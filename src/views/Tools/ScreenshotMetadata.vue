@@ -117,8 +117,8 @@
                     <template v-if="screenshotMetadataDialog.metadata.filePath">
                         <img
                             class="cursor-pointer max-w-full max-h-full object-contain"
-                            :src="screenshotMetadataDialog.metadata.filePath"
-                            @click="showFullscreenImageDialog(screenshotMetadataDialog.metadata.filePath)" />
+                            :src="screenshotImageUrl"
+                            @click="showFullscreenImageDialog(screenshotImageUrl)" />
                         <Button
                             variant="ghost"
                             size="icon"
@@ -271,6 +271,32 @@
     import { useRouter } from 'vue-router';
     import { vrcPlusImageRequest } from '@/api';
     import { lookupUser } from '@/coordinators/userCoordinator';
+
+    const screenshotImageUrl = ref('');
+    let _prevBlobUrl = '';
+
+    async function loadScreenshotImage(filePath) {
+        if (_prevBlobUrl) {
+            URL.revokeObjectURL(_prevBlobUrl);
+            _prevBlobUrl = '';
+        }
+        screenshotImageUrl.value = '';
+        if (!filePath) return;
+        try {
+            const buf = await window.__TAURI_INTERNALS__.invoke('app__get_file_bytes', { path: filePath });
+            if (!buf || !buf.byteLength) return;
+            const blob = new Blob([new Uint8Array(buf)], { type: 'image/png' });
+            const url = URL.createObjectURL(blob);
+            _prevBlobUrl = url;
+            screenshotImageUrl.value = url;
+        } catch (e) {
+            console.error('Failed to load screenshot image:', e);
+        }
+    }
+
+    onUnmounted(() => {
+        if (_prevBlobUrl) URL.revokeObjectURL(_prevBlobUrl);
+    });
 
     const router = useRouter();
     const { t } = useI18n();
@@ -742,8 +768,10 @@
             D.metadata.dateTime = Date.parse(metadata.creationDate);
         }
 
+        await loadScreenshotImage(D.metadata.filePath);
+
         if (fullscreenImageDialog.value.visible) {
-            showFullscreenImageDialog(D.metadata.filePath);
+            showFullscreenImageDialog(screenshotImageUrl.value);
         }
     }
 </script>

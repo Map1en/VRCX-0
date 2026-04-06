@@ -4,11 +4,11 @@ on:
     workflow_dispatch:
         inputs:
             release:
-                description: 'Create a GitHub Release'
+                description: 'Create a GitHub Pre-Release'
                 type: boolean
                 default: false
             stable:
-                description: 'Stable release (only when Release is checked)'
+                description: 'Stable release'
                 type: boolean
                 default: false
 
@@ -59,91 +59,38 @@ jobs:
                   fi
                   echo "$notes" > .release-notes.md
 
-            - uses: actions/setup-dotnet@v5
-              with:
-                  dotnet-version: '10.0.x'
+            - uses: dtolnay/rust-toolchain@stable
 
             - uses: actions/setup-node@v6
               with:
                   node-version: lts/*
                   cache: npm
 
-            - name: Set installer version
-              run: |
-                  # Extract numeric X.X.X.X from version for NSIS VIFileVersion
-                  # e.g. "2026.04.05-beta.1" -> "2026.4.5.1", "2026.04.05" -> "2026.4.5.0"
-                  raw="${{ steps.meta.outputs.version }}"
-                  base=$(echo "$raw" | sed 's/-.*//')
-                  # Remove leading zeros from each segment
-                  IFS='.' read -r y m d <<< "$base"
-                  y=$((10#$y)); m=$((10#$m)); d=$((10#$d))
-                  # Extract trailing number after last dot in suffix (e.g. beta.1 -> 1), default 0
-                  suffix=$(echo "$raw" | sed -n 's/^[^-]*-//p')
-                  if [ -n "$suffix" ]; then
-                      build=$(echo "$suffix" | grep -oE '[0-9]+$')
-                      build=${build:-0}
-                  else
-                      build=0
-                  fi
-                  echo "!define PRODUCT_VERSION_FROM_FILE \"${y}.${m}.${d}.${build}\"" > Installer/version_define.nsh
-
             - uses: actions/cache@v5
               with:
-                  path: ~/.nuget/packages
-                  key: ${{ runner.os }}-nuget-${{ hashFiles('Dotnet/VRCX-0.csproj') }}
-                  restore-keys: ${{ runner.os }}-nuget-
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                      src-tauri/target
+                  key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+                  restore-keys: ${{ runner.os }}-cargo-
 
             - run: npm ci
-            - run: npm run prod
-
-            - name: Build .NET
-              run: |
-                  dotnet build Dotnet/VRCX-0.csproj \
-                      -p:Configuration=Release \
-                      -p:Platform=x64 \
-                      -t:Restore,Build \
-                      -m --self-contained
-
-            - name: Install NSIS
-              run: choco install nsis -y
-
-            - name: Create installer
-              shell: pwsh
-              run: |
-                  $nsis = "C:\Program Files (x86)\NSIS"
-                  Copy-Item -Recurse -Force "Installer\Plugins\*" "$nsis\Plugins\"
-                  & "$nsis\makensis.exe" /V1 "Installer\installer.nsi"
-
-            - name: Rename installer
-              run: mv Installer/VRCX-0_Setup.exe "VRCX-0_${{ steps.meta.outputs.version }}_Setup.exe"
-
-            - name: Create zip
-              shell: pwsh
-              run: |
-                  $v = "${{ steps.meta.outputs.version }}"
-                  Get-ChildItem -Path build -Recurse -File |
-                      Where-Object { $_.Extension -notin '.log','.pdb' } |
-                      Compress-Archive -DestinationPath "VRCX-0_${v}.zip"
+            - run: npx tauri build
 
             # ── Artifacts (always) ───────────────────────────
-            - name: Upload installer
+            - name: Upload bundle
               uses: actions/upload-artifact@v7
               with:
-                  name: VRCX-0-Setup
-                  path: VRCX-0_${{ steps.meta.outputs.version }}_Setup.exe
-
-            - name: Upload zip
-              uses: actions/upload-artifact@v7
-              with:
-                  name: VRCX-0-Zip
-                  path: VRCX-0_${{ steps.meta.outputs.version }}.zip
+                  name: VRCX-0-bundle
+                  path: src-tauri/target/release/bundle/nsis/*
 
             # ── Release (conditional) ────────────────────────
             - name: SHA256
               if: inputs.release
               run: |
-                  v="${{ steps.meta.outputs.version }}"
-                  sha256sum "VRCX-0_${v}_Setup.exe" "VRCX-0_${v}.zip" > SHA256SUMS.txt
+                  cd src-tauri/target/release/bundle/nsis
+                  sha256sum *.exe > SHA256SUMS.txt
 
             - name: Create GitHub Release
               if: inputs.release
@@ -154,6 +101,5 @@ jobs:
                   prerelease: ${{ steps.meta.outputs.prerelease }}
                   body_path: .release-notes.md
                   files: |
-                      VRCX-0_${{ steps.meta.outputs.version }}_Setup.exe
-                      VRCX-0_${{ steps.meta.outputs.version }}.zip
-                      SHA256SUMS.txt
+                      src-tauri/target/release/bundle/nsis/*.exe
+                      src-tauri/target/release/bundle/nsis/SHA256SUMS.txt

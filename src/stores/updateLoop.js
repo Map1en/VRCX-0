@@ -5,7 +5,7 @@ import { database } from '../services/database';
 import { groupRequest } from '../api';
 import { runRefreshFriendsListFlow } from '../coordinators/friendSyncCoordinator';
 import { runUpdateIsGameRunningFlow } from '../coordinators/gameCoordinator';
-import { addGameLogEvent } from '../coordinators/gameLogCoordinator';
+import { addGameLogEntry } from '../coordinators/gameLogCoordinator';
 import { runRefreshPlayerModerationsFlow } from '../coordinators/moderationCoordinator';
 import { clearVRCXCache } from '../coordinators/vrcxCoordinator';
 import { useAuthStore } from './auth';
@@ -21,6 +21,8 @@ import { useVRCXUpdaterStore } from './vrcxUpdater';
 import { useVrStore } from './vr';
 import { useVrcxStore } from './vrcx';
 import { watchState } from '../services/watchState';
+import gameLogService from '../services/gameLog.js';
+import { useLocationStore } from './location';
 
 import * as workerTimers from 'worker-timers';
 
@@ -70,6 +72,12 @@ export const useUpdateLoopStore = defineStore('UpdateLoop', () => {
     async function updateLoop() {
         try {
             if (watchState.isLoggedIn) {
+                // Game log polling
+                if (--state.nextGetLogCheck <= 0) {
+                    state.nextGetLogCheck = 1; // every 1s
+                    await pollGameLogs();
+                }
+
                 if (--state.nextCurrentUserRefresh <= 0) {
                     state.nextCurrentUserRefresh = 300; // 5min
                     getCurrentUser();
@@ -133,6 +141,28 @@ export const useUpdateLoopStore = defineStore('UpdateLoop', () => {
             console.error(err);
         }
         workerTimers.setTimeout(() => updateLoop(), 1000);
+    }
+
+    /**
+     * Poll LogWatcher.Get() and process any new game log entries.
+     * Mirrors the C# update-loop polling that feeds addGameLogEntry.
+     */
+    async function pollGameLogs() {
+        try {
+            const locationStore = useLocationStore();
+            const gameLogs = await gameLogService.getAll();
+            if (gameLogs.length > 0) {
+                console.log(`[LogWatcher] polled ${gameLogs.length} log entries`);
+            }
+            for (const gameLog of gameLogs) {
+                if (gameLog.type !== 'api-request' && gameLog.type !== 'udon-exception') {
+                    console.log('[LogWatcher] processing:', gameLog.type, gameLog);
+                }
+                addGameLogEntry(gameLog, locationStore.lastLocation.location);
+            }
+        } catch (err) {
+            console.error('[LogWatcher] pollGameLogs error:', err);
+        }
     }
 
     /**

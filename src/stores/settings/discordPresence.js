@@ -185,6 +185,8 @@ export const useDiscordPresenceSettingsStore = defineStore(
          *
          */
         async function updateDiscord() {
+            // TODO: Discord RPC not yet ported to Tauri backend, disabled for now
+            return;
             let currentLocation = locationStore.lastLocation.location;
             let startTime = locationStore.lastLocation.date;
             if (locationStore.lastLocation.location === 'traveling') {

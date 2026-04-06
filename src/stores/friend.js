@@ -672,9 +672,14 @@ export const useFriendStore = defineStore('Friend', () => {
                 {
                     maxRetries: MAX_RETRY,
                     baseDelay: RETRY_BASE_DELAY,
-                    shouldRetry: (err) =>
-                        err?.status === 429 ||
-                        (err?.message || '').includes('429')
+                    shouldRetry: (err) => {
+                        const code = err?.status;
+                        if (code === 429 || code === 502 || code === 504) {
+                            return true;
+                        }
+                        const msg = err?.message || '';
+                        return msg.includes('429') || msg.includes('502') || msg.includes('504');
+                    }
                 }
             );
             return result;

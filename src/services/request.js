@@ -199,9 +199,11 @@ export function request(endpoint, options) {
                     updateLoopStore.setNextGroupInstanceRefresh(120); // 1min
                     $throw(429, t('api.status_code.429'), endpoint);
                 }
-                if (parsed.status === 504 || parsed.status === 502) {
-                    // ignore expected API errors
-                    $throw(parsed.status, parsed.data || '', endpoint);
+                if (parsed.status === 502) {
+                    $throw(502, 'Bad Gateway', endpoint);
+                }
+                if (parsed.status === 504) {
+                    $throw(504, 'Gateway Timeout', endpoint);
                 }
             }
             return parsed;

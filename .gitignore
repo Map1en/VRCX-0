@@ -1,16 +1,17 @@
 node_modules/
 build/
-obj/
-obj1/
 .idea/
 *.log
-*.DotSettings.user
-.vs/
-Installer/version_define.nsh
-bun.lock
 
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+
+# Misc
 .env.sentry-build-plugin
 AGENTS.md
 AI_GUIDE.md
 CLAUDE.md
 coverage/
+src/plugins/interopApi.js
+bun.lock

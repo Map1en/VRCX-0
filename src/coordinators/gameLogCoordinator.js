@@ -509,14 +509,6 @@ export function addGameLogEvent(json) {
         rawLogs[2],
         rawLogs.slice(3)
     );
-    if (
-        AppDebug.debugGameLog &&
-        gameLog.type !== 'photon-id' &&
-        gameLog.type !== 'api-request' &&
-        gameLog.type !== 'udon-exception'
-    ) {
-        console.log('gameLog:', gameLog);
-    }
     addGameLogEntry(gameLog, locationStore.lastLocation.location);
 }
 
