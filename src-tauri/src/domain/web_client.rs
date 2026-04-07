@@ -1,11 +1,12 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::io::Cursor;
+use std::sync::{Arc, Mutex};
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use reqwest::header::{HeaderName, HeaderValue, CONTENT_TYPE, REFERER};
 use reqwest::multipart::{Form, Part};
 use reqwest::{Client, Method, Proxy};
-use reqwest_cookie_store::CookieStoreMutex;
+use reqwest_cookie_store::{CookieStore, CookieStoreMutex, RawCookie};
 use serde_json::Value;
 
 use crate::domain::database::DatabaseService;
@@ -24,6 +25,7 @@ struct CookieEntry {
 pub struct WebClient {
     client: Client,
     jar: Arc<CookieStoreMutex>,
+    last_saved_cookies: Mutex<Option<String>>,
     proxy_url: Option<String>,
 }
 
@@ -55,6 +57,7 @@ impl WebClient {
         let wc = Self {
             client,
             jar,
+            last_saved_cookies: Mutex::new(None),
             proxy_url: proxy_url.clone(),
         };
 
@@ -82,31 +85,62 @@ impl WebClient {
             .and_then(|r| r.first())
             .and_then(|v| v.as_str())
         {
-            if let Ok(bytes) = B64.decode(b64) {
-                if let Ok(entries) = serde_json::from_slice::<Vec<CookieEntry>>(&bytes) {
-                    self.apply_cookie_entries(&entries);
-                }
+            if self.restore_cookies(b64) {
+                let mut last_saved = self.last_saved_cookies.lock().unwrap();
+                *last_saved = Some(b64.to_string());
             }
         }
     }
 
     pub fn save_cookies(&self, db: &DatabaseService) {
-        let entries = self.snapshot_cookies();
-        if entries.is_empty() {
-            return;
-        }
-        if let Ok(json) = serde_json::to_vec(&entries) {
-            let b64 = B64.encode(&json);
+        if let Some(b64) = self.serialize_cookie_store() {
+            let mut last_saved = self.last_saved_cookies.lock().unwrap();
+            if last_saved.as_ref() == Some(&b64) {
+                return;
+            }
             let _ = db.execute_non_query(
                 "INSERT OR REPLACE INTO `cookies` (`key`, `value`) VALUES (@key, @value)",
                 &{
                     let mut m = HashMap::new();
                     m.insert("@key".to_string(), Value::String("default".into()));
-                    m.insert("@value".to_string(), Value::String(b64));
+                    m.insert("@value".to_string(), Value::String(b64.clone()));
                     m
                 },
             );
+            *last_saved = Some(b64);
         }
+    }
+
+    fn restore_cookies(&self, b64: &str) -> bool {
+        if let Some(store) = Self::deserialize_cookie_store(b64) {
+            let mut jar = self.jar.lock().unwrap();
+            *jar = store;
+            return true;
+        }
+        if let Some(entries) = Self::deserialize_legacy_cookie_entries(b64) {
+            self.apply_cookie_entries(&entries);
+            return true;
+        }
+        false
+    }
+
+    fn serialize_cookie_store(&self) -> Option<String> {
+        let store = self.jar.lock().unwrap();
+        let mut json = Vec::new();
+        #[allow(deprecated)]
+        store.save_incl_expired_and_nonpersistent_json(&mut json).ok()?;
+        Some(B64.encode(json))
+    }
+
+    fn deserialize_cookie_store(b64: &str) -> Option<CookieStore> {
+        let bytes = B64.decode(b64).ok()?;
+        #[allow(deprecated)]
+        CookieStore::load_json_all(Cursor::new(bytes)).ok()
+    }
+
+    fn deserialize_legacy_cookie_entries(b64: &str) -> Option<Vec<CookieEntry>> {
+        let bytes = B64.decode(b64).ok()?;
+        serde_json::from_slice::<Vec<CookieEntry>>(&bytes).ok()
     }
 
     fn apply_cookie_entries(&self, entries: &[CookieEntry]) {
@@ -121,28 +155,12 @@ impl WebClient {
                 );
                 store
                     .insert_raw(
-                        &reqwest_cookie_store::RawCookie::parse(&cookie_str).unwrap(),
+                        &RawCookie::parse(&cookie_str).unwrap(),
                         &url,
                     )
                     .ok();
             }
         }
-    }
-
-    fn snapshot_cookies(&self) -> Vec<CookieEntry> {
-        let store = self.jar.lock().unwrap();
-        store
-            .iter_unexpired()
-            .map(|c| CookieEntry {
-                name: c.name().to_string(),
-                value: c.value().to_string(),
-                domain: c.domain().map(|d| d.to_string()).unwrap_or_default(),
-                path: c
-                    .path()
-                    .map(|p| p.to_string())
-                    .unwrap_or_else(|| "/".into()),
-            })
-            .collect()
     }
 
     pub fn cookie_jar(&self) -> Arc<CookieStoreMutex> {
@@ -159,17 +177,11 @@ impl WebClient {
     }
 
     pub fn get_cookies(&self) -> String {
-        let entries = self.snapshot_cookies();
-        let json = serde_json::to_vec(&entries).unwrap_or_default();
-        B64.encode(&json)
+        self.serialize_cookie_store().unwrap_or_default()
     }
 
     pub fn set_cookies(&self, b64: &str) {
-        if let Ok(bytes) = B64.decode(b64) {
-            if let Ok(entries) = serde_json::from_slice::<Vec<CookieEntry>>(&bytes) {
-                self.apply_cookie_entries(&entries);
-            }
-        }
+        self.restore_cookies(b64);
     }
 
     pub async fn execute(
