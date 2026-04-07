@@ -14,7 +14,7 @@ dirs = "6"
 rusqlite = { version = "0.34", features = ["bundled"] }
 sysinfo = "0.32"
 chrono = "0.4"
-reqwest = { version = "0.13", features = ["cookies", "gzip", "brotli", "deflate"] }
+reqwest = { version = "0.13", features = ["cookies", "gzip", "brotli", "deflate", "multipart"] }
 reqwest_cookie_store = "0.10"
 tokio = { version = "1", features = ["sync"] }
 base64 = "0.22"

@@ -616,6 +616,7 @@
     import { formatJsonVars } from '../../../shared/utils/base/ui';
     import { handleImageUploadInput } from '../../../coordinators/imageUploadCoordinator';
     import { runDeleteVRChatCacheFlow as deleteVRChatCache } from '../../../coordinators/gameCoordinator';
+    import { readFileAsBase64 } from '../../../shared/utils/imageUpload';
     import {
         showAvatarDialog,
         applyAvatar,
@@ -986,42 +987,26 @@
         if (!file) {
             return;
         }
-        const r = new FileReader();
         const resetLoading = () => {
             avatarDialog.value.galleryLoading = false;
             clearInput();
         };
-        r.onerror = resetLoading;
-        r.onabort = resetLoading;
-        r.onload = function () {
-            try {
-                avatarDialog.value.galleryLoading = true;
-                const base64Body = btoa(r.result.toString());
-                const uploadPromise = (async () => {
-                    const args = await avatarRequest.uploadAvatarGalleryImage(base64Body, avatarDialog.value.id);
-                    avatarDialog.value.galleryImages = await getAvatarGallery(avatarDialog.value.id);
-                    return args;
-                })();
-                toast.promise(uploadPromise, {
-                    loading: t('message.upload.loading'),
-                    success: t('message.upload.success'),
-                    error: t('message.upload.error')
-                });
-                uploadPromise
-                    .catch((error) => {
-                        console.error('Failed to upload image', error);
-                    })
-                    .finally(resetLoading);
-            } catch (error) {
-                console.error('Failed to process image', error);
-                resetLoading();
-            }
-        };
-        try {
-            r.readAsBinaryString(file);
-        } catch (error) {
-            console.error('Failed to read file', error);
-            resetLoading();
-        }
+        avatarDialog.value.galleryLoading = true;
+        const uploadPromise = (async () => {
+            const base64Body = await readFileAsBase64(file);
+            const args = await avatarRequest.uploadAvatarGalleryImage(base64Body, avatarDialog.value.id);
+            avatarDialog.value.galleryImages = await getAvatarGallery(avatarDialog.value.id);
+            return args;
+        })();
+        toast.promise(uploadPromise, {
+            loading: t('message.upload.loading'),
+            success: t('message.upload.success'),
+            error: t('message.upload.error')
+        });
+        uploadPromise
+            .catch((error) => {
+                console.error('Failed to upload image', error);
+            })
+            .finally(resetLoading);
     }
 </script>
