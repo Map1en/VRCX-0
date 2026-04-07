@@ -280,22 +280,16 @@ pub fn app__open_shortcut_folder(state: State<'_, AppState>) -> Result<(), AppEr
 #[tauri::command]
 pub fn app__open_folder_and_select_item(
     path: String,
-    is_folder: Option<bool>,
+    _is_folder: Option<bool>,
 ) -> Result<(), AppError> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err(AppError::Custom(format!("path not found: {path}")));
     }
 
-    let target = if is_folder.unwrap_or(false) {
-        path.clone()
-    } else {
-        path.clone()
-    };
-
     std::process::Command::new("explorer.exe")
         .arg("/select,")
-        .arg(&target)
+        .arg(&path)
         .spawn()
         .map_err(|e| AppError::Custom(format!("explorer: {e}")))?;
 
@@ -392,7 +386,7 @@ pub fn app__quit_game() -> Result<i32, AppError> {
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
 
     let mut count = 0i32;
-    for (_pid, process) in sys.processes() {
+    for process in sys.processes().values() {
         if process
             .name()
             .to_string_lossy()
@@ -891,7 +885,7 @@ pub fn app__get_extra_screenshot_data(
                 .filter(|e| {
                     e.path()
                         .extension()
-                        .map_or(false, |ext| ext.eq_ignore_ascii_case("png"))
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("png"))
                 })
                 .map(|e| e.path().to_string_lossy().into_owned())
                 .collect();
@@ -952,11 +946,11 @@ pub fn app__get_last_screenshot() -> Result<String, AppError> {
                 && entry
                     .path()
                     .extension()
-                    .map_or(false, |e| e.eq_ignore_ascii_case("png"))
+                    .is_some_and(|e| e.eq_ignore_ascii_case("png"))
             {
                 if let Ok(meta) = entry.metadata() {
                     if let Ok(modified) = meta.modified() {
-                        if newest.as_ref().map_or(true, |(_, t)| modified > *t) {
+                        if newest.as_ref().is_none_or(|(_, t)| modified > *t) {
                             newest = Some((entry.path().to_string_lossy().into_owned(), modified));
                         }
                     }
@@ -984,7 +978,7 @@ pub fn app__delete_all_screenshot_metadata(state: State<'_, AppState>) {
             && entry
                 .path()
                 .extension()
-                .map_or(false, |e| e.eq_ignore_ascii_case("png"))
+                .is_some_and(|e| e.eq_ignore_ascii_case("png"))
         {
             screenshot::delete_text_metadata(&entry.path().to_string_lossy(), true);
         }
@@ -1161,6 +1155,7 @@ pub fn app__desktop_notification(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub fn app__ovrt_notification(
     state: State<'_, AppState>,
     hud_notification: bool,
@@ -1184,6 +1179,9 @@ pub fn app__ovrt_notification(
 
 #[tauri::command]
 pub fn app__get_vrchat_registry_key(key: String) -> Result<serde_json::Value, AppError> {
+    #[cfg(not(target_os = "windows"))]
+    let _ = &key;
+
     #[cfg(target_os = "windows")]
     {
         use winreg::enums::*;
@@ -1446,6 +1444,7 @@ pub fn app__read_vrc_reg_json_file(filepath: String) -> Result<String, AppError>
     Ok(std::fs::read_to_string(&filepath)?)
 }
 
+#[cfg(target_os = "windows")]
 fn add_hash_to_key_name(key: &str) -> String {
     let mut hash: u32 = 5381;
     for byte in key.bytes() {

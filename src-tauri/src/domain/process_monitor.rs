@@ -34,7 +34,7 @@ impl ProcessMonitor {
                 let mut game_found = false;
                 let mut steamvr_found = false;
 
-                for (_pid, proc) in sys.processes() {
+                for proc in sys.processes().values() {
                     let name = proc.name().to_string_lossy();
                     if !game_found && name.starts_with("VRChat") {
                         game_found = true;

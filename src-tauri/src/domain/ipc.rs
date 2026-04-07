@@ -1,8 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 pub struct IpcServer {
+    #[cfg_attr(not(windows), allow(dead_code))]
     clients: Arc<Mutex<Vec<ClientHandle>>>,
 }
 

@@ -28,7 +28,7 @@ impl UpdateManager {
 
         let mut sys = sysinfo::System::new();
         sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
-        for (_pid, proc) in sys.processes() {
+        for proc in sys.processes().values() {
             if proc.name().to_string_lossy().starts_with("VRCX-0_Setup") {
                 std::process::exit(0);
             }

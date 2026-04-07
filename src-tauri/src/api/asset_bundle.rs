@@ -51,9 +51,9 @@ fn reverse_hex_to_decimal(hex_string: &str) -> (i32, i32) {
 
     let parse_part = |s: &str| -> Option<[u8; 4]> {
         let mut out = [0u8; 4];
-        for i in 0..4 {
+        for (i, slot) in out.iter_mut().enumerate() {
             let start = i * 2;
-            out[i] = u8::from_str_radix(&s[start..start + 2], 16).ok()?;
+            *slot = u8::from_str_radix(&s[start..start + 2], 16).ok()?;
         }
         Some(out)
     };

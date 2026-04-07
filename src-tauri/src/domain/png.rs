@@ -33,6 +33,7 @@ fn crc32(data: &[u8], init: u32) -> u32 {
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum ChunkType {
     IHDR,
     SRGB,

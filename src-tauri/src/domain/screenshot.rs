@@ -260,8 +260,8 @@ pub fn parse_lfs_picture(metadata_string: &str) -> ScreenshotMetadata {
         return metadata;
     }
 
-    for i in 2..parts.len() {
-        let split: Vec<&str> = parts[i].splitn(2, ':').collect();
+    for part in parts.iter().skip(2) {
+        let split: Vec<&str> = part.splitn(2, ':').collect();
         if split.len() < 2 || split[1].is_empty() {
             continue;
         }
@@ -356,17 +356,14 @@ pub fn get_screenshot_metadata(path: &str) -> Option<ScreenshotMetadata> {
             result.source_file = Some(path.into());
             got_vrchat = true;
         } else if s.starts_with('{') && s.ends_with('}') {
-            match serde_json::from_str::<ScreenshotMetadata>(s) {
-                Ok(mut vrcx) => {
-                    vrcx.source_file = Some(path.into());
-                    if got_vrchat {
-                        result.players = vrcx.players;
-                        result.world.instance_id = vrcx.world.instance_id;
-                    } else {
-                        result = vrcx;
-                    }
+            if let Ok(mut vrcx) = serde_json::from_str::<ScreenshotMetadata>(s) {
+                vrcx.source_file = Some(path.into());
+                if got_vrchat {
+                    result.players = vrcx.players;
+                    result.world.instance_id = vrcx.world.instance_id;
+                } else {
+                    result = vrcx;
                 }
-                Err(_) => {}
             }
         } else if s.starts_with("lfs") || s.starts_with("screenshotmanager") {
             result = parse_lfs_picture(s);
@@ -424,17 +421,14 @@ pub fn find_screenshots(
             e.file_type().is_file()
                 && e.path()
                     .extension()
-                    .map_or(false, |ext| ext.eq_ignore_ascii_case("png"))
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("png"))
         })
         .map(|e| e.path().to_string_lossy().into_owned())
         .collect();
 
     for file in &files {
         let metadata = if let Some(cached) = cache_db.get_metadata(file) {
-            match serde_json::from_str::<ScreenshotMetadata>(&cached) {
-                Ok(m) => Some(m),
-                Err(_) => None,
-            }
+            serde_json::from_str::<ScreenshotMetadata>(&cached).ok()
         } else if cache_db.is_cached(file) {
             None
         } else {
@@ -455,7 +449,7 @@ pub fn find_screenshots(
                     .world
                     .name
                     .as_ref()
-                    .map_or(false, |n| n.to_lowercase().contains(&query.to_lowercase())),
+                    .is_some_and(|n| n.to_lowercase().contains(&query.to_lowercase())),
                 SearchType::WorldID => meta.world.id == query,
             };
             if matched {
