@@ -925,7 +925,7 @@ pub fn app__delete_all_screenshot_metadata(state: State<'_, AppState>) {
             screenshot::delete_text_metadata(&entry.path().to_string_lossy(), true);
         }
     }
-    let _ = &state.screenshot_cache;
+    state.screenshot_cache.clear_all();
 }
 
 #[tauri::command]

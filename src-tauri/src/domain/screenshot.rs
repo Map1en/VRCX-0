@@ -547,4 +547,9 @@ impl MetadataCacheDb {
         }
         let _ = tx.commit();
     }
+
+    pub fn clear_all(&self) {
+        let conn = self.conn.lock().unwrap();
+        let _ = conn.execute("DELETE FROM cache", []);
+    }
 }
