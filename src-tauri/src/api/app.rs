@@ -457,22 +457,7 @@ pub fn app__show_dev_tools(app_handle: AppHandle) -> Result<(), AppError> {
     Ok(())
 }
 
-#[tauri::command]
-pub fn app__set_zoom(app_handle: AppHandle, state: State<'_, AppState>, zoom_level: f64) -> Result<(), AppError> {
-    use tauri::Manager;
-    if let Some(webview) = app_handle.get_webview_window("main") {
-        let factor = (1.2_f64).powf(zoom_level);
-        let _ = webview.set_zoom(factor);
-    }
-    *state.zoom_level.lock().unwrap() = zoom_level;
-    Ok(())
-}
 
-#[tauri::command]
-pub fn app__get_zoom(state: State<'_, AppState>) -> f64 {
-    
-    *state.zoom_level.lock().unwrap()
-}
 
 #[tauri::command]
 pub fn app__change_theme(app_handle: AppHandle, value: i32) -> Result<(), AppError> {

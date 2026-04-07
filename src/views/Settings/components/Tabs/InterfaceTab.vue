@@ -398,6 +398,7 @@
     import { computed, onBeforeUnmount, ref, watch } from 'vue';
     import { CheckIcon, ChevronDown } from 'lucide-vue-next';
     import { useAppearanceSettingsStore, useVrStore } from '@/stores';
+    import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
     import { Switch } from '@/components/ui/switch';
     import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -684,6 +685,12 @@
      *
      */
     async function initGetZoomLevel() {
+        const saved = await VRCXStorage.Get('VRCX-0_ZoomLevel');
+        if (saved) {
+            zoomLevel.value = Number(saved);
+            applyZoom(zoomLevel.value);
+        }
+
         const handleWheel = (event) => {
             if (event.ctrlKey) {
                 getZoomLevel();
@@ -693,20 +700,23 @@
         cleanupWheel = () => {
             window.removeEventListener('wheel', handleWheel);
         };
-        getZoomLevel();
     }
 
-    /**
-     *
-     */
     async function getZoomLevel() {
-        zoomLevel.value = ((await AppApi.GetZoom()) + 10) * 10;
+        const saved = await VRCXStorage.Get('VRCX-0_ZoomLevel');
+        if (saved) {
+            zoomLevel.value = Number(saved);
+        }
     }
 
-    /**
-     *
-     */
+    function applyZoom(displayValue) {
+        const step = displayValue / 10 - 10;
+        const factor = Math.pow(1.2, step);
+        getCurrentWebviewWindow().setZoom(factor);
+    }
+
     function setZoomLevel() {
-        AppApi.SetZoom(zoomLevel.value / 10 - 10);
+        applyZoom(zoomLevel.value);
+        VRCXStorage.Set('VRCX-0_ZoomLevel', String(zoomLevel.value));
     }
 </script>

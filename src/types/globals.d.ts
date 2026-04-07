@@ -96,8 +96,6 @@ declare global {
     const AppApi: {
         // Basic App Functions
         ShowDevTools(): Promise<void>;
-        SetZoom(zoomLevel: number): Promise<void>;
-        GetZoom(): Promise<number>;
         DesktopNotification(
             boldText: string,
             text?: string,

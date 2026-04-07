@@ -106,7 +106,6 @@ const commandArgs = {
     app__start_game: ['arguments'],
     app__start_game_from_path: ['path', 'arguments'],
     // App — window/UI
-    app__set_zoom: ['zoomLevel'],
     app__change_theme: ['value'],
     app__restart_application: ['isUpgrade'],
     app__set_tray_icon_notification: ['notify'],
@@ -369,5 +368,14 @@ export async function initInteropApi() {
     await configRepository.init();
 
     AppApi.SetUserAgent();
+
+    if (isTauri) {
+        const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+        const saved = await window.VRCXStorage.Get('VRCX-0_ZoomLevel');
+        if (saved) {
+            const step = Number(saved) / 10 - 10;
+            getCurrentWebviewWindow().setZoom(Math.pow(1.2, step));
+        }
+    }
 }
 

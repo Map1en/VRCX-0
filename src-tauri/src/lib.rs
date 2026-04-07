@@ -107,8 +107,7 @@ pub fn run() {
             api::app::app__focus_window,
             api::app::app__flash_window,
             api::app::app__show_dev_tools,
-            api::app::app__set_zoom,
-            api::app::app__get_zoom,
+
             api::app::app__change_theme,
             api::app::app__do_funny,
             api::app::app__set_tray_icon_notification,

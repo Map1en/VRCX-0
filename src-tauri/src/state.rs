@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::sync::Mutex;
 
 use crate::domain::auto_launch::AutoAppLaunchManager;
 use crate::domain::database::DatabaseService;
@@ -39,7 +38,6 @@ pub struct AppState {
     pub screenshot_cache: MetadataCacheDb,
 
     pub auto_launch: AutoAppLaunchManager,
-    pub zoom_level: Mutex<f64>,
 }
 
 impl AppState {
@@ -78,6 +76,6 @@ impl AppState {
 
         let auto_launch = AutoAppLaunchManager::new(&paths.app_data);
 
-        Ok(Self { paths, storage, db, process_monitor, log_watcher, web, image_cache, update_manager, ovrtoolkit, ipc, screenshot_cache, auto_launch, zoom_level: Mutex::new(0.0) })
+        Ok(Self { paths, storage, db, process_monitor, log_watcher, web, image_cache, update_manager, ovrtoolkit, ipc, screenshot_cache, auto_launch })
     }
 }
