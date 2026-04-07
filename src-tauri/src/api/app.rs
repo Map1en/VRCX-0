@@ -80,6 +80,11 @@ pub fn app__get_file_base64(path: String) -> Result<String, AppError> {
 }
 
 #[tauri::command]
+pub fn app__get_file_bytes(path: String) -> Result<Vec<u8>, AppError> {
+    Ok(std::fs::read(&path)?)
+}
+
+#[tauri::command]
 pub fn app__md5_file(blob: String) -> Result<String, AppError> {
     let data = B64.decode(&blob).map_err(|e| AppError::Custom(format!("bad base64: {e}")))?;
     let digest = md5::compute(&data);

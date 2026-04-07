@@ -412,6 +412,7 @@
     import PresetColorPicker from '@/components/PresetColorPicker.vue';
     import TableLimitsDialog from '@/components/dialogs/TableLimitsDialog.vue';
     import { saveSortFavoritesOption } from '@/coordinators/favoriteCoordinator';
+    import configRepository from '@/services/config';
 
     import SettingsGroup from '../SettingsGroup.vue';
     import SettingsItem from '../SettingsItem.vue';
@@ -591,6 +592,7 @@
     }
 
     const zoomLevel = ref(100);
+    const ZOOM_KEY = 'VRCX-0_ZoomLevel';
     let cleanupWheel = null;
 
     onBeforeUnmount(() => {
@@ -685,15 +687,15 @@
      *
      */
     async function initGetZoomLevel() {
-        const saved = await VRCXStorage.Get('VRCX-0_ZoomLevel');
-        if (saved) {
+        const saved = await configRepository.getString(ZOOM_KEY, null);
+        if (saved !== null) {
             zoomLevel.value = Number(saved);
-            applyZoom(zoomLevel.value);
+            await applyZoom(zoomLevel.value);
         }
 
         const handleWheel = (event) => {
             if (event.ctrlKey) {
-                getZoomLevel();
+                void getZoomLevel();
             }
         };
         window.addEventListener('wheel', handleWheel);
@@ -703,20 +705,20 @@
     }
 
     async function getZoomLevel() {
-        const saved = await VRCXStorage.Get('VRCX-0_ZoomLevel');
-        if (saved) {
+        const saved = await configRepository.getString(ZOOM_KEY, null);
+        if (saved !== null) {
             zoomLevel.value = Number(saved);
         }
     }
 
-    function applyZoom(displayValue) {
+    async function applyZoom(displayValue) {
         const step = displayValue / 10 - 10;
         const factor = Math.pow(1.2, step);
-        getCurrentWebviewWindow().setZoom(factor);
+        await getCurrentWebviewWindow().setZoom(factor);
     }
 
-    function setZoomLevel() {
-        applyZoom(zoomLevel.value);
-        VRCXStorage.Set('VRCX-0_ZoomLevel', String(zoomLevel.value));
+    async function setZoomLevel() {
+        await applyZoom(zoomLevel.value);
+        await configRepository.setString(ZOOM_KEY, String(zoomLevel.value));
     }
 </script>

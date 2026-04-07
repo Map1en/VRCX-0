@@ -254,6 +254,7 @@
 
 <script setup>
     import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    import { invoke } from '@tauri-apps/api/core';
     import { useMagicKeys, whenever } from '@vueuse/core';
     import { onMounted, onUnmounted, reactive, ref, computed } from 'vue';
     import { useGalleryStore, useUserStore, useVrcxStore } from '@/stores';
@@ -283,9 +284,9 @@
         screenshotImageUrl.value = '';
         if (!filePath) return;
         try {
-            const buf = await window.__TAURI_INTERNALS__.invoke('app__get_file_bytes', { path: filePath });
-            if (!buf || !buf.byteLength) return;
-            const blob = new Blob([new Uint8Array(buf)], { type: 'image/png' });
+            const bytes = await invoke('app__get_file_bytes', { path: filePath });
+            if (!bytes?.length) return;
+            const blob = new Blob([new Uint8Array(bytes)], { type: 'image/png' });
             const url = URL.createObjectURL(blob);
             _prevBlobUrl = url;
             screenshotImageUrl.value = url;

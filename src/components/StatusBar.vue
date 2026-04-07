@@ -430,6 +430,7 @@
     } from './statusBarUtils';
 
     import configRepository from '../services/config';
+    import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
     dayjs.extend(utc);
     dayjs.extend(timezone);
@@ -738,9 +739,10 @@
     const zoomLevel = ref(100);
     const zoomEditing = ref(false);
     const zoomInputRef = ref(null);
+    const ZOOM_KEY = 'VRCX-0_ZoomLevel';
 
     if (!isMacOS.value) {
-        initZoom();
+        void initZoom();
     }
 
     /**
@@ -748,20 +750,28 @@
      */
     async function initZoom() {
         try {
-            zoomLevel.value = ((await AppApi.GetZoom()) + 10) * 10;
+            const saved = await configRepository.getString(ZOOM_KEY, null);
+            if (saved === null) return;
+
+            const level = Number(saved);
+            if (!Number.isFinite(level)) return;
+
+            zoomLevel.value = level;
+            await getCurrentWebviewWindow().setZoom(Math.pow(1.2, zoomLevel.value / 10 - 10));
         } catch {
-            // AppApi not available
+            // ignore
         }
     }
 
     /**
      *
      */
-    function setZoomLevel() {
+    async function setZoomLevel() {
         try {
-            AppApi.SetZoom(zoomLevel.value / 10 - 10);
+            await getCurrentWebviewWindow().setZoom(Math.pow(1.2, zoomLevel.value / 10 - 10));
+            configRepository.setString(ZOOM_KEY, String(zoomLevel.value));
         } catch {
-            // AppApi not available
+            // ignore
         }
     }
 
