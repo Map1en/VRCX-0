@@ -1170,6 +1170,9 @@ pub fn app__desktop_notification(
     if let Some(ref body) = text {
         notification = notification.body(body);
     }
+    if let Some(icon) = image.as_deref().filter(|s| !s.trim().is_empty()) {
+        notification = notification.icon(icon);
+    }
     notification
         .show()
         .map_err(|e| AppError::Custom(format!("notification: {e}")))?;

@@ -64,7 +64,7 @@
                                     type="button"
                                     class="text-left text-sm font-medium truncate flex items-center gap-1"
                                     @click="emit('open-github')">
-                                    VRCX
+                                    VRCX-0
                                     <Heart class="text-primary fill-current stroke-none" />
                                 </button>
                                 <span class="text-xs text-muted-foreground">{{ version }}</span>
