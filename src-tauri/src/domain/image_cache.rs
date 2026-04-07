@@ -7,10 +7,6 @@ use reqwest_cookie_store::CookieStoreMutex;
 
 use crate::error::AppError;
 
-/// Disk-backed image cache with HTTP fetching.
-///
-/// Port of C# `ImageCache` — downloads VRChat images to
-/// `{AppData}/ImageCache/{fileId}/{version}.png` and serves the local path.
 pub struct ImageCache {
     client: Client,
     cache_dir: PathBuf,
@@ -18,12 +14,6 @@ pub struct ImageCache {
 }
 
 impl ImageCache {
-    /// Create a new ImageCache.
-    ///
-    /// `cache_dir` — root directory for cached images (e.g. `AppData/ImageCache`).
-    /// `cookie_jar` — shared cookie store from `WebClient` so api.vrchat.cloud
-    ///   requests include auth cookies automatically.
-    /// `proxy_url` — optional proxy inherited from `WebClient` / user settings.
     pub fn new(cache_dir: PathBuf, cookie_jar: Arc<CookieStoreMutex>, proxy_url: Option<&str>) -> Result<Self, AppError> {
         std::fs::create_dir_all(&cache_dir)?;
 
@@ -55,8 +45,6 @@ impl ImageCache {
         })
     }
 
-    /// Register additional image hosts provided by the frontend.
-    /// Each entry is a full URL — we extract the host component.
     pub fn populate_hosts(&self, hosts: &[String]) {
         let mut allowed = self.allowed_hosts.lock().unwrap();
         for host_url in hosts {
@@ -71,12 +59,6 @@ impl ImageCache {
         }
     }
 
-    /// Returns the cached file path for the given image, downloading it if
-    /// not already cached.
-    ///
-    /// - `url` — full download URL
-    /// - `file_id` — unique file identifier (used as directory name)
-    /// - `version` — version number (used as file name `{version}.png`)
     pub async fn get_image(
         &self,
         url: &str,
@@ -86,11 +68,9 @@ impl ImageCache {
         let dir = self.cache_dir.join(file_id);
         let file_path = dir.join(format!("{version}.png"));
 
-        // Cache hit — update directory mtime and return
         if file_path.exists() {
             if let Ok(meta) = std::fs::metadata(&file_path) {
                 if meta.len() > 0 {
-                    // Touch directory mtime — write+delete a temp marker
                     let marker = dir.join(".touch");
                     let _ = std::fs::write(&marker, b"");
                     let _ = std::fs::remove_file(&marker);
@@ -99,23 +79,19 @@ impl ImageCache {
             }
         }
 
-        // Delete stale directory if it exists, then recreate
         if dir.exists() {
             let _ = std::fs::remove_dir_all(&dir);
         }
         std::fs::create_dir_all(&dir)?;
 
-        // Download
         let bytes = self.fetch_image(url).await?;
         std::fs::write(&file_path, &bytes)?;
 
-        // Evict old entries if cache is too large
         self.clean_cache_if_needed();
 
         Ok(file_path.to_string_lossy().into_owned())
     }
 
-    /// Download an image directly to a specific path.
     pub async fn save_image_to_file(&self, url: &str, path: &str) -> Result<(), AppError> {
         let bytes = self.fetch_image(url).await?;
         if let Some(parent) = std::path::Path::new(path).parent() {
@@ -125,7 +101,6 @@ impl ImageCache {
         Ok(())
     }
 
-    /// Fetch image bytes from a URL, validating the host is allowed.
     async fn fetch_image(&self, url: &str) -> Result<Vec<u8>, AppError> {
         let parsed = reqwest::Url::parse(url)
             .map_err(|e| AppError::Custom(format!("invalid image url: {e}")))?;
@@ -162,7 +137,6 @@ impl ImageCache {
         Ok(bytes.to_vec())
     }
 
-    /// If cache has more than 1100 directories, delete the oldest until 1000 remain.
     fn clean_cache_if_needed(&self) {
         let entries = match std::fs::read_dir(&self.cache_dir) {
             Ok(e) => e,
@@ -182,10 +156,8 @@ impl ImageCache {
             return;
         }
 
-        // Sort by mtime descending — newest first
         dirs.sort_by(|a, b| b.1.cmp(&a.1));
 
-        // Delete everything past the 1000th entry
         for (path, _) in dirs.iter().skip(1000) {
             let _ = std::fs::remove_dir_all(path);
         }

@@ -1,14 +1,10 @@
 use std::io::{Read, Seek, SeekFrom, Write};
 
-/// PNG signature bytes.
 const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 const MAX_CHUNKS_TO_READ: usize = 16;
 const CHUNK_FIELD_SIZE: usize = 4;
-const CHUNK_NONDATA_SIZE: usize = 12; // 4 (length) + 4 (type) + 4 (crc)
+const CHUNK_NONDATA_SIZE: usize = 12;
 
-// ======================================================================
-// CRC-32 (PNG spec)
-// ======================================================================
 
 fn make_crc_table() -> [u32; 256] {
     let mut table = [0u32; 256];
@@ -36,12 +32,9 @@ fn crc32(data: &[u8], init: u32) -> u32 {
     c ^ 0xFFFF_FFFF
 }
 
-// ======================================================================
-// PNGChunk
-// ======================================================================
 
 #[derive(Clone, Debug)]
-#[allow(dead_code)] // TODO
+#[allow(dead_code)]
 pub enum ChunkType {
     IHDR,
     SRGB,
@@ -51,7 +44,7 @@ pub enum ChunkType {
     Unknown(String),
 }
 
-#[allow(dead_code)] // TODO
+#[allow(dead_code)]
 impl ChunkType {
     fn from_str(s: &str) -> Self {
         match s {
@@ -85,19 +78,16 @@ pub struct PngChunk {
 }
 
 impl PngChunk {
-    /// Read an iTXt chunk → (keyword, text).
     pub fn read_itxt(&self) -> Option<(String, String)> {
         if !matches!(self.chunk_type, ChunkType::ITXT) {
             return None;
         }
         let d = &self.data;
-        // find null terminator for keyword
         let kw_end = d.iter().position(|&b| b == 0)?;
         if kw_end == 0 || kw_end > 79 {
             return None;
         }
         let keyword = String::from_utf8_lossy(&d[..kw_end]).into_owned();
-        // skip: null + compression_flag + compression_method + lang_null + translated_null = 5
         let text_offset = kw_end + 5;
         if text_offset > d.len() {
             return Some((keyword, String::new()));
@@ -106,7 +96,6 @@ impl PngChunk {
         Some((keyword, text))
     }
 
-    /// Read IHDR → (width, height).
     pub fn read_ihdr_resolution(&self) -> Option<(u32, u32)> {
         if !matches!(self.chunk_type, ChunkType::IHDR) || self.data.len() < 8 {
             return None;
@@ -121,7 +110,6 @@ impl PngChunk {
         crc32(&self.data, crc32(type_bytes, 0))
     }
 
-    /// Validates this chunk still exists at the recorded index in the file.
     fn exists_in_file<F: Read + Seek>(&self, f: &mut F) -> bool {
         f.seek(SeekFrom::Start(self.index as u64)).ok();
         let mut buf = [0u8; 4];
@@ -132,7 +120,6 @@ impl PngChunk {
         if len != self.data.len() {
             return false;
         }
-        // skip type + data → CRC
         if f.seek(SeekFrom::Current((4 + len) as i64)).is_err() {
             return false;
         }
@@ -143,7 +130,6 @@ impl PngChunk {
         file_crc == self.calculate_crc()
     }
 
-    /// Serialize chunk to bytes (length + type + data + crc).
     pub fn to_bytes(&self) -> Vec<u8> {
         let type_bytes = self.chunk_type_str.as_bytes();
         let data_len = self.data.len() as u32;
@@ -158,15 +144,14 @@ impl PngChunk {
     }
 }
 
-/// Build an iTXt chunk from keyword + text.
 pub fn generate_text_chunk(keyword: &str, text: &str) -> PngChunk {
     let mut data = Vec::new();
     data.extend_from_slice(keyword.as_bytes());
-    data.push(0); // null sep
-    data.push(0); // compression flag
-    data.push(0); // compression method
-    data.push(0); // null sep (language tag)
-    data.push(0); // null sep (translated keyword)
+    data.push(0);
+    data.push(0);
+    data.push(0);
+    data.push(0);
+    data.push(0);
     data.extend_from_slice(text.as_bytes());
 
     PngChunk {
@@ -177,9 +162,6 @@ pub fn generate_text_chunk(keyword: &str, text: &str) -> PngChunk {
     }
 }
 
-// ======================================================================
-// PNGFile — read / write / delete chunks
-// ======================================================================
 
 pub struct PngFile {
     file: std::fs::File,
@@ -210,7 +192,6 @@ impl PngFile {
         })
     }
 
-    /// Validate PNG signature.
     pub fn is_valid(&mut self) -> bool {
         let len = self.file.seek(SeekFrom::End(0)).unwrap_or(0);
         if len < 57 {
@@ -224,7 +205,6 @@ impl PngFile {
         sig == PNG_SIGNATURE
     }
 
-    /// Read and cache metadata chunks (before IDAT).
     fn ensure_cache(&mut self) {
         if !self.cache.is_empty() {
             return;
@@ -269,13 +249,11 @@ impl PngFile {
         }
     }
 
-    /// Get first chunk of type.
     pub fn get_chunk(&mut self, ct: &ChunkType) -> Option<&PngChunk> {
         self.ensure_cache();
         self.cache.iter().find(|c| std::mem::discriminant(&c.chunk_type) == std::mem::discriminant(ct))
     }
 
-    /// Get all chunks of a given type.
     pub fn get_chunks_of_type(&mut self, ct: &ChunkType) -> Vec<PngChunk> {
         self.ensure_cache();
         self.cache
@@ -285,7 +263,6 @@ impl PngFile {
             .collect()
     }
 
-    /// Reverse search in last 8KB — for legacy mod chunks appended at end of file.
     pub fn get_chunk_reverse(&mut self, ct: &ChunkType) -> Option<PngChunk> {
         let file_len = self.file.seek(SeekFrom::End(0)).unwrap_or(0);
         if file_len < 8300 {
@@ -304,7 +281,6 @@ impl PngFile {
 
         for i in 0..buf.len().saturating_sub(4) {
             if &buf[i..i + 4] == search_bytes {
-                // Found type match — read the chunk
                 let chunk_start = start as i64 + i as i64 - CHUNK_FIELD_SIZE as i64;
                 if chunk_start < 0 {
                     continue;
@@ -336,7 +312,6 @@ impl PngFile {
         None
     }
 
-    /// Write a new chunk before IDAT (after last metadata chunk).
     pub fn write_chunk(&mut self, chunk: &PngChunk) -> bool {
         self.ensure_cache();
         let last = match self.cache.last() {
@@ -346,7 +321,6 @@ impl PngFile {
         let insert_pos = last.index + CHUNK_NONDATA_SIZE + last.data.len();
         let file_len = self.file.seek(SeekFrom::End(0)).unwrap_or(0) as usize;
 
-        // Read everything from insert_pos onward
         self.file.seek(SeekFrom::Start(insert_pos as u64)).ok();
         let tail_len = file_len - insert_pos;
         let mut tail = vec![0u8; tail_len];
@@ -363,7 +337,6 @@ impl PngFile {
         true
     }
 
-    /// Delete a chunk from the file.
     pub fn delete_chunk(&mut self, chunk: &PngChunk) -> bool {
         if !chunk.exists_in_file(&mut self.file) {
             return false;
@@ -392,7 +365,6 @@ impl PngFile {
         }
         self.file.set_len((file_len - delete_len) as u64).ok();
 
-        // Update cache
         self.cache.retain(|c| c.index != chunk.index);
         for c in &mut self.cache {
             if c.index > delete_start {
@@ -403,9 +375,6 @@ impl PngFile {
     }
 }
 
-// ======================================================================
-// PNGHelper convenience functions
-// ======================================================================
 
 pub fn read_resolution(png: &mut PngFile) -> String {
     if let Some(ihdr) = png.get_chunk(&ChunkType::IHDR) {

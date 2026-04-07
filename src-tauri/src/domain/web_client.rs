@@ -11,7 +11,6 @@ use crate::domain::database::DatabaseService;
 use crate::domain::storage::StorageService;
 use crate::error::AppError;
 
-/// Serialisable cookie entry matching the C# `Cookie` fields the frontend stores.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[serde(rename_all = "PascalCase")]
 struct CookieEntry {
@@ -21,15 +20,9 @@ struct CookieEntry {
     path: String,
 }
 
-/// Persistent HTTP client with cookie jar.
-///
-/// Replaces C# `WebApi` — handles `Execute`, `ClearCookies`, `GetCookies`, `SetCookies`.
 pub struct WebClient {
     client: Client,
-    /// reqwest_cookie_store wraps cookie_store::CookieStore in a Mutex
-    /// and implements reqwest::cookie::CookieStore.
     jar: Arc<CookieStoreMutex>,
-    /// Proxy URL from settings, shared with ImageCache / UpdateManager.
     proxy_url: Option<String>,
 }
 
@@ -63,15 +56,11 @@ impl WebClient {
 
         let wc = Self { client, jar, proxy_url: proxy_url.clone() };
 
-        // Load cookies from DB (same table/format as C#)
         wc.load_cookies(db);
 
         Ok(wc)
     }
 
-    // ------------------------------------------------------------------
-    // Cookie persistence  (matches C# cookies table)
-    // ------------------------------------------------------------------
 
     fn load_cookies(&self, db: &DatabaseService) {
         let _ = db.execute_non_query(
@@ -156,16 +145,10 @@ impl WebClient {
             .collect()
     }
 
-    // ------------------------------------------------------------------
-    // Public API matching C# WebApi
-    // ------------------------------------------------------------------
-
-    /// Returns a clone of the cookie jar Arc for sharing with other HTTP clients (e.g. ImageCache).
     pub fn cookie_jar(&self) -> Arc<CookieStoreMutex> {
         self.jar.clone()
     }
 
-    /// Returns the proxy URL if one was configured, for use by ImageCache / UpdateManager.
     pub fn proxy_url(&self) -> Option<&str> {
         self.proxy_url.as_deref()
     }
@@ -189,10 +172,6 @@ impl WebClient {
         }
     }
 
-    /// Execute an HTTP request. Returns `(status_code, response_body)`.
-    ///
-    /// `options` is the same JSON object the frontend passes in C#:
-    /// `{ url, method?, headers?, body?, uploadFilePUT?, fileData?, fileMIME?, fileMD5?, ... }`
     pub async fn execute(
         &self,
         options: HashMap<String, Value>,
@@ -208,7 +187,6 @@ impl WebClient {
         match result {
             Ok(pair) => Ok(pair),
             Err(e) => {
-                // Match C# behavior: return (-1, errorMessage) instead of propagating
                 Ok((-1, e.to_string()))
             }
         }
@@ -219,7 +197,6 @@ impl WebClient {
         url: &str,
         options: &HashMap<String, Value>,
     ) -> Result<(i32, String), AppError> {
-        // Determine if this is a special upload type
         let is_file_put = options.contains_key("uploadFilePUT");
 
         let request = if is_file_put {
@@ -273,7 +250,6 @@ impl WebClient {
 
         let mut builder = self.client.request(method.clone(), url);
 
-        // Headers
         let mut content_type_override: Option<String> = None;
         if let Some(headers) = options.get("headers").and_then(|v| v.as_object()) {
             for (key, val) in headers {
@@ -294,7 +270,6 @@ impl WebClient {
             }
         }
 
-        // Body for non-GET
         if method != Method::GET {
             if let Some(body) = options.get("body").and_then(|v| v.as_str()) {
                 let ct = content_type_override
@@ -339,7 +314,6 @@ impl WebClient {
             }
         }
 
-        // Apply custom headers
         if let Some(headers) = options.get("headers").and_then(|v| v.as_object()) {
             for (key, val) in headers {
                 let val_str = val.as_str().unwrap_or("");

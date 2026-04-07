@@ -1,21 +1,25 @@
-use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
 
 use tauri::{AppHandle, Emitter};
 
-use windows_sys::Win32::Foundation::*;
-use windows_sys::Win32::Storage::FileSystem::*;
-use windows_sys::Win32::System::Pipes::*;
-
-/// IPC Named Pipe server — port of C# `IPCServer` + `IPCClient`.
-///
-/// Listens on `\\.\pipe\vrcx-0-ipc-{hash}` (hash = sum of chars in username).
-/// External tools connect, exchange JSON packets delimited by `\0`.
-/// Incoming packets are forwarded to the frontend via Tauri events.
 pub struct IpcServer {
-    clients: Arc<Mutex<Vec<Arc<Mutex<Option<std::fs::File>>>>>>,
+    clients: Arc<Mutex<Vec<ClientHandle>>>,
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct IpcPacket {
+    #[serde(rename = "Type")]
+    pub type_field: String,
+    #[serde(rename = "Data", skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+    #[serde(rename = "MsgType", skip_serializing_if = "Option::is_none")]
+    pub msg_type: Option<String>,
+}
+
+#[cfg(windows)]
+type ClientHandle = Arc<Mutex<Option<std::fs::File>>>;
+
+#[cfg(windows)]
 impl IpcServer {
     pub fn new() -> Self {
         Self {
@@ -23,7 +27,6 @@ impl IpcServer {
         }
     }
 
-    /// Start the IPC server on a background thread.
     pub fn start(&self, app_handle: AppHandle) {
         let clients = self.clients.clone();
 
@@ -38,8 +41,9 @@ impl IpcServer {
         });
     }
 
-    /// Send an IPC packet to all connected clients.
     pub fn send(&self, packet: &IpcPacket) {
+        use std::io::Write;
+
         let json = match serde_json::to_string(packet) {
             Ok(j) => j,
             Err(e) => {
@@ -49,7 +53,7 @@ impl IpcServer {
         };
 
         let mut payload = json.into_bytes();
-        payload.push(0x00); // null terminator
+        payload.push(0x00);
 
         let mut clients = self.clients.lock().unwrap();
         clients.retain(|client_arc| {
@@ -67,29 +71,23 @@ impl IpcServer {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct IpcPacket {
-    #[serde(rename = "Type")]
-    pub type_field: String,
-    #[serde(rename = "Data", skip_serializing_if = "Option::is_none")]
-    pub data: Option<String>,
-    #[serde(rename = "MsgType", skip_serializing_if = "Option::is_none")]
-    pub msg_type: Option<String>,
-}
-
+#[cfg(windows)]
 fn get_ipc_name() -> String {
     let username = std::env::var("USERNAME").unwrap_or_default();
     let hash: u32 = username.chars().map(|c| c as u32).sum();
     format!(r"\\.\pipe\vrcx-0-ipc-{hash}")
 }
 
-/// Accept one connection, spawn a reader thread, then return so the caller can loop.
+#[cfg(windows)]
 fn accept_one(
     pipe_name: &str,
-    clients: &Arc<Mutex<Vec<Arc<Mutex<Option<std::fs::File>>>>>>,
+    clients: &Arc<Mutex<Vec<ClientHandle>>>,
     app_handle: &AppHandle,
 ) -> Result<(), String> {
-    // Create a named pipe instance
+    use windows_sys::Win32::Foundation::*;
+    use windows_sys::Win32::Storage::FileSystem::*;
+    use windows_sys::Win32::System::Pipes::*;
+
     let wide_name: Vec<u16> = pipe_name.encode_utf16().chain(std::iter::once(0)).collect();
 
     let handle = unsafe {
@@ -109,26 +107,21 @@ fn accept_one(
         return Err("CreateNamedPipeW failed".into());
     }
 
-    // Block until a client connects
     let connected = unsafe { ConnectNamedPipe(handle, std::ptr::null_mut() as *mut windows_sys::Win32::System::IO::OVERLAPPED) };
     if connected == 0 {
         let err = unsafe { GetLastError() };
-        // ERROR_PIPE_CONNECTED means client already connected before ConnectNamedPipe
         if err != ERROR_PIPE_CONNECTED {
             unsafe { CloseHandle(handle) };
             return Err(format!("ConnectNamedPipe failed: {err}"));
         }
     }
 
-    // Wrap the raw handle as a File for convenient I/O
     use std::os::windows::io::FromRawHandle;
     let pipe_file = unsafe { std::fs::File::from_raw_handle(handle as *mut std::ffi::c_void) };
     let client_arc = Arc::new(Mutex::new(Some(pipe_file)));
 
-    // Register client
     clients.lock().unwrap().push(client_arc.clone());
 
-    // Spawn a reader thread for this client
     let app_handle = app_handle.clone();
     let clients_ref = clients.clone();
     std::thread::spawn(move || {
@@ -138,11 +131,14 @@ fn accept_one(
     Ok(())
 }
 
+#[cfg(windows)]
 fn read_client(
-    client_arc: Arc<Mutex<Option<std::fs::File>>>,
-    clients: &Arc<Mutex<Vec<Arc<Mutex<Option<std::fs::File>>>>>>,
+    client_arc: ClientHandle,
+    clients: &Arc<Mutex<Vec<ClientHandle>>>,
     app_handle: &AppHandle,
 ) {
+    use std::io::Read;
+
     let mut buf = [0u8; 8192];
     let mut pending = String::new();
 
@@ -161,10 +157,9 @@ fn read_client(
 
         pending.push_str(&String::from_utf8_lossy(&buf[..bytes_read]));
 
-        // Split on null byte delimiter
         while let Some(pos) = pending.find('\0') {
             let packet_str: String = pending.drain(..pos).collect();
-            pending.drain(..1); // consume the null byte
+            pending.drain(..1);
 
             if !packet_str.is_empty() {
                 let _ = app_handle.emit("ipcEvent", &packet_str);
@@ -172,7 +167,6 @@ fn read_client(
         }
     }
 
-    // Clean up
     {
         let mut guard = client_arc.lock().unwrap();
         *guard = None;
@@ -181,19 +175,17 @@ fn read_client(
     all.retain(|c| c.lock().unwrap().is_some());
 }
 
-// ======================================================================
-// VRCIPC — VRChat URL Launch Pipe client
-// ======================================================================
-
-/// One-shot named pipe client to `VRChatURLLaunchPipe`.
-/// Sends a message, reads 1-byte response. Returns true if VRC acknowledged.
+#[cfg(windows)]
 pub fn vrcipc_send(message: &str) -> bool {
     use std::io::{Read, Write};
     use std::time::Duration;
 
+    use windows_sys::Win32::Foundation::*;
+    use windows_sys::Win32::Storage::FileSystem::*;
+    use windows_sys::Win32::System::Pipes::*;
+
     let pipe_path = r"\\.\pipe\VRChatURLLaunchPipe";
 
-    // Try to open the pipe as a regular file (client end)
     let mut pipe = match open_pipe_client(pipe_path, Duration::from_secs(1)) {
         Some(p) => p,
         None => return false,
@@ -212,7 +204,12 @@ pub fn vrcipc_send(message: &str) -> bool {
     result[0] == 1
 }
 
+#[cfg(windows)]
 fn open_pipe_client(pipe_path: &str, timeout: std::time::Duration) -> Option<std::fs::File> {
+    use windows_sys::Win32::Foundation::*;
+    use windows_sys::Win32::Storage::FileSystem::*;
+    use windows_sys::Win32::System::Pipes::*;
+
     let wide: Vec<u16> = pipe_path.encode_utf16().chain(std::iter::once(0)).collect();
     let deadline = std::time::Instant::now() + timeout;
 
@@ -240,10 +237,30 @@ fn open_pipe_client(pipe_path: &str, timeout: std::time::Duration) -> Option<std
             return None;
         }
 
-        // Wait for pipe to become available
         let ok = unsafe { WaitNamedPipeW(wide.as_ptr(), 1000) };
         if ok == 0 && std::time::Instant::now() >= deadline {
             return None;
         }
     }
+}
+
+#[cfg(not(windows))]
+type ClientHandle = ();
+
+#[cfg(not(windows))]
+impl IpcServer {
+    pub fn new() -> Self {
+        Self {
+            clients: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+
+    pub fn start(&self, _app_handle: AppHandle) {}
+
+    pub fn send(&self, _packet: &IpcPacket) {}
+}
+
+#[cfg(not(windows))]
+pub fn vrcipc_send(_message: &str) -> bool {
+    false
 }

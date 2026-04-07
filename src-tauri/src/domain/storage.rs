@@ -5,11 +5,9 @@ use std::time::Duration;
 
 use crate::error::AppError;
 
-/// In-memory key-value store backed by a JSON file.
-/// Writes are debounced: the file is flushed 500ms after the last mutation.
 pub struct StorageService {
     data: Arc<RwLock<HashMap<String, String>>>,
-    #[allow(dead_code)] // TODO
+    #[allow(dead_code)]
     file_path: PathBuf,
     dirty_tx: mpsc::Sender<()>,
 }
@@ -26,7 +24,6 @@ impl StorageService {
         let data = Arc::new(RwLock::new(data));
         let (dirty_tx, dirty_rx) = mpsc::channel::<()>();
 
-        // Background thread: debounced saver (500ms, matching C# timer)
         let saver_data = Arc::clone(&data);
         let saver_path = file_path.to_path_buf();
         std::thread::spawn(move || debounce_saver(dirty_rx, saver_data, saver_path));
@@ -59,8 +56,7 @@ impl StorageService {
         self.data.read().unwrap().clone()
     }
 
-    /// Force an immediate save (e.g. on shutdown).
-    #[allow(dead_code)] // TODO
+    #[allow(dead_code)]
     pub fn save(&self) -> Result<(), AppError> {
         let data = self.data.read().unwrap();
         let json = serde_json::to_string_pretty(&*data)?;
@@ -76,12 +72,10 @@ fn debounce_saver(
 ) {
     const DEBOUNCE: Duration = Duration::from_millis(500);
     loop {
-        // Block until first dirty signal
         match rx.recv() {
             Ok(()) => {}
             Err(_) => return,
         }
-        // Drain further signals, resetting timer each time
         loop {
             match rx.recv_timeout(DEBOUNCE) {
                 Ok(()) => continue,

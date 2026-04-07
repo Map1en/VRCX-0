@@ -24,7 +24,6 @@ tauri-plugin-notification = "2.3.3"
 sys-locale = "0.3.2"
 md5 = "0.8.0"
 open = "5.3.3"
-winreg = "0.56.0"
 arboard = "3.6.1"
 image = "0.25.10"
 fast_rsync = "0.2"
@@ -46,6 +45,7 @@ windows-sys = { version = "0.59", features = [
     "Win32_Security",
     "Win32_System_Threading",
 ] }
+winreg = "0.56.0"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

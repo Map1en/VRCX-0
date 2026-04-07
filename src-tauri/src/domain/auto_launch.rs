@@ -7,10 +7,8 @@ use std::time::Duration;
 
 use sysinfo::{Pid, ProcessesToUpdate, System};
 
-/// LNK file header signature (ShellLinkHeader).
 const LNK_SIGNATURE: [u8; 4] = [0x4C, 0x00, 0x00, 0x00];
 
-/// .url shortcut file header.
 const URL_HEADER: &[u8] = b"[{000214A0-0000-0000-C000-000000000046}]";
 
 pub struct AutoAppLaunchManager {
@@ -59,8 +57,6 @@ impl AutoAppLaunchManager {
             timer_interval_ms: 60000,
         }));
 
-        // Background thread that periodically refreshes child-process tracking
-        // (mirrors C# ChildUpdateTimer_Elapsed).
         {
             let inner_clone = Arc::clone(&inner);
             std::thread::spawn(move || loop {
@@ -91,21 +87,18 @@ impl AutoAppLaunchManager {
         inner.run_process_once = run_process_once;
     }
 
-    /// Called by ProcessMonitor when VRChat starts (not on first detection at boot).
     pub fn on_game_started(&self, is_steamvr_running: bool) {
         let mut inner = self.inner.lock().unwrap();
         if !inner.enabled {
             return;
         }
 
-        // Clean up previous run
         if inner.kill_on_exit {
             kill_child_processes(&mut inner.started_processes);
         } else {
             update_child_processes(&mut inner.started_processes);
         }
 
-        // Collect shortcuts from shared + platform-specific dirs
         let (mut shortcuts, mut steam_ids) = find_shortcut_files(&inner.shortcut_dir);
         let platform_dir = if is_steamvr_running {
             &inner.shortcut_vr
@@ -116,7 +109,6 @@ impl AutoAppLaunchManager {
         shortcuts.extend(plat_shortcuts);
         steam_ids.extend(plat_steam_ids);
 
-        // Launch each shortcut
         for file in &shortcuts {
             if inner.run_process_once && is_process_running(file) {
                 continue;
@@ -127,7 +119,6 @@ impl AutoAppLaunchManager {
             start_child_process(file, &mut inner.started_processes);
         }
 
-        // Launch Steam games
         for app_id in &steam_ids {
             start_steam_game(app_id);
         }
@@ -136,12 +127,10 @@ impl AutoAppLaunchManager {
             return;
         }
 
-        // Reset timer for fast polling (1 s × 5, then 60 s)
         inner.timer_ticks = 0;
         inner.timer_interval_ms = 1000;
     }
 
-    /// Called by ProcessMonitor when VRChat exits.
     pub fn on_game_stopped(&self) {
         let mut inner = self.inner.lock().unwrap();
         if inner.kill_on_exit {
@@ -152,9 +141,6 @@ impl AutoAppLaunchManager {
     }
 }
 
-// ──────────────────────────────────────────────
-// Private helpers
-// ──────────────────────────────────────────────
 
 fn find_shortcut_files(dir: &Path) -> (Vec<String>, Vec<String>) {
     let mut shortcuts = Vec::new();
@@ -242,7 +228,6 @@ fn start_child_process(path: &str, started_processes: &mut HashMap<String, HashS
     }
 }
 
-/// Launch a file via `ShellExecuteExW` (handles .lnk / .exe / etc.) and return PID.
 #[cfg(windows)]
 fn shell_execute_and_get_pid(path: &str) -> Result<Option<u32>, String> {
     use std::mem;
@@ -250,7 +235,6 @@ fn shell_execute_and_get_pid(path: &str) -> Result<Option<u32>, String> {
     use windows_sys::Win32::Foundation::CloseHandle;
     use windows_sys::Win32::System::Threading::GetProcessId;
 
-    // ShellExecuteExW FFI — the struct layout matches the Windows SDK.
     #[allow(non_snake_case)]
     #[repr(C)]
     struct SHELLEXECUTEINFOW {
@@ -267,7 +251,7 @@ fn shell_execute_and_get_pid(path: &str) -> Result<Option<u32>, String> {
         lpClass: *const u16,
         hkeyClass: isize,
         dwHotKey: u32,
-        hIcon: isize, // union with hMonitor
+        hIcon: isize,
         hProcess: isize,
     }
     const SEE_MASK_NOCLOSEPROCESS: u32 = 0x40;
@@ -290,7 +274,7 @@ fn shell_execute_and_get_pid(path: &str) -> Result<Option<u32>, String> {
     info.fMask = SEE_MASK_NOCLOSEPROCESS;
     info.lpVerb = verb.as_ptr();
     info.lpFile = wide_path.as_ptr();
-    info.nShow = 1; // SW_SHOWNORMAL
+    info.nShow = 1;
 
     let ok = unsafe { ShellExecuteExW(&mut info) };
     if ok == 0 {
@@ -336,20 +320,17 @@ fn update_child_processes(started_processes: &mut HashMap<String, HashSet<u32>>)
     for pids in started_processes.values_mut() {
         let snapshot: Vec<u32> = pids.iter().copied().collect();
         for pid in &snapshot {
-            // Discover child PIDs when this is the only known PID (avoid duplicates)
             if pids.len() == 1 {
                 for child in find_child_pids_recursive(&sys, *pid) {
                     pids.insert(child);
                 }
             }
-            // Remove exited processes
             if sys.process(Pid::from_u32(*pid)).is_none() {
                 pids.remove(pid);
             }
         }
     }
 
-    // Prune entries whose processes have all exited
     started_processes.retain(|_, pids| !pids.is_empty());
 }
 

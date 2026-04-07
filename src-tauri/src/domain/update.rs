@@ -4,11 +4,6 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
-/// Manages downloading and installing application updates.
-///
-/// Port of C# `Update` class — downloads update.exe with SHA256 verification,
-/// tracks progress, and supports cancellation.
-/// Also performs the install-on-startup check (C# `Update.Check()`).
 pub struct UpdateManager {
     app_data: PathBuf,
     progress: Arc<AtomicI32>,
@@ -26,15 +21,12 @@ impl UpdateManager {
         }
     }
 
-    /// Port of C# `Update.Check()`.
-    /// Called once at startup. If `update.exe` exists, rename it to
-    /// `VRCX-0_Setup.exe`, launch the installer, and exit this process.
     pub fn check_and_install_update(&self) {
         let update_exe = self.app_data.join("update.exe");
         let setup_exe = self.app_data.join("VRCX-0_Setup.exe");
         let temp_download = self.app_data.join("tempDownload");
 
-        // If VRCX-0_Setup is already running, exit immediately
+
         let mut sys = sysinfo::System::new();
         sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
         for (_pid, proc) in sys.processes() {
@@ -43,7 +35,6 @@ impl UpdateManager {
             }
         }
 
-        // Clean up stale files
         let _ = std::fs::remove_file(&temp_download);
         let _ = std::fs::remove_file(&setup_exe);
 
@@ -51,7 +42,6 @@ impl UpdateManager {
             return;
         }
 
-        // Rename update.exe → VRCX-0_Setup.exe and launch
         if let Err(e) = std::fs::rename(&update_exe, &setup_exe) {
             tracing::error!("Failed to rename update.exe: {e}");
             return;
@@ -68,8 +58,6 @@ impl UpdateManager {
         }
     }
 
-    /// Start downloading an update in a background task.
-    /// The file is downloaded to `tempDownload`, verified, then moved to `update.exe`.
     pub fn start_download(&self, file_url: String, hash_string: String, download_size: i32) {
         let app_data = self.app_data.clone();
         let progress = self.progress.clone();
@@ -90,17 +78,14 @@ impl UpdateManager {
         });
     }
 
-    /// Cancel an in-progress download.
     pub fn cancel_download(&self) {
         self.cancel.store(true, Ordering::Relaxed);
         self.progress.store(0, Ordering::Relaxed);
 
-        // Clean up temp file
         let temp = self.app_data.join("tempDownload");
         let _ = std::fs::remove_file(&temp);
     }
 
-    /// Returns the current download progress (0-100), 0 if not downloading, -1 on error.
     pub fn check_progress(&self) -> i32 {
         self.progress.load(Ordering::Relaxed)
     }
@@ -118,7 +103,6 @@ async fn do_download(
     let temp_path = app_data.join("tempDownload");
     let update_path = app_data.join("update.exe");
 
-    // Clean up any previous temp
     let _ = std::fs::remove_file(&temp_path);
 
     let mut builder = reqwest::Client::builder()
@@ -154,7 +138,6 @@ async fn do_download(
         return Err("cancelled".into());
     }
 
-    // Write chunks and track progress
     let total = content_length.unwrap_or(bytes.len() as u64);
     let chunk_size = 8192usize;
     let mut written = 0usize;
@@ -180,7 +163,6 @@ async fn do_download(
 
     drop(file);
 
-    // Verify file size
     let actual_size = std::fs::metadata(&temp_path)
         .map_err(|e| format!("stat temp: {e}"))?
         .len();
@@ -190,7 +172,6 @@ async fn do_download(
         return Err("Downloaded file size does not match expected size".into());
     }
 
-    // SHA256 verification
     if !hash_string.is_empty() {
         let file_data =
             std::fs::read(&temp_path).map_err(|e| format!("read for hash: {e}"))?;
@@ -207,7 +188,6 @@ async fn do_download(
         }
     }
 
-    // Move to final location
     let _ = std::fs::remove_file(&update_path);
     std::fs::rename(&temp_path, &update_path)
         .map_err(|e| format!("move to update.exe: {e}"))?;

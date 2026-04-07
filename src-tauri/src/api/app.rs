@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+#[cfg(windows)]
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -53,7 +54,7 @@ pub fn app__current_language() -> String {
 
 
 #[tauri::command]
-pub fn app__set_user_agent() { // TODO
+pub fn app__set_user_agent() {
     
 }
 
@@ -341,7 +342,7 @@ pub async fn app__open_file_selector_dialog(
         }
     }
 
-    // Parse Windows-style filter string: "PNG Files (*.png)|*.png"
+
     if let Some(ref filter) = default_filter {
         for pair in filter.split('|').collect::<Vec<_>>().chunks(2) {
             if pair.len() == 2 {
@@ -488,7 +489,7 @@ pub fn app__change_theme(app_handle: AppHandle, value: i32) -> Result<(), AppErr
 }
 
 #[tauri::command]
-pub fn app__do_funny() { // TODO
+pub fn app__do_funny() {
     
 }
 
@@ -567,9 +568,10 @@ pub fn app__copy_image_to_clipboard(path: String) -> Result<(), AppError> {
 }
 
 #[tauri::command]
-pub fn app__set_startup(enabled: bool) -> Result<(), AppError> {
+pub fn app__set_startup(_enabled: bool) -> Result<(), AppError> {
     #[cfg(target_os = "windows")]
     {
+        let enabled = _enabled;
         use winreg::enums::*;
         use winreg::RegKey;
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
@@ -843,7 +845,7 @@ pub fn app__get_extra_screenshot_data(path: String, _carousel_cache: bool) -> Re
     let file_name = p.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
     result.insert("fileName".into(), serde_json::json!(file_name));
 
-    // Carousel: find previous and next PNG files in the same directory
+
     if let Some(parent) = p.parent() {
         if let Ok(entries) = std::fs::read_dir(parent) {
             let mut pngs: Vec<String> = entries
@@ -1080,7 +1082,7 @@ pub fn app__check_update_progress(state: State<'_, AppState>) -> i32 {
 }
 
 #[tauri::command]
-#[allow(unused_variables)] // TODO
+#[allow(unused_variables)]
 pub fn app__desktop_notification(
     app_handle: AppHandle,
     bold_text: String,
@@ -1196,12 +1198,15 @@ pub fn app__delete_vrchat_registry_folder() -> Result<(), AppError> {
 
 #[tauri::command]
 pub fn app__set_vrchat_registry_key(
-    key: String,
-    value: serde_json::Value,
-    type_int: i32,
+    _key: String,
+    _value: serde_json::Value,
+    _type_int: i32,
 ) -> Result<bool, AppError> {
     #[cfg(target_os = "windows")]
     {
+        let key = _key;
+        let value = _value;
+        let type_int = _type_int;
         use winreg::enums::*;
         use winreg::RegKey;
 
@@ -1317,9 +1322,10 @@ pub fn app__get_vrchat_registry() -> Result<HashMap<String, HashMap<String, serd
 }
 
 #[tauri::command]
-pub fn app__set_vrchat_registry(json: String) -> Result<(), AppError> {
+pub fn app__set_vrchat_registry(_json: String) -> Result<(), AppError> {
     #[cfg(target_os = "windows")]
     {
+        let json = _json;
         use winreg::enums::*;
         use winreg::RegKey;
 

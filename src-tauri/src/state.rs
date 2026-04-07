@@ -14,7 +14,7 @@ use crate::domain::update::UpdateManager;
 use crate::domain::web_client::WebClient;
 use crate::error::AppError;
 
-/// Shared paths used across the application.
+
 pub struct AppPaths {
     pub app_data: PathBuf,
     pub db_file: PathBuf,
@@ -24,10 +24,7 @@ pub struct AppPaths {
 
 
 
-/// Central application state — replaces all C# `*.Instance` singletons.
-///
-/// Held by Tauri via `app.manage(AppState)`.
-/// Commands access it through `State<'_, AppState>`.
+
 pub struct AppState {
     pub paths: AppPaths,
     pub storage: StorageService,
@@ -60,10 +57,8 @@ impl AppState {
             app_data,
         };
 
-        // Init order matters: storage first (C# SQLite reads db path from VRCXStorage)
         let storage = StorageService::new(&paths.config_file)?;
 
-        // Check if user overrode DB location in storage (matching C# behavior)
         let db_path = storage
             .get("VRCX-0_DatabaseLocation")
             .filter(|s| !s.is_empty())

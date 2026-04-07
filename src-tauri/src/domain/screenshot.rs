@@ -3,9 +3,6 @@ use std::sync::Mutex;
 
 use crate::domain::png;
 
-// ======================================================================
-// ScreenshotMetadata data model
-// ======================================================================
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,10 +20,8 @@ pub struct ScreenshotMetadata {
     pub note: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pos: Option<[f32; 3]>,
-    /// Internal: source file path (included in serialization for search results).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_file: Option<String>,
-    /// Internal: error message — if set, nothing else is valid.
     #[serde(skip)]
     pub error: Option<String>,
 }
@@ -83,12 +78,7 @@ impl ScreenshotMetadata {
     }
 }
 
-// ======================================================================
-// Read / write / delete metadata from PNG files
-// ======================================================================
 
-/// Read text-based metadata entries from a PNG file.
-/// Returns VRChat XMP first (if present), then VRCX JSON (if present), then legacy.
 pub fn read_text_metadata(path: &str) -> Vec<String> {
     let mut pf = match png::PngFile::open_read(path) {
         Ok(p) => p,
@@ -103,7 +93,6 @@ pub fn read_text_metadata(path: &str) -> Vec<String> {
         result.push(desc);
     }
 
-    // Legacy (LFS / ScreenshotManager) — only search if nothing found and sRGB chunk present
     if result.is_empty() && pf.get_chunk(&png::ChunkType::SRGB).is_some() {
         if let Some(lfs) = png::read_text_chunk("Description", &mut pf, true) {
             result.push(lfs);
@@ -113,7 +102,6 @@ pub fn read_text_metadata(path: &str) -> Vec<String> {
     result
 }
 
-/// Delete all text metadata from a PNG file.
 pub fn delete_text_metadata(path: &str, delete_vrchat_metadata: bool) {
     let mut pf = match png::PngFile::open_rw(path) {
         Ok(p) => p,
@@ -125,7 +113,6 @@ pub fn delete_text_metadata(path: &str, delete_vrchat_metadata: bool) {
     png::delete_text_chunk("Description", &mut pf);
 }
 
-/// Write VRCX metadata (Description iTXt chunk) into a PNG file.
 pub fn write_vrcx_metadata(text: &str, path: &str) -> bool {
     let mut pf = match png::PngFile::open_rw(path) {
         Ok(p) => p,
@@ -135,7 +122,6 @@ pub fn write_vrcx_metadata(text: &str, path: &str) -> bool {
     pf.write_chunk(&chunk)
 }
 
-/// Check if file is a valid PNG by reading the first 8 bytes.
 pub fn is_png_file(path: &str) -> bool {
     let mut f = match std::fs::File::open(path) {
         Ok(f) => f,
@@ -155,11 +141,7 @@ pub fn is_png_file(path: &str) -> bool {
 
 use std::io::{Read, Seek};
 
-// ======================================================================
-// XMP / VRChat metadata parsing
-// ======================================================================
 
-/// Parse VRChat XMP metadata from XML string.
 pub fn parse_vrc_image(xml_string: &str) -> ScreenshotMetadata {
     let idx = match xml_string.find("<x:xmpmeta") {
         Some(i) => i,
@@ -175,7 +157,6 @@ pub fn parse_vrc_image(xml_string: &str) -> ScreenshotMetadata {
     let mut world_id: Option<String> = None;
     let mut world_display_name: Option<String> = None;
 
-    // Simple extraction using quick-xml events
     use quick_xml::events::Event;
     use quick_xml::Reader;
 
@@ -196,10 +177,9 @@ pub fn parse_vrc_image(xml_string: &str) -> ScreenshotMetadata {
                 }
                 match current_tag.as_str() {
                     "CreatorTool" => creator_tool = Some(text),
-                    "Author" => author_name = Some(text), // legacy: was authorId
+                    "Author" => author_name = Some(text),
                     "DateTime" => date_time = Some(text),
                     "li" => {
-                        // dc:title/rdf:Alt/rdf:li
                         if note.is_none() {
                             note = Some(text);
                         }
@@ -221,7 +201,6 @@ pub fn parse_vrc_image(xml_string: &str) -> ScreenshotMetadata {
         buf.clear();
     }
 
-    // If authorId not set, assume legacy format where Author is the ID
     if author_id.is_none() {
         author_id = author_name.take();
     }
@@ -244,14 +223,12 @@ pub fn parse_vrc_image(xml_string: &str) -> ScreenshotMetadata {
     }
 }
 
-/// Parse LFS / ScreenshotManager metadata string.
 pub fn parse_lfs_picture(metadata_string: &str) -> ScreenshotMetadata {
     let mut metadata = ScreenshotMetadata::default();
     let mut parts: Vec<&str> = metadata_string.split('|').collect();
 
-    // CVR edition: lfs|cvr|1|...
     if parts.len() > 1 && parts[1] == "cvr" {
-        parts.remove(0); // strip first "lfs"
+        parts.remove(0);
     }
 
     if parts.len() < 2 {
@@ -266,7 +243,6 @@ pub fn parse_lfs_picture(metadata_string: &str) -> ScreenshotMetadata {
     let is_cvr = application == "cvr";
 
     if application == "screenshotmanager" {
-        // screenshotmanager|0|author:usr_xxx,Name|wrld_xxx,12345,WorldName
         if parts.len() >= 4 {
             let author_parts: Vec<&str> = parts[2]
                 .strip_prefix("author:")
@@ -365,7 +341,6 @@ pub fn parse_lfs_picture(metadata_string: &str) -> ScreenshotMetadata {
     metadata
 }
 
-/// Main entry: parse a PNG file and return structured metadata.
 pub fn get_screenshot_metadata(path: &str) -> Option<ScreenshotMetadata> {
     if !Path::new(path).exists() || !path.ends_with(".png") {
         return None;
@@ -416,9 +391,6 @@ pub fn get_screenshot_metadata(path: &str) -> Option<ScreenshotMetadata> {
     Some(result)
 }
 
-// ======================================================================
-// Screenshot search
-// ======================================================================
 
 #[derive(Clone, Copy)]
 pub enum SearchType {
@@ -439,8 +411,6 @@ impl SearchType {
     }
 }
 
-/// Search screenshots in a directory for matching metadata.
-/// Returns list of matching file paths.
 pub fn find_screenshots(query: &str, directory: &str, search_type: SearchType, cache_db: &MetadataCacheDb) -> Vec<String> {
     let dir = Path::new(directory);
     if !dir.exists() {
@@ -469,7 +439,7 @@ pub fn find_screenshots(query: &str, directory: &str, search_type: SearchType, c
                 Err(_) => None,
             }
         } else if cache_db.is_cached(file) {
-            None // cached as "no metadata"
+            None
         } else {
             let m = get_screenshot_metadata(file);
             let json = m
@@ -508,9 +478,6 @@ pub fn find_screenshots(query: &str, directory: &str, search_type: SearchType, c
     result
 }
 
-// ======================================================================
-// Metadata cache DB (SQLite)
-// ======================================================================
 
 pub struct MetadataCacheDb {
     conn: Mutex<rusqlite::Connection>,
