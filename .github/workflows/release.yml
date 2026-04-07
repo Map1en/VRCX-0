@@ -78,19 +78,33 @@ jobs:
             - run: npm ci
             - run: npx tauri build
 
-            # ── Artifacts (always) ───────────────────────────
+            - name: Package portable zip
+              shell: pwsh
+              run: |
+                  $zipDir = "src-tauri/target/release/bundle/zip"
+                  $packageDir = Join-Path $zipDir "VRCX-0"
+                  $zipPath = Join-Path $zipDir "VRCX-0_${{ steps.meta.outputs.version }}_windows_x64.zip"
+                  if (Test-Path $packageDir) {
+                      Remove-Item $packageDir -Recurse -Force
+                  }
+                  New-Item -ItemType Directory -Force -Path $zipDir | Out-Null
+                  New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
+                  Copy-Item "src-tauri/target/release/VRCX-0.exe" -Destination (Join-Path $packageDir "VRCX-0.exe")
+                  Copy-Item "README.md" -Destination (Join-Path $packageDir "README.md")
+                  Copy-Item "LICENSE" -Destination (Join-Path $packageDir "LICENSE")
+                  Copy-Item "build/html/licenses/THIRD_PARTY_NOTICES.txt" -Destination (Join-Path $packageDir "THIRD_PARTY_NOTICES.txt")
+                  if (Test-Path $zipPath) {
+                      Remove-Item $zipPath -Force
+                  }
+                  Compress-Archive -Path $packageDir -DestinationPath $zipPath
+
             - name: Upload bundle
               uses: actions/upload-artifact@v7
               with:
                   name: VRCX-0-bundle
-                  path: src-tauri/target/release/bundle/nsis/*
-
-            # ── Release (conditional) ────────────────────────
-            - name: SHA256
-              if: inputs.release
-              run: |
-                  cd src-tauri/target/release/bundle/nsis
-                  sha256sum *.exe > SHA256SUMS.txt
+                  path: |
+                      src-tauri/target/release/bundle/nsis/*.exe
+                      src-tauri/target/release/bundle/zip/*.zip
 
             - name: Create GitHub Release
               if: inputs.release
@@ -102,4 +116,4 @@ jobs:
                   body_path: .release-notes.md
                   files: |
                       src-tauri/target/release/bundle/nsis/*.exe
-                      src-tauri/target/release/bundle/nsis/SHA256SUMS.txt
+                      src-tauri/target/release/bundle/zip/*.zip

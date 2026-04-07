@@ -41,7 +41,9 @@
     ],
     "windows": {
       "nsis": {
-        "displayLanguageSelector": false
+        "compression": "lzma",
+        "displayLanguageSelector": false,
+        "installMode": "currentUser"
       }
     }
   }
