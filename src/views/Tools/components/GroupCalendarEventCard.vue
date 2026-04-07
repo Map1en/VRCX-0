@@ -109,6 +109,7 @@
 </template>
 
 <script setup>
+    import { invoke } from '@tauri-apps/api/core';
     import { Calendar, Download, Image, Share2, Star } from 'lucide-vue-next';
     import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
     import { computed, ref } from 'vue';
@@ -187,7 +188,7 @@
     async function openCalendarEvent(event) {
         const content = await getCalendarIcs(event);
         if (!content) return;
-        await AppApi.OpenCalendarFile(content);
+        await invoke('app__open_calendar_file', { icsContent: content });
     }
 
     /**

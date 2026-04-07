@@ -104,6 +104,7 @@ pub fn run() {
             api::app::app__open_shortcut_folder,
             api::app::app__open_folder_and_select_item,
             api::app::app__open_file_selector_dialog,
+            api::app::app__open_folder_selector_dialog,
             
             api::app::app__focus_window,
             api::app::app__flash_window,

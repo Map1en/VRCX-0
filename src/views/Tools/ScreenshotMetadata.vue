@@ -374,9 +374,14 @@
         const lowerQuery = String(query).toLowerCase();
         const promises = filePaths.map(async (filePath) => {
             try {
-                const metaJson = await AppApi.GetScreenshotMetadata(filePath);
+                const metaJson = await invoke('app__get_screenshot_metadata', {
+                    path: filePath
+                });
                 const meta = JSON.parse(metaJson);
-                const extraJson = await AppApi.GetExtraScreenshotData(filePath, false);
+                const extraJson = await invoke('app__get_extra_screenshot_data', {
+                    path: filePath,
+                    carouselCache: false
+                });
                 const extra = JSON.parse(extraJson);
 
                 let dateTime = 0;
@@ -526,11 +531,11 @@
     async function getAndDisplayScreenshotFromFile() {
         let filePath = '';
 
-        filePath = await AppApi.OpenFileSelectorDialog(
-            await AppApi.GetVRChatPhotosLocation(),
-            '.png',
-            'PNG Files (*.png)|*.png'
-        );
+        filePath = await invoke('app__open_file_selector_dialog', {
+            defaultPath: await invoke('app__get_vrchat_photos_location'),
+            defaultExt: '.png',
+            defaultFilter: 'PNG Files (*.png)|*.png'
+        });
 
         if (filePath === '') {
             return;
@@ -545,7 +550,7 @@
      */
     function getAndDisplayLastScreenshot() {
         screenshotMetadataResetSearch();
-        AppApi.GetLastScreenshot().then((path) => {
+        invoke('app__get_last_screenshot').then((path) => {
             if (!path) {
                 return;
             }
@@ -561,7 +566,7 @@
         if (!path) {
             return;
         }
-        AppApi.CopyImageToClipboard(path).then(() => {
+        invoke('app__copy_image_to_clipboard', { path }).then(() => {
             toast.success('Image copied to clipboard');
         });
     }
@@ -573,7 +578,7 @@
         if (!path) {
             return;
         }
-        AppApi.OpenFolderAndSelectItem(path).then(() => {
+        invoke('app__open_folder_and_select_item', { path }).then(() => {
             toast.success('Opened image folder');
         });
     }
@@ -585,7 +590,7 @@
         if (!path) {
             return;
         }
-        AppApi.DeleteScreenshotMetadata(path).then((result) => {
+        invoke('app__delete_screenshot_metadata', { path }).then((result) => {
             if (!result) {
                 toast.error(t('message.screenshot_metadata.delete_failed'));
                 return;
@@ -605,7 +610,7 @@
             return;
         }
         D.isUploading = true;
-        AppApi.GetFileBase64(D.metadata.filePath)
+        invoke('app__get_file_base64', { path: D.metadata.filePath })
             .then((base64Body) => {
                 vrcPlusImageRequest
                     .uploadGalleryImage(base64Body)
@@ -648,7 +653,10 @@
 
             const searchType = D.searchTypes.indexOf(D.searchType);
             D.loading = true;
-            AppApi.FindScreenshotsBySearch(D.search, searchType)
+            invoke('app__find_screenshots_by_search', {
+                searchQuery: D.search,
+                searchType
+            })
                 .then(async (json) => {
                     const results = JSON.parse(json);
 
@@ -705,7 +713,7 @@
      * @param needsCarouselFiles
      */
     async function getAndDisplayScreenshot(path, needsCarouselFiles = true) {
-        const metadata = await AppApi.GetScreenshotMetadata(path);
+        const metadata = await invoke('app__get_screenshot_metadata', { path });
         displayScreenshotMetadata(metadata, needsCarouselFiles);
     }
 
@@ -741,7 +749,10 @@
         }
 
         D.loading = true;
-        const extraData = await AppApi.GetExtraScreenshotData(metadata.sourceFile, needsCarouselFiles);
+        const extraData = await invoke('app__get_extra_screenshot_data', {
+            path: metadata.sourceFile,
+            carouselCache: needsCarouselFiles
+        });
         D.loading = false;
         const extraDataObj = JSON.parse(extraData);
         Object.assign(metadata, extraDataObj);

@@ -379,6 +379,37 @@ pub async fn app__open_file_selector_dialog(
 }
 
 #[tauri::command]
+pub async fn app__open_folder_selector_dialog(
+    app_handle: AppHandle,
+    default_path: Option<String>,
+) -> Result<String, AppError> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let mut builder = app_handle.dialog().file();
+
+    if let Some(ref path) = default_path {
+        let p = PathBuf::from(path);
+        if p.is_dir() {
+            builder = builder.set_directory(p);
+        } else if let Some(parent) = p.parent() {
+            if parent.is_dir() {
+                builder = builder.set_directory(parent);
+            }
+        }
+    }
+
+    let result = builder.blocking_pick_folder();
+
+    match result {
+        Some(folder_path) => Ok(match folder_path {
+            tauri_plugin_dialog::FilePath::Path(p) => p.to_string_lossy().to_string(),
+            other => other.to_string(),
+        }),
+        None => Ok(String::new()),
+    }
+}
+
+#[tauri::command]
 pub fn app__quit_game() -> Result<i32, AppError> {
     use sysinfo::System;
     let mut sys = System::new();

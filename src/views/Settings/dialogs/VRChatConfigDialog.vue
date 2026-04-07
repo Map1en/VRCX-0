@@ -171,6 +171,7 @@
 </template>
 
 <script setup>
+    import { invoke } from '@tauri-apps/api/core';
     import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
     import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { computed, ref, watch } from 'vue';
@@ -445,7 +446,7 @@
     /**
      *
      */
-    function saveVRChatConfigFile() {
+    async function saveVRChatConfigFile() {
         for (const item in VRChatConfigFile.value) {
             if (item === 'picture_output_split_by_date') {
                 // this one is default true, it's special
@@ -463,23 +464,23 @@
                 }
             }
         }
-        WriteVRChatConfigFile();
+        await WriteVRChatConfigFile();
         closeDialog();
     }
 
     /**
      *
      */
-    function WriteVRChatConfigFile() {
+    async function WriteVRChatConfigFile() {
         const json = JSON.stringify(VRChatConfigFile.value, null, '\t');
-        AppApi.WriteConfigFile(json);
+        await invoke('app__write_config_file', { json });
     }
 
     /**
      *
      */
     async function readVRChatConfigFile() {
-        const config = await AppApi.ReadConfigFileSafe();
+        const config = await invoke('app__read_config_file_safe');
         if (config) {
             try {
                 const parsedConfig = JSON.parse(config);

@@ -2,6 +2,7 @@ import { reactive, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
+import { invoke } from '@tauri-apps/api/core';
 
 import { logWebRequest } from '../../services/appConfig';
 import { database } from '../../services/database';
@@ -704,11 +705,11 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
     }
 
     function handleSetAppLauncherSettings() {
-        AppApi.SetAppLauncherSettings(
-            enableAppLauncher.value,
-            enableAppLauncherAutoClose.value,
-            enableAppLauncherRunProcessOnce.value
-        );
+        invoke('app__set_app_launcher_settings', {
+            enabled: enableAppLauncher.value,
+            killOnExit: enableAppLauncherAutoClose.value,
+            runProcessOnce: enableAppLauncherRunProcessOnce.value
+        });
     }
 
     /**
@@ -888,7 +889,9 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
                     { duration: Infinity, position: 'bottom-right' }
                 );
                 try {
-                    await AppApi.CropAllPrints(ugcFolderPath.value);
+                    await invoke('app__crop_all_prints', {
+                        ugcFolderPath: ugcFolderPath.value
+                    });
                     toast.success('Batch print cropping complete');
                 } catch (err) {
                     console.error(err);
@@ -942,7 +945,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
                     { duration: Infinity, position: 'bottom-right' }
                 );
                 try {
-                    await AppApi.DeleteAllScreenshotMetadata();
+                    await invoke('app__delete_all_screenshot_metadata');
                     toast.success('Batch metadata removal complete');
                 } catch (err) {
                     console.error(err);
@@ -959,7 +962,9 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
     }
 
     async function openUGCFolder() {
-        await AppApi.OpenUGCPhotosFolder(ugcFolderPath.value);
+        await invoke('app__open_ugc_photos_folder', {
+            ugcPath: ugcFolderPath.value
+        });
     }
 
     async function folderSelectorDialog(oldPath) {
@@ -969,7 +974,9 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
         }
 
         state.folderSelectorDialogVisible = true;
-        const newFolder = await AppApi.OpenFolderSelectorDialog(oldPath);
+        const newFolder = await invoke('app__open_folder_selector_dialog', {
+            defaultPath: oldPath
+        });
 
         state.folderSelectorDialogVisible = false;
         return newFolder;

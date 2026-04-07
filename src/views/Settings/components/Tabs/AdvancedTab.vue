@@ -368,6 +368,7 @@
 </template>
 
 <script setup>
+    import { invoke } from '@tauri-apps/api/core';
     import { Trash2, TriangleAlert } from 'lucide-vue-next';
     import { computed, reactive, ref } from 'vue';
     import { Button } from '@/components/ui/button';
@@ -484,8 +485,8 @@
     /**
      *
      */
-    function openShortcutFolder() {
-        AppApi.OpenShortcutFolder();
+    async function openShortcutFolder() {
+        await invoke('app__open_shortcut_folder');
     }
 
     /**

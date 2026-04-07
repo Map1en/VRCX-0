@@ -38,6 +38,7 @@
 </template>
 
 <script setup>
+    import { invoke } from '@tauri-apps/api/core';
     import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { computed, ref, watch } from 'vue';
     import { Button } from '@/components/ui/button';
@@ -124,7 +125,7 @@
                     return;
                 }
                 const data = JSON.stringify(row.data);
-                AppApi.SetVRChatRegistry(data)
+                invoke('app__set_vrchat_registry', { json: data })
                     .then(() => {
                         toast.success(t('message.registry.restored'));
                     })
@@ -168,7 +169,7 @@
                 if (!ok) {
                     return;
                 }
-                AppApi.DeleteVRChatRegistryFolder().then(() => {
+                invoke('app__delete_vrchat_registry_folder').then(() => {
                     toast.success(t('message.registry.deleted'));
                 });
             })
@@ -207,12 +208,16 @@
      *
      */
     async function restoreVrcRegistryFromFile() {
-        const filePath = await AppApi.OpenFileSelectorDialog(null, '.json', 'JSON Files (*.json)|*.json');
+        const filePath = await invoke('app__open_file_selector_dialog', {
+            defaultPath: null,
+            defaultExt: '.json',
+            defaultFilter: 'JSON Files (*.json)|*.json'
+        });
         if (filePath === '') {
             return;
         }
 
-        const json = await AppApi.ReadVrcRegJsonFile(filePath);
+        const json = await invoke('app__read_vrc_reg_json_file', { filepath: filePath });
 
         try {
             const data = JSON.parse(json);
@@ -226,7 +231,7 @@
                     throw new Error('Invalid JSON');
                 }
             }
-            AppApi.SetVRChatRegistry(json)
+            invoke('app__set_vrchat_registry', { json })
                 .then(() => {
                     toast.success(t('message.registry.restored'));
                 })

@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
+import { invoke } from '@tauri-apps/api/core';
 
 import { instanceRequest, userRequest } from '../api';
 import { groupRequest } from '../api/';
@@ -94,7 +95,7 @@ export const useSearchStore = defineStore('Search', () => {
 
     async function directAccessPaste() {
         let cbText = '';
-        cbText = await AppApi.GetClipboard().catch((e) => {
+        cbText = await invoke('app__get_clipboard').catch((e) => {
             console.log(e);
             return '';
         });

@@ -2,6 +2,7 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
+import { invoke } from '@tauri-apps/api/core';
 
 import { logWebRequest } from '../services/appConfig';
 import { branches } from '../shared/constants';
@@ -350,7 +351,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         const D = VRCXUpdateDialog.value;
         D.visible = true;
         D.updatePendingIsLatest = false;
-        D.updatePending = await AppApi.CheckForUpdateExe();
+        D.updatePending = await invoke('app__check_for_update_exe');
         if (updateInProgress.value) {
             return;
         }
@@ -428,7 +429,11 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         try {
             updateInProgress.value = true;
             await downloadFileProgress();
-            await AppApi.DownloadUpdate(downloadUrl, hashString, size);
+            await invoke('app__download_update', {
+                fileUrl: downloadUrl,
+                hashString,
+                downloadSize: size
+            });
             pendingVRCXInstall.value = releaseName;
         } catch (err) {
             console.error(err);
@@ -439,7 +444,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         }
     }
     async function downloadFileProgress() {
-        updateProgress.value = await AppApi.CheckUpdateProgress();
+        updateProgress.value = await invoke('app__check_update_progress');
         if (updateInProgress.value) {
             workerTimers.setTimeout(() => downloadFileProgress(), 150);
         }
@@ -487,7 +492,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         return checkForVRCXUpdate();
     }
     function restartVRCX(isUpgrade) {
-        AppApi.RestartApplication(isUpgrade);
+        invoke('app__restart_application', { isUpgrade });
     }
     function updateProgressText() {
         if (updateProgress.value === 100) {
@@ -496,7 +501,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         return `${updateProgress.value}%`;
     }
     async function cancelUpdate() {
-        await AppApi.CancelUpdate();
+        await invoke('app__cancel_update');
         updateInProgress.value = false;
         updateProgress.value = 0;
     }

@@ -1,4 +1,5 @@
 import { toast } from 'vue-sonner';
+import { invoke } from '@tauri-apps/api/core';
 
 import { $throw } from '../services/request';
 import { AppDebug } from '../services/appConfig.js';
@@ -84,7 +85,9 @@ export function handleImageUploadInput(event, options = {}) {
  */
 export async function resizeImageToFitLimits(base64Data) {
     // frontend limit check = 20MB
-    return AppApi.ResizeImageToFitLimits(base64Data);
+    return invoke('app__resize_image_to_fit_limits', {
+        base64data: base64Data
+    });
 }
 
 /**
@@ -120,12 +123,16 @@ export async function uploadImageLegacy(
     };
     const api = apiMap[type];
 
-    const fileMd5 = await AppApi.MD5File(base64File);
+    const fileMd5 = await invoke('app__md5_file', { blob: base64File });
     const fileSizeInBytes = parseInt(blob.size, 10);
-    const base64SignatureFile = await AppApi.SignFile(base64File);
-    const signatureMd5 = await AppApi.MD5File(base64SignatureFile);
+    const base64SignatureFile = await invoke('app__sign_file', {
+        blob: base64File
+    });
+    const signatureMd5 = await invoke('app__md5_file', {
+        blob: base64SignatureFile
+    });
     const signatureSizeInBytes = parseInt(
-        await AppApi.FileLength(base64SignatureFile),
+        await invoke('app__file_length', { blob: base64SignatureFile }),
         10
     );
     const fileId = extractFileId(imageUrl);
