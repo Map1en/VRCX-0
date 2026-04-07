@@ -773,7 +773,7 @@
                 "database": {
                     "header": "Database"
                 },
-                "nightly": {
+                "beta": {
                     "header": "Beta"
                 }
             },

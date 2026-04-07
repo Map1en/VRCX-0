@@ -737,7 +737,7 @@
                 "database": {
                     "header": "データベース"
                 },
-                "nightly": {
+                "beta": {
                     "header": "ベータ"
                 }
             },

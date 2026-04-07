@@ -752,7 +752,7 @@
                 "database": {
                     "header": "資料庫"
                 },
-                "nightly": {
+                "beta": {
                     "header": "測試版"
                 }
             },
