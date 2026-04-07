@@ -510,30 +510,11 @@ export const useVrcxStore = defineStore('Vrcx', () => {
         () => watchState.isLoggedIn,
         (isLoggedIn) => {
             isRegistryBackupDialogVisible.value = false;
-            if (isLoggedIn) {
-                startupLaunchCommand();
-            }
         },
         { flush: 'sync' }
     );
 
-    /**
-     *
-     */
-    async function startupLaunchCommand() {
-        const command = await AppApi.GetLaunchCommand();
-        if (!command) {
-            return;
-        }
-        if (command.startsWith('crash/')) {
-            const crashMessage = command.replace('crash/', '');
-            console.error('VRCX recovered from crash:', crashMessage);
 
-            toast.success(t('message.crash.vrcx_reload'));
-            return;
-        }
-        eventLaunchCommand(command);
-    }
 
     // called from C#
     /**

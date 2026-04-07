@@ -1,7 +1,6 @@
 mod api;
 mod domain;
 mod error;
-mod infra;
 mod state;
 
 use tauri::Manager;
@@ -72,7 +71,6 @@ pub fn run() {
             
             api::app::app__current_culture,
             api::app::app__current_language,
-            api::app::app__get_launch_command,
             api::app::app__set_user_agent,
             api::app::app__open_link,
             api::app::app__open_discord_profile,

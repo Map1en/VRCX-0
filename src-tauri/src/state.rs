@@ -22,24 +22,7 @@ pub struct AppPaths {
     pub image_cache: PathBuf,
 }
 
-/// Holds pending launch command from CLI args (matches C# StartupArgs).
-pub struct StartupArgs {
-    launch_command: Mutex<Option<String>>,
-}
 
-impl StartupArgs {
-    pub fn new() -> Self {
-        let cmd = std::env::args().nth(1);
-        Self {
-            launch_command: Mutex::new(cmd),
-        }
-    }
-
-    /// Returns and clears the pending launch command.
-    pub fn take_launch_command(&self) -> String {
-        self.launch_command.lock().unwrap().take().unwrap_or_default()
-    }
-}
 
 /// Central application state — replaces all C# `*.Instance` singletons.
 ///
@@ -57,7 +40,7 @@ pub struct AppState {
     pub ovrtoolkit: OvrToolkit,
     pub ipc: IpcServer,
     pub screenshot_cache: MetadataCacheDb,
-    pub startup_args: StartupArgs,
+
     pub auto_launch: AutoAppLaunchManager,
     pub zoom_level: Mutex<f64>,
 }
@@ -97,9 +80,9 @@ impl AppState {
         let ipc = IpcServer::new();
         let screenshot_cache = MetadataCacheDb::new(&paths.app_data.join("metadataCache.db"))
             .map_err(|e| AppError::Custom(format!("screenshot cache: {e}")))?;
-        let startup_args = StartupArgs::new();
+
         let auto_launch = AutoAppLaunchManager::new(&paths.app_data);
 
-        Ok(Self { paths, storage, db, process_monitor, log_watcher, web, image_cache, update_manager, ovrtoolkit, ipc, screenshot_cache, startup_args, auto_launch, zoom_level: Mutex::new(0.0) })
+        Ok(Self { paths, storage, db, process_monitor, log_watcher, web, image_cache, update_manager, ovrtoolkit, ipc, screenshot_cache, auto_launch, zoom_level: Mutex::new(0.0) })
     }
 }

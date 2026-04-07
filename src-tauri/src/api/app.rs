@@ -50,10 +50,7 @@ pub fn app__current_language() -> String {
     sys_locale::get_locale().unwrap_or_else(|| "en".into())
 }
 
-#[tauri::command]
-pub fn app__get_launch_command(state: State<'_, AppState>) -> String {
-    state.startup_args.take_launch_command()
-}
+
 
 #[tauri::command]
 pub fn app__set_user_agent() { // TODO
