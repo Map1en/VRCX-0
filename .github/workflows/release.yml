@@ -88,19 +88,24 @@ jobs:
                   Copy-Item "src-tauri/target/release/VRCX-0.exe" -Destination (Join-Path $packageDir "VRCX-0.exe")
                   Copy-Item "README.md" -Destination (Join-Path $packageDir "README.md")
                   Copy-Item "LICENSE" -Destination (Join-Path $packageDir "LICENSE")
+                  Copy-Item "LICENSE-MIT" -Destination (Join-Path $packageDir "LICENSE-MIT")
                   Copy-Item "build/html/licenses/THIRD_PARTY_NOTICES.txt" -Destination (Join-Path $packageDir "THIRD_PARTY_NOTICES.txt")
                   if (Test-Path $zipPath) {
                       Remove-Item $zipPath -Force
                   }
                   Compress-Archive -Path $packageDir -DestinationPath $zipPath
 
-            - name: Upload bundle
+            - name: Upload NSIS bundle
               uses: actions/upload-artifact@v7
               with:
-                  name: VRCX-0-bundle
-                  path: |
-                      src-tauri/target/release/bundle/nsis/*.exe
-                      src-tauri/target/release/bundle/zip/*.zip
+                  name: VRCX-0-nsis
+                  path: src-tauri/target/release/bundle/nsis/*.exe
+
+            - name: Upload portable zip
+              uses: actions/upload-artifact@v7
+              with:
+                  name: VRCX-0-zip
+                  path: src-tauri/target/release/bundle/zip/*.zip
 
             - name: Create GitHub Release
               if: inputs.release
