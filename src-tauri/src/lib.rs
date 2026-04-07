@@ -47,6 +47,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             api::storage::storage__get,
             api::storage::storage__set,
+            api::storage::storage__flush,
             api::storage::storage__remove,
             api::storage::storage__get_all,
             api::database::sqlite__execute,

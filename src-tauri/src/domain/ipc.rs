@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use tauri::AppHandle;
+use tauri::Emitter;
 
 pub struct IpcServer {
     #[cfg_attr(not(windows), allow(dead_code))]
@@ -185,10 +186,6 @@ fn read_client(
 pub fn vrcipc_send(message: &str) -> bool {
     use std::io::{Read, Write};
     use std::time::Duration;
-
-    use windows_sys::Win32::Foundation::*;
-    use windows_sys::Win32::Storage::FileSystem::*;
-    use windows_sys::Win32::System::Pipes::*;
 
     let pipe_path = r"\\.\pipe\VRChatURLLaunchPipe";
 

@@ -519,6 +519,18 @@ pub fn app__restart_application(
     app_handle: AppHandle,
     is_upgrade: Option<bool>,
 ) -> Result<(), AppError> {
+    #[cfg(debug_assertions)]
+    {
+        tracing::warn!(
+            is_upgrade = is_upgrade.unwrap_or(false),
+            "app__restart_application ignored in dev build; restart VRCX manually"
+        );
+        let _ = app_handle;
+        return Ok(());
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
     let exe = std::env::current_exe().map_err(|e| AppError::Custom(format!("current exe: {e}")))?;
     let mut cmd = std::process::Command::new(&exe);
     if is_upgrade.unwrap_or(false) {
@@ -528,6 +540,7 @@ pub fn app__restart_application(
         .map_err(|e| AppError::Custom(format!("restart: {e}")))?;
     app_handle.exit(0);
     Ok(())
+    }
 }
 
 #[tauri::command]

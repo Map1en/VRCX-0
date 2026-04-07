@@ -67,6 +67,12 @@ export function parseResponse(response) {
     if (!response.data) {
         return response;
     }
+    if (typeof response.data !== 'string') {
+        if (response.data?.error) {
+            return { ...response, hasApiError: true };
+        }
+        return response;
+    }
     try {
         response.data = JSON.parse(response.data);
         if (response.data?.error) {

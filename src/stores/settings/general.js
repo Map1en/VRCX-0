@@ -9,8 +9,6 @@ import { useVrcxStore } from '../vrcx';
 
 import configRepository from '../../services/config';
 
-import * as workerTimers from 'worker-timers';
-
 export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
     const vrcxStore = useVrcxStore();
     const VRCXUpdaterStore = useVRCXUpdaterStore();
@@ -375,14 +373,7 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
             .then(async ({ ok, value }) => {
                 if (ok) {
                     vrcxStore.setProxyServer(value);
-                    await VRCXStorage.Set(
-                        'VRCX-0_ProxyServer',
-                        vrcxStore.proxyServer
-                    );
-                    await VRCXStorage.Save();
-                    await new Promise((resolve) => {
-                        workerTimers.setTimeout(resolve, 100);
-                    });
+                    await persistProxyServer();
                     const { restartVRCX } = VRCXUpdaterStore;
                     const isUpgrade = false;
                     restartVRCX(isUpgrade);
@@ -391,19 +382,17 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
 
                 // User clicked close/cancel, still save the value but don't restart
                 if (vrcxStore.proxyServer !== undefined) {
-                    await VRCXStorage.Set(
-                        'VRCX-0_ProxyServer',
-                        vrcxStore.proxyServer
-                    );
-                    await VRCXStorage.Save();
-                    await new Promise((resolve) => {
-                        workerTimers.setTimeout(resolve, 100);
-                    });
+                    await persistProxyServer();
                 }
             })
             .catch((err) => {
                 console.error(err);
             });
+    }
+
+    async function persistProxyServer() {
+        await VRCXStorage.Set('VRCX-0_ProxyServer', vrcxStore.proxyServer);
+        await VRCXStorage.Flush();
     }
 
     function setRecentActionCooldownEnabled() {

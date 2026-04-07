@@ -137,7 +137,7 @@ describe('LoginSettingsDialog.vue', () => {
 
         globalThis.VRCXStorage = {
             Set: vi.fn().mockResolvedValue(undefined),
-            Save: vi.fn().mockResolvedValue(undefined)
+            Flush: vi.fn().mockResolvedValue(undefined)
         };
     });
 
@@ -179,7 +179,7 @@ describe('LoginSettingsDialog.vue', () => {
             'VRCX-0_ProxyServer',
             'http://127.0.0.1:8080'
         );
-        expect(globalThis.VRCXStorage.Save).toHaveBeenCalledTimes(1);
+        expect(globalThis.VRCXStorage.Flush).toHaveBeenCalledTimes(1);
         expect(mocks.restartVRCX).not.toHaveBeenCalled();
     });
 
@@ -195,7 +195,11 @@ describe('LoginSettingsDialog.vue', () => {
         expect(mocks.setProxyServer).toHaveBeenCalledWith(
             'http://192.168.0.2:3128'
         );
-        expect(globalThis.VRCXStorage.Save).toHaveBeenCalledTimes(1);
+        expect(globalThis.VRCXStorage.Set).toHaveBeenCalledWith(
+            'VRCX-0_ProxyServer',
+            'http://192.168.0.2:3128'
+        );
+        expect(globalThis.VRCXStorage.Flush).toHaveBeenCalledTimes(1);
         expect(mocks.restartVRCX).toHaveBeenCalledWith(false);
     });
 });

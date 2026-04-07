@@ -23,6 +23,11 @@ pub fn storage__set(
 }
 
 #[tauri::command]
+pub fn storage__flush(state: State<'_, AppState>) -> Result<(), AppError> {
+    state.storage.save()
+}
+
+#[tauri::command]
 pub fn storage__remove(
     key: String,
     state: State<'_, AppState>,

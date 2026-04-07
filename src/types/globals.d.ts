@@ -42,6 +42,7 @@ declare global {
         Set(key: string, value: string): Promise<void>;
         Remove(key: string): Promise<void>;
         GetAll(): Promise<string>;
+        Flush(): Promise<void>;
     };
 
     const SQLite: {
