@@ -83,8 +83,6 @@ pub fn run() {
             api::app::app__open_discord_profile,
             api::app::app__get_file_base64,
             api::app::app__get_file_bytes,
-            api::app::app__md5_file,
-            api::app::app__file_length,
             
             api::app::app__read_config_file,
             api::app::app__read_config_file_safe,

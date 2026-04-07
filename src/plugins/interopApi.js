@@ -48,8 +48,6 @@ const commandArgs = {
     app__open_link: ['url'],
     app__open_discord_profile: ['discordId'],
     app__get_file_base64: ['path'],
-    app__md5_file: ['blob'],
-    app__file_length: ['blob'],
     app__sign_file: ['blob'],
     app__resize_image_to_fit_limits: ['base64data'],
     app__write_config_file: ['json'],

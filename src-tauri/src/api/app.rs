@@ -84,19 +84,6 @@ pub fn app__get_file_bytes(path: String) -> Result<Vec<u8>, AppError> {
     Ok(std::fs::read(&path)?)
 }
 
-#[tauri::command]
-pub fn app__md5_file(blob: String) -> Result<String, AppError> {
-    let data = B64.decode(&blob).map_err(|e| AppError::Custom(format!("bad base64: {e}")))?;
-    let digest = md5::compute(&data);
-    Ok(B64.encode(digest.as_ref()))
-}
-
-#[tauri::command]
-pub fn app__file_length(blob: String) -> Result<String, AppError> {
-    let data = B64.decode(&blob).map_err(|e| AppError::Custom(format!("bad base64: {e}")))?;
-    Ok(data.len().to_string())
-}
-
 fn vrchat_config_path() -> PathBuf {
     let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
     PathBuf::from(local_app_data)

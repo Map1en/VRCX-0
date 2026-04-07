@@ -266,6 +266,7 @@
     import { Kbd } from '@/components/ui/kbd';
 
     import { formatDateFilter } from '@/shared/utils';
+    import { bytesToObjectUrl } from '@/shared/utils/binary';
     import { storeToRefs } from 'pinia';
     import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
@@ -286,8 +287,7 @@
         try {
             const bytes = await invoke('app__get_file_bytes', { path: filePath });
             if (!bytes?.length) return;
-            const blob = new Blob([new Uint8Array(bytes)], { type: 'image/png' });
-            const url = URL.createObjectURL(blob);
+            const url = bytesToObjectUrl(new Uint8Array(bytes), 'image/png');
             _prevBlobUrl = url;
             screenshotImageUrl.value = url;
         } catch (e) {

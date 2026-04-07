@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { $throw } from '../services/request';
 import { AppDebug } from '../services/appConfig.js';
 import { extractFileId } from '../shared/utils';
+import { getBase64ByteLength, md5Base64 } from '../shared/utils/binary';
 import { imageRequest } from '../api';
 
 function resolveMessage(message) {
@@ -123,18 +124,13 @@ export async function uploadImageLegacy(
     };
     const api = apiMap[type];
 
-    const fileMd5 = await invoke('app__md5_file', { blob: base64File });
+    const fileMd5 = md5Base64(base64File);
     const fileSizeInBytes = parseInt(blob.size, 10);
     const base64SignatureFile = await invoke('app__sign_file', {
         blob: base64File
     });
-    const signatureMd5 = await invoke('app__md5_file', {
-        blob: base64SignatureFile
-    });
-    const signatureSizeInBytes = parseInt(
-        await invoke('app__file_length', { blob: base64SignatureFile }),
-        10
-    );
+    const signatureMd5 = md5Base64(base64SignatureFile);
+    const signatureSizeInBytes = getBase64ByteLength(base64SignatureFile);
     const fileId = extractFileId(imageUrl);
 
     // imageInit
