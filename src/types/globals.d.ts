@@ -1,6 +1,3 @@
-/// <reference types="node" />
-/// <reference types="jest" />
-
 declare global {
     const VERSION: string;
     const NIGHTLY: boolean;
@@ -9,21 +6,16 @@ declare global {
         $pinia: any;
         $debug: AppDebug;
         __VRCX_VERSION__: string;
-        AppApi: AppApi;
-        WebApi: WebApi;
-        VRCXStorage: VRCXStorage;
-        SQLite: SQLite;
-        LogWatcher: LogWatcher;
-        Discord: Discord;
-        AssetBundleManager: AssetBundleManager;
-        webApiService: webApiService;
-        request: any;
-        utils: any;
-        dayjs: any;
+        __TAURI_INTERNALS__?: unknown;
+        AppApi: typeof AppApi;
+        WebApi: typeof WebApi;
+        VRCXStorage: typeof VRCXStorage;
+        SQLite: typeof SQLite;
+        LogWatcher: typeof LogWatcher;
+        Discord: typeof Discord;
+        AssetBundleManager: typeof AssetBundleManager;
+        webApiService: typeof webApiService;
         configRepository: any;
-        database: any;
-        gameLogService: any;
-        crypto: any;
         sqliteService: any;
     }
 
@@ -50,13 +42,6 @@ declare global {
         Set(key: string, value: string): Promise<void>;
         Remove(key: string): Promise<void>;
         GetAll(): Promise<string>;
-        Flush(): Promise<void>;
-        Save(): Promise<void>;
-        Load(): Promise<void>;
-        GetArray(key: string): Promise<any[]>;
-        SetArray(key: string, value: any[]): Promise<void>;
-        GetObject(key: string): Promise<object>;
-        SetObject(key: string, value: object): Promise<void>;
     };
 
     const SQLite: {
@@ -68,6 +53,7 @@ declare global {
         Get(): Promise<Array<[string, string, string, ...any[]]>>;
         SetDateTill(date: string): Promise<void>;
         Reset(): Promise<void>;
+        VrcClosedGracefully(): Promise<boolean>;
     };
 
     const Discord: {
@@ -94,7 +80,6 @@ declare global {
     };
 
     const AppApi: {
-        // Basic App Functions
         ShowDevTools(): Promise<void>;
         DesktopNotification(
             boldText: string,
@@ -114,7 +99,6 @@ declare global {
         SetTrayIconNotification(notify: boolean): Promise<void>;
         OpenCalendarFile(icsContent: string): Promise<void>;
 
-        // Common Functions
         OpenLink(url: string): Promise<void>;
         OpenDiscordProfile(discordId: string): Promise<void>;
         IPCAnnounceStart(): Promise<void>;
@@ -130,12 +114,10 @@ declare global {
         GetFileBase64(path: string): Promise<string | null>;
         TryOpenInstanceInVrc(launchUrl: string): Promise<boolean>;
 
-        // Image Upload
         MD5File(blob: string): Promise<string>;
         SignFile(blob: string): Promise<string>;
         FileLength(blob: string): Promise<string>;
 
-        // Folders
         GetVRChatAppDataLocation(): Promise<string>;
         GetVRChatPhotosLocation(): Promise<string>;
         GetUGCPhotoLocation(path?: string): Promise<string>;
@@ -152,15 +134,13 @@ declare global {
             path: string,
             isFolder?: boolean
         ): Promise<void>;
-        OpenFolderSelectorDialog(defaultPath?: string): Promise<string>;
         OpenFileSelectorDialog(
             defaultPath?: string,
             defaultExt?: string,
             defaultFilter?: string
         ): Promise<string>;
+        OpenFolderSelectorDialog(defaultPath?: string): Promise<string>;
 
-        // Game Handler
-        OnProcessStateChanged(monitoredProcess: any): Promise<void>;
         CheckGameRunning(): Promise<void>;
         IsGameRunning(): Promise<boolean>;
         IsSteamVRRunning(): Promise<boolean>;
@@ -168,7 +148,6 @@ declare global {
         StartGame(arguments: string): Promise<boolean>;
         StartGameFromPath(path: string, arguments: string): Promise<boolean>;
 
-        // Registry
         GetVRChatRegistryKey(key: string): Promise<any>;
         GetVRChatRegistryKeyString(key: string): Promise<string>;
         SetVRChatRegistryKey(
@@ -182,7 +161,6 @@ declare global {
         DeleteVRChatRegistryFolder(): Promise<void>;
         ReadVrcRegJsonFile(filepath: string): Promise<string>;
 
-        // Image Functions
         PopulateImageHosts(json: string): Promise<void>;
         GetImage(url: string, fileId: string, version: string): Promise<string>;
         ResizeImageToFitLimits(base64data: string): Promise<string>;
@@ -207,7 +185,6 @@ declare global {
             fileName: string
         ): Promise<string>;
 
-        // Screenshot
         AddScreenshotMetadata(
             path: string,
             metadataString: string,
@@ -227,7 +204,6 @@ declare global {
         DeleteScreenshotMetadata(path: string): Promise<boolean>;
         DeleteAllScreenshotMetadata(): Promise<void>;
 
-        // Moderations
         GetVRChatModerations(
             currentUserId: string
         ): Promise<Record<string, number> | null>;
@@ -241,12 +217,10 @@ declare global {
             type: number
         ): Promise<boolean>;
 
-        // VRC Config
         ReadConfigFile(): Promise<string>;
         ReadConfigFileSafe(): Promise<string>;
         WriteConfigFile(json: string): Promise<void>;
 
-        // Update
         DownloadUpdate(
             fileUrl: string,
             hashString: string,
@@ -255,7 +229,6 @@ declare global {
         CancelUpdate(): Promise<void>;
         CheckUpdateProgress(): Promise<number>;
 
-        // Notifications
         XSNotification(
             title: string,
             content: string,
