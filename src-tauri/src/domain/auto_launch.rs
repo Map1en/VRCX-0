@@ -237,7 +237,7 @@ fn start_child_process(path: &str, started_processes: &mut HashMap<String, HashS
             started_processes.insert(path.to_string(), HashSet::new());
         }
         Err(e) => {
-            eprintln!("[AutoLaunch] failed to start {path}: {e}");
+            tracing::error!("[AutoLaunch] failed to start {path}: {e}");
         }
     }
 }
@@ -321,7 +321,7 @@ fn shell_execute_and_get_pid(_path: &str) -> Result<Option<u32>, String> {
 fn start_steam_game(app_id: &str) {
     let url = format!("steam://launch/{app_id}");
     if let Err(e) = open::that(&url) {
-        eprintln!("[AutoLaunch] failed to launch steam app {app_id}: {e}");
+        tracing::error!("[AutoLaunch] failed to launch steam app {app_id}: {e}");
     }
 }
 

@@ -80,7 +80,7 @@ impl OvrToolkit {
         let sender = self.sender.clone();
         tokio::spawn(async move {
             if let Err(e) = send_with_persistent_conn(sender, messages).await {
-                eprintln!("[OVRToolkit] send error: {e}");
+                tracing::error!("[OVRToolkit] send error: {e}");
             }
         });
     }

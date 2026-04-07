@@ -53,7 +53,7 @@ impl UpdateManager {
 
         // Rename update.exe → VRCX-0_Setup.exe and launch
         if let Err(e) = std::fs::rename(&update_exe, &setup_exe) {
-            eprintln!("Failed to rename update.exe: {e}");
+            tracing::error!("Failed to rename update.exe: {e}");
             return;
         }
 
@@ -63,7 +63,7 @@ impl UpdateManager {
         {
             Ok(_) => std::process::exit(0),
             Err(e) => {
-                eprintln!("Failed to launch installer: {e}");
+                tracing::error!("Failed to launch installer: {e}");
             }
         }
     }
@@ -84,7 +84,7 @@ impl UpdateManager {
                 do_download(&app_data, &file_url, &hash_string, download_size, &progress, &cancel, proxy_url.as_deref())
                     .await
             {
-                eprintln!("Update download error: {e}");
+                tracing::error!("Update download error: {e}");
                 progress.store(-1, Ordering::Relaxed);
             }
         });

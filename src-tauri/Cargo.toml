@@ -8,6 +8,8 @@ tauri = { version = "2", features = ["tray-icon", "image-ico"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dirs = "6"
 rusqlite = { version = "0.34", features = ["bundled"] }
 sysinfo = "0.32"

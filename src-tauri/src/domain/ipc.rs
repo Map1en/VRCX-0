@@ -31,7 +31,7 @@ impl IpcServer {
             let pipe_name = get_ipc_name();
             loop {
                 if let Err(e) = accept_one(&pipe_name, &clients, &app_handle) {
-                    eprintln!("[IPC] accept error: {e}");
+                    tracing::error!("[IPC] accept error: {e}");
                     std::thread::sleep(std::time::Duration::from_secs(1));
                 }
             }
@@ -43,7 +43,7 @@ impl IpcServer {
         let json = match serde_json::to_string(packet) {
             Ok(j) => j,
             Err(e) => {
-                eprintln!("[IPC] serialize error: {e}");
+                tracing::error!("[IPC] serialize error: {e}");
                 return;
             }
         };

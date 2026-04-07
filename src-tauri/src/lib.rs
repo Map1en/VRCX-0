@@ -8,6 +8,13 @@ use tauri::Manager;
 use state::AppState;
 
 pub fn run() {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "vrcx_0=info".into()),
+        )
+        .init();
+
     let app_state = AppState::new().expect("failed to initialize app state");
 
     app_state.update_manager.check_and_install_update();
