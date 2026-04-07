@@ -13,6 +13,8 @@
     },
     "scripts": {
         "dev": "vite serve src",
+        "tauri:dev": "tauri dev",
+        "tauri:build": "tauri build",
         "localization": "node ./src/shared/utils/localizationHelperCLI.js",
         "lint": "npm run lint:oxlint && npm run lint:eslint",
         "lint:eslint": "eslint .",
