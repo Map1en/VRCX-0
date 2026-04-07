@@ -92,14 +92,11 @@ function getAssetFilename({ name }) {
     return 'assets/i18n/[name][extname]';
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
     const tauriConf = JSON.parse(
         fs.readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf-8')
     );
     const version = tauriConf.version;
-
-    const nightly =
-        mode === 'development' || version.split('-').at(-1).length === 7;
 
     return {
         base: '',
@@ -141,8 +138,7 @@ export default defineConfig(({ mode }) => {
             ]
         },
         define: {
-            VERSION: JSON.stringify(version),
-            NIGHTLY: JSON.stringify(nightly)
+            VERSION: JSON.stringify(version)
         },
         server: {
             port: 9000,

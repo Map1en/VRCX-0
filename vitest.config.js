@@ -8,7 +8,6 @@ import vueJsx from '@vitejs/plugin-vue-jsx';
 export default defineConfig({
     plugins: [vue(), vueJsx()],
     define: {
-        NIGHTLY: JSON.stringify(false),
         WINDOWS: JSON.stringify(true)
     },
     test: {

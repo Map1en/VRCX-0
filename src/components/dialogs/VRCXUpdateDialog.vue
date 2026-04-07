@@ -12,21 +12,21 @@
                 </template>
                 <template v-else>
                     <div v-if="VRCXUpdateDialog.updatePending" style="margin-bottom: 16px">
-                        <span>{{ pendingVRCXInstall }}</span>
+                        <span>{{ pendingVRCXInstallDisplay }}</span>
                         <br />
                         <span>{{ t('dialog.vrcx_updater.ready_for_update') }}</span>
                     </div>
                     <Tabs :model-value="branch" class="w-full" @update:modelValue="handleBranchChange">
                         <TabsList class="grid w-full grid-cols-2">
                             <TabsTrigger value="Stable">{{ t('dialog.vrcx_updater.branch_stable') }}</TabsTrigger>
-                            <TabsTrigger value="Nightly">{{ t('dialog.vrcx_updater.branch_nightly') }}</TabsTrigger>
+                            <TabsTrigger value="Beta">{{ t('dialog.vrcx_updater.branch_beta') }}</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="Nightly">
+                        <TabsContent value="Beta">
                             <Alert variant="destructive">
                                 <AlertCircle class="text-muted-foreground" />
-                                <AlertTitle>{{ t('dialog.vrcx_updater.nightly_title') }}</AlertTitle>
+                                <AlertTitle>{{ t('dialog.vrcx_updater.beta_title') }}</AlertTitle>
                                 <AlertDescription>
-                                    {{ t('dialog.vrcx_updater.nightly_notice') }}
+                                    {{ t('dialog.vrcx_updater.beta_notice') }}
                                 </AlertDescription>
                             </Alert>
                         </TabsContent>
@@ -44,9 +44,9 @@
                                     <SelectContent>
                                         <SelectItem
                                             v-for="item in VRCXUpdateDialog.releases"
-                                            :key="item.name"
-                                            :value="item.name">
-                                            {{ item.tag_name }}
+                                            :key="item.canonicalVersion"
+                                            :value="item.canonicalVersion">
+                                            {{ item.displayName }}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -54,7 +54,7 @@
                         </Field>
                     </FieldGroup>
                     <div
-                        v-if="!VRCXUpdateDialog.updatePending && VRCXUpdateDialog.release === appVersion"
+                        v-if="!VRCXUpdateDialog.updatePending && VRCXUpdateDialog.release === currentVersion"
                         class="mt-3 text-xs text-muted-foreground">
                         <span>{{ t('dialog.vrcx_updater.latest_version') }}</span>
                     </div>
@@ -97,11 +97,12 @@
     const VRCXUpdaterStore = useVRCXUpdaterStore();
 
     const {
-        appVersion,
         branch,
         checkingForVRCXUpdate,
         VRCXUpdateDialog,
         pendingVRCXInstall,
+        pendingVRCXInstallDisplay,
+        currentVersion,
         updateInProgress,
         updateProgress
     } = storeToRefs(VRCXUpdaterStore);

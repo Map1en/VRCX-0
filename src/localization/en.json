@@ -774,7 +774,7 @@
                     "header": "Database"
                 },
                 "nightly": {
-                    "header": "Nightly"
+                    "header": "Beta"
                 }
             },
             "general": {
@@ -1121,10 +1121,10 @@
                         "description": "Use self invite instead of opening the instance in VRChat."
                     },
                     "anonymous_error_reporting": {
-                        "header": "Anonymous Error Reporting (Nightly Only)",
+                        "header": "Anonymous Error Reporting (Beta Only)",
                         "description": "Help improve VRCX by sending anonymous crash and error reports. No personal or VRChat data is collected.",
                         "consent_title": "Anonymous Error Reporting",
-                        "consent_description": "Allow anonymous error reporting to help improve VRCX?\n\n• Crash and error data only\n• No personal or VRChat data\n• Nightly builds only\n• Can be disabled in Advanced Settings",
+                        "consent_description": "Allow anonymous error reporting to help improve VRCX?\n\n• Crash and error data only\n• No personal or VRChat data\n• Beta builds only\n• Can be disabled in Advanced Settings",
                         "enabled_restart_description": "Error reporting enabled. Restart VRCX to apply changes?",
                         "disabled_restart_description": "Error reporting disabled. Restart VRCX to apply changes?"
                     },
@@ -2366,9 +2366,9 @@
             "latest_version": "VRCX is up to date.",
             "ready_for_update": "Ready for install, restart VRCX to apply.",
             "branch_stable": "Stable",
-            "branch_nightly": "Nightly",
-            "nightly_title": "Nightly builds",
-            "nightly_notice": "Nightly builds are for testing. For stability, use stable build.",
+            "branch_beta": "Beta",
+            "beta_title": "Beta builds",
+            "beta_notice": "Beta builds are for testing. For stability, use stable build.",
             "release": "Release",
             "download": "Download",
             "install": "Install",

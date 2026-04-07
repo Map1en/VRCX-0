@@ -28,7 +28,6 @@ export default defineConfig([
                 WebApi: 'readonly',
                 AssetBundleManager: 'readonly',
                 VERSION: 'readonly',
-                NIGHTLY: 'readonly',
                 webApiService: 'readonly',
                 process: 'readonly',
                 AppDebug: 'readonly'

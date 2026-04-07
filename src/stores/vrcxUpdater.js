@@ -12,6 +12,12 @@ import {
     normalizeReleaseVersion
 } from '../shared/constants/whatsNewReleases';
 import { changeLogRemoveLinks } from '../shared/utils';
+import {
+    compareReleaseVersions,
+    formatReleaseDisplayVersion,
+    isBetaReleaseVersion,
+    parseReleaseVersion
+} from '../shared/utils/releaseVersion';
 
 import configRepository from '../services/config';
 
@@ -29,7 +35,10 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
 
     const noUpdater = ref(false);
 
-    const appVersion = ref('');
+    const currentVersion = ref(VERSION || '');
+    const appVersion = computed(
+        () => formatReleaseDisplayVersion(currentVersion.value) || '-'
+    );
     const autoUpdateVRCX = ref('Auto Download');
     const latestAppVersion = ref('');
     const branch = ref('Stable');
@@ -53,12 +62,15 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
     const updateInProgress = ref(false);
     const updateProgress = ref(0);
     const updateToastRelease = ref('');
+    const pendingVRCXInstallDisplay = computed(() =>
+        formatReleaseDisplayVersion(pendingVRCXInstall.value)
+    );
 
     async function initVRCXUpdaterSettings() {
-
-        const [VRCX0_autoUpdateVRCX, VRCX0_id] = await Promise.all([
+        const [VRCX0_autoUpdateVRCX, VRCX0_id, savedBranch] = await Promise.all([
             configRepository.getString('autoUpdateVRCX', 'Auto Download'),
-            configRepository.getString('id', '')
+            configRepository.getString('id', ''),
+            configRepository.getString('branch', '')
         ]);
 
         if (VRCX0_autoUpdateVRCX === 'Auto Install') {
@@ -70,10 +82,9 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
             autoUpdateVRCX.value = 'Off';
         }
 
-        appVersion.value = window.__VRCX_VERSION__ || '';
         vrcxId.value = VRCX0_id;
 
-        await initBranch();
+        await initBranch(savedBranch);
         await loadVrcxId();
 
         let checkedForUpdatesDuringAnnouncement = false;
@@ -99,8 +110,6 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         }
     }
 
-    const currentVersion = computed(() => appVersion.value);
-
     /**
      * @param {string} value
      */
@@ -121,16 +130,19 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
      * @param {string} value
      */
     function setBranch(value) {
-        branch.value = value;
-        configRepository.setString('branch', value);
+        const nextBranch = value === 'Beta' ? 'Beta' : 'Stable';
+        branch.value = nextBranch;
+        configRepository.setString('branch', nextBranch);
     }
 
-    async function initBranch() {
-        if (!appVersion.value) {
+    async function initBranch(savedBranch = '') {
+        if (!currentVersion.value) {
             return;
         }
-        if (currentVersion.value.includes('VRCX Nightly')) {
-            branch.value = 'Nightly';
+        if (savedBranch === 'Stable' || savedBranch === 'Beta') {
+            branch.value = savedBranch;
+        } else if (isBetaReleaseVersion(currentVersion.value)) {
+            branch.value = 'Beta';
         } else {
             branch.value = 'Stable';
         }
@@ -172,14 +184,14 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
     }
 
     function isRecognizedStableReleaseVersion() {
-        return Boolean(normalizeReleaseVersion(currentVersion.value));
+        return Boolean(normalizeReleaseVersion(appVersion.value));
     }
 
     /**
      * @returns {Promise<boolean>}
      */
     async function showWhatsNewDialog() {
-        const release = getWhatsNewRelease(currentVersion.value);
+        const release = getWhatsNewRelease(appVersion.value);
 
         if (!release) {
             whatsNewDialog.value = emptyWhatsNewDialog();
@@ -255,24 +267,123 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         }
         return { downloadUrl, hashString, size };
     }
-    async function checkForVRCXUpdate() {
-        if (
-            !currentVersion.value ||
-            currentVersion.value === 'VRCX Nightly Build' ||
-            currentVersion.value === 'VRCX Build'
-        ) {
-            // ignore custom builds
+
+    /**
+     * @param {string} selectedBranch
+     * @returns {'Stable' | 'Beta'}
+     */
+    function sanitizeBranch(selectedBranch) {
+        return selectedBranch === 'Beta' ? 'Beta' : 'Stable';
+    }
+
+    /**
+     * @param {any} release
+     * @returns {null | {
+     *   canonicalVersion: string,
+     *   displayVersion: string,
+     *   tagName: string,
+     *   displayName: string,
+     *   prerelease: boolean,
+     *   publishedAt: string,
+     *   body: string,
+     *   assets: any[]
+     * }}
+     */
+    function normalizeGitHubRelease(release) {
+        const parsedVersion = parseReleaseVersion(release?.tag_name);
+        if (!parsedVersion) {
+            return null;
+        }
+
+        return {
+            canonicalVersion: parsedVersion.canonicalVersion,
+            displayVersion: parsedVersion.displayVersion,
+            tagName: release.tag_name,
+            displayName: release.name || `VRCX-0 ${parsedVersion.displayVersion}`,
+            prerelease: Boolean(release.prerelease),
+            publishedAt: release.published_at || '',
+            body: release.body || '',
+            assets: Array.isArray(release.assets) ? release.assets : []
+        };
+    }
+
+    /**
+     * @param {'Stable' | 'Beta'} selectedBranch
+     * @param {any[]} releases
+     * @returns {ReturnType<typeof normalizeGitHubRelease>[]}
+     */
+    function normalizeReleaseList(selectedBranch, releases) {
+        const shouldKeepPrerelease = selectedBranch === 'Beta';
+
+        return releases
+            .map((release) => normalizeGitHubRelease(release))
+            .filter((release) => {
+                if (!release) {
+                    return false;
+                }
+                if (release.prerelease !== shouldKeepPrerelease) {
+                    return false;
+                }
+
+                const { downloadUrl } = getAssetOfInterest(release.assets);
+                return Boolean(downloadUrl);
+            })
+            .sort((left, right) =>
+                compareReleaseVersions(
+                    right.canonicalVersion,
+                    left.canonicalVersion
+                )
+            );
+    }
+
+    /**
+     * @param {'Stable' | 'Beta'} selectedBranch
+     * @param {string} currentAppVersion
+     * @param {string} latestReleaseVersion
+     * @returns {boolean}
+     */
+    function hasUpdateForBranch(
+        selectedBranch,
+        currentAppVersion,
+        latestReleaseVersion
+    ) {
+        const currentParsed = parseReleaseVersion(currentAppVersion);
+        const latestParsed = parseReleaseVersion(latestReleaseVersion);
+
+        if (!currentParsed || !latestParsed) {
             return false;
         }
-        if (branch.value === 'Beta') {
-            // move Beta users to stable
-            setBranch('Stable');
+
+        if (selectedBranch === 'Beta') {
+            const dateDelta =
+                latestParsed.year - currentParsed.year ||
+                latestParsed.month - currentParsed.month ||
+                latestParsed.day - currentParsed.day;
+            if (dateDelta !== 0) {
+                return dateDelta > 0;
+            }
+
+            if (
+                currentParsed.channel === 'Stable' &&
+                latestParsed.channel === 'Beta'
+            ) {
+                return true;
+            }
         }
-        if (typeof branches[branch.value] === 'undefined') {
-            // handle invalid branch
-            setBranch('Stable');
-        }
-        const url = branches[branch.value].urlLatest;
+
+        return (
+            compareReleaseVersions(
+                latestParsed.canonicalVersion,
+                currentParsed.canonicalVersion
+            ) > 0
+        );
+    }
+
+    /**
+     * @param {string} url
+     * @returns {Promise<any[] | null>}
+     */
+    async function fetchGitHubReleases(url) {
         checkingForVRCXUpdate.value = true;
         let response;
         let json;
@@ -287,65 +398,127 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
             json = JSON.parse(response.data);
         } catch (error) {
             console.error('Failed to check for VRCX update', error);
-            return false;
+            return null;
         } finally {
             checkingForVRCXUpdate.value = false;
         }
+
         if (response.status !== 200) {
             toast.error(
                 t('message.vrcx_updater.failed', {
                     message: `${response.status} ${response.data}`
                 })
             );
+            return null;
+        }
+
+        logWebRequest('[EXTERNAL GET]', url, `(${response.status})`, json);
+
+        if (typeof json !== 'object' || json?.message) {
+            toast.error(
+                t('message.vrcx_updater.failed', {
+                    message: json?.message
+                })
+            );
+            return null;
+        }
+
+        return Array.isArray(json) ? json : [json];
+    }
+
+    /**
+     * @param {'Stable' | 'Beta'} selectedBranch
+     * @returns {Promise<ReturnType<typeof normalizeGitHubRelease>[] | null>}
+     */
+    async function fetchBranchReleases(selectedBranch) {
+        const releases = await fetchGitHubReleases(
+            branches[selectedBranch].urlReleases
+        );
+        if (!releases) {
+            return null;
+        }
+        return normalizeReleaseList(selectedBranch, releases);
+    }
+
+    /**
+     * @param {'Stable' | 'Beta'} selectedBranch
+     * @returns {Promise<ReturnType<typeof normalizeGitHubRelease> | null>}
+     */
+    async function fetchLatestBranchRelease(selectedBranch) {
+        if (selectedBranch === 'Stable') {
+            const releases = await fetchGitHubReleases(
+                branches[selectedBranch].urlLatest
+            );
+            if (!releases?.length) {
+                return null;
+            }
+            return normalizeGitHubRelease(releases[0]);
+        }
+
+        const releases = await fetchBranchReleases(selectedBranch);
+        return releases?.[0] || null;
+    }
+
+    async function checkForVRCXUpdate() {
+        if (!currentVersion.value || !parseReleaseVersion(currentVersion.value)) {
             return false;
         }
+        const selectedBranch = sanitizeBranch(branch.value);
+        if (selectedBranch !== branch.value) {
+            setBranch(selectedBranch);
+        }
+
+        const latestRelease = await fetchLatestBranchRelease(selectedBranch);
+        if (!latestRelease) {
+            return false;
+        }
+
         pendingVRCXUpdate.value = false;
-        logWebRequest('[EXTERNAL GET]', url, `(${response.status})`, json);
-        if (json === Object(json) && json.name && json.published_at) {
-            changeLogDialog.value.buildName = json.name;
-            changeLogDialog.value.changeLog = changeLogRemoveLinks(json.body);
-            const releaseName = json.name;
-            setLatestAppVersion(releaseName);
-            VRCXUpdateDialog.value.updatePendingIsLatest = false;
-            if (autoUpdateVRCX.value === 'Off') {
-                return true;
-            }
-            if (releaseName === pendingVRCXInstall.value) {
-                // update already downloaded
-                VRCXUpdateDialog.value.updatePendingIsLatest = true;
-            } else if (releaseName > currentVersion.value) {
-                const { downloadUrl, hashString, size } = getAssetOfInterest(
-                    json.assets
-                );
-                if (!downloadUrl) {
-                    return true;
-                }
-                pendingVRCXUpdate.value = true;
-                if (updateToastRelease.value !== releaseName) {
-                    updateToastRelease.value = releaseName;
-                    toast(t('nav_menu.update_available'), {
-                        description: releaseName,
-                        duration: 5000,
-                        action: {
-                            label: t('nav_menu.update'),
-                            onClick: () => showVRCXUpdateDialog()
-                        }
-                    });
-                }
-                if (autoUpdateVRCX.value === 'Notify') {
-                    // this.showVRCXUpdateDialog();
-                } else if (autoUpdateVRCX.value === 'Auto Download') {
-                    await downloadVRCXUpdate(
-                        downloadUrl,
-                        hashString,
-                        size,
-                        releaseName
-                    );
-                }
-            }
+        changeLogDialog.value.buildName = latestRelease.displayName;
+        changeLogDialog.value.changeLog = changeLogRemoveLinks(latestRelease.body);
+        setLatestAppVersion(latestRelease.displayVersion);
+        VRCXUpdateDialog.value.updatePendingIsLatest = false;
+
+        if (autoUpdateVRCX.value === 'Off') {
             return true;
         }
-        return false;
+        if (latestRelease.canonicalVersion === pendingVRCXInstall.value) {
+            VRCXUpdateDialog.value.updatePendingIsLatest = true;
+        } else if (
+            hasUpdateForBranch(
+                selectedBranch,
+                currentVersion.value,
+                latestRelease.canonicalVersion
+            )
+        ) {
+            const { downloadUrl, hashString, size } = getAssetOfInterest(
+                latestRelease.assets
+            );
+            if (!downloadUrl) {
+                return true;
+            }
+            pendingVRCXUpdate.value = true;
+            if (updateToastRelease.value !== latestRelease.canonicalVersion) {
+                updateToastRelease.value = latestRelease.canonicalVersion;
+                toast(t('nav_menu.update_available'), {
+                    description: latestRelease.displayVersion,
+                    duration: 5000,
+                    action: {
+                        label: t('nav_menu.update'),
+                        onClick: () => showVRCXUpdateDialog()
+                    }
+                });
+            }
+            if (autoUpdateVRCX.value === 'Auto Download') {
+                await downloadVRCXUpdate(
+                    downloadUrl,
+                    hashString,
+                    size,
+                    latestRelease.canonicalVersion
+                );
+            }
+        }
+        return true;
     }
     async function showVRCXUpdateDialog() {
         const D = VRCXUpdateDialog.value;
@@ -360,62 +533,23 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
 
     async function loadBranchVersions() {
         const D = VRCXUpdateDialog.value;
-        const url = branches[branch.value].urlReleases;
-        checkingForVRCXUpdate.value = true;
-        let response;
-        let json;
-        try {
-            response = await webApiService.execute({
-                url,
-                method: 'GET',
-                headers: {
-                    Accept: 'application/vnd.github+json'
-                }
-            });
-            json = JSON.parse(response.data);
-        } catch (error) {
-            console.error('Failed to check for VRCX update', error);
-            return;
-        } finally {
-            checkingForVRCXUpdate.value = false;
+        const selectedBranch = sanitizeBranch(branch.value);
+        if (selectedBranch !== branch.value) {
+            setBranch(selectedBranch);
         }
-        if (response.status !== 200) {
-            toast.error(
-                t('message.vrcx_updater.failed', {
-                    message: `${response.status} ${response.data}`
-                })
-            );
+
+        const releases = await fetchBranchReleases(selectedBranch);
+        if (!releases) {
             return;
-        }
-        logWebRequest('[EXTERNAL GET]', url, `(${response.status})`, json);
-        const releases = [];
-        if (typeof json !== 'object' || json.message) {
-            toast.error(
-                t('message.vrcx_updater.failed', {
-                    message: json.message
-                })
-            );
-            return;
-        }
-        for (const release of json) {
-            if (release.prerelease) {
-                continue;
-            }
-            assetLoop: for (const asset of release.assets) {
-                if (asset.state === 'uploaded') {
-                    releases.push(release);
-                    break assetLoop;
-                }
-            }
         }
         D.releases = releases;
-        D.release = json[0].name;
+        D.release = releases[0]?.canonicalVersion || '';
         VRCXUpdateDialog.value.updatePendingIsLatest = false;
         if (D.release === pendingVRCXInstall.value) {
             // update already downloaded and latest version
             VRCXUpdateDialog.value.updatePendingIsLatest = true;
         }
-        setBranch(branch.value);
+        setBranch(selectedBranch);
     }
     async function downloadVRCXUpdate(
         downloadUrl,
@@ -451,7 +585,10 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
     }
     function installVRCXUpdate() {
         for (const release of VRCXUpdateDialog.value.releases) {
-            if (release.name !== VRCXUpdateDialog.value.release) {
+            if (
+                release.canonicalVersion !==
+                VRCXUpdateDialog.value.release
+            ) {
                 continue;
             }
             const { downloadUrl, hashString, size } = getAssetOfInterest(
@@ -460,7 +597,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
             if (!downloadUrl) {
                 return;
             }
-            const releaseName = release.name;
+            const releaseName = release.canonicalVersion;
             downloadVRCXUpdate(downloadUrl, hashString, size, releaseName);
             break;
         }
@@ -521,6 +658,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         whatsNewDialog,
         pendingVRCXUpdate,
         pendingVRCXInstall,
+        pendingVRCXInstallDisplay,
         updateInProgress,
         updateProgress,
         noUpdater,

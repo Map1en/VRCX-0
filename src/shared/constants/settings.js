@@ -19,8 +19,8 @@ const branches = {
         urlReleases: 'https://api.github.com/repos/Map1en/VRCX-0/releases',
         urlLatest: 'https://api.github.com/repos/Map1en/VRCX-0/releases/latest'
     },
-    Nightly: {
-        name: 'Nightly',
+    Beta: {
+        name: 'Beta',
         urlReleases: 'https://api.github.com/repos/Map1en/VRCX-0/releases',
         urlLatest: 'https://api.github.com/repos/Map1en/VRCX-0/releases/latest'
     }

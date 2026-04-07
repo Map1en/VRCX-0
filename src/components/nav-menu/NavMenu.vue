@@ -281,7 +281,7 @@
     const customNavDialogVisible = ref(false);
 
     const hasNotifications = computed(() => notifiedMenus.value.length > 0);
-    const version = computed(() => appVersion.value?.split('VRCX ')?.[1] || '-');
+    const version = computed(() => appVersion.value || '-');
     const vrcxLogo = new URL('../../../images/VRCX-0.png', import.meta.url).href;
 
     const isEntryNotified = (entry) => checkEntryNotified(entry, notifiedMenus.value);

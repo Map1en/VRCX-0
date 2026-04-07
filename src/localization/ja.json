@@ -738,7 +738,7 @@
                     "header": "データベース"
                 },
                 "nightly": {
-                    "header": "ナイトリービルド"
+                    "header": "ベータ"
                 }
             },
             "general": {
@@ -2324,9 +2324,9 @@
             "latest_version": "VRCXは最新版です。",
             "ready_for_update": "インストールの準備が完了しました。VRCX を再起動して適用してください。",
             "branch_stable": "安定板",
-            "branch_nightly": "ナイトリー",
-            "nightly_title": "ナイトリービルド",
-            "nightly_notice": "ナイトリービルドはテスト用です。安定性を求める場合は安定板を使用してください。",
+            "branch_beta": "ベータ",
+            "beta_title": "ベータビルド",
+            "beta_notice": "ベータビルドはテスト用です。安定性を求める場合は安定板を使用してください。",
             "release": "リリース",
             "download": "ダウンロード",
             "install": "インストール",

@@ -1,11 +1,9 @@
 declare global {
     const VERSION: string;
-    const NIGHTLY: boolean;
 
     interface Window {
         $pinia: any;
         $debug: AppDebug;
-        __VRCX_VERSION__: string;
         __TAURI_INTERNALS__?: unknown;
         AppApi: typeof AppApi;
         WebApi: typeof WebApi;
