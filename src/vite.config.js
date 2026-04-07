@@ -123,7 +123,7 @@ export default defineConfig(({ mode }) => {
                     customMedia: true
                 },
                 errorRecovery: true,
-                targets: browserslistToTargets(browserslist('Chrome 145'))
+                targets: browserslistToTargets(browserslist('Chrome 125'))
             }
         },
         optimizeDeps: {
@@ -149,7 +149,7 @@ export default defineConfig(({ mode }) => {
             strictPort: true
         },
         build: {
-            target: 'chrome145',
+            target: 'chrome111',
             outDir: '../build/html',
             license: true,
             emptyOutDir: true,
