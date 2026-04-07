@@ -26,7 +26,6 @@ impl UpdateManager {
         let setup_exe = self.app_data.join("VRCX-0_Setup.exe");
         let temp_download = self.app_data.join("tempDownload");
 
-
         let mut sys = sysinfo::System::new();
         sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
         for (_pid, proc) in sys.processes() {
@@ -68,9 +67,16 @@ impl UpdateManager {
         cancel.store(false, Ordering::Relaxed);
 
         tokio::spawn(async move {
-            if let Err(e) =
-                do_download(&app_data, &file_url, &hash_string, download_size, &progress, &cancel, proxy_url.as_deref())
-                    .await
+            if let Err(e) = do_download(
+                &app_data,
+                &file_url,
+                &hash_string,
+                download_size,
+                &progress,
+                &cancel,
+                proxy_url.as_deref(),
+            )
+            .await
             {
                 tracing::error!("Update download error: {e}");
                 progress.store(-1, Ordering::Relaxed);
@@ -105,18 +111,13 @@ async fn do_download(
 
     let _ = std::fs::remove_file(&temp_path);
 
-    let mut builder = reqwest::Client::builder()
-        .user_agent("VRCX-0");
+    let mut builder = reqwest::Client::builder().user_agent("VRCX-0");
 
     if let Some(proxy) = proxy_url {
-        builder = builder.proxy(
-            reqwest::Proxy::all(proxy).map_err(|e| format!("proxy: {e}"))?,
-        );
+        builder = builder.proxy(reqwest::Proxy::all(proxy).map_err(|e| format!("proxy: {e}"))?);
     }
 
-    let client = builder
-        .build()
-        .map_err(|e| format!("http client: {e}"))?;
+    let client = builder.build().map_err(|e| format!("http client: {e}"))?;
 
     let response = client
         .get(file_url)
@@ -142,8 +143,7 @@ async fn do_download(
     let chunk_size = 8192usize;
     let mut written = 0usize;
 
-    let mut file =
-        std::fs::File::create(&temp_path).map_err(|e| format!("create temp: {e}"))?;
+    let mut file = std::fs::File::create(&temp_path).map_err(|e| format!("create temp: {e}"))?;
 
     for chunk in bytes.chunks(chunk_size) {
         if cancel.load(Ordering::Relaxed) {
@@ -153,8 +153,7 @@ async fn do_download(
         }
 
         use std::io::Write;
-        file.write_all(chunk)
-            .map_err(|e| format!("write: {e}"))?;
+        file.write_all(chunk).map_err(|e| format!("write: {e}"))?;
 
         written += chunk.len();
         let pct = ((written as f64 / total as f64) * 100.0).round() as i32;
@@ -173,8 +172,7 @@ async fn do_download(
     }
 
     if !hash_string.is_empty() {
-        let file_data =
-            std::fs::read(&temp_path).map_err(|e| format!("read for hash: {e}"))?;
+        let file_data = std::fs::read(&temp_path).map_err(|e| format!("read for hash: {e}"))?;
         let mut hasher = Sha256::new();
         hasher.update(&file_data);
         let result = hasher.finalize();
@@ -189,8 +187,7 @@ async fn do_download(
     }
 
     let _ = std::fs::remove_file(&update_path);
-    std::fs::rename(&temp_path, &update_path)
-        .map_err(|e| format!("move to update.exe: {e}"))?;
+    std::fs::rename(&temp_path, &update_path).map_err(|e| format!("move to update.exe: {e}"))?;
 
     progress.store(0, Ordering::Relaxed);
     Ok(())

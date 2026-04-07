@@ -83,7 +83,10 @@ fn get_vrchat_cache_full_location_impl(
     let version_location = get_asset_version(file_version, variant_version);
 
     if !top_dir.exists() {
-        return top_dir.join(version_location).to_string_lossy().into_owned();
+        return top_dir
+            .join(version_location)
+            .to_string_lossy()
+            .into_owned();
     }
 
     let suffix = &version_location[16..];
@@ -113,7 +116,10 @@ fn get_vrchat_cache_full_location_impl(
         return matches[0].to_string_lossy().into_owned();
     }
 
-    top_dir.join(version_location).to_string_lossy().into_owned()
+    top_dir
+        .join(version_location)
+        .to_string_lossy()
+        .into_owned()
 }
 
 fn dir_size(path: &Path) -> i64 {
@@ -133,12 +139,7 @@ pub fn asset_bundle__get_vrchat_cache_full_location(
     variant: String,
     variant_version: i32,
 ) -> String {
-    get_vrchat_cache_full_location_impl(
-        &file_id,
-        file_version,
-        &variant,
-        variant_version,
-    )
+    get_vrchat_cache_full_location_impl(&file_id, file_version, &variant, variant_version)
 }
 
 #[tauri::command]
@@ -151,15 +152,10 @@ pub fn asset_bundle__check_vrchat_cache(
     let mut file_size = -1i64;
     let mut is_locked = false;
 
-    let mut full_location =
-        get_vrchat_cache_full_location_impl(&file_id, file_version, "", 0);
+    let mut full_location = get_vrchat_cache_full_location_impl(&file_id, file_version, "", 0);
     if !Path::new(&full_location).exists() {
-        full_location = get_vrchat_cache_full_location_impl(
-            &file_id,
-            file_version,
-            &variant,
-            variant_version,
-        );
+        full_location =
+            get_vrchat_cache_full_location_impl(&file_id, file_version, &variant, variant_version);
     }
 
     let file_location = PathBuf::from(&full_location).join("__data");
@@ -193,12 +189,8 @@ pub fn asset_bundle__delete_cache(
         let _ = fs::remove_dir_all(&path);
     }
 
-    let path = get_vrchat_cache_full_location_impl(
-        &file_id,
-        file_version,
-        &variant,
-        variant_version,
-    );
+    let path =
+        get_vrchat_cache_full_location_impl(&file_id, file_version, &variant, variant_version);
     if Path::new(&path).exists() {
         let _ = fs::remove_dir_all(&path);
     }

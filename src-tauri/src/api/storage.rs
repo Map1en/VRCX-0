@@ -13,13 +13,20 @@ pub fn storage__get(key: String, state: State<'_, AppState>) -> Result<Option<St
 }
 
 #[tauri::command]
-pub fn storage__set(key: String, value: String, state: State<'_, AppState>) -> Result<(), AppError> {
+pub fn storage__set(
+    key: String,
+    value: String,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
     state.storage.set(key, value);
     Ok(())
 }
 
 #[tauri::command]
-pub fn storage__remove(key: String, state: State<'_, AppState>) -> Result<Option<String>, AppError> {
+pub fn storage__remove(
+    key: String,
+    state: State<'_, AppState>,
+) -> Result<Option<String>, AppError> {
     Ok(state.storage.remove(&key))
 }
 

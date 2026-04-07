@@ -141,7 +141,6 @@ impl AutoAppLaunchManager {
     }
 }
 
-
 fn find_shortcut_files(dir: &Path) -> (Vec<String>, Vec<String>) {
     let mut shortcuts = Vec::new();
     let mut steam_ids = Vec::new();

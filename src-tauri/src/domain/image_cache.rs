@@ -14,7 +14,11 @@ pub struct ImageCache {
 }
 
 impl ImageCache {
-    pub fn new(cache_dir: PathBuf, cookie_jar: Arc<CookieStoreMutex>, proxy_url: Option<&str>) -> Result<Self, AppError> {
+    pub fn new(
+        cache_dir: PathBuf,
+        cookie_jar: Arc<CookieStoreMutex>,
+        proxy_url: Option<&str>,
+    ) -> Result<Self, AppError> {
         std::fs::create_dir_all(&cache_dir)?;
 
         let mut builder = Client::builder()

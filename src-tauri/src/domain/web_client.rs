@@ -29,9 +29,7 @@ pub struct WebClient {
 
 impl WebClient {
     pub fn new(storage: &StorageService, db: &DatabaseService) -> Result<Self, AppError> {
-        let proxy_url = storage
-            .get("VRCX-0_ProxyServer")
-            .filter(|s| !s.is_empty());
+        let proxy_url = storage.get("VRCX-0_ProxyServer").filter(|s| !s.is_empty());
 
         let cookie_store = reqwest_cookie_store::CookieStore::default();
         let jar = Arc::new(CookieStoreMutex::new(cookie_store));
@@ -46,22 +44,24 @@ impl WebClient {
             .pool_idle_timeout(std::time::Duration::from_secs(300));
 
         if let Some(ref url) = proxy_url {
-            builder = builder.proxy(
-                Proxy::all(url).map_err(|e| AppError::Custom(format!("bad proxy: {e}")))?,
-            );
+            builder = builder
+                .proxy(Proxy::all(url).map_err(|e| AppError::Custom(format!("bad proxy: {e}")))?);
         }
 
         let client = builder
             .build()
             .map_err(|e| AppError::Custom(format!("http client: {e}")))?;
 
-        let wc = Self { client, jar, proxy_url: proxy_url.clone() };
+        let wc = Self {
+            client,
+            jar,
+            proxy_url: proxy_url.clone(),
+        };
 
         wc.load_cookies(db);
 
         Ok(wc)
     }
-
 
     fn load_cookies(&self, db: &DatabaseService) {
         let _ = db.execute_non_query(
@@ -70,17 +70,18 @@ impl WebClient {
         );
 
         let rows = db
-            .execute(
-                "SELECT `value` FROM `cookies` WHERE `key` = @key",
-                &{
-                    let mut m = HashMap::new();
-                    m.insert("@key".to_string(), Value::String("default".into()));
-                    m
-                },
-            )
+            .execute("SELECT `value` FROM `cookies` WHERE `key` = @key", &{
+                let mut m = HashMap::new();
+                m.insert("@key".to_string(), Value::String("default".into()));
+                m
+            })
             .unwrap_or_default();
 
-        if let Some(b64) = rows.first().and_then(|r| r.first()).and_then(|v| v.as_str()) {
+        if let Some(b64) = rows
+            .first()
+            .and_then(|r| r.first())
+            .and_then(|v| v.as_str())
+        {
             if let Ok(bytes) = B64.decode(b64) {
                 if let Ok(entries) = serde_json::from_slice::<Vec<CookieEntry>>(&bytes) {
                     self.apply_cookie_entries(&entries);
@@ -118,11 +119,12 @@ impl WebClient {
                     "{}={}; Domain={}; Path={}",
                     e.name, e.value, e.domain, e.path
                 );
-                store.insert_raw(
-                    &reqwest_cookie_store::RawCookie::parse(&cookie_str).unwrap(),
-                    &url,
-                )
-                .ok();
+                store
+                    .insert_raw(
+                        &reqwest_cookie_store::RawCookie::parse(&cookie_str).unwrap(),
+                        &url,
+                    )
+                    .ok();
             }
         }
     }
@@ -134,10 +136,7 @@ impl WebClient {
             .map(|c| CookieEntry {
                 name: c.name().to_string(),
                 value: c.value().to_string(),
-                domain: c
-                    .domain()
-                    .map(|d| d.to_string())
-                    .unwrap_or_default(),
+                domain: c.domain().map(|d| d.to_string()).unwrap_or_default(),
                 path: c
                     .path()
                     .map(|p| p.to_string())
@@ -187,9 +186,7 @@ impl WebClient {
 
         match result {
             Ok(pair) => Ok(pair),
-            Err(e) => {
-                Ok((-1, e.to_string()))
-            }
+            Err(e) => Ok((-1, e.to_string())),
         }
     }
 
@@ -285,9 +282,7 @@ impl WebClient {
                 let ct = content_type_override
                     .as_deref()
                     .unwrap_or("application/json; charset=utf-8");
-                builder = builder
-                    .header(CONTENT_TYPE, ct)
-                    .body(body.to_string());
+                builder = builder.header(CONTENT_TYPE, ct).body(body.to_string());
             }
         }
 
@@ -310,7 +305,9 @@ impl WebClient {
             .and_then(|v| v.as_str())
             .unwrap_or("application/octet-stream");
 
-        let bytes = B64.decode(file_data).map_err(|e| AppError::Custom(format!("bad base64: {e}")))?;
+        let bytes = B64
+            .decode(file_data)
+            .map_err(|e| AppError::Custom(format!("bad base64: {e}")))?;
 
         let mut builder = self
             .client
@@ -479,8 +476,8 @@ fn resize_image_to_limits(
         .decode(base64data)
         .map_err(|e| AppError::Custom(format!("base64 decode: {e}")))?;
     let format = image::guess_format(&raw).ok();
-    let mut img = image::load_from_memory(&raw)
-        .map_err(|e| AppError::Custom(format!("load image: {e}")))?;
+    let mut img =
+        image::load_from_memory(&raw).map_err(|e| AppError::Custom(format!("load image: {e}")))?;
 
     if (!matching_dimensions || img.width() == img.height())
         && matches!(format, Some(image::ImageFormat::Png))
@@ -526,7 +523,11 @@ fn resize_image_to_limits(
             let new_w = (w as f64 / (h as f64 / new_h as f64)).round() as u32;
             (new_w, new_h)
         };
-        img = img.resize_exact(new_w.max(1), new_h.max(1), image::imageops::FilterType::Lanczos3);
+        img = img.resize_exact(
+            new_w.max(1),
+            new_h.max(1),
+            image::imageops::FilterType::Lanczos3,
+        );
         output = encode_png(&img)?;
     }
 
@@ -549,15 +550,19 @@ fn resize_print_image_bytes(base64data: &str) -> Result<Vec<u8>, AppError> {
         let mut new_height = img.height();
         if img.width() < 1920 {
             new_width = 1920;
-            new_height = (img.height() as f64 / (img.width() as f64 / new_width as f64)).round() as u32;
+            new_height =
+                (img.height() as f64 / (img.width() as f64 / new_width as f64)).round() as u32;
         }
         if img.height() < 1080 {
             new_height = 1080;
-            new_width = (img.width() as f64 / (img.height() as f64 / new_height as f64)).round() as u32;
+            new_width =
+                (img.width() as f64 / (img.height() as f64 / new_height as f64)).round() as u32;
         }
 
-        let resized = img.resize_exact(new_width, new_height, image::imageops::FilterType::Lanczos3);
-        let mut canvas = image::RgbaImage::from_pixel(1920, 1080, image::Rgba([255, 255, 255, 255]));
+        let resized =
+            img.resize_exact(new_width, new_height, image::imageops::FilterType::Lanczos3);
+        let mut canvas =
+            image::RgbaImage::from_pixel(1920, 1080, image::Rgba([255, 255, 255, 255]));
         let x = i64::from((1920 - new_width) / 2);
         let y = i64::from((1080 - new_height) / 2);
         image::imageops::overlay(&mut canvas, &resized.to_rgba8(), x, y);
@@ -573,8 +578,8 @@ fn crop_print_base64(base64data: &str) -> Result<String, AppError> {
     let raw = B64
         .decode(base64data)
         .map_err(|e| AppError::Custom(format!("base64 decode: {e}")))?;
-    let img = image::load_from_memory(&raw)
-        .map_err(|e| AppError::Custom(format!("load image: {e}")))?;
+    let img =
+        image::load_from_memory(&raw).map_err(|e| AppError::Custom(format!("load image: {e}")))?;
     if img.width() != 2048 || img.height() != 1440 {
         return Ok(base64data.to_string());
     }

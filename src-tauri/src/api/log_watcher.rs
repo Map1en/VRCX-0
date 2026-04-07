@@ -11,7 +11,10 @@ pub fn log_watcher__get(state: State<'_, AppState>) -> Vec<Vec<String>> {
 }
 
 #[tauri::command]
-pub fn log_watcher__set_date_till(date: String, state: State<'_, AppState>) -> Result<(), AppError> {
+pub fn log_watcher__set_date_till(
+    date: String,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
     state.log_watcher.set_date_till(&date);
     Ok(())
 }

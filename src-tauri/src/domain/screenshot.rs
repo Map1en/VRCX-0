@@ -3,7 +3,6 @@ use std::sync::Mutex;
 
 use crate::domain::png;
 
-
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScreenshotMetadata {
@@ -78,7 +77,6 @@ impl ScreenshotMetadata {
     }
 }
 
-
 pub fn read_text_metadata(path: &str) -> Vec<String> {
     let mut pf = match png::PngFile::open_read(path) {
         Ok(p) => p,
@@ -140,7 +138,6 @@ pub fn is_png_file(path: &str) -> bool {
 }
 
 use std::io::{Read, Seek};
-
 
 pub fn parse_vrc_image(xml_string: &str) -> ScreenshotMetadata {
     let idx = match xml_string.find("<x:xmpmeta") {
@@ -319,11 +316,7 @@ pub fn parse_lfs_picture(metadata_string: &str) -> ScreenshotMetadata {
                         let y: f32 = pp[2].parse().unwrap_or(0.0);
                         let z: f32 = pp[3].parse().unwrap_or(0.0);
                         metadata.players.push(PlayerDetail {
-                            id: if is_cvr {
-                                String::new()
-                            } else {
-                                pp[0].into()
-                            },
+                            id: if is_cvr { String::new() } else { pp[0].into() },
                             display_name: if is_cvr {
                                 format!("{} ({})", pp[4], pp[0])
                             } else {
@@ -391,7 +384,6 @@ pub fn get_screenshot_metadata(path: &str) -> Option<ScreenshotMetadata> {
     Some(result)
 }
 
-
 #[derive(Clone, Copy)]
 pub enum SearchType {
     Username = 0,
@@ -411,7 +403,12 @@ impl SearchType {
     }
 }
 
-pub fn find_screenshots(query: &str, directory: &str, search_type: SearchType, cache_db: &MetadataCacheDb) -> Vec<String> {
+pub fn find_screenshots(
+    query: &str,
+    directory: &str,
+    search_type: SearchType,
+    cache_db: &MetadataCacheDb,
+) -> Vec<String> {
     let dir = Path::new(directory);
     if !dir.exists() {
         return Vec::new();
@@ -478,14 +475,14 @@ pub fn find_screenshots(query: &str, directory: &str, search_type: SearchType, c
     result
 }
 
-
 pub struct MetadataCacheDb {
     conn: Mutex<rusqlite::Connection>,
 }
 
 impl MetadataCacheDb {
     pub fn new(db_path: &Path) -> Result<Self, String> {
-        let conn = rusqlite::Connection::open(db_path).map_err(|e| format!("open cache db: {e}"))?;
+        let conn =
+            rusqlite::Connection::open(db_path).map_err(|e| format!("open cache db: {e}"))?;
         conn.execute_batch(
             "PRAGMA locking_mode=NORMAL;
              PRAGMA busy_timeout=5000;

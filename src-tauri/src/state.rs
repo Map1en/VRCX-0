@@ -7,12 +7,11 @@ use crate::domain::ipc::IpcServer;
 use crate::domain::log_watcher::LogWatcher;
 use crate::domain::ovrtoolkit::OvrToolkit;
 use crate::domain::process_monitor::ProcessMonitor;
-use crate::domain::storage::StorageService;
 use crate::domain::screenshot::MetadataCacheDb;
+use crate::domain::storage::StorageService;
 use crate::domain::update::UpdateManager;
 use crate::domain::web_client::WebClient;
 use crate::error::AppError;
-
 
 pub struct AppPaths {
     pub app_data: PathBuf,
@@ -20,9 +19,6 @@ pub struct AppPaths {
     pub config_file: PathBuf,
     pub image_cache: PathBuf,
 }
-
-
-
 
 pub struct AppState {
     pub paths: AppPaths,
@@ -67,7 +63,8 @@ impl AppState {
         let process_monitor = ProcessMonitor::new();
         let log_watcher = LogWatcher::new();
         let web = WebClient::new(&storage, &db)?;
-        let image_cache = ImageCache::new(paths.image_cache.clone(), web.cookie_jar(), web.proxy_url())?;
+        let image_cache =
+            ImageCache::new(paths.image_cache.clone(), web.cookie_jar(), web.proxy_url())?;
         let update_manager = UpdateManager::new(paths.app_data.clone(), web.proxy_url());
         let ovrtoolkit = OvrToolkit::new();
         let ipc = IpcServer::new();
@@ -76,6 +73,19 @@ impl AppState {
 
         let auto_launch = AutoAppLaunchManager::new(&paths.app_data);
 
-        Ok(Self { paths, storage, db, process_monitor, log_watcher, web, image_cache, update_manager, ovrtoolkit, ipc, screenshot_cache, auto_launch })
+        Ok(Self {
+            paths,
+            storage,
+            db,
+            process_monitor,
+            log_watcher,
+            web,
+            image_cache,
+            update_manager,
+            ovrtoolkit,
+            ipc,
+            screenshot_cache,
+            auto_launch,
+        })
     }
 }

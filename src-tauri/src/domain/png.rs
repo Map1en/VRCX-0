@@ -5,7 +5,6 @@ const MAX_CHUNKS_TO_READ: usize = 16;
 const CHUNK_FIELD_SIZE: usize = 4;
 const CHUNK_NONDATA_SIZE: usize = 12;
 
-
 fn make_crc_table() -> [u32; 256] {
     let mut table = [0u32; 256];
     for n in 0..256u32 {
@@ -31,7 +30,6 @@ fn crc32(data: &[u8], init: u32) -> u32 {
     }
     c ^ 0xFFFF_FFFF
 }
-
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
@@ -162,7 +160,6 @@ pub fn generate_text_chunk(keyword: &str, text: &str) -> PngChunk {
     }
 }
 
-
 pub struct PngFile {
     file: std::fs::File,
     cache: Vec<PngChunk>,
@@ -251,7 +248,9 @@ impl PngFile {
 
     pub fn get_chunk(&mut self, ct: &ChunkType) -> Option<&PngChunk> {
         self.ensure_cache();
-        self.cache.iter().find(|c| std::mem::discriminant(&c.chunk_type) == std::mem::discriminant(ct))
+        self.cache
+            .iter()
+            .find(|c| std::mem::discriminant(&c.chunk_type) == std::mem::discriminant(ct))
     }
 
     pub fn get_chunks_of_type(&mut self, ct: &ChunkType) -> Vec<PngChunk> {
@@ -285,9 +284,7 @@ impl PngFile {
                 if chunk_start < 0 {
                     continue;
                 }
-                self.file
-                    .seek(SeekFrom::Start(chunk_start as u64))
-                    .ok()?;
+                self.file.seek(SeekFrom::Start(chunk_start as u64)).ok()?;
                 let mut len_buf = [0u8; 4];
                 self.file.read_exact(&mut len_buf).ok()?;
                 let chunk_len = u32::from_be_bytes(len_buf) as usize;
@@ -374,7 +371,6 @@ impl PngFile {
         true
     }
 }
-
 
 pub fn read_resolution(png: &mut PngFile) -> String {
     if let Some(ihdr) = png.get_chunk(&ChunkType::IHDR) {

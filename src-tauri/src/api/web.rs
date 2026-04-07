@@ -32,10 +32,7 @@ pub async fn web__get_cookies(state: State<'_, AppState>) -> Result<String, AppE
 }
 
 #[tauri::command]
-pub async fn web__set_cookies(
-    state: State<'_, AppState>,
-    cookies: String,
-) -> Result<(), AppError> {
+pub async fn web__set_cookies(state: State<'_, AppState>, cookies: String) -> Result<(), AppError> {
     state.web.set_cookies(&cookies);
     state.web.save_cookies(&state.db);
     Ok(())

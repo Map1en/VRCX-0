@@ -9,11 +9,11 @@ use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use fast_rsync::{Signature, SignatureOptions};
 use tauri::{AppHandle, Emitter, State};
 
-use crate::error::AppError;
-use crate::state::AppState;
 use crate::domain::ipc::IpcPacket;
 use crate::domain::png::{self as png_mod, ChunkType};
 use crate::domain::screenshot::{self, SearchType};
+use crate::error::AppError;
+use crate::state::AppState;
 
 #[tauri::command]
 pub fn app__check_game_running(
@@ -42,7 +42,6 @@ pub fn app__is_steamvr_running(state: State<'_, AppState>) -> bool {
 
 #[tauri::command]
 pub fn app__current_culture() -> String {
-    
     sys_locale::get_locale().unwrap_or_else(|| "en-US".into())
 }
 
@@ -51,16 +50,11 @@ pub fn app__current_language() -> String {
     sys_locale::get_locale().unwrap_or_else(|| "en".into())
 }
 
-
-
 #[tauri::command]
-pub fn app__set_user_agent() {
-    
-}
+pub fn app__set_user_agent() {}
 
 #[tauri::command]
 pub fn app__open_link(url: String) -> Result<(), AppError> {
-    
     if !url.starts_with("http://") && !url.starts_with("https://") {
         return Err(AppError::Custom("Invalid URL scheme".into()));
     }
@@ -86,8 +80,7 @@ pub fn app__get_file_bytes(path: String) -> Result<Vec<u8>, AppError> {
 
 fn vrchat_config_path() -> PathBuf {
     let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
-    PathBuf::from(local_app_data)
-        .join("..\\LocalLow\\VRChat\\VRChat\\config.json")
+    PathBuf::from(local_app_data).join("..\\LocalLow\\VRChat\\VRChat\\config.json")
 }
 
 #[tauri::command]
@@ -106,7 +99,7 @@ pub fn app__read_config_file_safe() -> Result<String, AppError> {
         return Ok(String::new());
     }
     let content = std::fs::read_to_string(&path)?;
-    
+
     match serde_json::from_str::<serde_json::Value>(&content) {
         Ok(v) => Ok(serde_json::to_string_pretty(&v).unwrap_or_default()),
         Err(_) => Ok(String::new()),
@@ -135,7 +128,6 @@ pub fn app__get_vrchat_app_data_location() -> String {
 
 #[tauri::command]
 pub fn app__get_vrchat_photos_location() -> String {
-    
     if let Ok(content) = std::fs::read_to_string(vrchat_config_path()) {
         if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
             if let Some(folder) = v.get("picture_output_folder").and_then(|v| v.as_str()) {
@@ -145,7 +137,7 @@ pub fn app__get_vrchat_photos_location() -> String {
             }
         }
     }
-    
+
     dirs::picture_dir()
         .unwrap_or_default()
         .join("VRChat")
@@ -163,7 +155,6 @@ pub fn app__get_ugc_photo_location(path: Option<String>) -> String {
 
 #[tauri::command]
 pub fn app__get_vrchat_cache_location() -> String {
-    
     if let Ok(content) = std::fs::read_to_string(vrchat_config_path()) {
         if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
             if let Some(folder) = v.get("cache_directory").and_then(|v| v.as_str()) {
@@ -181,7 +172,6 @@ pub fn app__get_vrchat_cache_location() -> String {
 
 #[tauri::command]
 pub fn app__get_vrchat_screenshots_location() -> String {
-    
     let steam_path = get_steam_path();
     if steam_path.is_empty() {
         return String::new();
@@ -280,7 +270,6 @@ pub fn app__open_crash_vrc_crash_dumps() -> Result<bool, AppError> {
 
 #[tauri::command]
 pub fn app__open_shortcut_folder(state: State<'_, AppState>) -> Result<(), AppError> {
-    
     let shortcut_dir = state.paths.app_data.join("Shortcuts");
     std::fs::create_dir_all(&shortcut_dir)?;
     open::that(shortcut_dir.to_string_lossy().as_ref())
@@ -289,17 +278,18 @@ pub fn app__open_shortcut_folder(state: State<'_, AppState>) -> Result<(), AppEr
 }
 
 #[tauri::command]
-pub fn app__open_folder_and_select_item(path: String, is_folder: Option<bool>) -> Result<(), AppError> {
+pub fn app__open_folder_and_select_item(
+    path: String,
+    is_folder: Option<bool>,
+) -> Result<(), AppError> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err(AppError::Custom(format!("path not found: {path}")));
     }
 
     let target = if is_folder.unwrap_or(false) {
-        
         path.clone()
     } else {
-        
         path.clone()
     };
 
@@ -333,7 +323,6 @@ pub async fn app__open_file_selector_dialog(
             }
         }
     }
-
 
     if let Some(ref filter) = default_filter {
         for pair in filter.split('|').collect::<Vec<_>>().chunks(2) {
@@ -404,7 +393,11 @@ pub fn app__quit_game() -> Result<i32, AppError> {
 
     let mut count = 0i32;
     for (_pid, process) in sys.processes() {
-        if process.name().to_string_lossy().eq_ignore_ascii_case("VRChat.exe") {
+        if process
+            .name()
+            .to_string_lossy()
+            .eq_ignore_ascii_case("VRChat.exe")
+        {
             process.kill();
             count += 1;
         }
@@ -480,8 +473,6 @@ pub fn app__show_dev_tools(app_handle: AppHandle) -> Result<(), AppError> {
     Ok(())
 }
 
-
-
 #[tauri::command]
 pub fn app__change_theme(app_handle: AppHandle, value: i32) -> Result<(), AppError> {
     use tauri::Manager;
@@ -497,39 +488,50 @@ pub fn app__change_theme(app_handle: AppHandle, value: i32) -> Result<(), AppErr
 }
 
 #[tauri::command]
-pub fn app__do_funny() {
-    
-}
+pub fn app__do_funny() {}
 
 #[tauri::command]
 pub fn app__set_tray_icon_notification(app_handle: AppHandle, notify: Option<bool>) {
     let notify = notify.unwrap_or(false);
     if let Some(tray) = app_handle.tray_by_id("main") {
-        let icon_path = if notify { "icons/icon_notify.png" } else { "icons/icon.png" };
-        let icon_result = tauri::image::Image::from_path(icon_path)
-            .or_else(|_| {
-                let base = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.to_path_buf()));
-                match base {
-                    Some(dir) => tauri::image::Image::from_path(dir.join(icon_path)),
-                    None => Err(tauri::Error::AssetNotFound(icon_path.into())),
-                }
-            });
+        let icon_path = if notify {
+            "icons/icon_notify.png"
+        } else {
+            "icons/icon.png"
+        };
+        let icon_result = tauri::image::Image::from_path(icon_path).or_else(|_| {
+            let base = std::env::current_exe()
+                .ok()
+                .and_then(|p| p.parent().map(|d| d.to_path_buf()));
+            match base {
+                Some(dir) => tauri::image::Image::from_path(dir.join(icon_path)),
+                None => Err(tauri::Error::AssetNotFound(icon_path.into())),
+            }
+        });
         if let Ok(icon) = icon_result {
             let _ = tray.set_icon(Some(icon));
         }
-        let tooltip = if notify { "VRCX-0 (new notification)" } else { "VRCX-0" };
+        let tooltip = if notify {
+            "VRCX-0 (new notification)"
+        } else {
+            "VRCX-0"
+        };
         let _ = tray.set_tooltip(Some(tooltip));
     }
 }
 
 #[tauri::command]
-pub fn app__restart_application(app_handle: AppHandle, is_upgrade: Option<bool>) -> Result<(), AppError> {
+pub fn app__restart_application(
+    app_handle: AppHandle,
+    is_upgrade: Option<bool>,
+) -> Result<(), AppError> {
     let exe = std::env::current_exe().map_err(|e| AppError::Custom(format!("current exe: {e}")))?;
     let mut cmd = std::process::Command::new(&exe);
     if is_upgrade.unwrap_or(false) {
         cmd.arg("--upgrade");
     }
-    cmd.spawn().map_err(|e| AppError::Custom(format!("restart: {e}")))?;
+    cmd.spawn()
+        .map_err(|e| AppError::Custom(format!("restart: {e}")))?;
     app_handle.exit(0);
     Ok(())
 }
@@ -541,9 +543,8 @@ pub fn app__check_for_update_exe(state: State<'_, AppState>) -> bool {
 
 #[tauri::command]
 pub fn app__get_clipboard() -> Result<String, AppError> {
-    
-    let mut clipboard = arboard::Clipboard::new()
-        .map_err(|e| AppError::Custom(format!("clipboard: {e}")))?;
+    let mut clipboard =
+        arboard::Clipboard::new().map_err(|e| AppError::Custom(format!("clipboard: {e}")))?;
     Ok(clipboard.get_text().unwrap_or_default())
 }
 
@@ -554,17 +555,20 @@ pub fn app__copy_image_to_clipboard(path: String) -> Result<(), AppError> {
         .map(|e| e.to_string_lossy().to_lowercase())
         .unwrap_or_default();
 
-    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "bmp" | "gif" | "webp") {
+    if !matches!(
+        ext.as_str(),
+        "png" | "jpg" | "jpeg" | "bmp" | "gif" | "webp"
+    ) {
         return Err(AppError::Custom("unsupported image format".into()));
     }
 
     let data = std::fs::read(&path)?;
-    let img = image::load_from_memory(&data)
-        .map_err(|e| AppError::Custom(format!("load image: {e}")))?;
+    let img =
+        image::load_from_memory(&data).map_err(|e| AppError::Custom(format!("load image: {e}")))?;
     let rgba = img.to_rgba8();
 
-    let mut clipboard = arboard::Clipboard::new()
-        .map_err(|e| AppError::Custom(format!("clipboard: {e}")))?;
+    let mut clipboard =
+        arboard::Clipboard::new().map_err(|e| AppError::Custom(format!("clipboard: {e}")))?;
     clipboard
         .set_image(arboard::ImageData {
             width: rgba.width() as usize,
@@ -584,7 +588,10 @@ pub fn app__set_startup(_enabled: bool) -> Result<(), AppError> {
         use winreg::RegKey;
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
         let key = hkcu
-            .open_subkey_with_flags("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", KEY_SET_VALUE | KEY_READ)
+            .open_subkey_with_flags(
+                "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+                KEY_SET_VALUE | KEY_READ,
+            )
             .map_err(|e| AppError::Custom(format!("registry: {e}")))?;
 
         if enabled {
@@ -625,8 +632,8 @@ pub fn app__xs_notification(
     });
 
     let payload = serde_json::to_vec(&msg)?;
-    let socket = UdpSocket::bind("0.0.0.0:0")
-        .map_err(|e| AppError::Custom(format!("udp bind: {e}")))?;
+    let socket =
+        UdpSocket::bind("0.0.0.0:0").map_err(|e| AppError::Custom(format!("udp bind: {e}")))?;
     socket
         .send_to(&payload, "127.0.0.1:42069")
         .map_err(|e| AppError::Custom(format!("udp send: {e}")))?;
@@ -634,7 +641,9 @@ pub fn app__xs_notification(
 }
 
 #[tauri::command]
-pub fn app__get_vrchat_moderations(current_user_id: String) -> Result<HashMap<String, i16>, AppError> {
+pub fn app__get_vrchat_moderations(
+    current_user_id: String,
+) -> Result<HashMap<String, i16>, AppError> {
     let path = vrchat_app_data()
         .join("LocalPlayerModerations")
         .join(format!("{current_user_id}-show-hide-user.vrcset"));
@@ -657,7 +666,10 @@ pub fn app__get_vrchat_moderations(current_user_id: String) -> Result<HashMap<St
 }
 
 #[tauri::command]
-pub fn app__get_vrchat_user_moderation(current_user_id: String, user_id: String) -> Result<i16, AppError> {
+pub fn app__get_vrchat_user_moderation(
+    current_user_id: String,
+    user_id: String,
+) -> Result<i16, AppError> {
     let mods = app__get_vrchat_moderations(current_user_id)?;
     Ok(*mods.get(&user_id).unwrap_or(&0))
 }
@@ -721,7 +733,9 @@ pub fn app__set_app_launcher_settings(
     kill_on_exit: bool,
     run_process_once: bool,
 ) {
-    state.auto_launch.set_settings(enabled, kill_on_exit, run_process_once);
+    state
+        .auto_launch
+        .set_settings(enabled, kill_on_exit, run_process_once);
 }
 
 #[tauri::command]
@@ -731,7 +745,6 @@ pub fn app__try_open_instance_in_vrc(launch_url: String) -> bool {
 
 #[tauri::command]
 pub fn app__open_calendar_file(ics_content: String) -> Result<(), AppError> {
-    
     if !ics_content.starts_with("BEGIN:VCALENDAR") {
         return Err(AppError::Custom("invalid iCalendar content".into()));
     }
@@ -752,7 +765,12 @@ pub fn app__populate_image_hosts(state: State<'_, AppState>, json: String) {
 }
 
 #[tauri::command]
-pub async fn app__get_image(state: State<'_, AppState>, url: String, file_id: String, version: String) -> Result<String, AppError> {
+pub async fn app__get_image(
+    state: State<'_, AppState>,
+    url: String,
+    file_id: String,
+    version: String,
+) -> Result<String, AppError> {
     state.image_cache.get_image(&url, &file_id, &version).await
 }
 
@@ -762,10 +780,11 @@ pub fn app__resize_image_to_fit_limits(base64data: String) -> Result<String, App
     const MAX_HEIGHT: u32 = 2000;
     const MAX_SIZE: usize = 10_000_000;
 
-    let raw = B64.decode(&base64data)
+    let raw = B64
+        .decode(&base64data)
         .map_err(|e| AppError::Custom(format!("base64 decode: {e}")))?;
-    let mut img = image::load_from_memory(&raw)
-        .map_err(|e| AppError::Custom(format!("load image: {e}")))?;
+    let mut img =
+        image::load_from_memory(&raw).map_err(|e| AppError::Custom(format!("load image: {e}")))?;
 
     if img.width() > MAX_WIDTH {
         let factor = img.width() as f64 / MAX_WIDTH as f64;
@@ -810,7 +829,9 @@ pub fn app__resize_image_to_fit_limits(base64data: String) -> Result<String, App
     }
 
     if buf.len() >= MAX_SIZE {
-        return Err(AppError::Custom("Failed to get image into target filesize.".into()));
+        return Err(AppError::Custom(
+            "Failed to get image into target filesize.".into(),
+        ));
     }
 
     Ok(B64.encode(&buf))
@@ -818,17 +839,24 @@ pub fn app__resize_image_to_fit_limits(base64data: String) -> Result<String, App
 
 #[tauri::command]
 pub fn app__sign_file(blob: String) -> Result<String, AppError> {
-    let data = B64.decode(&blob)
+    let data = B64
+        .decode(&blob)
         .map_err(|e| AppError::Custom(format!("base64 decode: {e}")))?;
-    let sig = Signature::calculate(&data, SignatureOptions {
-        block_size: 2048,
-        crypto_hash_size: 8,
-    });
+    let sig = Signature::calculate(
+        &data,
+        SignatureOptions {
+            block_size: 2048,
+            crypto_hash_size: 8,
+        },
+    );
     Ok(B64.encode(sig.serialized()))
 }
 
 #[tauri::command]
-pub fn app__get_extra_screenshot_data(path: String, _carousel_cache: bool) -> Result<String, AppError> {
+pub fn app__get_extra_screenshot_data(
+    path: String,
+    _carousel_cache: bool,
+) -> Result<String, AppError> {
     let p = std::path::Path::new(&path);
     let mut result = serde_json::Map::new();
 
@@ -850,9 +878,11 @@ pub fn app__get_extra_screenshot_data(path: String, _carousel_cache: bool) -> Re
             }
         }
     }
-    let file_name = p.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
+    let file_name = p
+        .file_name()
+        .map(|f| f.to_string_lossy().into_owned())
+        .unwrap_or_default();
     result.insert("fileName".into(), serde_json::json!(file_name));
-
 
     if let Some(parent) = p.parent() {
         if let Ok(entries) = std::fs::read_dir(parent) {
@@ -883,8 +913,9 @@ pub fn app__get_extra_screenshot_data(path: String, _carousel_cache: bool) -> Re
 #[tauri::command]
 pub fn app__get_screenshot_metadata(path: String) -> Result<String, AppError> {
     match screenshot::get_screenshot_metadata(&path) {
-        Some(meta) => serde_json::to_string(&meta)
-            .map_err(|e| AppError::Custom(format!("serialize: {e}"))),
+        Some(meta) => {
+            serde_json::to_string(&meta).map_err(|e| AppError::Custom(format!("serialize: {e}")))
+        }
         None => Ok(String::new()),
     }
 }
@@ -900,7 +931,8 @@ pub fn app__find_screenshots_by_search(
     if photos_dir.is_empty() {
         return Ok("[]".into());
     }
-    let results = screenshot::find_screenshots(&search_query, &photos_dir, st, &state.screenshot_cache);
+    let results =
+        screenshot::find_screenshots(&search_query, &photos_dir, st, &state.screenshot_cache);
     serde_json::to_string(&results).map_err(|e| AppError::Custom(format!("serialize: {e}")))
 }
 
@@ -911,10 +943,16 @@ pub fn app__get_last_screenshot() -> Result<String, AppError> {
         return Ok(String::new());
     }
     let mut newest: Option<(String, std::time::SystemTime)> = None;
-    if let Ok(entries) = walkdir::WalkDir::new(&photos_dir).into_iter().collect::<Result<Vec<_>, _>>() {
+    if let Ok(entries) = walkdir::WalkDir::new(&photos_dir)
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+    {
         for entry in entries {
             if entry.file_type().is_file()
-                && entry.path().extension().map_or(false, |e| e.eq_ignore_ascii_case("png"))
+                && entry
+                    .path()
+                    .extension()
+                    .map_or(false, |e| e.eq_ignore_ascii_case("png"))
             {
                 if let Ok(meta) = entry.metadata() {
                     if let Ok(modified) = meta.modified() {
@@ -943,7 +981,10 @@ pub fn app__delete_all_screenshot_metadata(state: State<'_, AppState>) {
     }
     for entry in walkdir::WalkDir::new(&photos_dir).into_iter().flatten() {
         if entry.file_type().is_file()
-            && entry.path().extension().map_or(false, |e| e.eq_ignore_ascii_case("png"))
+            && entry
+                .path()
+                .extension()
+                .map_or(false, |e| e.eq_ignore_ascii_case("png"))
         {
             screenshot::delete_text_metadata(&entry.path().to_string_lossy(), true);
         }
@@ -971,7 +1012,10 @@ pub fn app__crop_all_prints(ugc_folder_path: String) -> Result<(), AppError> {
     for entry in walkdir::WalkDir::new(&folder) {
         let entry = entry.map_err(|e| AppError::Custom(format!("walk dir: {e}")))?;
         let p = entry.path();
-        if p.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("png")) {
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| e.eq_ignore_ascii_case("png"))
+        {
             crop_print_impl(p).map_err(|e| AppError::Custom(format!("{}: {e}", p.display())))?;
         }
     }
@@ -1075,8 +1119,15 @@ pub async fn app__save_emoji_to_file(
 }
 
 #[tauri::command]
-pub fn app__download_update(state: State<'_, AppState>, file_url: String, hash_string: String, download_size: i32) {
-    state.update_manager.start_download(file_url, hash_string, download_size);
+pub fn app__download_update(
+    state: State<'_, AppState>,
+    file_url: String,
+    hash_string: String,
+    download_size: i32,
+) {
+    state
+        .update_manager
+        .start_download(file_url, hash_string, download_size);
 }
 
 #[tauri::command]
@@ -1103,7 +1154,9 @@ pub fn app__desktop_notification(
     if let Some(ref body) = text {
         notification = notification.body(body);
     }
-    notification.show().map_err(|e| AppError::Custom(format!("notification: {e}")))?;
+    notification
+        .show()
+        .map_err(|e| AppError::Custom(format!("notification: {e}")))?;
     Ok(())
 }
 
@@ -1146,7 +1199,6 @@ pub fn app__get_vrchat_registry_key(key: String) -> Result<serde_json::Value, Ap
         if let Ok(val) = vrc_key.get_raw_value(&hashed_key) {
             match val.vtype {
                 REG_BINARY => {
-                    
                     let s = String::from_utf8_lossy(&val.bytes)
                         .trim_end_matches('\0')
                         .to_string();
@@ -1154,7 +1206,12 @@ pub fn app__get_vrchat_registry_key(key: String) -> Result<serde_json::Value, Ap
                 }
                 REG_DWORD => {
                     if val.bytes.len() >= 4 {
-                        let dword = u32::from_le_bytes([val.bytes[0], val.bytes[1], val.bytes[2], val.bytes[3]]);
+                        let dword = u32::from_le_bytes([
+                            val.bytes[0],
+                            val.bytes[1],
+                            val.bytes[2],
+                            val.bytes[3],
+                        ]);
                         return Ok(serde_json::json!(dword));
                     }
                 }
@@ -1225,7 +1282,6 @@ pub fn app__set_vrchat_registry_key(
             .map_err(|e| AppError::Custom(format!("registry create: {e}")))?;
 
         match type_int {
-            
             4 => {
                 let dword = value.as_u64().unwrap_or(0) as u32;
                 vrc_key
@@ -1238,11 +1294,11 @@ pub fn app__set_vrchat_registry_key(
                     )
                     .map_err(|e| AppError::Custom(format!("set dword: {e}")))?;
             }
-            
+
             3 => {
                 let s = value.as_str().unwrap_or("");
                 let mut bytes: Vec<u8> = s.as_bytes().to_vec();
-                bytes.push(0); 
+                bytes.push(0);
                 vrc_key
                     .set_raw_value(
                         &hashed_key,
@@ -1253,7 +1309,7 @@ pub fn app__set_vrchat_registry_key(
                     )
                     .map_err(|e| AppError::Custom(format!("set binary: {e}")))?;
             }
-            
+
             100 => {
                 let f = value.as_f64().unwrap_or(0.0);
                 let bits = (f as f32).to_bits();
@@ -1268,7 +1324,9 @@ pub fn app__set_vrchat_registry_key(
                     .map_err(|e| AppError::Custom(format!("set float-as-dword: {e}")))?;
             }
             _ => {
-                return Err(AppError::Custom(format!("unknown registry type: {type_int}")));
+                return Err(AppError::Custom(format!(
+                    "unknown registry type: {type_int}"
+                )));
             }
         }
         return Ok(true);
@@ -1280,7 +1338,8 @@ pub fn app__set_vrchat_registry_key(
 }
 
 #[tauri::command]
-pub fn app__get_vrchat_registry() -> Result<HashMap<String, HashMap<String, serde_json::Value>>, AppError> {
+pub fn app__get_vrchat_registry(
+) -> Result<HashMap<String, HashMap<String, serde_json::Value>>, AppError> {
     #[cfg(target_os = "windows")]
     {
         use winreg::enums::*;
@@ -1346,10 +1405,7 @@ pub fn app__set_vrchat_registry(_json: String) -> Result<(), AppError> {
             .map_err(|e| AppError::Custom(format!("registry create: {e}")))?;
 
         for (name, props) in data {
-            let vtype_str = props
-                .get("type")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
+            let vtype_str = props.get("type").and_then(|v| v.as_str()).unwrap_or("");
             let value = props.get("value");
 
             match vtype_str {

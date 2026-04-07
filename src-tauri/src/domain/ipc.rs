@@ -107,7 +107,12 @@ fn accept_one(
         return Err("CreateNamedPipeW failed".into());
     }
 
-    let connected = unsafe { ConnectNamedPipe(handle, std::ptr::null_mut() as *mut windows_sys::Win32::System::IO::OVERLAPPED) };
+    let connected = unsafe {
+        ConnectNamedPipe(
+            handle,
+            std::ptr::null_mut() as *mut windows_sys::Win32::System::IO::OVERLAPPED,
+        )
+    };
     if connected == 0 {
         let err = unsafe { GetLastError() };
         if err != ERROR_PIPE_CONNECTED {
