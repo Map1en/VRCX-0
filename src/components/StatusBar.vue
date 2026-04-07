@@ -114,6 +114,7 @@
                             </HoverCardContent>
                         </HoverCard>
 
+                        <!--
                         <HoverCard v-if="visibility.servers" v-model:open="serversHoverOpen">
                             <HoverCardTrigger as-child>
                                 <TooltipWrapper
@@ -156,6 +157,7 @@
                                 </p>
                             </HoverCardContent>
                         </HoverCard>
+                        -->
 
                         <TooltipWrapper v-if="visibility.ws" :content="wsTooltip" side="top">
                             <div class="flex items-center gap-1 px-2 h-[22px] whitespace-nowrap border-r border-border">
@@ -299,12 +301,14 @@
                     @update:model-value="toggleVisibility('vrchat')">
                     {{ t('status_bar.game') }}
                 </ContextMenuCheckboxItem>
+                <!--
                 <ContextMenuCheckboxItem
                     :model-value="visibility.servers"
                     @select.prevent
                     @update:model-value="toggleVisibility('servers')">
                     {{ t('status_bar.servers') }}
                 </ContextMenuCheckboxItem>
+                -->
                 <ContextMenuCheckboxItem
                     v-if="!isMacOS"
                     :model-value="visibility.steamvr"

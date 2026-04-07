@@ -117,7 +117,8 @@ export const useVrcStatusStore = defineStore('VrcStatus', () => {
         }, 60 * 1000);
     }
 
-    init();
+    // TODO
+    // init();
 
     return {
         lastStatus,
