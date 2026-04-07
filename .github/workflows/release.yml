@@ -30,14 +30,15 @@ jobs:
 
             - id: meta
               run: |
+                  app_version=$(node -p "require('./src-tauri/tauri.conf.json').version")
                   if [ "${{ inputs.release }}" = "true" ] && [ "${{ inputs.stable }}" = "true" ]; then
-                      version="$(cat Version)"
+                      version="${app_version}"
                       prerelease=false
                   elif [ "${{ inputs.release }}" = "true" ]; then
                       version=$(sed -n 's/^## *//p' CHANGELOG-beta.md | head -1)
                       prerelease=true
                   else
-                      version="$(cat Version)"
+                      version="${app_version}"
                       prerelease=false
                   fi
                   echo "version=${version}"       >> "$GITHUB_OUTPUT"
