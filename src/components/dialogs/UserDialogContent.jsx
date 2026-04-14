@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import {
     configRepository,
+    groupProfileRepository,
     instanceRepository,
     memoRepository,
     notificationRepository,
@@ -38,6 +39,69 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 function normalizeUserId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+}
+
+function isGroupId(value) {
+    return normalizeUserId(value).startsWith('grp_');
+}
+
+function groupSeed(value) {
+    if (!value || typeof value !== 'object') {
+        return null;
+    }
+    const groupId = normalizeUserId(value.groupId || value.group_id || value.id);
+    return isGroupId(groupId) ? value : null;
+}
+
+function groupDisplayName(...values) {
+    const fallback = [];
+    for (const value of values) {
+        const text = normalizeUserId(value);
+        if (!text) {
+            continue;
+        }
+        if (!isGroupId(text)) {
+            return text;
+        }
+        fallback.push(text);
+    }
+    return fallback[0] || '';
+}
+
+function hasGroupProfileDetails(group, fallback = {}) {
+    if (!group || typeof group !== 'object') {
+        return false;
+    }
+    const nestedGroup = group.group && typeof group.group === 'object' ? group.group : {};
+    const name = groupDisplayName(
+        group.name,
+        group.displayName,
+        group.display_name,
+        group.groupName,
+        group.group_name,
+        group.shortCode,
+        nestedGroup.name,
+        nestedGroup.displayName,
+        nestedGroup.display_name,
+        fallback.name,
+        fallback.displayName,
+        fallback.display_name
+    );
+    const image = normalizeUserId(
+        group.iconUrl ||
+            group.icon_url ||
+            group.thumbnailImageUrl ||
+            group.thumbnail_image_url ||
+            group.imageUrl ||
+            group.image_url ||
+            nestedGroup.iconUrl ||
+            nestedGroup.icon_url ||
+            nestedGroup.thumbnailImageUrl ||
+            nestedGroup.thumbnail_image_url ||
+            nestedGroup.imageUrl ||
+            nestedGroup.image_url
+    );
+    return Boolean((name && !isGroupId(name)) || image);
 }
 
 function buildFavoriteIdSet(remoteFavoriteIds, localFriendFavorites) {
@@ -185,6 +249,50 @@ function createLocationUserRow(user, fallback = {}) {
         $subtitle: fallback.subtitle || '',
         $location_at: source?.$location_at || source?.locationAt || source?.location_at || fallback.joinedAt || fallback.joined_at || '',
         joinedAt: source?.joinedAt || source?.joined_at || fallback.joinedAt || fallback.joined_at || ''
+    };
+}
+
+function createLocationGroupRow(group, fallback = {}) {
+    const source = typeof group === 'string'
+        ? { id: group, groupId: group, name: group }
+        : group || {};
+    const nestedGroup = source.group && typeof source.group === 'object' ? source.group : {};
+    const groupId = normalizeUserId(
+        source.groupId ||
+            source.group_id ||
+            nestedGroup.id ||
+            nestedGroup.groupId ||
+            nestedGroup.group_id ||
+            (isGroupId(source.id) ? source.id : '') ||
+            fallback.groupId ||
+            fallback.group_id ||
+            fallback.id
+    );
+    const name = groupDisplayName(
+        source.name,
+        source.displayName,
+        source.display_name,
+        source.groupName,
+        source.group_name,
+        source.shortCode,
+        nestedGroup.name,
+        nestedGroup.displayName,
+        nestedGroup.display_name,
+        fallback.name,
+        fallback.displayName,
+        fallback.display_name,
+        groupId
+    );
+    return {
+        ...nestedGroup,
+        ...(source && typeof source === 'object' ? source : {}),
+        id: groupId,
+        groupId,
+        name,
+        displayName: source.displayName || source.display_name || name,
+        iconUrl: source.iconUrl || source.icon_url || nestedGroup.iconUrl || nestedGroup.icon_url || fallback.iconUrl || fallback.icon_url || '',
+        thumbnailImageUrl: source.thumbnailImageUrl || source.thumbnail_image_url || nestedGroup.thumbnailImageUrl || nestedGroup.thumbnail_image_url || '',
+        imageUrl: source.imageUrl || source.image_url || nestedGroup.imageUrl || nestedGroup.image_url || ''
     };
 }
 
@@ -362,6 +470,7 @@ export function UserDialogContent({ userId, seedData = null }) {
         location: '',
         instance: null,
         ownerUser: null,
+        ownerGroup: null,
         users: [],
         friendCount: 0,
         playerCount: 0
@@ -767,6 +876,7 @@ export function UserDialogContent({ userId, seedData = null }) {
             location: '',
             instance: null,
             ownerUser: null,
+            ownerGroup: null,
             users: [],
             friendCount: 0,
             playerCount: 0
@@ -854,29 +964,84 @@ export function UserDialogContent({ userId, seedData = null }) {
                 locationMetadata.creatorUser?.user_id ||
                 locationMetadata.user?.id ||
                 locationMetadata.user?.userId ||
-                locationMetadata.user?.user_id
+                locationMetadata.user?.user_id ||
+                locationMetadata.groupId ||
+                locationMetadata.group_id ||
+                locationMetadata.group?.id ||
+                locationMetadata.group?.groupId ||
+                locationMetadata.group?.group_id ||
+                parsedLocation.groupId
         );
+        const ownerIsGroup = isGroupId(ownerId);
         const ownerSeed = ownerId
-            ? locationMetadata.ownerUser ||
-                locationMetadata.owner ||
-                locationMetadata.creatorUser ||
-                locationMetadata.user ||
-                knownUsersById.get(ownerId)
+            ? ownerIsGroup
+                ? locationMetadata.group ||
+                    locationMetadata.ownerGroup ||
+                    locationMetadata.owner_group ||
+                    groupSeed(locationMetadata.owner) ||
+                    locationMetadata.creatorGroup ||
+                    locationMetadata.creator_group ||
+                    null
+                : locationMetadata.ownerUser ||
+                    locationMetadata.owner ||
+                    locationMetadata.creatorUser ||
+                    locationMetadata.user ||
+                    knownUsersById.get(ownerId)
             : null;
         const ownerPromise = ownerId
             ? Promise.resolve(ownerSeed)
                 .then((cachedOwner) => {
+                    if (ownerIsGroup) {
+                        const groupFallback = {
+                            id: ownerId,
+                            name: locationMetadata.groupName || locationMetadata.group_name
+                        };
+                        const cachedOwnerGroup = cachedOwner
+                            ? createLocationGroupRow(cachedOwner, groupFallback)
+                            : null;
+                        if (cachedOwner && hasGroupProfileDetails(cachedOwner, groupFallback)) {
+                            return {
+                                ownerUser: null,
+                                ownerGroup: cachedOwnerGroup
+                            };
+                        }
+                        return groupProfileRepository.getGroupProfile({
+                            groupId: ownerId,
+                            endpoint: currentEndpoint,
+                            includeRoles: false
+                        })
+                            .then((groupProfile) => ({
+                                ownerUser: null,
+                                ownerGroup: createLocationGroupRow(groupProfile, groupFallback)
+                            }))
+                            .catch(() => ({
+                                ownerUser: null,
+                                ownerGroup: cachedOwnerGroup || createLocationGroupRow({
+                                    id: ownerId,
+                                    name: locationMetadata.groupName || locationMetadata.group_name || ownerId
+                                })
+                            }));
+                    }
                     if (cachedOwner) {
-                        return createLocationUserRow(cachedOwner);
+                        return {
+                            ownerUser: createLocationUserRow(cachedOwner),
+                            ownerGroup: null
+                        };
                     }
                     return userProfileRepository.getUserProfile({
                         userId: ownerId,
                         endpoint: currentEndpoint
                     })
-                        .then((ownerProfile) => createLocationUserRow(ownerProfile))
-                        .catch(() => createLocationUserRow({ id: ownerId, displayName: ownerId }));
+                        .then((ownerProfile) => ({
+                            ownerUser: createLocationUserRow(ownerProfile),
+                            ownerGroup: null
+                        }))
+                        .catch(() => ({
+                            ownerUser: createLocationUserRow({ id: ownerId, displayName: ownerId }),
+                            ownerGroup: null
+                        }));
                 })
-            : Promise.resolve(null);
+            : Promise.resolve({ ownerUser: null, ownerGroup: null });
         const instancePromise = canFetchInstance
             ? instanceRepository.getInstance({
                 worldId: parsedLocation.worldId,
@@ -898,7 +1063,9 @@ export function UserDialogContent({ userId, seedData = null }) {
                 if (!active) {
                     return;
                 }
-                let ownerUser = ownerResult.status === 'fulfilled' ? ownerResult.value : null;
+                const ownerPayload = ownerResult.status === 'fulfilled' ? ownerResult.value : null;
+                let ownerUser = ownerPayload?.ownerUser || null;
+                let ownerGroup = ownerPayload?.ownerGroup || null;
                 const instance = instanceResult.status === 'fulfilled' ? instanceResult.value : null;
                 const playerSnapshot = playerSnapshotResult.status === 'fulfilled' ? playerSnapshotResult.value : null;
                 const instanceOwnerId = normalizeUserId(
@@ -918,23 +1085,59 @@ export function UserDialogContent({ userId, seedData = null }) {
                         instance?.owner?.user_id ||
                         instance?.creatorUser?.id ||
                         instance?.creatorUser?.userId ||
-                        instance?.creatorUser?.user_id
+                        instance?.creatorUser?.user_id ||
+                        instance?.groupId ||
+                        instance?.group_id ||
+                        instance?.group?.id ||
+                        instance?.group?.groupId ||
+                        instance?.group?.group_id ||
+                        parsedLocation.groupId
                 );
-                if (!ownerUser && instanceOwnerId) {
-                    const cachedOwner =
-                        instance?.ownerUser ||
-                        instance?.owner ||
-                        instance?.creatorUser ||
-                        instance?.user ||
-                        knownUsersById.get(instanceOwnerId);
-                    ownerUser = cachedOwner
-                        ? createLocationUserRow(cachedOwner)
-                        : await userProfileRepository.getUserProfile({
-                            userId: instanceOwnerId,
-                            endpoint: currentEndpoint
-                        })
-                            .then((ownerProfile) => createLocationUserRow(ownerProfile))
-                            .catch(() => createLocationUserRow({ id: instanceOwnerId, displayName: instanceOwnerId }));
+                const instanceOwnerIsGroup = isGroupId(instanceOwnerId);
+                if (!ownerUser && !ownerGroup && instanceOwnerId) {
+                    const cachedOwner = instanceOwnerIsGroup
+                        ? instance?.group ||
+                            instance?.ownerGroup ||
+                            instance?.owner_group ||
+                            groupSeed(instance?.owner) ||
+                            instance?.creatorGroup ||
+                            instance?.creator_group ||
+                            null
+                        : instance?.ownerUser ||
+                            instance?.owner ||
+                            instance?.creatorUser ||
+                            instance?.user ||
+                            knownUsersById.get(instanceOwnerId);
+                    if (instanceOwnerIsGroup) {
+                        const groupFallback = {
+                            id: instanceOwnerId,
+                            name: instance?.groupName || instance?.group_name || instance?.group?.name
+                        };
+                        const cachedOwnerGroup = cachedOwner
+                            ? createLocationGroupRow(cachedOwner, groupFallback)
+                            : null;
+                        ownerGroup = cachedOwner && hasGroupProfileDetails(cachedOwner, groupFallback)
+                            ? cachedOwnerGroup
+                            : await groupProfileRepository.getGroupProfile({
+                                groupId: instanceOwnerId,
+                                endpoint: currentEndpoint,
+                                includeRoles: false
+                            })
+                                .then((groupProfile) => createLocationGroupRow(groupProfile, groupFallback))
+                                .catch(() => cachedOwnerGroup || createLocationGroupRow({
+                                    id: instanceOwnerId,
+                                    name: instance?.groupName || instance?.group_name || instance?.group?.name || instanceOwnerId
+                                }));
+                    } else {
+                        ownerUser = cachedOwner
+                            ? createLocationUserRow(cachedOwner)
+                            : await userProfileRepository.getUserProfile({
+                                userId: instanceOwnerId,
+                                endpoint: currentEndpoint
+                            })
+                                .then((ownerProfile) => createLocationUserRow(ownerProfile))
+                                .catch(() => createLocationUserRow({ id: instanceOwnerId, displayName: instanceOwnerId }));
+                    }
                     if (!active) {
                         return;
                     }
@@ -978,6 +1181,7 @@ export function UserDialogContent({ userId, seedData = null }) {
                     location: activeLocation,
                     instance,
                     ownerUser,
+                    ownerGroup,
                     users,
                     friendCount: instanceFriendCount,
                     playerCount: Number(instance?.userCount ?? instance?.occupants ?? playerSnapshot?.context?.playerCount ?? users.length) || users.length
@@ -2336,6 +2540,7 @@ export function UserDialogContent({ userId, seedData = null }) {
                 onPreviousInstancesChange={setPreviousInstances}
                 sameInstanceUsers={activeLocationPanel.users}
                 locationOwnerUser={activeLocationPanel.ownerUser}
+                locationOwnerGroup={activeLocationPanel.ownerGroup}
                 locationInstance={activeLocationPanel.instance}
                 locationFriendCount={activeLocationPanel.friendCount}
                 locationPlayerCount={activeLocationPanel.playerCount}
