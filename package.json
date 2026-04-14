@@ -39,7 +39,7 @@
         "lightningcss": "^1.32.0",
         "lucide-react": "^1.8.0",
         "oxfmt": "^0.45.0",
-        "oxlint": "^1.59.0",
+        "oxlint": "^1.60.0",
         "radix-ui": "^1.4.3",
         "react": "^19.2.5",
         "react-day-picker": "^9.14.0",
