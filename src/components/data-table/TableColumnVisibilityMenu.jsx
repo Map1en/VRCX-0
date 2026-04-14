@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import {
     ArrowDownIcon,
     ArrowUpIcon,
@@ -104,46 +105,40 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                 <DropdownMenuSeparator />
                 {columns.map((column) => {
                     const columnIndex = columnOrderIndexById.get(column.id) ?? -1;
+                    const columnLabel = resolveColumnLabel(column);
+                    const canMoveUp = columnIndex > 0;
+                    const canMoveDown = columnIndex >= 0 && columnIndex < columnOrder.length - 1;
 
                     return (
-                        <DropdownMenuCheckboxItem
-                            key={column.id}
-                            className="gap-2"
-                            checked={column.getIsVisible()}
-                            onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
-                            onSelect={(event) => event.preventDefault()}>
-                            <span className="min-w-0 flex-1 truncate">{resolveColumnLabel(column)}</span>
-                            <span className="ml-auto flex items-center gap-1">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-6"
-                                    disabled={columnIndex <= 0}
-                                    onPointerDown={(event) => event.stopPropagation()}
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        event.stopPropagation();
-                                        moveColumn(table, column.id, -1, columnOrder);
-                                    }}>
-                                    <ArrowUpIcon className="size-3.5" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-6"
-                                    disabled={columnIndex >= columnOrder.length - 1}
-                                    onPointerDown={(event) => event.stopPropagation()}
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        event.stopPropagation();
-                                        moveColumn(table, column.id, 1, columnOrder);
-                                    }}>
-                                    <ArrowDownIcon className="size-3.5" />
-                                </Button>
-                            </span>
-                        </DropdownMenuCheckboxItem>
+                        <Fragment key={column.id}>
+                            <DropdownMenuCheckboxItem
+                                className="gap-2"
+                                checked={column.getIsVisible()}
+                                onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
+                                onSelect={(event) => event.preventDefault()}>
+                                <span className="min-w-0 flex-1 truncate">{columnLabel}</span>
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuItem
+                                className="gap-2 pl-8 text-xs text-muted-foreground"
+                                disabled={!canMoveUp}
+                                onSelect={(event) => {
+                                    event.preventDefault();
+                                    moveColumn(table, column.id, -1, columnOrder);
+                                }}>
+                                <ArrowUpIcon className="size-3.5" />
+                                Move up
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="gap-2 pl-8 text-xs text-muted-foreground"
+                                disabled={!canMoveDown}
+                                onSelect={(event) => {
+                                    event.preventDefault();
+                                    moveColumn(table, column.id, 1, columnOrder);
+                                }}>
+                                <ArrowDownIcon className="size-3.5" />
+                                Move down
+                            </DropdownMenuItem>
+                        </Fragment>
                     );
                 })}
             </DropdownMenuContent>

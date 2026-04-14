@@ -13,7 +13,7 @@ import {
     TableRow
 } from '@/ui/shadcn/table.jsx';
 
-export function VrcxDataTable({ columns, data, emptyLabel = 'No rows yet.' }) {
+export function VrcxDataTable({ columns = [], data = [], emptyLabel = 'No rows yet.' }) {
     const table = useReactTable({
         columns,
         data,
