@@ -26,6 +26,7 @@ import { directAccessParse } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
 import {
     getLocationText,
+    normalizeLocationValue,
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location.js';
@@ -46,9 +47,9 @@ import {
 } from '@/ui/shadcn/tooltip.jsx';
 
 function locationTarget(location, traveling) {
-    const normalizedLocation = normalizeString(location);
+    const normalizedLocation = normalizeLocationValue(location);
     if (typeof traveling !== 'undefined' && normalizedLocation === 'traveling') {
-        return normalizeString(traveling);
+        return normalizeLocationValue(traveling);
     }
     return normalizedLocation;
 }

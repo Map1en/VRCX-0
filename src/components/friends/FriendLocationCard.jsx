@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { copyTextToClipboard, userImage } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { Location } from '@/components/Location.jsx';
-import { parseLocation } from '@/shared/utils/location.js';
+import { normalizeLocationValue, parseLocation } from '@/shared/utils/location.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Card, CardContent } from '@/ui/shadcn/card.jsx';
 import {
@@ -68,7 +68,7 @@ function isStaleOfflineLocationForLiveState(location, state) {
 
 function resolveRawCardLocation(rawLocation, friend) {
     const source = readFriendRef(friend);
-    return source?.location || (hasFriendRef(friend) ? '' : rawLocation) || '';
+    return normalizeLocationValue(source?.location) || (hasFriendRef(friend) ? '' : normalizeLocationValue(rawLocation)) || '';
 }
 
 function resolveCardLocation(rawLocation, friend) {
@@ -223,7 +223,6 @@ function resolveStatusTone(friend, currentUser) {
 export function FriendLocationCard({
     friend,
     locationLabel = '',
-    locationMeta = '',
     groupHint = '',
     rawLocation = '',
     cardScale = 1,
@@ -258,7 +257,9 @@ export function FriendLocationCard({
     const sourceState = normalizeStatusText(source?.stateBucket || source?.state);
     const rawSourceLocation = resolveRawCardLocation(rawLocation, friend);
     const sourceLocation = isStaleOfflineLocationForLiveState(rawSourceLocation, sourceState) ? '' : rawSourceLocation;
-    const sourceTravelingLocation = source?.travelingToLocation || source?.$travelingToLocation || (hasRef ? '' : travelingLocation) || '';
+    const sourceTravelingLocation = normalizeLocationValue(source?.travelingToLocation || source?.$travelingToLocation) ||
+        (hasRef ? '' : normalizeLocationValue(travelingLocation)) ||
+        '';
     const isCardTraveling = normalizeLocationStatus(sourceLocation) === 'traveling' || (!hasRef && Boolean(isTraveling));
     const locationValue = isCardTraveling ? 'traveling' : cardLocation;
     const travelingValue = isCardTraveling ? sourceTravelingLocation || undefined : undefined;
@@ -334,25 +335,20 @@ export function FriendLocationCard({
                                     className="flex w-full min-w-0 items-start gap-2 text-left text-muted-foreground"
                                     onClick={(event) => event.stopPropagation()}>
                                     <MapPinIcon className="mt-0.5 size-4 shrink-0" />
-                                    <span className="min-w-0 overflow-hidden">
+                                    <span className="line-clamp-2 min-w-0 break-words text-foreground">
                                         {locationValue ? (
-                                            <span className="line-clamp-2 break-words text-foreground">
-                                                <Location
-                                                    location={locationValue}
-                                                    traveling={travelingValue}
-                                                    hint={locationLabel}
-                                                    grouphint={groupHint}
-                                                    link={canOpenWorld}
-                                                    stopPropagation
-                                                    asButton={false}
-                                                />
-                                            </span>
+                                            <Location
+                                                location={locationValue}
+                                                traveling={travelingValue}
+                                                hint={locationLabel}
+                                                grouphint={groupHint}
+                                                link={canOpenWorld}
+                                                stopPropagation
+                                                asButton={false}
+                                            />
                                         ) : (
-                                            <span className="line-clamp-2 break-words text-foreground">{locationLabel || 'Offline'}</span>
+                                            locationLabel || 'Offline'
                                         )}
-                                        {locationMeta ? (
-                                            <span className="line-clamp-1 break-words text-xs text-muted-foreground">{locationMeta}</span>
-                                        ) : null}
                                     </span>
                                 </div>
                             ) : null}

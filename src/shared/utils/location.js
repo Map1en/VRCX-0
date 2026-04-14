@@ -14,8 +14,35 @@ export {
 };
 
 function normalizeLocationValue(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    if (typeof value === 'string') {
+        return value.trim();
+    }
+    if (!value || typeof value !== 'object') {
+        return String(value ?? '').trim();
+    }
+
+    const tag = normalizeLocationValue(value.tag || value.location || value.$location?.tag);
+    if (tag) {
+        return tag;
+    }
+    const worldId = normalizeLocationValue(value.worldId || value.world_id || value.$location?.worldId);
+    const instanceId = normalizeLocationValue(value.instanceId || value.instance_id || value.id || value.$location?.instanceId);
+    if (worldId && instanceId) {
+        return `${worldId}:${instanceId}`;
+    }
+    if (value.isOffline) {
+        return 'offline';
+    }
+    if (value.isPrivate) {
+        return 'private';
+    }
+    if (value.isTraveling) {
+        return 'traveling';
+    }
+    return '';
 }
+
+export { normalizeLocationValue };
 
 function getObject(value) {
     return value && typeof value === 'object' ? value : null;

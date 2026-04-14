@@ -198,14 +198,14 @@ export function useLocationMetadata({
     );
     const worldName = normalizeWorldNameHint(worldProfileQuery.data?.name, locationInfo, normalizedCurrentLocation) ||
         cachedWorldName ||
-        worldNameHint ||
-        localWorldName;
+        localWorldName ||
+        worldNameHint;
 
     useEffect(() => {
         let active = true;
         setLocalWorldName('');
 
-        if (!worldId || worldNameHint || cachedWorldName) {
+        if (!worldId || cachedWorldName) {
             return () => {
                 active = false;
             };
