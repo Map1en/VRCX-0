@@ -11,30 +11,30 @@ thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dirs = "6"
-rusqlite = { version = "0.34", features = ["bundled"] }
+rusqlite = { version = "0.39", features = ["bundled"] }
 sysinfo = "0.32"
 chrono = "0.4"
 reqwest = { version = "0.13", features = ["cookies", "gzip", "brotli", "deflate", "multipart"] }
 reqwest_cookie_store = "0.10"
 tokio = { version = "1", features = ["sync"] }
 base64 = "0.22"
-tauri-plugin-opener = "2.5.3"
-tauri-plugin-dialog = "2.7.0"
-tauri-plugin-notification = "2.3.3"
-sys-locale = "0.3.2"
-open = "5.3.3"
-arboard = "3.6.1"
-image = "0.25.10"
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-notification = "2"
+sys-locale = "0.3"
+open = "5"
+arboard = "3"
+image = "0.25"
 fast_rsync = "0.2"
-sha2 = "0.10"
+sha2 = "0.11"
 hex = "0.4"
-quick-xml = "0.37"
+quick-xml = "0.39"
 walkdir = "2"
-tauri-plugin-window-state = "2.4.1"
-percent-encoding = "2.3.1"
+tauri-plugin-window-state = "2"
+percent-encoding = "2"
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = [
+windows-sys = { version = "0.61", features = [
     "Win32_Foundation",
     "Win32_Storage_FileSystem",
     "Win32_System_IO",
@@ -42,8 +42,8 @@ windows-sys = { version = "0.59", features = [
     "Win32_Security",
     "Win32_System_Threading",
 ] }
-winreg = "0.56.0"
-tauri-plugin-autostart = "2.5.1"
+winreg = "0.56"
+tauri-plugin-autostart = "2"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
