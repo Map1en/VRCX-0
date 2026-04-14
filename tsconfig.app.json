@@ -3,7 +3,7 @@
     "compilerOptions": {
         "jsx": "preserve",
         "lib": ["esnext", "dom", "dom.iterable"],
-        "types": ["vite/client", "vitest/globals"],
+        "types": ["vite/client"],
         "resolveJsonModule": true,
         "strict": false
     },
