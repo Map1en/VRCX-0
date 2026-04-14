@@ -356,6 +356,7 @@ function PreviousInstancesTableDialog({
                     instanceOwner={locationObject.ownerUserId || locationObject.userId || ''}
                     instanceOwnerName={locationObject.ownerDisplayName || row?.ownerDisplayName || row?.ownerName || ''}
                     interactive={false}
+                    hint={row?.worldName || ''}
                     className="max-w-full"
                 />
             );
@@ -452,6 +453,7 @@ function PreviousInstancesTableDialog({
                                                         launchLocation={location}
                                                         inviteLocation={location}
                                                         instanceLocation={location}
+                                                        worldName={row?.worldName || ''}
                                                         showRefresh={false}
                                                         showInstanceInfo={false}
                                                     />
@@ -512,6 +514,7 @@ function PreviousInstancesTableDialog({
                                                             launchLocation={location}
                                                             inviteLocation={location}
                                                             instanceLocation={location}
+                                                            worldName={row?.worldName || ''}
                                                             showRefresh={false}
                                                             showInstanceInfo={false}
                                                         />

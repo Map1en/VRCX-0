@@ -2106,6 +2106,7 @@ export function UserDialogTabbedView({
                                         inviteLocation={visiblePresenceLocation}
                                         instanceLocation={visiblePresenceLocation}
                                         instance={locationInstance}
+                                        worldName={locationWorldTitle}
                                         friendCount={locationFriendCount}
                                         playerCount={locationPlayerCount}
                                         capacity={locationInstance?.capacity ?? locationInstance?.recommendedCapacity}
@@ -2132,6 +2133,7 @@ export function UserDialogTabbedView({
                                         playerCount={locationPlayerCount}
                                         capacity={locationInstance?.capacity ?? locationInstance?.recommendedCapacity}
                                         endpoint={currentEndpoint}
+                                        hint={locationWorldTitle}
                                     />
                                 ) : (
                                     <Location

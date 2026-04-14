@@ -534,6 +534,7 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                                             instanceOwnerName={getInstanceOwnerName(instance)}
                                             playerCount={instance.playerCount ?? instance.userCount ?? instance.occupants ?? users.length}
                                             capacity={instance.capacity ?? instance.ref?.capacity ?? undefined}
+                                            hint={getInstanceTitle(instance)}
                                         />
                                     </span>
                                 ) : null}

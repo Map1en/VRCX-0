@@ -1,10 +1,14 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangleIcon, LockIcon, UnlockIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { cn } from '@/lib/utils.js';
-import { groupProfileRepository } from '@/repositories/index.js';
+import {
+    gameLogRepository,
+    groupProfileRepository,
+    worldProfileRepository
+} from '@/repositories/index.js';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService.js';
 import { entityQueryPolicies, queryKeys } from '@/services/entityQueryCacheService.js';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
@@ -17,8 +21,31 @@ import {
     TooltipTrigger
 } from '@/ui/shadcn/tooltip.jsx';
 
+const WORLD_ID_PATTERN = /(?:^|\b)wrld_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::|$|\s)/i;
+
 function normalizeString(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+}
+
+function isRawWorldReference(value) {
+    const normalizedValue = normalizeString(value);
+    return Boolean(normalizedValue && WORLD_ID_PATTERN.test(normalizedValue));
+}
+
+function normalizeWorldNameHint(hint, locObj, currentLocation) {
+    const normalizedHint = normalizeString(hint);
+    if (!normalizedHint) {
+        return '';
+    }
+    if (
+        normalizedHint === normalizeString(locObj.worldId) ||
+        normalizedHint === normalizeString(locObj.tag) ||
+        normalizedHint === normalizeString(currentLocation) ||
+        isRawWorldReference(normalizedHint)
+    ) {
+        return '';
+    }
+    return normalizedHint;
 }
 
 function normalizeLocationObject(locationObject) {
@@ -105,12 +132,39 @@ function readInstanceDisplayName(instance) {
     );
 }
 
+function readInstanceWorldName(instance) {
+    return normalizeString(
+        instance?.worldName ||
+            instance?.world_name ||
+            instance?.world?.name ||
+            instance?.ref?.worldName ||
+            instance?.ref?.world?.name ||
+            instance?.$location?.worldName ||
+            instance?.$location?.world?.name
+    );
+}
+
 function isInstanceClosed(instance) {
     return Boolean(instance?.closedAt || instance?.closed_at || instance?.isClosed);
 }
 
 function groupProfileName(group) {
     return normalizeString(group?.name || group?.displayName || group?.shortCode);
+}
+
+function locationObjectWorldName(locObj) {
+    return normalizeString(
+        locObj?.worldName ||
+            locObj?.world_name ||
+            locObj?.world?.name ||
+            locObj?.ref?.worldName ||
+            locObj?.ref?.world?.name ||
+            locObj?.$worldName ||
+            locObj?.$location?.worldName ||
+            locObj?.$location?.world?.name ||
+            locObj?.$location?.ref?.worldName ||
+            locObj?.$location?.ref?.world?.name
+    );
 }
 
 function locationObjectGroupName(locObj) {
@@ -169,6 +223,7 @@ export function LocationWorld({
     playerCount,
     capacity,
     endpoint = '',
+    hint = '',
     interactive = true,
     className = ''
 }) {
@@ -184,8 +239,28 @@ export function LocationWorld({
     const cachedInstances = useMemo(() => buildCachedInstanceMap(groupInstances), [groupInstances, groupInstancesRevision]);
     const locObj = useMemo(() => normalizeLocationObject(locationObject), [locationObject]);
     const cachedInstance = cachedInstances.get(locObj.tag) || cachedInstances.get(locationObjectCacheKey(locObj));
+    const currentLocation = launchTagForLocationObject(locObj);
+    const worldId = normalizeString(locObj.worldId);
     const accessTypeName = translateAccessType(locObj.accessTypeName, t, accessTypeLocaleKeyMap);
     const instanceName = readInstanceDisplayName(cachedInstance) || normalizeString(locObj.instanceName);
+    const [localWorldName, setLocalWorldName] = useState('');
+    const worldNameHint =
+        normalizeWorldNameHint(hint, locObj, currentLocation) ||
+        normalizeWorldNameHint(locationObjectWorldName(locObj), locObj, currentLocation);
+    const cachedWorldName = normalizeWorldNameHint(readInstanceWorldName(cachedInstance), locObj, currentLocation);
+    const worldProfileQuery = useQuery({
+        queryKey: queryKeys.world(worldId, currentEndpoint),
+        queryFn: () => worldProfileRepository.getWorldProfile({ worldId, endpoint: currentEndpoint }),
+        enabled: Boolean(worldId),
+        staleTime: entityQueryPolicies.world.staleTime,
+        gcTime: entityQueryPolicies.world.gcTime,
+        retry: entityQueryPolicies.world.retry,
+        refetchOnWindowFocus: entityQueryPolicies.world.refetchOnWindowFocus
+    });
+    const worldName = normalizeWorldNameHint(worldProfileQuery.data?.name, locObj, currentLocation) ||
+        cachedWorldName ||
+        worldNameHint ||
+        localWorldName;
     const region = resolveRegion(locObj);
     const isUnlocked = Boolean(
         (worldDialogShortName && locObj.shortName && worldDialogShortName === locObj.shortName) ||
@@ -216,6 +291,35 @@ export function LocationWorld({
     const playerSummary = hasPlayerCount || hasCapacity
         ? `${hasPlayerCount ? resolvedPlayerCount : 0}${hasCapacity ? `/${resolvedCapacity}` : ''}`
         : '';
+    const locationLabel = [
+        worldName,
+        accessTypeName || locObj.accessTypeName || ''
+    ].filter(Boolean).join(' · ') || '—';
+
+    useEffect(() => {
+        let active = true;
+        setLocalWorldName('');
+
+        if (!worldId || worldNameHint || cachedWorldName) {
+            return () => {
+                active = false;
+            };
+        }
+
+        gameLogRepository
+            .getWorldNameByWorldId(worldId)
+            .then((name) => {
+                const nextName = normalizeWorldNameHint(name, locObj, currentLocation);
+                if (active && nextName) {
+                    setLocalWorldName(nextName);
+                }
+            })
+            .catch(() => {});
+
+        return () => {
+            active = false;
+        };
+    }, [cachedWorldName, currentLocation, locObj, worldId, worldNameHint]);
 
     function openLocationGroupDialog(event) {
         if (!interactive) {
@@ -240,10 +344,12 @@ export function LocationWorld({
         }
         const launchTag = launchTagForLocationObject(locObj);
         if (locObj.isRealInstance && launchTag) {
-            showLaunchDialog(launchTag, locObj.shortName || '', locObj.launchToken || locObj.shortName || '');
+            showLaunchDialog(launchTag, locObj.shortName || '', locObj.launchToken || locObj.shortName || '', {
+                worldName
+            });
             return;
         }
-        openWorldDialog({ worldId: dialogTarget });
+        openWorldDialog({ worldId: dialogTarget, title: worldName || undefined });
     }
 
     if (locObj.isOffline || locObj.isPrivate || (locObj.isTraveling && !locObj.worldId)) {
@@ -281,7 +387,7 @@ export function LocationWorld({
                 }}>
                 {isUnlocked ? <UnlockIcon className="mr-1.5 size-4 shrink-0" /> : null}
                 <span className="min-w-0 truncate">
-                    {accessTypeName || locObj.accessTypeName || '—'}
+                    {locationLabel}
                     {instanceName ? ` #${instanceName}` : ''}
                 </span>
             </span>

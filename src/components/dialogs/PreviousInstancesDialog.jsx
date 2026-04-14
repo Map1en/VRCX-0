@@ -209,6 +209,7 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                                                             launchLocation={location}
                                                             inviteLocation={location}
                                                             instanceLocation={location}
+                                                            worldName={instance?.worldName || ''}
                                                             showRefresh={false}
                                                             showInstanceInfo={false}
                                                         />
@@ -266,6 +267,7 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                                                             launchLocation={location}
                                                             inviteLocation={location}
                                                             instanceLocation={location}
+                                                            worldName={instance?.worldName || ''}
                                                             showRefresh={false}
                                                             showInstanceInfo={false}
                                                         />

@@ -831,6 +831,7 @@ export function WorldDialogTabbedView({
                                     )}
                                     playerCount={currentInstanceRow?.playerCount ?? undefined}
                                     capacity={currentInstanceDetailsForLocation.instance?.capacity ?? undefined}
+                                    hint={world.name || ''}
                                 />
                             </Section>
                         ) : null}
@@ -873,6 +874,7 @@ export function WorldDialogTabbedView({
                                                 )}
                                                 playerCount={instance.playerCount ?? instance.userCount ?? instance.occupants}
                                                 capacity={instance.capacity ?? instance.ref?.capacity ?? undefined}
+                                                hint={world.name || instance.worldName || instance.world?.name || ''}
                                             />
                                             <InstanceActionBar
                                                 location={location}
@@ -880,6 +882,7 @@ export function WorldDialogTabbedView({
                                                 inviteLocation={location}
                                                 instanceLocation={location}
                                                 shortName={launchToken}
+                                                worldName={world.name || instance.worldName || instance.world?.name || ''}
                                                 instance={instance}
                                                 friendCount={Number(instance.friendCount) || undefined}
                                                 playerCount={instance.playerCount ?? instance.userCount ?? instance.occupants}

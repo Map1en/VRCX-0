@@ -380,7 +380,9 @@ export function Location({
         if (!canUseCurrentInstance) {
             return;
         }
-        showLaunchDialog(currentLocation, parsedLocation.shortName || '');
+        showLaunchDialog(currentLocation, parsedLocation.shortName || '', '', {
+            worldName: worldName || worldNameHint
+        });
     }
 
     async function selfInviteCurrentInstance() {

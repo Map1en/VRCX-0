@@ -504,6 +504,7 @@ function CurrentWorldHeader({
                         locationObject={currentInstanceLocationObject}
                         currentUserId={currentUserSnapshot?.id || ''}
                         grouphint={context.groupName || ''}
+                        hint={worldName}
                         className="font-sans"
                     />
                 </div>

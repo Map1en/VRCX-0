@@ -378,6 +378,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                             currentUserId={currentUserId}
                             worldDialogShortName={parsedLocation.shortName || ''}
                             grouphint={context.groupName || ''}
+                            hint={context.worldName || ''}
                         />
                     ) : (
                         context.worldName || 'Current instance'
