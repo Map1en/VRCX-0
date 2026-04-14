@@ -6,6 +6,7 @@ use sha2::{Digest, Sha256};
 
 const UPDATE_PROGRESS_IDLE: i32 = 0;
 const UPDATE_PROGRESS_ERROR: i32 = -1;
+// IPC progress contract: 0..=100 is visible download percent, 101 means ready to install.
 const UPDATE_PROGRESS_READY: i32 = 101;
 
 pub struct UpdateManager {

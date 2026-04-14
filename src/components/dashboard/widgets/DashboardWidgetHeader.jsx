@@ -22,7 +22,9 @@ export function DashboardWidgetHeader({ title, icon, path, children }) {
                 <span className="truncate">{title}</span>
                 {canNavigate ? <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover/header:opacity-100" /> : null}
             </button>
-            <div className="opacity-0 transition-opacity group-hover/header:opacity-100">{children}</div>
+            <div className="invisible pointer-events-none opacity-0 transition-opacity group-hover/header:visible group-hover/header:pointer-events-auto group-hover/header:opacity-100 group-focus-within/header:visible group-focus-within/header:pointer-events-auto group-focus-within/header:opacity-100">
+                {children}
+            </div>
         </div>
     );
 }

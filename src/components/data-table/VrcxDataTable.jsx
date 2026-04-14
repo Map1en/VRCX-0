@@ -57,7 +57,7 @@ export function VrcxDataTable({ columns = [], data = [], emptyLabel = 'No rows y
                         <TableRow>
                             <TableCell
                                 className="h-24 text-center text-muted-foreground"
-                                colSpan={columns.length || 1}>
+                                colSpan={table.getVisibleLeafColumns().length || 1}>
                                 {emptyLabel}
                             </TableCell>
                         </TableRow>
