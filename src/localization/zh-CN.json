@@ -20,7 +20,8 @@
             "refresh": "刷新",
             "cancel": "取消",
             "copy": "复制",
-            "open_link": "打开链接"
+            "open_link": "打开链接",
+            "save": "保存"
         },
         "sort_by": "排序方式：",
         "time_units": {
@@ -42,7 +43,8 @@
         "duration": "持续时间",
         "load_more": "加载更多",
         "no_more": "没有更多条目",
-        "current_session": "当前会话"
+        "current_session": "当前会话",
+        "settings_saved": "设置已保存"
     },
     "nav_tooltip": {
         "friends_locations": "好友位置",
@@ -246,6 +248,7 @@
             }
         },
         "feed": {
+            "filter": "筛选",
             "favorites_only_tooltip": "仅显示被分组的好友",
             "search_placeholder": "搜索",
             "filters": {
@@ -255,8 +258,7 @@
                 "Status": "状态变动",
                 "Avatar": "模型变动",
                 "Bio": "简介变更"
-            },
-            "photon_event_logging": "Photon 事件日志"
+            }
         },
         "friends_locations": {
             "online": "在线",
@@ -292,16 +294,6 @@
                 "players_left": "{count} 玩家离开",
                 "play_count": "×{count}",
                 "no_data": "无日志"
-            }
-        },
-        "player_list": {
-            "photon": {
-                "current": "目前",
-                "previous": "上一个",
-                "search_placeholder": "搜索",
-                "filter_placeholder": "筛选",
-                "chatbox_blacklist": "聊天框黑名单",
-                "status_tooltip": "VRCX-0 Companion 状态"
             }
         },
         "my_avatars": {
@@ -875,7 +867,7 @@
                     "font_family_custom_dialog_description": "输入有效的 CSS 字体名称",
                     "font_family_custom_invalid": "无效的字体，请检查输入。注意：字体名称使用逗号分隔，例如 'My Font', Arial, sans-serif",
                     "cjk_font_pack_noto": "Noto Sans CJK",
-                    "cjk_font_pack_pht": "PuHuiTi CJK",
+                    "cjk_font_pack_puhuiti": "PuHuiTi CJK",
                     "theme_mode_system": "跟随系统",
                     "theme_mode_light": "浅色",
                     "theme_mode_dark": "深色",
@@ -1100,10 +1092,6 @@
                     "vrcx_settings": {
                         "header": "VRCX"
                     },
-                    "primary_password": {
-                        "header": "独立密码",
-                        "description": "使用独立密码加密 VRCX-0 数据（将停用自动登录）"
-                    },
                     "relaunch_vrchat": {
                         "header": "崩溃后重启",
                         "description": "重新加入崩溃前的房间"
@@ -1196,6 +1184,7 @@
                         "header": "应用启动器",
                         "folder": "打开启动文件夹",
                         "folder_tooltip": "如果要在 VRChat 启动时一并启动一些APP，请将其快捷方式放在这个文件夹中.",
+                        "enable": "启用应用启动器",
                         "auto_close": "在 VRChat 关闭后自动关闭这些APP",
                         "run_process_once": "仅允许启动应用的单个实例（禁止多开）"
                     },
@@ -1263,29 +1252,6 @@
                         "description": "设置“拍立得”和“贴纸”等内容保存的位置",
                         "set_folder": "设置保存文件夹",
                         "reset_override": "重置为默认"
-                    }
-                },
-                "photon": {
-                    "header": "Photon 日志叠加界面",
-                    "event_hud": {
-                        "header": "Photon 事件 HUD",
-                        "enable": "启用",
-                        "enable_tooltip": "需要启用 SteamVR 叠加界面选项",
-                        "filter": "筛选器",
-                        "filter_favorites": "星标好友",
-                        "filter_friends": "好友",
-                        "filter_everyone": "所有人",
-                        "message_timeout": "消息显示时长"
-                    },
-                    "timeout_hud": {
-                        "header": "玩家超时 HUD",
-                        "enable": "启用",
-                        "enable_tooltip": "需要启用 SteamVR 叠加界面选项",
-                        "filter": "筛选器",
-                        "filter_favorites": "星标好友",
-                        "filter_friends": "好友",
-                        "filter_everyone": "所有人",
-                        "timeout_threshold": "超时阈值"
                     }
                 }
             }
@@ -2205,7 +2171,12 @@
             "description": "输入你的 YouTube API 密钥（可选）",
             "placeholder": "输入形如“AIzaSy......”的密钥",
             "guide": "查看教程（英语）",
-            "save": "保存"
+            "save": "保存",
+            "test": "测试",
+            "msg_settings_saved": "YouTube API 密钥已保存",
+            "msg_removed": "YouTube API 密钥已移除",
+            "msg_test_success": "YouTube API 密钥有效",
+            "msg_test_failed": "无效的 YouTube API 密钥"
         },
         "translation_api": {
             "header": "翻译 API",
@@ -2224,7 +2195,8 @@
                 "endpoint": "API 端点",
                 "api_key": "API 密钥（可选）",
                 "model": "要使用的大语言模型名称",
-                "prompt_optional": "提示词（可选）"
+                "prompt_optional": "提示词（可选）",
+                "prompt_optional_description": "OpenAI 兼容翻译 API 的可选系统提示词。"
             },
             "fetch_models": "获取大语言模型列表",
             "fetching_models": "获取中...",
@@ -2396,12 +2368,6 @@
             "no_results": "未找到匹配的软件包。",
             "no_version": "没有可用的版本信息。"
         },
-        "primary_password": {
-            "header": "设置独立密码",
-            "password_placeholder": "输入新密码",
-            "re_input_placeholder": "确认密码",
-            "ok": "确定"
-        },
         "registry_backup": {
             "header": "VRC 设置数据备份工具",
             "backup": "备份",
@@ -2477,10 +2443,6 @@
             "resend": "重新发送验证码",
             "verify": "验证",
             "input_error": "无效的验证码"
-        },
-        "primary_password": {
-            "header": "需要独立密码",
-            "description": "请输入你的独立密码"
         },
         "change_favorite_group_name": {
             "header": "更改收藏夹名称",
@@ -2586,13 +2548,6 @@
                 "success": "世界的 YouTube 预览已成功更改"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "玩家超时阀值",
-            "description": "输入秒数（默认值：3）",
-            "cancel": "取消",
-            "ok": "确定",
-            "input_error": "请输入有效的秒数"
-        },
         "auto_clear_cache": {
             "header": "VRCX-0 缓存自动清理间隔",
             "description": "以小时为单位，较大的数值可能会影响性能（默认值：24，为 0 时关闭）",
@@ -2659,7 +2614,6 @@
             "logout_greeting": "下次再见，{name}！",
             "email_2fa_resent": "已重发验证码邮件",
             "email_2fa_no_credentials": "由于登录数据无效，无法重新发送验证码邮件，请重新登录。",
-            "incorrect_primary_password": "独立密码错误",
             "saved_credentials_invalid": "保存的账号信息不再有效，这可能是因为 IP 地址发生了变化导致登录状态过期。",
             "account_removed": "已移除账号。",
             "auto_login_success": "自动登录成功。",
@@ -2889,7 +2843,6 @@
         "playerList": {
             "avatar": "模型",
             "timer": "时长",
-            "photonId": "Photon ID",
             "icon": "图标",
             "platform": "平台",
             "displayName": "昵称",

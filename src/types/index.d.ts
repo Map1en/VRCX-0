@@ -11,6 +11,7 @@ export * from './api/notification';
 
 // Common Types
 export * from './common';
+export * from './preferences';
 
 // Global Types
 export * from './globals';

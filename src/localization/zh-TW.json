@@ -20,7 +20,8 @@
             "refresh": "重新整理",
             "cancel": "取消",
             "copy": "複製",
-            "open_link": "開啟連結"
+            "open_link": "開啟連結",
+            "save": "儲存"
         },
         "sort_by": "排序方式：",
         "time_units": {
@@ -38,7 +39,8 @@
             "thursday": "星期四",
             "friday": "星期五",
             "saturday": "星期六"
-        }
+        },
+        "settings_saved": "設定已儲存"
     },
     "nav_tooltip": {
         "friends_locations": "好友位置",
@@ -251,8 +253,7 @@
                 "Status": "狀態",
                 "Avatar": "角色",
                 "Bio": "自我介紹"
-            },
-            "photon_event_logging": "Photon 事件記錄"
+            }
         },
         "friends_locations": {
             "online": "上線",
@@ -279,16 +280,6 @@
                 "External": "外部",
                 "StringLoad": "字串載入",
                 "ImageLoad": "圖片載入"
-            }
-        },
-        "player_list": {
-            "photon": {
-                "current": "目前",
-                "previous": "上一個",
-                "search_placeholder": "搜尋",
-                "filter_placeholder": "篩選",
-                "chatbox_blacklist": "聊天框黑名單",
-                "status_tooltip": "VRCX-0 Companion 狀態"
             }
         },
         "my_avatars": {
@@ -853,7 +844,7 @@
                     "font_family_custom_dialog_description": "輸入有效的 CSS font-family 值",
                     "font_family_custom_invalid": "無效的 font-family。請使用逗號分隔字型名稱，例如：'My Font', Arial, sans-serif",
                     "cjk_font_pack_noto": "Noto Sans CJK",
-                    "cjk_font_pack_pht": "PuHuiTi CJK",
+                    "cjk_font_pack_puhuiti": "PuHuiTi CJK",
                     "theme_mode_system": "系統",
                     "theme_mode_light": "淺色",
                     "theme_mode_dark": "深色",
@@ -1078,10 +1069,6 @@
                     "vrcx_settings": {
                         "header": "VRCX-0"
                     },
-                    "primary_password": {
-                        "header": "主密碼",
-                        "description": "密碼加密（將停用自動登入）"
-                    },
                     "relaunch_vrchat": {
                         "header": "VRChat 崩潰後自動重啟",
                         "description": "自動重新加入 VRChat 崩潰前所在的房間"
@@ -1174,6 +1161,7 @@
                         "header": "應用程式啟動器",
                         "folder": "自動啟動資料夾",
                         "folder_tooltip": "要用 VRChat 自動啟動應用程式，請將捷徑放在這個文件夾中",
+                        "enable": "啟用應用程式啟動器",
                         "auto_close": "自動關閉應用程式",
                         "run_process_once": "開啟應用程式的單一執行個體"
                     },
@@ -1241,29 +1229,6 @@
                         "description": "開啟或設定儲存「拍立得」和「貼紙」等內容的資料夾",
                         "set_folder": "設定資料夾",
                         "reset_override": "重設"
-                    }
-                },
-                "photon": {
-                    "header": "Photon 紀錄嵌入介面",
-                    "event_hud": {
-                        "header": "Photon 事件 HUD",
-                        "enable": "啟用",
-                        "enable_tooltip": "需要啟用 SteamVR 嵌入介面選項",
-                        "filter": "篩選器",
-                        "filter_favorites": "收藏",
-                        "filter_friends": "好友",
-                        "filter_everyone": "所有人",
-                        "message_timeout": "訊息時長"
-                    },
-                    "timeout_hud": {
-                        "header": "用戶愈時 HUD",
-                        "enable": "啟用",
-                        "enable_tooltip": "需要啟用 SteamVR 嵌入介面選項",
-                        "filter": "篩選器",
-                        "filter_favorites": "收藏",
-                        "filter_friends": "好友",
-                        "filter_everyone": "所有人",
-                        "timeout_threshold": "超時閾值"
                     }
                 }
             }
@@ -2370,12 +2335,6 @@
             "no_results": "沒有符合的套裝。",
             "no_version": "無版本附加資料"
         },
-        "primary_password": {
-            "header": "需要設定主密碼",
-            "password_placeholder": "輸入新密碼",
-            "re_input_placeholder": "確認密碼",
-            "ok": "確定"
-        },
         "registry_backup": {
             "header": "VRC 註冊表設定備份",
             "backup": "備份",
@@ -2451,10 +2410,6 @@
             "resend": "重新發送郵件",
             "verify": "驗證",
             "input_error": "無效的代碼"
-        },
-        "primary_password": {
-            "header": "需要主密碼",
-            "description": "請輸入你的主密碼"
         },
         "change_favorite_group_name": {
             "header": "變更收藏群組名稱",
@@ -2560,13 +2515,6 @@
                 "success": "世界 YouTube 預覽已變更"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "用戶超時閾值",
-            "description": "輸入秒數（預設：3）",
-            "cancel": "取消",
-            "ok": "確定",
-            "input_error": "請輸入有效的秒數"
-        },
         "auto_clear_cache": {
             "header": "VRCX-0 快取清除間隔",
             "description": "輸入小時數，較大的數值可能會影響記憶體用量和性能 （預設：24，關閉：0）",
@@ -2633,7 +2581,6 @@
             "logout_greeting": "再見，{name}！",
             "email_2fa_resent": "已重新發送電子郵件 2FA 驗證。",
             "email_2fa_no_credentials": "沒有已儲存的登入憑證，無法發送 2FA 郵件。請重新登入。",
-            "incorrect_primary_password": "主要密碼錯誤",
             "saved_credentials_invalid": "已儲存的登入憑證已失效。",
             "account_removed": "帳號已移除。",
             "auto_login_success": "已自動登入。",
@@ -2862,7 +2809,6 @@
         "playerList": {
             "avatar": "角色",
             "timer": "時長",
-            "photonId": "Photon ID",
             "icon": "圖示",
             "platform": "平台",
             "displayName": "顯示名稱",

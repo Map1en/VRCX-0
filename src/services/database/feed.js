@@ -1,70 +1,156 @@
 import { dbVars } from '../database';
 
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
+
+function getUserPrefix(userId) {
+    let userPrefix = String(userId || '').replaceAll('-', '').replaceAll('_', '');
+    if (userPrefix.match(/^\d/)) {
+        userPrefix = '_' + userPrefix;
+    }
+    return userPrefix;
+}
+
+async function ensureFeedTablesForPrefix(userPrefix) {
+    if (!userPrefix) {
+        throw new Error('Feed table prefix is required.');
+    }
+    await sqliteService.executeNonQuery(
+        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_gps (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, location TEXT, world_name TEXT, previous_location TEXT, time INTEGER, group_name TEXT)`
+    );
+    await sqliteService.executeNonQuery(
+        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_status (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, status TEXT, status_description TEXT, previous_status TEXT, previous_status_description TEXT)`
+    );
+    await sqliteService.executeNonQuery(
+        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_bio (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, bio TEXT, previous_bio TEXT)`
+    );
+    await sqliteService.executeNonQuery(
+        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_avatar (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, owner_id TEXT, avatar_name TEXT, current_avatar_image_url TEXT, current_avatar_thumbnail_image_url TEXT, previous_current_avatar_image_url TEXT, previous_current_avatar_thumbnail_image_url TEXT)`
+    );
+    await sqliteService.executeNonQuery(
+        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_online_offline (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, type TEXT, location TEXT, world_name TEXT, time INTEGER, group_name TEXT)`
+    );
+    await sqliteService.executeNonQuery(
+        `CREATE INDEX IF NOT EXISTS ${userPrefix}_feed_online_offline_user_created_idx ON ${userPrefix}_feed_online_offline (user_id, created_at)`
+    );
+}
+
+async function userFeedPrefix(userId) {
+    const userPrefix = getUserPrefix(userId);
+    await ensureFeedTablesForPrefix(userPrefix);
+    return userPrefix;
+}
+
+function addGPSToDatabaseWithPrefix(userPrefix, entry) {
+    return sqliteService.executeNonQuery(
+        `INSERT OR IGNORE INTO ${userPrefix}_feed_gps (created_at, user_id, display_name, location, world_name, previous_location, time, group_name) VALUES (@created_at, @user_id, @display_name, @location, @world_name, @previous_location, @time, @group_name)`,
+        {
+            '@created_at': entry.created_at,
+            '@user_id': entry.userId,
+            '@display_name': entry.displayName,
+            '@location': entry.location,
+            '@world_name': entry.worldName,
+            '@previous_location': entry.previousLocation,
+            '@time': entry.time,
+            '@group_name': entry.groupName
+        }
+    );
+}
+
+function addStatusToDatabaseWithPrefix(userPrefix, entry) {
+    return sqliteService.executeNonQuery(
+        `INSERT OR IGNORE INTO ${userPrefix}_feed_status (created_at, user_id, display_name, status, status_description, previous_status, previous_status_description) VALUES (@created_at, @user_id, @display_name, @status, @status_description, @previous_status, @previous_status_description)`,
+        {
+            '@created_at': entry.created_at,
+            '@user_id': entry.userId,
+            '@display_name': entry.displayName,
+            '@status': entry.status,
+            '@status_description': entry.statusDescription,
+            '@previous_status': entry.previousStatus,
+            '@previous_status_description': entry.previousStatusDescription
+        }
+    );
+}
+
+function addBioToDatabaseWithPrefix(userPrefix, entry) {
+    return sqliteService.executeNonQuery(
+        `INSERT OR IGNORE INTO ${userPrefix}_feed_bio (created_at, user_id, display_name, bio, previous_bio) VALUES (@created_at, @user_id, @display_name, @bio, @previous_bio)`,
+        {
+            '@created_at': entry.created_at,
+            '@user_id': entry.userId,
+            '@display_name': entry.displayName,
+            '@bio': entry.bio,
+            '@previous_bio': entry.previousBio
+        }
+    );
+}
+
+function addAvatarToDatabaseWithPrefix(userPrefix, entry) {
+    return sqliteService.executeNonQuery(
+        `INSERT OR IGNORE INTO ${userPrefix}_feed_avatar (created_at, user_id, display_name, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url) VALUES (@created_at, @user_id, @display_name, @owner_id, @avatar_name, @current_avatar_image_url, @current_avatar_thumbnail_image_url, @previous_current_avatar_image_url, @previous_current_avatar_thumbnail_image_url)`,
+        {
+            '@created_at': entry.created_at,
+            '@user_id': entry.userId,
+            '@display_name': entry.displayName,
+            '@owner_id': entry.ownerId,
+            '@avatar_name': entry.avatarName,
+            '@current_avatar_image_url': entry.currentAvatarImageUrl,
+            '@current_avatar_thumbnail_image_url':
+                entry.currentAvatarThumbnailImageUrl,
+            '@previous_current_avatar_image_url':
+                entry.previousCurrentAvatarImageUrl,
+            '@previous_current_avatar_thumbnail_image_url':
+                entry.previousCurrentAvatarThumbnailImageUrl
+        }
+    );
+}
+
+function addOnlineOfflineToDatabaseWithPrefix(userPrefix, entry) {
+    return sqliteService.executeNonQuery(
+        `INSERT OR IGNORE INTO ${userPrefix}_feed_online_offline (created_at, user_id, display_name, type, location, world_name, time, group_name) VALUES (@created_at, @user_id, @display_name, @type, @location, @world_name, @time, @group_name)`,
+        {
+            '@created_at': entry.created_at,
+            '@user_id': entry.userId,
+            '@display_name': entry.displayName,
+            '@type': entry.type,
+            '@location': entry.location,
+            '@world_name': entry.worldName,
+            '@time': entry.time,
+            '@group_name': entry.groupName
+        }
+    );
+}
 
 const feed = {
     addGPSToDatabase(entry) {
-        sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO ${dbVars.userPrefix}_feed_gps (created_at, user_id, display_name, location, world_name, previous_location, time, group_name) VALUES (@created_at, @user_id, @display_name, @location, @world_name, @previous_location, @time, @group_name)`,
-            {
-                '@created_at': entry.created_at,
-                '@user_id': entry.userId,
-                '@display_name': entry.displayName,
-                '@location': entry.location,
-                '@world_name': entry.worldName,
-                '@previous_location': entry.previousLocation,
-                '@time': entry.time,
-                '@group_name': entry.groupName
-            }
-        );
+        return addGPSToDatabaseWithPrefix(dbVars.userPrefix, entry);
+    },
+
+    async addGPSToDatabaseForUser(userId, entry) {
+        return addGPSToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
     },
 
     addStatusToDatabase(entry) {
-        sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO ${dbVars.userPrefix}_feed_status (created_at, user_id, display_name, status, status_description, previous_status, previous_status_description) VALUES (@created_at, @user_id, @display_name, @status, @status_description, @previous_status, @previous_status_description)`,
-            {
-                '@created_at': entry.created_at,
-                '@user_id': entry.userId,
-                '@display_name': entry.displayName,
-                '@status': entry.status,
-                '@status_description': entry.statusDescription,
-                '@previous_status': entry.previousStatus,
-                '@previous_status_description': entry.previousStatusDescription
-            }
-        );
+        return addStatusToDatabaseWithPrefix(dbVars.userPrefix, entry);
+    },
+
+    async addStatusToDatabaseForUser(userId, entry) {
+        return addStatusToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
     },
 
     addBioToDatabase(entry) {
-        sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO ${dbVars.userPrefix}_feed_bio (created_at, user_id, display_name, bio, previous_bio) VALUES (@created_at, @user_id, @display_name, @bio, @previous_bio)`,
-            {
-                '@created_at': entry.created_at,
-                '@user_id': entry.userId,
-                '@display_name': entry.displayName,
-                '@bio': entry.bio,
-                '@previous_bio': entry.previousBio
-            }
-        );
+        return addBioToDatabaseWithPrefix(dbVars.userPrefix, entry);
+    },
+
+    async addBioToDatabaseForUser(userId, entry) {
+        return addBioToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
     },
 
     addAvatarToDatabase(entry) {
-        sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO ${dbVars.userPrefix}_feed_avatar (created_at, user_id, display_name, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url) VALUES (@created_at, @user_id, @display_name, @owner_id, @avatar_name, @current_avatar_image_url, @current_avatar_thumbnail_image_url, @previous_current_avatar_image_url, @previous_current_avatar_thumbnail_image_url)`,
-            {
-                '@created_at': entry.created_at,
-                '@user_id': entry.userId,
-                '@display_name': entry.displayName,
-                '@owner_id': entry.ownerId,
-                '@avatar_name': entry.avatarName,
-                '@current_avatar_image_url': entry.currentAvatarImageUrl,
-                '@current_avatar_thumbnail_image_url':
-                    entry.currentAvatarThumbnailImageUrl,
-                '@previous_current_avatar_image_url':
-                    entry.previousCurrentAvatarImageUrl,
-                '@previous_current_avatar_thumbnail_image_url':
-                    entry.previousCurrentAvatarThumbnailImageUrl
-            }
-        );
+        return addAvatarToDatabaseWithPrefix(dbVars.userPrefix, entry);
+    },
+
+    async addAvatarToDatabaseForUser(userId, entry) {
+        return addAvatarToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
     },
 
     /**
@@ -88,19 +174,11 @@ const feed = {
     },
 
     addOnlineOfflineToDatabase(entry) {
-        sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO ${dbVars.userPrefix}_feed_online_offline (created_at, user_id, display_name, type, location, world_name, time, group_name) VALUES (@created_at, @user_id, @display_name, @type, @location, @world_name, @time, @group_name)`,
-            {
-                '@created_at': entry.created_at,
-                '@user_id': entry.userId,
-                '@display_name': entry.displayName,
-                '@type': entry.type,
-                '@location': entry.location,
-                '@world_name': entry.worldName,
-                '@time': entry.time,
-                '@group_name': entry.groupName
-            }
-        );
+        return addOnlineOfflineToDatabaseWithPrefix(dbVars.userPrefix, entry);
+    },
+
+    async addOnlineOfflineToDatabaseForUser(userId, entry) {
+        return addOnlineOfflineToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
     },
 
     async searchFeedDatabase(
@@ -592,133 +670,6 @@ const feed = {
             args
         );
         return feedDatabase;
-    },
-
-    /**
-     * @param {number} days - Number of days to look back
-     * @param {number} limit - Max number of worlds to return
-     * @returns {Promise<Array>} Ranked list of hot worlds
-     */
-    async getHotWorlds(days = 30, limit = 30) {
-        const halfDays = Math.floor(days / 2);
-        const results = [];
-        await sqliteService.execute(
-            (dbRow) => {
-                results.push({
-                    worldId: dbRow[0],
-                    worldName: dbRow[1],
-                    visitCount: dbRow[2],
-                    uniqueFriends: dbRow[3],
-                    lastVisited: dbRow[4]
-                });
-            },
-            `SELECT
-                SUBSTR(location, 1, INSTR(location, ':') - 1) AS world_id,
-                world_name,
-                COUNT(*) AS visit_count,
-                COUNT(DISTINCT user_id) AS unique_friends,
-                MAX(created_at) AS last_visited
-            FROM ${dbVars.userPrefix}_feed_gps
-            WHERE created_at >= datetime('now', @daysOffset)
-                AND location LIKE 'wrld_%'
-                AND INSTR(location, ':') > 0
-                AND world_name IS NOT NULL AND world_name != ''
-            GROUP BY world_id
-            ORDER BY unique_friends DESC, visit_count DESC
-            LIMIT @limit`,
-            {
-                '@daysOffset': `-${days} days`,
-                '@limit': limit
-            }
-        );
-
-        const trendMap = new Map();
-        await sqliteService.execute(
-            (dbRow) => {
-                trendMap.set(dbRow[0], dbRow[1]);
-            },
-            `SELECT
-                SUBSTR(location, 1, INSTR(location, ':') - 1) AS world_id,
-                COUNT(DISTINCT user_id) AS unique_friends
-            FROM ${dbVars.userPrefix}_feed_gps
-            WHERE created_at >= datetime('now', @daysOffset)
-                AND created_at < datetime('now', @halfOffset)
-                AND location LIKE 'wrld_%'
-                AND INSTR(location, ':') > 0
-                AND world_name IS NOT NULL AND world_name != ''
-            GROUP BY world_id`,
-            {
-                '@daysOffset': `-${days} days`,
-                '@halfOffset': `-${halfDays} days`
-            }
-        );
-
-        const recentMap = new Map();
-        await sqliteService.execute(
-            (dbRow) => {
-                recentMap.set(dbRow[0], dbRow[1]);
-            },
-            `SELECT
-                SUBSTR(location, 1, INSTR(location, ':') - 1) AS world_id,
-                COUNT(DISTINCT user_id) AS unique_friends
-            FROM ${dbVars.userPrefix}_feed_gps
-            WHERE created_at >= datetime('now', @halfOffset)
-                AND location LIKE 'wrld_%'
-                AND INSTR(location, ':') > 0
-                AND world_name IS NOT NULL AND world_name != ''
-            GROUP BY world_id`,
-            {
-                '@halfOffset': `-${halfDays} days`
-            }
-        );
-
-        for (const world of results) {
-            const oldFriends = trendMap.get(world.worldId) || 0;
-            const newFriends = recentMap.get(world.worldId) || 0;
-            if (newFriends > oldFriends) {
-                world.trend = 'rising';
-            } else if (newFriends < oldFriends) {
-                world.trend = 'cooling';
-            } else {
-                world.trend = 'stable';
-            }
-        }
-
-        return results;
-    },
-
-    /**
-     * @param {string} worldId - The world ID (e.g. wrld_xxx)
-     * @param {number} days - Number of days to look back
-     * @returns {Promise<Array>} List of friends who visited
-     */
-    async getHotWorldFriendDetail(worldId, days = 30) {
-        const results = [];
-        await sqliteService.execute(
-            (dbRow) => {
-                results.push({
-                    userId: dbRow[0],
-                    displayName: dbRow[1],
-                    visitCount: dbRow[2],
-                    lastVisit: dbRow[3]
-                });
-            },
-            `SELECT
-                user_id,
-                display_name,
-                COUNT(*) AS visit_count,
-                MAX(created_at) AS last_visit
-            FROM ${dbVars.userPrefix}_feed_gps
-            WHERE SUBSTR(location, 1, INSTR(location, ':') - 1) = @worldId
-                AND created_at >= datetime('now', @daysOffset)
-            GROUP BY user_id
-            ORDER BY visit_count DESC`,
-            {
-                '@worldId': worldId,
-                '@daysOffset': `-${days} days`
-            }
-        );
-        return results;
     }
 };
 

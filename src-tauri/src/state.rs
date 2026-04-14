@@ -2,10 +2,10 @@ use std::path::PathBuf;
 
 use crate::domain::auto_launch::AutoAppLaunchManager;
 use crate::domain::database::DatabaseService;
+use crate::domain::discord_rpc::DiscordRpc;
 use crate::domain::image_cache::ImageCache;
 use crate::domain::ipc::IpcServer;
 use crate::domain::log_watcher::LogWatcher;
-use crate::domain::ovrtoolkit::OvrToolkit;
 use crate::domain::process_monitor::ProcessMonitor;
 use crate::domain::screenshot::MetadataCacheDb;
 use crate::domain::storage::StorageService;
@@ -24,12 +24,12 @@ pub struct AppState {
     pub paths: AppPaths,
     pub storage: StorageService,
     pub db: DatabaseService,
+    pub discord_rpc: DiscordRpc,
     pub process_monitor: ProcessMonitor,
     pub log_watcher: LogWatcher,
     pub web: WebClient,
     pub image_cache: ImageCache,
     pub update_manager: UpdateManager,
-    pub ovrtoolkit: OvrToolkit,
     pub ipc: IpcServer,
     pub screenshot_cache: MetadataCacheDb,
 
@@ -68,13 +68,13 @@ impl AppState {
         let storage = StorageService::new(&paths.config_file)?;
 
         let db = DatabaseService::new(&paths.db_file)?;
+        let discord_rpc = DiscordRpc::new();
         let process_monitor = ProcessMonitor::new();
         let log_watcher = LogWatcher::new();
         let web = WebClient::new(&storage, &db)?;
         let image_cache =
             ImageCache::new(paths.image_cache.clone(), web.cookie_jar(), web.proxy_url())?;
         let update_manager = UpdateManager::new(paths.app_data.clone(), web.proxy_url());
-        let ovrtoolkit = OvrToolkit::new();
         let ipc = IpcServer::new();
         let screenshot_cache = MetadataCacheDb::new(&paths.app_data.join("metadataCache.db"))
             .map_err(|e| AppError::Custom(format!("screenshot cache: {e}")))?;
@@ -85,12 +85,12 @@ impl AppState {
             paths,
             storage,
             db,
+            discord_rpc,
             process_monitor,
             log_watcher,
             web,
             image_cache,
             update_manager,
-            ovrtoolkit,
             ipc,
             screenshot_cache,
             auto_launch,

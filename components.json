@@ -1,7 +1,8 @@
 {
-    "$schema": "https://shadcn-vue.com/schema.json",
+    "$schema": "https://ui.shadcn.com/schema.json",
     "style": "new-york",
-    "typescript": false,
+    "rsc": false,
+    "tsx": false,
     "tailwind": {
         "config": "",
         "css": "src/styles/globals.css",
@@ -11,10 +12,10 @@
     },
     "aliases": {
         "components": "@/components",
-        "composables": "@/composables",
         "utils": "@/lib/utils",
-        "ui": "@/components/ui",
-        "lib": "@/lib"
+        "ui": "@/ui/shadcn",
+        "lib": "@/lib",
+        "hooks": "@/lib"
     },
     "iconLibrary": "lucide"
 }

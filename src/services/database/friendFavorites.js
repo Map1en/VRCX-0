@@ -1,8 +1,8 @@
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
 
 const friendFavorites = {
     addFriendToLocalFavorites(userId, groupName) {
-        sqliteService.executeNonQuery(
+        return sqliteService.executeNonQuery(
             'INSERT OR REPLACE INTO favorite_friend (user_id, group_name, created_at) VALUES (@user_id, @group_name, @created_at)',
             {
                 '@user_id': userId,

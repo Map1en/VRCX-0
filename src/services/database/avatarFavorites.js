@@ -1,10 +1,10 @@
 import { dbVars } from '../database';
 
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
 
 const avatarFavorites = {
     addAvatarToCache(entry) {
-        sqliteService.executeNonQuery(
+        return sqliteService.executeNonQuery(
             `INSERT OR REPLACE INTO cache_avatar (id, added_at, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version) VALUES (@id, @added_at, @author_id, @author_name, @created_at, @description, @image_url, @name, @release_status, @thumbnail_image_url, @updated_at, @version)`,
             {
                 '@id': entry.id,
@@ -131,7 +131,7 @@ const avatarFavorites = {
     },
 
     addAvatarToFavorites(avatarId, groupName) {
-        sqliteService.executeNonQuery(
+        return sqliteService.executeNonQuery(
             'INSERT OR REPLACE INTO favorite_avatar (avatar_id, group_name, created_at) VALUES (@avatar_id, @group_name, @created_at)',
             {
                 '@avatar_id': avatarId,

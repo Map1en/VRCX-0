@@ -6,13 +6,8 @@ import {
     compareByName,
     compareByPrivate,
     compareByStatus
-} from './compare';
+} from './compare.js';
 
-/**
- *
- * @param {string[]} sortMethods
- * @returns
- */
 function getFriendsSortFunction(sortMethods) {
     const sorts = [];
     for (const sortMethod of sortMethods) {
@@ -34,13 +29,9 @@ function getFriendsSortFunction(sortMethods) {
                 break;
             case 'Sort by Time in Instance':
                 sorts.push((a, b) => {
-                    if (
-                        typeof a.ref === 'undefined' ||
-                        typeof b.ref === 'undefined'
-                    ) {
+                    if (typeof a.ref === 'undefined' || typeof b.ref === 'undefined') {
                         return 0;
                     }
-                    // sort pending offline to bottom
                     if (a.pendingOffline && !b.pendingOffline) {
                         return 1;
                     }
@@ -66,13 +57,8 @@ function getFriendsSortFunction(sortMethods) {
         }
     }
 
-    /**
-     * @param {object} a
-     * @param {object} b
-     * @returns {number}
-     */
     return (a, b) => {
-        let res;
+        let res = 0;
         for (const sort of sorts) {
             res = sort(a, b);
             if (res !== 0) {
@@ -83,22 +69,13 @@ function getFriendsSortFunction(sortMethods) {
     };
 }
 
-/**
- *
- * @param {string} a
- * @param {string} b
- * @returns {number}
- */
 function sortStatus(a, b) {
     switch (b) {
         case 'join me':
             switch (a) {
                 case 'active':
-                    return 1;
                 case 'ask me':
-                    return 1;
                 case 'busy':
-                    return 1;
                 case 'offline':
                     return 1;
             }
@@ -108,9 +85,7 @@ function sortStatus(a, b) {
                 case 'join me':
                     return -1;
                 case 'ask me':
-                    return 1;
                 case 'busy':
-                    return 1;
                 case 'offline':
                     return 1;
             }
@@ -118,11 +93,9 @@ function sortStatus(a, b) {
         case 'ask me':
             switch (a) {
                 case 'join me':
-                    return -1;
                 case 'active':
                     return -1;
                 case 'busy':
-                    return 1;
                 case 'offline':
                     return 1;
             }
@@ -130,9 +103,7 @@ function sortStatus(a, b) {
         case 'busy':
             switch (a) {
                 case 'join me':
-                    return -1;
                 case 'active':
-                    return -1;
                 case 'ask me':
                     return -1;
                 case 'offline':
@@ -142,11 +113,8 @@ function sortStatus(a, b) {
         case 'offline':
             switch (a) {
                 case 'join me':
-                    return -1;
                 case 'active':
-                    return -1;
                 case 'ask me':
-                    return -1;
                 case 'busy':
                     return -1;
             }
@@ -155,11 +123,6 @@ function sortStatus(a, b) {
     return 0;
 }
 
-/**
- *
- * @param {object} friend
- * @returns {boolean}
- */
 function isFriendOnline(friend) {
     if (typeof friend === 'undefined' || typeof friend.ref === 'undefined') {
         return false;
@@ -168,7 +131,6 @@ function isFriendOnline(friend) {
         return true;
     }
     if (friend.state !== 'online' && friend.ref.location !== 'private') {
-        // wat
         return true;
     }
     return false;

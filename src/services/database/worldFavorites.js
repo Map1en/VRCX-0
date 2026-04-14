@@ -1,8 +1,8 @@
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
 
 const worldFavorites = {
     addWorldToCache(entry) {
-        sqliteService.executeNonQuery(
+        return sqliteService.executeNonQuery(
             `INSERT OR REPLACE INTO cache_world (id, added_at, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version) VALUES (@id, @added_at, @author_id, @author_name, @created_at, @description, @image_url, @name, @release_status, @thumbnail_image_url, @updated_at, @version)`,
             {
                 '@id': entry.id,
@@ -22,7 +22,7 @@ const worldFavorites = {
     },
 
     addWorldToFavorites(worldId, groupName) {
-        sqliteService.executeNonQuery(
+        return sqliteService.executeNonQuery(
             'INSERT OR REPLACE INTO favorite_world (world_id, group_name, created_at) VALUES (@world_id, @group_name, @created_at)',
             {
                 '@world_id': worldId,

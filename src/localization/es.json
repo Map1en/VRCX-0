@@ -78,16 +78,6 @@
                 "ImageLoad": "Carga de Imagen"
             }
         },
-        "player_list": {
-            "photon": {
-                "current": "Actual",
-                "previous": "Anterior",
-                "search_placeholder": "Buscar",
-                "filter_placeholder": "Filtrar",
-                "chatbox_blacklist": "Lista Negra del Chatbox",
-                "status_tooltip": "Estado del Compañero VRCX-0"
-            }
-        },
         "search": {
             "search_placeholder": "Buscar",
             "clear_results_tooltip": "Borrar Resultados de Búsqueda",
@@ -483,10 +473,6 @@
                 "advanced": {
                     "launch_options": "Opciones de Lanzamiento",
                     "vrc_registry_backup": "Copia de Seguridad del Registro de VRC",
-                    "primary_password": {
-                        "header": "Contraseña Principal",
-                        "description": "Cifrar contraseña (desactiva el inicio de sesión automático)"
-                    },
                     "relaunch_vrchat": {
                         "header": "Reiniciar VRChat después de un fallo",
                         "description": "Reunirse en la última instancia cuando VRChat se bloquee"
@@ -549,6 +535,7 @@
                         "header": "Lanzador de Aplicaciones",
                         "folder": "Carpeta de Auto-Lanzamiento",
                         "folder_tooltip": "Para auto-lanzar aplicaciones con VRChat, coloca accesos directos en esta carpeta.",
+                        "enable": "Habilitar lanzador de aplicaciones",
                         "auto_close": "Cerrar aplicaciones automáticamente"
                     },
                     "cache_debug": {
@@ -588,29 +575,6 @@
                         "description": "Abrir o establecer la carpeta donde se almacena contenido como 'Impresiones' y 'Pegatinas'.",
                         "set_folder": "Establecer Carpeta",
                         "reset_override": "Restablecer"
-                    }
-                },
-                "photon": {
-                    "header": "Superposición de Registro de Photon",
-                    "event_hud": {
-                        "header": "HUD de Eventos de Photon",
-                        "enable": "Habilitar",
-                        "enable_tooltip": "Requiere que la superposición de SteamVR esté habilitada",
-                        "filter": "Filtro",
-                        "filter_favorites": "Favoritos",
-                        "filter_friends": "Amigos",
-                        "filter_everyone": "Todos",
-                        "message_timeout": "Tiempo de Espera del Mensaje"
-                    },
-                    "timeout_hud": {
-                        "header": "HUD de Tiempo de Espera de Usuario",
-                        "enable": "Habilitar",
-                        "enable_tooltip": "Requiere que la superposición de SteamVR esté habilitada",
-                        "filter": "Filtro",
-                        "filter_favorites": "Favoritos",
-                        "filter_friends": "Amigos",
-                        "filter_everyone": "Todos",
-                        "timeout_threshold": "Umbral de Tiempo de Espera"
                     }
                 }
             }
@@ -1456,12 +1420,6 @@
             "header": "Aviso de Software de Código Abierto",
             "description": "VRCX-0 se basa en software de código abierto. Fue posible gracias a su contribución."
         },
-        "primary_password": {
-            "header": "Contraseña Principal Requerida",
-            "password_placeholder": "Introduce nueva contraseña",
-            "re_input_placeholder": "Reintroduce contraseña",
-            "ok": "OK"
-        },
         "registry_backup": {
             "header": "Copia de Seguridad de Configuraciones del Registro de VRC",
             "backup": "Copia de Seguridad",
@@ -1508,10 +1466,6 @@
             "resend": "Reenviar Correo",
             "verify": "Verificar",
             "input_error": "Código inválido"
-        },
-        "primary_password": {
-            "header": "Contraseña Principal Requerida",
-            "description": "Por favor, introduce tu Contraseña Principal."
         },
         "change_favorite_group_name": {
             "header": "Cambiar Nombre del Grupo",
@@ -1616,13 +1570,6 @@
                 "success": "Vista previa de YouTube del mundo cambiada"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "Umbral de Tiempo de Espera de Usuario",
-            "description": "Introduce la cantidad de segundos (predeterminado: 3)",
-            "cancel": "Cancelar",
-            "ok": "OK",
-            "input_error": "Se requiere un número válido"
-        },
         "auto_clear_cache": {
             "header": "Temporizador de Limpieza de Caché de VRCX-0",
             "description": "Introduce la cantidad de horas, valores más grandes pueden impactar el uso de RAM y el rendimiento (predeterminado: 24, deshabilitado: 0)",
@@ -1712,7 +1659,6 @@
         "playerList": {
             "avatar": "Avatar",
             "timer": "Temporizador",
-            "photonId": "ID de Photon",
             "icon": "Iconos",
             "platform": "Plataforma",
             "displayName": "Nombre de Pantalla",

@@ -1,6 +1,6 @@
 import { dbVars } from '../database';
 
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
 
 const memos = {
     // user memos
@@ -75,8 +75,8 @@ const memos = {
         return row;
     },
 
-    setWorldMemo(entry) {
-        sqliteService.executeNonQuery(
+    async setWorldMemo(entry) {
+        await sqliteService.executeNonQuery(
             `INSERT OR REPLACE INTO world_memos (world_id, edited_at, memo) VALUES (@world_id, @edited_at, @memo)`,
             {
                 '@world_id': entry.worldId,
@@ -86,8 +86,8 @@ const memos = {
         );
     },
 
-    deleteWorldMemo(worldId) {
-        sqliteService.executeNonQuery(
+    async deleteWorldMemo(worldId) {
+        await sqliteService.executeNonQuery(
             `DELETE FROM world_memos WHERE world_id = @world_id`,
             {
                 '@world_id': worldId
@@ -115,8 +115,8 @@ const memos = {
         return row;
     },
 
-    setAvatarMemo(entry) {
-        sqliteService.executeNonQuery(
+    async setAvatarMemo(entry) {
+        await sqliteService.executeNonQuery(
             `INSERT OR REPLACE INTO avatar_memos (avatar_id, edited_at, memo) VALUES (@avatar_id, @edited_at, @memo)`,
             {
                 '@avatar_id': entry.avatarId,
@@ -126,8 +126,8 @@ const memos = {
         );
     },
 
-    deleteAvatarMemo(avatarId) {
-        sqliteService.executeNonQuery(
+    async deleteAvatarMemo(avatarId) {
+        await sqliteService.executeNonQuery(
             `DELETE FROM avatar_memos WHERE avatar_id = @avatar_id`,
             {
                 '@avatar_id': avatarId

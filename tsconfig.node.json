@@ -4,9 +4,6 @@
         "lib": ["esnext"],
         "types": ["node"]
     },
-    "include": [
-        "src/vite.config.js",
-        "src/shared/utils/localizationHelperCLI.js"
-    ],
-    "exclude": ["node_modules", "build"]
+    "include": ["vite.config.js"],
+    "exclude": ["node_modules", "build", "dist"]
 }

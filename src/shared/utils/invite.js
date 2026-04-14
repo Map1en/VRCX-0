@@ -1,5 +1,19 @@
 import { parseLocation } from './location';
 
+function locationCacheKey(parsed) {
+    if (!parsed.worldId || !parsed.instanceId) {
+        return '';
+    }
+    return `${parsed.worldId}:${parsed.instanceId}`;
+}
+
+function getCachedInstance(location, parsed, cachedInstances) {
+    if (!cachedInstances) {
+        return null;
+    }
+    return cachedInstances.get(location) || cachedInstances.get(locationCacheKey(parsed)) || null;
+}
+
 /**
  *
  * @param {string} location
@@ -14,7 +28,10 @@ function checkCanInvite(location, deps) {
         return false;
     }
     const L = parseLocation(location);
-    const instance = deps.cachedInstances?.get(location);
+    if (!L.isRealInstance || !L.worldId || !L.instanceId) {
+        return false;
+    }
+    const instance = getCachedInstance(location, L, deps.cachedInstances);
     if (instance?.closedAt) {
         return false;
     }
@@ -48,7 +65,10 @@ function checkCanInviteSelf(location, deps) {
         return false;
     }
     const L = parseLocation(location);
-    const instance = deps.cachedInstances?.get(location);
+    if (!L.isRealInstance || !L.worldId || !L.instanceId) {
+        return false;
+    }
+    const instance = getCachedInstance(location, L, deps.cachedInstances);
     if (instance?.closedAt) {
         return false;
     }

@@ -199,27 +199,6 @@ function feedFiltersOptions() {
         }
     ];
 
-    const photonFeedFiltersOptions = [
-        {
-            key: 'PortalSpawn',
-            name: 'Portal Spawn',
-            options: getOptions(['Off', 'VIP', 'Friends', 'Everyone'])
-        },
-        {
-            key: 'ChatBoxMessage',
-            name: 'Lobby ChatBox Message',
-            options: getOptions(['Off', 'VIP', 'Friends', 'Everyone'])
-        },
-        { key: 'Blocked', name: 'Blocked', options: getOptions(['Off', 'On']) },
-        {
-            key: 'Unblocked',
-            name: 'Unblocked',
-            options: getOptions(['Off', 'On'])
-        },
-        { key: 'Muted', name: 'Muted', options: getOptions(['Off', 'On']) },
-        { key: 'Unmuted', name: 'Unmuted', options: getOptions(['Off', 'On']) }
-    ];
-
     const notyFeedFiltersOptions = baseOptions;
 
     const wristFeedFiltersOptions = [
@@ -233,8 +212,7 @@ function feedFiltersOptions() {
 
     return {
         notyFeedFiltersOptions,
-        wristFeedFiltersOptions,
-        photonFeedFiltersOptions
+        wristFeedFiltersOptions
     };
 }
 

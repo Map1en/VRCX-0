@@ -1,4 +1,4 @@
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
 
 const tableAlter = {
     async upgradeDatabaseVersion() {
@@ -26,9 +26,9 @@ const tableAlter = {
                     `ALTER TABLE ${tableName} ADD group_name TEXT DEFAULT ''`
                 );
             } catch (e) {
-                e = e.toString();
-                if (e.indexOf('duplicate column name') === -1) {
-                    console.error(e);
+                const message = e.toString();
+                if (message.indexOf('duplicate column name') === -1) {
+                    console.error(message);
                 }
             }
         }
@@ -38,9 +38,9 @@ const tableAlter = {
                 `ALTER TABLE gamelog_location DROP COLUMN groupName`
             );
         } catch (e) {
-            e = e.toString();
-            if (e.indexOf('no such column') === -1) {
-                console.error(e);
+            const message = e.toString();
+            if (message.indexOf('no such column') === -1) {
+                console.error(message);
             }
         }
     },
@@ -56,9 +56,9 @@ const tableAlter = {
                     `ALTER TABLE ${tableName} ADD friend_number INTEGER DEFAULT 0`
                 );
             } catch (e) {
-                e = e.toString();
-                if (e.indexOf('duplicate column name') === -1) {
-                    console.error(e);
+                const message = e.toString();
+                if (message.indexOf('duplicate column name') === -1) {
+                    console.error(message);
                 }
             }
         }
@@ -75,9 +75,9 @@ const tableAlter = {
                     `ALTER TABLE ${tableName} ADD time INTEGER DEFAULT 0`
                 );
             } catch (e) {
-                e = e.toString();
-                if (e.indexOf('duplicate column name') === -1) {
-                    console.error(e);
+                const message = e.toString();
+                if (message.indexOf('duplicate column name') === -1) {
+                    console.error(message);
                 }
             }
         }

@@ -95,15 +95,6 @@ function localeIncludes(str, search, comparer) {
  * @param {string} text
  * @returns {string}
  */
-function changeLogRemoveLinks(text) {
-    return text.replace(/([^!])\[[^\]]+\]\([^)]+\)/g, '$1');
-}
-
-/**
- *
- * @param {string} text
- * @returns {string}
- */
 function replaceBioSymbols(text) {
     if (typeof text !== 'string') {
         return '';
@@ -168,7 +159,6 @@ export {
     textToHex,
     commaNumber,
     localeIncludes,
-    changeLogRemoveLinks,
     replaceBioSymbols,
     removeEmojis
 };

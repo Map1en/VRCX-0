@@ -1,83 +1,53 @@
 /* global __dirname, require */
-// generate-third-party-licenses.js
-// use by frontend open source software notice dialog
 
 const fs = require('fs');
 const path = require('path');
 
 const rootDir = path.join(__dirname, '..');
-const frontendLicensePath = path.join(
-    rootDir,
-    'build',
-    'html',
-    '.vite',
-    'license.md'
-);
-const outputDir = path.join(rootDir, 'build', 'html', 'licenses');
+const outputDir = path.join(rootDir, 'dist', 'licenses');
+const frontendLicenseJsonPath = path.join(outputDir, 'frontend-licenses.json');
 const outputManifestPath = path.join(outputDir, 'third-party-licenses.json');
 const outputNoticePath = path.join(outputDir, 'THIRD_PARTY_NOTICES.txt');
 
-function ensureDirectory(directoryPath) {
-    fs.mkdirSync(directoryPath, { recursive: true });
-}
-
-function readFileIfExists(filePath) {
-    if (!fs.existsSync(filePath)) {
-        return null;
-    }
-
-    return fs.readFileSync(filePath, 'utf8');
-}
-
 function normalizeWhitespace(value) {
-    return value?.replace(/\r\n/g, '\n').trim() || '';
+    return String(value ?? '').replace(/\r\n/g, '\n').trim();
 }
 
 function sanitizeId(value) {
-    return value
+    return String(value)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 }
 
-function parseFrontendLicenses(markdown) {
-    const normalized = normalizeWhitespace(markdown);
-    if (!normalized) {
+function readJsonArrayIfExists(filePath) {
+    if (!fs.existsSync(filePath)) {
         return [];
     }
 
-    const sections = normalized.split(/\n(?=## )/g).slice(1);
-
-    return sections
-        .map((section) => {
-            const [headerLine, ...bodyLines] = section.split('\n');
-            const headerMatch = headerLine.match(
-                /^##\s+(.+?)\s+-\s+(.+?)\s+\((.+?)\)$/
-            );
-
-            if (!headerMatch) {
-                return null;
-            }
-
-            const [, name, version, license] = headerMatch;
-            const noticeText = normalizeWhitespace(bodyLines.join('\n'));
-
-            return {
-                id: `frontend-${sanitizeId(`${name}-${version}`)}`,
-                name,
-                version,
-                license,
-                sourceType: 'frontend',
-                sourceLabel: 'Frontend bundle',
-                noticeText,
-                needsReview: !license && !noticeText
-            };
-        })
-        .filter(Boolean)
-        .sort((left, right) => left.name.localeCompare(right.name));
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return Array.isArray(parsed) ? parsed : [];
 }
 
-function createThirdPartyNoticeText(frontendLicenseMarkdown) {
+function normalizeFrontendEntry(entry, index) {
+    const packageName = normalizeWhitespace(entry?.name) || `frontend-package-${index + 1}`;
+    const version = normalizeWhitespace(entry?.version);
+    const license = normalizeWhitespace(entry?.identifier || entry?.license);
+    const noticeText = normalizeWhitespace(entry?.text || entry?.noticeText);
+
+    return {
+        id: `frontend-${sanitizeId(`${packageName}-${version || index + 1}`)}`,
+        name: packageName,
+        version,
+        license,
+        sourceType: 'frontend',
+        sourceLabel: 'Frontend bundle',
+        noticeText,
+        needsReview: !license && !noticeText
+    };
+}
+
+function createThirdPartyNoticeText(entries) {
     const lines = [
         'VRCX-0 Third-Party Notices',
         '',
@@ -86,20 +56,32 @@ function createThirdPartyNoticeText(frontendLicenseMarkdown) {
         '========================================',
         'Frontend bundled dependencies',
         '========================================',
-        '',
-        normalizeWhitespace(frontendLicenseMarkdown) ||
-            'No frontend license manifest was available.',
         ''
     ];
+
+    if (!entries.length) {
+        lines.push('No frontend license manifest was available.', '');
+        return `${lines.join('\n').trimEnd()}\n`;
+    }
+
+    for (const entry of entries) {
+        lines.push(
+            `## ${entry.name}${entry.version ? ` - ${entry.version}` : ''}${entry.license ? ` (${entry.license})` : ''}`,
+            '',
+            entry.noticeText || 'No local license text was generated for this entry.',
+            ''
+        );
+    }
 
     return `${lines.join('\n').trimEnd()}\n`;
 }
 
 function main() {
-    ensureDirectory(outputDir);
+    fs.mkdirSync(outputDir, { recursive: true });
 
-    const frontendLicenseMarkdown = readFileIfExists(frontendLicensePath) || '';
-    const frontendEntries = parseFrontendLicenses(frontendLicenseMarkdown);
+    const frontendEntries = readJsonArrayIfExists(frontendLicenseJsonPath)
+        .map(normalizeFrontendEntry)
+        .sort((left, right) => left.name.localeCompare(right.name));
     const manifest = {
         generatedAt: new Date().toISOString(),
         noticePath: 'licenses/THIRD_PARTY_NOTICES.txt',
@@ -107,14 +89,9 @@ function main() {
     };
 
     fs.writeFileSync(outputManifestPath, JSON.stringify(manifest, null, 4));
-    fs.writeFileSync(
-        outputNoticePath,
-        createThirdPartyNoticeText(frontendLicenseMarkdown)
-    );
+    fs.writeFileSync(outputNoticePath, createThirdPartyNoticeText(frontendEntries));
 
-    const reviewCount = manifest.entries.filter(
-        (entry) => entry.needsReview
-    ).length;
+    const reviewCount = manifest.entries.filter((entry) => entry.needsReview).length;
     console.log(
         `Generated third-party license manifest with ${manifest.entries.length} entries (${reviewCount} requiring review).`
     );

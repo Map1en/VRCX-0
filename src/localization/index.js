@@ -1,41 +1,18 @@
-const localizedStringsUrls = import.meta.glob('./*.json', {
+const localizedStrings = import.meta.glob('./*.json', {
     eager: true,
-    query: '?url',
     import: 'default'
 });
 
 async function getLocalizedStrings(code) {
-    const fallbackUrl = localizedStringsUrls['./en.json'];
-    const url = localizedStringsUrls[`./${code}.json`] || fallbackUrl;
-
-    try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(res.status);
-        return await res.json();
-    } catch {
-        if (url !== fallbackUrl) {
-            try {
-                const res = await fetch(fallbackUrl);
-                return await res.json();
-            } catch {
-                return {};
-            }
-        }
-        return {};
-    }
+    return localizedStrings[`./${code}.json`] || localizedStrings['./en.json'] || {};
 }
 
-const languageNames = import.meta.glob('./*.json', {
-    eager: true,
-    import: 'language'
-});
-
 function getLanguageName(code) {
-    return String(languageNames[`./${code}.json`] ?? code);
+    return String(localizedStrings[`./${code}.json`]?.language ?? code);
 }
 
 /**
- * @param {string} systemLanguage - BCP-47 code from AppApi.CurrentLanguage()
+ * @param {string} systemLanguage - BCP-47 code from backend.app.CurrentLanguage()
  * @param {string[]} codes - supported language codes
  * @returns {string | null} matched language code, or null
  */

@@ -62,12 +62,16 @@ pub fn app__is_steamvr_running(state: State<'_, AppState>) -> bool {
 
 #[tauri::command]
 pub fn app__current_culture() -> String {
-    sys_locale::get_locale().unwrap_or_else(|| "en-US".into())
+    normalize_locale(sys_locale::get_locale().unwrap_or_else(|| "en-US".into()))
 }
 
 #[tauri::command]
 pub fn app__current_language() -> String {
-    sys_locale::get_locale().unwrap_or_else(|| "en".into())
+    normalize_locale(sys_locale::get_locale().unwrap_or_else(|| "en".into()))
+}
+
+fn normalize_locale(locale: String) -> String {
+    locale.replace('_', "-")
 }
 
 #[tauri::command]
@@ -692,40 +696,6 @@ pub fn app__set_startup(app_handle: AppHandle, _enabled: bool) -> Result<(), App
 }
 
 #[tauri::command]
-pub fn app__xs_notification(
-    title: String,
-    content: String,
-    timeout: i32,
-    opacity: f64,
-    image: Option<String>,
-) -> Result<(), AppError> {
-    use std::net::UdpSocket;
-
-    let height = (content.len() as f64 / 100.0 * 250.0).max(110.0);
-
-    let msg = serde_json::json!({
-        "messageType": 1,
-        "title": title,
-        "content": content,
-        "height": height,
-        "sourceApp": "VRCX-0",
-        "timeout": timeout,
-        "volume": 0.0,
-        "audioPath": "",
-        "icon": image.unwrap_or_default(),
-        "opacity": opacity,
-    });
-
-    let payload = serde_json::to_vec(&msg)?;
-    let socket =
-        UdpSocket::bind("0.0.0.0:0").map_err(|e| AppError::Custom(format!("udp bind: {e}")))?;
-    socket
-        .send_to(&payload, "127.0.0.1:42069")
-        .map_err(|e| AppError::Custom(format!("udp send: {e}")))?;
-    Ok(())
-}
-
-#[tauri::command]
 pub fn app__get_vrchat_moderations(
     current_user_id: String,
 ) -> Result<HashMap<String, i16>, AppError> {
@@ -1251,29 +1221,6 @@ pub fn app__desktop_notification(
         .show()
         .map_err(|e| AppError::Custom(format!("notification: {e}")))?;
     Ok(())
-}
-
-#[tauri::command]
-#[allow(clippy::too_many_arguments)]
-pub fn app__ovrt_notification(
-    state: State<'_, AppState>,
-    hud_notification: bool,
-    wrist_notification: bool,
-    title: String,
-    body: String,
-    timeout: i32,
-    opacity: f64,
-    image: Option<String>,
-) {
-    state.ovrtoolkit.send_notification(
-        hud_notification,
-        wrist_notification,
-        &title,
-        &body,
-        timeout,
-        opacity,
-        image.as_deref(),
-    );
 }
 
 #[tauri::command]
