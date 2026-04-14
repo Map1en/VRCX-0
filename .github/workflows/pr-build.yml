@@ -1,44 +1,52 @@
 name: PR Build
 
 on:
-    pull_request:
-        types:
-            - opened
-            - synchronize
-            - reopened
-            - ready_for_review
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  workflow_dispatch:
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-    cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    frontend:
-        runs-on: windows-latest
-        defaults:
-            run:
-                shell: bash
-        steps:
-            - uses: actions/checkout@v6
-            - uses: actions/setup-node@v6
-              with:
-                  node-version: lts/*
-                  cache: npm
-            - run: npm ci
-            - run: npm run build
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - run: npm ci
+      - run: npm run prod
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: build/html
+          if-no-files-found: error
 
-    tauri:
-        runs-on: windows-latest
-        defaults:
-            run:
-                shell: bash
-        steps:
-            - uses: actions/checkout@v6
-            - uses: dtolnay/rust-toolchain@stable
-            - uses: Swatinem/rust-cache@v2
-              with:
-                  workspaces: src-tauri -> target
-            - run: cargo build --manifest-path src-tauri/Cargo.toml
+  tauri:
+    needs: frontend
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: build/html
+      - run: cargo build --manifest-path src-tauri/Cargo.toml
