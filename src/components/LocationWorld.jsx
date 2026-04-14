@@ -1,52 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { AlertTriangleIcon, LockIcon, UnlockIcon } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { cn } from '@/lib/utils.js';
 import {
-    gameLogRepository,
-    groupProfileRepository,
-    worldProfileRepository
-} from '@/repositories/index.js';
+    normalizeString,
+    useLocationMetadata
+} from '@/components/location/useLocationMetadata.js';
+import { cn } from '@/lib/utils.js';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService.js';
-import { entityQueryPolicies, queryKeys } from '@/services/entityQueryCacheService.js';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
-import { parseLocation, resolveRegion, translateAccessType } from '@/shared/utils/location.js';
+import { parseLocation, translateAccessType } from '@/shared/utils/location.js';
 import { useLaunchStore } from '@/state/launchStore.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger
 } from '@/ui/shadcn/tooltip.jsx';
-
-const WORLD_ID_PATTERN = /(?:^|\b)wrld_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::|$|\s)/i;
-
-function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function isRawWorldReference(value) {
-    const normalizedValue = normalizeString(value);
-    return Boolean(normalizedValue && WORLD_ID_PATTERN.test(normalizedValue));
-}
-
-function normalizeWorldNameHint(hint, locObj, currentLocation) {
-    const normalizedHint = normalizeString(hint);
-    if (!normalizedHint) {
-        return '';
-    }
-    if (
-        normalizedHint === normalizeString(locObj.worldId) ||
-        normalizedHint === normalizeString(locObj.tag) ||
-        normalizedHint === normalizeString(currentLocation) ||
-        isRawWorldReference(normalizedHint)
-    ) {
-        return '';
-    }
-    return normalizedHint;
-}
 
 function normalizeLocationObject(locationObject) {
     if (typeof locationObject === 'string') {
@@ -84,74 +53,6 @@ function normalizeLocationObject(locationObject) {
     return parseLocation('');
 }
 
-function instanceLocation(instance) {
-    return normalizeString(instance?.location || instance?.tag || instance?.$location?.tag);
-}
-
-function locationCacheKey(location) {
-    const parsed = parseLocation(location);
-    if (!parsed.worldId || !parsed.instanceId) {
-        return '';
-    }
-    return `${parsed.worldId}:${parsed.instanceId}`;
-}
-
-function locationObjectCacheKey(locObj) {
-    const worldId = normalizeString(locObj?.worldId);
-    const instanceId = normalizeString(locObj?.instanceId);
-    if (worldId && instanceId) {
-        return `${worldId}:${instanceId}`;
-    }
-    return locationCacheKey(locObj?.tag);
-}
-
-function buildCachedInstanceMap(instances) {
-    const map = new Map();
-    if (!Array.isArray(instances)) {
-        return map;
-    }
-    for (const instance of instances) {
-        const location = instanceLocation(instance);
-        if (location) {
-            map.set(location, instance);
-            const key = locationCacheKey(location);
-            if (key) {
-                map.set(key, instance);
-            }
-        }
-    }
-    return map;
-}
-
-function readInstanceDisplayName(instance) {
-    return normalizeString(
-        instance?.displayName ||
-            instance?.name ||
-            instance?.instanceDisplayName ||
-            instance?.$location?.displayName
-    );
-}
-
-function readInstanceWorldName(instance) {
-    return normalizeString(
-        instance?.worldName ||
-            instance?.world_name ||
-            instance?.world?.name ||
-            instance?.ref?.worldName ||
-            instance?.ref?.world?.name ||
-            instance?.$location?.worldName ||
-            instance?.$location?.world?.name
-    );
-}
-
-function isInstanceClosed(instance) {
-    return Boolean(instance?.closedAt || instance?.closed_at || instance?.isClosed);
-}
-
-function groupProfileName(group) {
-    return normalizeString(group?.name || group?.displayName || group?.shortCode);
-}
-
 function locationObjectWorldName(locObj) {
     return normalizeString(
         locObj?.worldName ||
@@ -184,21 +85,6 @@ function locationObjectGroupName(locObj) {
     );
 }
 
-function instanceGroupName(instance) {
-    return normalizeString(
-        instance?.groupName ||
-            instance?.group_name ||
-            instance?.group?.name ||
-            instance?.group?.displayName ||
-            instance?.ref?.groupName ||
-            instance?.ref?.group?.name ||
-            instance?.ref?.group?.displayName ||
-            instance?.$location?.groupName ||
-            instance?.$location?.group?.name ||
-            instance?.$location?.group?.displayName
-    );
-}
-
 function worldDialogTarget(locObj) {
     return normalizeString(locObj.worldId) || normalizeString(locObj.tag);
 }
@@ -228,60 +114,29 @@ export function LocationWorld({
     className = ''
 }) {
     const { t } = useI18n();
-    const storeEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const currentEndpoint = endpoint || storeEndpoint;
     const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);
-    const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
-    const groupInstances = groupInstancesState.endpoint === currentEndpoint ? groupInstancesState.instances : [];
-    const groupInstancesRevision = groupInstancesState.endpoint === currentEndpoint
-        ? groupInstancesState.lastLoadedAt || groupInstancesState.fetchedAt || groupInstancesState.status
-        : '';
-    const cachedInstances = useMemo(() => buildCachedInstanceMap(groupInstances), [groupInstances, groupInstancesRevision]);
     const locObj = useMemo(() => normalizeLocationObject(locationObject), [locationObject]);
-    const cachedInstance = cachedInstances.get(locObj.tag) || cachedInstances.get(locationObjectCacheKey(locObj));
     const currentLocation = launchTagForLocationObject(locObj);
-    const worldId = normalizeString(locObj.worldId);
     const accessTypeName = translateAccessType(locObj.accessTypeName, t, accessTypeLocaleKeyMap);
-    const instanceName = readInstanceDisplayName(cachedInstance) || normalizeString(locObj.instanceName);
-    const [localWorldName, setLocalWorldName] = useState('');
-    const worldNameHint =
-        normalizeWorldNameHint(hint, locObj, currentLocation) ||
-        normalizeWorldNameHint(locationObjectWorldName(locObj), locObj, currentLocation);
-    const cachedWorldName = normalizeWorldNameHint(readInstanceWorldName(cachedInstance), locObj, currentLocation);
-    const worldProfileQuery = useQuery({
-        queryKey: queryKeys.world(worldId, currentEndpoint),
-        queryFn: () => worldProfileRepository.getWorldProfile({ worldId, endpoint: currentEndpoint }),
-        enabled: Boolean(worldId),
-        staleTime: entityQueryPolicies.world.staleTime,
-        gcTime: entityQueryPolicies.world.gcTime,
-        retry: entityQueryPolicies.world.retry,
-        refetchOnWindowFocus: entityQueryPolicies.world.refetchOnWindowFocus
+    const {
+        region,
+        instanceName,
+        isClosed,
+        groupName,
+        worldName
+    } = useLocationMetadata({
+        locationInfo: locObj,
+        currentLocation,
+        endpoint,
+        hint,
+        worldNameHint: locationObjectWorldName(locObj),
+        groupHint: normalizeString(grouphint) || locationObjectGroupName(locObj),
+        instanceName: locObj.instanceName
     });
-    const worldName = normalizeWorldNameHint(worldProfileQuery.data?.name, locObj, currentLocation) ||
-        cachedWorldName ||
-        worldNameHint ||
-        localWorldName;
-    const region = resolveRegion(locObj);
     const isUnlocked = Boolean(
         (worldDialogShortName && locObj.shortName && worldDialogShortName === locObj.shortName) ||
             (worldDialogShortName && locObj.launchToken && worldDialogShortName === locObj.launchToken) ||
             (currentUserId && currentUserId === locObj.userId)
-    );
-    const isClosed = Boolean(cachedInstance && isInstanceClosed(cachedInstance));
-    const groupId = normalizeString(locObj.groupId);
-    const hintedGroupName = normalizeString(grouphint) || locationObjectGroupName(locObj) || instanceGroupName(cachedInstance);
-    const groupProfileQuery = useQuery({
-        queryKey: queryKeys.group(groupId, false, currentEndpoint),
-        queryFn: () => groupProfileRepository.getGroupProfile({ groupId, endpoint: currentEndpoint, includeRoles: false }),
-        enabled: Boolean(groupId),
-        staleTime: entityQueryPolicies.group.staleTime,
-        gcTime: entityQueryPolicies.group.gcTime,
-        retry: entityQueryPolicies.group.retry,
-        refetchOnWindowFocus: entityQueryPolicies.group.refetchOnWindowFocus
-    });
-    const groupName = useMemo(
-        () => groupProfileName(groupProfileQuery.data) || hintedGroupName,
-        [groupProfileQuery.data, hintedGroupName]
     );
     const ownerLabel = normalizeString(instanceOwnerName) || normalizeString(instanceOwner);
     const resolvedPlayerCount = Number(playerCount);
@@ -295,31 +150,6 @@ export function LocationWorld({
         worldName,
         accessTypeName || locObj.accessTypeName || ''
     ].filter(Boolean).join(' · ') || '—';
-
-    useEffect(() => {
-        let active = true;
-        setLocalWorldName('');
-
-        if (!worldId || worldNameHint || cachedWorldName) {
-            return () => {
-                active = false;
-            };
-        }
-
-        gameLogRepository
-            .getWorldNameByWorldId(worldId)
-            .then((name) => {
-                const nextName = normalizeWorldNameHint(name, locObj, currentLocation);
-                if (active && nextName) {
-                    setLocalWorldName(nextName);
-                }
-            })
-            .catch(() => {});
-
-        return () => {
-            active = false;
-        };
-    }, [cachedWorldName, currentLocation, locObj, worldId, worldNameHint]);
 
     function openLocationGroupDialog(event) {
         if (!interactive) {
