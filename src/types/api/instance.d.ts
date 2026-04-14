@@ -56,7 +56,6 @@ interface GetInstanceResponse {
     name: string;
     ownerId: string;
     permanent: boolean;
-    photonRegion: string;
     platforms: {
         android: number;
         ios: number;

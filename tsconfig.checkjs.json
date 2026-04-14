@@ -7,10 +7,9 @@
     "exclude": [
         "node_modules",
         "build",
+        "dist",
         "src/**/*.spec.js",
         "src/**/*.test.js",
-        "src/**/__tests__/**",
-        "src/app.js",
-        "src/vr/vr.js"
+        "src/**/__tests__/**"
     ]
 }

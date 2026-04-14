@@ -79,16 +79,6 @@
                 "ImageLoad": "Изо загружено"
             }
         },
-        "player_list": {
-            "photon": {
-                "current": "Текущий",
-                "previous": "Предыдущий",
-                "search_placeholder": "Поиск",
-                "filter_placeholder": "Фильтр",
-                "chatbox_blacklist": "Чатбокс черный список",
-                "status_tooltip": "Статус компаньона VRCX-0"
-            }
-        },
         "search": {
             "search_placeholder": "Поиск",
             "clear_results_tooltip": "Очистить результаты поиска",
@@ -479,6 +469,13 @@
                         "use_memo_nicknames": "Использовать прозвища из заметок",
                         "play": "Воспроизвести",
                         "tts_test_placeholder": "Тест TTS"
+                    }
+                }
+            },
+            "advanced": {
+                "advanced": {
+                    "app_launcher": {
+                        "enable": "Включить запуск приложений"
                     }
                 }
             },
@@ -1442,12 +1439,6 @@
             "header": "Уведомление об открытом программном обеспечении",
             "description": "VRCX-0 основан на программном обеспечении с открытым исходным кодом, что стало возможным благодаря его вкладу."
         },
-        "primary_password": {
-            "header": "Требуется основной пароль",
-            "password_placeholder": "Введите новый пароль",
-            "re_input_placeholder": "Повторите пароль",
-            "ok": "ОК"
-        },
         "registry_backup": {
             "header": "Резервное копирование настроек реестра VRC",
             "backup": "Резервное копирование",
@@ -1495,10 +1486,6 @@
             "resend": "Отправить письмо повторно",
             "verify": "Подтвердить",
             "input_error": "Неверный код"
-        },
-        "primary_password": {
-            "header": "Требуется основной пароль",
-            "description": "Пожалуйста, введите ваш основной пароль."
         },
         "change_favorite_group_name": {
             "header": "Изменить название группы",
@@ -1603,13 +1590,6 @@
                 "success": "Предпросмотр мира YouTube изменен"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "Порог времени ожидания пользователя",
-            "description": "Введите количество секунд (по умолчанию: 3)",
-            "cancel": "Отмена",
-            "ok": "ОК",
-            "input_error": "Требуется корректное число"
-        },
         "auto_clear_cache": {
             "header": "Очистить таймер кэша VRCX-0",
             "description": "Введите количество часов, большее значение может повлиять на использование ОЗУ и производительность (по умолчанию: 24, отключено: 0)",
@@ -1710,7 +1690,6 @@
         "playerList": {
             "avatar": "Аватар",
             "timer": "Таймер",
-            "photonId": "Photon ID",
             "icon": "Иконки",
             "platform": "Платформа",
             "displayName": "Отображаемое имя",

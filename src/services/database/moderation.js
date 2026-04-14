@@ -1,6 +1,6 @@
 import { dbVars } from '../database';
 
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
 
 const moderation = {
     async getModeration(userId) {
@@ -31,7 +31,24 @@ const moderation = {
         return row;
     },
 
-    setModeration(entry) {
+    async getAllModerations() {
+        var rows = [];
+        await sqliteService.execute(
+            (dbRow) => {
+                rows.push({
+                    userId: dbRow[0],
+                    updatedAt: dbRow[1],
+                    displayName: dbRow[2],
+                    block: dbRow[3] === 1,
+                    mute: dbRow[4] === 1
+                });
+            },
+            `SELECT * FROM ${dbVars.userPrefix}_moderation`
+        );
+        return rows;
+    },
+
+    async setModeration(entry) {
         var block = 0;
         var mute = 0;
         if (entry.block) {
@@ -40,7 +57,7 @@ const moderation = {
         if (entry.mute) {
             mute = 1;
         }
-        sqliteService.executeNonQuery(
+        await sqliteService.executeNonQuery(
             `INSERT OR REPLACE INTO ${dbVars.userPrefix}_moderation (user_id, updated_at, display_name, block, mute) VALUES (@user_id, @updated_at, @display_name, @block, @mute)`,
             {
                 '@user_id': entry.userId,
@@ -52,8 +69,8 @@ const moderation = {
         );
     },
 
-    deleteModeration(userId) {
-        sqliteService.executeNonQuery(
+    async deleteModeration(userId) {
+        await sqliteService.executeNonQuery(
             `DELETE FROM ${dbVars.userPrefix}_moderation WHERE user_id = @user_id`,
             {
                 '@user_id': userId

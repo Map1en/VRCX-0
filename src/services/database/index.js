@@ -15,7 +15,7 @@ import { tableFixes } from './tableFixes.js';
 import { tableSize } from './tableSize.js';
 import { worldFavorites } from './worldFavorites.js';
 
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
 
 const dbVars = {
     userId: '',

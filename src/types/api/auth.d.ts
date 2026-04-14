@@ -200,8 +200,6 @@ export interface ConfigResponse {
         standalonewindows: boolean;
     };
     onlyFpsStringGraphContent: string;
-    photonNameserverOverrides: string[];
-    photonPublicKeys: string[];
     'player-url-resolver-sha1': string;
     'player-url-resolver-version': string;
     pluginSamlSandwich: boolean;

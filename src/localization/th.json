@@ -78,16 +78,6 @@
                 "ImageLoad": "โหลดรูปภาพ"
             }
         },
-        "player_list": {
-            "photon": {
-                "current": "ปัจจุบัน",
-                "previous": "ก่อนหน้า",
-                "search_placeholder": "ค้นหา",
-                "filter_placeholder": "ตัวกรอง",
-                "chatbox_blacklist": "บัญชีดำกล่องแชท",
-                "status_tooltip": "สถานะ VRCX-0 Companion"
-            }
-        },
         "search": {
             "search_placeholder": "ค้นหา",
             "clear_results_tooltip": "ล้างผลการค้นหา",
@@ -501,10 +491,6 @@
                 "advanced": {
                     "launch_options": "ตัวเลือกการเปิดเกม",
                     "vrc_registry_backup": "สำรองข้อมูลรีจิสทรีของ VRC",
-                    "primary_password": {
-                        "header": "รหัสผ่านหลัก",
-                        "description": "เข้ารหัสรหัสผ่าน (ปิดใช้งานการเข้าสู่ระบบอัตโนมัติ)"
-                    },
                     "relaunch_vrchat": {
                         "header": "เปิด VRChat ใหม่หลังจากเกมขัดข้อง",
                         "description": "เข้าร่วมอินสแตนซ์ล่าสุดอีกครั้งเมื่อ VRChat ขัดข้อง"
@@ -571,6 +557,7 @@
                         "header": "ตัวเปิดโปรแกรม",
                         "folder": "โฟลเดอร์สำหรับเปิดอัตโนมัติ",
                         "folder_tooltip": "หากต้องการเปิดโปรแกรมพร้อมกับ VRChat โดยอัตโนมัติ ให้วางทางลัดไว้ในโฟลเดอร์นี้",
+                        "enable": "เปิดใช้งานตัวเปิดโปรแกรม",
                         "auto_close": "ปิดโปรแกรมอัตโนมัติ"
                     },
                     "cache_debug": {
@@ -610,29 +597,6 @@
                         "description": "เปิดหรือตั้งค่าโฟลเดอร์ที่จัดเก็บเนื้อหาเช่น 'Prints' และ 'Stickers'",
                         "set_folder": "ตั้งค่าโฟลเดอร์",
                         "reset_override": "รีเซ็ต"
-                    }
-                },
-                "photon": {
-                    "header": "โอเวอร์เลย์บันทึก Photon",
-                    "event_hud": {
-                        "header": "Photon Event HUD",
-                        "enable": "เปิดใช้งาน",
-                        "enable_tooltip": "ต้องเปิดใช้งานโอเวอร์เลย์ของ SteamVR",
-                        "filter": "ตัวกรอง",
-                        "filter_favorites": "รายการโปรด",
-                        "filter_friends": "เพื่อน",
-                        "filter_everyone": "ทุกคน",
-                        "message_timeout": "ระยะเวลาข้อความ"
-                    },
-                    "timeout_hud": {
-                        "header": "User Timeout HUD",
-                        "enable": "เปิดใช้งาน",
-                        "enable_tooltip": "ต้องเปิดใช้งานโอเวอร์เลย์ของ SteamVR",
-                        "filter": "ตัวกรอง",
-                        "filter_favorites": "รายการโปรด",
-                        "filter_friends": "เพื่อน",
-                        "filter_everyone": "ทุกคน",
-                        "timeout_threshold": "เกณฑ์การหมดเวลา"
                     }
                 }
             }
@@ -1507,12 +1471,6 @@
             "header": "ประกาศเกี่ยวกับซอฟต์แวร์โอเพนซอร์ส",
             "description": "VRCX-0 พัฒนาขึ้นโดยใช้ซอฟต์แวร์โอเพนซอร์ส ซึ่งเป็นไปได้เพราะการมีส่วนร่วมของพวกเขา"
         },
-        "primary_password": {
-            "header": "ต้องใช้รหัสผ่านหลัก",
-            "password_placeholder": "ป้อนรหัสผ่านใหม่",
-            "re_input_placeholder": "ป้อนรหัสผ่านอีกครั้ง",
-            "ok": "ตกลง"
-        },
         "registry_backup": {
             "header": "สำรองการตั้งค่ารีจิสทรีของ VRC",
             "backup": "สำรองข้อมูล",
@@ -1559,10 +1517,6 @@
             "resend": "ส่งอีเมลอีกครั้ง",
             "verify": "ยืนยัน",
             "input_error": "รหัสไม่ถูกต้อง"
-        },
-        "primary_password": {
-            "header": "ต้องใช้รหัสผ่านหลัก",
-            "description": "กรุณาป้อนรหัสผ่านหลักของคุณ"
         },
         "change_favorite_group_name": {
             "header": "เปลี่ยนชื่อกลุ่ม",
@@ -1667,13 +1621,6 @@
                 "success": "เปลี่ยนวิดีโอพรีวิว YouTube ของโลกแล้ว"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "เกณฑ์การหมดเวลาของผู้ใช้",
-            "description": "ป้อนจำนวนวินาที (ค่าเริ่มต้น: 3)",
-            "cancel": "ยกเลิก",
-            "ok": "ตกลง",
-            "input_error": "ต้องระบุตัวเลขที่ถูกต้อง"
-        },
         "auto_clear_cache": {
             "header": "ตัวตั้งเวลาล้างแคช VRCX-0",
             "description": "ป้อนจำนวนชั่วโมง, ค่าที่สูงขึ้นอาจส่งผลต่อการใช้ RAM และประสิทธิภาพ (ค่าเริ่มต้น: 24, ปิดใช้งาน: 0)",
@@ -1763,7 +1710,6 @@
         "playerList": {
             "avatar": "อวาตาร์",
             "timer": "ตัวจับเวลา",
-            "photonId": "Photon ID",
             "icon": "ไอคอน",
             "platform": "แพลตฟอร์ม",
             "displayName": "ชื่อที่แสดง",

@@ -4,10 +4,10 @@
     "version": "2026.4.10",
     "identifier": "com.vrcx-0.app",
     "build": {
-        "frontendDist": "../build/html",
+        "frontendDist": "../dist",
         "devUrl": "http://localhost:9000",
         "beforeDevCommand": "npm run dev",
-        "beforeBuildCommand": "npm run prod"
+        "beforeBuildCommand": "npm run build"
     },
     "app": {
         "withGlobalTauri": true,
@@ -39,8 +39,8 @@
         "resources": {
             "../LICENSE": "LICENSE",
             "../LICENSE-MIT": "LICENSE-MIT",
-            "../build/html/licenses/THIRD_PARTY_NOTICES.txt": "licenses/THIRD_PARTY_NOTICES.txt",
-            "../build/html/licenses/third-party-licenses.json": "licenses/third-party-licenses.json"
+            "../dist/licenses/THIRD_PARTY_NOTICES.txt": "licenses/THIRD_PARTY_NOTICES.txt",
+            "../dist/licenses/third-party-licenses.json": "licenses/third-party-licenses.json"
         },
         "targets": ["nsis"],
         "icon": [

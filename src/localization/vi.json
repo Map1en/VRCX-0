@@ -57,16 +57,6 @@
             "filter_placeholder": "Lọc",
             "search_placeholder": "Tìm Kiếm"
         },
-        "player_list": {
-            "photon": {
-                "current": "Hiện tại",
-                "previous": "Trước đó",
-                "search_placeholder": "Tìm kiếm",
-                "filter_placeholder": "Lọc",
-                "chatbox_blacklist": "Cho chatbox vào danh sách đen",
-                "status_tooltip": "VRCX-0 Companion Status"
-            }
-        },
         "search": {
             "search_placeholder": "Tìm kiếm",
             "clear_results_tooltip": "Xóa kết quả tìm kiếm",
@@ -353,10 +343,6 @@
                 "advanced": {
                     "launch_options": "Lựa chọn khởi động",
                     "vrc_registry_backup": "VRC Registry Backup",
-                    "primary_password": {
-                        "header": "Mật khẩu chính",
-                        "description": "Mã hóa mật khẩu (sẽ tắt đăng nhập tự động)"
-                    },
                     "relaunch_vrchat": {
                         "header": "Chạy lại VRChat sau khi bị crash",
                         "description": "Vào lại Íntance cuối cùng trước khi bị crash"
@@ -399,6 +385,7 @@
                         "header": "khởi động ứng dụng",
                         "folder": "Tự động khởi động thư mục",
                         "folder_tooltip": "Đẻ tự động khởi động ứng dụng với VRChat, hãy bỏ shortcut trong thư mục này",
+                        "enable": "Bật khởi động ứng dụng",
                         "auto_close": "Tự động đóng ứng dụng"
                     },
                     "cache_debug": {
@@ -431,29 +418,6 @@
                         "portal_spawn": "Portal Spawn:",
                         "video_play": "Video Play:",
                         "event": "Event:"
-                    }
-                },
-                "photon": {
-                    "header": "Photon Logging Overlay",
-                    "event_hud": {
-                        "header": "Photon Event HUD",
-                        "enable": "Bật",
-                        "enable_tooltip": "Yêu cầu bật SteamVR overlay",
-                        "filter": "Lọc",
-                        "filter_favorites": "Yêu thích",
-                        "filter_friends": "Ban bè",
-                        "filter_everyone": "Tấy cả",
-                        "message_timeout": "Message Timeout"
-                    },
-                    "timeout_hud": {
-                        "header": "User Timeout HUD",
-                        "enable": "Bật",
-                        "enable_tooltip": "Yêu cầu bật SteamVR overlay",
-                        "filter": "Lọc",
-                        "filter_favorites": "Yêu thích",
-                        "filter_friends": "Ban bè",
-                        "filter_everyone": "Tất cả",
-                        "timeout_threshold": "Timeout Threshold"
                     }
                 }
             }
@@ -1255,12 +1219,6 @@
             "header": "Thông báo phần mềm mở (Tiếng Anh) - Open Source Software Notice",
             "description": "VRCX-0 is based on open source software. It was possible because of their contribution."
         },
-        "primary_password": {
-            "header": "Yêu cầu mật khẩu chính",
-            "password_placeholder": "Nhập mật khẩu mới",
-            "re_input_placeholder": "Nhập lại mật khẩu mới",
-            "ok": "OK"
-        },
         "registry_backup": {
             "header": "VRC Registry Settings Backup",
             "backup": "Backup",
@@ -1301,10 +1259,6 @@
             "resend": "Gửi lại Email",
             "verify": "Xác thực",
             "input_error": "Sai mã"
-        },
-        "primary_password": {
-            "header": "Yêu cầu mật khẩu chính",
-            "description": "Vui lòng nhập mật khẩu chính"
         },
         "change_favorite_group_name": {
             "header": "Thay đổi tên Group",
@@ -1409,13 +1363,6 @@
                 "success": "YouTube Preview đã được thay đổi"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "User Timeout Threshold",
-            "description": "Nhập số giây (mặc định: 3)",
-            "cancel": "Hủy",
-            "ok": "OK",
-            "input_error": "Yêu cầu số hợp lệ"
-        },
         "auto_clear_cache": {
             "header": "Xóa thời gian VRCX-0 Cache",
             "description": "Nhập số giờ, số lớn có thể sử dụng nhiều RAM và hiệu năng hơn (mặc định: 24, tắt: 0)",
@@ -1470,7 +1417,6 @@
         "playerList": {
             "avatar": "Avatar",
             "timer": "Timer",
-            "photonId": "Photon ID",
             "icon": "Icons",
             "platform": "Nền tảng",
             "displayName": "Display Name",

@@ -118,16 +118,6 @@
                 "ImageLoad": "Załadowano obraz"
             }
         },
-        "player_list": {
-            "photon": {
-                "current": "Obecny",
-                "previous": "Poprzedni",
-                "search_placeholder": "Szukaj",
-                "filter_placeholder": "Filtruj",
-                "chatbox_blacklist": "Zablokowane czaty",
-                "status_tooltip": "Status VRCX-0"
-            }
-        },
         "search": {
             "search_placeholder": "Szukaj",
             "clear_results_tooltip": "Wyczyść wyniki wyszukiwania",
@@ -642,10 +632,6 @@
                 "advanced": {
                     "launch_options": "Opcje uruchamiania",
                     "vrc_registry_backup": "Kopia zapasowa rejestru VRC",
-                    "primary_password": {
-                        "header": "Hasło główne",
-                        "description": "Szyfruj hasło (wyłącza automatyczne logowanie)"
-                    },
                     "relaunch_vrchat": {
                         "header": "Uruchom ponownie VRChat po crashu",
                         "description": "Dołącz ponownie do ostatniej instancji, gdy VRChat zcrashuje"
@@ -729,6 +715,7 @@
                         "header": "Uruchamianie innych aplikacji",
                         "folder": "Folder autouruchamiania",
                         "folder_tooltip": "Aby automatycznie uruchamiać aplikacje z VRChat, umieść skróty w tym folderze.",
+                        "enable": "Włącz uruchamianie innych aplikacji",
                         "auto_close": "Autozamykaj aplikacje",
                         "run_process_once": "Otwieraj jedną instancję aplikacji"
                     },
@@ -770,29 +757,6 @@
                         "description": "Otwórz lub ustaw folder, w którym przechowywane są treści, takie jak odbitki czy naklejki.",
                         "set_folder": "Ustaw folder",
                         "reset_override": "Resetuj"
-                    }
-                },
-                "photon": {
-                    "header": "Nakładka logów Photon",
-                    "event_hud": {
-                        "header": "HUD wydarzeń Photon",
-                        "enable": "Włącz",
-                        "enable_tooltip": "Wymaga włączonej nakładki SteamVR",
-                        "filter": "Filtruj",
-                        "filter_favorites": "Ulubione",
-                        "filter_friends": "Znajomi",
-                        "filter_everyone": "Wszyscy",
-                        "message_timeout": "Limit czasu wiadomości"
-                    },
-                    "timeout_hud": {
-                        "header": "HUD limitu czasu użytkownika",
-                        "enable": "Włącz",
-                        "enable_tooltip": "Wymaga włączonej nakładki SteamVR",
-                        "filter": "Filtruj",
-                        "filter_favorites": "Ulubione",
-                        "filter_friends": "Znajomi",
-                        "filter_everyone": "Wszyscy",
-                        "timeout_threshold": "Próg limitu czasu"
                     }
                 }
             }
@@ -1754,12 +1718,6 @@
             "header": "Informacja o otwartym oprogramowaniu",
             "description": "VRCX-0 opiera się na oprogramowaniu open source. Było to możliwe ze względu na ich wkład."
         },
-        "primary_password": {
-            "header": "Wymagane hasło podstawowe",
-            "password_placeholder": "Wprowadź nowe hasło",
-            "re_input_placeholder": "Wprowadź hasło ponownie",
-            "ok": "Ok"
-        },
         "registry_backup": {
             "header": "Kopia zapasowa ustawień rejestru VRC",
             "backup": "Kopia zapasowa",
@@ -1807,10 +1765,6 @@
             "resend": "Wyślij ponownie e-mail",
             "verify": "Weryfikuj",
             "input_error": "Nieprawidłowy kod"
-        },
-        "primary_password": {
-            "header": "Wymagane hasło podstawowe",
-            "description": "Wprowadź swoje podstawowe hasło."
         },
         "change_favorite_group_name": {
             "header": "Zmień nazwę grupy",
@@ -1915,13 +1869,6 @@
                 "success": "Zmieniono podgląd YouTube"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "Próg limitu czasu użytkownika",
-            "description": "Wprowadź liczbę sekund (domyślnie: 3)",
-            "cancel": "Anuluj",
-            "ok": "Ok",
-            "input_error": "Wymagana jest prawidłowa liczba"
-        },
         "auto_clear_cache": {
             "header": "Wyczyść zegar pamięci podręcznej VRCX-0",
             "description": "Wprowadź liczbę godzin, większe wartości mogą wpłynąć na zużycie RAM (domyślnie: 24, wyłącz: 0)",
@@ -2022,7 +1969,6 @@
         "playerList": {
             "avatar": "Awatar",
             "timer": "Zegar",
-            "photonId": "Photon ID",
             "icon": "Ikony",
             "platform": "Platforma",
             "displayName": "Wyświetlana nazwa",

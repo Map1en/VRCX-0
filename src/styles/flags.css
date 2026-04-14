@@ -1,7 +1,8 @@
 :root {
-    --offx: 20px; /* flag size */
+    --offx: 20px;
     --offy: 14.5px;
 }
+
 .flags {
     background: url('/images/flags.png') no-repeat;
     background-size: calc(var(--offx) * 6);
@@ -11,180 +12,236 @@
     background-position: calc(var(--offx) * -5) calc(var(--offy) * -4);
     filter: grayscale(0.05);
 }
+
 span[class='flags'] {
     background-position: calc(var(--offx) * 1) 0;
 }
-.flags.us {
-    background-position: 0 0;
-}
+
+.flags.us,
 .flags.usw {
     background-position: 0 0;
 }
+
 .flags.kr {
     background-position: calc(var(--offx) * -1) 0;
 }
+
 .flags.ru {
     background-position: calc(var(--offx) * -2) 0;
 }
+
 .flags.es {
     background-position: calc(var(--offx) * -3) 0;
 }
+
 .flags.pt {
     background-position: calc(var(--offx) * -4) 0;
 }
+
 .flags.cn {
     background-position: calc(var(--offx) * -5) 0;
 }
+
 .flags.de {
     background-position: 0 calc(var(--offy) * -1);
 }
+
 .flags.jp {
     background-position: calc(var(--offx) * -1) calc(var(--offy) * -1);
 }
+
 .flags.fr {
     background-position: calc(var(--offx) * -2) calc(var(--offy) * -1);
 }
+
 .flags.se {
     background-position: calc(var(--offx) * -3) calc(var(--offy) * -1);
 }
+
 .flags.nl {
     background-position: calc(var(--offx) * -4) calc(var(--offy) * -1);
 }
+
 .flags.pl {
     background-position: calc(var(--offx) * -5) calc(var(--offy) * -1);
 }
+
 .flags.dk {
     background-position: 0 calc(var(--offy) * -2);
 }
+
 .flags.no {
     background-position: calc(var(--offx) * -1) calc(var(--offy) * -2);
 }
+
 .flags.it {
     background-position: calc(var(--offx) * -2) calc(var(--offy) * -2);
 }
+
 .flags.th {
     background-position: calc(var(--offx) * -3) calc(var(--offy) * -2);
 }
+
 .flags.fi {
     background-position: calc(var(--offx) * -4) calc(var(--offy) * -2);
 }
+
 .flags.hu {
     background-position: calc(var(--offx) * -5) calc(var(--offy) * -2);
 }
+
 .flags.cz {
     background-position: 0 calc(var(--offy) * -3);
 }
+
 .flags.tr {
     background-position: calc(var(--offx) * -1) calc(var(--offy) * -3);
 }
+
 .flags.ae {
     background-position: calc(var(--offx) * -2) calc(var(--offy) * -3);
 }
+
 .flags.ro {
     background-position: calc(var(--offx) * -3) calc(var(--offy) * -3);
 }
+
 .flags.vn {
     background-position: calc(var(--offx) * -4) calc(var(--offy) * -3);
 }
+
 .flags.ua {
     background-position: calc(var(--offx) * -5) calc(var(--offy) * -3);
 }
+
 .flags.gb {
     background-position: 0 calc(var(--offy) * -4);
 }
+
 .flags.use {
     background-position: calc(var(--offx) * -1) calc(var(--offy) * -4);
 }
+
 .flags.eu {
     background-position: calc(var(--offx) * -2) calc(var(--offy) * -4);
 }
+
 .flags.tw {
     background-position: calc(var(--offx) * -3) calc(var(--offy) * -4);
 }
-.flags.mt {
-    background-position: 0 calc(var(--offy) * -5);
-}
-.flags.id {
-    background-position: calc(var(--offx) * -1) calc(var(--offy) * -5);
-}
-.flags.hr {
-    background-position: calc(var(--offx) * -2) calc(var(--offy) * -5);
-}
-.flags.he {
-    background-position: calc(var(--offx) * -3) calc(var(--offy) * -5);
-}
-.flags.af {
-    background-position: calc(var(--offx) * -4) calc(var(--offy) * -5);
-}
-.flags.be {
-    background-position: calc(var(--offx) * -5) calc(var(--offy) * -5);
-}
-.flags.bg {
-    background-position: 0 calc(var(--offy) * -6);
-}
-.flags.cy {
-    background-position: calc(var(--offx) * -1) calc(var(--offy) * -6);
-}
-.flags.el {
-    background-position: calc(var(--offx) * -2) calc(var(--offy) * -6);
-}
-.flags.et {
-    background-position: calc(var(--offx) * -3) calc(var(--offy) * -6);
-}
-.flags.ph {
-    background-position: calc(var(--offx) * -4) calc(var(--offy) * -6);
-}
-.flags.gd {
-    background-position: calc(var(--offx) * -5) calc(var(--offy) * -6);
-}
-.flags.ga {
-    background-position: 0 calc(var(--offy) * -7);
-}
-.flags.hi {
-    background-position: calc(var(--offx) * -1) calc(var(--offy) * -7);
-}
-.flags.hy {
-    background-position: calc(var(--offx) * -2) calc(var(--offy) * -7);
-}
-.flags.is {
-    background-position: calc(var(--offx) * -3) calc(var(--offy) * -7);
-}
-.flags.lv {
-    background-position: calc(var(--offx) * -4) calc(var(--offy) * -7);
-}
-.flags.lt {
-    background-position: calc(var(--offx) * -5) calc(var(--offy) * -7);
-}
-.flags.lb {
-    background-position: 0 calc(var(--offy) * -8);
-}
-.flags.mk {
-    background-position: calc(var(--offx) * -1) calc(var(--offy) * -8);
-}
-.flags.sk {
-    background-position: calc(var(--offx) * -2) calc(var(--offy) * -8);
-}
-.flags.sl {
-    background-position: calc(var(--offx) * -3) calc(var(--offy) * -8);
-}
-.flags.nz {
-    background-position: calc(var(--offx) * -4) calc(var(--offy) * -8);
-}
-.flags.au {
-    background-position: calc(var(--offx) * -5) calc(var(--offy) * -8);
-}
-.flags.eo {
-    background-position: 0 calc(var(--offy) * -9);
-}
-.flags.tok {
-    background-position: calc(var(--offx) * -1) calc(var(--offy) * -9);
-}
-.flags.my {
-    background-position: calc(var(--offx) * -2) calc(var(--offy) * -9);
-}
+
 .flags.blank {
     background-position: calc(var(--offx) * -4) calc(var(--offy) * -4);
 }
+
 .flags.unknown {
     background-position: calc(var(--offx) * -5) calc(var(--offy) * -4);
+}
+
+.flags.mt {
+    background-position: 0 calc(var(--offy) * -5);
+}
+
+.flags.id {
+    background-position: calc(var(--offx) * -1) calc(var(--offy) * -5);
+}
+
+.flags.hr {
+    background-position: calc(var(--offx) * -2) calc(var(--offy) * -5);
+}
+
+.flags.he {
+    background-position: calc(var(--offx) * -3) calc(var(--offy) * -5);
+}
+
+.flags.af {
+    background-position: calc(var(--offx) * -4) calc(var(--offy) * -5);
+}
+
+.flags.be {
+    background-position: calc(var(--offx) * -5) calc(var(--offy) * -5);
+}
+
+.flags.bg {
+    background-position: 0 calc(var(--offy) * -6);
+}
+
+.flags.cy {
+    background-position: calc(var(--offx) * -1) calc(var(--offy) * -6);
+}
+
+.flags.el {
+    background-position: calc(var(--offx) * -2) calc(var(--offy) * -6);
+}
+
+.flags.et {
+    background-position: calc(var(--offx) * -3) calc(var(--offy) * -6);
+}
+
+.flags.ph {
+    background-position: calc(var(--offx) * -4) calc(var(--offy) * -6);
+}
+
+.flags.gd {
+    background-position: calc(var(--offx) * -5) calc(var(--offy) * -6);
+}
+
+.flags.ga {
+    background-position: 0 calc(var(--offy) * -7);
+}
+
+.flags.hi {
+    background-position: calc(var(--offx) * -1) calc(var(--offy) * -7);
+}
+
+.flags.hy {
+    background-position: calc(var(--offx) * -2) calc(var(--offy) * -7);
+}
+
+.flags.is {
+    background-position: calc(var(--offx) * -3) calc(var(--offy) * -7);
+}
+
+.flags.lv {
+    background-position: calc(var(--offx) * -4) calc(var(--offy) * -7);
+}
+
+.flags.lt {
+    background-position: calc(var(--offx) * -5) calc(var(--offy) * -7);
+}
+
+.flags.lb {
+    background-position: 0 calc(var(--offy) * -8);
+}
+
+.flags.mk {
+    background-position: calc(var(--offx) * -1) calc(var(--offy) * -8);
+}
+
+.flags.sk {
+    background-position: calc(var(--offx) * -2) calc(var(--offy) * -8);
+}
+
+.flags.sl {
+    background-position: calc(var(--offx) * -3) calc(var(--offy) * -8);
+}
+
+.flags.nz {
+    background-position: calc(var(--offx) * -4) calc(var(--offy) * -8);
+}
+
+.flags.au {
+    background-position: calc(var(--offx) * -5) calc(var(--offy) * -8);
+}
+
+.flags.eo {
+    background-position: 0 calc(var(--offy) * -9);
+}
+
+.flags.tok {
+    background-position: calc(var(--offx) * -1) calc(var(--offy) * -9);
+}
+
+.flags.my {
+    background-position: calc(var(--offx) * -2) calc(var(--offy) * -9);
 }

@@ -1,4 +1,4 @@
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
 
 const avatarTags = {
     async getAvatarTags(avatarId) {

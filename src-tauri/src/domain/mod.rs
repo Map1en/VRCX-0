@@ -1,9 +1,9 @@
 pub mod auto_launch;
 pub mod database;
+pub mod discord_rpc;
 pub mod image_cache;
 pub mod ipc;
 pub mod log_watcher;
-pub mod ovrtoolkit;
 pub mod png;
 pub mod process_monitor;
 pub mod screenshot;

@@ -15,7 +15,13 @@
       "delete": "Excluir",
       "remove": "Remover",
       "reset": "Redefinir",
-      "view_details": "Ver Detalhes"
+      "view_details": "Ver Detalhes",
+      "configure": "Configurar",
+      "refresh": "Atualizar",
+      "cancel": "Cancelar",
+      "copy": "Copiar",
+      "open_link": "Abrir Link",
+      "save": "Salvar"
     },
     "time_units": {
       "y": "a",
@@ -32,7 +38,12 @@
       "thursday": "Quinta-feira",
       "friday": "Sexta-feira",
       "saturday": "Sábado"
-    }
+    },
+    "duration": "Duração",
+    "load_more": "Carregar mais",
+    "no_more": "Sem mais entradas",
+    "current_session": "Atual",
+    "settings_saved": "Configurações salvas"
   },
   "nav_tooltip": {
     "friends_locations": "Localização de Amigos",
@@ -240,8 +251,7 @@
         "Status": "Status",
         "Avatar": "Avatar",
         "Bio": "Bio"
-      },
-      "photon_event_logging": "Registro de Eventos Photon"
+      }
     },
     "friends_locations": {
       "online": "Online",
@@ -268,16 +278,6 @@
         "External": "Externo",
         "StringLoad": "Carregamento de string",
         "ImageLoad": "Carregamento de imagem"
-      }
-    },
-    "player_list": {
-      "photon": {
-        "current": "Atual",
-        "previous": "Anterior",
-        "search_placeholder": "Pesquisar",
-        "filter_placeholder": "Filtrar",
-        "chatbox_blacklist": "Lista Negra do Chatbox",
-        "status_tooltip": "Status do Companion VRCX-0"
       }
     },
     "my_avatars": {
@@ -830,7 +830,7 @@
           "font_family_custom_dialog_description": "Insira um valor CSS font-family válido",
           "font_family_custom_invalid": "font-family inválida. Use nomes de fontes separados por vírgula, ex: \"Minha Fonte\", Arial, sans-serif",
           "cjk_font_pack_noto": "Noto Sans CJK",
-          "cjk_font_pack_pht": "PuHuiTi CJK",
+          "cjk_font_pack_puhuiti": "PuHuiTi CJK",
           "theme_mode_system": "Sistema",
           "theme_mode_light": "Claro",
           "theme_mode_dark": "Escuro",
@@ -1045,10 +1045,6 @@
           "vrcx_settings": {
             "header": "VRCX-0"
           },
-          "primary_password": {
-            "header": "Senha Principal",
-            "description": "Criptografar Senha (Desativa Login Automático)"
-          },
           "relaunch_vrchat": {
             "header": "Reiniciar VRChat Após Falha",
             "description": "Reingressar na Última Instância Quando o VRChat Travar"
@@ -1141,6 +1137,7 @@
             "header": "Iniciador de Aplicativos",
             "folder": "Pasta de Inicialização Automática",
             "folder_tooltip": "Para iniciar aplicativos automaticamente com o VRChat, coloque atalhos dentro desta pasta; alternativamente, use as subpastas específicas da plataforma; atalhos de aplicativos Steam também são suportados",
+            "enable": "Ativar Iniciador de Aplicativos",
             "auto_close": "Fechar Aplicativos Automaticamente",
             "run_process_once": "Abrir Instância Única do Aplicativo"
           },
@@ -1208,29 +1205,6 @@
             "description": "Abrir ou definir a pasta onde conteúdos como \"'Impressões\" e \"Adesivos\" são armazenados.",
             "set_folder": "Definir Pasta",
             "reset_override": "Redefinir"
-          }
-        },
-        "photon": {
-          "header": "Overlay de Log Photon",
-          "event_hud": {
-            "header": "HUD de Eventos Photon",
-            "enable": "Ativar",
-            "enable_tooltip": "Requer overlay do SteamVR ativado",
-            "filter": "Filtrar",
-            "filter_favorites": "Favoritos",
-            "filter_friends": "Amigos",
-            "filter_everyone": "Todos",
-            "message_timeout": "Tempo Limite da Mensagem"
-          },
-          "timeout_hud": {
-            "header": "HUD de Timeout de Usuário",
-            "enable": "Ativar",
-            "enable_tooltip": "Requer overlay do SteamVR ativado",
-            "filter": "Filtrar",
-            "filter_favorites": "Favoritos",
-            "filter_friends": "Amigos",
-            "filter_everyone": "Todos",
-            "timeout_threshold": "Limite de Timeout"
           }
         }
       }
@@ -2330,12 +2304,6 @@
       "no_results": "Nenhum pacote correspondente encontrado.",
       "no_version": "Sem metadados de versão"
     },
-    "primary_password": {
-      "header": "Senha Principal Necessária",
-      "password_placeholder": "Inserir nova senha",
-      "re_input_placeholder": "Reinserir senha",
-      "ok": "OK"
-    },
     "registry_backup": {
       "header": "Backup de Configurações de Registro do VRC",
       "backup": "Backup",
@@ -2411,10 +2379,6 @@
       "resend": "Reenviar E-mail",
       "verify": "Verificar",
       "input_error": "Código Inválido"
-    },
-    "primary_password": {
-      "header": "Senha Principal Necessária",
-      "description": "Por favor, insira sua Senha Principal."
     },
     "change_favorite_group_name": {
       "header": "Alterar Nome do Grupo",
@@ -2520,13 +2484,6 @@
         "success": "Prévia do YouTube do mundo alterada"
       }
     },
-    "photon_lobby_timeout": {
-      "header": "Limite de Timeout de Usuário",
-      "description": "Insira a quantidade de segundos (padrão: 3)",
-      "cancel": "Cancelar",
-      "ok": "OK",
-      "input_error": "Número válido é obrigatório"
-    },
     "auto_clear_cache": {
       "header": "Temporizador de Limpeza de Cache do VRCX-0",
       "description": "Insira a quantidade de horas; valores maiores podem impactar o uso de RAM e o desempenho (padrão: 24, desativado: 0)",
@@ -2593,7 +2550,6 @@
       "logout_greeting": "Até logo, {name}!",
       "email_2fa_resent": "E-mail 2FA reenviado.",
       "email_2fa_no_credentials": "Não é possível enviar e-mail 2FA sem credenciais salvas. Por favor, faça login novamente.",
-      "incorrect_primary_password": "Senha principal incorreta",
       "saved_credentials_invalid": "As credenciais salvas não são mais válidas.",
       "account_removed": "Conta removida.",
       "auto_login_success": "Login automático realizado.",
@@ -2772,7 +2728,6 @@
     "playerList": {
       "avatar": "Avatar",
       "timer": "Temporizador",
-      "photonId": "ID Photon",
       "icon": "Ícones",
       "platform": "Plataforma",
       "displayName": "Nome de Exibição",

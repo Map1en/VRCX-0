@@ -57,16 +57,6 @@
       "filter_placeholder": "Szűrés",
       "search_placeholder": "Keresés"
     },
-    "player_list": {
-      "photon": {
-        "current": "Jelenlegi",
-        "previous": "Előző",
-        "search_placeholder": "Keresés",
-        "filter_placeholder": "Szűrés",
-        "chatbox_blacklist": "Chatbox feketelista",
-        "status_tooltip": "Vrcx companion állapot"
-      }
-    },
     "search": {
       "search_placeholder": "Keresés",
       "clear_results_tooltip": "Keresési eredmények törlése",
@@ -353,10 +343,6 @@
         "advanced": {
           "launch_options": "Indítási opciók",
           "vrc_registry_backup": "VRC regisztrációs adatbázis mentése",
-          "primary_password": {
-            "header": "Elsődleges jelszó",
-            "description": "Jelszó titkosítása (kikapcsolja az automatikus bejelentkezést)"
-          },
           "relaunch_vrchat": {
             "header": "VRChat újraindítása összeomlás után",
             "description": "Visszacsatlakozás az utolsó példányhoz, ha a VRChat összeomlik"
@@ -399,6 +385,7 @@
             "header": "Alkalmazásindító",
             "folder": "Automatikus indítási mappa",
             "folder_tooltip": "Az alkalmazások VRChat-tel együtt történő indításához helyezz el parancsikonokat ebben a mappában.",
+            "enable": "Alkalmazásindító engedélyezése",
             "auto_close": "Alkalmazások automatikus bezárása"
           },
           "cache_debug": {
@@ -431,29 +418,6 @@
             "portal_spawn": "Portál létrehozás:",
             "video_play": "Videó lejátszás:",
             "event": "Esemény:"
-          }
-        },
-        "photon": {
-          "header": "Photon naplózási átfedés",
-          "event_hud": {
-            "header": "Photon esemény HUD",
-            "enable": "Engedélyezés",
-            "enable_tooltip": "SteamVR átfedés engedélyezése szükséges",
-            "filter": "Szűrés",
-            "filter_favorites": "Kedvencek",
-            "filter_friends": "Barátok",
-            "filter_everyone": "Mindenki",
-            "message_timeout": "Üzenet időtúllépése"
-          },
-          "timeout_hud": {
-            "header": "Felhasználói időtúllépés HUD",
-            "enable": "Engedélyezés",
-            "enable_tooltip": "SteamVR átfedés engedélyezése szükséges",
-            "filter": "Szűrés",
-            "filter_favorites": "Kedvencek",
-            "filter_friends": "Barátok",
-            "filter_everyone": "Mindenki",
-            "timeout_threshold": "Időtúllépési küszöb"
           }
         }
       }
@@ -1255,12 +1219,6 @@
       "header": "Nyílt forráskódú szoftverre vonatkozó megjegyzés",
       "description": "A VRCX-0 nyílt forráskódú szoftvereken alapul. Az ő hozzájárulásuk tette ezt lehetővé."
     },
-    "primary_password": {
-      "header": "Elsődleges jelszó szükséges",
-      "password_placeholder": "Új jelszó megadása",
-      "re_input_placeholder": "Jelszó újra",
-      "ok": "OK"
-    },
     "registry_backup": {
       "header": "VRC regisztrációs beállítások mentése",
       "backup": "Mentés",
@@ -1301,10 +1259,6 @@
       "resend": "E-mail újraküldése",
       "verify": "Ellenőrzés",
       "input_error": "Érvénytelen kód"
-    },
-    "primary_password": {
-      "header": "Elsődleges jelszó szükséges",
-      "description": "Kérlek, add meg az elsődleges jelszavadat."
     },
     "change_favorite_group_name": {
       "header": "Csoportnév módosítása",
@@ -1409,13 +1363,6 @@
         "success": "Világ YouTube előnézete módosítva"
       }
     },
-    "photon_lobby_timeout": {
-      "header": "Felhasználói időtúllépési küszöb",
-      "description": "Add meg a másodpercek számát (alapértelmezett: 3)",
-      "cancel": "Mégse",
-      "ok": "OK",
-      "input_error": "Érvényes szám megadása kötelező"
-    },
     "auto_clear_cache": {
       "header": "VRCX-0 gyorsítótár ürítési időzítő",
       "description": "Add meg az órák számát. A nagyobb értékek befolyásolhatják a RAM használatot és a teljesítményt (alapértelmezett: 24, kikapcsolva: 0)",
@@ -1470,7 +1417,6 @@
     "playerList": {
       "avatar": "Avatar",
       "timer": "Időzítő",
-      "photonId": "Photon ID",
       "icon": "Ikonok",
       "platform": "Platform",
       "displayName": "Megjelenített név",

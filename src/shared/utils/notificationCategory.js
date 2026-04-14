@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+import dayjs from '@/lib/dayjs.js';
 
 const FRIEND_TYPES = new Set([
     'friendRequest',

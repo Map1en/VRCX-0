@@ -88,8 +88,7 @@
                 "Status": "Statut",
                 "Avatar": "Avatar",
                 "Bio": "Bio"
-            },
-            "photon_event_logging": "Photon Event Logging"
+            }
         },
         "friends_locations": {
             "online": "En ligne",
@@ -115,16 +114,6 @@
                 "External": "Externe",
                 "StringLoad": "Texte téléchargé",
                 "ImageLoad": "Image téléchargée"
-            }
-        },
-        "player_list": {
-            "photon": {
-                "current": "Actuel",
-                "previous": "Précédant",
-                "search_placeholder": "Rechercher",
-                "filter_placeholder": "Filtrer",
-                "chatbox_blacklist": "Liste noire des boîtes de dialogue",
-                "status_tooltip": "Statut du Compagnon VRCX-0"
             }
         },
         "search": {
@@ -633,10 +622,6 @@
                 "advanced": {
                     "launch_options": "Options de démarrage",
                     "vrc_registry_backup": "Sauvegarde du registre VRC",
-                    "primary_password": {
-                        "header": "Mot de passe principal",
-                        "description": "Encodage du mot de passe (désactive la connexion automatique)"
-                    },
                     "relaunch_vrchat": {
                         "header": "Relancer VRChat après un crash",
                         "description": "Rejoindre la dernière instance lorsque VRChat crash"
@@ -688,6 +673,7 @@
                         "header": "Lanceur d'application",
                         "folder": "Dossier de lancement automatique",
                         "folder_tooltip": "Pour lancer automatiquement des applications avec VRChat, placez des raccourcis dans ce dossier.",
+                        "enable": "Activer le lanceur d'application",
                         "auto_close": "Fermeture automatique des applications"
                     },
                     "cache_debug": {
@@ -727,29 +713,6 @@
                         "description": "Ouvrez ou définissez le dossier dans lequel sont stockés les contenus tels que « Impressions » et « Autocollants ».",
                         "set_folder": "Définir un dossier",
                         "reset_override": "Réinitialiser"
-                    }
-                },
-                "photon": {
-                    "header": "Overlay de l'historique de Photon",
-                    "event_hud": {
-                        "header": "Interface des événements de Photon",
-                        "enable": "Activé",
-                        "enable_tooltip": "Nécessite l'activation de l'Overlay SteamVR",
-                        "filter": "Filtrer",
-                        "filter_favorites": "Favoris",
-                        "filter_friends": "Amis",
-                        "filter_everyone": "Tout le monde",
-                        "message_timeout": "Délai d'attente des messages"
-                    },
-                    "timeout_hud": {
-                        "header": "HUD de temporisation utilisateur",
-                        "enable": "Activé",
-                        "enable_tooltip": "Nécessite l'activation de l'Overlay SteamVR",
-                        "filter": "Filtrer",
-                        "filter_favorites": "Favoris",
-                        "filter_friends": "Amis",
-                        "filter_everyone": "Tout le monde",
-                        "timeout_threshold": "Délai d'attente des seuils"
                     }
                 }
             }
@@ -1588,12 +1551,6 @@
             "header": "Mentions relatives aux logiciels libres",
             "description": "VRCX-0 est basé sur un logiciel libre. Il a été possible grâce à leurs contributions."
         },
-        "primary_password": {
-            "header": "Mot de passe primaire nécessaire",
-            "password_placeholder": "Saisissez le nouveau mot de passe",
-            "re_input_placeholder": "Confirmation du mot de passe",
-            "ok": "OK"
-        },
         "registry_backup": {
             "header": "Sauvegarde des paramètres du registre VRC",
             "backup": "Sauvegarder",
@@ -1640,10 +1597,6 @@
             "resend": "Renvoyer l'email",
             "verify": "Vérifier",
             "input_error": "Code incorrect"
-        },
-        "primary_password": {
-            "header": "Mot de passe primaire nécessaire",
-            "description": "Veuillez saisir votre mot de passe principal."
         },
         "change_favorite_group_name": {
             "header": "Changer le nom du groupe",
@@ -1747,13 +1700,6 @@
                 "error": "URL YouTube invalide",
                 "success": "L'aperçu YouTube a été changé"
             }
-        },
-        "photon_lobby_timeout": {
-            "header": "Seuil d'attente de l'utilisateur",
-            "description": "Saisissez le nombre de secondes (par défaut : 3)",
-            "cancel": "Annuler",
-            "ok": "OK",
-            "input_error": "Un numéro valide est nécessaire"
         },
         "auto_clear_cache": {
             "header": "Effacer la temporisation du cache VRCX-0",
@@ -1888,7 +1834,6 @@
         "playerList": {
             "avatar": "Avatar",
             "timer": "Depuis",
-            "photonId": "ID Photon",
             "icon": "Icônes",
             "platform": "Platforme",
             "displayName": "Nom d'affichage",

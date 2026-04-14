@@ -57,16 +57,6 @@
             "filter_placeholder": "필터",
             "search_placeholder": "검색"
         },
-        "player_list": {
-            "photon": {
-                "current": "현재",
-                "previous": "이전",
-                "search_placeholder": "검색",
-                "filter_placeholder": "필터",
-                "chatbox_blacklist": "채팅창 블랙리스트",
-                "status_tooltip": "VRCX-0 Companion 상태"
-            }
-        },
         "search": {
             "search_placeholder": "검색",
             "clear_results_tooltip": "비우기",
@@ -364,10 +354,6 @@
                 "advanced": {
                     "launch_options": "VRChat 실행 설정",
                     "vrc_registry_backup": "VRC Registry Backup",
-                    "primary_password": {
-                        "header": "잠금 비밀번호",
-                        "description": "비밀번호 암호화 사용 (자동 로그인 불가)"
-                    },
                     "relaunch_vrchat": {
                         "header": "VRChat이 터지면 재시작",
                         "description": "VRChat이 터질경우 직전 인스턴스로 재입장합니다"
@@ -410,6 +396,7 @@
                         "header": "앱 실행",
                         "folder": "자동 실행 폴더",
                         "folder_tooltip": "VRChat 실행 시 자동으로 실행할 프로그램들을 이 폴더에 넣어주세요",
+                        "enable": "앱 실행 사용",
                         "auto_close": "자동 종료"
                     },
                     "cache_debug": {
@@ -442,29 +429,6 @@
                         "portal_spawn": "Portal Spawn:",
                         "video_play": "Video Play:",
                         "event": "Event:"
-                    }
-                },
-                "photon": {
-                    "header": "Photon 로깅 오버레이",
-                    "event_hud": {
-                        "header": "Photon Event HUD",
-                        "enable": "사용",
-                        "enable_tooltip": "SteamVR 오버레이 활성화 필요",
-                        "filter": "필터",
-                        "filter_favorites": "친한 친구",
-                        "filter_friends": "친구",
-                        "filter_everyone": "모두",
-                        "message_timeout": "표시 시간 설정"
-                    },
-                    "timeout_hud": {
-                        "header": "User Timeout HUD",
-                        "enable": "사용",
-                        "enable_tooltip": "SteamVR 오버레이 활성화 필요",
-                        "filter": "필터",
-                        "filter_favorites": "친한 친구",
-                        "filter_friends": "친구",
-                        "filter_everyone": "모두",
-                        "timeout_threshold": "표시 시간 설정"
                     }
                 }
             }
@@ -1266,12 +1230,6 @@
             "header": "오픈 소스 소프트웨어 안내",
             "description": "VRCX-0는 오픈 소스 소프트웨어에 기반하고 있습니다. 그들의 기여에 감사드립니다"
         },
-        "primary_password": {
-            "header": "잠금 비밀번호 필요",
-            "password_placeholder": "새 비밀번호 입력",
-            "re_input_placeholder": "한번 더 입력",
-            "ok": "확인"
-        },
         "registry_backup": {
             "header": "VRC Registry Settings Backup",
             "backup": "Backup",
@@ -1312,10 +1270,6 @@
             "resend": "이메일 재전송",
             "verify": "확인",
             "input_error": "잘못된 코드"
-        },
-        "primary_password": {
-            "header": "잠금 비밀번호 필요",
-            "description": "잠금 비밀번호를 입력하세요"
         },
         "change_favorite_group_name": {
             "header": "그룹 이름 변경",
@@ -1420,13 +1374,6 @@
                 "success": "월드 유튜브 미리보기 변경됨"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "유저 시간 제한",
-            "description": "초를 입력 (기본: 3)",
-            "cancel": "취소",
-            "ok": "확인",
-            "input_error": "숫자만 입력 가능"
-        },
         "auto_clear_cache": {
             "header": "VRCX-0 캐시 타이머 초기화",
             "description": "시간을 입력하세요..  주기가 길수록 메모리 사용량과 성능에 영향을 줍니다 (기본: 24, 끄기: 0)",
@@ -1481,7 +1428,6 @@
         "playerList": {
             "avatar": "아바타",
             "timer": "타이머",
-            "photonId": "Photon ID",
             "icon": "아이콘",
             "platform": "플랫폼",
             "displayName": "닉네임",

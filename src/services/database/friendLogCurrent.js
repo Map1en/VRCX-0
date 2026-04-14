@@ -1,6 +1,6 @@
 import { dbVars } from '../database';
 
-import sqliteService from '../sqlite.js';
+import sqliteService from '../../repositories/sqliteRepository.js';
 
 const friendLogCurrent = {
     async getFriendLogCurrent() {

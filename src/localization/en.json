@@ -20,7 +20,8 @@
             "refresh": "Refresh",
             "cancel": "Cancel",
             "copy": "Copy",
-            "open_link": "Open Link"
+            "open_link": "Open Link",
+            "save": "Save"
         },
         "sort_by": "Sort by:",
         "time_units": {
@@ -42,7 +43,8 @@
         "duration": "Duration",
         "load_more": "Load more",
         "no_more": "No more entries",
-        "current_session": "Current"
+        "current_session": "Current",
+        "settings_saved": "Settings saved"
     },
     "nav_tooltip": {
         "friends_locations": "Friends Locations",
@@ -246,6 +248,7 @@
             }
         },
         "feed": {
+            "filter": "Filter",
             "favorites_only_tooltip": "Filter favorites only",
             "search_placeholder": "Search",
             "filters": {
@@ -255,8 +258,7 @@
                 "Status": "Status",
                 "Avatar": "Avatar",
                 "Bio": "Bio"
-            },
-            "photon_event_logging": "Photon Event Logging"
+            }
         },
         "friends_locations": {
             "online": "Online",
@@ -292,16 +294,6 @@
                 "players_left": "{count} players left",
                 "play_count": "×{count}",
                 "no_data": "No game log data"
-            }
-        },
-        "player_list": {
-            "photon": {
-                "current": "Current",
-                "previous": "Previous",
-                "search_placeholder": "Search",
-                "filter_placeholder": "Filter",
-                "chatbox_blacklist": "Chatbox Blacklist",
-                "status_tooltip": "VRCX-0 Companion Status"
             }
         },
         "my_avatars": {
@@ -875,7 +867,7 @@
                     "font_family_custom_dialog_description": "Enter a valid CSS font-family value",
                     "font_family_custom_invalid": "Invalid font-family. Use comma-separated font names, e.g. 'My Font', Arial, sans-serif",
                     "cjk_font_pack_noto": "Noto Sans CJK",
-                    "cjk_font_pack_pht": "PuHuiTi CJK",
+                    "cjk_font_pack_puhuiti": "PuHuiTi CJK",
                     "theme_mode_system": "System",
                     "theme_mode_light": "Light",
                     "theme_mode_dark": "Dark",
@@ -1100,10 +1092,6 @@
                     "vrcx_settings": {
                         "header": "VRCX-0"
                     },
-                    "primary_password": {
-                        "header": "Primary Password",
-                        "description": "Encrypt Password (Disables Auto Login)"
-                    },
                     "relaunch_vrchat": {
                         "header": "Auto Relaunch VRChat After Crash",
                         "description": "Automatically relaunch and rejoin the last instance after a crash."
@@ -1196,6 +1184,7 @@
                         "header": "App Launcher",
                         "folder": "Auto-Launch Folder",
                         "folder_tooltip": "To auto-launch apps with VRChat, place shortcuts inside this folder, alteratively use the platform-specific subfolders, Steam app shortcuts are also supported",
+                        "enable": "Enable App Launcher",
                         "auto_close": "Auto Close Apps",
                         "run_process_once": "Open Single Instance of App"
                     },
@@ -1263,29 +1252,6 @@
                         "description": "Open or set the folder for VRChat content such as Prints and Stickers.",
                         "set_folder": "Set Folder",
                         "reset_override": "Reset"
-                    }
-                },
-                "photon": {
-                    "header": "Photon Logging Overlay",
-                    "event_hud": {
-                        "header": "Photon Event HUD",
-                        "enable": "Enable",
-                        "enable_tooltip": "Requires SteamVR overlay to be enabled",
-                        "filter": "Filter",
-                        "filter_favorites": "Favorites",
-                        "filter_friends": "Friends",
-                        "filter_everyone": "Everyone",
-                        "message_timeout": "Message Timeout"
-                    },
-                    "timeout_hud": {
-                        "header": "User Timeout HUD",
-                        "enable": "Enable",
-                        "enable_tooltip": "Requires SteamVR overlay to be enabled",
-                        "filter": "Filter",
-                        "filter_favorites": "Favorites",
-                        "filter_friends": "Friends",
-                        "filter_everyone": "Everyone",
-                        "timeout_threshold": "Timeout Threshold"
                     }
                 }
             }
@@ -2205,7 +2171,12 @@
             "description": "Enter your YouTube API Key (optional)",
             "placeholder": "YouTube API Key",
             "guide": "Guide",
-            "save": "Save"
+            "save": "Save",
+            "test": "Test",
+            "msg_settings_saved": "YouTube API key saved",
+            "msg_removed": "YouTube API key removed",
+            "msg_test_success": "YouTube API key valid",
+            "msg_test_failed": "Invalid YouTube API key"
         },
         "translation_api": {
             "header": "Bio Translation API",
@@ -2224,7 +2195,8 @@
                 "endpoint": "API Endpoint",
                 "api_key": "API Key (Optional)",
                 "model": "Model Name",
-                "prompt_optional": "Prompt (Optional)"
+                "prompt_optional": "Prompt (Optional)",
+                "prompt_optional_description": "Optional system prompt for OpenAI-compatible translation APIs."
             },
             "fetch_models": "Fetch Models",
             "fetching_models": "Fetching...",
@@ -2396,12 +2368,6 @@
             "no_results": "No matching packages found.",
             "no_version": "No version metadata"
         },
-        "primary_password": {
-            "header": "Primary Password Required",
-            "password_placeholder": "Input new password",
-            "re_input_placeholder": "Re-input password",
-            "ok": "OK"
-        },
         "registry_backup": {
             "header": "VRChat Registry Settings Backup",
             "backup": "Backup",
@@ -2477,10 +2443,6 @@
             "resend": "Resend Email",
             "verify": "Verify",
             "input_error": "Invalid Code"
-        },
-        "primary_password": {
-            "header": "Primary Password Required",
-            "description": "Please enter your Primary Password."
         },
         "change_favorite_group_name": {
             "header": "Change Group Name",
@@ -2586,13 +2548,6 @@
                 "success": "World YouTube preview changed"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "User Timeout Threshold",
-            "description": "Enter amount of seconds (default: 3)",
-            "cancel": "Cancel",
-            "ok": "OK",
-            "input_error": "Valid number is required"
-        },
         "auto_clear_cache": {
             "header": "Clear VRCX-0 Cache Timer",
             "description": "Enter amount of hours, larger values may impact RAM usage and performance (default: 24, disabled: 0)",
@@ -2659,7 +2614,6 @@
             "logout_greeting": "See you again, {name}!",
             "email_2fa_resent": "Email 2FA resent.",
             "email_2fa_no_credentials": "Cannot send 2FA email without saved credentials. Please login again.",
-            "incorrect_primary_password": "Incorrect primary password",
             "saved_credentials_invalid": "Saved credentials are no longer valid.",
             "account_removed": "Account removed.",
             "auto_login_success": "Automatically logged in.",
@@ -2888,7 +2842,6 @@
         "playerList": {
             "avatar": "Avatar",
             "timer": "Timer",
-            "photonId": "Photon ID",
             "icon": "Icons",
             "platform": "Platform",
             "displayName": "Display Name",

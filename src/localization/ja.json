@@ -17,7 +17,11 @@
             "reset": "リセット",
             "view_details": "詳細を表示",
             "configure": "設定",
-            "refresh": "更新"
+            "refresh": "更新",
+            "cancel": "キャンセル",
+            "copy": "コピー",
+            "open_link": "リンクを開く",
+            "save": "保存"
         },
         "sort_by": "並び替え:",
         "time_units": {
@@ -35,7 +39,8 @@
             "thursday": "木曜日",
             "friday": "金曜日",
             "saturday": "土曜日"
-        }
+        },
+        "settings_saved": "設定を保存しました"
     },
     "nav_tooltip": {
         "friends_locations": "フレンドの現在地",
@@ -248,8 +253,7 @@
                 "Status": "ステータス",
                 "Avatar": "アバター",
                 "Bio": "自己紹介"
-            },
-            "photon_event_logging": "Photon のイベントログ記録"
+            }
         },
         "friends_locations": {
             "online": "オンライン",
@@ -276,16 +280,6 @@
                 "External": "外部",
                 "StringLoad": "URI の読み込み",
                 "ImageLoad": "画像の読み込み"
-            }
-        },
-        "player_list": {
-            "photon": {
-                "current": "現在",
-                "previous": "前",
-                "search_placeholder": "検索",
-                "filter_placeholder": "フィルター",
-                "chatbox_blacklist": "チャットボックスのブラックリスト",
-                "status_tooltip": "VRCX-0 コンパニオンの状態"
             }
         },
         "my_avatars": {
@@ -837,7 +831,7 @@
                     "font_family_custom_dialog_description": "有効な CSS フォントファミリーを入力してください。",
                     "font_family_custom_invalid": "無効なフォントファミリーです。カンマ区切りでフォント名を入力してください。例:'My Font', Arial, sans-serif",
                     "cjk_font_pack_noto": "Noto Sans CJK",
-                    "cjk_font_pack_pht": "PuHuiTi CJK",
+                    "cjk_font_pack_puhuiti": "PuHuiTi CJK",
                     "theme_mode_system": "システムに合わせる",
                     "theme_mode_light": "ライト",
                     "theme_mode_dark": "ダーク",
@@ -1062,10 +1056,6 @@
                     "vrcx_settings": {
                         "header": "VRCX-0"
                     },
-                    "primary_password": {
-                        "header": "プライマリーパスワード",
-                        "description": "パスワードを暗号化 (自動ログイン無効化)"
-                    },
                     "relaunch_vrchat": {
                         "header": "VRChat がクラッシュした場合に自動再起動する",
                         "description": "クラッシュ時、自動で再起動し、インスタンスに再参加を試みます"
@@ -1158,6 +1148,7 @@
                         "header": "アプリケーションの自動起動",
                         "folder": "自動起動フォルダ",
                         "folder_tooltip": "VRChat と一緒に起動させたいアプリケーションのショートカットを配置してください。",
+                        "enable": "アプリケーションの自動起動を有効化",
                         "auto_close": "VRChat 終了時に自動終了",
                         "run_process_once": "アプリを単一インスタンスで開く"
                     },
@@ -1225,29 +1216,6 @@
                         "description": "プリントやステッカーを保存するフォルダを指定、または開きます。",
                         "set_folder": "フォルダを設定",
                         "reset_override": "元に戻す"
-                    }
-                },
-                "photon": {
-                    "header": "Photon ログオーバーレイ",
-                    "event_hud": {
-                        "header": "Photon イベント HUD",
-                        "enable": "有効化する",
-                        "enable_tooltip": "使用するには SteamVR オーバーレイが必要です。",
-                        "filter": "フィルター",
-                        "filter_favorites": "お気に入り",
-                        "filter_friends": "フレンド",
-                        "filter_everyone": "全員",
-                        "message_timeout": "メッセージタイムアウト"
-                    },
-                    "timeout_hud": {
-                        "header": "ユーザータイムアウト HUD",
-                        "enable": "有効化する",
-                        "enable_tooltip": "使用するには SteamVR オーバーレイが必要です。",
-                        "filter": "フィルター",
-                        "filter_favorites": "お気に入り",
-                        "filter_friends": "フレンド",
-                        "filter_everyone": "全員",
-                        "timeout_threshold": "タイムアウトのしきい値"
                     }
                 }
             }
@@ -2354,12 +2322,6 @@
             "no_results": "一致するパッケージが見つかりません。",
             "no_version": "バージョンメタデータがありません"
         },
-        "primary_password": {
-            "header": "プライマリーパスワードが必要です",
-            "password_placeholder": "新しいパスワードを入力",
-            "re_input_placeholder": "パスワードを再入力",
-            "ok": "OK"
-        },
         "registry_backup": {
             "header": "VRChatのレジストリ設定をバックアップ",
             "backup": "バックアップ",
@@ -2435,10 +2397,6 @@
             "resend": "メールを再送信",
             "verify": "認証",
             "input_error": "無効なコードです。"
-        },
-        "primary_password": {
-            "header": "プライマリーパスワードが必要です",
-            "description": "プライマリーパスワードを入力してください。"
         },
         "change_favorite_group_name": {
             "header": "グループ名を変更",
@@ -2544,13 +2502,6 @@
                 "success": "ワールドの YouTube プレビュー動画を変更しました。"
             }
         },
-        "photon_lobby_timeout": {
-            "header": "ユーザータイムアウトのしきい値",
-            "description": "タイムアウトまでの秒数を入力してください。 (デフォルト: 3)",
-            "cancel": "キャンセル",
-            "ok": "OK",
-            "input_error": "有効な数字を入力してください。"
-        },
         "auto_clear_cache": {
             "header": "VRCX-0のキャッシュの自動消去タイマー",
             "description": "消去までの時間を入力してください。長い時間を指定するとRAM使用量とパフォーマンスに影響を及ぼす可能性があります。 (デフォルト: 24, 無効化: 0)",
@@ -2617,7 +2568,6 @@
             "logout_greeting": "またお会いしましょう、{name}！",
             "email_2fa_resent": "2FAメールを再送信しました。",
             "email_2fa_no_credentials": "保存された認証情報がないと2FAメールを送信できません。再度ログインしてください。",
-            "incorrect_primary_password": "プライマリパスワードが正しくありません。",
             "saved_credentials_invalid": "保存された認証情報はもはや有効ではありません。",
             "account_removed": "アカウントのログイン情報が削除されました。",
             "auto_login_success": "自動的にログインしました。",
@@ -2846,7 +2796,6 @@
         "playerList": {
             "avatar": "アバター",
             "timer": "時間",
-            "photonId": "Photon ID",
             "icon": "アイコン",
             "platform": "プラットフォーム",
             "displayName": "表示名",

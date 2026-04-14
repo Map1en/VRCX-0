@@ -260,3 +260,273 @@ export function parsePrintFromUrl(url) {
     }
     return null;
 }
+
+const SESSION_TOLERANCE_MS = 1000;
+const SESSION_AGGREGATE_THRESHOLD = 5;
+const SESSION_AGGREGATE_WINDOW_MS = 5000;
+
+function toGameLogSessionEpoch(dateStr) {
+    if (!dateStr) {
+        return 0;
+    }
+    const timestamp = Date.parse(dateStr);
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function findGameLogSessionIndex(eventEpoch, segmentsAsc) {
+    const target = eventEpoch + SESSION_TOLERANCE_MS;
+    for (let index = segmentsAsc.length - 1; index >= 0; index -= 1) {
+        if (segmentsAsc[index].epoch <= target) {
+            return index;
+        }
+    }
+    return -1;
+}
+
+function findMatchingGameLogSessionIndex(event, segmentsAsc, locationMap) {
+    const eventEpoch = toGameLogSessionEpoch(event.created_at);
+    const target = eventEpoch + SESSION_TOLERANCE_MS;
+    const candidates = event.location ? locationMap.get(event.location) : null;
+
+    if (candidates && candidates.length > 0) {
+        for (let index = candidates.length - 1; index >= 0; index -= 1) {
+            const segmentIndex = candidates[index];
+            if (segmentsAsc[segmentIndex].epoch <= target) {
+                return segmentIndex;
+            }
+        }
+        return -1;
+    }
+
+    return findGameLogSessionIndex(eventEpoch, segmentsAsc);
+}
+
+function toGameLogSessionMember(event) {
+    return {
+        displayName: event.displayName,
+        userId: event.userId,
+        created_at: event.created_at,
+        isFriend: event.isFriend,
+        isFavorite: event.isFavorite
+    };
+}
+
+function makeGameLogSessionGroup(groupType, batch) {
+    return {
+        type: groupType,
+        created_at: batch[0].created_at,
+        count: batch.length,
+        members: batch.map(toGameLogSessionMember)
+    };
+}
+
+function aggregateGameLogSessionTailEvents(events, matchType, groupType) {
+    if (events.length === 0) {
+        return;
+    }
+
+    let lastIndex = -1;
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+        if (events[index].type === matchType) {
+            lastIndex = index;
+            break;
+        }
+    }
+    if (lastIndex === -1) {
+        return;
+    }
+
+    const windowStart =
+        toGameLogSessionEpoch(events[lastIndex].created_at) - SESSION_AGGREGATE_WINDOW_MS;
+    const indices = [];
+    for (let index = lastIndex; index >= 0; index -= 1) {
+        if (toGameLogSessionEpoch(events[index].created_at) < windowStart) {
+            break;
+        }
+        if (events[index].type === matchType) {
+            indices.unshift(index);
+        }
+    }
+    if (indices.length < SESSION_AGGREGATE_THRESHOLD) {
+        return;
+    }
+
+    const batch = indices.map((index) => events[index]);
+    const group = makeGameLogSessionGroup(groupType, batch);
+    for (let index = indices.length - 1; index >= 0; index -= 1) {
+        events.splice(indices[index], 1);
+    }
+    events.splice(indices[0], 0, group);
+}
+
+function aggregateGameLogSessionHeadEvents(events, matchType, groupType) {
+    if (events.length === 0) {
+        return;
+    }
+
+    let firstIndex = -1;
+    for (let index = 0; index < events.length; index += 1) {
+        if (events[index].type === matchType) {
+            firstIndex = index;
+            break;
+        }
+    }
+    if (firstIndex === -1) {
+        return;
+    }
+
+    const windowEnd =
+        toGameLogSessionEpoch(events[firstIndex].created_at) + SESSION_AGGREGATE_WINDOW_MS;
+    const indices = [];
+    for (let index = firstIndex; index < events.length; index += 1) {
+        if (toGameLogSessionEpoch(events[index].created_at) > windowEnd) {
+            break;
+        }
+        if (events[index].type === matchType) {
+            indices.push(index);
+        }
+    }
+    if (indices.length < SESSION_AGGREGATE_THRESHOLD) {
+        return;
+    }
+
+    const batch = indices.map((index) => events[index]);
+    const group = makeGameLogSessionGroup(groupType, batch);
+    for (let index = indices.length - 1; index >= 0; index -= 1) {
+        events.splice(indices[index], 1);
+    }
+    events.splice(indices[0], 0, group);
+}
+
+function applyGameLogSessionAggregation(segmentsAsc) {
+    for (const segment of segmentsAsc) {
+        aggregateGameLogSessionTailEvents(segment.events, 'OnPlayerLeft', 'LeftGroup');
+        aggregateGameLogSessionTailEvents(segment.events, 'OnPlayerJoined', 'JoinGroup');
+        aggregateGameLogSessionHeadEvents(segment.events, 'OnPlayerJoined', 'JoinGroup');
+    }
+}
+
+function deduplicateGameLogSessionVideoPlay(events) {
+    for (let index = events.length - 1; index > 0; index -= 1) {
+        if (
+            events[index].type === 'VideoPlay' &&
+            events[index - 1].type === 'VideoPlay' &&
+            events[index].videoUrl === events[index - 1].videoUrl
+        ) {
+            events[index - 1].playCount =
+                (events[index - 1].playCount || 1) + (events[index].playCount || 1);
+            events.splice(index, 1);
+        }
+    }
+    for (const event of events) {
+        if (event.type === 'VideoPlay' && !event.playCount) {
+            event.playCount = 1;
+        }
+    }
+}
+
+export function buildGameLogSessions(locationSegments, flatEvents) {
+    if (!locationSegments || locationSegments.length === 0) {
+        return { segments: [] };
+    }
+
+    const segmentsAsc = locationSegments
+        .map((location) => ({
+            id: location.id,
+            created_at: location.created_at,
+            epoch: toGameLogSessionEpoch(location.created_at),
+            location: location.location,
+            worldId: location.worldId,
+            worldName: location.worldName,
+            groupName: location.groupName,
+            duration: location.time || null,
+            events: []
+        }))
+        .sort((left, right) => left.epoch - right.epoch);
+
+    let dedupedEvents = flatEvents;
+    if (flatEvents && flatEvents.length > 0) {
+        const seen = new Set();
+        dedupedEvents = flatEvents.filter((event) => {
+            const key = `${event.type}\0${event.created_at}\0${event.userId || ''}\0${event.location || ''}\0${event.videoUrl || ''}`;
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        });
+    }
+
+    const locationMap = new Map();
+    for (let index = 0; index < segmentsAsc.length; index += 1) {
+        const location = segmentsAsc[index].location;
+        if (!locationMap.has(location)) {
+            locationMap.set(location, []);
+        }
+        locationMap.get(location).push(index);
+    }
+
+    if (dedupedEvents && dedupedEvents.length > 0) {
+        for (const event of dedupedEvents) {
+            const index = findMatchingGameLogSessionIndex(event, segmentsAsc, locationMap);
+            if (index === -1) {
+                continue;
+            }
+            segmentsAsc[index].events.push({ ...event });
+        }
+    }
+
+    for (const segment of segmentsAsc) {
+        segment.events.sort(
+            (left, right) =>
+                toGameLogSessionEpoch(left.created_at) - toGameLogSessionEpoch(right.created_at)
+        );
+    }
+
+    for (const segment of segmentsAsc) {
+        const cutoff = segment.epoch - SESSION_TOLERANCE_MS;
+        segment.events = segment.events.filter(
+            (event) => toGameLogSessionEpoch(event.created_at) >= cutoff
+        );
+    }
+
+    for (const segment of segmentsAsc) {
+        const windowEnd = segment.epoch + SESSION_AGGREGATE_WINDOW_MS;
+        const joinedIds = new Set();
+        for (const event of segment.events) {
+            if (toGameLogSessionEpoch(event.created_at) > windowEnd) {
+                break;
+            }
+            if (event.type === 'OnPlayerJoined' && event.userId) {
+                joinedIds.add(event.userId);
+            }
+        }
+        if (joinedIds.size > 0) {
+            for (let index = segment.events.length - 1; index >= 0; index -= 1) {
+                const event = segment.events[index];
+                if (toGameLogSessionEpoch(event.created_at) > windowEnd) {
+                    continue;
+                }
+                if (
+                    event.type === 'OnPlayerLeft' &&
+                    event.userId &&
+                    joinedIds.has(event.userId)
+                ) {
+                    segment.events.splice(index, 1);
+                }
+            }
+        }
+    }
+
+    applyGameLogSessionAggregation(segmentsAsc);
+
+    for (const segment of segmentsAsc) {
+        deduplicateGameLogSessionVideoPlay(segment.events);
+    }
+    for (const segment of segmentsAsc) {
+        segment.events.reverse();
+    }
+
+    const segments = segmentsAsc.reverse().map(({ epoch: _epoch, ...rest }) => rest);
+    return { segments };
+}
