@@ -27,8 +27,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run prod
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: build/html
+          if-no-files-found: error
 
   tauri:
+    needs: frontend
     runs-on: windows-latest
     defaults:
       run:
@@ -39,4 +45,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: build/html
       - run: cargo build --manifest-path src-tauri/Cargo.toml
