@@ -184,7 +184,7 @@ export function useLocationMetadata({
     });
     const worldProfileQuery = useQuery({
         queryKey: queryKeys.world(worldId, currentEndpoint),
-        queryFn: () => worldProfileRepository.getWorldProfile({ worldId, endpoint: currentEndpoint }),
+        queryFn: () => worldProfileRepository.fetchWorldProfile({ worldId, endpoint: currentEndpoint }),
         enabled: Boolean(worldId),
         staleTime: entityQueryPolicies.world.staleTime,
         gcTime: entityQueryPolicies.world.gcTime,

@@ -194,6 +194,20 @@ class WorldProfileRepository {
         return normalizeWorldProfile(world);
     }
 
+    async fetchWorldProfile({ worldId, endpoint = '' }) {
+        const normalizedWorldId = normalizeEntityId(worldId);
+        if (!normalizedWorldId) {
+            throw new Error('WorldProfileRepository.fetchWorldProfile requires a world id.');
+        }
+
+        const response = await this.executeGet(
+            `worlds/${encodeURIComponent(normalizedWorldId)}`,
+            {},
+            { endpoint }
+        );
+        return this.normalize(response.json);
+    }
+
     async executeGet(path, params = {}, { endpoint = '' } = {}) {
         const response = await webRepository.execute({
             url: buildUrl(path, params, endpoint),
@@ -304,14 +318,7 @@ class WorldProfileRepository {
             queryKey: queryKeys.world(normalizedWorldId, endpoint),
             policy: entityQueryPolicies.world,
             force,
-            queryFn: async () => {
-                const response = await this.executeGet(
-                    `worlds/${encodeURIComponent(normalizedWorldId)}`,
-                    {},
-                    { endpoint }
-                );
-                return response.json;
-            }
+            queryFn: () => this.fetchWorldProfile({ worldId: normalizedWorldId, endpoint })
         });
 
         return this.normalize(json);
