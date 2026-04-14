@@ -53,6 +53,7 @@ import {
 } from '@/services/dialogService.js';
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import {
+    IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
     validateImageUploadFile,
     withUploadTimeout
@@ -597,7 +598,7 @@ function InviteResponseMessageDialog({
                     <div className="flex flex-wrap items-center gap-2">
                         <Input
                             type="file"
-                            accept="image/*"
+                            accept={IMAGE_UPLOAD_ACCEPT}
                             className="max-w-sm"
                             disabled={sending}
                             onChange={(event) => void handleImageChange(event)}

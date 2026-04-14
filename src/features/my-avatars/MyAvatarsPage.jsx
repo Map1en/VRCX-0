@@ -41,6 +41,7 @@ import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import { avatarProfileRepository, configRepository, mediaRepository, myAvatarRepository } from '@/repositories/index.js';
 import { getTagColor } from '@/shared/constants/tags.js';
 import {
+    IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
     validateImageUploadFile,
     withUploadTimeout
@@ -1831,7 +1832,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             <input
                 ref={imageUploadInputRef}
                 type="file"
-                accept="image/*"
+                accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"
                 onChange={(event) => void onAvatarImageFileChange(event)}
             />

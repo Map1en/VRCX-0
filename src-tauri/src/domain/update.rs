@@ -4,6 +4,10 @@ use std::sync::{Arc, Mutex};
 
 use sha2::{Digest, Sha256};
 
+const UPDATE_PROGRESS_IDLE: i32 = 0;
+const UPDATE_PROGRESS_ERROR: i32 = -1;
+const UPDATE_PROGRESS_READY: i32 = 101;
+
 pub struct UpdateManager {
     app_data: PathBuf,
     progress: Arc<AtomicI32>,
@@ -80,7 +84,7 @@ impl UpdateManager {
         let generation = {
             let _guard = self.finalize_lock.lock().unwrap_or_else(|e| e.into_inner());
             let generation = generation_state.fetch_add(1, Ordering::SeqCst) + 1;
-            progress.store(0, Ordering::Relaxed);
+            progress.store(UPDATE_PROGRESS_IDLE, Ordering::Relaxed);
             cancel.store(false, Ordering::Relaxed);
             generation
         };
@@ -102,7 +106,7 @@ impl UpdateManager {
             {
                 if generation_state.load(Ordering::SeqCst) == generation {
                     tracing::error!("Update download error: {e}");
-                    progress.store(-1, Ordering::Relaxed);
+                    progress.store(UPDATE_PROGRESS_ERROR, Ordering::Relaxed);
                 } else {
                     tracing::debug!("Superseded update download stopped: {e}");
                 }
@@ -112,7 +116,7 @@ impl UpdateManager {
 
     pub fn cancel_download(&self) {
         self.cancel.store(true, Ordering::Relaxed);
-        self.progress.store(0, Ordering::Relaxed);
+        self.progress.store(UPDATE_PROGRESS_IDLE, Ordering::Relaxed);
 
         let temp = self.app_data.join("tempDownload");
         let _ = std::fs::remove_file(&temp);
@@ -232,7 +236,7 @@ async fn do_download(
         std::fs::rename(&temp_path, &update_path).map_err(|e| format!("move to update.exe: {e}"))?;
 
         if generation_state.load(Ordering::SeqCst) == generation {
-            progress.store(101, Ordering::Relaxed);
+            progress.store(UPDATE_PROGRESS_READY, Ordering::Relaxed);
         }
     }
     Ok(())

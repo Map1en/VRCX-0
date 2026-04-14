@@ -237,18 +237,19 @@ fn read_response(file: &mut std::fs::File, expected_nonce: Option<&str>) -> Resu
 
 #[cfg(windows)]
 fn read_next_frame(file: &mut std::fs::File) -> Result<Option<Value>, AppError> {
-    let available = peek_available(file)?;
-    if available < 8 {
+    let Some((header, available)) = peek_frame_header(file)? else {
+        return Ok(None);
+    };
+    let length = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
+    if length > 1024 * 1024 {
+        return Err(AppError::Custom("discord rpc response is too large".into()));
+    }
+    if available < 8usize.saturating_add(length) {
         return Ok(None);
     }
 
     let mut header = [0u8; 8];
     read_exact_from_pipe(file, &mut header)?;
-    let length = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
-    if length > 1024 * 1024 {
-        return Err(AppError::Custom("discord rpc response is too large".into()));
-    }
-
     let mut payload = vec![0u8; length];
     read_exact_from_pipe(file, &mut payload)?;
     Ok(Some(serde_json::from_slice(&payload)?))
@@ -276,20 +277,22 @@ fn discord_response_error(payload: &Value) -> Option<String> {
 }
 
 #[cfg(windows)]
-fn peek_available(file: &std::fs::File) -> Result<u32, AppError> {
+fn peek_frame_header(file: &std::fs::File) -> Result<Option<([u8; 8], usize)>, AppError> {
     use std::os::windows::io::AsRawHandle;
     use std::ptr::null_mut;
 
     use windows_sys::Win32::System::Pipes::PeekNamedPipe;
 
     let handle = file.as_raw_handle();
+    let mut header = [0u8; 8];
+    let mut bytes_read = 0u32;
     let mut available = 0u32;
     let ok = unsafe {
         PeekNamedPipe(
             handle,
-            null_mut(),
-            0,
-            null_mut(),
+            header.as_mut_ptr().cast(),
+            header.len() as u32,
+            &mut bytes_read,
             &mut available,
             null_mut(),
         )
@@ -297,7 +300,10 @@ fn peek_available(file: &std::fs::File) -> Result<u32, AppError> {
     if ok == 0 {
         return Err(std::io::Error::last_os_error().into());
     }
-    Ok(available)
+    if bytes_read < header.len() as u32 || available < header.len() as u32 {
+        return Ok(None);
+    }
+    Ok(Some((header, available as usize)))
 }
 
 #[cfg(windows)]

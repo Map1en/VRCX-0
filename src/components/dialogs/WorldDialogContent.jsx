@@ -29,6 +29,7 @@ import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import {
+    IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
     validateImageUploadFile,
     withUploadTimeout
@@ -1607,7 +1608,7 @@ export function WorldDialogContent({
             <input
                 ref={imageUploadInputRef}
                 type="file"
-                accept="image/*"
+                accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"
                 onChange={onFileChangeWorldImage}
             />

@@ -10,6 +10,7 @@ export function I18nProvider({ children }) {
 
     useEffect(() => {
         let active = true;
+        setReady(false);
 
         async function loadMessages() {
             const { fallbackMessages, localizedMessages } = await changeI18nLocale(locale || 'en');

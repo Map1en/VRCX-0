@@ -28,13 +28,6 @@ const BODY_ONLY_TYPES = new Set([
     'External'
 ]);
 const COLON_SEPARATOR_TYPES = new Set(['groupChange', 'VideoPlay']);
-const CUSTOM_FORMAT_MESSAGES = {
-    BlockedOnPlayerJoined: (title) => `Blocked user ${title} has joined`,
-    BlockedOnPlayerLeft: (title) => `Blocked user ${title} has left`,
-    MutedOnPlayerJoined: (title) => `Muted user ${title} has joined`,
-    MutedOnPlayerLeft: (title) => `Muted user ${title} has left`
-};
-
 let cachedPreferences = { ...DEFAULT_NOTIFICATION_PREFERENCES };
 let preferencesLoaded = false;
 let preferencesLoadPromise = null;
@@ -302,11 +295,18 @@ function toNotificationText({ title, body }, type) {
     if (COLON_SEPARATOR_TYPES.has(type)) {
         return title ? `${title}: ${body}` : body;
     }
-    const customFormat = CUSTOM_FORMAT_MESSAGES[type];
-    if (customFormat) {
-        return customFormat(title);
+    switch (type) {
+    case 'BlockedOnPlayerJoined':
+        return `Blocked user ${title} has joined`;
+    case 'BlockedOnPlayerLeft':
+        return `Blocked user ${title} has left`;
+    case 'MutedOnPlayerJoined':
+        return `Muted user ${title} has joined`;
+    case 'MutedOnPlayerLeft':
+        return `Muted user ${title} has left`;
+    default:
+        return title ? `${title} ${body}` : body;
     }
-    return title ? `${title} ${body}` : body;
 }
 
 function shouldPlayForCondition(condition, gameState) {

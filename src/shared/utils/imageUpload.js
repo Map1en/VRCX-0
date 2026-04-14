@@ -2,6 +2,15 @@ import { bytesToBase64 } from './binary';
 
 const UPLOAD_TIMEOUT_MS = 30_000;
 const DEFAULT_MAX_IMAGE_UPLOAD_BYTES = 20_000_000;
+export const IMAGE_UPLOAD_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/bmp';
+
+const SAFE_RASTER_IMAGE_TYPES = new Set([
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+    'image/gif',
+    'image/bmp'
+]);
 
 /**
  *
@@ -41,7 +50,7 @@ export function validateImageUploadFile(file, { maxSize = DEFAULT_MAX_IMAGE_UPLO
         return { ok: false, reason: 'too_large' };
     }
 
-    if (!/image.*/.test(file.type || '')) {
+    if (!SAFE_RASTER_IMAGE_TYPES.has(String(file.type || '').toLowerCase())) {
         return { ok: false, reason: 'not_image' };
     }
 
@@ -49,6 +58,10 @@ export function validateImageUploadFile(file, { maxSize = DEFAULT_MAX_IMAGE_UPLO
 }
 
 export async function cropImageFileToAspect(file, aspectRatio, options = {}) {
+    if (!validateImageUploadFile(file).ok) {
+        throw new Error('Selected file is not a supported image.');
+    }
+
     if (!aspectRatio || typeof document === 'undefined') {
         return file;
     }

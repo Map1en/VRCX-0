@@ -27,7 +27,12 @@ import { getPrintFileName } from '@/shared/utils/gallery.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { extractFileId } from '@/shared/utils/fileUtils.js';
-import { readFileAsBase64, withUploadTimeout } from '@/shared/utils/imageUpload.js';
+import {
+    IMAGE_UPLOAD_ACCEPT,
+    readFileAsBase64,
+    validateImageUploadFile,
+    withUploadTimeout
+} from '@/shared/utils/imageUpload.js';
 import { Badge } from '@/ui/shadcn/badge.jsx';
 import { Button } from '@/ui/shadcn/button.jsx';
 import {
@@ -158,13 +163,9 @@ function parseEmojiUploadSettings(fileName, currentSettings = {}) {
 }
 
 function validateImageFile(file, t) {
-    if (file.size >= MAX_IMAGE_UPLOAD_BYTES) {
-        toast.error(t('message.file.too_large'));
-        return false;
-    }
-
-    if (!/image.*/.test(file.type || '')) {
-        toast.error(t('message.file.not_image'));
+    const validation = validateImageUploadFile(file, { maxSize: MAX_IMAGE_UPLOAD_BYTES });
+    if (!validation.ok) {
+        toast.error(validation.reason === 'too_large' ? t('message.file.too_large') : t('message.file.not_image'));
         return false;
     }
 
@@ -747,7 +748,7 @@ export function GalleryPage() {
             <input
                 ref={uploadInputRef}
                 type="file"
-                accept="image/*"
+                accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"
                 onChange={(event) => void uploadSelectedFile(event)}
             />

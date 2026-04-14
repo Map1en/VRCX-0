@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { cropImageFileToAspect } from '@/shared/utils/imageUpload.js';
+import { cropImageFileToAspect, validateImageUploadFile } from '@/shared/utils/imageUpload.js';
 import { Button } from '@/ui/shadcn/button.jsx';
 import {
     Dialog,
@@ -12,6 +12,19 @@ import {
 } from '@/ui/shadcn/dialog.jsx';
 import { Input } from '@/ui/shadcn/input.jsx';
 import { Label } from '@/ui/shadcn/label.jsx';
+
+function createPreviewObjectUrl(file) {
+    if (!file || !(file instanceof Blob) || !validateImageUploadFile(file).ok) {
+        return '';
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    return objectUrl.startsWith('blob:') ? objectUrl : '';
+}
+
+function normalizePreviewObjectUrl(value) {
+    return typeof value === 'string' && value.startsWith('blob:') ? value : '';
+}
 
 export function ImageCropDialog({
     open,
@@ -34,7 +47,11 @@ export function ImageCropDialog({
             return undefined;
         }
 
-        const nextUrl = URL.createObjectURL(file);
+        const nextUrl = createPreviewObjectUrl(file);
+        if (!nextUrl) {
+            setImageUrl('');
+            return undefined;
+        }
         setImageUrl(nextUrl);
         setZoom(1);
         setOffsetX(0);
@@ -50,7 +67,7 @@ export function ImageCropDialog({
     );
 
     async function confirmCrop() {
-        if (!file) {
+        if (!file || !validateImageUploadFile(file).ok) {
             return;
         }
 
@@ -67,6 +84,8 @@ export function ImageCropDialog({
         }
     }
 
+    const previewImageUrl = normalizePreviewObjectUrl(imageUrl);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl">
@@ -78,10 +97,10 @@ export function ImageCropDialog({
                     <div
                         className="relative max-h-[60vh] overflow-hidden rounded-lg border bg-muted"
                         style={frameStyle}>
-                        {imageUrl ? (
+                        {previewImageUrl ? (
                             <img
-                                src={imageUrl}
-                                alt={file?.name || 'Selected upload'}
+                                src={previewImageUrl}
+                                alt="Selected upload"
                                 className="h-full w-full object-cover"
                                 style={{
                                     transform: `translate(${-offsetX / 6}%, ${-offsetY / 6}%) scale(${zoom})`

@@ -31,6 +31,7 @@ import {
 } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import {
+    IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
     validateImageUploadFile,
     withUploadTimeout
@@ -1238,14 +1239,14 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             <input
                 ref={imageUploadInputRef}
                 type="file"
-                accept="image/*"
+                accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"
                 onChange={onFileChangeAvatarImage}
             />
             <input
                 ref={galleryUploadInputRef}
                 type="file"
-                accept="image/*"
+                accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"
                 onChange={onFileChangeAvatarGallery}
             />

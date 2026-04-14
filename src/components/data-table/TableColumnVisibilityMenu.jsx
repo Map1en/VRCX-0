@@ -27,22 +27,24 @@ function resolveColumnLabel(column) {
     return column.id;
 }
 
-function getColumnOrder(table) {
-    const leafColumnIds = table.getAllLeafColumns().map((column) => column.id);
+function getColumnOrder(table, leafColumns = table.getAllLeafColumns()) {
+    const leafColumnIds = leafColumns.map((column) => column.id);
+    const leafColumnIdSet = new Set(leafColumnIds);
     const currentOrder = table.getState().columnOrder || [];
-    const ordered = currentOrder.filter((columnId) => leafColumnIds.includes(columnId));
+    const ordered = currentOrder.filter((columnId) => leafColumnIdSet.has(columnId));
+    const orderedIds = new Set(ordered);
 
     for (const columnId of leafColumnIds) {
-        if (!ordered.includes(columnId)) {
+        if (!orderedIds.has(columnId)) {
             ordered.push(columnId);
+            orderedIds.add(columnId);
         }
     }
 
     return ordered;
 }
 
-function moveColumn(table, columnId, delta) {
-    const order = getColumnOrder(table);
+function moveColumn(table, columnId, delta, order = getColumnOrder(table)) {
     const currentIndex = order.indexOf(columnId);
     const nextIndex = currentIndex + delta;
 
@@ -68,13 +70,17 @@ function resetTableLayout(table, onResetLayout) {
 }
 
 export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLayout }) {
-    const columns = table
-        .getAllLeafColumns()
-        .filter((column) => column.getCanHide());
+    const allLeafColumns = table.getAllLeafColumns();
+    const columns = allLeafColumns.filter((column) => column.getCanHide());
 
-    if (!columns.length && !table.getAllLeafColumns().length) {
+    if (!columns.length && !allLeafColumns.length) {
         return null;
     }
+
+    const columnOrder = getColumnOrder(table, allLeafColumns);
+    const columnOrderIndexById = new Map(
+        columnOrder.map((columnId, index) => [columnId, index])
+    );
 
     return (
         <DropdownMenu>
@@ -96,49 +102,50 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                     Reset columns
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {columns.map((column) => (
-                    <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="gap-2"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(checked) => column.toggleVisibility(Boolean(checked))}
-                        onSelect={(event) => event.preventDefault()}>
-                        <span className="min-w-0 flex-1 truncate">{resolveColumnLabel(column)}</span>
-                        <span className="ml-auto flex items-center gap-1">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="size-6"
-                                disabled={getColumnOrder(table).indexOf(column.id) <= 0}
-                                onPointerDown={(event) => event.stopPropagation()}
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    moveColumn(table, column.id, -1);
-                                }}>
-                                <ArrowUpIcon className="size-3.5" />
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="size-6"
-                                disabled={
-                                    getColumnOrder(table).indexOf(column.id) >=
-                                    getColumnOrder(table).length - 1
-                                }
-                                onPointerDown={(event) => event.stopPropagation()}
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    moveColumn(table, column.id, 1);
-                                }}>
-                                <ArrowDownIcon className="size-3.5" />
-                            </Button>
-                        </span>
-                    </DropdownMenuCheckboxItem>
-                ))}
+                {columns.map((column) => {
+                    const columnIndex = columnOrderIndexById.get(column.id) ?? -1;
+
+                    return (
+                        <DropdownMenuCheckboxItem
+                            key={column.id}
+                            className="gap-2"
+                            checked={column.getIsVisible()}
+                            onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
+                            onSelect={(event) => event.preventDefault()}>
+                            <span className="min-w-0 flex-1 truncate">{resolveColumnLabel(column)}</span>
+                            <span className="ml-auto flex items-center gap-1">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-6"
+                                    disabled={columnIndex <= 0}
+                                    onPointerDown={(event) => event.stopPropagation()}
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        moveColumn(table, column.id, -1, columnOrder);
+                                    }}>
+                                    <ArrowUpIcon className="size-3.5" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-6"
+                                    disabled={columnIndex >= columnOrder.length - 1}
+                                    onPointerDown={(event) => event.stopPropagation()}
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        moveColumn(table, column.id, 1, columnOrder);
+                                    }}>
+                                    <ArrowDownIcon className="size-3.5" />
+                                </Button>
+                            </span>
+                        </DropdownMenuCheckboxItem>
+                    );
+                })}
             </DropdownMenuContent>
         </DropdownMenu>
     );
