@@ -177,8 +177,8 @@ const translationProviderOptions = [
     ['google', 'dialog.translation_api.mode_google'],
     ['openai', 'dialog.translation_api.mode_openai']
 ];
-const FONT_FAMILY_PATTERN =
-    /^\s*(([-_\p{L}][\p{L}\p{N}_\s-]*)|'[^']+'|"[^"]+")\s*(,\s*(([-_\p{L}][\p{L}\p{N}_\s-]*)|'[^']+'|"[^"]+")\s*)*$/u;
+const MAX_CUSTOM_FONT_FAMILY_LENGTH = 200;
+const FONT_FAMILY_TOKEN_PATTERN = /^([-_\p{L}][\p{L}\p{N}_\s-]*|'[^']+'|"[^"]+")$/u;
 
 const settingsTabs = [
     ['system', 'view.settings.category.system'],
@@ -251,6 +251,17 @@ function normalizeTablePageSizes(input) {
 function parseIntegerInput(value, fallback) {
     const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function isValidFontFamilyList(value) {
+    const normalized = String(value ?? '').trim();
+    if (!normalized || normalized.length > MAX_CUSTOM_FONT_FAMILY_LENGTH) {
+        return false;
+    }
+
+    return normalized
+        .split(',')
+        .every((entry) => FONT_FAMILY_TOKEN_PATTERN.test(entry.trim()));
 }
 
 function formatByteSize(value) {
@@ -720,7 +731,7 @@ export function SettingsPage() {
 
     async function saveCustomFontFamily(value = customFontDraft) {
         const nextValue = String(value ?? '').trim();
-        if (!nextValue || !FONT_FAMILY_PATTERN.test(nextValue)) {
+        if (!isValidFontFamilyList(nextValue)) {
             toast.error(t('view.settings.appearance.appearance.font_family_custom_invalid'));
             return;
         }
