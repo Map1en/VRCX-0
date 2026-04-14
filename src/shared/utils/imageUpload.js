@@ -65,22 +65,21 @@ export async function cropImageFileToAspect(file, aspectRatio, options = {}) {
     if (!aspectRatio || typeof document === 'undefined') {
         return file;
     }
+    if (typeof createImageBitmap !== 'function') {
+        throw new Error('Image decoding is not supported.');
+    }
 
-    const imageUrl = URL.createObjectURL(file);
+    const image = await createImageBitmap(file);
     try {
-        const image = new Image();
-        await new Promise((resolve, reject) => {
-            image.onload = resolve;
-            image.onerror = reject;
-            image.src = imageUrl;
-        });
-
-        const crop = computeAspectCrop(image.naturalWidth, image.naturalHeight, aspectRatio, options);
+        const crop = computeAspectCrop(image.width, image.height, aspectRatio, options);
 
         const canvas = document.createElement('canvas');
         canvas.width = crop.width;
         canvas.height = crop.height;
         const context = canvas.getContext('2d');
+        if (!context) {
+            throw new Error('Failed to prepare image crop.');
+        }
         context.drawImage(
             image,
             crop.x,
@@ -105,7 +104,7 @@ export async function cropImageFileToAspect(file, aspectRatio, options = {}) {
             );
         });
     } finally {
-        URL.revokeObjectURL(imageUrl);
+        image.close();
     }
 }
 

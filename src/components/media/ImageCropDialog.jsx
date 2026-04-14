@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { cropImageFileToAspect, validateImageUploadFile } from '@/shared/utils/imageUpload.js';
+import { computeAspectCrop, cropImageFileToAspect, validateImageUploadFile } from '@/shared/utils/imageUpload.js';
 import { Button } from '@/ui/shadcn/button.jsx';
 import {
     Dialog,
@@ -13,19 +13,6 @@ import {
 import { Input } from '@/ui/shadcn/input.jsx';
 import { Label } from '@/ui/shadcn/label.jsx';
 
-function createPreviewObjectUrl(file) {
-    if (!file || !(file instanceof Blob) || !validateImageUploadFile(file).ok) {
-        return '';
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    return objectUrl.startsWith('blob:') ? objectUrl : '';
-}
-
-function normalizePreviewObjectUrl(value) {
-    return typeof value === 'string' && value.startsWith('blob:') ? value : '';
-}
-
 export function ImageCropDialog({
     open,
     title = 'Crop image',
@@ -35,29 +22,75 @@ export function ImageCropDialog({
     onOpenChange,
     onConfirm
 }) {
-    const [imageUrl, setImageUrl] = useState('');
+    const canvasRef = useRef(null);
+    const [imageBitmap, setImageBitmap] = useState(null);
     const [zoom, setZoom] = useState(1);
     const [offsetX, setOffsetX] = useState(0);
     const [offsetY, setOffsetY] = useState(0);
     const [isConfirming, setIsConfirming] = useState(false);
 
     useEffect(() => {
-        if (!open || !file) {
-            setImageUrl('');
+        if (!open || !file || !validateImageUploadFile(file).ok || typeof createImageBitmap !== 'function') {
+            setImageBitmap(null);
             return undefined;
         }
 
-        const nextUrl = createPreviewObjectUrl(file);
-        if (!nextUrl) {
-            setImageUrl('');
-            return undefined;
-        }
-        setImageUrl(nextUrl);
+        let active = true;
+        let bitmap = null;
+        setImageBitmap(null);
         setZoom(1);
         setOffsetX(0);
         setOffsetY(0);
-        return () => URL.revokeObjectURL(nextUrl);
+        createImageBitmap(file)
+            .then((nextBitmap) => {
+                if (!active) {
+                    nextBitmap.close();
+                    return;
+                }
+                bitmap = nextBitmap;
+                setImageBitmap(nextBitmap);
+            })
+            .catch(() => {
+                if (active) {
+                    setImageBitmap(null);
+                }
+            });
+        return () => {
+            active = false;
+            bitmap?.close();
+        };
     }, [file, open]);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !imageBitmap) {
+            return;
+        }
+
+        const crop = computeAspectCrop(imageBitmap.width, imageBitmap.height, aspectRatio, {
+            zoom,
+            offsetX: offsetX / 100,
+            offsetY: offsetY / 100
+        });
+        canvas.width = crop.width;
+        canvas.height = crop.height;
+        const context = canvas.getContext('2d');
+        if (!context) {
+            return;
+        }
+        context.clearRect(0, 0, crop.width, crop.height);
+        context.drawImage(
+            imageBitmap,
+            crop.x,
+            crop.y,
+            crop.width,
+            crop.height,
+            0,
+            0,
+            crop.width,
+            crop.height
+        );
+    }, [aspectRatio, imageBitmap, offsetX, offsetY, zoom]);
 
     const frameStyle = useMemo(
         () => ({
@@ -84,8 +117,6 @@ export function ImageCropDialog({
         }
     }
 
-    const previewImageUrl = normalizePreviewObjectUrl(imageUrl);
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl">
@@ -97,14 +128,12 @@ export function ImageCropDialog({
                     <div
                         className="relative max-h-[60vh] overflow-hidden rounded-lg border bg-muted"
                         style={frameStyle}>
-                        {previewImageUrl ? (
-                            <img
-                                src={previewImageUrl}
-                                alt="Selected upload"
+                        {imageBitmap ? (
+                            <canvas
+                                ref={canvasRef}
+                                role="img"
+                                aria-label="Selected upload preview"
                                 className="h-full w-full object-cover"
-                                style={{
-                                    transform: `translate(${-offsetX / 6}%, ${-offsetY / 6}%) scale(${zoom})`
-                                }}
                             />
                         ) : null}
                     </div>
