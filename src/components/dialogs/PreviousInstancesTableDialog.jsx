@@ -228,6 +228,27 @@ function markerForEntry(entry) {
     return '';
 }
 
+function createInfoChartTooltipElement(detailEntry, hour12) {
+    const container = document.createElement('div');
+    container.className = 'min-w-[180px]';
+
+    const title = document.createElement('div');
+    title.style.fontWeight = '600';
+    title.style.marginBottom = '4px';
+    title.textContent = `${detailEntry.displayName || ''} ${markerForEntry(detailEntry).trim()}`.trim();
+    container.appendChild(title);
+
+    const timeRange = document.createElement('div');
+    timeRange.textContent = `${formatClock(detailEntry.joinMs, hour12, true)} - ${formatClock(detailEntry.leaveMs, hour12, true)}`;
+    container.appendChild(timeRange);
+
+    const duration = document.createElement('div');
+    duration.textContent = timeToText(detailEntry.durationMs, true);
+    container.appendChild(duration);
+
+    return container;
+}
+
 function buildInfoChartOption({ rows, hour12 }) {
     if (!rows.length) {
         return null;
@@ -323,13 +344,7 @@ function buildInfoChartOption({ rows, hour12 }) {
                     if (!detailEntry) {
                         return '';
                     }
-                    return [
-                        '<div class="min-w-[180px]">',
-                        `<div style="font-weight:600;margin-bottom:4px;">${detailEntry.displayName} ${markerForEntry(detailEntry).trim()}</div>`,
-                        `<div>${formatClock(detailEntry.joinMs, hour12, true)} - ${formatClock(detailEntry.leaveMs, hour12, true)}</div>`,
-                        `<div>${timeToText(detailEntry.durationMs, true)}</div>`,
-                        '</div>'
-                    ].join('');
+                    return createInfoChartTooltipElement(detailEntry, hour12);
                 }
             },
             grid: {

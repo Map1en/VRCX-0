@@ -552,6 +552,7 @@ const DEFAULT_USER_STATS = Object.freeze({
     joinCount: 0,
     previousDisplayNames: []
 });
+const userDialogCacheLimit = 128;
 const cachedUserStatsByTarget = new Map();
 const cachedPreviousInstancesByTarget = new Map();
 
@@ -575,28 +576,50 @@ function cloneUserStats(stats = DEFAULT_USER_STATS) {
     };
 }
 
+function setCappedCacheEntry(cache, key, value) {
+    if (!key) {
+        return;
+    }
+    if (cache.has(key)) {
+        cache.delete(key);
+    }
+    cache.set(key, value);
+    while (cache.size > userDialogCacheLimit) {
+        const oldestKey = cache.keys().next().value;
+        cache.delete(oldestKey);
+    }
+}
+
+function refreshCacheEntry(cache, key) {
+    if (!key || !cache.has(key)) {
+        return null;
+    }
+    const value = cache.get(key);
+    cache.delete(key);
+    cache.set(key, value);
+    return value;
+}
+
 function readCachedUserStats(key) {
-    return key && cachedUserStatsByTarget.has(key)
-        ? cloneUserStats(cachedUserStatsByTarget.get(key))
+    const value = refreshCacheEntry(cachedUserStatsByTarget, key);
+    return value
+        ? cloneUserStats(value)
         : cloneUserStats();
 }
 
 function cacheUserStats(key, stats) {
-    if (key) {
-        cachedUserStatsByTarget.set(key, cloneUserStats(stats));
-    }
+    setCappedCacheEntry(cachedUserStatsByTarget, key, cloneUserStats(stats));
 }
 
 function readCachedPreviousInstances(key) {
-    return key && cachedPreviousInstancesByTarget.has(key)
-        ? [...cachedPreviousInstancesByTarget.get(key)]
+    const value = refreshCacheEntry(cachedPreviousInstancesByTarget, key);
+    return value
+        ? [...value]
         : [];
 }
 
 function cachePreviousInstances(key, rows) {
-    if (key) {
-        cachedPreviousInstancesByTarget.set(key, Array.isArray(rows) ? [...rows] : []);
-    }
+    setCappedCacheEntry(cachedPreviousInstancesByTarget, key, Array.isArray(rows) ? [...rows] : []);
 }
 
 export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
