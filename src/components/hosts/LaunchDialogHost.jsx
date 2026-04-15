@@ -29,9 +29,14 @@ import {
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import {
+    Field,
+    FieldLabel
+} from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 
 const emptyDetails = {
@@ -103,10 +108,10 @@ function buildCachedInstanceMap(instances) {
 
 function LaunchField({ label, value, notice = '', onCopy }) {
     return (
-        <div className="space-y-1.5">
+        <Field>
             <div className="flex items-center gap-1.5 text-sm font-medium">
-                <span>{label}</span>
-                {notice ? <InfoIcon className="size-3.5 text-muted-foreground" title={notice} /> : null}
+                <FieldLabel>{label}</FieldLabel>
+                {notice ? <InfoIcon className="text-muted-foreground" title={notice} /> : null}
             </div>
             <div className="flex items-center gap-2">
                 <Input
@@ -122,10 +127,10 @@ function LaunchField({ label, value, notice = '', onCopy }) {
                     className="shrink-0 rounded-full"
                     disabled={!value}
                     onClick={onCopy}>
-                    <CopyIcon className="size-4" />
+                    <CopyIcon />
                 </Button>
             </div>
-        </div>
+        </Field>
     );
 }
 
@@ -278,7 +283,7 @@ export function LaunchDialogHost() {
                         <DialogDescription>Open, copy, invite, or self-invite to this VRChat instance.</DialogDescription>
                     </DialogHeader>
 
-                    <div className={cn('space-y-4', loading ? 'opacity-60' : '')}>
+                    <div className={cn('flex flex-col gap-4', loading ? 'opacity-60' : '')}>
                         <LaunchField
                             label="URL"
                             value={details.url}
@@ -341,16 +346,18 @@ export function LaunchDialogHost() {
                                         disabled={!canUseResolvedInstance || Boolean(busy)}
                                         className="rounded-l-none border-l border-primary-foreground/25"
                                         aria-label="More launch options">
-                                        <MoreHorizontalIcon className="size-4" />
+                                        <MoreHorizontalIcon />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem onSelect={() => void runAction('launch-vr', () => selectLaunchMode(false))}>
-                                        Launch
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => void runAction('launch-desktop', () => selectLaunchMode(true))}>
-                                        Start as Desktop
-                                    </DropdownMenuItem>
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem onSelect={() => void runAction('launch-vr', () => selectLaunchMode(false))}>
+                                            Launch
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => void runAction('launch-desktop', () => selectLaunchMode(true))}>
+                                            Start as Desktop
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>

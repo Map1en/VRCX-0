@@ -54,6 +54,7 @@ import { Textarea } from '@/ui/shadcn/textarea';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
@@ -828,11 +829,11 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                             <div className="mb-3 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2">
                                     <Button type="button" size="sm" variant="outline" disabled={loading} onClick={() => setReloadToken((value) => value + 1)}>
-                                        <RefreshCwIcon className="size-3.5" />
+                                        <RefreshCwIcon data-icon="inline-start" />
                                         Refresh
                                     </Button>
                                     <Button type="button" size="sm" variant="outline" disabled={!rows.length} onClick={() => downloadJsonFile(`${group.id}_${activeTab}.json`, rows)}>
-                                        <DownloadIcon className="size-3.5" />
+                                        <DownloadIcon data-icon="inline-start" />
                                         JSON
                                     </Button>
                                     <span className="text-sm text-muted-foreground">{filteredRows.length}/{rows.length}</span>
@@ -853,7 +854,9 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                     }}>
                                         <SelectTrigger size="sm" className="w-24"><SelectValue /></SelectTrigger>
                                         <SelectContent>
-                                            {[10, 25, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                            <SelectGroup>
+                                                {[10, 25, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1843,7 +1846,7 @@ export function GroupDialogTabbedView({
                             Load All
                         </Button>
                         <Button type="button" size="sm" variant="outline" disabled={!members.length} onClick={() => downloadJsonFile(`${group.id}_members.json`, members)}>
-                            <DownloadIcon className="size-3.5" />
+                            <DownloadIcon data-icon="inline-start" />
                             JSON
                         </Button>
                         <Select value={memberSort} onValueChange={setMemberSort} disabled={remoteStatus.members === 'running'}>
@@ -1851,10 +1854,12 @@ export function GroupDialogTabbedView({
                                 <SelectValue placeholder="Sort" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="joinedAt:desc">Joined newest</SelectItem>
-                                <SelectItem value="joinedAt:asc">Joined oldest</SelectItem>
-                                <SelectItem value="user.displayName:asc">Name A-Z</SelectItem>
-                                <SelectItem value="user.displayName:desc">Name Z-A</SelectItem>
+                                <SelectGroup>
+                                    <SelectItem value="joinedAt:desc">Joined newest</SelectItem>
+                                    <SelectItem value="joinedAt:asc">Joined oldest</SelectItem>
+                                    <SelectItem value="user.displayName:asc">Name A-Z</SelectItem>
+                                    <SelectItem value="user.displayName:desc">Name Z-A</SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                         <Select
@@ -1865,12 +1870,14 @@ export function GroupDialogTabbedView({
                                 <SelectValue placeholder="Role" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All roles</SelectItem>
-                                {group.roles.map((role) => (
-                                    <SelectItem key={role.id || role.name} value={role.id || role.name}>
-                                        {role.name || 'Role'}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    <SelectItem value="all">All roles</SelectItem>
+                                    {group.roles.map((role) => (
+                                        <SelectItem key={role.id || role.name} value={role.id || role.name}>
+                                            {role.name || 'Role'}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                         <Input

@@ -17,11 +17,17 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
+import {
+    Field,
+    FieldContent,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel
+} from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
-import { Label } from '@/ui/shadcn/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
 import { Separator } from '@/ui/shadcn/separator';
 import { Switch } from '@/ui/shadcn/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/shadcn/table';
@@ -175,18 +181,18 @@ function ToolTextarea({ value, rows = 15 }) {
 
 function CheckRow({ id, label, description, checked, disabled, onCheckedChange }) {
     return (
-        <div className="flex items-start gap-3 rounded-md border p-3">
+        <Field orientation="horizontal" data-disabled={disabled} className="rounded-md border p-3">
             <Checkbox
                 id={id}
                 checked={checked}
                 disabled={disabled}
                 onCheckedChange={(value) => onCheckedChange(Boolean(value))}
             />
-            <div className="space-y-1">
-                <Label htmlFor={id}>{label}</Label>
-                {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
-            </div>
-        </div>
+            <FieldContent>
+                <FieldLabel htmlFor={id}>{label}</FieldLabel>
+                {description ? <FieldDescription>{description}</FieldDescription> : null}
+            </FieldContent>
+        </Field>
     );
 }
 
@@ -207,37 +213,45 @@ function MultiCheckList({ idPrefix, values, options, disabled, onChange }) {
     );
 }
 
-function StatusEditor({ label, disabled, status, descEnabled, desc, onStatusChange, onDescEnabledChange, onDescChange }) {
+function StatusEditor({ id, label, disabled, status, descEnabled, desc, onStatusChange, onDescEnabledChange, onDescChange }) {
     const { t } = useI18n();
+    const descEnabledId = `${id}-description-enabled`;
+
     return (
-        <div className="space-y-3 rounded-md border p-3">
-            <Label>{label}</Label>
-            <Select value={status} disabled={disabled} onValueChange={onStatusChange}>
-                <SelectTrigger>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    {statusOptions.map((statusOption) => (
-                        <SelectItem key={statusOption} value={statusOption}>
-                            {t(`dialog.user.status.${statusOption.replace(' ', '_')}`)}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <div className="flex items-center gap-2">
-                <Switch checked={descEnabled} disabled={disabled} onCheckedChange={onDescEnabledChange} />
-                <Label>{t('view.settings.general.automation.change_status_description')}</Label>
-            </div>
+        <FieldGroup className="rounded-md border p-3">
+            <Field>
+                <FieldLabel>{label}</FieldLabel>
+                <Select value={status} disabled={disabled} onValueChange={onStatusChange}>
+                    <SelectTrigger>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            {statusOptions.map((statusOption) => (
+                                <SelectItem key={statusOption} value={statusOption}>
+                                    {t(`dialog.user.status.${statusOption.replace(' ', '_')}`)}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
+            </Field>
+            <Field orientation="horizontal" data-disabled={disabled}>
+                <Switch id={descEnabledId} checked={descEnabled} disabled={disabled} onCheckedChange={onDescEnabledChange} />
+                <FieldLabel htmlFor={descEnabledId}>{t('view.settings.general.automation.change_status_description')}</FieldLabel>
+            </Field>
             {descEnabled ? (
-                <Input
-                    value={desc}
-                    maxLength={32}
-                    disabled={disabled}
-                    placeholder={t('view.settings.general.automation.status_description_placeholder')}
-                    onChange={(event) => onDescChange(event.target.value)}
-                />
+                <Field data-disabled={disabled}>
+                    <Input
+                        value={desc}
+                        maxLength={32}
+                        disabled={disabled}
+                        placeholder={t('view.settings.general.automation.status_description_placeholder')}
+                        onChange={(event) => onDescChange(event.target.value)}
+                    />
+                </Field>
             ) : null}
-        </div>
+        </FieldGroup>
     );
 }
 
@@ -370,7 +384,7 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                     <DialogTitle>{t('view.settings.general.automation.auto_change_status')}</DialogTitle>
                     <DialogDescription>{t('view.settings.general.automation.auto_state_change_tooltip')}</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-5">
+                <FieldGroup>
                     <CheckRow
                         id="autoStateChangeEnabled"
                         label={t('view.settings.general.automation.auto_change_status_switch')}
@@ -379,8 +393,8 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                         disabled={loading}
                         onCheckedChange={(checked) => void saveValue('autoStateChangeEnabled', checked, 'bool')}
                     />
-                    <div className="space-y-2">
-                        <Label>{t('view.settings.general.automation.alone_condition')}</Label>
+                    <Field data-disabled={loading || !values.autoStateChangeEnabled}>
+                        <FieldLabel>{t('view.settings.general.automation.alone_condition')}</FieldLabel>
                         <Select
                             value={values.autoStateChangeNoFriends ? 'noFriends' : 'alone'}
                             disabled={loading || !values.autoStateChangeEnabled}
@@ -389,13 +403,15 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="alone">{t('view.settings.general.automation.alone')}</SelectItem>
-                                <SelectItem value="noFriends">{t('view.settings.general.automation.no_friends')}</SelectItem>
+                                <SelectGroup>
+                                    <SelectItem value="alone">{t('view.settings.general.automation.alone')}</SelectItem>
+                                    <SelectItem value="noFriends">{t('view.settings.general.automation.no_friends')}</SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('view.settings.general.automation.auto_change_status_groups')}</Label>
+                    </Field>
+                    <Field data-disabled={loading || !values.autoStateChangeEnabled || !values.autoStateChangeNoFriends}>
+                        <FieldLabel>{t('view.settings.general.automation.auto_change_status_groups')}</FieldLabel>
                         <MultiCheckList
                             idPrefix="autoStateChangeGroups"
                             values={values.autoStateChangeGroups}
@@ -403,9 +419,9 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                             disabled={loading || !values.autoStateChangeEnabled || !values.autoStateChangeNoFriends}
                             onChange={(next) => void saveValue('autoStateChangeGroups', next, 'array')}
                         />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('view.settings.general.automation.allowed_instance_types')}</Label>
+                    </Field>
+                    <Field data-disabled={loading || !values.autoStateChangeEnabled}>
+                        <FieldLabel>{t('view.settings.general.automation.allowed_instance_types')}</FieldLabel>
                         <MultiCheckList
                             idPrefix="autoStateChangeInstanceTypes"
                             values={values.autoStateChangeInstanceTypes}
@@ -413,9 +429,10 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                             disabled={loading || !values.autoStateChangeEnabled}
                             onChange={(next) => void saveValue('autoStateChangeInstanceTypes', next, 'array')}
                         />
-                    </div>
+                    </Field>
                     <div className="grid gap-4 md:grid-cols-2">
                         <StatusEditor
+                            id="auto-state-change-alone-status"
                             label={t('view.settings.general.automation.alone_status')}
                             disabled={loading || !values.autoStateChangeEnabled}
                             status={values.autoStateChangeAloneStatus}
@@ -426,6 +443,7 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                             onDescChange={(value) => void saveValue('autoStateChangeAloneDesc', value)}
                         />
                         <StatusEditor
+                            id="auto-state-change-company-status"
                             label={t('view.settings.general.automation.company_status')}
                             disabled={loading || !values.autoStateChangeEnabled}
                             status={values.autoStateChangeCompanyStatus}
@@ -450,8 +468,8 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                             )
                         }
                     />
-                    <div className="space-y-2">
-                        <Label>{t('view.settings.general.automation.auto_invite_request_accept')}</Label>
+                    <Field data-disabled={loading || !autoAcceptEnabled}>
+                        <FieldLabel>{t('view.settings.general.automation.auto_invite_request_accept')}</FieldLabel>
                         <Select
                             value={normalizeAutoAcceptMode(values.autoAcceptInviteRequests)}
                             disabled={loading || !autoAcceptEnabled}
@@ -460,13 +478,15 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="All Favorites">{t('view.settings.general.automation.auto_invite_request_accept_favs')}</SelectItem>
-                                <SelectItem value="Selected Favorites">{t('view.settings.general.automation.auto_invite_request_accept_selected_favs')}</SelectItem>
+                                <SelectGroup>
+                                    <SelectItem value="All Favorites">{t('view.settings.general.automation.auto_invite_request_accept_favs')}</SelectItem>
+                                    <SelectItem value="Selected Favorites">{t('view.settings.general.automation.auto_invite_request_accept_selected_favs')}</SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('view.settings.general.automation.auto_accept_invite_groups')}</Label>
+                    </Field>
+                    <Field data-disabled={loading || values.autoAcceptInviteRequests !== 'Selected Favorites'}>
+                        <FieldLabel>{t('view.settings.general.automation.auto_accept_invite_groups')}</FieldLabel>
                         <MultiCheckList
                             idPrefix="autoAcceptInviteGroups"
                             values={values.autoAcceptInviteGroups}
@@ -474,8 +494,8 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                             disabled={loading || values.autoAcceptInviteRequests !== 'Selected Favorites'}
                             onChange={(next) => void saveValue('autoAcceptInviteGroups', next, 'array')}
                         />
-                    </div>
-                </div>
+                    </Field>
+                </FieldGroup>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                         Close
@@ -718,7 +738,7 @@ function NoteExportDialog({ open, onOpenChange }) {
                 <DialogHeader>
                     <DialogTitle>{t('dialog.note_export.header')}</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-1 text-xs text-muted-foreground">
+                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
                     {Array.from({ length: 8 }, (_, index) => (
                         <div key={`note-export-description-${index + 1}`}>
                             {t(`dialog.note_export.description${index + 1}`)}
@@ -744,7 +764,7 @@ function NoteExportDialog({ open, onOpenChange }) {
                     ) : null}
                 </div>
                 {errors ? (
-                    <div className="space-y-2 rounded-md border p-3">
+                    <div className="flex flex-col gap-2 rounded-md border p-3">
                         <Button type="button" size="sm" variant="outline" onClick={() => setErrors('')}>
                             {t('dialog.note_export.clear_errors')}
                         </Button>
@@ -993,12 +1013,12 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                         className="w-auto"
                         onChange={(event) => setSelectedDate(event.target.value || selectedDateKey(new Date()))}
                     />
-                    <div className="flex items-center gap-2">
-                        <Switch checked={showFeaturedEvents} onCheckedChange={(checked) => void toggleFeatured(checked)} />
-                        <Label>{t('dialog.group_calendar.featured_events')}</Label>
-                    </div>
+                    <Field orientation="horizontal" className="w-auto">
+                        <Switch id="group-calendar-featured-events" checked={showFeaturedEvents} onCheckedChange={(checked) => void toggleFeatured(checked)} />
+                        <FieldLabel htmlFor="group-calendar-featured-events">{t('dialog.group_calendar.featured_events')}</FieldLabel>
+                    </Field>
                     <Button type="button" variant="outline" disabled={loading} onClick={() => void loadCalendar({ force: true })}>
-                        <RefreshCwIcon className="size-4" />
+                        <RefreshCwIcon data-icon="inline-start" />
                         {t('common.actions.refresh')}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => setViewMode((current) => (current === 'timeline' ? 'grid' : 'timeline'))}>
@@ -1041,7 +1061,7 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                                             className={`relative h-12 flex-col gap-0 ${hasFollowing ? 'ring-1 ring-primary' : ''}`}
                                             onClick={() => setSelectedDate(dateKey)}>
                                             <span>{index + 1}</span>
-                                            {count ? <span className="text-[10px]">{count}</span> : null}
+                                            {count ? <span className="text-xs">{count}</span> : null}
                                             {hasFollowing ? <span className="absolute right-1 top-1 size-1.5 rounded-full bg-primary" /> : null}
                                         </Button>
                                     );
@@ -1050,7 +1070,7 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <Input
                             value={search}
                             placeholder={t('dialog.group_calendar.search_placeholder')}
@@ -1058,7 +1078,7 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                         />
                         <ScrollArea className="h-[55vh] rounded-md border p-4">
                             {eventsByGroup.length ? eventsByGroup.map((group) => (
-                                <div key={group.groupId} className="mb-4 space-y-2">
+                                <div key={group.groupId} className="mb-4 flex flex-col gap-2">
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -1249,7 +1269,7 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
                     )}
                     <div className="p-3">
                         <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 space-y-1">
+                            <div className="flex min-w-0 flex-col gap-1">
                                 {showGroupName ? (
                                     <button
                                         type="button"
@@ -1271,20 +1291,20 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
                             </div>
                             <div className="flex shrink-0 flex-wrap justify-end gap-2">
                                 <Button type="button" size="icon-sm" variant="outline" onClick={stopAndRun(() => void copyEventLink(event, t))}>
-                                    <Share2Icon className="size-4" />
+                                    <Share2Icon />
                                 </Button>
                                 <Button type="button" size="icon-sm" variant={isFollowing ? 'default' : 'outline'} onClick={stopAndRun(onToggleFollow)}>
-                                    <StarIcon className="size-4" />
+                                    <StarIcon />
                                 </Button>
                             </div>
                         </div>
                         <div className="mt-3 flex flex-wrap justify-end gap-2">
                             <Button type="button" size="sm" variant="outline" onClick={stopAndRun(() => void openCalendarEvent(event))}>
-                                <CalendarIcon className="size-4" />
+                                <CalendarIcon data-icon="inline-start" />
                                 {t('dialog.group_calendar.event_card.export_to_calendar')}
                             </Button>
                             <Button type="button" size="sm" variant="outline" onClick={stopAndRun(() => void downloadEventIcs(event))}>
-                                <DownloadIcon className="size-4" />
+                                <DownloadIcon data-icon="inline-start" />
                                 {t('dialog.group_calendar.event_card.download_ics')}
                             </Button>
                         </div>
@@ -1298,16 +1318,16 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
                 onMouseEnter={openPopover}
                 onMouseLeave={scheduleClosePopover}>
                 <div className="flex items-baseline justify-between gap-3 text-xs">
-                    <div className="min-w-0 text-[13px] font-semibold">{title}</div>
+                    <div className="min-w-0 text-sm font-semibold">{title}</div>
                     <div className="shrink-0 whitespace-nowrap">{formatEventTimeRange(event)}</div>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                     <Button variant="outline" size="sm" onClick={() => void openCalendarEvent(event)}>
-                        <CalendarIcon className="size-4" />
+                        <CalendarIcon data-icon="inline-start" />
                         {t('dialog.group_calendar.event_card.export_to_calendar')}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => void downloadEventIcs(event)}>
-                        <DownloadIcon className="size-4" />
+                        <DownloadIcon data-icon="inline-start" />
                         {t('dialog.group_calendar.event_card.download_ics')}
                     </Button>
                     <div className="flex min-w-0 flex-col gap-1">

@@ -238,7 +238,7 @@ export function FavoriteImportHost() {
                 </div>
 
                 {errors ? (
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setErrors('')}>
                             Clear errors
                         </Button>
@@ -268,10 +268,10 @@ export function FavoriteImportHost() {
                                                 <img
                                                     alt=""
                                                     src={getRowImage(row)}
-                                                    className="h-10 w-10 rounded object-cover"
+                                                    className="size-10 rounded object-cover"
                                                 />
                                             ) : (
-                                                <div className="h-10 w-10 rounded bg-muted" />
+                                                <div className="size-10 rounded bg-muted" />
                                             )}
                                         </TableCell>
                                         <TableCell>{getRowName(type, row)}</TableCell>

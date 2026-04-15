@@ -236,7 +236,7 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                     ) : (
                         <div className="h-full overflow-auto p-2">
                             {chartRows.length ? (
-                                <div className="space-y-2">
+                                <div className="flex flex-col gap-2">
                                     {chartRows.map((instance, index) => {
                                         const location = rowLocation(instance);
                                         const durationValue = rowDurationValue(instance);
@@ -307,7 +307,7 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                             <div><span className="text-muted-foreground">World</span><div>{infoRow?.worldName || '—'}</div></div>
                             <div><span className="text-muted-foreground">Group</span><div>{infoRow?.groupName || '—'}</div></div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-medium">Players</h4>
                                 <span className="text-xs text-muted-foreground">{infoData.players.length} players</span>

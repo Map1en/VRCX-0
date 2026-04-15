@@ -40,6 +40,7 @@ import { useI18n } from '@/app/hooks/use-i18n.js';
 import {
     ContextMenu,
     ContextMenuContent,
+    ContextMenuGroup,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
@@ -48,6 +49,7 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -262,35 +264,37 @@ function DashboardEntryAction({ entry, onEditDashboard, onDeleteDashboard, onUnp
         <DropdownMenu>
             <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="start" className="w-48">
-                {isDashboard ? (
-                    <>
-                        <DropdownMenuItem
-                            onSelect={() => {
-                                void onEditDashboard(entry);
-                            }}>
-                            <PencilIcon className="size-4" />
-                            {t('nav_menu.edit_dashboard')}
-                        </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    {isDashboard ? (
+                        <>
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    void onEditDashboard(entry);
+                                }}>
+                                <PencilIcon />
+                                {t('nav_menu.edit_dashboard')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => {
+                                    void onDeleteDashboard(entry);
+                                }}>
+                                <Trash2Icon />
+                                {t('nav_menu.delete_dashboard')}
+                            </DropdownMenuItem>
+                        </>
+                    ) : null}
+                    {isTool ? (
                         <DropdownMenuItem
                             variant="destructive"
                             onSelect={() => {
-                                void onDeleteDashboard(entry);
+                                void onUnpinTool(entry);
                             }}>
-                            <Trash2Icon className="size-4" />
-                            {t('nav_menu.delete_dashboard')}
+                            <Trash2Icon />
+                            {t('nav_menu.custom_nav.unpin_from_nav')}
                         </DropdownMenuItem>
-                    </>
-                ) : null}
-                {isTool ? (
-                    <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={() => {
-                            void onUnpinTool(entry);
-                        }}>
-                        <Trash2Icon className="size-4" />
-                        {t('nav_menu.custom_nav.unpin_from_nav')}
-                    </DropdownMenuItem>
-                ) : null}
+                    ) : null}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -317,26 +321,28 @@ function NavItemContextMenu({
             <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
             <ContextMenuContent className="w-56">
                 {hasNotifications ? (
-                    <>
+                    <ContextMenuGroup>
                         <ContextMenuItem
                             onSelect={() => {
                                 void onMarkAllRead();
                             }}>
                             {t('nav_menu.mark_all_read')}
                         </ContextMenuItem>
-                        <ContextMenuSeparator />
-                    </>
+                    </ContextMenuGroup>
                 ) : null}
+                {hasNotifications ? <ContextMenuSeparator /> : null}
                 {showCreateDashboard ? (
-                    <ContextMenuItem
-                        onSelect={() => {
-                            void onCreateDashboard();
-                        }}>
-                        {t('dashboard.new_dashboard')}
-                    </ContextMenuItem>
+                    <ContextMenuGroup>
+                        <ContextMenuItem
+                            onSelect={() => {
+                                void onCreateDashboard();
+                            }}>
+                            {t('dashboard.new_dashboard')}
+                        </ContextMenuItem>
+                    </ContextMenuGroup>
                 ) : null}
                 {isDashboard ? (
-                    <>
+                    <ContextMenuGroup>
                         <ContextMenuItem
                             onSelect={() => {
                                 void onEditDashboard(entry);
@@ -350,23 +356,25 @@ function NavItemContextMenu({
                             }}>
                             {t('nav_menu.delete_dashboard')}
                         </ContextMenuItem>
-                        <ContextMenuSeparator />
-                    </>
+                    </ContextMenuGroup>
                 ) : null}
+                {isDashboard ? <ContextMenuSeparator /> : null}
                 {isTool ? (
-                    <>
+                    <ContextMenuGroup>
                         <ContextMenuItem
                             onSelect={() => {
                                 void onUnpinTool(entry);
                             }}>
                             {t('nav_menu.custom_nav.unpin_from_nav')}
                         </ContextMenuItem>
-                        <ContextMenuSeparator />
-                    </>
+                    </ContextMenuGroup>
                 ) : null}
-                <ContextMenuItem onSelect={onOpenCustomNav}>
-                    {t('nav_menu.custom_nav.header')}
-                </ContextMenuItem>
+                {isTool ? <ContextMenuSeparator /> : null}
+                <ContextMenuGroup>
+                    <ContextMenuItem onSelect={onOpenCustomNav}>
+                        {t('nav_menu.custom_nav.header')}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
             </ContextMenuContent>
         </ContextMenu>
     );
@@ -377,13 +385,15 @@ function CollapsedFolderDropdownEntry({ entry, isNotified, onSelect, onEditDashb
     const isTool = isToolEntry(entry);
     if (!isDashboard && !isTool) {
         return (
-            <DropdownMenuItem
-                onSelect={() => {
-                    void onSelect(entry);
-                }}>
-                <NotifiedNavIcon entry={entry} isNotified={isNotified} />
-                <span>{labelForEntry(entry, t)}</span>
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+                <DropdownMenuItem
+                    onSelect={() => {
+                        void onSelect(entry);
+                    }}>
+                    <NotifiedNavIcon entry={entry} isNotified={isNotified} />
+                    <span>{labelForEntry(entry, t)}</span>
+                </DropdownMenuItem>
+            </DropdownMenuGroup>
         );
     }
 
@@ -394,21 +404,23 @@ function CollapsedFolderDropdownEntry({ entry, isNotified, onSelect, onEditDashb
                 <span>{labelForEntry(entry, t)}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent side="right" align="start" className="w-48">
-                <DropdownMenuItem
-                    onSelect={() => {
-                        void onSelect(entry);
-                    }}>
-                    <NotifiedNavIcon entry={entry} isNotified={isNotified} />
-                    <span>{labelForEntry(entry, t)}</span>
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuItem
+                        onSelect={() => {
+                            void onSelect(entry);
+                        }}>
+                        <NotifiedNavIcon entry={entry} isNotified={isNotified} />
+                        <span>{labelForEntry(entry, t)}</span>
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 {isDashboard ? (
-                    <>
+                    <DropdownMenuGroup>
                         <DropdownMenuItem
                             onSelect={() => {
                                 void onEditDashboard(entry);
                             }}>
-                            <PencilIcon className="size-4" />
+                            <PencilIcon />
                             {t('nav_menu.edit_dashboard')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -416,20 +428,22 @@ function CollapsedFolderDropdownEntry({ entry, isNotified, onSelect, onEditDashb
                             onSelect={() => {
                                 void onDeleteDashboard(entry);
                             }}>
-                            <Trash2Icon className="size-4" />
+                            <Trash2Icon />
                             {t('nav_menu.delete_dashboard')}
                         </DropdownMenuItem>
-                    </>
+                    </DropdownMenuGroup>
                 ) : null}
                 {isTool ? (
-                    <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={() => {
-                            void onUnpinTool(entry);
-                        }}>
-                        <Trash2Icon className="size-4" />
-                        {t('nav_menu.custom_nav.unpin_from_nav')}
-                    </DropdownMenuItem>
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => {
+                                void onUnpinTool(entry);
+                            }}>
+                            <Trash2Icon />
+                            {t('nav_menu.custom_nav.unpin_from_nav')}
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
                 ) : null}
             </DropdownMenuSubContent>
         </DropdownMenuSub>
@@ -993,7 +1007,7 @@ export function AppNavMenu({ isCollapsed }) {
                                                             />
                                                             <span>{labelForEntry(item, t)}</span>
                                                             {item.action === 'direct-access' && !isCollapsed ? (
-                                                                <span className="ml-auto text-[10px] text-muted-foreground">
+                                                                <span className="ml-auto text-xs text-muted-foreground">
                                                                     Ctrl D
                                                                 </span>
                                                             ) : null}
@@ -1006,7 +1020,7 @@ export function AppNavMenu({ isCollapsed }) {
                                                             />
                                                             <span>{labelForEntry(item, t)}</span>
                                                             {item.action === 'direct-access' && !isCollapsed ? (
-                                                                <span className="ml-auto text-[10px] text-muted-foreground">
+                                                                <span className="ml-auto text-xs text-muted-foreground">
                                                                     Ctrl D
                                                                 </span>
                                                             ) : null}
@@ -1042,19 +1056,23 @@ export function AppNavMenu({ isCollapsed }) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent side="right" align="start" className="w-56">
                                 <DropdownMenuLabel>{t('nav_menu.resources')}</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => void openExternalLink(links.wiki)}>
-                                    {t('nav_menu.wiki')}
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => void openExternalLink(links.wiki)}>
+                                        {t('nav_menu.wiki')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuLabel>{t('nav_menu.get_help')}</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => void openExternalLink(links.github)}>
-                                    {t('nav_menu.github')}
-                                </DropdownMenuItem>
-                                {links.discord ? (
-                                    <DropdownMenuItem onClick={() => void openExternalLink(links.discord)}>
-                                        {t('nav_menu.discord')}
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => void openExternalLink(links.github)}>
+                                        {t('nav_menu.github')}
                                     </DropdownMenuItem>
-                                ) : null}
+                                    {links.discord ? (
+                                        <DropdownMenuItem onClick={() => void openExternalLink(links.discord)}>
+                                            {t('nav_menu.discord')}
+                                        </DropdownMenuItem>
+                                    ) : null}
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </SidebarMenuItem>
@@ -1104,32 +1122,36 @@ export function AppNavMenu({ isCollapsed }) {
                                 </div>
                                 <DropdownMenuSeparator />
                                 {hasPendingUpdate ? (
-                                    <>
+                                    <DropdownMenuGroup>
                                         <DropdownMenuItem
                                             onClick={() => useRuntimeStore.getState().setSystemHostOpen('updaterOpen', true)}>
                                             {t('nav_menu.update_available')}
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                    </>
+                                    </DropdownMenuGroup>
                                 ) : null}
-                                <DropdownMenuItem onClick={() => navigate(routePathByName.settings)}>
-                                    {t('nav_tooltip.settings')}
-                                </DropdownMenuItem>
+                                {hasPendingUpdate ? <DropdownMenuSeparator /> : null}
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => navigate(routePathByName.settings)}>
+                                        {t('nav_tooltip.settings')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>
                                         {t('view.settings.appearance.appearance.theme_mode')}
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent side="right" align="start" className="w-48">
-                                        {themeModeOptions.map((mode) => (
-                                            <DropdownMenuCheckboxItem
-                                                key={mode}
-                                                checked={themeMode === mode}
-                                                onSelect={() => {
-                                                    void setThemeModePreference(mode);
-                                                }}>
-                                                {themeModeLabel(mode, t)}
-                                            </DropdownMenuCheckboxItem>
-                                        ))}
+                                        <DropdownMenuGroup>
+                                            {themeModeOptions.map((mode) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={mode}
+                                                    checked={themeMode === mode}
+                                                    onSelect={() => {
+                                                        void setThemeModePreference(mode);
+                                                    }}>
+                                                    {themeModeLabel(mode, t)}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
                                 <DropdownMenuSub>
@@ -1137,41 +1159,47 @@ export function AppNavMenu({ isCollapsed }) {
                                         {t('view.settings.appearance.appearance.table_density')}
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent side="right" align="start" className="w-48">
-                                        {tableDensityOptions.map((option) => (
-                                            <DropdownMenuCheckboxItem
-                                                key={option.value}
-                                                checked={tableDensity === option.value}
-                                                onSelect={() => {
-                                                    void setTableDensityPreference(option.value);
-                                                }}>
-                                                {t(option.labelKey)}
-                                            </DropdownMenuCheckboxItem>
-                                        ))}
+                                        <DropdownMenuGroup>
+                                            {tableDensityOptions.map((option) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={option.value}
+                                                    checked={tableDensity === option.value}
+                                                    onSelect={() => {
+                                                        void setTableDensityPreference(option.value);
+                                                    }}>
+                                                    {t(option.labelKey)}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
-                                <DropdownMenuItem onClick={() => setCustomNavDialogOpen(true)}>
-                                    {t('nav_menu.custom_nav.header')}
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => setCustomNavDialogOpen(true)}>
+                                        {t('nav_menu.custom_nav.header')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    variant="destructive"
-                                    disabled={!isLoggedIn}
-                                    onClick={() => {
-                                        void logoutFromReactShell()
-                                            .then((didLogout) => {
-                                                if (didLogout) {
-                                                    navigate('/login', { replace: true });
-                                                }
-                                            })
-                                            .catch((error) => {
-                                                toast.error(
-                                                    error instanceof Error ? error.message : 'Failed to sign out of VRCX.'
-                                                );
-                                            });
-                                    }}>
-                                    <LogOutIcon className="size-4" />
-                                    {t('dialog.user.actions.logout')}
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        disabled={!isLoggedIn}
+                                        onClick={() => {
+                                            void logoutFromReactShell()
+                                                .then((didLogout) => {
+                                                    if (didLogout) {
+                                                        navigate('/login', { replace: true });
+                                                    }
+                                                })
+                                                .catch((error) => {
+                                                    toast.error(
+                                                        error instanceof Error ? error.message : 'Failed to sign out of VRCX.'
+                                                    );
+                                                });
+                                        }}>
+                                        <LogOutIcon />
+                                        {t('dialog.user.actions.logout')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </SidebarMenuItem>

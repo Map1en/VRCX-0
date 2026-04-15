@@ -249,15 +249,15 @@ export function AvatarDialogTabbedView({
                     <EntityInfoGrid>
                     {galleryImages.length || canManageAvatar ? (
                         <EntityInfoBlock label="Gallery" full>
-                            <div className="mt-2 w-full space-y-2">
+                            <div className="mt-2 flex w-full flex-col gap-2">
                                 {canManageAvatar ? (
                                     <Button type="button" size="sm" variant="outline" disabled={actionStatus === 'gallery-upload'} onClick={onUploadGallery}>
-                                        <UploadIcon className="size-3.5" />
+                                        <UploadIcon data-icon="inline-start" />
                                         Upload
                                     </Button>
                                 ) : null}
                                 {galleryImages.length ? (
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <button
                                             type="button"
                                             disabled={!currentGalleryImage}
@@ -299,7 +299,7 @@ export function AvatarDialogTabbedView({
                     ) : null}
                     {listings.length ? (
                         <EntityInfoBlock label="Published Listings" full>
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 {listings.map((listing, index) => (
                                     <div key={`${listing?.id || listing?.platform || index}`} className="box-border flex items-center p-1.5 text-[13px]">
                                         <div className="font-medium">{listing?.displayName || listing?.name || listing?.platform || listing?.id || 'Listing'}</div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ImageIcon, LoaderCircleIcon, RefreshCwIcon } from 'lucide-react';
+import { ImageIcon, RefreshCwIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import configRepository from '@/repositories/configRepository.js';
@@ -11,7 +11,8 @@ import { parseLocation } from '@/shared/utils/locationParser.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Button } from '@/ui/shadcn/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 
 const ACTIVITY_SELF_PERIOD_KEY = 'VRCX_activitySelfPeriodDays';
@@ -448,7 +449,7 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                         disabled={loading}
                         title="Refresh activity"
                         onClick={() => void refreshData({ forceRefresh: true })}>
-                        {loading ? <LoaderCircleIcon className="size-4 animate-spin" /> : <RefreshCwIcon className="size-4" />}
+                        {loading ? <Spinner /> : <RefreshCwIcon />}
                     </Button>
                     {filteredEventCount > 0 ? (
                         <span className="text-sm text-muted-foreground">{filteredEventCount} events</span>
@@ -462,12 +463,14 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {fullCacheReady ? <SelectItem value="0">All Time</SelectItem> : null}
-                                {fullCacheReady ? <SelectItem value="365">365 Days</SelectItem> : null}
-                                {fullCacheReady ? <SelectItem value="180">180 Days</SelectItem> : null}
-                                <SelectItem value="90">90 Days</SelectItem>
-                                <SelectItem value="30">30 Days</SelectItem>
-                                <SelectItem value="7">7 Days</SelectItem>
+                                <SelectGroup>
+                                    {fullCacheReady ? <SelectItem value="0">All Time</SelectItem> : null}
+                                    {fullCacheReady ? <SelectItem value="365">365 Days</SelectItem> : null}
+                                    {fullCacheReady ? <SelectItem value="180">180 Days</SelectItem> : null}
+                                    <SelectItem value="90">90 Days</SelectItem>
+                                    <SelectItem value="30">30 Days</SelectItem>
+                                    <SelectItem value="7">7 Days</SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>
@@ -496,7 +499,7 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
 
             {loading && !hasAnyData ? (
                 <div className="mt-8 flex flex-1 flex-col items-center justify-center gap-2">
-                    <LoaderCircleIcon className="size-5 animate-spin" />
+                    <Spinner className="size-5" />
                     <span className="text-sm text-muted-foreground">Preparing activity data</span>
                     <span className="text-xs text-muted-foreground">This can take a moment on the first load.</span>
                 </div>
@@ -527,7 +530,7 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                     <div className="mb-2 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">Overlap</span>
-                            {overlapLoading ? <LoaderCircleIcon className="size-3.5 animate-spin" /> : null}
+                            {overlapLoading ? <Spinner className="size-3.5" /> : null}
                         </div>
                         {hasOverlapData ? (
                             <div className="flex items-center gap-1.5">
@@ -536,14 +539,18 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                                 <Select value={excludeStartHour} onValueChange={(value) => void changeExcludeRange('start', value)}>
                                     <SelectTrigger size="sm" className="h-6 w-[78px] px-2 text-sm"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {HOUR_LABELS.map((label, index) => <SelectItem key={label} value={String(index)}>{label}</SelectItem>)}
+                                        <SelectGroup>
+                                            {HOUR_LABELS.map((label, index) => <SelectItem key={label} value={String(index)}>{label}</SelectItem>)}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                                 <span className="text-xs text-muted-foreground">-</span>
                                 <Select value={excludeEndHour} onValueChange={(value) => void changeExcludeRange('end', value)}>
                                     <SelectTrigger size="sm" className="h-6 w-[78px] px-2 text-sm"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {HOUR_LABELS.map((label, index) => <SelectItem key={label} value={String(index)}>{label}</SelectItem>)}
+                                        <SelectGroup>
+                                            {HOUR_LABELS.map((label, index) => <SelectItem key={label} value={String(index)}>{label}</SelectItem>)}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -583,7 +590,7 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                     <div className="mb-2 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">Most Visited Worlds</span>
-                            {topWorldsLoading ? <LoaderCircleIcon className="size-3.5 animate-spin" /> : null}
+                            {topWorldsLoading ? <Spinner className="size-3.5" /> : null}
                         </div>
                         <div className="flex items-center gap-4">
                             {currentHomeWorldId ? (
@@ -597,8 +604,10 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                                 <Select value={topWorldsSortBy} onValueChange={(value) => void changeTopWorldsSort(value)} disabled={topWorldsLoading}>
                                     <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="time">Time</SelectItem>
-                                        <SelectItem value="count">Count</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="time">Time</SelectItem>
+                                            <SelectItem value="count">Count</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -606,7 +615,7 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                     </div>
                     {topWorldsLoading && !topWorlds.length ? (
                         <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
-                            <LoaderCircleIcon className="size-4 animate-spin" />
+                            <Spinner />
                             Loading worlds...
                         </div>
                     ) : (

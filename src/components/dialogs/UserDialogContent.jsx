@@ -4,7 +4,6 @@ import {
     BookmarkIcon,
     CheckIcon,
     HistoryIcon,
-    LoaderCircleIcon,
     MonitorIcon,
     SmartphoneIcon,
     XIcon
@@ -69,6 +68,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 function normalizeUserId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
@@ -536,7 +536,7 @@ function UserDialogEmptyState({ title, description, loading = false }) {
             <div className="max-w-sm space-y-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <LoaderCircleIcon className="size-5 animate-spin text-muted-foreground" />
+                        <Spinner className="size-5 text-muted-foreground" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>

@@ -11,7 +11,6 @@ import {
     ExternalLinkIcon,
     HeartIcon,
     LanguagesIcon,
-    LoaderCircleIcon,
     LogOutIcon,
     MailIcon,
     MapPinIcon,
@@ -68,6 +67,7 @@ import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
@@ -77,10 +77,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import {
     EntityActionDropdown,
@@ -727,44 +729,48 @@ function UserGroupCard({
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button type="button" size="icon-sm" variant="ghost" className="ml-1 shrink-0" disabled={busy} title="Manage group membership">
-                            <SettingsIcon className="size-3.5" />
+                            <SettingsIcon />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         {onMove ? (
                             <>
-                                <DropdownMenuItem onSelect={() => void onMove(group, 'top')}>
-                                    <DownloadIcon className="size-4 rotate-180" />
-                                    Move Top
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => void onMove(group, 'up')}>
-                                    <ArrowUpIcon className="size-4" />
-                                    Move Up
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => void onMove(group, 'down')}>
-                                    <ArrowDownIcon className="size-4" />
-                                    Move Down
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => void onMove(group, 'bottom')}>
-                                    <DownloadIcon className="size-4" />
-                                    Move Bottom
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onSelect={() => void onMove(group, 'top')}>
+                                        <DownloadIcon className="size-4 rotate-180" />
+                                        Move Top
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => void onMove(group, 'up')}>
+                                        <ArrowUpIcon className="size-4" />
+                                        Move Up
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => void onMove(group, 'down')}>
+                                        <ArrowDownIcon className="size-4" />
+                                        Move Down
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => void onMove(group, 'bottom')}>
+                                        <DownloadIcon className="size-4" />
+                                        Move Bottom
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                             </>
                         ) : null}
-                        <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'visible')}>
-                            Visibility: Everyone
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'friends')}>
-                            Visibility: Friends
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'hidden')}>
-                            Visibility: Hidden
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onSelect={() => onLeave?.(group)}>
-                            <LogOutIcon className="size-4" />
-                            Leave Group
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'visible')}>
+                                Visibility: Everyone
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'friends')}>
+                                Visibility: Friends
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'hidden')}>
+                                Visibility: Hidden
+                            </DropdownMenuItem>
+                            <DropdownMenuItem variant="destructive" onSelect={() => onLeave?.(group)}>
+                                <LogOutIcon className="size-4" />
+                                Leave Group
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
                     </DropdownMenuContent>
                 </DropdownMenu>
             ) : null}
@@ -868,7 +874,7 @@ function EntityList({
                             <span className="block truncate font-medium leading-[18px]" style={kind === 'user' && row?.$userColour ? { color: row.$userColour } : undefined}>{label || '—'}</span>
                             {travelingTimestamp ? (
                                 <span className="block truncate text-xs text-muted-foreground">
-                                    <LoaderCircleIcon className="mr-1 inline-block size-3 animate-spin" />
+                                    <Spinner className="mr-1 inline-block size-3" />
                                     {timeToText(Date.now() - travelingTimestamp)}
                                 </span>
                             ) : subtitle ? <span className="block truncate text-xs text-muted-foreground">{subtitle}</span> : null}
@@ -2306,7 +2312,7 @@ export function UserDialogTabbedView({
                         <EntityInfoBlock label="Avatar Info" full>
                             {currentAvatarTarget ? (
                                 <Button type="button" variant="link" className="h-auto justify-start p-0 text-left text-xs" onClick={() => openAvatarDialog(currentAvatarDialogArgs)}>
-                                    <UserIcon className="mr-1 size-3.5" />
+                                    <UserIcon data-icon="inline-start" />
                                     {currentAvatarDisplayName || 'Avatar'}
                                 </Button>
                             ) : <span className="block truncate text-xs">—</span>}
@@ -2368,7 +2374,7 @@ export function UserDialogTabbedView({
                                         disabled={bioTranslationLoading}
                                         title={translatedBioActive ? 'Show original bio' : 'Translate bio'}
                                         onClick={() => void toggleBioTranslation()}>
-                                        {bioTranslationLoading ? <LoaderCircleIcon className="size-3 animate-spin" /> : <LanguagesIcon className="size-3" />}
+                                        {bioTranslationLoading ? <Spinner className="size-3" /> : <LanguagesIcon />}
                                     </Button>
                                 ) : null}
                             </div>
@@ -2386,7 +2392,7 @@ export function UserDialogTabbedView({
                                             {getFaviconUrl(link) ? (
                                                 <img src={getFaviconUrl(link)} alt="" className="size-4" />
                                             ) : (
-                                                <ExternalLinkIcon className="size-4" />
+                                                <ExternalLinkIcon />
                                             )}
                                         </Button>
                                     ))}
@@ -2467,23 +2473,25 @@ export function UserDialogTabbedView({
                                                 size="icon-sm"
                                                 variant="ghost"
                                                 onClick={(event) => event.stopPropagation()}>
-                                                <CopyIcon className="size-4" />
+                                                <CopyIcon />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="start">
-                                            <DropdownMenuItem onSelect={() => void copyUserText(profile.id, 'User ID')}>
-                                                Copy User ID
-                                            </DropdownMenuItem>
-                                            {userUrl ? (
-                                                <DropdownMenuItem onSelect={() => void copyUserText(userUrl, 'User URL')}>
-                                                    Copy User URL
+                                            <DropdownMenuGroup>
+                                                <DropdownMenuItem onSelect={() => void copyUserText(profile.id, 'User ID')}>
+                                                    Copy User ID
                                                 </DropdownMenuItem>
-                                            ) : null}
-                                            {profile.displayName ? (
-                                                <DropdownMenuItem onSelect={() => void copyUserText(profile.displayName, 'Display name')}>
-                                                    Copy Display Name
-                                                </DropdownMenuItem>
-                                            ) : null}
+                                                {userUrl ? (
+                                                    <DropdownMenuItem onSelect={() => void copyUserText(userUrl, 'User URL')}>
+                                                        Copy User URL
+                                                    </DropdownMenuItem>
+                                                ) : null}
+                                                {profile.displayName ? (
+                                                    <DropdownMenuItem onSelect={() => void copyUserText(profile.displayName, 'Display name')}>
+                                                        Copy Display Name
+                                                    </DropdownMenuItem>
+                                                ) : null}
+                                            </DropdownMenuGroup>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 ) : null}
@@ -2506,11 +2514,13 @@ export function UserDialogTabbedView({
                         <Select value={mutualSort} onValueChange={setMutualSort} disabled={remoteStatus.mutual === 'running'}>
                             <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                {Object.entries(userDialogMutualFriendSortingOptions).map(([key, option]) => (
-                                    <SelectItem key={key} value={option.value}>
-                                        {t(option.name)}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    {Object.entries(userDialogMutualFriendSortingOptions).map(([key, option]) => (
+                                        <SelectItem key={key} value={option.value}>
+                                            {t(option.name)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </SearchHeader>
@@ -2524,11 +2534,13 @@ export function UserDialogTabbedView({
                                 <Select value={effectiveGroupSort} onValueChange={setGroupSort} disabled={remoteStatus.groups === 'running'}>
                                     <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(userDialogGroupSortingOptions).map(([key, option]) => (
-                                            <SelectItem key={key} value={option.value} disabled={option.value === 'inGame' && !isCurrentUser}>
-                                                {t(option.name)}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {Object.entries(userDialogGroupSortingOptions).map(([key, option]) => (
+                                                <SelectItem key={key} value={option.value} disabled={option.value === 'inGame' && !isCurrentUser}>
+                                                    {t(option.name)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </>
@@ -2571,32 +2583,34 @@ export function UserDialogTabbedView({
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button type="button" size="sm" variant="outline" disabled={groupActionId === '__bulk_groups__'}>
-                                                    <SettingsIcon className="size-3.5" />
+                                                    <SettingsIcon data-icon="inline-start" />
                                                     Bulk Actions
                                                     {selectedGroupCount ? <span className="text-xs text-muted-foreground">({selectedGroupCount})</span> : null}
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="start">
-                                                <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('visible')}>
-                                                    <EyeIcon className="size-4" />
-                                                    Set Selected Visible
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('hidden')}>
-                                                    <EyeIcon className="size-4" />
-                                                    Set Selected Hidden
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('friends')}>
-                                                    <UsersIcon className="size-4" />
-                                                    Set Selected Friends
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => exportUserGroups(selectedUserGroups)}>
-                                                    <DownloadIcon className="size-4" />
-                                                    Export {selectedGroupCount ? 'Selected' : 'All'} Groups
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem variant="destructive" disabled={!selectedGroupCount} onSelect={() => void leaveSelectedGroups()}>
-                                                    <LogOutIcon className="size-4" />
-                                                    Leave Selected
-                                                </DropdownMenuItem>
+                                                <DropdownMenuGroup>
+                                                    <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('visible')}>
+                                                        <EyeIcon className="size-4" />
+                                                        Set Selected Visible
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('hidden')}>
+                                                        <EyeIcon className="size-4" />
+                                                        Set Selected Hidden
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('friends')}>
+                                                        <UsersIcon className="size-4" />
+                                                        Set Selected Friends
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => exportUserGroups(selectedUserGroups)}>
+                                                        <DownloadIcon className="size-4" />
+                                                        Export {selectedGroupCount ? 'Selected' : 'All'} Groups
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem variant="destructive" disabled={!selectedGroupCount} onSelect={() => void leaveSelectedGroups()}>
+                                                        <LogOutIcon className="size-4" />
+                                                        Leave Selected
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuGroup>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </>
@@ -2681,19 +2695,23 @@ export function UserDialogTabbedView({
                             <Select value={worldSort} onValueChange={changeWorldSort} disabled={remoteStatus.worlds === 'running'}>
                                 <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="name">Name</SelectItem>
-                                    <SelectItem value="updated">Updated</SelectItem>
-                                    <SelectItem value="created">Created</SelectItem>
-                                    <SelectItem value="favorites">Favorites</SelectItem>
-                                    <SelectItem value="popularity">Popularity</SelectItem>
+                                    <SelectGroup>
+                                        <SelectItem value="name">Name</SelectItem>
+                                        <SelectItem value="updated">Updated</SelectItem>
+                                        <SelectItem value="created">Created</SelectItem>
+                                        <SelectItem value="favorites">Favorites</SelectItem>
+                                        <SelectItem value="popularity">Popularity</SelectItem>
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                             <span className="text-sm text-muted-foreground">Order By</span>
                             <Select value={worldOrder} onValueChange={changeWorldOrder} disabled={remoteStatus.worlds === 'running'}>
                                 <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="descending">Descending</SelectItem>
-                                    <SelectItem value="ascending">Ascending</SelectItem>
+                                    <SelectGroup>
+                                        <SelectItem value="descending">Descending</SelectItem>
+                                        <SelectItem value="ascending">Ascending</SelectItem>
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -2714,7 +2732,7 @@ export function UserDialogTabbedView({
                 <EntityDialogTabContent value="avatars" className="space-y-2">
                     {currentAvatarTarget ? (
                         <Button type="button" variant="link" className="h-auto justify-start p-0 text-left" onClick={() => openAvatarDialog(currentAvatarDialogArgs)}>
-                            <UserIcon className="mr-1 size-3.5" />
+                            <UserIcon data-icon="inline-start" />
                             Current Avatar: {currentAvatarDisplayName || 'Avatar'}
                         </Button>
                     ) : null}
@@ -2735,18 +2753,22 @@ export function UserDialogTabbedView({
                                 <Select value={avatarSort} onValueChange={changeAvatarSort} disabled={remoteStatus.avatars === 'running'}>
                                     <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="name">Name</SelectItem>
-                                        <SelectItem value="update">Updated</SelectItem>
-                                        <SelectItem value="createdAt">Uploaded</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="name">Name</SelectItem>
+                                            <SelectItem value="update">Updated</SelectItem>
+                                            <SelectItem value="createdAt">Uploaded</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                                 <span className="text-sm text-muted-foreground">Group By</span>
                                 <Select value={avatarReleaseStatus} onValueChange={changeAvatarReleaseStatus} disabled={remoteStatus.avatars === 'running'}>
                                     <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        <SelectItem value="public">Public</SelectItem>
-                                        <SelectItem value="private">Private</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="all">All</SelectItem>
+                                            <SelectItem value="public">Public</SelectItem>
+                                            <SelectItem value="private">Private</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </>

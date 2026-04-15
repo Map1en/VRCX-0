@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { LoaderCircleIcon, RefreshCwIcon } from 'lucide-react';
+import { RefreshCwIcon } from 'lucide-react';
 
 import { toolsRepository } from '@/repositories/index.js';
 import { Button } from '@/ui/shadcn/button';
@@ -11,6 +11,7 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 function normalizeRows(value) {
     if (Array.isArray(value)) {
@@ -109,7 +110,7 @@ function UserInviteMessageDialog({
                             {loading ? (
                                 <tr>
                                     <td colSpan={3} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                                        <LoaderCircleIcon className="mr-2 inline size-4 animate-spin" />
+                                        <Spinner className="mr-2 inline" />
                                         Loading...
                                     </td>
                                 </tr>
@@ -132,7 +133,7 @@ function UserInviteMessageDialog({
                 </div>
                 <DialogFooter>
                     <Button type="button" variant="outline" disabled={loading || sending} onClick={() => void loadRows()}>
-                        <RefreshCwIcon className="size-3.5" />
+                        <RefreshCwIcon data-icon="inline-start" />
                         Refresh
                     </Button>
                     <Button type="button" variant="secondary" disabled={sending} onClick={() => onOpenChange?.(false)}>

@@ -433,28 +433,28 @@ export function CustomNavDialog({
                     <DialogTitle>{t('nav_menu.custom_nav.dialog_title')}</DialogTitle>
                 </DialogHeader>
                 <div className="min-h-[40vh] overflow-y-auto pr-2">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                         {localLayout.map((entry, index) => {
                             if (entry.type === 'folder') {
                                 return (
-                                    <div key={entry.id} className="space-y-1 rounded-lg border p-2">
+                                    <div key={entry.id} className="flex flex-col gap-1 rounded-lg border p-2">
                                         <div className="flex items-center gap-2 text-sm font-medium">
                                             <span className="min-w-0 flex-1 truncate">{entry.name}</span>
                                             <Button type="button" variant="ghost" size="icon-sm" disabled={index === 0} onClick={() => moveTopLevel(index, -1)}>
-                                                <ArrowUpIcon className="size-3.5" />
+                                                <ArrowUpIcon />
                                             </Button>
                                             <Button type="button" variant="ghost" size="icon-sm" disabled={index === localLayout.length - 1} onClick={() => moveTopLevel(index, 1)}>
-                                                <ArrowDownIcon className="size-3.5" />
+                                                <ArrowDownIcon />
                                             </Button>
                                             <Button type="button" variant="ghost" size="icon-sm" onClick={() => void editFolder(index)}>
-                                                <PencilIcon className="size-3.5" />
+                                                <PencilIcon />
                                             </Button>
                                             <Button type="button" variant="ghost" size="icon-sm" onClick={() => deleteFolder(index)}>
-                                                <FolderXIcon className="size-3.5" />
+                                                <FolderXIcon />
                                             </Button>
                                         </div>
                                         {entry.items?.length ? (
-                                            <div className="space-y-1">
+                                            <div className="flex flex-col gap-1">
                                                 {entry.items.map((key, childIndex) => {
                                                     const definition = definitionMap.get(key);
                                                     if (!definition) {
@@ -515,14 +515,14 @@ export function CustomNavDialog({
                                 <span className="text-xs text-muted-foreground">{t('nav_menu.custom_nav.hidden_items')}</span>
                                 <Separator className="flex-1" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="flex flex-col gap-1">
                                 {hiddenItems.map((item) => (
                                     <button
                                         key={item.key}
                                         type="button"
                                         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground hover:bg-muted/50"
                                         onClick={() => showItem(item.key)}>
-                                        <EyeIcon className="size-3.5" />
+                                        <EyeIcon />
                                         <span className="min-w-0 flex-1 truncate">{item.label}</span>
                                     </button>
                                 ))}

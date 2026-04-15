@@ -5,7 +5,6 @@ import {
     GlobeIcon,
     LogInIcon,
     LogOutIcon,
-    LoaderCircleIcon,
     RefreshCwIcon,
     ShieldIcon,
     UserIcon,
@@ -27,6 +26,7 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 function normalizeEntityId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
@@ -165,7 +165,7 @@ function GroupDialogEmptyState({ title, description, loading = false }) {
             <div className="max-w-sm space-y-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <LoaderCircleIcon className="size-5 animate-spin text-muted-foreground" />
+                        <Spinner className="size-5 text-muted-foreground" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>

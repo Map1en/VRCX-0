@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { LoaderCircleIcon, MoreHorizontalIcon, RefreshCwIcon } from 'lucide-react';
+import { MoreHorizontalIcon, RefreshCwIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils.js';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Button } from '@/ui/shadcn/button';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
 
@@ -185,18 +187,16 @@ function EntityActionDropdown({ children, busy = false, dangerous = false, indic
                     variant={dangerous ? 'destructive' : 'outline'}
                     aria-label="Open entity actions"
                     className="relative">
-                    {busy ? (
-                        <LoaderCircleIcon className="size-4 animate-spin" />
-                    ) : (
-                        <MoreHorizontalIcon className="size-4" />
-                    )}
+                    {busy ? <Spinner /> : <MoreHorizontalIcon />}
                     {indicator ? (
                         <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-emerald-500" />
                     ) : null}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-56">
-                {children}
+                <DropdownMenuGroup>
+                    {children}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -248,7 +248,7 @@ function EntityRawJson({ value, valueFactory }) {
         <div className="flex flex-col gap-2">
             <div className="flex justify-end">
                 <Button type="button" size="sm" variant="outline" onClick={() => void refreshJson()} disabled={refreshing}>
-                    <RefreshCwIcon className={cn('size-3.5', refreshing ? 'animate-spin' : '')} />
+                    <RefreshCwIcon data-icon="inline-start" className={cn(refreshing ? 'animate-spin' : '')} />
                     Refresh
                 </Button>
             </div>

@@ -27,7 +27,7 @@ import {
     DialogTitle
 } from '@/ui/shadcn/dialog';
 import { Input } from '@/ui/shadcn/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 const INFO_CHART_BAR_WIDTH = 12;
@@ -709,7 +709,9 @@ function PreviousInstancesTableDialog({
                             }}>
                             <SelectTrigger size="sm" className="w-24"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                {[10, 25, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                <SelectGroup>
+                                    {[10, 25, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>
@@ -721,7 +723,7 @@ function PreviousInstancesTableDialog({
                                     <th className="w-44 px-3 py-2">
                                         <Button type="button" variant="ghost" size="sm" className="h-auto px-1" onClick={() => setSortDesc((value) => !value)}>
                                             Created
-                                            {sortDesc ? <ArrowDownIcon className="size-3.5" /> : <ArrowUpIcon className="size-3.5" />}
+                                            {sortDesc ? <ArrowDownIcon data-icon="inline-end" /> : <ArrowUpIcon data-icon="inline-end" />}
                                         </Button>
                                     </th>
                                     <th className="px-3 py-2">Location</th>
@@ -767,7 +769,7 @@ function PreviousInstancesTableDialog({
                                                         Info
                                                     </Button>
                                                     <Button type="button" size="sm" variant="outline" disabled={!location} onClick={() => void deleteRow(row)}>
-                                                        <Trash2Icon className="size-3.5" />
+                                                        <Trash2Icon data-icon="inline-start" />
                                                         Delete
                                                     </Button>
                                                 </div>

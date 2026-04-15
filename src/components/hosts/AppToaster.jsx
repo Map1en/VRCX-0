@@ -1,13 +1,13 @@
 import {
     CircleCheckIcon,
     InfoIcon,
-    Loader2Icon,
     OctagonXIcon,
     TriangleAlertIcon
 } from 'lucide-react';
 
 import { useShellStore } from '@/state/shellStore.js';
 import { Toaster } from '@/ui/shadcn/sonner';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 function resolveSonnerTheme(themeMode) {
     if (themeMode === 'dark') {
@@ -45,7 +45,7 @@ export function AppToaster(props) {
                 info: <InfoIcon className="size-4" />,
                 warning: <TriangleAlertIcon className="size-4" />,
                 error: <OctagonXIcon className="size-4" />,
-                loading: <Loader2Icon className="size-4 animate-spin" />
+                loading: <Spinner />
             }}
             style={{
                 '--normal-bg': 'var(--popover)',

@@ -10,7 +10,6 @@ import {
     HomeIcon,
     ImageIcon,
     LineChartIcon,
-    LoaderCircleIcon,
     MessageSquareIcon,
     MonitorIcon,
     PencilIcon,
@@ -40,6 +39,7 @@ import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     EntityActionDropdown,
     EntityActionItem,
@@ -486,7 +486,7 @@ function InstanceUserTiles({ instance }) {
                             <span className="block truncate font-medium leading-[18px]" style={user?.$userColour ? { color: user.$userColour } : undefined}>{displayName}</span>
                             {travelingTimestamp ? (
                                 <span className="block truncate text-xs text-muted-foreground">
-                                    <LoaderCircleIcon className="mr-1 inline-block size-3 animate-spin" />
+                                    <Spinner className="mr-1 inline-block size-3" />
                                     {timeToText(Date.now() - travelingTimestamp)}
                                 </span>
                             ) : subtitle ? <span className="block truncate text-xs text-muted-foreground">{subtitle}</span> : null}
