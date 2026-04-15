@@ -1068,12 +1068,12 @@ const gameLog = {
                 }
             }
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_join_leave WHERE (display_name LIKE @searchLike AND user_id != '${dbVars.userId}') ${vipQuery} ${query} ORDER BY id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_join_leave WHERE ((display_name LIKE @searchLike OR user_id LIKE @searchLike) AND user_id != '${dbVars.userId}') ${vipQuery} ${query} ORDER BY id DESC LIMIT @perTable)`
             );
         }
         if (portalspawn) {
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_portal_spawn WHERE (display_name LIKE @searchLike OR world_name LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_portal_spawn WHERE (display_name LIKE @searchLike OR user_id LIKE @searchLike OR world_name LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
             );
         }
         if (msgevent) {
@@ -1083,12 +1083,12 @@ const gameLog = {
         }
         if (external) {
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'External' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, message FROM gamelog_external WHERE (display_name LIKE @searchLike OR message LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, 'External' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, message FROM gamelog_external WHERE (display_name LIKE @searchLike OR user_id LIKE @searchLike OR message LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
             );
         }
         if (videoplay) {
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_video_play WHERE (video_url LIKE @searchLike OR video_name LIKE @searchLike OR display_name LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_video_play WHERE (video_url LIKE @searchLike OR video_name LIKE @searchLike OR display_name LIKE @searchLike OR user_id LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
             );
         }
         if (resourceload_string || resourceload_image) {
