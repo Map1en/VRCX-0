@@ -108,7 +108,14 @@ export default defineConfig(() => {
                 'sonner',
                 'lucide-react',
                 'tailwindcss',
-                'dayjs'
+                'dayjs',
+                'graphology',
+                'graphology-communities-louvain',
+                'graphology-layout-forceatlas2',
+                'graphology-layout-noverlap',
+                'sigma',
+                '@sigma/edge-curve',
+                '@sigma/node-border'
             ]
         },
         define: {
