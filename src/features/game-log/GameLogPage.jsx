@@ -971,14 +971,24 @@ function GameLogSessionSegment({
                 />
                 <div className="min-w-0 flex-1">
                     {sessionLocation ? (
-                        <Location
-                            location={sessionLocation}
-                            hint={session.worldName || worldTarget}
-                            grouphint={session.groupName || ''}
-                            enableContextMenu
-                            stopPropagation
-                            className="text-sm"
-                        />
+                        <div className="flex min-w-0 items-center gap-1.5">
+                            <Location
+                                location={sessionLocation}
+                                hint={session.worldName || worldTarget}
+                                grouphint={session.groupName || ''}
+                                enableContextMenu
+                                stopPropagation
+                                className="min-w-0 text-sm"
+                            />
+                            {durationText ? (
+                                <Badge
+                                    variant="outline"
+                                    className="h-4 shrink-0 px-1 text-[0.625rem] tabular-nums"
+                                    title="Time spent in this instance">
+                                    {durationText}
+                                </Badge>
+                            ) : null}
+                        </div>
                     ) : (
                         <span className="truncate text-sm" />
                     )}
@@ -986,14 +996,7 @@ function GameLogSessionSegment({
                 <span className="shrink-0 text-[0.6875rem] text-muted-foreground">
                     {formatDateFilter(session.created_at, 'long')}
                 </span>
-                {durationText ? (
-                    <Badge
-                        variant="outline"
-                        className="h-4 shrink-0 px-1 text-[0.625rem] tabular-nums"
-                        title="Time spent in this instance">
-                        {durationText}
-                    </Badge>
-                ) : isLatest && isGameRunning ? (
+                {!durationText && isLatest && isGameRunning ? (
                     <Badge variant="outline" className="h-4 shrink-0 px-1 text-[0.625rem]">
                         {t('common.current_session')}
                     </Badge>
