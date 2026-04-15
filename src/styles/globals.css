@@ -199,7 +199,7 @@
         @apply py-1.5;
     }
 
-    .is-striped-table .vrcx-data-table [data-slot='table-body'] [data-slot='table-row']:nth-child(even) {
+    .is-striped-table .app-data-table [data-slot='table-body'] [data-slot='table-row']:nth-child(even) {
         @apply bg-muted/20;
     }
 

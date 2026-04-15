@@ -21,7 +21,7 @@ export function DataTableSurface({ className = '', children }) {
     return (
         <div
             className={cn(
-                'vrcx-data-table min-h-0 min-w-0 flex-1 overflow-hidden rounded-md border bg-background',
+                'app-data-table min-h-0 min-w-0 flex-1 overflow-hidden rounded-md border bg-background',
                 className
             )}>
             {children}
@@ -94,7 +94,7 @@ export function DataTablePagination({
     );
 }
 
-export function VrcxDataTable({ columns = [], data = [], emptyLabel = 'No rows yet.' }) {
+export function DataTableView({ columns = [], data = [], emptyLabel = 'No rows yet.' }) {
     const table = useReactTable({
         columns,
         data,

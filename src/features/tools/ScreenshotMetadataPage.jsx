@@ -888,7 +888,7 @@ export function ScreenshotMetadataPage() {
                             description="Resolving file list and metadata summaries."
                         />
                     ) : (
-                        <Table className="vrcx-data-table">
+                        <Table className="app-data-table">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>

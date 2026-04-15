@@ -35,7 +35,7 @@ import {
     DataTablePagination,
     DataTableScrollArea,
     DataTableSurface
-} from '@/components/data-table/VrcxDataTable.jsx';
+} from '@/components/data-table/DataTableView.jsx';
 import {
     PageBody,
     PageFooter,

@@ -907,7 +907,7 @@ export function ModerationPage({ embedded = false } = {}) {
                 <>
                     <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
                         <div className="h-full overflow-auto">
-                            <Table className="vrcx-data-table table-fixed">
+                            <Table className="app-data-table table-fixed">
                                 <TableHeader>
                                     {table.getHeaderGroups().map((headerGroup) => (
                                         <TableRow key={headerGroup.id}>

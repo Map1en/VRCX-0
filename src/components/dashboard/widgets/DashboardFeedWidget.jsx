@@ -468,7 +468,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto">
-                <Table className="vrcx-data-table table-fixed">
+                <Table className="app-data-table table-fixed">
                     <TableBody>
                         {annotatedRows.map((row, index) => (
                             <TableRow

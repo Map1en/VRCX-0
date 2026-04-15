@@ -42,7 +42,7 @@ import {
 import {
     DataTablePagination,
     DataTableSurface
-} from '@/components/data-table/VrcxDataTable.jsx';
+} from '@/components/data-table/DataTableView.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import { Location } from '@/components/Location.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';

@@ -560,7 +560,7 @@ function SortButton({ column, label }) {
 
 function PlayerListTableShell({ table, children }) {
     return (
-        <div className="vrcx-data-table flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border [&_td]:px-2.5 [&_td]:py-0.5 [&_th]:px-2.5 [&_th]:py-1 [&_tr]:h-7">
+        <div className="app-data-table flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border [&_td]:px-2.5 [&_td]:py-0.5 [&_th]:px-2.5 [&_th]:py-1 [&_tr]:h-7">
             <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
                 <table className="w-full table-fixed caption-bottom text-sm">
                     <TableHeader>
