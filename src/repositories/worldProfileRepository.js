@@ -82,7 +82,25 @@ function createWorldRequestError(message, status, path, payload = null) {
 }
 
 function normalizeEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    if (typeof value === 'string') {
+        return value.trim();
+    }
+
+    if (value && typeof value === 'object') {
+        return normalizeEntityId(
+            value.id ||
+                value.worldId ||
+                value.world_id ||
+                value.userId ||
+                value.user_id ||
+                value.avatarId ||
+                value.avatar_id ||
+                value.groupId ||
+                value.group_id
+        );
+    }
+
+    return String(value ?? '').trim();
 }
 
 function normalizeArray(values) {
