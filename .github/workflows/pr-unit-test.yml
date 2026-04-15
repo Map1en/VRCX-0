@@ -18,7 +18,6 @@ permissions:
 
 jobs:
   frontend:
-    name: Frontend UT
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
