@@ -1,13 +1,18 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
     AppleIcon,
+    BookmarkIcon,
+    CheckIcon,
+    HistoryIcon,
     LoaderCircleIcon,
     MonitorIcon,
-    SmartphoneIcon
+    SmartphoneIcon,
+    XIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
+import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
 import {
     configRepository,
     groupProfileRepository,
@@ -17,6 +22,7 @@ import {
     playerListRepository,
     toolsRepository,
     userProfileRepository,
+    vrchatAuthRepository,
     vrchatFriendRepository,
     vrchatModerationRepository,
     vrchatSearchRepository
@@ -27,6 +33,7 @@ import { UserDialogTabbedView } from './UserDialogTabbedView.jsx';
 import { UserInviteMessageDialog } from './UserInviteMessageDialog.jsx';
 import { database } from '@/services/database/index.js';
 import friendRelationshipService from '@/services/friendRelationshipService.js';
+import { languageMappings } from '@/shared/constants/language.js';
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation, resolveFriendPresenceLocation } from '@/shared/utils/location.js';
 import { backend } from '@/platform/index.js';
@@ -36,6 +43,32 @@ import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { Badge } from '@/ui/shadcn/badge.jsx';
+import { Button } from '@/ui/shadcn/button.jsx';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/ui/shadcn/dialog.jsx';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from '@/ui/shadcn/dropdown-menu.jsx';
+import { Input } from '@/ui/shadcn/input.jsx';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select.jsx';
 
 function normalizeUserId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
@@ -186,9 +219,17 @@ function isSameLocationTag(left, right) {
 }
 
 const allowedSelfStatuses = new Set(['active', 'join me', 'ask me', 'busy', 'offline']);
+const statusPresetsConfigKey = 'VRCX_statusPresets';
+const maxStatusPresets = 10;
+const selfStatusBaseOptions = [
+    { value: 'join me', label: 'Join Me' },
+    { value: 'active', label: 'Online' },
+    { value: 'ask me', label: 'Ask Me' },
+    { value: 'busy', label: 'Busy' }
+];
 
 function normalizeSelfStatusInput(value) {
-    const normalized = normalizedText(value).toLowerCase();
+    const normalized = normalizeUserId(value).toLowerCase();
     if (normalized === 'joinme') {
         return 'join me';
     }
@@ -199,6 +240,97 @@ function normalizeSelfStatusInput(value) {
         return normalized;
     }
     return '';
+}
+
+function normalizeLanguageKey(value) {
+    return normalizeUserId(value).toLowerCase().replace(/^language_/, '');
+}
+
+function languageFlagClassName(languageKey) {
+    const key = normalizeLanguageKey(languageKey);
+    return languageMappings[key] || key || 'unknown';
+}
+
+function languageOptionLabel(option) {
+    const key = normalizeLanguageKey(option?.key || option?.value);
+    const value = normalizeUserId(option?.value || option?.label || option?.name || key.toUpperCase());
+    return key ? `${value || key.toUpperCase()} (${key.toUpperCase()})` : value;
+}
+
+function fallbackLanguageOptions() {
+    return Object.keys(languageMappings)
+        .sort()
+        .map((key) => ({ key, value: key.toUpperCase() }));
+}
+
+function normalizeLanguageOptionsFromConfig(json) {
+    const options = json?.constants?.LANGUAGE?.SPOKEN_LANGUAGE_OPTIONS;
+    if (!options || typeof options !== 'object') {
+        return [];
+    }
+
+    return Object.entries(options)
+        .map(([key, value]) => ({
+            key: normalizeLanguageKey(key),
+            value: normalizeUserId(value)
+        }))
+        .filter((option) => option.key && option.value)
+        .sort((left, right) => left.value.localeCompare(right.value));
+}
+
+function normalizeProfileLanguageRows(profile, languageOptionMap = new Map()) {
+    const rows = [];
+    const seen = new Set();
+    const addRow = (entry) => {
+        const key = normalizeLanguageKey(typeof entry === 'string'
+            ? entry
+            : entry?.key || entry?.id || entry?.value || entry?.label || entry?.name);
+        if (!key || seen.has(key)) {
+            return;
+        }
+        const option = languageOptionMap.get(key);
+        rows.push({
+            key,
+            value: normalizeUserId(option?.value || entry?.value || entry?.label || entry?.name || key.toUpperCase())
+        });
+        seen.add(key);
+    };
+
+    if (Array.isArray(profile?.$languages)) {
+        profile.$languages.forEach(addRow);
+    }
+    if (Array.isArray(profile?.languages)) {
+        profile.languages.forEach(addRow);
+    }
+    if (Array.isArray(profile?.tags)) {
+        profile.tags.forEach((tag) => {
+            const normalizedTag = normalizeUserId(tag).toLowerCase();
+            if (normalizedTag.startsWith('language_')) {
+                addRow(normalizedTag);
+            }
+        });
+    }
+
+    return rows;
+}
+
+function normalizeStatusHistoryRows(profile, currentUserSnapshot) {
+    const source = Array.isArray(profile?.statusHistory)
+        ? profile.statusHistory
+        : Array.isArray(currentUserSnapshot?.statusHistory)
+            ? currentUserSnapshot.statusHistory
+            : [];
+    const seen = new Set();
+    return source
+        .map((item) => normalizeUserId(typeof item === 'string' ? item : item?.status || item?.statusDescription))
+        .filter((status) => {
+            if (!status || seen.has(status)) {
+                return false;
+            }
+            seen.add(status);
+            return true;
+        })
+        .slice(0, 10);
 }
 
 function userDisplayName(user) {
@@ -531,6 +663,16 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     const [currentInviteInstanceStatus, setCurrentInviteInstanceStatus] = useState('idle');
     const [locationRefreshToken, setLocationRefreshToken] = useState(0);
     const [inviteMessageRequest, setInviteMessageRequest] = useState(null);
+    const [socialStatusDialogOpen, setSocialStatusDialogOpen] = useState(false);
+    const [socialStatusDraft, setSocialStatusDraft] = useState({
+        status: 'active',
+        statusDescription: ''
+    });
+    const [statusPresets, setStatusPresets] = useState([]);
+    const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
+    const [languageOptions, setLanguageOptions] = useState([]);
+    const [languageOptionsStatus, setLanguageOptionsStatus] = useState('idle');
+    const [selectedLanguageToAdd, setSelectedLanguageToAdd] = useState('');
     const actionStatusRef = useRef('idle');
     const memoRevisionRef = useRef(0);
     const moderationRevisionRef = useRef(0);
@@ -549,6 +691,29 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         () => ({ hideUserNotes, hideUserMemos }),
         [hideUserMemos, hideUserNotes]
     );
+    const selfStatusOptions = useMemo(() => (
+        profile?.$isModerator
+            ? [...selfStatusBaseOptions, { value: 'offline', label: 'Offline' }]
+            : selfStatusBaseOptions
+    ), [profile?.$isModerator]);
+    const languageOptionsMap = useMemo(() => (
+        new Map(languageOptions.map((option) => [option.key, option]))
+    ), [languageOptions]);
+    const currentLanguageRows = useMemo(() => (
+        normalizeProfileLanguageRows(profile, languageOptionsMap)
+    ), [profile, languageOptionsMap]);
+    const selectedLanguageKeys = useMemo(() => (
+        new Set(currentLanguageRows.map((language) => language.key))
+    ), [currentLanguageRows]);
+    const availableLanguageOptions = useMemo(() => (
+        languageOptions.filter((option) => !selectedLanguageKeys.has(option.key))
+    ), [languageOptions, selectedLanguageKeys]);
+    const statusHistoryRows = useMemo(() => (
+        normalizeStatusHistoryRows(profile, currentUserSnapshot)
+    ), [currentUserSnapshot, profile]);
+    const selfStatusLabelByValue = useMemo(() => (
+        new Map(selfStatusOptions.map((option) => [option.value, option.label]))
+    ), [selfStatusOptions]);
 
     useEffect(() => {
         activeUserTargetRef.current = { userId: normalizedUserId, endpoint: currentEndpoint };
@@ -561,6 +726,66 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     useLayoutEffect(() => {
         setInviteMessageRequest(null);
     }, [currentEndpoint, normalizedCurrentUserId, profile?.id]);
+
+    useEffect(() => {
+        setLanguageOptions([]);
+        setLanguageOptionsStatus('idle');
+        setSelectedLanguageToAdd('');
+    }, [currentEndpoint]);
+
+    useEffect(() => {
+        let active = true;
+
+        configRepository
+            .getArray(statusPresetsConfigKey, [])
+            .then((presets) => {
+                if (active) {
+                    setStatusPresets(Array.isArray(presets) ? presets : []);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setStatusPresets([]);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        let active = true;
+
+        if (!languageDialogOpen || languageOptions.length) {
+            return () => {
+                active = false;
+            };
+        }
+
+        setLanguageOptionsStatus('running');
+        vrchatAuthRepository
+            .getConfig({ endpoint: currentEndpoint })
+            .then((response) => {
+                if (!active) {
+                    return;
+                }
+                const nextOptions = normalizeLanguageOptionsFromConfig(response.json);
+                setLanguageOptions(nextOptions.length ? nextOptions : fallbackLanguageOptions());
+                setLanguageOptionsStatus('ready');
+            })
+            .catch(() => {
+                if (!active) {
+                    return;
+                }
+                setLanguageOptions(fallbackLanguageOptions());
+                setLanguageOptionsStatus('error');
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [currentEndpoint, languageDialogOpen, languageOptions.length]);
 
     useEffect(() => {
         if (localSnapshot) {
@@ -1526,7 +1751,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
     async function saveCurrentUserPatch(patch, { successMessage, errorMessage }) {
         if (!isCurrentUser || actionStatusRef.current !== 'idle') {
-            return;
+            return false;
         }
 
         actionStatusRef.current = 'self-profile';
@@ -1539,54 +1764,93 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             });
             applyCurrentUserSnapshot(nextUser);
             toast.success(successMessage);
+            return true;
         } catch (error) {
             toast.error(error instanceof Error ? error.message : errorMessage);
+            return false;
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
         }
     }
 
-    async function editSelfStatusDescription() {
-        const result = await prompt({
-            title: 'Edit status description',
-            inputValue: profile.statusDescription || '',
-            multiline: true,
-            confirmText: 'Save',
-            cancelText: 'Cancel'
-        });
-        if (result.ok) {
-            await saveCurrentUserPatch(
-                { statusDescription: result.value },
-                {
-                    successMessage: 'Status description updated.',
-                    errorMessage: 'Failed to update status description.'
-                }
-            );
+    function openSelfSocialStatusDialog() {
+        if (!isCurrentUser || actionStatusRef.current !== 'idle') {
+            return;
         }
+        setSocialStatusDraft({
+            status: normalizeSelfStatusInput(profile.status) || 'active',
+            statusDescription: String(profile.statusDescription || '').slice(0, 32)
+        });
+        setSocialStatusDialogOpen(true);
     }
 
     async function editSelfStatus() {
-        const result = await prompt({
-            title: 'Edit social status',
-            description: 'Use active, join me, ask me, busy, or offline.',
-            inputValue: profile.status || 'active',
-            confirmText: 'Save',
-            cancelText: 'Cancel'
-        });
-        if (result.ok) {
-            const nextStatus = normalizeSelfStatusInput(result.value);
-            if (!nextStatus) {
-                toast.warning('Please choose active, join me, ask me, busy, or offline.');
-                return;
+        openSelfSocialStatusDialog();
+    }
+
+    async function saveSelfSocialStatus() {
+        const nextStatus = normalizeSelfStatusInput(socialStatusDraft.status);
+        if (!nextStatus || (!profile?.$isModerator && nextStatus === 'offline')) {
+            toast.warning('Please choose a valid social status.');
+            return;
+        }
+        const saved = await saveCurrentUserPatch(
+            {
+                status: nextStatus,
+                statusDescription: String(socialStatusDraft.statusDescription || '').slice(0, 32)
+            },
+            {
+                successMessage: 'Status updated.',
+                errorMessage: 'Failed to update social status.'
             }
-            await saveCurrentUserPatch(
-                { status: nextStatus },
-                {
-                    successMessage: 'Social status updated.',
-                    errorMessage: 'Failed to update social status.'
-                }
-            );
+        );
+        if (saved) {
+            setSocialStatusDialogOpen(false);
+        }
+    }
+
+    async function saveSelfStatusPreset() {
+        const nextStatus = normalizeSelfStatusInput(socialStatusDraft.status);
+        if (!nextStatus) {
+            toast.warning('Please choose a valid social status.');
+            return;
+        }
+        const nextPreset = {
+            status: nextStatus,
+            statusDescription: String(socialStatusDraft.statusDescription || '').slice(0, 32)
+        };
+        if (statusPresets.some((preset) =>
+            preset?.status === nextPreset.status &&
+            String(preset?.statusDescription || '') === nextPreset.statusDescription
+        )) {
+            toast.info('Status preset already exists.');
+            return;
+        }
+        if (statusPresets.length >= maxStatusPresets) {
+            toast.warning(`Status presets are limited to ${maxStatusPresets}.`);
+            return;
+        }
+
+        const nextPresets = [...statusPresets, nextPreset];
+        setStatusPresets(nextPresets);
+        try {
+            await configRepository.setArray(statusPresetsConfigKey, nextPresets);
+            toast.success('Status preset saved.');
+        } catch (error) {
+            setStatusPresets(statusPresets);
+            toast.error(error instanceof Error ? error.message : 'Failed to save status preset.');
+        }
+    }
+
+    async function removeSelfStatusPreset(index) {
+        const nextPresets = statusPresets.filter((_, presetIndex) => presetIndex !== index);
+        setStatusPresets(nextPresets);
+        try {
+            await configRepository.setArray(statusPresetsConfigKey, nextPresets);
+        } catch (error) {
+            setStatusPresets(statusPresets);
+            toast.error(error instanceof Error ? error.message : 'Failed to remove status preset.');
         }
     }
 
@@ -1594,64 +1858,57 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         if (!isCurrentUser || actionStatusRef.current !== 'idle') {
             return;
         }
+        setSelectedLanguageToAdd('');
+        setLanguageDialogOpen(true);
+    }
 
-        const currentLanguageTags = (Array.isArray(profile.tags) ? profile.tags : [])
-            .filter((tag) => tag.startsWith('language_'));
-        const currentLanguages = currentLanguageTags
-            .map((tag) => tag.replace(/^language_/, ''))
-            .join(', ');
-        const result = await prompt({
-            title: 'Edit languages',
-            description: 'Comma-separated VRChat language codes, up to 3.',
-            inputValue: currentLanguages,
-            confirmText: 'Save',
-            cancelText: 'Cancel'
-        });
-        if (!result.ok) {
+    async function addSelfLanguage(languageKey) {
+        const key = normalizeLanguageKey(languageKey);
+        if (!isCurrentUser || actionStatusRef.current !== 'idle' || !key) {
             return;
         }
-
-        const nextLanguageTags = Array.from(new Set(
-            String(result.value || '')
-                .split(/[,\s]+/)
-                .map((value) => value.trim().toLowerCase().replace(/^language_/, ''))
-                .filter(Boolean)
-                .slice(0, 3)
-                .map((value) => `language_${value}`)
-        ));
-        const previousSet = new Set(currentLanguageTags);
-        const nextSet = new Set(nextLanguageTags);
-        const tagsToAdd = nextLanguageTags.filter((tag) => !previousSet.has(tag));
-        const tagsToRemove = currentLanguageTags.filter((tag) => !nextSet.has(tag));
-        if (!tagsToAdd.length && !tagsToRemove.length) {
+        if (selectedLanguageKeys.has(key) || currentLanguageRows.length >= 3) {
             return;
         }
 
         actionStatusRef.current = 'self-profile';
         setActionStatus('self-profile');
         try {
-            if (tagsToRemove.length) {
-                await userProfileRepository.removeCurrentUserTags({
-                    userId: currentUserId,
-                    endpoint: currentEndpoint,
-                    tags: tagsToRemove
-                });
-            }
-            if (tagsToAdd.length) {
-                await userProfileRepository.addCurrentUserTags({
-                    userId: currentUserId,
-                    endpoint: currentEndpoint,
-                    tags: tagsToAdd
-                });
-            }
-            const nextUser = await userProfileRepository.getUserProfile({
+            const nextUser = await userProfileRepository.addCurrentUserTags({
                 userId: currentUserId,
-                endpoint: currentEndpoint
+                endpoint: currentEndpoint,
+                tags: [`language_${key}`]
             });
             applyCurrentUserSnapshot(nextUser);
-            toast.success('Languages updated.');
+            setSelectedLanguageToAdd('');
+            toast.success('Language added.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update languages.');
+            toast.error(error instanceof Error ? error.message : 'Failed to add language.');
+        } finally {
+            actionStatusRef.current = 'idle';
+            setActionStatus('idle');
+        }
+    }
+
+    async function removeSelfLanguage(languageKey) {
+        const key = normalizeLanguageKey(languageKey);
+        if (!isCurrentUser || actionStatusRef.current !== 'idle' || !key) {
+            return;
+        }
+
+        actionStatusRef.current = 'self-profile';
+        setActionStatus('self-profile');
+        try {
+            const nextUser = await userProfileRepository.removeCurrentUserTags({
+                userId: currentUserId,
+                endpoint: currentEndpoint,
+                tags: [`language_${key}`]
+            });
+            applyCurrentUserSnapshot(nextUser);
+            setSelectedLanguageToAdd('');
+            toast.success('Language removed.');
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to remove language.');
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -2599,7 +2856,6 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 onReportHacking={() => void reportHacking()}
                 onGroupModeration={() => void openGroupModerationForUser()}
                 onEditSelfStatus={() => void editSelfStatus()}
-                onEditSelfStatusDescription={() => void editSelfStatusDescription()}
                 onEditSelfLanguages={() => void editSelfLanguages()}
                 onEditSelfBio={() => void editSelfBio()}
                 onEditSelfBioLinks={() => void editSelfBioLinks()}
@@ -2611,6 +2867,299 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 onToggleBadgeVisibility={(badge, hidden) => void toggleBadgeVisibility(badge, hidden)}
                 onToggleBadgeShowcased={(badge, showcased) => void toggleBadgeShowcased(badge, showcased)}
             />
+            <Dialog
+                open={socialStatusDialogOpen}
+                onOpenChange={(nextOpen) => {
+                    if (nextOpen || actionStatusRef.current === 'idle') {
+                        setSocialStatusDialogOpen(nextOpen);
+                    }
+                }}>
+                <DialogContent className="sm:max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Edit social status</DialogTitle>
+                        <DialogDescription>
+                            Update your social status and status description.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-5">
+                        <div className="space-y-2">
+                            <div className="text-sm font-medium">Status description</div>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    value={socialStatusDraft.statusDescription}
+                                    maxLength={32}
+                                    placeholder="Status description"
+                                    disabled={actionStatus !== 'idle'}
+                                    onChange={(event) => {
+                                        setSocialStatusDraft((draft) => ({
+                                            ...draft,
+                                            statusDescription: event.target.value.slice(0, 32)
+                                        }));
+                                    }}
+                                />
+                                {socialStatusDraft.statusDescription ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        disabled={actionStatus !== 'idle'}
+                                        aria-label="Clear status description"
+                                        onClick={() => {
+                                            setSocialStatusDraft((draft) => ({
+                                                ...draft,
+                                                statusDescription: ''
+                                            }));
+                                        }}>
+                                        <XIcon />
+                                    </Button>
+                                ) : null}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            disabled={actionStatus !== 'idle'}
+                                            aria-label="Status history">
+                                            <HistoryIcon />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="max-w-72">
+                                        <DropdownMenuGroup>
+                                            {statusHistoryRows.length ? (
+                                                statusHistoryRows.map((status, index) => (
+                                                    <DropdownMenuItem
+                                                        key={`${status}:${index}`}
+                                                        onSelect={() => {
+                                                            setSocialStatusDraft((draft) => ({
+                                                                ...draft,
+                                                                statusDescription: status.slice(0, 32)
+                                                            }));
+                                                        }}>
+                                                        <span className="truncate">{status}</span>
+                                                    </DropdownMenuItem>
+                                                ))
+                                            ) : (
+                                                <DropdownMenuItem disabled>
+                                                    No status history
+                                                </DropdownMenuItem>
+                                            )}
+                                        </DropdownMenuGroup>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                {socialStatusDraft.statusDescription.length}/32
+                            </div>
+                        </div>
+                        <div className="space-y-2" role="radiogroup" aria-label="Social status">
+                            {selfStatusOptions.map((option) => {
+                                const selected = socialStatusDraft.status === option.value;
+                                return (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={selected}
+                                        disabled={actionStatus !== 'idle'}
+                                        className={[
+                                            'flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors',
+                                            selected ? 'border-primary bg-primary/10' : 'border-border bg-background hover:bg-accent',
+                                            actionStatus !== 'idle' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                                        ].join(' ')}
+                                        onClick={() => {
+                                            setSocialStatusDraft((draft) => ({
+                                                ...draft,
+                                                status: option.value
+                                            }));
+                                        }}>
+                                        <i
+                                            className={userStatusIndicatorClassName(option.value, {
+                                                showOffline: true,
+                                                className: 'shrink-0'
+                                            })}
+                                        />
+                                        <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                                        {selected ? <CheckIcon className="size-4 shrink-0 text-primary" /> : null}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {statusPresets.length ? (
+                            <div className="space-y-2">
+                                <div className="text-xs font-medium text-muted-foreground">Presets</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {statusPresets.map((preset, index) => {
+                                        const presetStatus = normalizeSelfStatusInput(preset?.status) || 'active';
+                                        const presetDescription = String(preset?.statusDescription || '').slice(0, 32);
+                                        const label = presetDescription || selfStatusLabelByValue.get(presetStatus) || presetStatus;
+                                        return (
+                                            <div
+                                                key={`${presetStatus}:${presetDescription}:${index}`}
+                                                role="button"
+                                                tabIndex={actionStatus === 'idle' ? 0 : -1}
+                                                aria-disabled={actionStatus !== 'idle'}
+                                                className={[
+                                                    'group inline-flex max-w-52 items-center gap-1.5 rounded-md border bg-background py-1 pr-1 pl-2 text-xs transition-colors hover:bg-accent',
+                                                    actionStatus !== 'idle' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                                                ].join(' ')}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter' || event.key === ' ') {
+                                                        event.preventDefault();
+                                                        if (actionStatus !== 'idle') {
+                                                            return;
+                                                        }
+                                                        setSocialStatusDraft({
+                                                            status: presetStatus,
+                                                            statusDescription: presetDescription
+                                                        });
+                                                    }
+                                                }}
+                                                onClick={() => {
+                                                    if (actionStatus !== 'idle') {
+                                                        return;
+                                                    }
+                                                    setSocialStatusDraft({
+                                                        status: presetStatus,
+                                                        statusDescription: presetDescription
+                                                    });
+                                                }}>
+                                                <i
+                                                    className={userStatusIndicatorClassName(presetStatus, {
+                                                        showOffline: true,
+                                                        className: 'shrink-0'
+                                                    })}
+                                                />
+                                                <span className="min-w-0 truncate">{label}</span>
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex size-5 shrink-0 items-center justify-center rounded-md opacity-70 hover:bg-muted"
+                                                    disabled={actionStatus !== 'idle'}
+                                                    aria-label="Remove status preset"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        void removeSelfStatusPreset(index);
+                                                    }}>
+                                                    <XIcon className="size-3" />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={actionStatus !== 'idle'}
+                            onClick={() => void saveSelfStatusPreset()}>
+                            <BookmarkIcon />
+                            Save Preset
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={actionStatus !== 'idle'}
+                            onClick={() => setSocialStatusDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            disabled={actionStatus !== 'idle'}
+                            onClick={() => void saveSelfSocialStatus()}>
+                            Update
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog
+                open={languageDialogOpen}
+                onOpenChange={(nextOpen) => {
+                    if (nextOpen || actionStatusRef.current === 'idle') {
+                        setLanguageDialogOpen(nextOpen);
+                    }
+                }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit language</DialogTitle>
+                        <DialogDescription>
+                            Add or remove the languages shown on your profile.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="flex min-h-8 flex-wrap gap-2">
+                            {currentLanguageRows.length ? (
+                                currentLanguageRows.map((language) => (
+                                    <Badge
+                                        key={language.key}
+                                        variant="outline"
+                                        className="gap-1.5 pr-1"
+                                        title={languageOptionLabel(language)}>
+                                        <span className={`flags inline-block shrink-0 ${languageFlagClassName(language.key)}`} />
+                                        <span>{languageOptionLabel(language)}</span>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-xs"
+                                            className="ml-1 size-5"
+                                            disabled={actionStatus !== 'idle'}
+                                            aria-label={`Remove ${languageOptionLabel(language)}`}
+                                            onClick={() => void removeSelfLanguage(language.key)}>
+                                            <XIcon />
+                                        </Button>
+                                    </Badge>
+                                ))
+                            ) : (
+                                <div className="text-sm text-muted-foreground">No languages selected.</div>
+                            )}
+                        </div>
+                        <Select
+                            value={selectedLanguageToAdd}
+                            disabled={
+                                actionStatus !== 'idle' ||
+                                languageOptionsStatus === 'running' ||
+                                currentLanguageRows.length >= 3 ||
+                                !availableLanguageOptions.length
+                            }
+                            onValueChange={(value) => {
+                                setSelectedLanguageToAdd(value);
+                                void addSelfLanguage(value);
+                            }}>
+                            <SelectTrigger className="w-full" size="sm">
+                                <SelectValue
+                                    placeholder={
+                                        currentLanguageRows.length >= 3
+                                            ? 'Maximum 3 languages'
+                                            : languageOptionsStatus === 'running'
+                                                ? 'Loading languages'
+                                                : 'Select language'
+                                    }
+                                />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {availableLanguageOptions.map((option) => (
+                                        <SelectItem
+                                            key={option.key}
+                                            value={option.key}
+                                            textValue={languageOptionLabel(option)}>
+                                            <span className={`flags mr-1.5 inline-block shrink-0 ${languageFlagClassName(option.key)}`} />
+                                            {languageOptionLabel(option)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        {languageOptionsStatus === 'error' ? (
+                            <div className="text-xs text-muted-foreground">
+                                VRChat language list unavailable, using local language codes.
+                            </div>
+                        ) : null}
+                    </div>
+                </DialogContent>
+            </Dialog>
             <UserInviteMessageDialog
                 open={Boolean(inviteMessageRequest)}
                 onOpenChange={(nextOpen) => {

@@ -1051,7 +1051,6 @@ export function UserDialogTabbedView({
     onReportHacking,
     onGroupModeration,
     onEditSelfStatus,
-    onEditSelfStatusDescription,
     onEditSelfLanguages,
     onEditSelfBio,
     onEditSelfBioLinks,
@@ -2091,7 +2090,6 @@ export function UserDialogTabbedView({
                                 <>
                                     <EntityActionSeparator />
                                     <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfStatus}>Edit Social Status</EntityActionItem>
-                                    <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfStatusDescription}>Edit Status Description</EntityActionItem>
                                     <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfLanguages}>Edit Language</EntityActionItem>
                                     <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfBio}>Edit Bio</EntityActionItem>
                                     <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfBioLinks}>Edit Bio Links</EntityActionItem>
