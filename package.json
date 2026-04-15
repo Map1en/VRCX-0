@@ -17,7 +17,6 @@
         "tauri:build": "tauri build",
         "lint": "npm run lint:oxlint",
         "lint:oxlint": "oxlint .",
-        "typecheck:js": "tsc -p tsconfig.checkjs.json --pretty false",
         "test": "vitest run --config vitest.config.js",
         "test:watch": "vitest --config vitest.config.js",
         "build:licenses": "node ./build-scripts/generate-third-party-licenses.js",
