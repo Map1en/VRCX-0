@@ -38,6 +38,30 @@ export function PageToolbar({ className = '', children }) {
     );
 }
 
+export function PageHeader({ className = '', children }) {
+    return (
+        <div className={cn('flex shrink-0 flex-col gap-1 p-1.5', className)}>
+            {children}
+        </div>
+    );
+}
+
+export function PageTitle({ className = '', children }) {
+    return (
+        <h1 className={cn('font-heading text-lg leading-none font-medium text-foreground', className)}>
+            {children}
+        </h1>
+    );
+}
+
+export function PageDescription({ className = '', children }) {
+    return (
+        <p className={cn('text-sm text-muted-foreground', className)}>
+            {children}
+        </p>
+    );
+}
+
 export function PageToolbarRow({ className = '', children }) {
     return (
         <div className={cn('flex min-w-0 flex-wrap items-center gap-2', className)}>
