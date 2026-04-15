@@ -8,6 +8,7 @@ const UPDATE_PROGRESS_IDLE: i32 = 0;
 const UPDATE_PROGRESS_ERROR: i32 = -1;
 // IPC progress contract: 0..=100 is visible download percent, 101 means ready to install.
 const UPDATE_PROGRESS_READY: i32 = 101;
+pub const MAX_UPDATE_INSTALLER_SIZE_BYTES: u64 = 256 * 1024 * 1024;
 
 pub struct UpdateManager {
     app_data: PathBuf,
@@ -168,10 +169,18 @@ async fn do_download(
     }
 
     let content_length = response.content_length();
+    if content_length.is_some_and(|size| size > MAX_UPDATE_INSTALLER_SIZE_BYTES) {
+        return Err("Update installer is too large".into());
+    }
+
     let bytes = response
         .bytes()
         .await
         .map_err(|e| format!("download read: {e}"))?;
+
+    if (bytes.len() as u64) > MAX_UPDATE_INSTALLER_SIZE_BYTES {
+        return Err("Update installer is too large".into());
+    }
 
     if cancel.load(Ordering::Relaxed) || generation_state.load(Ordering::SeqCst) != generation {
         return Err("cancelled".into());
@@ -206,24 +215,32 @@ async fn do_download(
         .map_err(|e| format!("stat temp: {e}"))?
         .len();
 
+    if actual_size > MAX_UPDATE_INSTALLER_SIZE_BYTES {
+        let _ = std::fs::remove_file(&temp_path);
+        return Err("Update installer is too large".into());
+    }
+
     if download_size > 0 && actual_size != download_size as u64 {
         let _ = std::fs::remove_file(&temp_path);
         return Err("Downloaded file size does not match expected size".into());
     }
 
-    if !hash_string.is_empty() {
-        let file_data = std::fs::read(&temp_path).map_err(|e| format!("read for hash: {e}"))?;
-        let mut hasher = Sha256::new();
-        hasher.update(&file_data);
-        let result = hasher.finalize();
-        let file_hash = hex::encode(result);
+    if hash_string.is_empty() {
+        let _ = std::fs::remove_file(&temp_path);
+        return Err("SHA-256 hash is required".into());
+    }
 
-        if !file_hash.eq_ignore_ascii_case(hash_string) {
-            let _ = std::fs::remove_file(&temp_path);
-            return Err(format!(
-                "Hash check failed file:{file_hash} web:{hash_string}"
-            ));
-        }
+    let file_data = std::fs::read(&temp_path).map_err(|e| format!("read for hash: {e}"))?;
+    let mut hasher = Sha256::new();
+    hasher.update(&file_data);
+    let result = hasher.finalize();
+    let file_hash = hex::encode(result);
+
+    if !file_hash.eq_ignore_ascii_case(hash_string) {
+        let _ = std::fs::remove_file(&temp_path);
+        return Err(format!(
+            "Hash check failed file:{file_hash} web:{hash_string}"
+        ));
     }
 
     {

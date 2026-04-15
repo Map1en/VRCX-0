@@ -1,9 +1,10 @@
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use reqwest::Client;
 use reqwest_cookie_store::CookieStoreMutex;
+use sha2::{Digest, Sha256};
 
 use crate::error::AppError;
 
@@ -49,26 +50,14 @@ impl ImageCache {
         })
     }
 
-    pub fn populate_hosts(&self, hosts: &[String]) {
-        let mut allowed = self.allowed_hosts.lock().unwrap();
-        for host_url in hosts {
-            if host_url.is_empty() {
-                continue;
-            }
-            if let Ok(url) = reqwest::Url::parse(host_url) {
-                if let Some(host) = url.host_str() {
-                    allowed.insert(host.to_string());
-                }
-            }
-        }
-    }
-
     pub async fn get_image(
         &self,
         url: &str,
         file_id: &str,
         version: &str,
     ) -> Result<String, AppError> {
+        let file_id = safe_cache_component(file_id);
+        let version = safe_cache_component(version);
         let dir = self.cache_dir.join(file_id);
         let file_path = dir.join(format!("{version}.png"));
 
@@ -166,4 +155,53 @@ impl ImageCache {
             let _ = std::fs::remove_dir_all(path);
         }
     }
+}
+
+fn safe_cache_component(value: &str) -> String {
+    if is_safe_path_component(value) {
+        return value.to_string();
+    }
+
+    let digest = Sha256::digest(value.as_bytes());
+    format!("h-{}", hex::encode(digest))
+}
+
+fn is_safe_path_component(value: &str) -> bool {
+    if value.is_empty() || value == "." || value == ".." {
+        return false;
+    }
+
+    if value.ends_with(' ') || value.ends_with('.') {
+        return false;
+    }
+
+    if value.chars().any(|ch| {
+        ch.is_control() || matches!(ch, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*')
+    }) {
+        return false;
+    }
+
+    if is_windows_reserved_name(value) {
+        return false;
+    }
+
+    let mut components = Path::new(value).components();
+    match (components.next(), components.next()) {
+        (Some(Component::Normal(component)), None) => component == std::ffi::OsStr::new(value),
+        _ => false,
+    }
+}
+
+fn is_windows_reserved_name(value: &str) -> bool {
+    let upper = value
+        .split('.')
+        .next()
+        .unwrap_or_default()
+        .to_ascii_uppercase();
+    matches!(
+        upper.as_str(),
+        "CON" | "PRN" | "AUX" | "NUL"
+            | "COM1" | "COM2" | "COM3" | "COM4" | "COM5" | "COM6" | "COM7" | "COM8" | "COM9"
+            | "LPT1" | "LPT2" | "LPT3" | "LPT4" | "LPT5" | "LPT6" | "LPT7" | "LPT8" | "LPT9"
+    )
 }

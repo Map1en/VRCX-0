@@ -10,10 +10,10 @@
         "beforeBuildCommand": "npm run build"
     },
     "app": {
-        "withGlobalTauri": true,
+        "withGlobalTauri": false,
         "security": {
             "csp": {
-                "img-src": ["*", "data:", "blob:"]
+                "img-src": ["https:", "http://localhost:*", "asset:", "vrcx-img:", "data:", "blob:"]
             }
         },
         "windows": [

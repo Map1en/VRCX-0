@@ -1,5 +1,6 @@
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
+import sqliteRepository from '@/repositories/sqliteRepository.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
@@ -11,7 +12,51 @@ function setUpgradeState(patch) {
     useRuntimeStore.getState().setDatabaseUpgradeState(patch);
 }
 
+function errorMessage(error) {
+    return error instanceof Error ? error.message : String(error);
+}
+
+function failedUpgradeDescription(failedUpgrade) {
+    const path = failedUpgrade?.workDbPath || 'Unknown path';
+    const reason = failedUpgrade?.reason ? `\n\nReason: ${failedUpgrade.reason}` : '';
+    return `The previous database upgrade failed. This database cannot be used until it is repaired manually.\n\nWork database: ${path}${reason}`;
+}
+
+async function blockOnFailedUpgrade(failedUpgrade) {
+    setUpgradeState({
+        open: false,
+        phase: 'error',
+        fromVersion: failedUpgrade?.fromVersion ?? 0,
+        toVersion: failedUpgrade?.toVersion ?? DATABASE_VERSION,
+        detail: failedUpgradeDescription(failedUpgrade),
+        legacyMigrationAvailable: false
+    });
+
+    await useModalStore.getState().alert({
+        title: 'Database upgrade failed',
+        description: failedUpgradeDescription(failedUpgrade),
+        dismissible: false
+    });
+    useSessionStore.getState().setSessionState({ databaseReady: false });
+    return false;
+}
+
+async function writeUpgradeDatabaseVersion() {
+    await sqliteRepository.executeNonQuery(
+        'INSERT OR REPLACE INTO configs (key, value) VALUES (@key, @value)',
+        {
+            '@key': 'config:vrcx_databaseversion',
+            '@value': String(DATABASE_VERSION)
+        }
+    );
+}
+
 async function runFullDatabaseUpgrade() {
+    const failedUpgrade = await backend.sqlite.GetFailedUpgrade();
+    if (failedUpgrade) {
+        return blockOnFailedUpgrade(failedUpgrade);
+    }
+
     const currentVersion = await configRepository.getInt('databaseVersion', 0);
 
     if (currentVersion >= DATABASE_VERSION) {
@@ -36,7 +81,12 @@ async function runFullDatabaseUpgrade() {
         legacyMigrationAvailable: false
     });
 
+    let upgradeStarted = false;
+    let upgradeCommitted = false;
     try {
+        await backend.sqlite.BeginUpgrade(currentVersion, DATABASE_VERSION);
+        upgradeStarted = true;
+
         await database.cleanLegendFromFriendLog();
         await database.fixGameLogTraveling();
         await database.fixNegativeGPS();
@@ -49,7 +99,10 @@ async function runFullDatabaseUpgrade() {
         await database.upgradeDatabaseVersion();
         await database.vacuum();
         await database.optimize();
-        await configRepository.setInt('databaseVersion', DATABASE_VERSION);
+        await writeUpgradeDatabaseVersion();
+        await backend.sqlite.CommitUpgrade();
+        upgradeCommitted = true;
+        await configRepository.reload();
 
         setUpgradeState({
             open: false,
@@ -62,24 +115,45 @@ async function runFullDatabaseUpgrade() {
         return true;
     } catch (error) {
         console.error('Database upgrade failed:', error);
+        const reason = errorMessage(error);
+        let failedUpgrade = null;
+        if (upgradeStarted && !upgradeCommitted) {
+            try {
+                await backend.sqlite.FailUpgrade(reason);
+                failedUpgrade = await backend.sqlite.GetFailedUpgrade();
+            } catch (failError) {
+                console.error('Failed to preserve database upgrade work copy:', failError);
+            }
+        }
+
+        let description = 'VRCX failed to apply a local database upgrade.';
+        if (upgradeCommitted) {
+            description =
+                'VRCX upgraded the database, but failed to refresh local configuration. Please restart the application.';
+        } else if (failedUpgrade) {
+            description = failedUpgradeDescription(failedUpgrade);
+        }
         setUpgradeState({
             open: false,
             phase: 'error',
-            detail: error instanceof Error ? error.message : String(error)
+            detail: description
         });
         await useModalStore.getState().alert({
             title: 'Database upgrade failed',
-            description:
-                'VRCX failed to apply a local database upgrade. Developer tools will open so the error can be inspected.',
+            description,
             dismissible: false
         });
-        await backend.app.ShowDevTools().catch(() => {});
         useSessionStore.getState().setSessionState({ databaseReady: false });
         return false;
     }
 }
 
 export async function initializeDatabaseUpgradeFlow() {
+    const failedUpgrade = await backend.sqlite.GetFailedUpgrade();
+    if (failedUpgrade) {
+        return blockOnFailedUpgrade(failedUpgrade);
+    }
+
     let legacyAvailable = false;
 
     try {
