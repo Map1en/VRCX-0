@@ -803,6 +803,8 @@ export function MutualFriendsPage() {
     const selectedNodeIdRef = useRef('');
     const fetchCancelRef = useRef(false);
     const currentUserIdRef = useRef(currentUserId);
+    const pendingRenderFrameRef = useRef(0);
+    const [renderRetryToken, setRenderRetryToken] = useState(0);
 
     useEffect(() => {
         currentUserIdRef.current = currentUserId;
@@ -894,6 +896,10 @@ export function MutualFriendsPage() {
 
     useEffect(() => {
         return () => {
+            if (pendingRenderFrameRef.current) {
+                cancelAnimationFrame(pendingRenderFrameRef.current);
+                pendingRenderFrameRef.current = 0;
+            }
             destroySigmaInstance(chartInstanceRef, resizeObserverRef);
         };
     }, []);
@@ -998,6 +1004,17 @@ export function MutualFriendsPage() {
             return undefined;
         }
 
+        const { width, height } = container.getBoundingClientRect();
+        if (!width || !height) {
+            if (!pendingRenderFrameRef.current) {
+                pendingRenderFrameRef.current = requestAnimationFrame(() => {
+                    pendingRenderFrameRef.current = 0;
+                    setRenderRetryToken((current) => current + 1);
+                });
+            }
+            return undefined;
+        }
+
         let active = true;
         const isDarkMode = resolvedTheme === 'dark' || resolvedTheme === 'midnight';
         void buildSigmaGraph({
@@ -1008,6 +1025,17 @@ export function MutualFriendsPage() {
         })
             .then((graph) => {
                 if (!active || chartElementRef.current !== container) {
+                    return;
+                }
+
+                const nextRect = container.getBoundingClientRect();
+                if (!nextRect.width || !nextRect.height) {
+                    if (!pendingRenderFrameRef.current) {
+                        pendingRenderFrameRef.current = requestAnimationFrame(() => {
+                            pendingRenderFrameRef.current = 0;
+                            setRenderRetryToken((current) => current + 1);
+                        });
+                    }
                     return;
                 }
 
@@ -1031,7 +1059,7 @@ export function MutualFriendsPage() {
         return () => {
             active = false;
         };
-    }, [filteredGraph.links, filteredGraph.nodes, layoutSettings, resolvedTheme, t]);
+    }, [filteredGraph.links, filteredGraph.nodes, layoutSettings, renderRetryToken, resolvedTheme, t]);
 
     useEffect(() => {
         selectedNodeIdRef.current = selectedNodeId;
