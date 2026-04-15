@@ -414,7 +414,60 @@ function UserDialogEmptyState({ title, description, loading = false }) {
     );
 }
 
-export function UserDialogContent({ userId, seedData = null }) {
+const DEFAULT_USER_STATS = Object.freeze({
+    timeSpent: 0,
+    lastSeen: '',
+    joinCount: 0,
+    previousDisplayNames: []
+});
+const cachedUserStatsByTarget = new Map();
+const cachedPreviousInstancesByTarget = new Map();
+
+function dialogTargetKey(endpoint, userId) {
+    const normalizedUserId = normalizeUserId(userId);
+    if (!normalizedUserId) {
+        return '';
+    }
+    return `${normalizeUserId(endpoint)}:${normalizedUserId}`;
+}
+
+function cloneUserStats(stats = DEFAULT_USER_STATS) {
+    const previousDisplayNames = Array.isArray(stats?.previousDisplayNames)
+        ? stats.previousDisplayNames.map((entry) => ({ ...entry }))
+        : [];
+    return {
+        timeSpent: Number(stats?.timeSpent) || 0,
+        lastSeen: stats?.lastSeen || '',
+        joinCount: Number(stats?.joinCount) || 0,
+        previousDisplayNames
+    };
+}
+
+function readCachedUserStats(key) {
+    return key && cachedUserStatsByTarget.has(key)
+        ? cloneUserStats(cachedUserStatsByTarget.get(key))
+        : cloneUserStats();
+}
+
+function cacheUserStats(key, stats) {
+    if (key) {
+        cachedUserStatsByTarget.set(key, cloneUserStats(stats));
+    }
+}
+
+function readCachedPreviousInstances(key) {
+    return key && cachedPreviousInstancesByTarget.has(key)
+        ? [...cachedPreviousInstancesByTarget.get(key)]
+        : [];
+}
+
+function cachePreviousInstances(key, rows) {
+    if (key) {
+        cachedPreviousInstancesByTarget.set(key, Array.isArray(rows) ? [...rows] : []);
+    }
+}
+
+export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     const normalizedUserId = normalizeUserId(userId);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
@@ -435,6 +488,10 @@ export function UserDialogContent({ userId, seedData = null }) {
         isTargetCurrentUser
             ? currentUserSnapshot
             : friendsById[normalizedUserId] || seedData || null;
+    const targetKey = useMemo(
+        () => dialogTargetKey(currentEndpoint, normalizedUserId),
+        [currentEndpoint, normalizedUserId]
+    );
 
     const [profile, setProfile] = useState(() =>
         localSnapshot ? userProfileRepository.normalize(localSnapshot) : null
@@ -457,13 +514,8 @@ export function UserDialogContent({ userId, seedData = null }) {
         showAvatar: false
     }));
     const [detail, setDetail] = useState('');
-    const [previousInstances, setPreviousInstances] = useState([]);
-    const [userStats, setUserStats] = useState({
-        timeSpent: 0,
-        lastSeen: '',
-        joinCount: 0,
-        previousDisplayNames: []
-    });
+    const [previousInstances, setPreviousInstances] = useState(() => readCachedPreviousInstances(targetKey));
+    const [userStats, setUserStats] = useState(() => readCachedUserStats(targetKey));
     const [representedGroup, setRepresentedGroup] = useState(null);
     const [representedGroupStatus, setRepresentedGroupStatus] = useState('idle');
     const [locationPanel, setLocationPanel] = useState({
@@ -544,13 +596,8 @@ export function UserDialogContent({ userId, seedData = null }) {
 
         setProfile(localSnapshot ? userProfileRepository.normalize(localSnapshot) : null);
         setMemo('');
-        setPreviousInstances([]);
-        setUserStats({
-            timeSpent: 0,
-            lastSeen: '',
-            joinCount: 0,
-            previousDisplayNames: []
-        });
+        setPreviousInstances(readCachedPreviousInstances(targetKey));
+        setUserStats(readCachedUserStats(targetKey));
         setLoadStatus('running');
         setDetail('');
 
@@ -596,7 +643,7 @@ export function UserDialogContent({ userId, seedData = null }) {
         return () => {
             active = false;
         };
-    }, [currentEndpoint, localSnapshot, normalizedUserId, reloadToken]);
+    }, [currentEndpoint, localSnapshot, normalizedUserId, reloadToken, targetKey]);
 
     useEffect(() => {
         let active = true;
@@ -674,7 +721,7 @@ export function UserDialogContent({ userId, seedData = null }) {
         let active = true;
 
         if (!profile?.id) {
-            setPreviousInstances([]);
+            setPreviousInstances(readCachedPreviousInstances(targetKey));
             return () => {
                 active = false;
             };
@@ -688,29 +735,24 @@ export function UserDialogContent({ userId, seedData = null }) {
                     return;
                 }
                 const values = rows instanceof Set ? Array.from(rows.values()) : [];
-                setPreviousInstances(values.reverse());
+                const nextInstances = values.reverse();
+                cachePreviousInstances(targetKey, nextInstances);
+                setPreviousInstances(nextInstances);
             })
             .catch(() => {
-                if (active) {
-                    setPreviousInstances([]);
-                }
+                // Keep the last visible rows while a refresh fails.
             });
 
         return () => {
             active = false;
         };
-    }, [profile?.displayName, profile?.id, profile?.username, reloadToken]);
+    }, [openNonce, profile?.displayName, profile?.id, profile?.username, reloadToken, targetKey]);
 
     useEffect(() => {
         let active = true;
 
         if (!profile?.id) {
-            setUserStats({
-                timeSpent: 0,
-                lastSeen: '',
-                joinCount: 0,
-                previousDisplayNames: []
-            });
+            setUserStats(readCachedUserStats(targetKey));
             return () => {
                 active = false;
             };
@@ -739,22 +781,17 @@ export function UserDialogContent({ userId, seedData = null }) {
                         : Array.isArray(stats?.previousDisplayNames)
                             ? stats.previousDisplayNames
                             : [];
-                setUserStats({
+                const nextStats = {
                     timeSpent: Number(stats?.timeSpent) || 0,
                     lastSeen: stats?.lastSeen || '',
                     joinCount: Number(stats?.joinCount) || 0,
                     previousDisplayNames
-                });
+                };
+                cacheUserStats(targetKey, nextStats);
+                setUserStats(nextStats);
             })
             .catch(() => {
-                if (active) {
-                    setUserStats({
-                        timeSpent: 0,
-                        lastSeen: '',
-                        joinCount: 0,
-                        previousDisplayNames: []
-                    });
-                }
+                // Keep the last visible stats while a refresh fails.
             });
 
         return () => {
@@ -769,7 +806,9 @@ export function UserDialogContent({ userId, seedData = null }) {
         profile?.location,
         profile?.travelingToLocation,
         profile?.username,
-        reloadToken
+        openNonce,
+        reloadToken,
+        targetKey
     ]);
 
     useEffect(() => {

@@ -1,5 +1,7 @@
 import { useDialogStore } from '@/state/dialogStore.js';
 
+let entityDialogOpenNonce = 0;
+
 function normalizeEntityId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
 }
@@ -65,12 +67,15 @@ function openEntityDialog({
     }
 
     const label = sanitizeEntityTitle(kind, normalizedEntityId, title, payload);
+    entityDialogOpenNonce += 1;
+    const openNonce = entityDialogOpenNonce;
     const dialog = {
         kind,
         entityId: normalizedEntityId,
         title: label,
         description,
-        payload
+        payload,
+        openNonce
     };
     const crumb = {
         key: `${kind}:${normalizedEntityId}`,
@@ -79,7 +84,8 @@ function openEntityDialog({
         label,
         title: label,
         description,
-        payload
+        payload,
+        openNonce
     };
     const store = useDialogStore.getState();
     const existingIndex = store.breadcrumbs.findIndex((entry) => entry?.key === crumb.key);
