@@ -275,6 +275,41 @@ function normalizeLanguageRows(rows, tags = []) {
     return normalizedRows;
 }
 
+function languageFlagClassName(languageKey) {
+    const key = String(languageKey || '').trim().toLowerCase();
+    return languageMappings[key] || key || 'unknown';
+}
+
+function languageTooltipLabel(language) {
+    const key = String(language?.key || '').trim();
+    const value = String(language?.value || '').trim();
+    return value && key ? `${value} (${key})` : value || key;
+}
+
+function UserTitleLanguageFlags({ languages }) {
+    if (!languages.length) {
+        return null;
+    }
+
+    return (
+        <span className="inline-flex shrink-0 items-center gap-1">
+            {languages.map((language) => {
+                const key = String(language?.key || language?.value || '').trim();
+                const flagClassName = languageFlagClassName(key);
+                const tooltip = languageTooltipLabel(language);
+                return (
+                    <span
+                        key={`${key}:${language?.value || ''}`}
+                        className={`flags inline-block ${flagClassName}`}
+                        title={tooltip}
+                        aria-label={tooltip}
+                    />
+                );
+            })}
+        </span>
+    );
+}
+
 function formatDate(value) {
     if (!value) {
         return '—';
@@ -1896,6 +1931,7 @@ export function UserDialogTabbedView({
                 onTitleClick={profile.displayName || profile.username ? () => void copyUserText(profile.displayName || profile.username, 'Display name') : undefined}
                 titleMeta={
                     <>
+                        <UserTitleLanguageFlags languages={profileLanguages} />
                         {previousDisplayNames.length ? (
                             <Badge variant="outline" className="shrink-0 text-[11px]" title={previousDisplayNamesTitle}>
                                 Names {previousDisplayNames.length}
@@ -1947,11 +1983,6 @@ export function UserDialogTabbedView({
                             {PlatformIcon ? <PlatformIcon className="mr-1 size-3.5" /> : null}
                             {platform.label}
                         </Badge>
-                        {profileLanguages.map((language) => (
-                            <Badge key={`${language.key}:${language.value}`} variant="outline" title={language.value || language.key}>
-                                {languageMappings[String(language.key).toLowerCase()] || language.key || language.value}
-                            </Badge>
-                        ))}
                         {profile.discordId ? (
                             <button type="button" onClick={() => void openDiscordProfile(profile.discordId)}>
                                 <Badge variant="outline">Discord</Badge>
