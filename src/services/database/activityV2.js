@@ -7,16 +7,34 @@ const ACTIVITY_VIEW_KIND = {
     OVERLAP: 'overlap'
 };
 
-function syncStateTable() {
-    return `${dbVars.userPrefix}_activity_sync_state_v2`;
+function normalizeActivityUserTablePrefix(userId) {
+    const normalizedUserId =
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+    if (!normalizedUserId) {
+        return dbVars.userPrefix;
+    }
+
+    let userPrefix = normalizedUserId.replaceAll('-', '').replaceAll('_', '');
+    if (/^\d/.test(userPrefix)) {
+        userPrefix = `_${userPrefix}`;
+    }
+    return userPrefix;
 }
 
-function sessionsTable() {
-    return `${dbVars.userPrefix}_activity_sessions_v2`;
+function syncStateTableForUser(userId) {
+    return `${normalizeActivityUserTablePrefix(userId)}_activity_sync_state_v2`;
 }
 
-function bucketCacheTable() {
-    return `${dbVars.userPrefix}_activity_bucket_cache_v2`;
+function sessionsTableForUser(userId) {
+    return `${normalizeActivityUserTablePrefix(userId)}_activity_sessions_v2`;
+}
+
+function bucketCacheTableForUser(userId) {
+    return `${normalizeActivityUserTablePrefix(userId)}_activity_bucket_cache_v2`;
+}
+
+function feedOnlineOfflineTableForOwner(ownerUserId) {
+    return `${normalizeActivityUserTablePrefix(ownerUserId)}_feed_online_offline`;
 }
 
 function parseJson(value, fallback) {
@@ -37,7 +55,7 @@ function parseJson(value, fallback) {
 const activityV2 = {
     ACTIVITY_VIEW_KIND,
 
-    async getActivitySourceSliceV2({ userId, isSelf, fromDays, toDays = 0 }) {
+    async getActivitySourceSliceV2({ userId, ownerUserId = '', isSelf, fromDays, toDays = 0 }) {
         const fromDateIso = new Date(
             Date.now() - fromDays * 86400000
         ).toISOString();
@@ -47,22 +65,24 @@ const activityV2 = {
                 : '';
         return isSelf
             ? this.getCurrentUserLocationSliceV2(fromDateIso, toDateIso)
-            : this.getFriendPresenceSliceV2(userId, fromDateIso, toDateIso);
+            : this.getFriendPresenceSliceV2(userId, fromDateIso, toDateIso, ownerUserId);
     },
 
     async getActivitySourceAfterV2({
         userId,
+        ownerUserId = '',
         isSelf,
         afterCreatedAt,
         inclusive = false
     }) {
         return isSelf
             ? this.getCurrentUserLocationAfterV2(afterCreatedAt, inclusive)
-            : this.getFriendPresenceAfterV2(userId, afterCreatedAt);
+            : this.getFriendPresenceAfterV2(userId, afterCreatedAt, ownerUserId);
     },
 
-    async getFriendPresenceSliceV2(userId, fromDateIso, toDateIso = '') {
+    async getFriendPresenceSliceV2(userId, fromDateIso, toDateIso = '', ownerUserId = '') {
         const rows = [];
+        const tableName = feedOnlineOfflineTableForOwner(ownerUserId);
         await sqliteService.execute(
             (dbRow) => {
                 rows.push({ created_at: dbRow[0], type: dbRow[1] });
@@ -73,7 +93,7 @@ const activityV2 = {
                     SELECT created_at, type, 0 AS sort_group
                     FROM (
                         SELECT created_at, type
-                        FROM ${dbVars.userPrefix}_feed_online_offline
+                        FROM ${tableName}
                         WHERE user_id = @userId
                           AND (type = 'Online' OR type = 'Offline')
                           AND created_at < @fromDateIso
@@ -82,7 +102,7 @@ const activityV2 = {
                     )
                     UNION ALL
                     SELECT created_at, type, 1 AS sort_group
-                    FROM ${dbVars.userPrefix}_feed_online_offline
+                    FROM ${tableName}
                     WHERE user_id = @userId
                       AND (type = 'Online' OR type = 'Offline')
                       AND created_at >= @fromDateIso
@@ -103,7 +123,7 @@ const activityV2 = {
                     rows.push({ created_at: dbRow[0], type: dbRow[1] });
                 },
                 `SELECT created_at, type
-                 FROM ${dbVars.userPrefix}_feed_online_offline
+                 FROM ${tableName}
                  WHERE user_id = @userId
                    AND (type = 'Online' OR type = 'Offline')
                    AND created_at >= @toDateIso
@@ -121,14 +141,15 @@ const activityV2 = {
         );
     },
 
-    async getFriendPresenceAfterV2(userId, afterCreatedAt) {
+    async getFriendPresenceAfterV2(userId, afterCreatedAt, ownerUserId = '') {
         const rows = [];
+        const tableName = feedOnlineOfflineTableForOwner(ownerUserId);
         await sqliteService.execute(
             (dbRow) => {
                 rows.push({ created_at: dbRow[0], type: dbRow[1] });
             },
             `SELECT created_at, type
-             FROM ${dbVars.userPrefix}_feed_online_offline
+             FROM ${tableName}
              WHERE user_id = @userId
                AND (type = 'Online' OR type = 'Offline')
                AND created_at > @afterCreatedAt
@@ -218,7 +239,7 @@ const activityV2 = {
                 };
             },
             `SELECT user_id, updated_at, is_self, source_last_created_at, pending_session_start_at, cached_range_days
-             FROM ${syncStateTable()}
+             FROM ${syncStateTableForUser(userId)}
              WHERE user_id = @userId`,
             { '@userId': userId }
         );
@@ -227,7 +248,7 @@ const activityV2 = {
 
     async upsertActivitySyncStateV2(entry) {
         await sqliteService.executeNonQuery(
-            `INSERT OR REPLACE INTO ${syncStateTable()}
+            `INSERT OR REPLACE INTO ${syncStateTableForUser(entry.userId)}
              (user_id, updated_at, is_self, source_last_created_at, pending_session_start_at, cached_range_days)
              VALUES (@userId, @updatedAt, @isSelf, @sourceLastCreatedAt, @pendingSessionStartAt, @cachedRangeDays)`,
             {
@@ -253,7 +274,7 @@ const activityV2 = {
                 });
             },
             `SELECT start_at, end_at, is_open_tail, source_revision
-             FROM ${sessionsTable()}
+             FROM ${sessionsTableForUser(userId)}
              WHERE user_id = @userId
              ORDER BY start_at`,
             { '@userId': userId }
@@ -262,13 +283,14 @@ const activityV2 = {
     },
 
     async replaceActivitySessionsV2(userId, sessions = []) {
+        const tableName = sessionsTableForUser(userId);
         await sqliteService.executeNonQuery('BEGIN');
         try {
             await sqliteService.executeNonQuery(
-                `DELETE FROM ${sessionsTable()} WHERE user_id = @userId`,
+                `DELETE FROM ${tableName} WHERE user_id = @userId`,
                 { '@userId': userId }
             );
-            await insertSessions(userId, sessions);
+            await insertSessions(userId, sessions, tableName);
             await sqliteService.executeNonQuery('COMMIT');
         } catch (error) {
             await sqliteService.executeNonQuery('ROLLBACK');
@@ -281,11 +303,12 @@ const activityV2 = {
         sessions = [],
         replaceFromStartAt = null
     }) {
+        const tableName = sessionsTableForUser(userId);
         await sqliteService.executeNonQuery('BEGIN');
         try {
             if (replaceFromStartAt !== null) {
                 await sqliteService.executeNonQuery(
-                    `DELETE FROM ${sessionsTable()}
+                    `DELETE FROM ${tableName}
                      WHERE user_id = @userId AND start_at >= @replaceFromStartAt`,
                     {
                         '@userId': userId,
@@ -293,7 +316,7 @@ const activityV2 = {
                     }
                 );
             }
-            await insertSessions(userId, sessions);
+            await insertSessions(userId, sessions, tableName);
             await sqliteService.executeNonQuery('COMMIT');
         } catch (error) {
             await sqliteService.executeNonQuery('ROLLBACK');
@@ -326,7 +349,7 @@ const activityV2 = {
                 };
             },
             `SELECT user_id, target_user_id, range_days, view_kind, exclude_key, bucket_version, built_from_cursor, raw_buckets_json, normalized_buckets_json, summary_json, built_at
-             FROM ${bucketCacheTable()}
+             FROM ${bucketCacheTableForUser(ownerUserId)}
              WHERE user_id = @ownerUserId AND target_user_id = @targetUserId AND range_days = @rangeDays AND view_kind = @viewKind AND exclude_key = @excludeKey`,
             {
                 '@ownerUserId': ownerUserId,
@@ -341,7 +364,7 @@ const activityV2 = {
 
     async upsertActivityBucketCacheV2(entry) {
         await sqliteService.executeNonQuery(
-            `INSERT OR REPLACE INTO ${bucketCacheTable()}
+            `INSERT OR REPLACE INTO ${bucketCacheTableForUser(entry.ownerUserId)}
              (user_id, target_user_id, range_days, view_kind, exclude_key, bucket_version, built_from_cursor, raw_buckets_json, normalized_buckets_json, summary_json, built_at)
              VALUES (@ownerUserId, @targetUserId, @rangeDays, @viewKind, @excludeKey, @bucketVersion, @builtFromCursor, @rawBucketsJson, @normalizedBucketsJson, @summaryJson, @builtAt)`,
             {
@@ -364,7 +387,7 @@ const activityV2 = {
 
 };
 
-async function insertSessions(userId, sessions = []) {
+async function insertSessions(userId, sessions = [], tableName = sessionsTableForUser(userId)) {
     if (sessions.length === 0) {
         return;
     }
@@ -388,7 +411,7 @@ async function insertSessions(userId, sessions = []) {
         });
 
         await sqliteService.executeNonQuery(
-            `INSERT OR REPLACE INTO ${sessionsTable()}
+            `INSERT OR REPLACE INTO ${tableName}
              (user_id, start_at, end_at, is_open_tail, source_revision)
              VALUES ${values.join(', ')}`,
             args

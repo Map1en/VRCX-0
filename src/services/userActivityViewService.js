@@ -20,7 +20,8 @@ function createSnapshot(userId, isSelf) {
             isSelf,
             sourceLastCreatedAt: '',
             pendingSessionStartAt: null,
-            cachedRangeDays: 0
+            cachedRangeDays: 0,
+            ownerUserId: ''
         },
         sessions: []
     };
@@ -37,6 +38,7 @@ function getSnapshot(userId, isSelf, ownerUserId = '') {
         snapshot.isSelf = isSelf;
         snapshot.sync.isSelf = isSelf;
     }
+    snapshot.sync.ownerUserId = String(ownerUserId || '').trim();
     return snapshot;
 }
 
@@ -74,6 +76,7 @@ async function hydrateSnapshot(userId, isSelf, ownerUserId = '') {
 async function fullRefresh(snapshot, rangeDays) {
     const sourceItems = await database.getActivitySourceSliceV2({
         userId: snapshot.userId,
+        ownerUserId: snapshot.sync.ownerUserId || '',
         isSelf: snapshot.isSelf,
         fromDays: rangeDays
     });
@@ -113,6 +116,7 @@ async function incrementalRefresh(snapshot) {
 
     const sourceItems = await database.getActivitySourceAfterV2({
         userId: snapshot.userId,
+        ownerUserId: snapshot.sync.ownerUserId || '',
         isSelf: snapshot.isSelf,
         afterCreatedAt: snapshot.sync.sourceLastCreatedAt,
         inclusive: snapshot.isSelf
@@ -168,6 +172,7 @@ async function expandRange(snapshot, rangeDays) {
 
     const sourceItems = await database.getActivitySourceSliceV2({
         userId: snapshot.userId,
+        ownerUserId: snapshot.sync.ownerUserId || '',
         isSelf: snapshot.isSelf,
         fromDays: rangeDays,
         toDays: currentDays
