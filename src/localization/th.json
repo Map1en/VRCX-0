@@ -297,8 +297,6 @@
                     "startup": "เริ่มทำงานเมื่อเปิด Windows",
                     "minimized": "เริ่มแบบย่อหน้าต่าง",
                     "tray": "ย่อลงถาดระบบเมื่อปิด",
-                    "disable_gpu_acceleration": "ปิดการเร่งความเร็ว GPU",
-                    "disable_gpu_acceleration_tooltip": "เปลี่ยนตัวเลือกนี้เมื่อคุณรู้ว่ากำลังทำอะไรเท่านั้น อาจช่วยแก้ปัญหาเกี่ยวกับ UI ได้ และต้องรีสตาร์ท VRCX-0",
                     "disable_vr_overlay_gpu_acceleration": "ปิดการเร่งความเร็ว GPU ของโอเวอร์เลย์ VR",
                     "proxy": "ตั้งค่าพร็อกซี"
                 },

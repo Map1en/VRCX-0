@@ -422,8 +422,6 @@
                     "startup": "Uruchamiaj razem z Windows",
                     "minimized": "Uruchamiaj zminimalizowane",
                     "tray": "Zamykaj do zasobnika",
-                    "disable_gpu_acceleration": "Wyłącz akcelerację GPU",
-                    "disable_gpu_acceleration_tooltip": "Zmieniaj to ustawienie tylko, jeżeli wiesz co robisz. Może pomóc z błędami UI. Wymaga restartu VRCX-0",
                     "disable_vr_overlay_gpu_acceleration": "Wyłącz akcelerację GPU nakładki VR",
                     "proxy": "Ustawienia proxy",
                     "startup_linux": "Dodaj argument \"--startup\" dop pliku VRCX-0.desktop, aby uruchamiać VRCX-0 po starcie systemu"

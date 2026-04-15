@@ -805,6 +805,48 @@ pub fn app__open_calendar_file(ics_content: String) -> Result<(), AppError> {
 }
 
 #[tauri::command]
+pub async fn app__save_calendar_file(
+    app_handle: AppHandle,
+    default_name: String,
+    ics_content: String,
+) -> Result<String, AppError> {
+    use tauri_plugin_dialog::DialogExt;
+
+    if !ics_content.starts_with("BEGIN:VCALENDAR") {
+        return Err(AppError::Custom("invalid iCalendar content".into()));
+    }
+
+    let file_name = if default_name.trim().is_empty() {
+        "group-event.ics"
+    } else {
+        default_name.trim()
+    };
+    let result = app_handle
+        .dialog()
+        .file()
+        .set_file_name(file_name)
+        .add_filter("iCalendar Files", &["ics"])
+        .blocking_save_file();
+
+    match result {
+        Some(file_path) => {
+            let path = match file_path {
+                tauri_plugin_dialog::FilePath::Path(p) => p,
+                other => PathBuf::from(other.to_string()),
+            };
+
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+
+            std::fs::write(&path, ics_content)?;
+            Ok(path.to_string_lossy().to_string())
+        }
+        None => Ok(String::new()),
+    }
+}
+
+#[tauri::command]
 pub async fn app__get_image(
     state: State<'_, AppState>,
     url: String,

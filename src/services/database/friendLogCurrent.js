@@ -1,4 +1,5 @@
 import { dbVars } from '../database';
+import { buildValuesList } from './sqlHelpers.js';
 
 import sqliteService from '../../repositories/sqliteRepository.js';
 
@@ -33,22 +34,37 @@ const friendLogCurrent = {
         if (inputData.length === 0) {
             return;
         }
-        var sqlValues = '';
-        var items = ['userId', 'displayName', 'trustLevel'];
-        for (var line of inputData) {
-            var field = {};
-            for (var item of items) {
-                if (typeof line[item] === 'string') {
-                    field[item] = line[item].replace(/'/g, "''");
-                } else {
-                    field[item] = '';
+        const { valuesSql, args } = buildValuesList(
+            inputData,
+            [
+                {
+                    column: 'user_id',
+                    value: (line) =>
+                        typeof line.userId === 'string' ? line.userId : ''
+                },
+                {
+                    column: 'display_name',
+                    value: (line) =>
+                        typeof line.displayName === 'string' ? line.displayName : ''
+                },
+                {
+                    column: 'trust_level',
+                    value: (line) =>
+                        typeof line.trustLevel === 'string' ? line.trustLevel : ''
+                },
+                {
+                    column: 'friend_number',
+                    value: (line) =>
+                        typeof line.friendNumber === 'number'
+                            ? line.friendNumber
+                            : null
                 }
-            }
-            sqlValues += `('${field.userId}', '${field.displayName}', '${field.trustLevel}', ${line.friendNumber}), `;
-        }
-        sqlValues = sqlValues.slice(0, -2);
-        sqliteService.executeNonQuery(
-            `INSERT OR REPLACE INTO ${dbVars.userPrefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES ${sqlValues}`
+            ],
+            'friend_log_current'
+        );
+        return sqliteService.executeNonQuery(
+            `INSERT OR REPLACE INTO ${dbVars.userPrefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES ${valuesSql}`,
+            args
         );
     },
 

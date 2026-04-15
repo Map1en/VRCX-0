@@ -196,6 +196,7 @@ export function InstanceActionBar({
     inviteLocation = '',
     instanceLocation = '',
     shortName = '',
+    worldName = '',
     instance = null,
     friendCount,
     playerCount,
@@ -254,7 +255,9 @@ export function InstanceActionBar({
         if (!resolvedLaunchLocation || busy) {
             return;
         }
-        showLaunchDialog(resolvedLaunchLocation, parsedLaunchLocation.shortName || '', shortName || parsedLaunchLocation.shortName || '');
+        showLaunchDialog(resolvedLaunchLocation, parsedLaunchLocation.shortName || '', shortName || parsedLaunchLocation.shortName || '', {
+            worldName
+        });
     }
 
     async function selfInvite() {

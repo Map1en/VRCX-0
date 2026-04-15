@@ -32,7 +32,7 @@ import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { timeToText } from '@/lib/dateTime.js';
 import { convertFileUrlToImageUrl, copyTextToClipboard, openExternalLink, userImage } from '@/lib/entityMedia.js';
 import { userStatusDotClassName } from '@/lib/userStatus.js';
-import { instanceRepository, playerListRepository, userProfileRepository } from '@/repositories/index.js';
+import { groupProfileRepository, instanceRepository, playerListRepository, userProfileRepository } from '@/repositories/index.js';
 import { parseLocation } from '@/shared/utils/location.js';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils.js';
 import { openUserDialog } from '@/services/dialogService.js';
@@ -100,6 +100,18 @@ function firstText(...values) {
     return '';
 }
 
+function isGroupId(value) {
+    return firstText(value).startsWith('grp_');
+}
+
+function groupSeed(value) {
+    if (!value || typeof value !== 'object') {
+        return null;
+    }
+    const groupId = firstText(value.groupId, value.group_id, value.id);
+    return isGroupId(groupId) ? value : null;
+}
+
 function normalizeInstanceUser(value) {
     if (!value) {
         return null;
@@ -119,6 +131,77 @@ function normalizeInstanceUser(value) {
         userId: value.userId || userId,
         displayName
     };
+}
+
+function normalizeInstanceGroup(value, fallbackId = '') {
+    if (!value) {
+        const groupId = firstText(fallbackId);
+        return groupId ? { id: groupId, groupId, name: groupId } : null;
+    }
+    if (typeof value === 'string') {
+        const groupId = firstText(value);
+        return groupId ? { id: groupId, groupId, name: groupId } : null;
+    }
+    if (typeof value !== 'object') {
+        return null;
+    }
+    const nestedGroup = value.group && typeof value.group === 'object' ? value.group : {};
+    const groupId = firstText(
+        value.groupId,
+        value.group_id,
+        nestedGroup.id,
+        nestedGroup.groupId,
+        nestedGroup.group_id,
+        isGroupId(value.id) ? value.id : '',
+        fallbackId
+    );
+    if (!groupId) {
+        return null;
+    }
+    const name = firstText(
+        value.name,
+        value.displayName,
+        value.display_name,
+        value.groupName,
+        value.group_name,
+        value.shortCode,
+        nestedGroup.name,
+        nestedGroup.displayName,
+        nestedGroup.display_name,
+        groupId
+    );
+    return {
+        ...nestedGroup,
+        ...value,
+        id: groupId,
+        groupId,
+        name,
+        displayName: value.displayName || value.display_name || name,
+        iconUrl: value.iconUrl || value.icon_url || nestedGroup.iconUrl || nestedGroup.icon_url || '',
+        thumbnailImageUrl: value.thumbnailImageUrl || value.thumbnail_image_url || nestedGroup.thumbnailImageUrl || nestedGroup.thumbnail_image_url || '',
+        imageUrl: value.imageUrl || value.image_url || nestedGroup.imageUrl || nestedGroup.image_url || ''
+    };
+}
+
+function instanceCreatorId(instance) {
+    return firstText(instance?.creatorGroupId, instance?.creatorUserId);
+}
+
+function instanceCreatorName(instance) {
+    return instance?.creatorGroupId
+        ? firstText(
+            instance.creatorGroup?.name,
+            instance.creatorGroup?.displayName,
+            instance.creatorGroup?.display_name,
+            instance.creatorGroup?.shortCode,
+            instance.creatorGroupId
+        )
+        : firstText(
+            instance?.creatorUser?.displayName,
+            instance?.creatorUser?.display_name,
+            instance?.creatorUser?.username,
+            instance?.creatorUser?.name
+        );
 }
 
 function normalizeInstanceUsers(...sources) {
@@ -171,6 +254,61 @@ function resolveInstanceRows(world) {
                 };
             }
             if (entry && typeof entry === 'object') {
+                const creatorId = firstText(
+                    entry.$location?.userId,
+                    entry.$location?.user_id,
+                    entry.$location?.ownerUserId,
+                    entry.$location?.owner_user_id,
+                    entry.$location?.ownerId,
+                    entry.$location?.owner_id,
+                    entry.$location?.creatorUserId,
+                    entry.$location?.creator_user_id,
+                    entry.ownerUserId,
+                    entry.owner_user_id,
+                    entry.userId,
+                    entry.user_id,
+                    entry.ownerId,
+                    entry.owner_id,
+                    entry.creatorUserId,
+                    entry.creator_user_id,
+                    entry.creatorId,
+                    entry.creator_id,
+                    entry.instanceOwnerId,
+                    entry.instance_owner_id,
+                    entry.ownerUser?.id,
+                    entry.ownerUser?.userId,
+                    entry.owner?.id,
+                    entry.owner?.userId,
+                    entry.creatorUser?.id,
+                    entry.creatorUser?.userId,
+                    entry.user?.id,
+                    entry.user?.userId,
+                    entry.$location?.groupId,
+                    entry.$location?.group_id,
+                    entry.$location?.group?.id,
+                    entry.groupId,
+                    entry.group_id,
+                    entry.group?.id,
+                    entry.group?.groupId
+                );
+                const creatorIsGroup = isGroupId(creatorId);
+                const creatorEntity = entry.$location?.ownerUser ||
+                    entry.$location?.owner ||
+                    entry.$location?.creatorUser ||
+                    entry.$location?.user ||
+                    entry.creatorUser ||
+                    entry.creator_user ||
+                    entry.ownerUser ||
+                    entry.owner ||
+                    entry.user ||
+                    null;
+                const creatorGroupEntity = entry.$location?.group ||
+                    entry.$location?.ownerGroup ||
+                    entry.$location?.owner_group ||
+                    entry.group ||
+                    entry.ownerGroup ||
+                    entry.owner_group ||
+                    (creatorIsGroup ? groupSeed(creatorEntity) : null);
                 return {
                     ...entry,
                     id: String(entry.id || entry.instanceId || '').trim(),
@@ -186,46 +324,10 @@ function resolveInstanceRows(world) {
                         entry.ref?.users,
                         entry.ref?.players
                     ),
-                    creatorUserId: firstText(
-                        entry.$location?.userId,
-                        entry.$location?.user_id,
-                        entry.$location?.ownerUserId,
-                        entry.$location?.owner_user_id,
-                        entry.$location?.ownerId,
-                        entry.$location?.owner_id,
-                        entry.$location?.creatorUserId,
-                        entry.$location?.creator_user_id,
-                        entry.ownerUserId,
-                        entry.owner_user_id,
-                        entry.userId,
-                        entry.user_id,
-                        entry.ownerId,
-                        entry.owner_id,
-                        entry.creatorUserId,
-                        entry.creator_user_id,
-                        entry.creatorId,
-                        entry.creator_id,
-                        entry.instanceOwnerId,
-                        entry.instance_owner_id,
-                        entry.ownerUser?.id,
-                        entry.ownerUser?.userId,
-                        entry.owner?.id,
-                        entry.owner?.userId,
-                        entry.creatorUser?.id,
-                        entry.creatorUser?.userId,
-                        entry.user?.id,
-                        entry.user?.userId
-                    ),
-                    creatorUser: entry.$location?.ownerUser ||
-                        entry.$location?.owner ||
-                        entry.$location?.creatorUser ||
-                        entry.$location?.user ||
-                        entry.creatorUser ||
-                        entry.creator_user ||
-                        entry.ownerUser ||
-                        entry.owner ||
-                        entry.user ||
-                        null
+                    creatorUserId: creatorIsGroup ? '' : creatorId,
+                    creatorUser: creatorIsGroup ? null : creatorEntity,
+                    creatorGroupId: creatorIsGroup ? creatorId : '',
+                    creatorGroup: creatorIsGroup ? normalizeInstanceGroup(creatorGroupEntity, creatorId) : null
                 };
             }
             return {
@@ -339,7 +441,7 @@ function InstanceUserTiles({ instance }) {
         userMap.set(key, row);
     };
 
-    if (instance?.creatorUserId) {
+    if (instance?.creatorUserId && !isGroupId(instance.creatorUserId)) {
         pushUser({
             ...(instance.creatorUser || {}),
             id: instance.creatorUserId,
@@ -518,8 +620,10 @@ export function WorldDialogTabbedView({
         location: '',
         instance: null,
         ownerUser: null,
+        ownerGroup: null,
         playerSnapshot: null
     });
+    const [creatorGroupsById, setCreatorGroupsById] = useState({});
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const instanceRows = resolveInstanceRows(world);
     const parsedCurrentInstanceLocation = isInstanceLocation ? parseLocation(normalizedWorldId) : null;
@@ -528,7 +632,33 @@ export function WorldDialogTabbedView({
         : currentGameLocation;
     const currentInstanceDetailsForLocation = sameLocationTag(currentInstanceDetails.location, normalizedWorldId)
         ? currentInstanceDetails
-        : { instance: null, ownerUser: null, playerSnapshot: null };
+        : { instance: null, ownerUser: null, ownerGroup: null, playerSnapshot: null };
+    const currentInstanceOwnerId = parsedCurrentInstanceLocation?.worldId && parsedCurrentInstanceLocation?.instanceId
+        ? firstText(
+            parsedCurrentInstanceLocation.userId,
+            currentInstanceDetailsForLocation.instance?.ownerId,
+            currentInstanceDetailsForLocation.instance?.owner_id,
+            currentInstanceDetailsForLocation.instance?.ownerUserId,
+            currentInstanceDetailsForLocation.instance?.owner_user_id,
+            currentInstanceDetailsForLocation.instance?.userId,
+            currentInstanceDetailsForLocation.instance?.user_id,
+            currentInstanceDetailsForLocation.instance?.creatorUserId,
+            currentInstanceDetailsForLocation.instance?.creator_user_id,
+            currentInstanceDetailsForLocation.instance?.ownerUser?.id,
+            currentInstanceDetailsForLocation.instance?.ownerUser?.userId,
+            currentInstanceDetailsForLocation.instance?.owner?.id,
+            currentInstanceDetailsForLocation.instance?.owner?.userId,
+            currentInstanceDetailsForLocation.instance?.creatorUser?.id,
+            currentInstanceDetailsForLocation.instance?.creatorUser?.userId,
+            currentInstanceDetailsForLocation.instance?.user?.id,
+            currentInstanceDetailsForLocation.instance?.user?.userId,
+            currentInstanceDetailsForLocation.instance?.groupId,
+            currentInstanceDetailsForLocation.instance?.group_id,
+            currentInstanceDetailsForLocation.instance?.group?.id,
+            parsedCurrentInstanceLocation.groupId
+        )
+        : '';
+    const currentInstanceOwnerIsGroup = isGroupId(currentInstanceOwnerId);
     const currentInstanceRow = parsedCurrentInstanceLocation?.worldId && parsedCurrentInstanceLocation?.instanceId
         ? {
             id: parsedCurrentInstanceLocation.instanceId,
@@ -553,39 +683,34 @@ export function WorldDialogTabbedView({
                 currentInstanceDetailsForLocation.playerSnapshot?.players
             ),
             ref: currentInstanceDetailsForLocation.instance || null,
-            creatorUserId: firstText(
-                parsedCurrentInstanceLocation.userId,
-                currentInstanceDetailsForLocation.instance?.ownerId,
-                currentInstanceDetailsForLocation.instance?.owner_id,
-                currentInstanceDetailsForLocation.instance?.ownerUserId,
-                currentInstanceDetailsForLocation.instance?.owner_user_id,
-                currentInstanceDetailsForLocation.instance?.userId,
-                currentInstanceDetailsForLocation.instance?.user_id,
-                currentInstanceDetailsForLocation.instance?.creatorUserId,
-                currentInstanceDetailsForLocation.instance?.creator_user_id,
-                currentInstanceDetailsForLocation.instance?.ownerUser?.id,
-                currentInstanceDetailsForLocation.instance?.ownerUser?.userId,
-                currentInstanceDetailsForLocation.instance?.owner?.id,
-                currentInstanceDetailsForLocation.instance?.owner?.userId,
-                currentInstanceDetailsForLocation.instance?.creatorUser?.id,
-                currentInstanceDetailsForLocation.instance?.creatorUser?.userId,
-                currentInstanceDetailsForLocation.instance?.user?.id,
-                currentInstanceDetailsForLocation.instance?.user?.userId
-            ),
-            creatorUser: currentInstanceDetailsForLocation.ownerUser ||
-                currentInstanceDetailsForLocation.instance?.ownerUser ||
-                currentInstanceDetailsForLocation.instance?.owner ||
-                currentInstanceDetailsForLocation.instance?.creatorUser ||
-                currentInstanceDetailsForLocation.instance?.user ||
-                null
+            creatorUserId: currentInstanceOwnerIsGroup ? '' : currentInstanceOwnerId,
+            creatorUser: currentInstanceOwnerIsGroup
+                ? null
+                : currentInstanceDetailsForLocation.ownerUser ||
+                    currentInstanceDetailsForLocation.instance?.ownerUser ||
+                    currentInstanceDetailsForLocation.instance?.owner ||
+                    currentInstanceDetailsForLocation.instance?.creatorUser ||
+                    currentInstanceDetailsForLocation.instance?.user ||
+                    null,
+            creatorGroupId: currentInstanceOwnerIsGroup ? currentInstanceOwnerId : '',
+            creatorGroup: currentInstanceOwnerIsGroup
+                ? normalizeInstanceGroup(
+                    currentInstanceDetailsForLocation.ownerGroup ||
+                        currentInstanceDetailsForLocation.instance?.group ||
+                        currentInstanceDetailsForLocation.instance?.ownerGroup ||
+                        groupSeed(currentInstanceDetailsForLocation.instance?.owner),
+                    currentInstanceOwnerId
+                )
+                : null
         }
         : null;
     const hasLiveCurrentInstanceDetails = Boolean(
         currentInstanceDetailsForLocation.instance ||
             currentInstanceDetailsForLocation.playerSnapshot ||
-            currentInstanceDetailsForLocation.ownerUser
+            currentInstanceDetailsForLocation.ownerUser ||
+            currentInstanceDetailsForLocation.ownerGroup
     );
-    const displayInstanceRows = currentInstanceRow && hasLiveCurrentInstanceDetails
+    const baseDisplayInstanceRows = currentInstanceRow && hasLiveCurrentInstanceDetails
         ? instanceRows.some((instance) => sameInstanceLocation(world, instance, normalizedWorldId))
             ? instanceRows.map((instance) => sameInstanceLocation(world, instance, normalizedWorldId)
                 ? {
@@ -598,11 +723,29 @@ export function WorldDialogTabbedView({
                     users: currentInstanceRow.users.length ? currentInstanceRow.users : instance.users,
                     ref: currentInstanceRow.ref ?? instance.ref,
                     creatorUserId: firstText(currentInstanceRow.creatorUserId, instance.creatorUserId),
-                    creatorUser: currentInstanceRow.creatorUser || instance.creatorUser
+                    creatorUser: currentInstanceRow.creatorUser || instance.creatorUser,
+                    creatorGroupId: firstText(currentInstanceRow.creatorGroupId, instance.creatorGroupId),
+                    creatorGroup: currentInstanceRow.creatorGroup || instance.creatorGroup
                 }
                 : instance)
             : [currentInstanceRow, ...instanceRows]
         : instanceRows;
+    const creatorGroupKey = Array.from(new Set(
+        baseDisplayInstanceRows
+            .map((instance) => firstText(instance.creatorGroupId, isGroupId(instance.creatorUserId) ? instance.creatorUserId : ''))
+            .filter(Boolean)
+    )).sort().join('|');
+    const displayInstanceRows = baseDisplayInstanceRows.map((instance) => {
+        const creatorGroupId = firstText(instance.creatorGroupId, isGroupId(instance.creatorUserId) ? instance.creatorUserId : '');
+        const creatorGroupProfile = creatorGroupId ? creatorGroupsById[creatorGroupId] : null;
+        return creatorGroupProfile
+            ? {
+                ...instance,
+                creatorGroupId,
+                creatorGroup: normalizeInstanceGroup(creatorGroupProfile, creatorGroupId)
+            }
+            : instance;
+    });
     const tabs = [
         { value: 'instances', label: 'Instances' },
         { value: 'info', label: 'Info' },
@@ -615,11 +758,49 @@ export function WorldDialogTabbedView({
     }
 
     useEffect(() => {
+        const groupIds = creatorGroupKey ? creatorGroupKey.split('|').filter(Boolean) : [];
+        if (!groupIds.length) {
+            return undefined;
+        }
+
+        let active = true;
+        Promise.all(groupIds.map((groupId) =>
+            groupProfileRepository
+                .getGroupProfile({ groupId, endpoint: currentEndpoint, includeRoles: false })
+                .then((groupProfile) => [groupId, groupProfile])
+                .catch(() => null)
+        ))
+            .then((entries) => {
+                if (!active) {
+                    return;
+                }
+                setCreatorGroupsById((current) => {
+                    const next = { ...current };
+                    let changed = false;
+                    for (const entry of entries) {
+                        if (!entry) {
+                            continue;
+                        }
+                        const [groupId, groupProfile] = entry;
+                        next[groupId] = groupProfile;
+                        changed = true;
+                    }
+                    return changed ? next : current;
+                });
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [creatorGroupKey, currentEndpoint]);
+
+    useEffect(() => {
         if (!isInstanceLocation) {
             setCurrentInstanceDetails({
                 location: '',
                 instance: null,
                 ownerUser: null,
+                ownerGroup: null,
                 playerSnapshot: null
             });
             return undefined;
@@ -631,6 +812,7 @@ export function WorldDialogTabbedView({
                 location: normalizedWorldId,
                 instance: null,
                 ownerUser: null,
+                ownerGroup: null,
                 playerSnapshot: null
             });
             return undefined;
@@ -652,7 +834,7 @@ export function WorldDialogTabbedView({
                 : Promise.resolve(null)
         ])
             .then(async ([instance, playerSnapshot]) => {
-                const ownerUserId = firstText(
+                const ownerId = firstText(
                     parsedLocation.userId,
                     instance?.ownerUserId,
                     instance?.owner_user_id,
@@ -669,17 +851,38 @@ export function WorldDialogTabbedView({
                     instance?.creatorUser?.id,
                     instance?.creatorUser?.userId,
                     instance?.user?.id,
-                    instance?.user?.userId
+                    instance?.user?.userId,
+                    instance?.groupId,
+                    instance?.group_id,
+                    instance?.group?.id,
+                    parsedLocation.groupId
                 );
-                const ownerUserSeed = instance?.ownerUser || instance?.owner || instance?.creatorUser || instance?.user || null;
-                const ownerUser = ownerUserSeed
-                    ? ownerUserSeed
-                    : ownerUserId
-                        ? await userProfileRepository.getUserProfile({
-                            userId: ownerUserId,
-                            endpoint: currentEndpoint
-                        }).catch(() => ({ id: ownerUserId, userId: ownerUserId, displayName: ownerUserId }))
-                    : null;
+                const ownerIsGroup = isGroupId(ownerId);
+                const ownerSeed = ownerIsGroup
+                    ? instance?.group || instance?.ownerGroup || instance?.owner_group || groupSeed(instance?.owner) || instance?.creatorGroup || instance?.creator_group || null
+                    : instance?.ownerUser || instance?.owner || instance?.creatorUser || instance?.user || null;
+                let ownerUser = null;
+                let ownerGroup = null;
+                if (ownerIsGroup) {
+                    ownerGroup = ownerSeed
+                        ? normalizeInstanceGroup(ownerSeed, ownerId)
+                        : ownerId
+                            ? await groupProfileRepository.getGroupProfile({
+                                groupId: ownerId,
+                                endpoint: currentEndpoint,
+                                includeRoles: false
+                            }).catch(() => ({ id: ownerId, groupId: ownerId, name: ownerId }))
+                            : null;
+                } else {
+                    ownerUser = ownerSeed
+                        ? ownerSeed
+                        : ownerId
+                            ? await userProfileRepository.getUserProfile({
+                                userId: ownerId,
+                                endpoint: currentEndpoint
+                            }).catch(() => ({ id: ownerId, userId: ownerId, displayName: ownerId }))
+                            : null;
+                }
 
                 if (!active) {
                     return;
@@ -688,6 +891,7 @@ export function WorldDialogTabbedView({
                     location: normalizedWorldId,
                     instance,
                     ownerUser,
+                    ownerGroup,
                     playerSnapshot
                 });
             })
@@ -697,6 +901,7 @@ export function WorldDialogTabbedView({
                         location: normalizedWorldId,
                         instance: null,
                         ownerUser: null,
+                        ownerGroup: null,
                         playerSnapshot: null
                     });
                 }
@@ -823,14 +1028,11 @@ export function WorldDialogTabbedView({
                                     locationObject={normalizedWorldId}
                                     currentUserId={currentUserId}
                                     worldDialogShortName={worldDialogShortName}
-                                    instanceOwner={currentInstanceRow?.creatorUserId || ''}
-                                    instanceOwnerName={firstText(
-                                        currentInstanceRow?.creatorUser?.displayName,
-                                        currentInstanceRow?.creatorUser?.username,
-                                        currentInstanceRow?.creatorUser?.name
-                                    )}
+                                    instanceOwner={currentInstanceRow?.creatorGroupId ? '' : instanceCreatorId(currentInstanceRow)}
+                                    instanceOwnerName={currentInstanceRow?.creatorGroupId ? '' : instanceCreatorName(currentInstanceRow)}
                                     playerCount={currentInstanceRow?.playerCount ?? undefined}
                                     capacity={currentInstanceDetailsForLocation.instance?.capacity ?? undefined}
+                                    hint={world.name || ''}
                                 />
                             </Section>
                         ) : null}
@@ -865,14 +1067,11 @@ export function WorldDialogTabbedView({
                                                 currentUserId={currentUserId}
                                                 worldDialogShortName={worldDialogShortName}
                                                 grouphint={instance.groupName || instance.group?.name || ''}
-                                                instanceOwner={instance.creatorUserId || ''}
-                                                instanceOwnerName={firstText(
-                                                    instance.creatorUser?.displayName,
-                                                    instance.creatorUser?.username,
-                                                    instance.creatorUser?.name
-                                                )}
+                                                instanceOwner={instance.creatorGroupId ? '' : instanceCreatorId(instance)}
+                                                instanceOwnerName={instance.creatorGroupId ? '' : instanceCreatorName(instance)}
                                                 playerCount={instance.playerCount ?? instance.userCount ?? instance.occupants}
                                                 capacity={instance.capacity ?? instance.ref?.capacity ?? undefined}
+                                                hint={world.name || instance.worldName || instance.world?.name || ''}
                                             />
                                             <InstanceActionBar
                                                 location={location}
@@ -880,6 +1079,7 @@ export function WorldDialogTabbedView({
                                                 inviteLocation={location}
                                                 instanceLocation={location}
                                                 shortName={launchToken}
+                                                worldName={world.name || instance.worldName || instance.world?.name || ''}
                                                 instance={instance}
                                                 friendCount={Number(instance.friendCount) || undefined}
                                                 playerCount={instance.playerCount ?? instance.userCount ?? instance.occupants}

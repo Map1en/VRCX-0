@@ -63,7 +63,6 @@ import {
     setAppLauncherPreference,
     setBoolConfigPreference,
     setCloseToTrayPreference,
-    setDisableGpuAccelerationPreference,
     setIntConfigPreference,
     setSaveInstanceEmojiPreference,
     setSaveInstancePrintsPreference,
@@ -341,7 +340,6 @@ export function SettingsPage() {
         isStartAtWindowsStartup: false,
         isStartAsMinimizedState: false,
         isCloseToTray: false,
-        disableGpuAcceleration: false,
         navIsCollapsed: false,
         proxyServer: '',
         tablePageSizes: [...tablePageSizeDefaults],
@@ -1600,18 +1598,6 @@ export function SettingsPage() {
                                         'isCloseToTray',
                                         checked,
                                         () => setCloseToTrayPreference(checked)
-                                    )}
-                                />
-                            </Field>
-                            <Field
-                                label={t('view.settings.general.application.disable_gpu_acceleration')}
-                                description={t('view.settings.general.application.disable_gpu_acceleration_tooltip')}>
-                                <Switch
-                                    checked={prefs.disableGpuAcceleration}
-                                    onCheckedChange={(checked) => void savePreferenceValue(
-                                        'disableGpuAcceleration',
-                                        checked,
-                                        () => setDisableGpuAccelerationPreference(checked)
                                     )}
                                 />
                             </Field>

@@ -1108,10 +1108,16 @@ async function getCalendarIcs(event) {
         return '';
     }
     try {
-        return await toolsRepository.getGroupCalendarIcs(
+        const content = await toolsRepository.getGroupCalendarIcs(
             { groupId, eventId },
             { endpoint: getEndpoint() }
         );
+        const normalizedContent = String(content || '').replace(/^\uFEFF/, '').trimStart();
+        if (!normalizedContent.startsWith('BEGIN:VCALENDAR')) {
+            toast.error('Failed to download .ics file, invalid iCalendar content');
+            return '';
+        }
+        return normalizedContent;
     } catch (error) {
         toast.error(`Failed to download .ics file, ${error instanceof Error ? error.message : String(error)}`);
         return '';
@@ -1131,15 +1137,12 @@ async function downloadEventIcs(event) {
         return;
     }
     const eventId = getEventId(event);
-    const blob = new Blob([content], { type: 'text/calendar' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${eventId || 'group-event'}.ics`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const fileName = `${eventId || 'group-event'}.ics`;
+    try {
+        await backend.app.SaveCalendarFile(fileName, content);
+    } catch (error) {
+        toast.error(`Failed to save .ics file, ${error instanceof Error ? error.message : String(error)}`);
+    }
 }
 
 async function copyEventLink(event, t) {

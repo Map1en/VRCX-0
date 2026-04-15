@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownIcon, ArrowUpIcon, Trash2Icon } from 'lucide-react';
+import * as echarts from 'echarts';
 import { toast } from 'sonner';
 
 import { Location } from '@/components/Location.jsx';
@@ -9,10 +10,14 @@ import { timeToText } from '@/lib/dateTime.js';
 import { userProfileRepository } from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
+import { getResolvedThemeMode } from '@/services/themeService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
+import { useFavoriteStore } from '@/state/favoriteStore.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
+import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
+import { useShellStore } from '@/state/shellStore.js';
 import { Button } from '@/ui/shadcn/button.jsx';
 import {
     Dialog,
@@ -23,7 +28,9 @@ import {
 } from '@/ui/shadcn/dialog.jsx';
 import { Input } from '@/ui/shadcn/input.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+
+const INFO_CHART_BAR_WIDTH = 12;
 
 function formatDate(value) {
     if (!value) {
@@ -34,6 +41,24 @@ function formatDate(value) {
         return String(value);
     }
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
+
+function formatClock(value, hour12, includeSeconds = false) {
+    try {
+        return new Intl.DateTimeFormat(undefined, {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: includeSeconds ? '2-digit' : undefined,
+            hour12
+        }).format(new Date(value));
+    } catch {
+        return '';
+    }
+}
+
+function truncateLabel(value, maxLength = 20) {
+    const text = String(value || '');
+    return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 }
 
 function createdTime(row) {
@@ -94,11 +119,6 @@ function rowDuration(row) {
     return Number.isFinite(value) && value > 0 ? timeToText(value) : '—';
 }
 
-function rowDurationValue(row) {
-    const value = Number(row?.time || row?.duration || 0);
-    return Number.isFinite(value) && value > 0 ? value : 0;
-}
-
 function rowSearchText(row) {
     return [
         row?.created_at,
@@ -109,10 +129,6 @@ function rowSearchText(row) {
         row?.worldName,
         row?.groupName
     ].filter(Boolean).join(' ').toLowerCase();
-}
-
-function rowTitle(row) {
-    return row?.worldName || row?.groupName || rowLocation(row) || '—';
 }
 
 function normalizePlayerRows(players) {
@@ -179,6 +195,308 @@ function InstanceOwnerCell({ userId, location = '', endpoint = '' }) {
     );
 }
 
+function normalizeInfoChartRows(rows, currentUserId, friendsById, favoriteIdSet) {
+    return (Array.isArray(rows) ? rows : [])
+        .map((row) => {
+            const durationMs = Math.max(0, Number(row?.time || 0));
+            const leaveMs = new Date(row?.created_at || row?.createdAt || 0).getTime();
+            const userId = playerUserId(row);
+            if (!Number.isFinite(leaveMs) || !userId) {
+                return null;
+            }
+            return {
+                ...row,
+                userId,
+                displayName: playerDisplayName(row),
+                joinMs: leaveMs - durationMs,
+                leaveMs,
+                durationMs,
+                isFriend: userId === currentUserId ? null : Boolean(friendsById?.[userId]),
+                isFavorite: userId === currentUserId ? null : favoriteIdSet.has(userId)
+            };
+        })
+        .filter(Boolean);
+}
+
+function markerForEntry(entry) {
+    if (entry?.isFavorite) {
+        return '* ';
+    }
+    if (entry?.isFriend) {
+        return '+ ';
+    }
+    return '';
+}
+
+function createInfoChartTooltipElement(detailEntry, hour12) {
+    const container = document.createElement('div');
+    container.className = 'min-w-[180px]';
+
+    const title = document.createElement('div');
+    title.style.fontWeight = '600';
+    title.style.marginBottom = '4px';
+    title.textContent = `${detailEntry.displayName || ''} ${markerForEntry(detailEntry).trim()}`.trim();
+    container.appendChild(title);
+
+    const timeRange = document.createElement('div');
+    timeRange.textContent = `${formatClock(detailEntry.joinMs, hour12, true)} - ${formatClock(detailEntry.leaveMs, hour12, true)}`;
+    container.appendChild(timeRange);
+
+    const duration = document.createElement('div');
+    duration.textContent = timeToText(detailEntry.durationMs, true);
+    container.appendChild(duration);
+
+    return container;
+}
+
+function buildInfoChartOption({ rows, hour12 }) {
+    if (!rows.length) {
+        return null;
+    }
+
+    const startMs = Math.min(...rows.map((entry) => entry.joinMs));
+    const endMs = Math.max(...rows.map((entry) => entry.leaveMs));
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+        return null;
+    }
+
+    const groupedByUser = new Map();
+    const firstEntries = [];
+    const sortedRows = [...rows].sort((left, right) => {
+        const joinDiff = Math.abs(left.joinMs - right.joinMs);
+        return joinDiff < 3000 ? left.leaveMs - right.leaveMs : left.joinMs - right.joinMs;
+    });
+
+    for (const entry of sortedRows) {
+        if (!groupedByUser.has(entry.userId)) {
+            groupedByUser.set(entry.userId, []);
+            firstEntries.push(entry);
+        }
+        const entries = groupedByUser.get(entry.userId);
+        const previous = entries[entries.length - 1];
+        const offset = Math.max(0, previous ? entry.joinMs - startMs - previous.tail : entry.joinMs - startMs);
+        const tail = previous ? previous.tail + offset + entry.durationMs : offset + entry.durationMs;
+        entries.push({
+            offset,
+            durationMs: entry.durationMs,
+            tail,
+            entry
+        });
+    }
+
+    const maxEntryCount = Math.max(...Array.from(groupedByUser.values()).map((entries) => entries.length));
+    const series = [];
+    for (let entryIndex = 0; entryIndex < maxEntryCount; entryIndex += 1) {
+        series.push({
+            name: 'Placeholder',
+            type: 'bar',
+            stack: 'Total',
+            itemStyle: {
+                borderColor: 'transparent',
+                color: 'transparent'
+            },
+            emphasis: {
+                itemStyle: {
+                    borderColor: 'transparent',
+                    color: 'transparent'
+                }
+            },
+            data: firstEntries.map((entry) => {
+                const element = groupedByUser.get(entry.userId)?.[entryIndex];
+                return element ? element.offset : 0;
+            })
+        });
+        series.push({
+            name: 'Time',
+            type: 'bar',
+            stack: 'Total',
+            colorBy: 'data',
+            barWidth: INFO_CHART_BAR_WIDTH,
+            emphasis: {
+                focus: 'self'
+            },
+            itemStyle: {
+                borderRadius: 2,
+                shadowBlur: 2,
+                shadowOffsetX: 0.7,
+                shadowOffsetY: 0.5
+            },
+            data: firstEntries.map((entry) => {
+                const element = groupedByUser.get(entry.userId)?.[entryIndex];
+                return element ? element.durationMs : 0;
+            })
+        });
+    }
+
+    return {
+        option: {
+            tooltip: {
+                trigger: 'item',
+                axisPointer: {
+                    type: 'shadow'
+                },
+                formatter(params) {
+                    if (params.seriesIndex % 2 === 0) {
+                        return '';
+                    }
+                    const userEntry = firstEntries[params.dataIndex];
+                    const detailEntry = groupedByUser.get(userEntry?.userId)?.[Math.floor(params.seriesIndex / 2)]?.entry;
+                    if (!detailEntry) {
+                        return '';
+                    }
+                    return createInfoChartTooltipElement(detailEntry, hour12);
+                }
+            },
+            grid: {
+                top: 50,
+                left: 160,
+                right: 90,
+                bottom: 24
+            },
+            yAxis: {
+                type: 'category',
+                inverse: true,
+                triggerEvent: true,
+                axisLabel: {
+                    interval: 0,
+                    formatter(value) {
+                        const entry = firstEntries.find((item) => item.displayName === value);
+                        return `${markerForEntry(entry)}${truncateLabel(value, 20)}`;
+                    }
+                },
+                data: firstEntries.map((entry) => entry.displayName)
+            },
+            xAxis: {
+                type: 'value',
+                min: 0,
+                max: endMs - startMs,
+                axisLine: { show: true },
+                axisLabel: {
+                    formatter(value) {
+                        return formatClock(startMs + value, hour12, false);
+                    }
+                },
+                splitLine: {
+                    lineStyle: {
+                        type: 'dashed'
+                    }
+                }
+            },
+            series,
+            backgroundColor: 'transparent'
+        },
+        firstEntries
+    };
+}
+
+function PreviousInstanceInfoChart({ rows }) {
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const favoriteFriendIds = useFavoriteStore((state) => state.favoriteFriendIds);
+    const localFriendFavoritesList = useFavoriteStore((state) => state.localFriendFavoritesList);
+    const shellThemeMode = useShellStore((state) => state.themeMode);
+    const resolvedTheme = getResolvedThemeMode(shellThemeMode);
+    const hour12 = usePreferencesStore((state) => state.dtHour12);
+
+    const [chartElement, setChartElement] = useState(null);
+    const chartElementRef = useRef(null);
+    const chartInstanceRef = useRef(null);
+    const chartThemeRef = useRef(null);
+    const resizeObserverRef = useRef(null);
+
+    const favoriteIdSet = useMemo(
+        () => new Set([...(favoriteFriendIds || []), ...(localFriendFavoritesList || [])].filter(Boolean)),
+        [favoriteFriendIds, localFriendFavoritesList]
+    );
+    const chartRows = useMemo(
+        () => normalizeInfoChartRows(rows, currentUserId, friendsById, favoriteIdSet),
+        [currentUserId, favoriteIdSet, friendsById, rows]
+    );
+    const chartPayload = useMemo(
+        () => buildInfoChartOption({ rows: chartRows, hour12 }),
+        [chartRows, hour12]
+    );
+
+    const setInfoChartElementRef = useCallback((node) => {
+        if (chartElementRef.current && chartElementRef.current !== node) {
+            resizeObserverRef.current?.disconnect();
+            chartInstanceRef.current?.dispose();
+            resizeObserverRef.current = null;
+            chartInstanceRef.current = null;
+            chartThemeRef.current = null;
+        }
+        chartElementRef.current = node;
+        setChartElement(node);
+    }, []);
+
+    useEffect(() => () => {
+        resizeObserverRef.current?.disconnect();
+        chartInstanceRef.current?.dispose();
+        resizeObserverRef.current = null;
+        chartInstanceRef.current = null;
+        chartThemeRef.current = null;
+    }, []);
+
+    useEffect(() => {
+        if (!chartElement) {
+            return;
+        }
+
+        const themeName =
+            resolvedTheme === 'dark' || resolvedTheme === 'midnight' ? 'dark' : null;
+        let chart = chartInstanceRef.current;
+
+        if (!chart || chartThemeRef.current !== themeName) {
+            resizeObserverRef.current?.disconnect();
+            chart?.dispose();
+
+            chart = echarts.init(chartElement, themeName || undefined, {
+                useDirtyRect: chartRows.length > 80
+            });
+            chartInstanceRef.current = chart;
+            chartThemeRef.current = themeName;
+
+            resizeObserverRef.current = new ResizeObserver(() => {
+                chart.resize();
+            });
+            resizeObserverRef.current.observe(chartElement);
+        }
+
+        const chartRowCount = chartPayload?.firstEntries.length || chartRows.length;
+        const chartHeight = Math.max(220, chartRowCount * (INFO_CHART_BAR_WIDTH + 10) + 200);
+        chartElement.style.height = `${chartHeight}px`;
+        chart.resize({ height: chartHeight });
+        chart.off('click');
+
+        if (!chartPayload) {
+            chart.clear();
+            return;
+        }
+
+        chart.clear();
+        chart.setOption(chartPayload.option, { notMerge: true });
+        chart.on('click', (params) => {
+            if (params.componentType !== 'yAxis') {
+                return;
+            }
+            const entry = chartPayload.firstEntries[params.dataIndex];
+            if (entry?.userId) {
+                openUserDialog({ userId: entry.userId, title: entry.displayName || undefined });
+            }
+        });
+    }, [chartElement, chartPayload, chartRows.length, resolvedTheme]);
+
+    if (!chartRows.length) {
+        return (
+            <div className="flex min-h-52 items-center justify-center rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+                No player detail rows for this instance.
+            </div>
+        );
+    }
+
+    return <div ref={setInfoChartElementRef} className="w-full bg-transparent" />;
+}
+
 function PreviousInstancesTableDialog({
     open,
     onOpenChange,
@@ -197,8 +515,8 @@ function PreviousInstancesTableDialog({
     const [sortDesc, setSortDesc] = useState(true);
     const [pageSize, setPageSize] = useState(10);
     const [pageIndex, setPageIndex] = useState(0);
-    const [viewMode, setViewMode] = useState('table');
     const [infoRow, setInfoRow] = useState(null);
+    const [infoViewMode, setInfoViewMode] = useState('table');
     const [infoData, setInfoData] = useState({
         status: 'idle',
         error: '',
@@ -210,12 +528,12 @@ function PreviousInstancesTableDialog({
         if (open) {
             setRows(Array.isArray(instances) ? instances : []);
             setPageIndex(0);
-            setViewMode('table');
             if (autoOpenInfo && Array.isArray(instances) && instances.length > 0) {
                 setInfoRow(instances[0]);
             }
         } else {
             setInfoRow(null);
+            setInfoViewMode('table');
         }
     }, [autoOpenInfo, instances, open]);
 
@@ -279,14 +597,6 @@ function PreviousInstancesTableDialog({
     const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
     const currentPageIndex = Math.min(pageIndex, totalPages - 1);
     const visibleRows = filteredRows.slice(currentPageIndex * pageSize, currentPageIndex * pageSize + pageSize);
-    const visibleChartRows = useMemo(
-        () => [...visibleRows].sort((left, right) => rowDurationValue(right) - rowDurationValue(left)),
-        [visibleRows]
-    );
-    const maxChartDuration = useMemo(
-        () => Math.max(1, ...visibleChartRows.map((row) => rowDurationValue(row))),
-        [visibleChartRows]
-    );
 
     async function deleteRow(row) {
         const location = rowLocation(row);
@@ -341,6 +651,7 @@ function PreviousInstancesTableDialog({
 
     function openInfo(row) {
         setInfoRow(row);
+        setInfoViewMode('table');
     }
 
     function renderLocationCell(row) {
@@ -356,6 +667,7 @@ function PreviousInstancesTableDialog({
                     instanceOwner={locationObject.ownerUserId || locationObject.userId || ''}
                     instanceOwnerName={locationObject.ownerDisplayName || row?.ownerDisplayName || row?.ownerName || ''}
                     interactive={false}
+                    hint={row?.worldName || ''}
                     className="max-w-full"
                 />
             );
@@ -389,12 +701,6 @@ function PreviousInstancesTableDialog({
                         className="max-w-sm"
                     />
                     <div className="flex items-center gap-2">
-                        <Tabs value={viewMode} onValueChange={setViewMode}>
-                            <TabsList variant="line">
-                                <TabsTrigger value="table">Table View</TabsTrigger>
-                                <TabsTrigger value="chart">Chart View</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
                         <span className="text-sm text-muted-foreground">Rows</span>
                         <Select
                             value={String(pageSize)}
@@ -410,8 +716,7 @@ function PreviousInstancesTableDialog({
                     </div>
                 </div>
                 <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
-                    {viewMode === 'table' ? (
-                        <table className="w-full text-left text-sm">
+                    <table className="w-full text-left text-sm">
                             <thead className="sticky top-0 bg-background">
                                 <tr className="border-b">
                                     <th className="w-44 px-3 py-2">
@@ -452,6 +757,7 @@ function PreviousInstancesTableDialog({
                                                         launchLocation={location}
                                                         inviteLocation={location}
                                                         instanceLocation={location}
+                                                        worldName={row?.worldName || ''}
                                                         showRefresh={false}
                                                         showInstanceInfo={false}
                                                     />
@@ -478,66 +784,6 @@ function PreviousInstancesTableDialog({
                                 )}
                             </tbody>
                         </table>
-                    ) : (
-                        <div className="h-full overflow-auto p-2">
-                            {visibleChartRows.length ? (
-                                <div className="space-y-2">
-                                    {visibleChartRows.map((row, index) => {
-                                        const location = rowLocation(row);
-                                        const durationValue = rowDurationValue(row);
-                                        const barWidth = Math.max(8, Math.round((durationValue / maxChartDuration) * 100));
-                                        return (
-                                            <div key={`${location}:${row?.id || row?.created_at || row?.createdAt || index}`} className="rounded-md border bg-muted/10 p-3">
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openInfo(row)}>
-                                                        <div className="truncate text-sm font-medium">{rowTitle(row)}</div>
-                                                        <div className="truncate text-xs text-muted-foreground">
-                                                            {[formatDate(row?.created_at || row?.createdAt), row?.groupName].filter(Boolean).join(' · ') || '—'}
-                                                        </div>
-                                                    </button>
-                                                    <Badge variant="outline" className="shrink-0 tabular-nums">
-                                                        {rowDuration(row)}
-                                                    </Badge>
-                                                </div>
-                                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                                                    <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${barWidth}%` }} />
-                                                </div>
-                                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {[row?.worldName, row?.groupName].filter(Boolean).join(' / ') || location || '—'}
-                                                    </div>
-                                                    <div className="flex flex-wrap justify-end gap-2">
-                                                        <InstanceActionBar
-                                                            location={location}
-                                                            launchLocation={location}
-                                                            inviteLocation={location}
-                                                            instanceLocation={location}
-                                                            showRefresh={false}
-                                                            showInstanceInfo={false}
-                                                        />
-                                                        <Button type="button" size="sm" variant="outline" disabled={!location} onClick={() => openLocation(row)}>
-                                                            Open
-                                                        </Button>
-                                                        <Button type="button" size="sm" variant="outline" onClick={() => openInfo(row)}>
-                                                            Info
-                                                        </Button>
-                                                        <Button type="button" size="sm" variant="outline" disabled={!location} onClick={() => void deleteRow(row)}>
-                                                            <Trash2Icon className="size-3.5" />
-                                                            Delete
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                                    No previous instances.
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
                 <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">Page {currentPageIndex + 1} / {totalPages}</div>
@@ -554,9 +800,10 @@ function PreviousInstancesTableDialog({
                 <Dialog open={Boolean(infoRow)} onOpenChange={(nextOpen) => {
                     if (!nextOpen) {
                         setInfoRow(null);
+                        setInfoViewMode('table');
                     }
                 }}>
-                    <DialogContent className="max-h-[90vh] max-w-4xl overflow-auto">
+                    <DialogContent className="max-h-[90vh] max-w-5xl overflow-auto">
                         <DialogHeader>
                             <DialogTitle>Previous Instance Info</DialogTitle>
                             <DialogDescription>{rowLocation(infoRow) || 'Instance details'}</DialogDescription>
@@ -573,9 +820,12 @@ function PreviousInstancesTableDialog({
                                 </div>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-medium">Players</h4>
+                        <Tabs value={infoViewMode} onValueChange={setInfoViewMode} className="min-h-0">
+                            <div className="flex items-center justify-between gap-3">
+                                <TabsList variant="line">
+                                    <TabsTrigger value="table">Table View</TabsTrigger>
+                                    <TabsTrigger value="chart">Chart View</TabsTrigger>
+                                </TabsList>
                                 <span className="text-xs text-muted-foreground">{infoData.players.length} players</span>
                             </div>
                             {infoData.status === 'running' ? (
@@ -585,7 +835,9 @@ function PreviousInstancesTableDialog({
                                 <div className="rounded-md border border-destructive/40 p-4 text-sm text-destructive">{infoData.error}</div>
                             ) : null}
                             {infoData.status === 'ready' ? (
-                                <div className="max-h-80 overflow-auto rounded-md border">
+                                <>
+                                    <TabsContent value="table" className="mt-2">
+                                        <div className="max-h-80 overflow-auto rounded-md border">
                                     <table className="w-full text-left text-sm">
                                         <thead className="sticky top-0 bg-background">
                                             <tr className="border-b">
@@ -614,10 +866,15 @@ function PreviousInstancesTableDialog({
                                             )}
                                         </tbody>
                                     </table>
-                                </div>
+                                        </div>
+                                    </TabsContent>
+                                    <TabsContent value="chart" className="mt-2 max-h-[52vh] overflow-auto rounded-md border p-2">
+                                        <PreviousInstanceInfoChart rows={infoData.details} />
+                                    </TabsContent>
+                                </>
                             ) : null}
-                        </div>
-                        {infoData.details.length ? (
+                        </Tabs>
+                        {infoViewMode === 'table' && infoData.details.length ? (
                             <details className="rounded-md border p-3">
                                 <summary className="cursor-pointer text-sm font-medium">Leave Details ({infoData.details.length})</summary>
                                 <div className="mt-3 max-h-48 overflow-auto">
@@ -642,9 +899,11 @@ function PreviousInstancesTableDialog({
                                 </div>
                             </details>
                         ) : null}
-                        <pre className="max-h-[45vh] overflow-auto rounded-md border bg-muted/20 p-3 text-xs">
-                            {JSON.stringify(infoRow ?? null, null, 2)}
-                        </pre>
+                        {infoViewMode === 'table' ? (
+                            <pre className="max-h-[45vh] overflow-auto rounded-md border bg-muted/20 p-3 text-xs">
+                                {JSON.stringify(infoRow ?? null, null, 2)}
+                            </pre>
+                        ) : null}
                     </DialogContent>
                 </Dialog>
             </DialogContent>

@@ -29,8 +29,37 @@ function displayLocation(location, worldName, groupName = '') {
  * @param {string} tag
  * @returns
  */
+function normalizeLocationTag(tag) {
+    if (typeof tag === 'string') {
+        return tag;
+    }
+    if (!tag || typeof tag !== 'object') {
+        return String(tag || '');
+    }
+
+    const rawTag = normalizeLocationTag(tag.tag || tag.location || tag.$location?.tag);
+    if (rawTag) {
+        return rawTag;
+    }
+    const worldId = normalizeLocationTag(tag.worldId || tag.world_id || tag.$location?.worldId);
+    const instanceId = normalizeLocationTag(tag.instanceId || tag.instance_id || tag.id || tag.$location?.instanceId);
+    if (worldId && instanceId) {
+        return `${worldId}:${instanceId}`;
+    }
+    if (tag.isOffline) {
+        return 'offline';
+    }
+    if (tag.isPrivate) {
+        return 'private';
+    }
+    if (tag.isTraveling) {
+        return 'traveling';
+    }
+    return '';
+}
+
 function parseLocation(tag) {
-    let _tag = String(tag || '');
+    let _tag = normalizeLocationTag(tag);
     const ctx = {
         tag: _tag,
         isOffline: false,

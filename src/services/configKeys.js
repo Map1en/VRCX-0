@@ -122,8 +122,8 @@ export const ConfigKeys = {
     autoAcceptInviteGroups: { type: 'string', default: null },
 
     // ── Registry Backup ──────────────────────────────
-    vrcRegistryAutoBackup: { type: 'bool', default: false },
-    vrcRegistryAskRestore: { type: 'bool', default: false },
+    vrcRegistryAutoBackup: { type: 'bool', default: true },
+    vrcRegistryAskRestore: { type: 'bool', default: true },
     VRChatRegistryBackups: { type: 'string', default: null },
     VRChatRegistryLastBackupDate: { type: 'string', default: null },
     VRChatRegistryLastRestoreCheck: { type: 'string', default: null },

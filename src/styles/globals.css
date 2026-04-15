@@ -203,8 +203,4 @@
         @apply bg-muted/20;
     }
 
-    .disable-gpu-acceleration .gpu-sensitive-blur {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-    }
 }

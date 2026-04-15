@@ -13,6 +13,7 @@ import {
     isPopcornPalaceWorld
 } from '@/shared/utils/discordPresence.js';
 import { getLaunchURL, isRealInstance } from '@/shared/utils/instance.js';
+import { normalizeLocationValue } from '@/shared/utils/location.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
@@ -169,21 +170,21 @@ async function loadDiscordConfig() {
 }
 
 function getCurrentLocationContext(runtimeState, currentUser) {
-    let currentLocation = normalizeString(runtimeState.gameState.currentLocation);
+    let currentLocation = normalizeLocationValue(runtimeState.gameState.currentLocation);
     let startTime = runtimeState.gameState.currentLocationStartedAt;
     if (currentLocation === 'traveling') {
-        currentLocation = normalizeString(runtimeState.gameState.currentDestination);
+        currentLocation = normalizeLocationValue(runtimeState.gameState.currentDestination);
         startTime = runtimeState.gameState.currentLocationStartedAt;
     }
 
     if (!currentLocation) {
-        currentLocation = normalizeString(
+        currentLocation = normalizeLocationValue(
             currentUser?.$locationTag ||
             currentUser?.location ||
             currentUser?.worldId
         );
         startTime = currentUser?.$location_at || currentUser?.locationAt || currentUser?.updated_at || '';
-        const travelingToLocation = normalizeString(
+        const travelingToLocation = normalizeLocationValue(
             currentUser?.$travelingToLocation ||
             currentUser?.travelingToLocation
         );

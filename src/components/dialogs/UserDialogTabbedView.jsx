@@ -106,6 +106,25 @@ function normalizedText(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
 }
 
+function isGroupId(value) {
+    return normalizedText(value).startsWith('grp_');
+}
+
+function firstNonGroupIdText(...values) {
+    const fallback = [];
+    for (const value of values) {
+        const text = normalizedText(value);
+        if (!text) {
+            continue;
+        }
+        if (!isGroupId(text)) {
+            return text;
+        }
+        fallback.push(text);
+    }
+    return fallback[0] || '';
+}
+
 function isOfflineLikeValue(value) {
     const normalized = normalizedText(value).toLowerCase();
     return !normalized || normalized === 'offline' || normalized === 'private' || normalized === 'traveling';
@@ -120,6 +139,24 @@ function summarizeEntityRow(row, fallback = '—') {
     }
     const label = row.displayName || row.name || row.worldName || row.groupName || row.avatarName || fallback;
     return row.$favoriteGroup ? `${row.$favoriteGroup}: ${label}` : label;
+}
+
+function groupDisplayName(row, fallback = 'Group') {
+    if (!row || typeof row !== 'object') {
+        return fallback;
+    }
+    return firstNonGroupIdText(
+        row.displayName,
+        row.display_name,
+        row.name,
+        row.groupName,
+        row.group_name,
+        row.shortCode,
+        row.group?.displayName,
+        row.group?.display_name,
+        row.group?.name,
+        fallback
+    );
 }
 
 function filterRows(rows, query) {
@@ -236,6 +273,41 @@ function normalizeLanguageRows(rows, tags = []) {
         seen.add(key);
     }
     return normalizedRows;
+}
+
+function languageFlagClassName(languageKey) {
+    const key = String(languageKey || '').trim().toLowerCase();
+    return languageMappings[key] || key || 'unknown';
+}
+
+function languageTooltipLabel(language) {
+    const key = String(language?.key || '').trim();
+    const value = String(language?.value || '').trim();
+    return value && key ? `${value} (${key})` : value || key;
+}
+
+function UserTitleLanguageFlags({ languages }) {
+    if (!languages.length) {
+        return null;
+    }
+
+    return (
+        <span className="inline-flex shrink-0 items-center gap-1">
+            {languages.map((language) => {
+                const key = String(language?.key || language?.value || '').trim();
+                const flagClassName = languageFlagClassName(key);
+                const tooltip = languageTooltipLabel(language);
+                return (
+                    <span
+                        key={`${key}:${language?.value || ''}`}
+                        className={`flags inline-block ${flagClassName}`}
+                        title={tooltip}
+                        aria-label={tooltip}
+                    />
+                );
+            })}
+        </span>
+    );
 }
 
 function formatDate(value) {
@@ -587,8 +659,37 @@ function UserGroupCard({
     onMove,
     onSelectionChange
 }) {
-    const image = rowImage(group, 'group');
-    const label = summarizeEntityRow(group);
+    const groupId = groupIdForRow(group);
+    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const [profile, setProfile] = useState(null);
+
+    useEffect(() => {
+        let active = true;
+        setProfile(null);
+
+        if (!groupId) {
+            return () => {
+                active = false;
+            };
+        }
+
+        groupProfileRepository
+            .getGroupProfile({ groupId, endpoint: currentEndpoint, includeRoles: false })
+            .then((groupProfile) => {
+                if (active) {
+                    setProfile(groupProfile);
+                }
+            })
+            .catch(() => {});
+
+        return () => {
+            active = false;
+        };
+    }, [currentEndpoint, groupId]);
+
+    const displayGroup = profile ? { ...group, ...profile } : group;
+    const image = rowImage(displayGroup, 'group');
+    const label = groupDisplayName(displayGroup);
     const visibility = groupMemberVisibility(group);
     const memberCount = Number(group?.memberCount ?? group?.member_count ?? group?.membershipCount ?? group?.membership_count ?? 0) || 0;
     return (
@@ -605,7 +706,7 @@ function UserGroupCard({
             <button
                 type="button"
                 className="flex min-w-0 flex-1 cursor-pointer items-center text-left"
-                onClick={() => openRow(group, 'group')}>
+                onClick={() => openRow(displayGroup, 'group')}>
                 {image ? (
                     <img src={image} alt="" className="mr-2.5 size-9 shrink-0 rounded-full object-cover" />
                 ) : (
@@ -930,6 +1031,7 @@ export function UserDialogTabbedView({
     onPreviousInstancesChange,
     sameInstanceUsers = [],
     locationOwnerUser = null,
+    locationOwnerGroup = null,
     locationInstance = null,
     locationFriendCount = 0,
     locationPlayerCount = 0,
@@ -949,7 +1051,6 @@ export function UserDialogTabbedView({
     onReportHacking,
     onGroupModeration,
     onEditSelfStatus,
-    onEditSelfStatusDescription,
     onEditSelfLanguages,
     onEditSelfBio,
     onEditSelfBioLinks,
@@ -1441,21 +1542,51 @@ export function UserDialogTabbedView({
             locationInstance?.ownerId ||
             locationInstance?.owner_id ||
             locationInstance?.userId ||
-            locationInstance?.user_id
+            locationInstance?.user_id ||
+            locationInstance?.groupId ||
+            locationInstance?.group_id ||
+            locationInstance?.group?.id ||
+            visiblePresenceParsedLocation?.groupId
     );
-    const locationOwnerId = rowUserId(locationOwnerUser) || locationOwnerFallbackId;
-    const locationOwnerName = normalizedText(
-        locationOwnerUser?.displayName ||
-            locationOwnerUser?.username ||
-            locationOwnerUser?.name ||
+    const locationOwnerUserId = rowUserId(locationOwnerUser);
+    const locationOwnerGroupId = groupIdForRow(locationOwnerGroup);
+    const locationOwnerIsGroup = Boolean(
+        locationOwnerGroupId ||
+            isGroupId(locationOwnerFallbackId) ||
+            isGroupId(locationOwnerUserId)
+    );
+    const locationOwnerId = locationOwnerGroupId ||
+        (locationOwnerIsGroup ? locationOwnerFallbackId || locationOwnerUserId : locationOwnerUserId) ||
+        locationOwnerFallbackId;
+    const locationOwnerName = locationOwnerIsGroup
+        ? firstNonGroupIdText(
+            locationOwnerGroup?.name,
+            locationOwnerGroup?.displayName,
+            locationOwnerGroup?.display_name,
+            locationOwnerGroup?.shortCode,
+            locationInstance?.groupName,
+            locationInstance?.group_name,
+            locationInstance?.group?.name,
+            profile?.$location?.groupName,
+            profile?.$location?.group_name,
+            profile?.$location?.group?.name,
+            locationOwnerUser?.displayName,
+            locationOwnerUser?.username,
+            locationOwnerUser?.name,
             locationOwnerId
-    );
-    const locationOwnerRow = locationOwnerUser
+        )
+        : normalizedText(
+            locationOwnerUser?.displayName ||
+                locationOwnerUser?.username ||
+                locationOwnerUser?.name ||
+                locationOwnerId
+        );
+    const locationOwnerRow = !locationOwnerIsGroup && locationOwnerUser
         ? {
             ...locationOwnerUser,
             $subtitle: t('dialog.user.info.instance_creator')
         }
-        : locationOwnerId
+        : !locationOwnerIsGroup && locationOwnerId
             ? {
                 id: locationOwnerId,
                 userId: locationOwnerId,
@@ -1463,7 +1594,7 @@ export function UserDialogTabbedView({
                 $subtitle: t('dialog.user.info.instance_creator')
             }
         : null;
-    const locationPlayerUsers = locationOwnerId
+    const locationPlayerUsers = locationOwnerId && !locationOwnerIsGroup
         ? locationUsers.filter((user) => rowUserId(user) !== locationOwnerId)
         : locationUsers;
 
@@ -1799,6 +1930,7 @@ export function UserDialogTabbedView({
                 onTitleClick={profile.displayName || profile.username ? () => void copyUserText(profile.displayName || profile.username, 'Display name') : undefined}
                 titleMeta={
                     <>
+                        <UserTitleLanguageFlags languages={profileLanguages} />
                         {previousDisplayNames.length ? (
                             <Badge variant="outline" className="shrink-0 text-[11px]" title={previousDisplayNamesTitle}>
                                 Names {previousDisplayNames.length}
@@ -1850,11 +1982,6 @@ export function UserDialogTabbedView({
                             {PlatformIcon ? <PlatformIcon className="mr-1 size-3.5" /> : null}
                             {platform.label}
                         </Badge>
-                        {profileLanguages.map((language) => (
-                            <Badge key={`${language.key}:${language.value}`} variant="outline" title={language.value || language.key}>
-                                {languageMappings[String(language.key).toLowerCase()] || language.key || language.value}
-                            </Badge>
-                        ))}
                         {profile.discordId ? (
                             <button type="button" onClick={() => void openDiscordProfile(profile.discordId)}>
                                 <Badge variant="outline">Discord</Badge>
@@ -1963,7 +2090,6 @@ export function UserDialogTabbedView({
                                 <>
                                     <EntityActionSeparator />
                                     <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfStatus}>Edit Social Status</EntityActionItem>
-                                    <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfStatusDescription}>Edit Status Description</EntityActionItem>
                                     <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfLanguages}>Edit Language</EntityActionItem>
                                     <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfBio}>Edit Bio</EntityActionItem>
                                     <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfBioLinks}>Edit Bio Links</EntityActionItem>
@@ -2106,6 +2232,7 @@ export function UserDialogTabbedView({
                                         inviteLocation={visiblePresenceLocation}
                                         instanceLocation={visiblePresenceLocation}
                                         instance={locationInstance}
+                                        worldName={locationWorldTitle}
                                         friendCount={locationFriendCount}
                                         playerCount={locationPlayerCount}
                                         capacity={locationInstance?.capacity ?? locationInstance?.recommendedCapacity}
@@ -2127,11 +2254,12 @@ export function UserDialogTabbedView({
                                         }}
                                         currentUserId={currentUserId}
                                         grouphint={locationInstance?.groupName || profile.$location?.groupName || ''}
-                                        instanceOwner={locationOwnerId}
-                                        instanceOwnerName={locationOwnerName}
+                                        instanceOwner={locationOwnerIsGroup ? '' : locationOwnerId}
+                                        instanceOwnerName={locationOwnerIsGroup ? '' : locationOwnerName}
                                         playerCount={locationPlayerCount}
                                         capacity={locationInstance?.capacity ?? locationInstance?.recommendedCapacity}
                                         endpoint={currentEndpoint}
+                                        hint={locationWorldTitle}
                                     />
                                 ) : (
                                     <Location

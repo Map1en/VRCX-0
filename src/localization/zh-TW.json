@@ -771,8 +771,6 @@
                     "startup": "在 Windows 啟動時啟動",
                     "minimized": "以最小化啟動",
                     "tray": "最小化到系統列",
-                    "disable_gpu_acceleration": "停用 GPU 加速",
-                    "disable_gpu_acceleration_tooltip": "僅在你確切知道自己在做什麼的情況下變更此選項，可能會導致 SteamVR 嵌入介面無法正常運作，但可能可以解決 UI 問題，需要重新啟動 VRCX-0",
                     "disable_vr_overlay_gpu_acceleration": "停用 VR 嵌入介面 GPU 加速",
                     "proxy": "代理設定"
                 },

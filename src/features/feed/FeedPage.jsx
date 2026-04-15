@@ -571,13 +571,15 @@ async function copyFeedText(text, label = 'Value') {
 function resolveStatusMeta(status) {
     switch (status) {
         case 'active':
-            return { label: 'Online', className: 'bg-emerald-500' };
+            return { label: 'Online', className: 'bg-[var(--status-online)]' };
         case 'join me':
-            return { label: 'Join Me', className: 'bg-sky-500' };
+        case 'joinme':
+            return { label: 'Join Me', className: 'bg-[var(--status-joinme)]' };
         case 'ask me':
-            return { label: 'Ask Me', className: 'bg-amber-500' };
+        case 'askme':
+            return { label: 'Ask Me', className: 'bg-[var(--status-askme)]' };
         case 'busy':
-            return { label: 'Busy', className: 'bg-red-500' };
+            return { label: 'Busy', className: 'bg-[var(--status-busy)]' };
         default:
             return { label: status || 'Offline', className: '' };
     }

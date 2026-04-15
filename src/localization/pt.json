@@ -757,8 +757,6 @@
           "startup": "Iniciar com o Windows",
           "minimized": "Iniciar Minimizado na Inicialização do Sistema",
           "tray": "Minimizar para a Bandeja ao Fechar",
-          "disable_gpu_acceleration": "Desativar Aceleração de GPU",
-          "disable_gpu_acceleration_tooltip": "Só altere esta opção se souber o que está fazendo, pode corrigir problemas com a interface, requer reiniciar o VRCX-0",
           "disable_vr_overlay_gpu_acceleration": "Desativar Aceleração de GPU do Overlay VR",
           "proxy": "Configurações de Proxy",
           "startup_linux": "Adicione o argumento \"--startup\" ao arquivo VRCX-0.desktop de inicialização para iniciar o VRCX-0 minimizado na inicialização do sistema"

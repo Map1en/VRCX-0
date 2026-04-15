@@ -92,6 +92,7 @@ export function DialogHost() {
                     <UserDialogContent
                         userId={activeDialog?.entityId}
                         seedData={dialogPayload?.seedData ?? null}
+                        openNonce={activeDialog?.openNonce ?? 0}
                     />
                 ) : isWorldDialog ? (
                     <WorldDialogContent

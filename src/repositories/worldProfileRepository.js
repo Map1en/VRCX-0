@@ -82,7 +82,25 @@ function createWorldRequestError(message, status, path, payload = null) {
 }
 
 function normalizeEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    if (typeof value === 'string') {
+        return value.trim();
+    }
+
+    if (value && typeof value === 'object') {
+        return normalizeEntityId(
+            value.id ||
+                value.worldId ||
+                value.world_id ||
+                value.userId ||
+                value.user_id ||
+                value.avatarId ||
+                value.avatar_id ||
+                value.groupId ||
+                value.group_id
+        );
+    }
+
+    return String(value ?? '').trim();
 }
 
 function normalizeArray(values) {
@@ -192,6 +210,20 @@ async function collectPages(fetchPage, { pageSize = 100, maxPages = 50 } = {}) {
 class WorldProfileRepository {
     normalize(world) {
         return normalizeWorldProfile(world);
+    }
+
+    async fetchWorldProfile({ worldId, endpoint = '' }) {
+        const normalizedWorldId = normalizeEntityId(worldId);
+        if (!normalizedWorldId) {
+            throw new Error('WorldProfileRepository.fetchWorldProfile requires a world id.');
+        }
+
+        const response = await this.executeGet(
+            `worlds/${encodeURIComponent(normalizedWorldId)}`,
+            {},
+            { endpoint }
+        );
+        return this.normalize(response.json);
     }
 
     async executeGet(path, params = {}, { endpoint = '' } = {}) {
@@ -304,14 +336,7 @@ class WorldProfileRepository {
             queryKey: queryKeys.world(normalizedWorldId, endpoint),
             policy: entityQueryPolicies.world,
             force,
-            queryFn: async () => {
-                const response = await this.executeGet(
-                    `worlds/${encodeURIComponent(normalizedWorldId)}`,
-                    {},
-                    { endpoint }
-                );
-                return response.json;
-            }
+            queryFn: () => this.fetchWorldProfile({ worldId: normalizedWorldId, endpoint })
         });
 
         return this.normalize(json);

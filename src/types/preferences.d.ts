@@ -85,7 +85,6 @@ export interface PreferencesSnapshot {
     isStartAtWindowsStartup: boolean;
     isStartAsMinimizedState: boolean;
     isCloseToTray: boolean;
-    disableGpuAcceleration: boolean;
     navPanelWidth: number;
     navIsCollapsed: boolean;
     proxyServer: string;

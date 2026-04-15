@@ -247,8 +247,8 @@ function RegistryBackupDialog({ open, onOpenChange }) {
         try {
             const [nextBackups, nextAutoBackup, nextAskRestore] = await Promise.all([
                 listVrcRegistryBackups(),
-                configRepository.getBool('vrcRegistryAutoBackup', false),
-                configRepository.getBool('vrcRegistryAskRestore', false)
+                configRepository.getBool('vrcRegistryAutoBackup', true),
+                configRepository.getBool('vrcRegistryAskRestore', true)
             ]);
             setBackups(nextBackups);
             setAutoBackup(Boolean(nextAutoBackup));

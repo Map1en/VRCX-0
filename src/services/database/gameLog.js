@@ -1,9 +1,14 @@
 import { dbVars } from '../database';
+import { buildInClause, buildValuesList } from './sqlHelpers.js';
 
 import sqliteService from '../../repositories/sqliteRepository.js';
 
 function normalizeGameLogIdentifier(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+}
+
+function bulkValue(value) {
+    return typeof value === 'string' || typeof value === 'number' ? value : '';
 }
 
 const gameLog = {
@@ -158,31 +163,24 @@ const gameLog = {
         if (inputData.length === 0) {
             return;
         }
-        var sqlValues = '';
-        var items = [
-            'created_at',
-            'type',
-            'displayName',
-            'location',
-            'userId',
-            'time'
-        ];
-        for (var line of inputData) {
-            var field = {};
-            for (var item of items) {
-                if (typeof line[item] === 'string') {
-                    field[item] = line[item].replace(/'/g, "''");
-                } else if (typeof line[item] === 'number') {
-                    field[item] = line[item];
-                } else {
-                    field[item] = '';
-                }
-            }
-            sqlValues += `('${field.created_at}', '${field.type}', '${field.displayName}', '${field.location}', '${field.userId}', '${field.time}'), `;
-        }
-        sqlValues = sqlValues.slice(0, -2);
+        const { valuesSql, args } = buildValuesList(
+            inputData,
+            [
+                { column: 'created_at', value: (line) => bulkValue(line.created_at) },
+                { column: 'type', value: (line) => bulkValue(line.type) },
+                {
+                    column: 'display_name',
+                    value: (line) => bulkValue(line.displayName)
+                },
+                { column: 'location', value: (line) => bulkValue(line.location) },
+                { column: 'user_id', value: (line) => bulkValue(line.userId) },
+                { column: 'time', value: (line) => bulkValue(line.time) }
+            ],
+            'gamelog_join_leave'
+        );
         return sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO gamelog_join_leave (created_at, type, display_name, location, user_id, time) VALUES ${sqlValues}`
+            `INSERT OR IGNORE INTO gamelog_join_leave (created_at, type, display_name, location, user_id, time) VALUES ${valuesSql}`,
+            args
         );
     },
 
@@ -514,29 +512,28 @@ const gameLog = {
         if (!userIds.length && !displayNames.length) {
             return [];
         }
-        var data = [];
-        // this makes me most sad
-        var userIdsString = '';
-        for (var userId of userIds) {
-            userIdsString += `'${userId}', `;
+        const data = [];
+        const userIdFilter = buildInClause('g.user_id', userIds, 'stat_user_id');
+        const displayNameFilter = buildInClause(
+            'g.display_name',
+            displayNames,
+            'stat_display_name'
+        );
+        const whereClauses = [];
+        const args = {
+            ...userIdFilter.args,
+            ...displayNameFilter.args
+        };
+        if (userIdFilter.clause) {
+            whereClauses.push(userIdFilter.clause);
         }
-        userIdsString = userIdsString.slice(0, -2);
-        var displayNamesString = '';
-        for (var displayName of displayNames) {
-            displayNamesString += `'${displayName.replaceAll("'", "''")}', `;
-        }
-        displayNamesString = displayNamesString.slice(0, -2);
-        var whereClauses = [];
-        if (userIdsString) {
-            whereClauses.push(`g.user_id IN (${userIdsString})`);
-        }
-        if (displayNamesString) {
-            whereClauses.push(`g.display_name IN (${displayNamesString})`);
+        if (displayNameFilter.clause) {
+            whereClauses.push(displayNameFilter.clause);
         }
 
         await sqliteService.execute(
             (dbRow) => {
-                var row = {
+                const row = {
                     lastSeen: dbRow[0],
                     userId: dbRow[1],
                     timeSpent: dbRow[2],
@@ -561,7 +558,8 @@ const gameLog = {
                 g.display_name
             ORDER BY
                 g.user_id DESC
-            `
+            `,
+            args
         );
         return data;
     },
@@ -770,17 +768,8 @@ const gameLog = {
             'data',
             'message'
         ].join(', ');
-        let vipQuery = '';
-        if (vipList.length > 0) {
-            vipQuery = 'AND user_id IN (';
-            for (var i = 0; i < vipList.length; i++) {
-                vipQuery += `'${vipList[i].replaceAll("'", "''")}'`;
-                if (i < vipList.length - 1) {
-                    vipQuery += ', ';
-                }
-            }
-            vipQuery += ')';
-        }
+        const vipFilter = buildInClause('user_id', vipList, 'lookup_vip');
+        const vipQuery = vipFilter.clause ? `AND ${vipFilter.clause}` : '';
         let location = true;
         let onplayerjoined = true;
         let onplayerleft = true;
@@ -890,7 +879,8 @@ const gameLog = {
         const gamelogDatabase = [];
         const args = {
             '@limit': maxEntries,
-            '@perTable': maxEntries
+            '@perTable': maxEntries,
+            ...vipFilter.args
         };
         await sqliteService.execute(
             (dbRow) => {
@@ -1068,12 +1058,12 @@ const gameLog = {
                 }
             }
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_join_leave WHERE (display_name LIKE @searchLike AND user_id != '${dbVars.userId}') ${vipQuery} ${query} ORDER BY id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_join_leave WHERE ((display_name LIKE @searchLike OR user_id LIKE @searchLike) AND user_id != '${dbVars.userId}') ${vipQuery} ${query} ORDER BY id DESC LIMIT @perTable)`
             );
         }
         if (portalspawn) {
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_portal_spawn WHERE (display_name LIKE @searchLike OR world_name LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_portal_spawn WHERE (display_name LIKE @searchLike OR user_id LIKE @searchLike OR world_name LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
             );
         }
         if (msgevent) {
@@ -1083,12 +1073,12 @@ const gameLog = {
         }
         if (external) {
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'External' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, message FROM gamelog_external WHERE (display_name LIKE @searchLike OR message LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, 'External' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, message FROM gamelog_external WHERE (display_name LIKE @searchLike OR user_id LIKE @searchLike OR message LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
             );
         }
         if (videoplay) {
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_video_play WHERE (video_url LIKE @searchLike OR video_name LIKE @searchLike OR display_name LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_video_play WHERE (video_url LIKE @searchLike OR video_name LIKE @searchLike OR display_name LIKE @searchLike OR user_id LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
             );
         }
         if (resourceload_string || resourceload_image) {

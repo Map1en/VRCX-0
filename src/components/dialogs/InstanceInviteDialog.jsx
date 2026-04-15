@@ -110,9 +110,9 @@ export function InstanceInviteDialog({
             worldId: parsedLocation.worldId,
             endpoint
         })
-            .then((response) => {
+            .then((world) => {
                 if (active) {
-                    setResolvedWorldName(normalizeId(response.json?.name));
+                    setResolvedWorldName(normalizeId(world?.name));
                 }
             })
             .catch(() => {});

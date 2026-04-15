@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import {
     AlertTriangleIcon,
     CopyIcon,
@@ -15,27 +14,25 @@ import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
+import {
+    normalizeString,
+    useLocationMetadata
+} from '@/components/location/useLocationMetadata.js';
 import { cn } from '@/lib/utils.js';
 import { copyTextToClipboard } from '@/lib/entityMedia.js';
-import {
-    gameLogRepository,
-    groupProfileRepository,
-    worldProfileRepository
-} from '@/repositories/index.js';
-import { entityQueryPolicies, queryKeys } from '@/services/entityQueryCacheService.js';
+import { gameLogRepository } from '@/repositories/index.js';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService.js';
 import { directAccessParse } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
 import {
     getLocationText,
+    normalizeLocationValue,
     parseLocation,
-    resolveRegion,
     translateAccessType
 } from '@/shared/utils/location.js';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
 import { useLaunchStore } from '@/state/launchStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
 import {
     ContextMenu,
     ContextMenuContent,
@@ -49,114 +46,12 @@ import {
     TooltipTrigger
 } from '@/ui/shadcn/tooltip.jsx';
 
-const WORLD_ID_PATTERN = /(?:^|\b)wrld_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::|$|\s)/i;
-
-function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function isRawWorldReference(value) {
-    const normalizedValue = normalizeString(value);
-    return Boolean(normalizedValue && WORLD_ID_PATTERN.test(normalizedValue));
-}
-
-function normalizeWorldNameHint(hint, parsedLocation, currentLocation) {
-    const normalizedHint = normalizeString(hint);
-    if (!normalizedHint) {
-        return '';
-    }
-    if (
-        normalizedHint === normalizeString(parsedLocation.worldId) ||
-        normalizedHint === normalizeString(parsedLocation.tag) ||
-        normalizedHint === normalizeString(currentLocation) ||
-        isRawWorldReference(normalizedHint)
-    ) {
-        return '';
-    }
-    return normalizedHint;
-}
-
 function locationTarget(location, traveling) {
-    const normalizedLocation = normalizeString(location);
+    const normalizedLocation = normalizeLocationValue(location);
     if (typeof traveling !== 'undefined' && normalizedLocation === 'traveling') {
-        return normalizeString(traveling);
+        return normalizeLocationValue(traveling);
     }
     return normalizedLocation;
-}
-
-function instanceLocation(instance) {
-    return normalizeString(instance?.location || instance?.tag || instance?.$location?.tag);
-}
-
-function locationCacheKey(location) {
-    const parsed = parseLocation(location);
-    if (!parsed.worldId || !parsed.instanceId) {
-        return '';
-    }
-    return `${parsed.worldId}:${parsed.instanceId}`;
-}
-
-function buildCachedInstanceMap(instances) {
-    const map = new Map();
-    if (!Array.isArray(instances)) {
-        return map;
-    }
-
-    for (const instance of instances) {
-        const location = instanceLocation(instance);
-        if (location) {
-            map.set(location, instance);
-            const key = locationCacheKey(location);
-            if (key) {
-                map.set(key, instance);
-            }
-        }
-    }
-    return map;
-}
-
-function readInstanceDisplayName(instance) {
-    return normalizeString(
-        instance?.displayName ||
-            instance?.name ||
-            instance?.instanceDisplayName ||
-            instance?.$location?.displayName
-    );
-}
-
-function readInstanceWorldName(instance) {
-    return normalizeString(
-        instance?.worldName ||
-            instance?.world_name ||
-            instance?.world?.name ||
-            instance?.ref?.worldName ||
-            instance?.ref?.world?.name ||
-            instance?.$location?.worldName ||
-            instance?.$location?.world?.name
-    );
-}
-
-function readInstanceGroupName(instance) {
-    return normalizeString(
-        instance?.groupName ||
-            instance?.group_name ||
-            instance?.group?.name ||
-            instance?.group?.displayName ||
-            instance?.ref?.groupName ||
-            instance?.ref?.group?.name ||
-            instance?.ref?.group?.displayName ||
-            instance?.$location?.groupName ||
-            instance?.$location?.group?.name ||
-            instance?.$location?.group?.displayName
-    );
-}
-
-function isInstanceClosed(instance) {
-    return Boolean(instance?.closedAt || instance?.closed_at || instance?.isClosed);
-}
-
-function groupProfileName(group) {
-    return normalizeString(group?.name || group?.displayName || group?.shortCode);
 }
 
 function LocationTooltip({ disabled, content, children }) {
@@ -192,20 +87,11 @@ export function Location({
     className = ''
 }) {
     const { t } = useI18n();
-    const storeEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const currentEndpoint = endpoint || storeEndpoint;
     const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);
-    const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
-    const groupInstances = groupInstancesState.endpoint === currentEndpoint ? groupInstancesState.instances : [];
-    const groupInstancesRevision = groupInstancesState.endpoint === currentEndpoint
-        ? groupInstancesState.lastLoadedAt || groupInstancesState.fetchedAt || groupInstancesState.status
-        : '';
     const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
     const ageGatedInstancesVisiblePreference = usePreferencesStore((state) => state.isAgeGatedInstancesVisible);
     const globalShowInstanceIdInLocation = usePreferencesStore((state) => state.showInstanceIdInLocation);
     const ageGatedInstancesVisible = preferencesHydrated && ageGatedInstancesVisiblePreference;
-    const cachedInstances = useMemo(() => buildCachedInstanceMap(groupInstances), [groupInstances, groupInstancesRevision]);
-    const [localWorldName, setLocalWorldName] = useState('');
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [previousInstancesRows, setPreviousInstancesRows] = useState([]);
     const [previousInstancesTitle, setPreviousInstancesTitle] = useState('Previous Instances');
@@ -214,41 +100,21 @@ export function Location({
     const hasShortNameHint = Boolean(!normalizeString(currentLocation) && normalizeString(hint).length === 8);
     const isTraveling = typeof traveling !== 'undefined' && normalizeString(location) === 'traveling';
     const parsedLocation = useMemo(() => parseLocation(currentLocation), [currentLocation]);
-    const worldId = normalizeString(parsedLocation.worldId);
-    const region = resolveRegion(parsedLocation);
-    const cachedInstance = cachedInstances.get(parsedLocation.tag) || cachedInstances.get(locationCacheKey(parsedLocation.tag));
-    const resolvedInstanceName = readInstanceDisplayName(cachedInstance) || parsedLocation.instanceName || '';
-    const isClosed = Boolean(cachedInstance && isInstanceClosed(cachedInstance));
-    const groupId = normalizeString(parsedLocation.groupId);
-    const hintedGroupName = normalizeString(grouphint) || readInstanceGroupName(cachedInstance);
-    const worldNameHint = normalizeWorldNameHint(hint, parsedLocation, currentLocation);
-    const cachedWorldName = normalizeWorldNameHint(readInstanceWorldName(cachedInstance), parsedLocation, currentLocation);
-    const groupProfileQuery = useQuery({
-        queryKey: queryKeys.group(groupId, false, currentEndpoint),
-        queryFn: () => groupProfileRepository.getGroupProfile({ groupId, endpoint: currentEndpoint, includeRoles: false }),
-        enabled: Boolean(groupId),
-        staleTime: entityQueryPolicies.group.staleTime,
-        gcTime: entityQueryPolicies.group.gcTime,
-        retry: entityQueryPolicies.group.retry,
-        refetchOnWindowFocus: entityQueryPolicies.group.refetchOnWindowFocus
+    const {
+        currentEndpoint,
+        region,
+        instanceName: resolvedInstanceName,
+        isClosed,
+        groupName,
+        worldName,
+        worldNameHint
+    } = useLocationMetadata({
+        locationInfo: parsedLocation,
+        currentLocation,
+        endpoint,
+        hint,
+        groupHint: grouphint
     });
-    const groupName = useMemo(
-        () => groupProfileName(groupProfileQuery.data) || hintedGroupName,
-        [groupProfileQuery.data, hintedGroupName]
-    );
-    const worldProfileQuery = useQuery({
-        queryKey: queryKeys.world(worldId, currentEndpoint),
-        queryFn: () => worldProfileRepository.getWorldProfile({ worldId, endpoint: currentEndpoint }),
-        enabled: Boolean(worldId),
-        staleTime: entityQueryPolicies.world.staleTime,
-        gcTime: entityQueryPolicies.world.gcTime,
-        retry: entityQueryPolicies.world.retry,
-        refetchOnWindowFocus: entityQueryPolicies.world.refetchOnWindowFocus
-    });
-    const worldName = normalizeWorldNameHint(worldProfileQuery.data?.name, parsedLocation, currentLocation) ||
-        cachedWorldName ||
-        worldNameHint ||
-        localWorldName;
     const isAgeRestricted = Boolean(parsedLocation.ageGate && !ageGatedInstancesVisible);
     const isLocationLink = Boolean(
         link &&
@@ -279,37 +145,6 @@ export function Location({
         ? `https://vrchat.com/home/world/${parsedLocation.worldId}`
         : '';
     const showContextMenu = Boolean(enableContextMenu && parsedLocation.isRealInstance && parsedLocation.worldId);
-
-    useEffect(() => {
-        let active = true;
-        setLocalWorldName('');
-
-        if (!worldId) {
-            return () => {
-                active = false;
-            };
-        }
-
-        if (worldNameHint || cachedWorldName) {
-            return () => {
-                active = false;
-            };
-        }
-
-        gameLogRepository
-            .getWorldNameByWorldId(worldId)
-            .then((localWorldName) => {
-                const nextLocalName = normalizeWorldNameHint(localWorldName, parsedLocation, currentLocation);
-                if (nextLocalName && active) {
-                    setLocalWorldName(nextLocalName);
-                }
-            })
-            .catch(() => {});
-
-        return () => {
-            active = false;
-        };
-    }, [cachedWorldName, currentLocation, parsedLocation, worldId, worldNameHint]);
 
     function showExactPreviousInstanceInfo() {
         const payload = {
@@ -380,7 +215,9 @@ export function Location({
         if (!canUseCurrentInstance) {
             return;
         }
-        showLaunchDialog(currentLocation, parsedLocation.shortName || '');
+        showLaunchDialog(currentLocation, parsedLocation.shortName || '', '', {
+            worldName: worldName || worldNameHint
+        });
     }
 
     async function selfInviteCurrentInstance() {

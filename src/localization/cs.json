@@ -194,8 +194,6 @@
                     "startup": "Spustit při startu Windows",
                     "minimized": "Spustit minimalizované",
                     "tray": "Minimalizovat do systémové lišty při zavření",
-                    "disable_gpu_acceleration": "Vypnout GPU Akceleraci",
-                    "disable_gpu_acceleration_tooltip": "Tuto možnost změnte pouze, pokud víte co děláte, narušujete SteamVR Overlay, může opravit UI problémy, vyžaduje restart VRCX-0",
                     "disable_vr_overlay_gpu_acceleration": "Vypnout GPU akceleraci VR Overlay",
                     "proxy": "Nastavení proxy"
                 },

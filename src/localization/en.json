@@ -793,8 +793,6 @@
                     "startup": "Start at Windows Startup",
                     "minimized": "Start Minimized at System Startup",
                     "tray": "Minimize to Tray When Closing",
-                    "disable_gpu_acceleration": "Disable GPU Acceleration",
-                    "disable_gpu_acceleration_tooltip": "Only change this option if you know what you're doing, may fix issues with UI, requires restarting VRCX-0",
                     "disable_vr_overlay_gpu_acceleration": "Disable VR Overlay GPU Acceleration",
                     "proxy": "Proxy Settings",
                     "startup_linux": "Add \"--startup\" arg to startup VRCX-0.desktop file to start VRCX-0 minimized at system startup"

@@ -1,6 +1,11 @@
 import { dbVars } from '../database';
+import { buildInClause, buildValuesList } from './sqlHelpers.js';
 
 import sqliteService from '../../repositories/sqliteRepository.js';
+
+function stringOrNull(value) {
+    return typeof value === 'string' ? value : null;
+}
 
 const friendLogHistory = {
     async getFriendLogHistory() {
@@ -45,51 +50,48 @@ const friendLogHistory = {
         if (inputData.length === 0) {
             return;
         }
-        var sqlValues = '';
-        var items = [
-            'created_at',
-            'type',
-            'userId',
-            'displayName',
-            'previousDisplayName',
-            'trustLevel',
-            'previousTrustLevel',
-            'friendNumber'
-        ];
-        for (var i = 0; i < inputData.length; ++i) {
-            var line = inputData[i];
-            sqlValues += '(';
-            for (var k = 0; k < items.length; ++k) {
-                var item = items[k];
-                var field = '';
-                if (typeof line[item] === 'string') {
-                    field = `'${line[item].replace(/'/g, "''")}'`;
-                } else {
-                    field = null;
+        const { valuesSql, args } = buildValuesList(
+            inputData,
+            [
+                { column: 'created_at', value: (line) => stringOrNull(line.created_at) },
+                { column: 'type', value: (line) => stringOrNull(line.type) },
+                { column: 'user_id', value: (line) => stringOrNull(line.userId) },
+                {
+                    column: 'display_name',
+                    value: (line) => stringOrNull(line.displayName)
+                },
+                {
+                    column: 'previous_display_name',
+                    value: (line) => stringOrNull(line.previousDisplayName)
+                },
+                {
+                    column: 'trust_level',
+                    value: (line) => stringOrNull(line.trustLevel)
+                },
+                {
+                    column: 'previous_trust_level',
+                    value: (line) => stringOrNull(line.previousTrustLevel)
+                },
+                {
+                    column: 'friend_number',
+                    value: (line) =>
+                        typeof line.friendNumber === 'number'
+                            ? line.friendNumber
+                            : null
                 }
-                sqlValues += field;
-                if (k < items.length - 1) {
-                    sqlValues += ', ';
-                }
-            }
-            sqlValues += ')';
-            if (i < inputData.length - 1) {
-                sqlValues += ', ';
-            }
-            // sqlValues `('${line.created_at}', '${line.type}', '${line.userId}', '${line.displayName}', '${line.previousDisplayName}', '${line.trustLevel}', '${line.previousTrustLevel}'), `
-        }
-        sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO ${dbVars.userPrefix}_friend_log_history (created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number) VALUES ${sqlValues}`
+            ],
+            'friend_log_history'
+        );
+        return sqliteService.executeNonQuery(
+            `INSERT OR IGNORE INTO ${dbVars.userPrefix}_friend_log_history (created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number) VALUES ${valuesSql}`,
+            args
         );
     },
 
     async getFriendLogHistoryForUserId(userId, types) {
-        let friendLogHistory = [];
-        let typeFilter = '';
-        if (types && types.length > 0) {
-            const escapedTypes = types.map((t) => `'${t.replace(/'/g, "''")}'`);
-            typeFilter = ` AND type IN (${escapedTypes.join(', ')})`;
-        }
+        const friendLogHistory = [];
+        const typeInClause = buildInClause('type', types, 'friend_history_type');
+        const typeFilter = typeInClause.clause ? ` AND ${typeInClause.clause}` : '';
         await sqliteService.execute(
             (dbRow) => {
                 const row = {
@@ -110,7 +112,8 @@ const friendLogHistory = {
             },
             `SELECT * FROM ${dbVars.userPrefix}_friend_log_history WHERE user_id = @user_id${typeFilter}`,
             {
-                '@user_id': userId
+                '@user_id': userId,
+                ...typeInClause.args
             }
         );
         return friendLogHistory;

@@ -59,7 +59,54 @@ function formatOptionValue(value) {
 }
 
 function normalizeId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    if (typeof value === 'string') {
+        return value.trim();
+    }
+    if (!value || typeof value !== 'object') {
+        return String(value ?? '').trim();
+    }
+
+    const tag = normalizeId(value.tag || value.location || value.$location?.tag);
+    if (tag) {
+        return tag;
+    }
+    const id = normalizeId(value.id || value.userId || value.shortCode);
+    if (id) {
+        return id;
+    }
+    const worldId = normalizeId(value.worldId || value.world_id || value.$location?.worldId);
+    const instanceId = normalizeId(value.instanceId || value.instance_id || value.$location?.instanceId);
+    if (worldId && instanceId) {
+        return `${worldId}:${instanceId}`;
+    }
+    if (value.isOffline) {
+        return 'offline';
+    }
+    if (value.isPrivate) {
+        return 'private';
+    }
+    if (value.isTraveling) {
+        return 'traveling';
+    }
+    return '';
+}
+
+function normalizeDisplayText(value) {
+    if (typeof value === 'string') {
+        return value.trim();
+    }
+    if (!value || typeof value !== 'object') {
+        return String(value ?? '').trim();
+    }
+    return normalizeDisplayText(
+        value.name ||
+            value.displayName ||
+            value.worldName ||
+            value.groupName ||
+            value.shortCode ||
+            value.$location?.worldName ||
+            value.$location?.groupName
+    );
 }
 
 function isSentinelLocationValue(value) {
@@ -83,7 +130,7 @@ function isRawWorldReference(value) {
 
 function resolveDisplayWorldName(...values) {
     for (const value of values) {
-        const normalizedValue = normalizeId(value);
+        const normalizedValue = normalizeDisplayText(value);
         if (normalizedValue && !isRawWorldReference(normalizedValue)) {
             return normalizedValue;
         }
@@ -123,7 +170,7 @@ function resolveFriendTravelingWorldId(friend) {
 
 function resolveFriendGroupName(friend) {
     const source = friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
-    return normalizeId(
+    return normalizeDisplayText(
         source?.groupName ||
             source?.$groupName ||
             source?.$location?.groupName ||
@@ -267,7 +314,7 @@ function resolveLocationSummary(friend) {
         const parsedTraveling = parseLocation(travelingToLocation);
         return {
             label: resolveFriendTravelingWorldName(friend),
-            meta: parsedTraveling.instanceId || travelingToLocation
+            meta: parsedTraveling.instanceName || travelingToLocation
         };
     }
 
@@ -297,7 +344,7 @@ function resolveLocationSummary(friend) {
 
     return {
         label: resolveFriendWorldName(friend),
-        meta: [resolveFriendGroupName(friend), parsedLocation.accessTypeName, parsedLocation.instanceId].filter(Boolean).join(' · ')
+        meta: [resolveFriendGroupName(friend), parsedLocation.accessTypeName, parsedLocation.instanceName].filter(Boolean).join(' · ')
     };
 }
 
@@ -1477,7 +1524,6 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 key={`${section.key}:${friend.id}`}
                 friend={friend}
                 locationLabel={location.label}
-                locationMeta={location.meta}
                 groupHint={groupHint}
                 rawLocation={rawLocation}
                 isTraveling={isTravelingLocation}
