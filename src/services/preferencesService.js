@@ -69,10 +69,6 @@ function applyDataTableStripedClass(enabled) {
     document.documentElement.classList.toggle('is-striped-table', Boolean(enabled));
 }
 
-function applyDisableGpuAccelerationClass(enabled) {
-    document.documentElement.classList.toggle('disable-gpu-acceleration', Boolean(enabled));
-}
-
 function patchPreferences(patch) {
     usePreferencesStore.getState().patchPreferences(patch);
 }
@@ -143,7 +139,6 @@ export async function loadPreferenceSnapshot() {
         isStartAtWindowsStartup,
         isStartAsMinimizedState,
         isCloseToTray,
-        disableGpuAcceleration,
         dtIsoFormat,
         dtHour12,
         trustColor,
@@ -222,7 +217,6 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('StartAtWindowsStartup', false),
         storageRepository.getString('VRCX_StartAsMinimizedState', 'false'),
         storageRepository.getString('VRCX_CloseToTray', 'false'),
-        storageRepository.getString('VRCX_DisableGpuAcceleration', 'false'),
         configRepository.getBool('dtIsoFormat', false),
         configRepository.getBool('dtHour12', false),
         configRepository.getObject('VRCX_trustColor', null),
@@ -272,7 +266,6 @@ export async function loadPreferenceSnapshot() {
         : 60;
     applyTableDensityClass(resolvedTableDensity);
     applyDataTableStripedClass(dataTableStriped);
-    applyDisableGpuAccelerationClass(disableGpuAcceleration === 'true');
     applyPointerHoverClass(showPointerOnHover);
     applyAccessibleStatusClass(accessibleStatusIndicators);
     applyTrustColorClasses(trustColor);
@@ -337,7 +330,6 @@ export async function loadPreferenceSnapshot() {
         isStartAtWindowsStartup: Boolean(isStartAtWindowsStartup),
         isStartAsMinimizedState: isStartAsMinimizedState === 'true',
         isCloseToTray: isCloseToTray === 'true',
-        disableGpuAcceleration: disableGpuAcceleration === 'true',
         dtIsoFormat: Boolean(dtIsoFormat),
         dtHour12: Boolean(dtHour12),
         trustColor: normalizeTrustColors(trustColor),
@@ -551,14 +543,6 @@ export async function setCloseToTrayPreference(value) {
     await storageRepository.setString('VRCX_CloseToTray', String(enabled));
     patchPreferences({ isCloseToTray: enabled });
     publishPreferenceChanged('VRCX_CloseToTray', enabled);
-}
-
-export async function setDisableGpuAccelerationPreference(value) {
-    const enabled = Boolean(value);
-    await storageRepository.setString('VRCX_DisableGpuAcceleration', String(enabled));
-    applyDisableGpuAccelerationClass(enabled);
-    patchPreferences({ disableGpuAcceleration: enabled });
-    publishPreferenceChanged('disableGpuAcceleration', enabled);
 }
 
 export async function setBoolConfigPreference(key, value) {

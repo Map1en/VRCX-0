@@ -442,8 +442,6 @@
                     "startup": "Lancer au démarrage de Windows",
                     "minimized": "Lancer en arrière plan",
                     "tray": "Minimiser dans la barre des tâches",
-                    "disable_gpu_acceleration": "Désactiver l'accélération GPU",
-                    "disable_gpu_acceleration_tooltip": "Ne changez cette option que si vous savez ce que vous faites, cette fonctionnalité casse la surcouche SteamVR, peut corriger des problèmes avec l'interface utilisateur, nécessite le redémarrage de VRCX-0.",
                     "disable_vr_overlay_gpu_acceleration": "Désactiver l'accélération GPU de l'overlay VR",
                     "proxy": "Proxy settings"
                 },

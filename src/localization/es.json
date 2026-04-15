@@ -287,8 +287,6 @@
                     "startup": "Iniciar al arrancar Windows",
                     "minimized": "Iniciar minimizado",
                     "tray": "Minimizar a la bandeja al cerrar",
-                    "disable_gpu_acceleration": "Deshabilitar Aceleración GPU",
-                    "disable_gpu_acceleration_tooltip": "Solo cambia esta opción si sabes lo que estás haciendo, rompe la superposición de SteamVR, puede solucionar problemas con la UI, requiere reiniciar VRCX-0",
                     "disable_vr_overlay_gpu_acceleration": "Deshabilitar Aceleración GPU de Superposición VR",
                     "proxy": "Configuraciones de Proxy"
                 },
