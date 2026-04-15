@@ -223,18 +223,18 @@ function resolveSidebarStatusDotClassName(friend, currentUser, isCurrentUser = f
         return '';
     }
 
-    if (source?.pendingOffline) {
-        return 'bg-[var(--status-offline)]';
-    }
-
     if (isCurrentUser || userId === currentUser?.id) {
-        if (state === 'offline' || (location === 'offline' && state !== 'online')) {
-            return 'bg-[var(--status-offline)]';
+        if (source?.pendingOffline || state === 'offline' || (location === 'offline' && state !== 'online')) {
+            return '';
         }
         if (state === 'active') {
             return 'bg-[var(--status-active)]';
         }
         return legacyStatusDotClassName(status) || (state === 'online' ? 'bg-[var(--status-online)]' : '');
+    }
+
+    if (source?.pendingOffline) {
+        return 'bg-[var(--status-offline)]';
     }
 
     if (source?.isFriend === false && friend?.isFriend === false) {
