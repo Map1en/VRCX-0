@@ -568,7 +568,7 @@ function FriendRow({
                             {statusDotClassName ? (
                                 <span
                                     className={cn(
-                                        'absolute bottom-0.5 right-0.5 z-10 size-2.5 rounded-full border-2 border-background',
+                                        'absolute -bottom-0.5 -right-0.5 z-10 size-3.75 rounded-full border-3 border-background',
                                         statusDotClassName
                                     )}
                                 />
