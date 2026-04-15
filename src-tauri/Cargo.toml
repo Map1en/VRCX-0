@@ -4,14 +4,14 @@ version = "2026.4.10"
 edition = "2021"
 
 [dependencies]
-tauri = { version = "2", features = [ "tray-icon", "image-ico", "devtools"] }
+tauri = { version = "2", features = [ "tray-icon", "image-ico" ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dirs = "6"
-rusqlite = { version = "0.39", features = ["bundled"] }
+rusqlite = { version = "0.39", features = ["bundled", "backup"] }
 sysinfo = "0.32"
 chrono = "0.4"
 reqwest = { version = "0.13", features = ["cookies", "gzip", "brotli", "deflate", "multipart"] }
@@ -21,6 +21,7 @@ base64 = "0.22"
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"
+tauri-plugin-single-instance = "2"
 sys-locale = "0.3"
 open = "5"
 arboard = "3"
@@ -44,6 +45,9 @@ windows-sys = { version = "0.61", features = [
 ] }
 winreg = "0.56"
 tauri-plugin-autostart = "2"
+
+[features]
+devtools = ["tauri/devtools"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

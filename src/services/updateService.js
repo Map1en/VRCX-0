@@ -17,16 +17,18 @@ function getAssetOfInterest(assets = []) {
         if (asset?.state !== 'uploaded') {
             continue;
         }
+        const hashString = asset.digest?.startsWith('sha256:')
+            ? asset.digest.replace('sha256:', '')
+            : '';
         if (
             asset.name?.endsWith('.exe') &&
+            /^[a-f0-9]{64}$/i.test(hashString) &&
             (asset.content_type === 'application/x-msdownload' ||
                 asset.content_type === 'application/x-msdos-program')
         ) {
             return {
                 downloadUrl: asset.browser_download_url || '',
-                hashString: asset.digest?.startsWith('sha256:')
-                    ? asset.digest.replace('sha256:', '')
-                    : '',
+                hashString,
                 size: Number(asset.size) || 0
             };
         }

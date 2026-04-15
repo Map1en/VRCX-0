@@ -2676,9 +2676,6 @@ export function SettingsPage() {
                                 </Button>
                             </Field>
                             <div className="flex flex-wrap gap-2">
-                                <Button type="button" variant="outline" onClick={() => void backend.app.ShowDevTools()}>
-                                    {t('view.settings.advanced.advanced.cache_debug.show_console')}
-                                </Button>
                                 <Button type="button" variant="outline" onClick={() => setSystemHostOpen('launchOptionsOpen', true)}>
                                     {t('dialog.launch_options.header')}
                                 </Button>

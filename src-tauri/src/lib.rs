@@ -16,6 +16,15 @@ use tauri_plugin_autostart::ManagerExt as _;
 
 use state::AppState;
 
+fn show_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_skip_taskbar(false);
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
 fn db_config_bool(state: &AppState, key: &str) -> Option<bool> {
     let mut args = HashMap::new();
     args.insert("@key".to_string(), serde_json::Value::String(key.to_string()));
@@ -75,11 +84,10 @@ pub fn run() {
         )
         .init();
 
-    let app_state = AppState::new().expect("failed to initialize app state");
-
-    app_state.update_manager.check_and_install_update();
-
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main_window(app);
+        }))
         .register_asynchronous_uri_scheme_protocol(
             "vrcx-img",
             |_ctx, request, responder| {
@@ -120,17 +128,15 @@ pub fn run() {
                 button: MouseButton::Left,
                 ..
             } => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.set_skip_taskbar(false);
-                    let _ = window.show();
-                    let _ = window.unminimize();
-                    let _ = window.set_focus();
-                }
+                show_main_window(app);
             }
             _ => {}
         })
-        .manage(app_state)
         .setup(|app| {
+            let app_state = AppState::new().expect("failed to initialize app state");
+            app_state.update_manager.check_and_install_update();
+            app.manage(app_state);
+
             let state = app.state::<AppState>();
             if let Some(tray) = app.tray_by_id("main") {
                 let exit_item = MenuItem::with_id(app, "tray-exit", "Exit", true, None::<&str>)?;
@@ -171,7 +177,7 @@ pub fn run() {
                 .unwrap_or_default();
             state.log_watcher.start(local_low, app.handle().clone());
 
-            #[cfg(debug_assertions)]
+            #[cfg(all(debug_assertions, feature = "devtools"))]
             if let Some(window) = app.get_webview_window("main") {
                 window.open_devtools();
             }
@@ -191,6 +197,10 @@ pub fn run() {
             api::storage::storage__get_all,
             api::database::sqlite__execute,
             api::database::sqlite__execute_non_query,
+            api::database::sqlite__begin_upgrade,
+            api::database::sqlite__commit_upgrade,
+            api::database::sqlite__fail_upgrade,
+            api::database::sqlite__get_failed_upgrade,
             api::web::web__clear_cookies,
             api::web::web__get_cookies,
             api::web::web__set_cookies,
@@ -241,7 +251,6 @@ pub fn run() {
             api::app::app__save_vrc_reg_json_file,
             api::app::app__focus_window,
             api::app::app__flash_window,
-            api::app::app__show_dev_tools,
             api::app::app__change_theme,
             api::app::app__do_funny,
             api::app::app__set_tray_icon_notification,
@@ -269,7 +278,6 @@ pub fn run() {
             api::app::app__set_app_launcher_settings,
             api::app::app__try_open_instance_in_vrc,
             api::app::app__open_calendar_file,
-            api::app::app__populate_image_hosts,
             api::app::app__get_image,
             api::app::app__resize_image_to_fit_limits,
             api::app::app__sign_file,

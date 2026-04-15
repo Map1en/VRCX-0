@@ -13,7 +13,7 @@
     },
     "scripts": {
         "dev": "vite",
-        "tauri:dev": "tauri dev",
+        "tauri:dev": "tauri dev --features devtools",
         "tauri:build": "tauri build",
         "lint": "npm run lint:oxlint",
         "lint:oxlint": "oxlint .",
