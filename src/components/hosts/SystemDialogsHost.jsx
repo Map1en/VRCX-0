@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -10,13 +10,13 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
+import { Label } from '@/ui/shadcn/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Textarea } from '@/ui/shadcn/textarea';
 import { backend } from '@/platform/index.js';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { configRepository } from '@/repositories/index.js';

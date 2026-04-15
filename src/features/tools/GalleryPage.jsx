@@ -33,37 +33,37 @@ import {
     validateImageUploadFile,
     withUploadTimeout
 } from '@/shared/utils/imageUpload.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle
-} from '@/ui/shadcn/card.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+} from '@/ui/shadcn/card';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
+import { Label } from '@/ui/shadcn/label';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
 import {
     Tabs,
     TabsContent,
     TabsList,
     TabsTrigger
-} from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/tabs';
 
 const FILE_TABS = {
     gallery: { tag: 'gallery', titleKey: 'dialog.gallery_icons.gallery', aspectClass: 'aspect-[4/3]', max: 64 },

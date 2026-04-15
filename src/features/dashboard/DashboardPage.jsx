@@ -24,28 +24,28 @@ import { FEED_FILTER_TYPES, GAME_LOG_FILTER_TYPES } from '@/repositories/index.j
 import { generateDashboardRowId } from '@/repositories/dashboardRepository.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { useModalStore } from '@/state/modalStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
 import {
     ResizableHandle,
     ResizablePanel,
     ResizablePanelGroup
-} from '@/ui/shadcn/resizable.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
+} from '@/ui/shadcn/resizable';
+import { Switch } from '@/ui/shadcn/switch';
 
 function cloneRows(rows) {
     return JSON.parse(JSON.stringify(Array.isArray(rows) ? rows : []));

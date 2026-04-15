@@ -6,13 +6,13 @@ import {
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Pagination,
     PaginationContent,
     PaginationItem
-} from '@/ui/shadcn/pagination.jsx';
+} from '@/ui/shadcn/pagination';
 import {
     Table,
     TableBody,
@@ -20,7 +20,7 @@ import {
     TableHead,
     TableHeader,
     TableRow
-} from '@/ui/shadcn/table.jsx';
+} from '@/ui/shadcn/table';
 
 export function DataTableSurface({ className = '', children }) {
     return (

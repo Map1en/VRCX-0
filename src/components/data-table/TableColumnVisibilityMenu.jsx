@@ -6,7 +6,7 @@ import {
     Settings2Icon
 } from 'lucide-react';
 
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -16,7 +16,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
+} from '@/ui/shadcn/dropdown-menu';
 
 function resolveColumnLabel(column) {
     const metaLabel = column.columnDef?.meta?.label;

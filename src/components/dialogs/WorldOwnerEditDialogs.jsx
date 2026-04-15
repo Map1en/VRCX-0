@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Trash2Icon } from 'lucide-react';
 
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 const CONTENT_TAGS = [
     ['contentHorror', 'content_horror', 'Horror'],

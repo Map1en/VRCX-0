@@ -5,16 +5,16 @@ import { timeToText } from '@/lib/dateTime.js';
 import { database } from '@/services/database/index.js';
 import { openWorldDialog } from '@/services/dialogService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 function formatDate(value) {
     if (!value) {

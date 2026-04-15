@@ -6,14 +6,14 @@ import { cn } from '@/lib/utils.js';
 import { Location } from '@/components/Location.jsx';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Card, CardContent } from '@/ui/shadcn/card.jsx';
+import { Card, CardContent } from '@/ui/shadcn/card';
 import {
     ContextMenu,
     ContextMenuContent,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
+} from '@/ui/shadcn/context-menu';
 
 function getInitials(value) {
     const source = String(value || '').trim();

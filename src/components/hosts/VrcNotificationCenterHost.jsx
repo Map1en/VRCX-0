@@ -29,16 +29,16 @@ import {
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { getNotificationTs } from '@/shared/utils/notificationCategory.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Separator } from '@/ui/shadcn/separator.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import { Separator } from '@/ui/shadcn/separator';
 import {
     Sheet,
     SheetContent,
     SheetHeader,
     SheetTitle
-} from '@/ui/shadcn/sheet.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';

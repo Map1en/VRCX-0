@@ -6,8 +6,8 @@ import {
     EmptyHeader,
     EmptyMedia,
     EmptyTitle
-} from '@/ui/shadcn/empty.jsx';
-import { Spinner } from '@/ui/shadcn/spinner.jsx';
+} from '@/ui/shadcn/empty';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 export function PageScaffold({
     embedded = false,

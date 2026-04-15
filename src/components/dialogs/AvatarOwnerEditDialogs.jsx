@@ -5,24 +5,24 @@ import { toast } from 'sonner';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { avatarProfileRepository } from '@/repositories/index.js';
 import { cn } from '@/lib/utils.js';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
+} from '@/ui/shadcn/dialog';
+import { Label } from '@/ui/shadcn/label';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/select';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 const contentTagOptions = [
     { value: 'content_horror', label: 'Horror' },

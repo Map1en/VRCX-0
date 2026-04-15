@@ -39,12 +39,12 @@ import {
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
+} from '@/ui/shadcn/context-menu';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger
-} from '@/ui/shadcn/tooltip.jsx';
+} from '@/ui/shadcn/tooltip';
 
 function locationTarget(location, traveling) {
     const normalizedLocation = normalizeLocationValue(location);

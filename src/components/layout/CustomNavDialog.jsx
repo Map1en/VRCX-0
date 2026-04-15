@@ -13,15 +13,15 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Separator } from '@/ui/shadcn/separator.jsx';
+} from '@/ui/shadcn/dialog';
+import { Separator } from '@/ui/shadcn/separator';
 import { DASHBOARD_NAV_KEY_PREFIX, DEFAULT_DASHBOARD_ICON } from '@/shared/constants/dashboard.js';
 import { isToolNavKey } from '@/shared/constants/tools.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';

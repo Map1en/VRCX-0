@@ -38,8 +38,8 @@ import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     EntityActionDropdown,
     EntityActionItem,

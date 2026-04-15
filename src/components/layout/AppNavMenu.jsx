@@ -43,7 +43,7 @@ import {
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
+} from '@/ui/shadcn/context-menu';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -55,7 +55,7 @@ import {
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
+} from '@/ui/shadcn/dropdown-menu';
 import {
     SidebarContent,
     SidebarFooter,
@@ -69,7 +69,7 @@ import {
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem
-} from '@/ui/shadcn/sidebar.jsx';
+} from '@/ui/shadcn/sidebar';
 import { backend } from '@/platform/index.js';
 import { logoutFromReactShell } from '@/services/authExecutionService.js';
 import { directAccessParse } from '@/services/directAccessService.js';

@@ -20,7 +20,7 @@ import {
     ContextMenuSubContent,
     ContextMenuSubTrigger,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
+} from '@/ui/shadcn/context-menu';
 import { configRepository, notificationRepository, userProfileRepository, vrchatSearchRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';

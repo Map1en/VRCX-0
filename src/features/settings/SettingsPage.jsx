@@ -12,10 +12,10 @@ import {
 import { getLanguageName, languageCodes } from '@/localization/index.js';
 import { backend } from '@/platform/index.js';
 import { avatarProfileRepository, avatarSearchProviderRepository, configRepository, mediaRepository, vrchatAuthRepository, webRepository } from '@/repositories/index.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -23,7 +23,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -31,13 +31,13 @@ import {
     DropdownMenuGroup,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Spinner } from '@/ui/shadcn/spinner.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Input } from '@/ui/shadcn/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Textarea } from '@/ui/shadcn/textarea';
 import { feedFiltersOptions, sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters.js';
 import {
     DEFAULT_MAX_TABLE_SIZE,

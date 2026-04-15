@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 import { useShellStore } from '@/state/shellStore.js';
-import { Toaster } from '@/ui/shadcn/sonner.jsx';
+import { Toaster } from '@/ui/shadcn/sonner';
 
 function resolveSonnerTheme(themeMode) {
     if (themeMode === 'dark') {

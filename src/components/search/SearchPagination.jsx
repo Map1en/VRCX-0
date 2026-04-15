@@ -1,11 +1,11 @@
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
 
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     Pagination,
     PaginationContent,
     PaginationItem
-} from '@/ui/shadcn/pagination.jsx';
+} from '@/ui/shadcn/pagination';
 
 export function SearchPagination({ show = false, prevDisabled = true, nextDisabled = true, onPrev, onNext }) {
     if (!show) {

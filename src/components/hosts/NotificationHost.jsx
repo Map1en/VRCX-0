@@ -1,15 +1,15 @@
 import { BellIcon, XIcon } from 'lucide-react';
 
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Separator } from '@/ui/shadcn/separator.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Badge } from '@/ui/shadcn/badge';
+import { Separator } from '@/ui/shadcn/separator';
 import {
     Sheet,
     SheetContent,
     SheetDescription,
     SheetHeader,
     SheetTitle
-} from '@/ui/shadcn/sheet.jsx';
+} from '@/ui/shadcn/sheet';
 
 import { useNotificationStore } from '@/state/notificationStore.js';
 

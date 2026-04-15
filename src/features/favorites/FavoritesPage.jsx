@@ -48,15 +48,15 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
 import { parseLocation, resolveFriendPresenceLocation } from '@/shared/utils/location.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -67,9 +67,9 @@ import {
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/ui/shadcn/resizable.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Input } from '@/ui/shadcn/input';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/ui/shadcn/resizable';
 import {
     Select,
     SelectContent,
@@ -77,9 +77,9 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/select';
+import { Switch } from '@/ui/shadcn/switch';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 import {
     clearFavoriteRemoteDetailsCache,

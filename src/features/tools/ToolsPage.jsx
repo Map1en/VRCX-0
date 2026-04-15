@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { cn } from '@/lib/utils.js';
 import { configRepository } from '@/repositories/index.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { getToolsByCategory, toolCategories } from '@/shared/constants/tools.js';
 import { triggerToolByKey } from '@/services/toolActionService.js';

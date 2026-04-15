@@ -15,7 +15,7 @@ import { DashboardInstanceWidget } from './widgets/DashboardInstanceWidget.jsx';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 
 function PreviewMetric({ label, value }) {
     return (

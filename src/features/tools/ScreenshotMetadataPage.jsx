@@ -28,23 +28,23 @@ import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { withUploadTimeout } from '@/shared/utils/imageUpload.js';
 import { parseVrchatScreenshotDateFromFileName } from '@/shared/utils/screenshot.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle
-} from '@/ui/shadcn/card.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/card';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
 import {
     Table,
     TableBody,
@@ -52,7 +52,7 @@ import {
     TableHead,
     TableHeader,
     TableRow
-} from '@/ui/shadcn/table.jsx';
+} from '@/ui/shadcn/table';
 
 const searchTypes = [
     {

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BellIcon, ClockIcon, MonitorIcon, RadioIcon, ZoomInIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
     ContextMenuCheckboxItem,
@@ -13,13 +13,13 @@ import {
     ContextMenuSubContent,
     ContextMenuSubTrigger,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/context-menu';
+import { Input } from '@/ui/shadcn/input';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger
-} from '@/ui/shadcn/tooltip.jsx';
+} from '@/ui/shadcn/tooltip';
 
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';

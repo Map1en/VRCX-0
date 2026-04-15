@@ -37,8 +37,8 @@ import { languageMappings } from '@/shared/constants/language.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useModalStore } from '@/state/modalStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -46,18 +46,18 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
+import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Label } from '@/ui/shadcn/label';
+import { Textarea } from '@/ui/shadcn/textarea';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
 import {
     EntityActionDropdown,
     EntityActionItem,
@@ -71,7 +71,7 @@ import {
     EntityInfoGrid,
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
 
 function firstArray(...values) {

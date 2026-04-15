@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/ui/shadcn/context-menu.jsx';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/ui/shadcn/context-menu';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { openGroupDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';

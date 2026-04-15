@@ -6,8 +6,8 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+} from '@/ui/shadcn/dialog';
+import { Button } from '@/ui/shadcn/button';
 import {
     Select,
     SelectContent,
@@ -15,7 +15,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
 import {
     Table,
     TableBody,
@@ -23,8 +23,8 @@ import {
     TableHead,
     TableHeader,
     TableRow
-} from '@/ui/shadcn/table.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/table';
+import { Textarea } from '@/ui/shadcn/textarea';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFavoriteImportStore } from '@/state/favoriteImportStore.js';
 import {

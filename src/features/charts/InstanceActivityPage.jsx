@@ -22,10 +22,10 @@ import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover.jsx';
-import { Separator } from '@/ui/shadcn/separator.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { Separator } from '@/ui/shadcn/separator';
+import { Switch } from '@/ui/shadcn/switch';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const THREE_HOURS_MS = 3 * 60 * 60 * 1000;

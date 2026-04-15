@@ -1,7 +1,7 @@
 import { flexRender } from '@tanstack/react-table';
 
 import { cn } from '@/lib/utils.js';
-import { TableCell, TableHead } from '@/ui/shadcn/table.jsx';
+import { TableCell, TableHead } from '@/ui/shadcn/table';
 
 function resolveSize(value) {
     const size = Number(value);

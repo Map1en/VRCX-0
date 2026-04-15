@@ -27,18 +27,18 @@ import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     Sheet,
     SheetContent,
     SheetHeader,
     SheetTitle,
     SheetTrigger
-} from '@/ui/shadcn/sheet.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover.jsx';
-import { ScrollArea } from '@/ui/shadcn/scroll-area.jsx';
+} from '@/ui/shadcn/sheet';
+import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Input } from '@/ui/shadcn/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import GraphLayoutWorker from './graphLayoutWorker.js?worker&inline';
 
 const LAYOUT_ITERATIONS_MIN = 300;

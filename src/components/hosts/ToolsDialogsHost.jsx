@@ -7,8 +7,8 @@ import { useI18n } from '@/app/hooks/use-i18n.js';
 import { convertFileUrlToImageUrl, userImage } from '@/lib/entityMedia.js';
 import { timeToText } from '@/lib/dateTime.js';
 import { backend } from '@/platform/index.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -16,17 +16,17 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover.jsx';
-import { ScrollArea } from '@/ui/shadcn/scroll-area.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Separator } from '@/ui/shadcn/separator.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/shadcn/table.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
+import { Label } from '@/ui/shadcn/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { ScrollArea } from '@/ui/shadcn/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Separator } from '@/ui/shadcn/separator';
+import { Switch } from '@/ui/shadcn/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/shadcn/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Textarea } from '@/ui/shadcn/textarea';
 import { configRepository, groupProfileRepository, myAvatarRepository, toolsRepository } from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
 import { openGroupDialog, openUserDialog } from '@/services/dialogService.js';

@@ -1,6 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 
-import { TooltipProvider } from '@/ui/shadcn/tooltip.jsx';
+import { TooltipProvider } from '@/ui/shadcn/tooltip';
 import { queryClient } from '@/services/queryClient.js';
 
 import { I18nProvider } from './I18nProvider.jsx';

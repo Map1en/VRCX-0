@@ -5,7 +5,7 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -13,7 +13,7 @@ import {
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator
-} from '@/ui/shadcn/breadcrumb.jsx';
+} from '@/ui/shadcn/breadcrumb';
 import { AvatarDialogContent } from '@/components/dialogs/AvatarDialogContent.jsx';
 import { GroupDialogContent } from '@/components/dialogs/GroupDialogContent.jsx';
 import { UserDialogContent } from '@/components/dialogs/UserDialogContent.jsx';

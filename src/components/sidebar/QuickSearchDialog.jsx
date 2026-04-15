@@ -13,8 +13,8 @@ import { openAvatarDialog, openGroupDialog, openUserDialog, openWorldDialog } fr
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
 
 const RESULT_LIMIT = 8;
 

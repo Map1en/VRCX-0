@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { PlusIcon, SaveIcon, XIcon } from 'lucide-react';
 
 import { TAG_COLORS, getTagColor } from '@/shared/constants/tags.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -11,8 +11,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
 
 function normalizeTagName(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();

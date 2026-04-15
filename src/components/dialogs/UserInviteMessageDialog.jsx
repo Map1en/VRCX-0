@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LoaderCircleIcon, RefreshCwIcon } from 'lucide-react';
 
 import { toolsRepository } from '@/repositories/index.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -10,7 +10,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
 
 function normalizeRows(value) {
     if (Array.isArray(value)) {

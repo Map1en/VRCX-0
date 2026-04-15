@@ -18,13 +18,13 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { parseLocation } from '@/shared/utils/location.js';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { cn } from '@/lib/utils.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger
-} from '@/ui/shadcn/tooltip.jsx';
+} from '@/ui/shadcn/tooltip';
 
 function normalizeString(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();

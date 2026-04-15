@@ -10,9 +10,9 @@ import { buildDailySummary } from '@/shared/utils/activityEngine.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Switch } from '@/ui/shadcn/switch';
 
 const ACTIVITY_SELF_PERIOD_KEY = 'VRCX_activitySelfPeriodDays';
 const ACTIVITY_FRIEND_PERIOD_KEY = 'VRCX_activityFriendPeriodDays';

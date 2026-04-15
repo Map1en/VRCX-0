@@ -7,7 +7,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle
-} from '@/ui/shadcn/alert-dialog.jsx';
+} from '@/ui/shadcn/alert-dialog';
 import {
     Dialog,
     DialogContent,
@@ -15,10 +15,10 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dialog';
+import { Button } from '@/ui/shadcn/button';
+import { Input } from '@/ui/shadcn/input';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 import { useModalStore } from '@/state/modalStore.js';
 

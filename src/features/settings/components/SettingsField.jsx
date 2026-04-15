@@ -8,8 +8,8 @@ import {
     FieldGroup,
     FieldLabel,
     FieldTitle
-} from '@/ui/shadcn/field.jsx';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group.jsx';
+} from '@/ui/shadcn/field';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 function getAttachableControl(children) {
     if (Children.count(children) !== 1) {
