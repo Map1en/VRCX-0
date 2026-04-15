@@ -47,6 +47,12 @@ class ConfigRepository {
         this.#ready = true;
     }
 
+    async reload() {
+        this.#cache.clear();
+        this.#ready = false;
+        await this.init();
+    }
+
     async #ensureReady() {
         if (!this.#ready) {
             await this.init();

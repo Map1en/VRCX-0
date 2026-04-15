@@ -31,10 +31,11 @@ const tableFixes = {
             };
             travelingList.unshift(row);
         }, "SELECT * FROM gamelog_join_leave WHERE type = 'OnPlayerLeft' AND location = 'traveling'");
-        travelingList.forEach(async (travelingEntry) => {
+        for (var travelingEntry of travelingList) {
+            var onPlayingJoin = null;
             await sqliteService.execute(
                 (dbRow) => {
-                    var onPlayingJoin = {
+                    onPlayingJoin = {
                         rowId: dbRow[0],
                         created_at: dbRow[1],
                         type: dbRow[2],
@@ -43,13 +44,6 @@ const tableFixes = {
                         userId: dbRow[5],
                         time: dbRow[6]
                     };
-                    sqliteService.executeNonQuery(
-                        `UPDATE gamelog_join_leave SET location = @location WHERE id = @rowId`,
-                        {
-                            '@rowId': travelingEntry.rowId,
-                            '@location': onPlayingJoin.location
-                        }
-                    );
                 },
                 "SELECT * FROM gamelog_join_leave WHERE type = 'OnPlayerJoined' AND display_name = @displayName AND created_at <= @created_at ORDER BY created_at DESC LIMIT 1",
                 {
@@ -57,7 +51,16 @@ const tableFixes = {
                     '@created_at': travelingEntry.created_at
                 }
             );
-        });
+            if (onPlayingJoin?.location) {
+                await sqliteService.executeNonQuery(
+                    `UPDATE gamelog_join_leave SET location = @location WHERE id = @rowId`,
+                    {
+                        '@rowId': travelingEntry.rowId,
+                        '@location': onPlayingJoin.location
+                    }
+                );
+            }
+        }
     },
 
     async fixNegativeGPS() {
@@ -65,11 +68,11 @@ const tableFixes = {
         await sqliteService.execute((dbRow) => {
             gpsTables.push(dbRow[0]);
         }, `SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE '%_gps'`);
-        gpsTables.forEach((tableName) => {
-            sqliteService.executeNonQuery(
+        for (var tableName of gpsTables) {
+            await sqliteService.executeNonQuery(
                 `UPDATE ${tableName} SET time = 0 WHERE time < 0`
             );
-        });
+        }
     },
 
     async getBrokenLeaveEntries() {
@@ -88,6 +91,9 @@ const tableFixes = {
 
     async fixBrokenLeaveEntries() {
         var badEntries = await this.getBrokenLeaveEntries();
+        if (badEntries.length === 0) {
+            return;
+        }
         var badEntriesList = '';
         var count = badEntries.length;
         badEntries.forEach((entry) => {
@@ -99,7 +105,7 @@ const tableFixes = {
             }
         });
 
-        sqliteService.executeNonQuery(
+        await sqliteService.executeNonQuery(
             `UPDATE gamelog_join_leave SET time = 0 WHERE id IN (${badEntriesList})`
         );
     },
@@ -109,11 +115,11 @@ const tableFixes = {
         await sqliteService.execute((dbRow) => {
             notificationTables.push(dbRow[0]);
         }, `SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE '%_notifications'`);
-        notificationTables.forEach((tableName) => {
-            sqliteService.executeNonQuery(
+        for (var tableName of notificationTables) {
+            await sqliteService.executeNonQuery(
                 `DELETE FROM ${tableName} WHERE type LIKE '%.%'`
             );
-        });
+        }
     },
 
     async fixBrokenNotifications() {
@@ -165,16 +171,16 @@ const tableFixes = {
 
     async fixBrokenGameLogDisplayNames() {
         var badEntries = await this.getBrokenGameLogDisplayNames();
-        badEntries.forEach((entry) => {
+        for (var entry of badEntries) {
             var newDisplayName = entry.displayName.split(' (')[0];
-            sqliteService.executeNonQuery(
+            await sqliteService.executeNonQuery(
                 `UPDATE gamelog_join_leave SET display_name = @new_display_name WHERE id = @id`,
                 {
                     '@new_display_name': newDisplayName,
                     '@id': entry.id
                 }
             );
-        });
+        }
     }
 };
 
