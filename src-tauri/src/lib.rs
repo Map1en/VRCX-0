@@ -16,6 +16,15 @@ use tauri_plugin_autostart::ManagerExt as _;
 
 use state::AppState;
 
+fn show_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_skip_taskbar(false);
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
 fn db_config_bool(state: &AppState, key: &str) -> Option<bool> {
     let mut args = HashMap::new();
     args.insert("@key".to_string(), serde_json::Value::String(key.to_string()));
@@ -75,11 +84,10 @@ pub fn run() {
         )
         .init();
 
-    let app_state = AppState::new().expect("failed to initialize app state");
-
-    app_state.update_manager.check_and_install_update();
-
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main_window(app);
+        }))
         .register_asynchronous_uri_scheme_protocol(
             "vrcx-img",
             |_ctx, request, responder| {
@@ -120,17 +128,15 @@ pub fn run() {
                 button: MouseButton::Left,
                 ..
             } => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.set_skip_taskbar(false);
-                    let _ = window.show();
-                    let _ = window.unminimize();
-                    let _ = window.set_focus();
-                }
+                show_main_window(app);
             }
             _ => {}
         })
-        .manage(app_state)
         .setup(|app| {
+            let app_state = AppState::new().expect("failed to initialize app state");
+            app_state.update_manager.check_and_install_update();
+            app.manage(app_state);
+
             let state = app.state::<AppState>();
             if let Some(tray) = app.tray_by_id("main") {
                 let exit_item = MenuItem::with_id(app, "tray-exit", "Exit", true, None::<&str>)?;
