@@ -121,15 +121,11 @@ const toolIconByKey = {
     gallery: ImageIcon,
     'screenshot-metadata': ImageIcon
 };
-const themeModeOptions = ['system', 'light', 'dark', 'midnight'];
+const themeModeOptions = ['system', 'light', 'dark'];
 const tableDensityOptions = [
     {
         value: 'standard',
         labelKey: 'view.settings.appearance.appearance.table_density_standard'
-    },
-    {
-        value: 'comfortable',
-        labelKey: 'view.settings.appearance.appearance.table_density_comfortable'
     },
     {
         value: 'compact',

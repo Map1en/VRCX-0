@@ -668,7 +668,7 @@ export function FriendsSidebar({ prefs }) {
     const [openGroups, setOpenGroups] = useState(defaultGroupState);
     const [statusPresets, setStatusPresets] = useState([]);
     const [recentActionVersion, setRecentActionVersion] = useState(0);
-    const isDarkMode = themeMode === 'dark' || themeMode === 'midnight' ||
+    const isDarkMode = themeMode === 'dark' ||
         (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUser),

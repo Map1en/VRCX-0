@@ -3,8 +3,6 @@ import {
     ArrowDownIcon,
     ArrowUpDownIcon,
     ArrowUpIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
     LoaderCircleIcon,
     RefreshCwIcon,
     Trash2Icon,
@@ -22,13 +20,26 @@ import {
     ResizableTableCell,
     ResizableTableHead
 } from '@/components/data-table/ResizableTableParts.jsx';
+import {
+    DataTablePagination,
+    DataTableScrollArea,
+    DataTableSurface
+} from '@/components/data-table/DataTableView.jsx';
+import {
+    EmptyState,
+    LoadingState,
+    PageBody,
+    PageFooter,
+    PageScaffold,
+    PageToolbar,
+    PageToolbarRow
+} from '@/components/layout/PageScaffold.jsx';
 import { configRepository, vrchatModerationRepository } from '@/repositories/index.js';
 import { moderationTypes } from '@/shared/constants';
 import { getTablePageSizesPreference } from '@/services/preferencesService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
 import { Button } from '@/ui/shadcn/button.jsx';
 import {
     DropdownMenu,
@@ -40,6 +51,7 @@ import { Input } from '@/ui/shadcn/input.jsx';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
@@ -282,14 +294,7 @@ function SortButton({ column, label }) {
 }
 
 function ModerationEmptyState({ title, description }) {
-    return (
-        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
-                <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
-            </div>
-        </div>
-    );
+    return <EmptyState title={title} description={description} />;
 }
 
 function ModerationTypeFilterDropdown({ value, onChange, getTypeLabel = (type) => TYPE_LABELS[type] || type }) {
@@ -778,16 +783,17 @@ export function ModerationPage({ embedded = false } = {}) {
                                 size="icon-xs"
                                 variant="ghost"
                                 className="text-muted-foreground hover:text-foreground"
+                                aria-label={t('common.actions.delete')}
                                 disabled={isDeleting}
                                 onClick={() =>
                                     handleDeleteModeration(original, { skipConfirm: shiftHeld })
                                 }>
                                 {isDeleting ? (
-                                    <LoaderCircleIcon className="size-3.5 animate-spin" />
+                                    <LoaderCircleIcon className="animate-spin" />
                                 ) : shiftHeld ? (
-                                    <XIcon className="size-3.5 text-red-600" />
+                                    <XIcon className="text-destructive" />
                                 ) : (
-                                    <Trash2Icon className="size-3.5" />
+                                    <Trash2Icon />
                                 )}
                             </Button>
                         </div>
@@ -829,19 +835,14 @@ export function ModerationPage({ embedded = false } = {}) {
         columnResizeMode: 'onChange'
     });
 
-    const pageCount = Math.max(1, table.getPageCount());
     const hasRows = filteredRows.length > 0;
     const isLoading = loadStatus === 'running' && rows.length === 0;
     const isError = loadStatus === 'error' && rows.length === 0;
 
     return (
-        <div
-            className={
-                embedded
-                    ? 'flex h-full min-h-0 flex-col gap-3 p-3'
-                    : 'x-container x-container--auto-height flex h-full min-h-0 flex-col gap-3 p-4 pb-0'
-            }>
-            <div className="flex flex-wrap items-center gap-2">
+        <PageScaffold embedded={embedded}>
+            <PageToolbar>
+                <PageToolbarRow>
                 <ModerationTypeFilterDropdown
                     value={selectedTypes}
                     onChange={setSelectedTypes}
@@ -851,19 +852,19 @@ export function ModerationPage({ embedded = false } = {}) {
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Search"
-                    className="h-9 w-[150px] flex-[0.4]"
+                    className="w-[150px] flex-[0.4]"
                 />
                 <Button
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="rounded-full"
+                    aria-label="Refresh moderation snapshot"
                     disabled={!currentUserId || loadStatus === 'running'}
                     onClick={() => setRefreshToken((value) => value + 1)}>
                     {loadStatus === 'running' ? (
-                        <LoaderCircleIcon className="size-4 animate-spin" />
+                        <LoaderCircleIcon className="animate-spin" />
                     ) : (
-                        <RefreshCwIcon className="size-4" />
+                        <RefreshCwIcon />
                     )}
                 </Button>
                 <TableColumnVisibilityMenu table={table} />
@@ -876,28 +877,27 @@ export function ModerationPage({ embedded = false } = {}) {
                             pageSize: nextPageSize
                         });
                     }}>
-                    <SelectTrigger className="h-9 w-24">
+                    <SelectTrigger className="w-24">
                         <SelectValue placeholder="Page size" />
                     </SelectTrigger>
                     <SelectContent>
-                        {pageSizes.map((size) => (
-                            <SelectItem key={size} value={String(size)}>
-                                {size}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            {pageSizes.map((size) => (
+                                <SelectItem key={size} value={String(size)}>
+                                    {size}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
-            </div>
+                </PageToolbarRow>
 
-            {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
+                {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
+            </PageToolbar>
 
+            <PageBody>
             {isLoading ? (
-                <div className="flex min-h-72 flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/20">
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <LoaderCircleIcon className="size-5 animate-spin" />
-                        Loading the moderation snapshot
-                    </div>
-                </div>
+                <LoadingState label="Loading the moderation snapshot" />
             ) : isError ? (
                 <ModerationEmptyState
                     title="Moderation snapshot failed to load"
@@ -905,8 +905,8 @@ export function ModerationPage({ embedded = false } = {}) {
                 />
             ) : hasRows ? (
                 <>
-                    <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
-                        <div className="h-full overflow-auto">
+                    <DataTableSurface>
+                        <DataTableScrollArea>
                             <Table className="app-data-table table-fixed">
                                 <TableHeader>
                                     {table.getHeaderGroups().map((headerGroup) => (
@@ -927,10 +927,10 @@ export function ModerationPage({ embedded = false } = {}) {
                                     ))}
                                 </TableBody>
                             </Table>
-                        </div>
-                    </div>
+                        </DataTableScrollArea>
+                    </DataTableSurface>
 
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <PageFooter>
                         <div className="text-sm text-muted-foreground">
                             Showing{' '}
                             <span className="font-medium text-foreground">
@@ -942,30 +942,8 @@ export function ModerationPage({ embedded = false } = {}) {
                             </span>{' '}
                             moderation row{filteredRows.length === 1 ? '' : 's'}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={!table.getCanPreviousPage()}
-                                onClick={() => table.previousPage()}>
-                                <ChevronLeftIcon className="size-4" />
-                                Previous
-                            </Button>
-                            <Badge variant="outline">
-                                Page {pagination.pageIndex + 1} / {pageCount}
-                            </Badge>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={!table.getCanNextPage()}
-                                onClick={() => table.nextPage()}>
-                                Next
-                                <ChevronRightIcon className="size-4" />
-                            </Button>
-                        </div>
-                    </div>
+                        <DataTablePagination table={table} pageIndex={pagination.pageIndex} />
+                    </PageFooter>
                 </>
             ) : (
                 <ModerationEmptyState
@@ -973,6 +951,7 @@ export function ModerationPage({ embedded = false } = {}) {
                     description="Broaden the type filters or search query to see more results."
                 />
             )}
-        </div>
+            </PageBody>
+        </PageScaffold>
     );
 }

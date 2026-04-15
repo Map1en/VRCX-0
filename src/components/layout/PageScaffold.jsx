@@ -1,6 +1,13 @@
-import { LoaderCircleIcon } from 'lucide-react';
-
 import { cn } from '@/lib/utils.js';
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle
+} from '@/ui/shadcn/empty.jsx';
+import { Spinner } from '@/ui/shadcn/spinner.jsx';
 
 export function PageScaffold({
     embedded = false,
@@ -68,26 +75,26 @@ export function EmptyState({
     children
 }) {
     return (
-        <div
-            className={cn(
-                'flex min-h-72 flex-1 items-center justify-center rounded-md border border-dashed bg-muted/20 p-6 text-center',
-                className
-            )}>
-            <div className={cn('flex max-w-sm flex-col items-center gap-2', contentClassName)}>
-                {Icon ? <Icon className="size-5 text-muted-foreground" /> : null}
-                {title ? <div className="text-sm font-medium">{title}</div> : null}
-                {description ? <div className="text-sm text-muted-foreground">{description}</div> : null}
-                {children}
-            </div>
-        </div>
+        <Empty className={cn('min-h-72', className)}>
+            <EmptyHeader className={contentClassName}>
+                {Icon ? (
+                    <EmptyMedia variant="icon">
+                        <Icon />
+                    </EmptyMedia>
+                ) : null}
+                {title ? <EmptyTitle>{title}</EmptyTitle> : null}
+                {description ? <EmptyDescription>{description}</EmptyDescription> : null}
+            </EmptyHeader>
+            {children ? <EmptyContent>{children}</EmptyContent> : null}
+        </Empty>
     );
 }
 
 export function LoadingState({ label, className = '' }) {
     return (
         <EmptyState className={className}>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <LoaderCircleIcon className="size-5 animate-spin" />
+            <div className="flex items-center gap-2">
+                <Spinner />
                 {label}
             </div>
         </EmptyState>

@@ -833,7 +833,6 @@
                     "theme_mode_system": "システムに合わせる",
                     "theme_mode_light": "ライト",
                     "theme_mode_dark": "ダーク",
-                    "theme_mode_midnight": "ミッドナイト",
                     "theme_mode_blue": "ブルー",
                     "theme_mode_darkblue": "ダークブルー",
                     "theme_mode_amoled": "AMOLED",
@@ -869,7 +868,6 @@
                     "use_official_status_colors_description": "VRChat の元のステータスカラーと一致させます",
                     "table_density": "テーブルの行の高さ",
                     "table_density_standard": "標準",
-                    "table_density_comfortable": "やや低め",
                     "table_density_compact": "低め",
                     "table_entries_settings": "最大読み込み件数",
                     "table_entries_settings_description": "表示や検索で読み込む、最大エントリ数を設定します"

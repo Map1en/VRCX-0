@@ -13,7 +13,6 @@ import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import { timeToText } from '@/lib/dateTime.js';
-import { cn } from '@/lib/utils.js';
 import { configRepository, instanceActivityRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { getResolvedThemeMode } from '@/services/themeService.js';
@@ -601,7 +600,7 @@ function InstanceActivityDetailChart({
             return;
         }
 
-        const themeName = resolvedTheme === 'dark' || resolvedTheme === 'midnight' ? 'dark' : null;
+        const themeName = resolvedTheme === 'dark' ? 'dark' : null;
         let chart = chartInstanceRef.current;
         if (!chart || chartThemeRef.current !== themeName) {
             resizeObserverRef.current?.disconnect();
@@ -916,8 +915,7 @@ export function InstanceActivityPage() {
             return;
         }
 
-        const themeName =
-            resolvedTheme === 'dark' || resolvedTheme === 'midnight' ? 'dark' : null;
+        const themeName = resolvedTheme === 'dark' ? 'dark' : null;
         let chart = chartInstanceRef.current;
 
         if (!chart || chartThemeRef.current !== themeName) {
@@ -1164,10 +1162,7 @@ export function InstanceActivityPage() {
                         <>
                             <div
                                 ref={setMainChartElementRef}
-                                className={cn(
-                                    'w-full bg-transparent',
-                                    resolvedTheme === 'midnight' ? 'border-primary/20' : ''
-                                )}
+                                className="w-full bg-transparent"
                             />
                             {!chartRows.length ? (
                                 <ChartEmptyState

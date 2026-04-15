@@ -4,8 +4,6 @@ import {
     ArrowUpDownIcon,
     ArrowUpIcon,
     CheckIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
     EyeIcon,
     ImageIcon,
     LayoutGridIcon,
@@ -35,6 +33,12 @@ import {
     ResizableTableCell,
     ResizableTableHead
 } from '@/components/data-table/ResizableTableParts.jsx';
+import {
+    DataTablePagination,
+    DataTableScrollArea,
+    DataTableSurface
+} from '@/components/data-table/DataTableView.jsx';
+import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { getAvailablePlatforms, getPlatformInfo } from '@/lib/avatarPlatform.js';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
@@ -75,6 +79,7 @@ import {
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
@@ -359,14 +364,7 @@ function PlatformBadges({ unityPackages }) {
 }
 
 function MyAvatarsEmptyState({ title, description }) {
-    return (
-        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
-                <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
-            </div>
-        </div>
-    );
+    return <EmptyState title={title} description={description} />;
 }
 
 function openAvatarDetails(avatar) {
@@ -417,47 +415,47 @@ function AvatarActionMenuItems({
     return (
         <>
             <Item onSelect={(event) => handleAction(event, 'details')}>
-                <EyeIcon className="size-4" />
+                <EyeIcon />
                 View details
             </Item>
             <Item
                 disabled={disabled || isActive}
                 onSelect={(event) => handleAction(event, 'wear')}>
-                <CheckIcon className="size-4" />
+                <CheckIcon />
                 Select avatar
             </Item>
             <Separator />
             <Item disabled={disabled} onSelect={(event) => handleAction(event, 'manageTags')}>
-                <TagIcon className="size-4" />
+                <TagIcon />
                 Manage tags
             </Item>
             <Separator />
             <Item disabled={disabled} onSelect={(event) => handleAction(event, releaseAction)}>
-                <UserIcon className="size-4" />
+                <UserIcon />
                 {avatar?.releaseStatus === 'public' ? 'Make private' : 'Make public'}
             </Item>
             <Item disabled={disabled} onSelect={(event) => handleAction(event, 'rename')}>
-                <PencilIcon className="size-4" />
+                <PencilIcon />
                 Rename
             </Item>
             <Item disabled={disabled} onSelect={(event) => handleAction(event, 'changeDescription')}>
-                <PencilIcon className="size-4" />
+                <PencilIcon />
                 Change description
             </Item>
             <Item disabled={disabled} onSelect={(event) => handleAction(event, 'changeTags')}>
-                <PencilIcon className="size-4" />
+                <PencilIcon />
                 Change content tags
             </Item>
             <Item disabled={disabled} onSelect={(event) => handleAction(event, 'changeStyles')}>
-                <PencilIcon className="size-4" />
+                <PencilIcon />
                 Change styles/author tags
             </Item>
             <Item disabled={disabled} onSelect={(event) => handleAction(event, 'changeImage')}>
-                <ImageIcon className="size-4" />
+                <ImageIcon />
                 Change image
             </Item>
             <Item disabled={disabled} onSelect={(event) => handleAction(event, 'createImpostor')}>
-                <RefreshCwIcon className="size-4" />
+                <RefreshCwIcon />
                 Create impostor
             </Item>
         </>
@@ -479,13 +477,13 @@ function AvatarActionsDropdown({
                     type="button"
                     variant="ghost"
                     size="icon-xs"
-                    className="rounded-full"
+                    aria-label="Open avatar actions"
                     disabled={isUpdating}
                     onClick={(event) => event.stopPropagation()}>
                     {isUpdating ? (
-                        <LoaderCircleIcon className="size-3.5 animate-spin" />
+                        <LoaderCircleIcon className="animate-spin" />
                     ) : (
-                        <MoreHorizontalIcon className="size-4" />
+                        <MoreHorizontalIcon />
                     )}
                 </Button>
             </DropdownMenuTrigger>
@@ -517,19 +515,17 @@ function MyAvatarFilterPopover({
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5">
-                    <ListFilterIcon className="size-4" />
+                <Button type="button" variant="outline" size="sm">
+                    <ListFilterIcon data-icon="inline-start" />
                     Filter
                     {activeFilterCount ? (
-                        <Badge variant="secondary" className="ml-0.5 h-4 min-w-4 rounded-full px-1 text-xs">
-                            {activeFilterCount}
-                        </Badge>
+                        <Badge variant="secondary">{activeFilterCount}</Badge>
                     ) : null}
                 </Button>
             </PopoverTrigger>
             <PopoverContent align="start" className="w-80 p-3">
                 <div className="flex flex-col gap-3">
-                    <div className="space-y-1.5">
+                    <div className="flex flex-col gap-1.5">
                         <div className="text-xs font-medium text-muted-foreground">Visibility</div>
                         <div className="flex flex-wrap gap-1">
                             {RELEASE_STATUS_OPTIONS.map((option) => (
@@ -544,7 +540,7 @@ function MyAvatarFilterPopover({
                             ))}
                         </div>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="flex flex-col gap-1.5">
                         <div className="text-xs font-medium text-muted-foreground">Platform</div>
                         <div className="flex flex-wrap gap-1">
                             {PLATFORM_OPTIONS.map((option) => (
@@ -566,7 +562,7 @@ function MyAvatarFilterPopover({
                         </div>
                     </div>
                     {allTags.length ? (
-                        <div className="space-y-1.5">
+                        <div className="flex flex-col gap-1.5">
                             <div className="text-xs font-medium text-muted-foreground">Tags</div>
                             <div className="flex max-h-40 flex-wrap gap-1 overflow-y-auto">
                                 {allTags.map((tag) => {
@@ -630,8 +626,8 @@ function GridSettingsMenu({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button className="rounded-full" size="icon-sm" variant="ghost">
-                    <SettingsIcon className="size-4" />
+                <Button type="button" size="icon-sm" variant="ghost" aria-label="Grid settings">
+                    <SettingsIcon />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-60 p-3" align="end">
@@ -1778,7 +1774,6 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         columnResizeMode: 'onChange'
     });
 
-    const pageCount = Math.max(1, table.getPageCount());
     const gridGap = Math.round(12 * cardSpacing);
     const gridMinWidth = Math.round(Math.max(200, 320 * cardScale));
     const gridColumnCount = Math.max(
@@ -1843,21 +1838,23 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                             type="button"
                             size="icon-sm"
                             variant={viewMode === 'grid' ? 'default' : 'outline'}
+                            aria-label="Show avatar grid"
                             onClick={() => {
                                 setViewMode('grid');
                                 void configRepository.setString('MyAvatarsViewMode', 'grid');
                             }}>
-                            <LayoutGridIcon className="size-4" />
+                            <LayoutGridIcon />
                         </Button>
                         <Button
                             type="button"
                             size="icon-sm"
                             variant={viewMode === 'table' ? 'default' : 'outline'}
+                            aria-label="Show avatar table"
                             onClick={() => {
                                 setViewMode('table');
                                 void configRepository.setString('MyAvatarsViewMode', 'table');
                             }}>
-                            <ListIcon className="size-4" />
+                            <ListIcon />
                         </Button>
                     </div>
 
@@ -1886,7 +1883,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
                         placeholder="Search"
-                        className="h-8 w-80"
+                        className="w-80"
                     />
                     {viewMode === 'grid' ? (
                         <GridSettingsMenu
@@ -1907,15 +1904,17 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                     pageSize: nextPageSize
                                 });
                             }}>
-                            <SelectTrigger className="h-8 w-24">
+                            <SelectTrigger className="w-24">
                                 <SelectValue placeholder="Page size" />
                             </SelectTrigger>
                             <SelectContent>
-                                {pageSizes.map((size) => (
-                                    <SelectItem key={size} value={String(size)}>
-                                        {size}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    {pageSizes.map((size) => (
+                                        <SelectItem key={size} value={String(size)}>
+                                            {size}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     ) : null}
@@ -1923,21 +1922,17 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
+                        aria-label="Refresh avatar inventory"
                         disabled={!currentUserId || loadStatus === 'running'}
                         onClick={() => setRefreshToken((value) => value + 1)}>
-                        <RefreshCwIcon className={loadStatus === 'running' ? 'size-4 animate-spin' : 'size-4'} />
+                        <RefreshCwIcon className={loadStatus === 'running' ? 'animate-spin' : ''} />
                     </Button>
                 </div>
 
                 {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
 
                     {isLoading ? (
-                        <div className="flex min-h-72 flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/20">
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <LoaderCircleIcon className="size-5 animate-spin" />
-                                Loading the avatar inventory
-                            </div>
-                        </div>
+                        <LoadingState label="Loading the avatar inventory" />
                     ) : isError ? (
                         <MyAvatarsEmptyState
                             title="Avatar inventory failed to load"
@@ -1946,8 +1941,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     ) : hasRows ? (
                         viewMode === 'table' ? (
                             <>
-                                <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
-                                    <div className="h-full overflow-auto">
+                                <DataTableSurface>
+                                    <DataTableScrollArea>
                                         <Table className="app-data-table table-fixed">
                                             <TableHeader>
                                                 {table.getHeaderGroups().map((headerGroup) => (
@@ -1992,8 +1987,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                             ))}
                                             </TableBody>
                                         </Table>
-                                    </div>
-                                </div>
+                                    </DataTableScrollArea>
+                                </DataTableSurface>
                                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                     <div className="text-sm text-muted-foreground">
                                         Showing{' '}
@@ -2006,29 +2001,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                         </span>{' '}
                                         avatar{filteredAvatars.length === 1 ? '' : 's'}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={!table.getCanPreviousPage()}
-                                            onClick={() => table.previousPage()}>
-                                            <ChevronLeftIcon className="size-4" />
-                                            Previous
-                                        </Button>
-                                        <Badge variant="outline">
-                                            Page {pagination.pageIndex + 1} / {pageCount}
-                                        </Badge>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={!table.getCanNextPage()}
-                                            onClick={() => table.nextPage()}>
-                                            Next
-                                            <ChevronRightIcon className="size-4" />
-                                        </Button>
-                                    </div>
+                                    <DataTablePagination table={table} pageIndex={pagination.pageIndex} />
                                 </div>
                             </>
                         ) : (

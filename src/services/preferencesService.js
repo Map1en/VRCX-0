@@ -56,12 +56,9 @@ function applyAccessibleStatusClass(enabled) {
 
 function applyTableDensityClass(density) {
     const normalized = normalizeTableDensity(density);
-    document.documentElement.classList.remove('is-compact-table', 'is-comfortable-table');
+    document.documentElement.classList.remove('is-compact-table');
     if (normalized === 'compact') {
         document.documentElement.classList.add('is-compact-table');
-    }
-    if (normalized === 'comfortable') {
-        document.documentElement.classList.add('is-comfortable-table');
     }
 }
 
@@ -274,7 +271,7 @@ export async function loadPreferenceSnapshot() {
         minutes: normalizedRecentActionCooldownMinutes
     });
     setDocumentLanguage(useShellStore.getState().locale || 'en');
-    if (!tableDensity) {
+    if (!tableDensity || tableDensity !== resolvedTableDensity) {
         await configRepository.setString('VRCX_tableDensity', resolvedTableDensity);
     }
 

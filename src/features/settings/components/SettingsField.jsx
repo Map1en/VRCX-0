@@ -1,19 +1,25 @@
 import { cn } from '@/lib/utils.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import {
+    Field as ShadcnField,
+    FieldContent,
+    FieldDescription,
+    FieldLabel
+} from '@/ui/shadcn/field.jsx';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group.jsx';
 
 export function Field({ label, description, children, className = '' }) {
     return (
-        <div
+        <ShadcnField
             className={cn(
                 'grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
                 className
             )}>
-            <div className="flex min-w-0 flex-col gap-1">
-                <div className="text-sm font-medium">{label}</div>
-                {description ? <div className="text-xs text-muted-foreground">{description}</div> : null}
-            </div>
+            <FieldContent>
+                <FieldLabel>{label}</FieldLabel>
+                {description ? <FieldDescription>{description}</FieldDescription> : null}
+            </FieldContent>
             <div className="justify-self-start lg:justify-self-end">{children}</div>
-        </div>
+        </ShadcnField>
     );
 }
 
@@ -28,20 +34,25 @@ export function SettingsSectionHeading({ title, description }) {
 
 export function SegmentedPreference({ options, value, onChange }) {
     return (
-        <div className="inline-flex overflow-hidden rounded-md border">
+        <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={value}
+            onValueChange={(nextValue) => {
+                if (nextValue) {
+                    onChange?.(nextValue);
+                }
+            }}>
             {options.map((option) => (
-                <Button
+                <ToggleGroupItem
                     key={option.value}
-                    type="button"
-                    variant={value === option.value ? 'default' : 'ghost'}
-                    size="sm"
-                    className="rounded-none border-r last:border-r-0"
-                    aria-pressed={value === option.value}
-                    onClick={() => onChange?.(option.value)}>
+                    value={option.value}
+                    aria-label={option.label}>
                     {option.label}
-                </Button>
+                </ToggleGroupItem>
             ))}
-        </div>
+        </ToggleGroup>
     );
 }
 

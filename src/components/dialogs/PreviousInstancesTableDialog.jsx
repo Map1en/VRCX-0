@@ -442,8 +442,7 @@ function PreviousInstanceInfoChart({ rows }) {
             return;
         }
 
-        const themeName =
-            resolvedTheme === 'dark' || resolvedTheme === 'midnight' ? 'dark' : null;
+        const themeName = resolvedTheme === 'dark' ? 'dark' : null;
         let chart = chartInstanceRef.current;
 
         if (!chart || chartThemeRef.current !== themeName) {

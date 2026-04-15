@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     GlobeIcon,
-    LoaderCircleIcon,
     SettingsIcon,
     Trash2Icon,
     UserIcon,
@@ -11,6 +10,7 @@ import {
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { AvatarProviderSettingsDialog } from '@/components/search/AvatarProviderSettingsDialog.jsx';
 import { SearchPagination } from '@/components/search/SearchPagination.jsx';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
@@ -35,7 +35,7 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { Button } from '@/ui/shadcn/button.jsx';
 import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
 import { Input } from '@/ui/shadcn/input.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
 
 const PAGE_SIZE = 10;
@@ -194,19 +194,11 @@ function buildUserSearchRequest(
 }
 
 function SearchEmptyState() {
-    return (
-        <div className="flex h-full min-h-56 items-center justify-center text-sm text-muted-foreground">
-            No data
-        </div>
-    );
+    return <EmptyState title="No data" className="min-h-56" />;
 }
 
 function SearchLoadingState() {
-    return (
-        <div className="flex h-full min-h-56 items-center justify-center">
-            <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
-        </div>
-    );
+    return <LoadingState label="Loading" className="min-h-56" />;
 }
 
 function AvatarCard({ avatar }) {
@@ -909,12 +901,13 @@ export function SearchPage() {
                         </div>
                         <Button
                             type="button"
-                            className="ml-2 rounded-full"
+                            className="ml-2"
                             size="icon"
                             variant="ghost"
                             title={t('view.search.clear_results_tooltip')}
+                            aria-label={t('view.search.clear_results_tooltip')}
                             onClick={handleClearSearch}>
-                            <Trash2Icon className="size-4" />
+                            <Trash2Icon />
                             <span className="sr-only">{t('view.search.clear_results_tooltip')}</span>
                         </Button>
                     </div>
@@ -985,11 +978,13 @@ export function SearchPage() {
                                     <SelectValue placeholder={t('view.search.world.category')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {worldCategories.map((row) => (
-                                        <SelectItem key={row.index} value={String(row.index)}>
-                                            {row.name}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        {worldCategories.map((row) => (
+                                            <SelectItem key={row.index} value={String(row.index)}>
+                                                {row.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1029,11 +1024,13 @@ export function SearchPage() {
                                         <SelectValue placeholder={t('view.search.avatar.search_provider')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {avatarProviderList.filter(Boolean).map((provider) => (
-                                            <SelectItem key={provider} value={provider}>
-                                                {provider}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {avatarProviderList.filter(Boolean).map((provider) => (
+                                                <SelectItem key={provider} value={provider}>
+                                                    {provider}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             ) : (
@@ -1045,8 +1042,9 @@ export function SearchPage() {
                                 type="button"
                                 size="sm"
                                 variant="outline"
+                                aria-label={t('view.search.avatar.search_provider')}
                                 onClick={() => setIsAvatarProviderDialogOpen(true)}>
-                                <SettingsIcon className="size-4" />
+                                <SettingsIcon data-icon="inline-start" />
                             </Button>
                         </div>
 

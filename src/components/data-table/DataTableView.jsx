@@ -9,6 +9,11 @@ import { cn } from '@/lib/utils.js';
 import { Badge } from '@/ui/shadcn/badge.jsx';
 import { Button } from '@/ui/shadcn/button.jsx';
 import {
+    Pagination,
+    PaginationContent,
+    PaginationItem
+} from '@/ui/shadcn/pagination.jsx';
+import {
     Table,
     TableBody,
     TableCell,
@@ -67,28 +72,40 @@ export function DataTablePagination({
     );
 
     return (
-        <div className={cn('flex items-center gap-2', className)}>
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!table?.getCanPreviousPage?.()}
-                onClick={() => table?.previousPage?.()}>
-                <ChevronLeftIcon className="size-4" />
-                {previousLabel}
-            </Button>
-            <Badge variant="outline">
-                Page {resolvedPageIndex + 1} / {resolvedPageCount}
-            </Badge>
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!table?.getCanNextPage?.()}
-                onClick={() => table?.nextPage?.()}>
-                {nextLabel}
-                <ChevronRightIcon className="size-4" />
-            </Button>
+        <div className={className}>
+            <Pagination className="mx-0 w-auto justify-start">
+                <PaginationContent>
+                    <PaginationItem>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-label={previousLabel}
+                            disabled={!table?.getCanPreviousPage?.()}
+                            onClick={() => table?.previousPage?.()}>
+                            <ChevronLeftIcon data-icon="inline-start" />
+                            {previousLabel}
+                        </Button>
+                    </PaginationItem>
+                    <PaginationItem>
+                        <Badge variant="outline">
+                            Page {resolvedPageIndex + 1} / {resolvedPageCount}
+                        </Badge>
+                    </PaginationItem>
+                    <PaginationItem>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-label={nextLabel}
+                            disabled={!table?.getCanNextPage?.()}
+                            onClick={() => table?.nextPage?.()}>
+                            {nextLabel}
+                            <ChevronRightIcon data-icon="inline-end" />
+                        </Button>
+                    </PaginationItem>
+                </PaginationContent>
+            </Pagination>
             {summary ? <span className="sr-only">{summary}</span> : null}
         </div>
     );

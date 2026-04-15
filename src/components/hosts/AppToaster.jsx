@@ -10,7 +10,7 @@ import { useShellStore } from '@/state/shellStore.js';
 import { Toaster } from '@/ui/shadcn/sonner.jsx';
 
 function resolveSonnerTheme(themeMode) {
-    if (themeMode === 'dark' || themeMode === 'midnight') {
+    if (themeMode === 'dark') {
         return 'dark';
     }
     if (themeMode === 'light') {
@@ -22,7 +22,7 @@ function resolveSonnerTheme(themeMode) {
         : '';
     const resolvedTheme = documentTheme || 'system';
 
-    if (resolvedTheme === 'dark' || resolvedTheme === 'midnight') {
+    if (resolvedTheme === 'dark') {
         return 'dark';
     }
     if (resolvedTheme === 'light') {

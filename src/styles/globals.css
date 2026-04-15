@@ -220,10 +220,6 @@
         @apply py-1;
     }
 
-    .is-comfortable-table [data-slot='table-cell'] {
-        @apply py-1.5;
-    }
-
     .is-striped-table .app-data-table [data-slot='table-body'] [data-slot='table-row']:nth-child(even) {
         @apply bg-muted/20;
     }

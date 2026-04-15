@@ -7,7 +7,6 @@ import {
     ExternalLinkIcon,
     HomeIcon,
     IdCardIcon,
-    LoaderCircleIcon,
     MonitorIcon,
     SmartphoneIcon,
     UserIcon,
@@ -29,6 +28,16 @@ import {
     ResizableTableCell,
     ResizableTableHead
 } from '@/components/data-table/ResizableTableParts.jsx';
+import {
+    DataTableEmptyRow,
+    DataTableScrollArea,
+    DataTableSurface
+} from '@/components/data-table/DataTableView.jsx';
+import {
+    EmptyState,
+    LoadingState,
+    PageScaffold
+} from '@/components/layout/PageScaffold.jsx';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import {
@@ -53,6 +62,7 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge.jsx';
 import { Button } from '@/ui/shadcn/button.jsx';
 import {
+    Table,
     TableBody,
     TableHeader,
     TableRow
@@ -560,48 +570,39 @@ function SortButton({ column, label }) {
 
 function PlayerListTableShell({ table, children }) {
     return (
-        <div className="app-data-table flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border [&_td]:px-2.5 [&_td]:py-0.5 [&_th]:px-2.5 [&_th]:py-1 [&_tr]:h-7">
-            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-                <table className="w-full table-fixed caption-bottom text-sm">
+        <DataTableSurface>
+            <DataTableScrollArea>
+                <Table className="app-data-table table-fixed">
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <ResizableTableHead key={header.id} header={header} className="px-2.5 py-1" />
+                                    <ResizableTableHead key={header.id} header={header} />
                                 ))}
                             </TableRow>
                         ))}
                     </TableHeader>
                     <TableBody>{children}</TableBody>
-                </table>
-            </div>
-        </div>
+                </Table>
+            </DataTableScrollArea>
+        </DataTableSurface>
     );
 }
 
 function PlayerListEmptyRow({ table, title, description }) {
     const visibleColumnCount = table.getVisibleLeafColumns?.().length || table.getAllLeafColumns?.().length || COLUMN_IDS.length;
     return (
-        <TableRow className="hover:bg-transparent">
-            <td colSpan={Math.max(1, visibleColumnCount)} className="px-3 py-10 text-center">
-                <div className="mx-auto max-w-md space-y-2">
+        <DataTableEmptyRow colSpan={Math.max(1, visibleColumnCount)} className="py-10">
+                <div className="mx-auto flex max-w-md flex-col gap-2">
                     <div className="text-sm font-medium">{title}</div>
                     <div className="text-sm text-muted-foreground">{description}</div>
                 </div>
-            </td>
-        </TableRow>
+        </DataTableEmptyRow>
     );
 }
 
 function PlayerListEmptyState({ title, description }) {
-    return (
-        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-md space-y-2">
-                <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
-            </div>
-        </div>
-    );
+    return <EmptyState title={title} description={description} />;
 }
 
 export function PlayerListPage({ embedded = false } = {}) {
@@ -1400,8 +1401,8 @@ export function PlayerListPage({ embedded = false } = {}) {
                                     key={`${link}:${index}`}
                                     type="button"
                                     variant="ghost"
-                                    size="icon"
-                                    className="size-6"
+                                    size="icon-xs"
+                                    aria-label={`${t('common.actions.open_link')}: ${link}`}
                                     title={link}
                                     onClick={(event) => {
                                         event.stopPropagation();
@@ -1410,7 +1411,7 @@ export function PlayerListPage({ embedded = false } = {}) {
                                     {getFaviconUrl(link) ? (
                                         <img src={getFaviconUrl(link)} alt="" className="size-4" />
                                     ) : (
-                                        <ExternalLinkIcon className="size-4" />
+                                        <ExternalLinkIcon />
                                     )}
                                 </Button>
                             ))
@@ -1467,12 +1468,7 @@ export function PlayerListPage({ embedded = false } = {}) {
     const isError = loadStatus === 'error' && playerSourceRows.length === 0;
 
     return (
-        <div
-            className={
-                embedded
-                    ? 'flex h-full min-h-0 flex-col overflow-y-auto overflow-x-hidden p-3'
-                    : 'x-container x-container--auto-height flex h-full min-h-0 flex-col overflow-y-auto overflow-x-hidden p-4 pb-0'
-            }>
+        <PageScaffold embedded={embedded} className="overflow-y-auto overflow-x-hidden">
             <CurrentWorldHeader
                 cacheInfo={currentWorldCacheInfo}
                 clockNow={clockNow}
@@ -1497,12 +1493,7 @@ export function PlayerListPage({ embedded = false } = {}) {
                         />
                     </div>
                     {isLoading ? (
-                        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20">
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <LoaderCircleIcon className="size-5 animate-spin" />
-                                Rebuilding the current instance roster from game-log history
-                            </div>
-                        </div>
+                        <LoadingState label="Rebuilding the current instance roster from game-log history" />
                     ) : isError ? (
                         <PlayerListEmptyState
                             title="Player list failed to load"
@@ -1516,7 +1507,7 @@ export function PlayerListPage({ embedded = false } = {}) {
                                     className="cursor-pointer"
                                     onClick={() => void openPlayerRow(row.original)}>
                                     {row.getVisibleCells().map((cell) => (
-                                        <ResizableTableCell key={cell.id} cell={cell} className="px-2.5 py-0.5" />
+                                        <ResizableTableCell key={cell.id} cell={cell} />
                                     ))}
                                 </TableRow>
                             )) : (
@@ -1551,6 +1542,6 @@ export function PlayerListPage({ embedded = false } = {}) {
                         </PlayerListTableShell>
                     )}
                 </div>
-        </div>
+        </PageScaffold>
     );
 }

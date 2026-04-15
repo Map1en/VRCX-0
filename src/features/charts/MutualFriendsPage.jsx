@@ -1016,7 +1016,7 @@ export function MutualFriendsPage() {
         }
 
         let active = true;
-        const isDarkMode = resolvedTheme === 'dark' || resolvedTheme === 'midnight';
+        const isDarkMode = resolvedTheme === 'dark';
         void buildSigmaGraph({
             nodes: filteredGraph.nodes,
             links: filteredGraph.links,
@@ -1628,7 +1628,7 @@ export function MutualFriendsPage() {
                     ) : (
                         <div
                             ref={setGraphElementRef}
-                            className={cn('h-[calc(100vh-260px)] min-h-[520px] w-full flex-1 rounded-lg bg-transparent', resolvedTheme === 'midnight' ? 'border-primary/20' : '')}
+                            className="h-[calc(100vh-260px)] min-h-[520px] w-full flex-1 rounded-lg bg-transparent"
                         />
                     )}
                 </div>

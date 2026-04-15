@@ -846,7 +846,6 @@
                     "theme_mode_system": "系統",
                     "theme_mode_light": "淺色",
                     "theme_mode_dark": "深色",
-                    "theme_mode_midnight": "午夜",
                     "theme_mode_blue": "藍色",
                     "theme_mode_darkblue": "深藍",
                     "theme_mode_amoled": "AMOLED 黑",
@@ -882,7 +881,6 @@
                     "use_official_status_colors_description": "與 VRChat 官方的狀態顏色保持一致。",
                     "table_density": "表格密度",
                     "table_density_standard": "標準",
-                    "table_density_comfortable": "舒適",
                     "table_density_compact": "緊湊",
                     "table_entries_settings": "表格最大列數",
                     "table_entries_settings_description": "控制清單與搜尋載入的項目數量。"
