@@ -21,14 +21,18 @@ function getAttemptBucket(accountKey) {
 }
 
 function pruneAttempts(accountKey, now = Date.now()) {
-    const bucket = getAttemptBucket(accountKey);
+    const normalizedKey = normalizeThrottleKey(accountKey);
+    const bucket = attemptTimestampsByKey.get(normalizedKey);
+    if (!bucket) {
+        return;
+    }
 
     while (bucket.length > 0 && bucket[0] <= now - AUTO_LOGIN_WINDOW_MS) {
         bucket.shift();
     }
 
     if (bucket.length === 0) {
-        attemptTimestampsByKey.delete(normalizeThrottleKey(accountKey));
+        attemptTimestampsByKey.delete(normalizedKey);
     }
 }
 
@@ -42,8 +46,8 @@ export function canAttemptReactAutoLogin(accountKey, now = Date.now()) {
 }
 
 export function recordReactAutoLoginAttempt(accountKey, now = Date.now()) {
-    const bucket = getAttemptBucket(accountKey);
     pruneAttempts(accountKey, now);
+    const bucket = getAttemptBucket(accountKey);
     bucket.push(now);
     return bucket.length;
 }
