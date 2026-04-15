@@ -69,11 +69,9 @@ async function runFullDatabaseUpgrade() {
         });
         await useModalStore.getState().alert({
             title: 'Database upgrade failed',
-            description:
-                'VRCX failed to apply a local database upgrade. Developer tools will open so the error can be inspected.',
+            description: 'VRCX failed to apply a local database upgrade.',
             dismissible: false
         });
-        await backend.app.ShowDevTools().catch(() => {});
         useSessionStore.getState().setSessionState({ databaseReady: false });
         return false;
     }

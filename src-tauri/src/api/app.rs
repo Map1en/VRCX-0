@@ -3,7 +3,7 @@
 #[cfg(windows)]
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use fast_rsync::{Signature, SignatureOptions};
@@ -531,15 +531,6 @@ pub fn app__flash_window(app_handle: AppHandle) -> Result<(), AppError> {
 }
 
 #[tauri::command]
-pub fn app__show_dev_tools(app_handle: AppHandle) -> Result<(), AppError> {
-    use tauri::Manager;
-    if let Some(window) = app_handle.get_webview_window("main") {
-        window.open_devtools();
-    }
-    Ok(())
-}
-
-#[tauri::command]
 pub fn app__change_theme(app_handle: AppHandle, value: i32) -> Result<(), AppError> {
     use tauri::Manager;
     if let Some(window) = app_handle.get_webview_window("main") {
@@ -811,12 +802,6 @@ pub fn app__open_calendar_file(ics_content: String) -> Result<(), AppError> {
     open::that(ics_path.to_string_lossy().as_ref())
         .map_err(|e| AppError::Custom(format!("open ics: {e}")))?;
     Ok(())
-}
-
-#[tauri::command]
-pub fn app__populate_image_hosts(state: State<'_, AppState>, json: String) {
-    let hosts: Vec<String> = serde_json::from_str(&json).unwrap_or_default();
-    state.image_cache.populate_hosts(&hosts);
 }
 
 #[tauri::command]
@@ -1130,6 +1115,87 @@ fn crop_print_impl(path: &std::path::Path) -> Result<bool, Box<dyn std::error::E
     Ok(false)
 }
 
+fn sanitize_ugc_component(value: &str, label: &str) -> Result<String, AppError> {
+    let mut sanitized = String::with_capacity(value.len());
+    for ch in value.trim().chars() {
+        if ch.is_control() || matches!(ch, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*') {
+            sanitized.push('_');
+        } else {
+            sanitized.push(ch);
+        }
+    }
+
+    while sanitized.ends_with(' ') || sanitized.ends_with('.') {
+        sanitized.pop();
+    }
+
+    if sanitized.is_empty() || sanitized == "." || sanitized == ".." {
+        sanitized = "_".into();
+    }
+
+    if is_windows_reserved_name(&sanitized) {
+        sanitized.insert(0, '_');
+    }
+
+    if !is_single_path_component(&sanitized) {
+        return Err(AppError::Custom(format!("invalid {label} path component")));
+    }
+
+    Ok(sanitized)
+}
+
+fn is_single_path_component(value: &str) -> bool {
+    let mut components = Path::new(value).components();
+    match (components.next(), components.next()) {
+        (Some(Component::Normal(component)), None) => component == std::ffi::OsStr::new(value),
+        _ => false,
+    }
+}
+
+fn is_windows_reserved_name(value: &str) -> bool {
+    let upper = value
+        .split('.')
+        .next()
+        .unwrap_or_default()
+        .to_ascii_uppercase();
+    matches!(
+        upper.as_str(),
+        "CON" | "PRN" | "AUX" | "NUL"
+            | "COM1" | "COM2" | "COM3" | "COM4" | "COM5" | "COM6" | "COM7" | "COM8" | "COM9"
+            | "LPT1" | "LPT2" | "LPT3" | "LPT4" | "LPT5" | "LPT6" | "LPT7" | "LPT8" | "LPT9"
+    )
+}
+
+fn build_ugc_image_path(
+    ugc_folder_path: &str,
+    month_folder: &str,
+    file_name: &str,
+) -> Result<PathBuf, AppError> {
+    if ugc_folder_path.trim().is_empty() {
+        return Err(AppError::Custom("UGC folder path is empty".into()));
+    }
+
+    let month_folder = sanitize_ugc_component(month_folder, "month_folder")?;
+    let file_name = sanitize_ugc_component(file_name, "file_name")?;
+    Ok(PathBuf::from(ugc_folder_path).join(month_folder).join(file_name))
+}
+
+async fn save_ugc_image_to_file(
+    state: &AppState,
+    url: String,
+    ugc_folder_path: String,
+    month_folder: String,
+    file_name: String,
+) -> Result<String, AppError> {
+    let out = build_ugc_image_path(&ugc_folder_path, &month_folder, &file_name)?;
+    if let Some(dir) = out.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let out_str = out.to_string_lossy().into_owned();
+    state.image_cache.save_image_to_file(&url, &out_str).await?;
+    Ok(out_str)
+}
+
 #[tauri::command]
 pub async fn app__save_print_to_file(
     state: State<'_, AppState>,
@@ -1138,12 +1204,7 @@ pub async fn app__save_print_to_file(
     month_folder: String,
     file_name: String,
 ) -> Result<String, AppError> {
-    let dir = PathBuf::from(&ugc_folder_path).join(&month_folder);
-    std::fs::create_dir_all(&dir)?;
-    let out = dir.join(&file_name);
-    let out_str = out.to_string_lossy().into_owned();
-    state.image_cache.save_image_to_file(&url, &out_str).await?;
-    Ok(out_str)
+    save_ugc_image_to_file(state.inner(), url, ugc_folder_path, month_folder, file_name).await
 }
 
 #[tauri::command]
@@ -1154,12 +1215,7 @@ pub async fn app__save_sticker_to_file(
     month_folder: String,
     file_name: String,
 ) -> Result<String, AppError> {
-    let dir = PathBuf::from(&ugc_folder_path).join(&month_folder);
-    std::fs::create_dir_all(&dir)?;
-    let out = dir.join(&file_name);
-    let out_str = out.to_string_lossy().into_owned();
-    state.image_cache.save_image_to_file(&url, &out_str).await?;
-    Ok(out_str)
+    save_ugc_image_to_file(state.inner(), url, ugc_folder_path, month_folder, file_name).await
 }
 
 #[tauri::command]
@@ -1170,12 +1226,44 @@ pub async fn app__save_emoji_to_file(
     month_folder: String,
     file_name: String,
 ) -> Result<String, AppError> {
-    let dir = PathBuf::from(&ugc_folder_path).join(&month_folder);
-    std::fs::create_dir_all(&dir)?;
-    let out = dir.join(&file_name);
-    let out_str = out.to_string_lossy().into_owned();
-    state.image_cache.save_image_to_file(&url, &out_str).await?;
-    Ok(out_str)
+    save_ugc_image_to_file(state.inner(), url, ugc_folder_path, month_folder, file_name).await
+}
+
+fn validate_update_download(
+    file_url: &str,
+    hash_string: &str,
+    download_size: i32,
+) -> Result<(), AppError> {
+    if download_size < 0 {
+        return Err(AppError::Custom("update download size is invalid".into()));
+    }
+
+    if (download_size as u64) > crate::domain::update::MAX_UPDATE_INSTALLER_SIZE_BYTES {
+        return Err(AppError::Custom("update installer is too large".into()));
+    }
+
+    let url = reqwest::Url::parse(file_url)
+        .map_err(|e| AppError::Custom(format!("invalid update URL: {e}")))?;
+    if url.scheme() != "https" {
+        return Err(AppError::Custom("update URL must use https".into()));
+    }
+    if url.host_str() != Some("github.com") {
+        return Err(AppError::Custom("update URL host is not allowed".into()));
+    }
+    let path = url.path();
+    if !path.starts_with("/Map1en/VRCX-0/releases/download/")
+        || !path.to_ascii_lowercase().ends_with(".exe")
+    {
+        return Err(AppError::Custom("update URL path is not allowed".into()));
+    }
+
+    if hash_string.len() != 64 || !hash_string.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(AppError::Custom(
+            "update SHA-256 hash must be 64 hex characters".into(),
+        ));
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -1184,10 +1272,13 @@ pub fn app__download_update(
     file_url: String,
     hash_string: String,
     download_size: i32,
-) {
+) -> Result<(), AppError> {
+    let hash_string = hash_string.trim().to_string();
+    validate_update_download(&file_url, &hash_string, download_size)?;
     state
         .update_manager
         .start_download(file_url, hash_string, download_size);
+    Ok(())
 }
 
 #[tauri::command]

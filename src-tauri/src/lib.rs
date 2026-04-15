@@ -177,7 +177,7 @@ pub fn run() {
                 .unwrap_or_default();
             state.log_watcher.start(local_low, app.handle().clone());
 
-            #[cfg(debug_assertions)]
+            #[cfg(all(debug_assertions, feature = "devtools"))]
             if let Some(window) = app.get_webview_window("main") {
                 window.open_devtools();
             }
@@ -247,7 +247,6 @@ pub fn run() {
             api::app::app__save_vrc_reg_json_file,
             api::app::app__focus_window,
             api::app::app__flash_window,
-            api::app::app__show_dev_tools,
             api::app::app__change_theme,
             api::app::app__do_funny,
             api::app::app__set_tray_icon_notification,
@@ -275,7 +274,6 @@ pub fn run() {
             api::app::app__set_app_launcher_settings,
             api::app::app__try_open_instance_in_vrc,
             api::app::app__open_calendar_file,
-            api::app::app__populate_image_hosts,
             api::app::app__get_image,
             api::app::app__resize_image_to_fit_limits,
             api::app::app__sign_file,
