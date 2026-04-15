@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronDownIcon, UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/ui/shadcn/context-menu';
+import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuTrigger } from '@/ui/shadcn/context-menu';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import { openGroupDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
@@ -184,7 +185,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
                 <div className="flex w-full items-center rounded-lg hover:bg-muted/50">
                     <button
                         type="button"
-                        className="flex min-w-0 flex-1 items-center gap-2 p-1.5 text-left text-[13px]"
+                        className="flex min-w-0 flex-1 items-center gap-2 p-1.5 text-left text-sm"
                         onClick={() => openGroupDialog({ groupId, title: name, seedData: instance?.group || instance })}>
                             <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
                                 {iconUrl ? (
@@ -221,20 +222,22 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
                 </div>
             </ContextMenuTrigger>
             <ContextMenuContent className="w-52">
-                <ContextMenuItem
-                    disabled={!canUseInstanceAction}
-                    onSelect={() => {
-                        void launchInstance();
-                    }}>
-                    {t('dialog.user.info.launch_invite_tooltip')}
-                </ContextMenuItem>
-                <ContextMenuItem
-                    disabled={!canUseInstanceAction}
-                    onSelect={() => {
-                        void sendSelfInvite();
-                    }}>
-                    {t('dialog.user.info.self_invite_tooltip')}
-                </ContextMenuItem>
+                <ContextMenuGroup>
+                    <ContextMenuItem
+                        disabled={!canUseInstanceAction}
+                        onSelect={() => {
+                            void launchInstance();
+                        }}>
+                        {t('dialog.user.info.launch_invite_tooltip')}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        disabled={!canUseInstanceAction}
+                        onSelect={() => {
+                            void sendSelfInvite();
+                        }}>
+                        {t('dialog.user.info.self_invite_tooltip')}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
             </ContextMenuContent>
         </ContextMenu>
     );
@@ -325,9 +328,9 @@ export function GroupsSidebar() {
                 return (
                     <button
                         type="button"
-                        className={`flex w-full items-center py-1.5 text-left text-xs ${row.first ? 'pt-0' : 'pt-4'}`}
+                        className={cn('flex w-full items-center py-1.5 text-left text-xs', row.first ? 'pt-0' : 'pt-4')}
                         onClick={() => toggleGroup(row.groupId)}>
-                        <ChevronDownIcon className={`size-4 transition-transform ${row.isCollapsed ? '-rotate-90' : ''}`} />
+                        <ChevronDownIcon className={cn('size-4 transition-transform', row.isCollapsed && '-rotate-90')} />
                         <span className="ml-1.5">
                             {row.name} - {row.count}
                         </span>

@@ -5,7 +5,6 @@ import {
     ExternalLinkIcon,
     FlagIcon,
     HistoryIcon,
-    Loader2Icon,
     LockIcon,
     MessageSquareIcon,
     Share2Icon
@@ -36,10 +35,12 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import {
     ContextMenu,
     ContextMenuContent,
+    ContextMenuGroup,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Tooltip,
     TooltipContent,
@@ -350,7 +351,14 @@ export function Location({
                             )}
                             onClick={openWorld}
                             onKeyDown={openWorldFromKeyboard}>
-                            {isTraveling ? <Loader2Icon className="mr-1 size-3.5 shrink-0 animate-spin" /> : null}
+                            {isTraveling ? (
+                                <Spinner
+                                    aria-hidden="true"
+                                    aria-label={undefined}
+                                    role="presentation"
+                                    className="mr-1 size-3.5 shrink-0"
+                                />
+                            ) : null}
                             <span className="min-w-0 flex-1 truncate">
                                 <span>{text}</span>
                                 {shouldShowInstanceIdInLocation && resolvedInstanceName ? (
@@ -417,51 +425,59 @@ export function Location({
                     <span className="inline-flex min-w-0 max-w-full">{content}</span>
                 </ContextMenuTrigger>
                 <ContextMenuContent className="w-56">
-                    <ContextMenuItem disabled={!canOpenWorld} onSelect={openWorld}>
-                        <ExternalLinkIcon className="size-4" />
-                        {t('common.actions.view_details')}
-                    </ContextMenuItem>
-                    <ContextMenuItem disabled={!shareUrl} onSelect={copyShareLink}>
-                        <Share2Icon className="size-4" />
-                        {t('dialog.world.actions.share')}
-                    </ContextMenuItem>
-                    <ContextMenuItem disabled={!currentLocation} onSelect={() => void copyTextToClipboard(currentLocation)}>
-                        <CopyIcon className="size-4" />
-                        Copy location
-                    </ContextMenuItem>
+                    <ContextMenuGroup>
+                        <ContextMenuItem disabled={!canOpenWorld} onSelect={openWorld}>
+                            <ExternalLinkIcon className="size-4" />
+                            {t('common.actions.view_details')}
+                        </ContextMenuItem>
+                        <ContextMenuItem disabled={!shareUrl} onSelect={copyShareLink}>
+                            <Share2Icon className="size-4" />
+                            {t('dialog.world.actions.share')}
+                        </ContextMenuItem>
+                        <ContextMenuItem disabled={!currentLocation} onSelect={() => void copyTextToClipboard(currentLocation)}>
+                            <CopyIcon className="size-4" />
+                            Copy location
+                        </ContextMenuItem>
+                    </ContextMenuGroup>
                     <ContextMenuSeparator />
-                    <ContextMenuItem disabled={!parsedLocation.worldId} onSelect={() => newInstance(false)}>
-                        <FlagIcon className="size-4" />
-                        {t('dialog.world.actions.new_instance')}
-                    </ContextMenuItem>
-                    <ContextMenuItem disabled={!parsedLocation.worldId} onSelect={() => newInstance(true)}>
-                        <MessageSquareIcon className="size-4" />
-                        {t('dialog.world.actions.new_instance_and_self_invite')}
-                    </ContextMenuItem>
+                    <ContextMenuGroup>
+                        <ContextMenuItem disabled={!parsedLocation.worldId} onSelect={() => newInstance(false)}>
+                            <FlagIcon className="size-4" />
+                            {t('dialog.world.actions.new_instance')}
+                        </ContextMenuItem>
+                        <ContextMenuItem disabled={!parsedLocation.worldId} onSelect={() => newInstance(true)}>
+                            <MessageSquareIcon className="size-4" />
+                            {t('dialog.world.actions.new_instance_and_self_invite')}
+                        </ContextMenuItem>
+                    </ContextMenuGroup>
                     <ContextMenuSeparator />
-                    <ContextMenuItem
-                        disabled={previousInstancesDisabled || previousInstancesLoading || (!parsedLocation.worldId && !isOpenPreviousInstanceInfoDialog)}
-                        onSelect={() => {
-                            if (isOpenPreviousInstanceInfoDialog) {
-                                showExactPreviousInstanceInfo();
-                                return;
-                            }
-                            void showPreviousInstances();
-                        }}>
-                        <HistoryIcon className="size-4" />
-                        {t('dialog.world.actions.show_previous_instances')}
-                    </ContextMenuItem>
+                    <ContextMenuGroup>
+                        <ContextMenuItem
+                            disabled={previousInstancesDisabled || previousInstancesLoading || (!parsedLocation.worldId && !isOpenPreviousInstanceInfoDialog)}
+                            onSelect={() => {
+                                if (isOpenPreviousInstanceInfoDialog) {
+                                    showExactPreviousInstanceInfo();
+                                    return;
+                                }
+                                void showPreviousInstances();
+                            }}>
+                            <HistoryIcon className="size-4" />
+                            {t('dialog.world.actions.show_previous_instances')}
+                        </ContextMenuItem>
+                    </ContextMenuGroup>
                     {showLaunchActions ? (
                         <>
                             <ContextMenuSeparator />
-                            <ContextMenuItem disabled={!canUseCurrentInstance} onSelect={launchCurrentInstance}>
-                                <ExternalLinkIcon className="size-4" />
-                                Launch in VRChat
-                            </ContextMenuItem>
-                            <ContextMenuItem disabled={!canUseCurrentInstance} onSelect={() => void selfInviteCurrentInstance()}>
-                                <MessageSquareIcon className="size-4" />
-                                Self invite
-                            </ContextMenuItem>
+                            <ContextMenuGroup>
+                                <ContextMenuItem disabled={!canUseCurrentInstance} onSelect={launchCurrentInstance}>
+                                    <ExternalLinkIcon className="size-4" />
+                                    Launch in VRChat
+                                </ContextMenuItem>
+                                <ContextMenuItem disabled={!canUseCurrentInstance} onSelect={() => void selfInviteCurrentInstance()}>
+                                    <MessageSquareIcon className="size-4" />
+                                    Self invite
+                                </ContextMenuItem>
+                            </ContextMenuGroup>
                         </>
                     ) : null}
                 </ContextMenuContent>

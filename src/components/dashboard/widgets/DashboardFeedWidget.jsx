@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     BoxIcon,
     HeartIcon,
-    LoaderCircleIcon,
     MapPinIcon,
     PencilIcon,
     SettingsIcon
@@ -22,9 +21,11 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
@@ -381,31 +382,35 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     const settingsMenu = configUpdater ? (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon-sm">
-                    <SettingsIcon className="size-3.5" />
+                <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
+                    <SettingsIcon />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-                {FEED_FILTER_TYPES.map((filterType) => (
-                    <DropdownMenuCheckboxItem
-                        key={filterType}
-                        checked={isDashboardWidgetFilterActive(config, filterType)}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={() =>
-                            configUpdater(
-                                getNextDashboardWidgetFilterConfig(config, filterType, FEED_FILTER_TYPES)
-                            )
-                        }>
-                        {t(`view.feed.filters.${filterType}`)}
-                    </DropdownMenuCheckboxItem>
-                ))}
+                <DropdownMenuGroup>
+                    {FEED_FILTER_TYPES.map((filterType) => (
+                        <DropdownMenuCheckboxItem
+                            key={filterType}
+                            checked={isDashboardWidgetFilterActive(config, filterType)}
+                            onSelect={(event) => event.preventDefault()}
+                            onCheckedChange={() =>
+                                configUpdater(
+                                    getNextDashboardWidgetFilterConfig(config, filterType, FEED_FILTER_TYPES)
+                                )
+                            }>
+                            {t(`view.feed.filters.${filterType}`)}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                    checked={showType}
-                    onSelect={(event) => event.preventDefault()}
-                    onCheckedChange={(checked) => configUpdater({ ...config, showType: Boolean(checked) })}>
-                    {t('dashboard.widget.config.show_type')}
-                </DropdownMenuCheckboxItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuCheckboxItem
+                        checked={showType}
+                        onSelect={(event) => event.preventDefault()}
+                        onCheckedChange={(checked) => configUpdater({ ...config, showType: Boolean(checked) })}>
+                        {t('dashboard.widget.config.show_type')}
+                    </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     ) : null;
@@ -438,8 +443,8 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
 
     if (loadStatus === 'running' && annotatedRows.length === 0) {
         return renderShell(
-            <div className="flex min-h-[180px] flex-1 items-center justify-center text-sm text-muted-foreground">
-                <LoaderCircleIcon className="mr-2 size-4 animate-spin" />
+            <div className="flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Spinner />
                 Loading feed widget
             </div>
         );
@@ -474,12 +479,12 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                             <TableRow
                                 key={`${row.type || 'feed'}-${row.created_at || index}-${index}`}>
                                 <TableCell
-                                    className="w-24 align-top text-[11px] tabular-nums text-muted-foreground"
+                                    className="w-24 align-top text-xs tabular-nums text-muted-foreground"
                                     title={formatWidgetExactTime(row.created_at)}>
                                     {formatWidgetTime(row.created_at)}
                                 </TableCell>
                                 {showType ? (
-                                    <TableCell className="w-20 align-top text-[11px] text-muted-foreground">
+                                    <TableCell className="w-20 align-top text-xs text-muted-foreground">
                                         {row.type || ''}
                                     </TableCell>
                                 ) : null}

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
     AppleIcon,
     HeartIcon,
-    LoaderCircleIcon,
     MonitorIcon,
     SettingsIcon,
     ShieldIcon,
@@ -25,8 +24,10 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
@@ -302,23 +303,25 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
     const settingsMenu = configUpdater ? (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon-sm">
-                    <SettingsIcon className="size-3.5" />
+                <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
+                    <SettingsIcon />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-                {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column) => (
-                    <DropdownMenuCheckboxItem
-                        key={column.key}
-                        checked={activeColumns.includes(column.key)}
-                        disabled={column.required}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={() =>
-                            configUpdater(getNextColumnConfig(config, activeColumns, column.key))
-                        }>
-                        {column.label}
-                    </DropdownMenuCheckboxItem>
-                ))}
+                <DropdownMenuGroup>
+                    {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column) => (
+                        <DropdownMenuCheckboxItem
+                            key={column.key}
+                            checked={activeColumns.includes(column.key)}
+                            disabled={column.required}
+                            onSelect={(event) => event.preventDefault()}
+                            onCheckedChange={() =>
+                                configUpdater(getNextColumnConfig(config, activeColumns, column.key))
+                            }>
+                            {column.label}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     ) : null;
@@ -351,8 +354,8 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
 
     if (loadStatus === 'running' && enrichedRows.length === 0) {
         return renderShell(
-            <div className="flex min-h-[180px] flex-1 items-center justify-center text-sm text-muted-foreground">
-                <LoaderCircleIcon className="mr-2 size-4 animate-spin" />
+            <div className="flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Spinner />
                 Loading instance widget
             </div>
         );
@@ -430,7 +433,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                                     </TableCell>
                                 ) : null}
                                 <TableCell className="align-top">
-                                    <div className="space-y-1">
+                                    <div className="flex flex-col gap-1">
                                         <div className="text-sm font-medium">{row.displayName}</div>
                                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                             {activeColumns.includes('rank') ? (
@@ -448,7 +451,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                                     </div>
                                 </TableCell>
                                 {activeColumns.includes('timer') ? (
-                                    <TableCell className="w-24 align-top text-right text-[11px] tabular-nums text-muted-foreground">
+                                    <TableCell className="w-24 align-top text-right text-xs tabular-nums text-muted-foreground">
                                         {row.joinedAtMs > 0 ? timeToText(row.timerMs, true) : ''}
                                     </TableCell>
                                 ) : null}

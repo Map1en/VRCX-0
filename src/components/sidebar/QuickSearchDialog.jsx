@@ -420,7 +420,7 @@ export function QuickSearchDialog({ open, onOpenChange }) {
                 </div>
                 <div className="max-h-[min(420px,55vh)] overflow-y-auto overflow-x-hidden p-2">
                     {normalizedQuery.length < 2 ? (
-                        <div className="space-y-2 p-2 text-sm text-muted-foreground">
+                        <div className="flex flex-col gap-2 p-2 text-sm text-muted-foreground">
                             <div className="font-medium text-foreground">{t('side_panel.search_categories')}</div>
                             <div>{t('side_panel.search_friends')} - {t('side_panel.search_scope_all')}</div>
                             <div>{t('side_panel.search_avatars')} - {t('side_panel.search_scope_avatars')}</div>

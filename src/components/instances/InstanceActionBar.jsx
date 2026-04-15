@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     HistoryIcon,
-    Loader2Icon,
     LogInIcon,
     MailIcon,
     RefreshCwIcon,
@@ -20,6 +19,7 @@ import { formatDateFilter } from '@/lib/dateTime.js';
 import { cn } from '@/lib/utils.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Tooltip,
     TooltipContent,
@@ -58,9 +58,10 @@ function ActionButton({ label, disabled = false, loading = false, icon: Icon, on
                         size="icon-xs"
                         variant="outline"
                         className="rounded-full"
+                        aria-label={label}
                         disabled={disabled || loading}
                         onClick={onClick}>
-                        {loading ? <Loader2Icon className="size-3.5 animate-spin" /> : <Icon className="size-3.5" />}
+                        {loading ? <Spinner className="size-3" /> : <Icon />}
                     </Button>
                 </span>
             </TooltipTrigger>
@@ -143,7 +144,7 @@ function InstanceInfoTooltip({ instance, location, canClose, closeDisabled, onCl
         <Tooltip>
             <TooltipTrigger asChild>{children}</TooltipTrigger>
             <TooltipContent className="max-w-sm text-xs">
-                <div className="space-y-1.5">
+                <div className="flex flex-col gap-1.5">
                     {instance?.closedAt ? (
                         <div>Closed At: {formatDateFilter(instance.closedAt, 'long')}</div>
                     ) : null}

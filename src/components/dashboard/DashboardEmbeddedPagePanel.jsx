@@ -1,12 +1,13 @@
 import { Suspense } from 'react';
-import { LoaderCircleIcon } from 'lucide-react';
+
+import { Spinner } from '@/ui/shadcn/spinner';
 
 import { getDashboardPagePanelComponent } from './dashboardPagePanelRegistry.jsx';
 
 function EmbeddedPageFallback() {
     return (
-        <div className="flex min-h-[220px] flex-1 items-center justify-center text-sm text-muted-foreground">
-            <LoaderCircleIcon className="mr-2 size-4 animate-spin" />
+        <div className="flex min-h-[220px] flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Spinner />
             Loading dashboard panel
         </div>
     );
