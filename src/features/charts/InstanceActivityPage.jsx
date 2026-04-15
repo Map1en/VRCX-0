@@ -239,31 +239,13 @@ function buildChartOption({ rows, selectedDate, barWidth, hour12, t }) {
                 name: 'Time',
                 type: 'bar',
                 stack: 'Total',
+                colorBy: 'data',
                 barWidth,
                 itemStyle: {
                     borderRadius: 3,
                     shadowBlur: 2,
                     shadowOffsetX: 0.7,
-                    shadowOffsetY: 0.5,
-                    color(params) {
-                        const row = rows[params.dataIndex];
-                        if (!row) {
-                            return '#60a5fa';
-                        }
-                        if (!row.worldResolvedFromCache) {
-                            return '#94a3b8';
-                        }
-                        if (row.parsedLocation.accessTypeName === 'public') {
-                            return '#38bdf8';
-                        }
-                        if (row.parsedLocation.accessTypeName === 'friends') {
-                            return '#34d399';
-                        }
-                        if (row.parsedLocation.accessTypeName === 'group') {
-                            return '#f59e0b';
-                        }
-                        return '#818cf8';
-                    }
+                    shadowOffsetY: 0.5
                 },
                 data: rows.map((row) => row.visibleDurationMs)
             }
@@ -441,6 +423,7 @@ function buildDetailChartOption({ group, barWidth, hour12 }) {
             name: 'Time',
             type: 'bar',
             stack: 'Total',
+            colorBy: 'data',
             barWidth,
             emphasis: {
                 focus: 'self'
@@ -720,6 +703,7 @@ export function InstanceActivityPage() {
     const [previousInstanceOpen, setPreviousInstanceOpen] = useState(false);
     const [previousInstanceRows, setPreviousInstanceRows] = useState([]);
     const [previousInstanceTitle, setPreviousInstanceTitle] = useState('Previous Instance');
+    const [mainChartElement, setMainChartElement] = useState(null);
 
     const chartElementRef = useRef(null);
     const chartInstanceRef = useRef(null);
@@ -736,6 +720,7 @@ export function InstanceActivityPage() {
             chartThemeRef.current = null;
         }
         chartElementRef.current = node;
+        setMainChartElement(node);
     }, []);
 
     useEffect(() => {
@@ -927,7 +912,7 @@ export function InstanceActivityPage() {
     const isPrevDayDisabled = !earliestDate || selectedDate === earliestDate;
 
     useEffect(() => {
-        if (!chartElementRef.current) {
+        if (!mainChartElement) {
             return;
         }
 
@@ -939,18 +924,18 @@ export function InstanceActivityPage() {
             resizeObserverRef.current?.disconnect();
             chart?.dispose();
 
-            chart = echarts.init(chartElementRef.current, themeName || undefined);
+            chart = echarts.init(mainChartElement, themeName || undefined);
             chartInstanceRef.current = chart;
             chartThemeRef.current = themeName;
 
             resizeObserverRef.current = new ResizeObserver(() => {
                 chart.resize();
             });
-            resizeObserverRef.current.observe(chartElementRef.current);
+            resizeObserverRef.current.observe(mainChartElement);
         }
 
-        const chartHeight = Math.max(220, chartRows.length * (barWidth + 10) + 120);
-        chartElementRef.current.style.height = `${chartHeight}px`;
+        const chartHeight = Math.max(220, chartRows.length * (barWidth + 10) + 200);
+        mainChartElement.style.height = `${chartHeight}px`;
         chart.resize({ height: chartHeight });
         chart.off('click');
 
@@ -981,7 +966,7 @@ export function InstanceActivityPage() {
                 block: 'start'
             });
         });
-    }, [barWidth, chartRows, hour12, resolvedTheme, selectedDate, t]);
+    }, [barWidth, chartRows, hour12, mainChartElement, resolvedTheme, selectedDate, t]);
 
     function handleDateStep(isNext = false) {
         if (!sortedDatesDesc.length) {
@@ -1175,23 +1160,26 @@ export function InstanceActivityPage() {
                                     'The chart adapter could not read game-log instance activity for the selected day.'
                                 }
                             />
-                        ) : !chartRows.length ? (
-                            <ChartEmptyState
-                                title="No instance activity on this day"
-                                description={
-                                    availableDates.includes(selectedDate)
-                                        ? 'The selected day exists in the activity index, but the timeline query returned no current-user instance rows.'
-                                        : 'This date is outside the known activity set. Use the previous/next buttons or pick a recorded day from the selector.'
-                                }
-                            />
                     ) : (
-                        <div
-                            ref={setMainChartElementRef}
-                            className={cn(
-                                'w-full bg-transparent',
-                                resolvedTheme === 'midnight' ? 'border-primary/20' : ''
-                            )}
-                        />
+                        <>
+                            <div
+                                ref={setMainChartElementRef}
+                                className={cn(
+                                    'w-full bg-transparent',
+                                    resolvedTheme === 'midnight' ? 'border-primary/20' : ''
+                                )}
+                            />
+                            {!chartRows.length ? (
+                                <ChartEmptyState
+                                    title="No instance activity on this day"
+                                    description={
+                                        availableDates.includes(selectedDate)
+                                            ? 'The selected day exists in the activity index, but the timeline query returned no current-user instance rows.'
+                                            : 'This date is outside the known activity set. Use the previous/next buttons or pick a recorded day from the selector.'
+                                    }
+                                />
+                            ) : null}
+                        </>
                     )}
 
                     {isDetailVisible && chartRows.length ? (
