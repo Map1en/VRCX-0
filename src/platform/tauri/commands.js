@@ -69,6 +69,7 @@ const commandArgs = {
     app__set_app_launcher_settings: ['enabled', 'killOnExit', 'runProcessOnce'],
     app__try_open_instance_in_vrc: ['launchUrl'],
     app__open_calendar_file: ['icsContent'],
+    app__save_calendar_file: ['defaultName', 'icsContent'],
     app__focus_window: [],
     app__flash_window: [],
     app__check_for_update_exe: [],
