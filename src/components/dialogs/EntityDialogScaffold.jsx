@@ -15,7 +15,7 @@ import { Textarea } from '@/ui/shadcn/textarea.jsx';
 
 function EntityDialogScaffold({ className, children }) {
     return (
-        <div className={cn('flex min-h-0 w-full flex-1 flex-col gap-4 md:w-[65rem]', className)}>
+        <div className={cn('flex min-h-0 min-w-0 w-full flex-1 flex-col gap-4 md:w-[65rem]', className)}>
             {children}
         </div>
     );
@@ -47,7 +47,7 @@ function EntityDialogHeader({
                 disabled={!imageUrl || !onImageClick}
                 onClick={onImageClick}
                 className={cn(
-                    'flex h-[120px] w-[160px] shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted disabled:pointer-events-none',
+                    'flex aspect-[4/3] w-40 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted disabled:pointer-events-none',
                     imageUrl && onImageClick ? 'cursor-pointer' : 'cursor-default',
                     imageClassName
                 )}>
@@ -56,8 +56,8 @@ function EntityDialogHeader({
 
             <div className="min-w-0 flex-1">
                 <div className="flex items-start gap-3">
-                    <div className="min-w-0 flex-1 space-y-2">
-                        <div className="space-y-1">
+                    <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <div className="flex flex-col gap-1">
                             <div className="flex min-w-0 items-center gap-1.5 break-words text-lg font-semibold leading-tight">
                                 {titlePrefix}
                                 {onTitleClick ? (
@@ -183,7 +183,8 @@ function EntityActionDropdown({ children, busy = false, dangerous = false, indic
                     type="button"
                     size="icon-lg"
                     variant={dangerous ? 'destructive' : 'outline'}
-                    className="relative rounded-full">
+                    aria-label="Open entity actions"
+                    className="relative">
                     {busy ? (
                         <LoaderCircleIcon className="size-4 animate-spin" />
                     ) : (
@@ -244,7 +245,7 @@ function EntityRawJson({ value, valueFactory }) {
     }
 
     return (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
             <div className="flex justify-end">
                 <Button type="button" size="sm" variant="outline" onClick={() => void refreshJson()} disabled={refreshing}>
                     <RefreshCwIcon className={cn('size-3.5', refreshing ? 'animate-spin' : '')} />
@@ -275,7 +276,7 @@ function EntityInfoBlock({ label, value, mono = false, full = false, wide = fals
             className={cn(
                 'box-border flex items-center p-1.5 text-left text-[13px]',
                 full ? 'w-full' : wide ? 'w-[350px]' : 'w-[167px]',
-                onClick ? 'cursor-pointer hover:rounded-[25px_5px_5px_25px] hover:bg-muted/50' : 'cursor-default'
+                onClick ? 'cursor-pointer hover:rounded-md hover:bg-muted/50' : 'cursor-default'
             )}>
             <div className="min-w-0 flex-1 overflow-hidden">
                 <span className="block truncate font-medium leading-[18px]">{label}</span>

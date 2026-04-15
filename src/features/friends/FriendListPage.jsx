@@ -4,8 +4,6 @@ import {
     ArrowUpDownIcon,
     ArrowUpIcon,
     ChevronDownIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
     EyeOffIcon,
     LoaderCircleIcon,
     StarIcon,
@@ -29,6 +27,20 @@ import {
     ResizableTableHead
 } from '@/components/data-table/ResizableTableParts.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
+import {
+    DataTablePagination,
+    DataTableScrollArea,
+    DataTableSurface
+} from '@/components/data-table/VrcxDataTable.jsx';
+import {
+    EmptyState,
+    LoadingState,
+    PageBody,
+    PageFooter,
+    PageScaffold,
+    PageToolbar,
+    PageToolbarRow
+} from '@/components/layout/PageScaffold.jsx';
 import {
     configRepository,
     gameLogRepository,
@@ -463,14 +475,7 @@ function SortButton({ column, label, descFirst = false }) {
 }
 
 function FriendListEmptyState({ title, description }) {
-    return (
-        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
-                <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
-            </div>
-        </div>
-    );
+    return <EmptyState title={title} description={description} />;
 }
 
 function FriendListSearchFilterDropdown({ value, onChange }) {
@@ -1543,13 +1548,9 @@ export function FriendListPage({ embedded = false } = {}) {
         : 0;
 
     return (
-        <div
-            className={
-                embedded
-                    ? 'flex h-full min-h-0 flex-col p-3'
-                    : 'x-container x-container--auto-height flex h-full min-h-0 flex-col p-4 pb-0'
-            }>
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <PageScaffold embedded={embedded}>
+            <PageToolbar>
+                <PageToolbarRow className="justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                     <Button
                         type="button"
@@ -1558,6 +1559,7 @@ export function FriendListPage({ embedded = false } = {}) {
                         className="size-9"
                         disabled={!isFavoritesLoaded}
                         title={t('view.friend_list.favorites_only_tooltip')}
+                        aria-label={t('view.friend_list.favorites_only_tooltip')}
                         onClick={() => setFavoritesOnly((current) => !current)}>
                         <StarIcon className={cn('size-4', favoritesOnly ? 'fill-current' : '')} />
                     </Button>
@@ -1633,23 +1635,20 @@ export function FriendListPage({ embedded = false } = {}) {
                         </SelectContent>
                     </Select>
                 </div>
-            </div>
+                </PageToolbarRow>
 
             {friendDetail || isMutualFetching ? (
-                <div className="mb-2 text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
                     {isMutualFetching
                         ? `Loading mutual friends ${mutualProgress.current} / ${mutualProgress.total}`
                         : friendDetail}
                 </div>
             ) : null}
+            </PageToolbar>
 
+            <PageBody>
             {isLoading ? (
-                <div className="flex min-h-72 flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/20">
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <LoaderCircleIcon className="size-5 animate-spin" />
-                        Loading the friend roster snapshot
-                    </div>
-                </div>
+                <LoadingState label="Loading the friend roster snapshot" />
             ) : isError ? (
                 <FriendListEmptyState
                     title="Friend roster failed to load"
@@ -1657,9 +1656,9 @@ export function FriendListPage({ embedded = false } = {}) {
                 />
             ) : hasRows ? (
                 <>
-                    <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
-                        <div className="h-full overflow-auto">
-                            <Table className="vrcx-data-table min-w-max w-max">
+                    <DataTableSurface>
+                        <DataTableScrollArea>
+                            <Table className="min-w-max w-max">
                                 <TableHeader>
                                     {table.getHeaderGroups().map((headerGroup) => (
                                         <TableRow key={headerGroup.id}>
@@ -1687,10 +1686,10 @@ export function FriendListPage({ embedded = false } = {}) {
                                     ))}
                                 </TableBody>
                             </Table>
-                        </div>
-                    </div>
+                        </DataTableScrollArea>
+                    </DataTableSurface>
 
-                    <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <PageFooter>
                         <div className="text-sm text-muted-foreground">
                             Showing{' '}
                             <span className="font-medium text-foreground">
@@ -1702,30 +1701,12 @@ export function FriendListPage({ embedded = false } = {}) {
                             </span>{' '}
                             friend{filteredRows.length === 1 ? '' : 's'}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={!table.getCanPreviousPage()}
-                                onClick={() => table.previousPage()}>
-                                <ChevronLeftIcon className="size-4" />
-                                Previous
-                            </Button>
-                            <Badge variant="outline">
-                                Page {pagination.pageIndex + 1} / {pageCount}
-                            </Badge>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={!table.getCanNextPage()}
-                                onClick={() => table.nextPage()}>
-                                Next
-                                <ChevronRightIcon className="size-4" />
-                            </Button>
-                        </div>
-                    </div>
+                        <DataTablePagination
+                            table={table}
+                            pageIndex={pagination.pageIndex}
+                            pageCount={pageCount}
+                        />
+                    </PageFooter>
                 </>
             ) : (
                 <FriendListEmptyState
@@ -1737,6 +1718,7 @@ export function FriendListPage({ embedded = false } = {}) {
                     }
                 />
             )}
+            </PageBody>
 
             <Dialog open={userLoadProgress.open} onOpenChange={(open) => !open && cancelFriendUserDetailsLoad()}>
                 <DialogContent showCloseButton={false} className="sm:max-w-[420px]">
@@ -1762,6 +1744,6 @@ export function FriendListPage({ embedded = false } = {}) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </PageScaffold>
     );
 }

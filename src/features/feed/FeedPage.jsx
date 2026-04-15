@@ -5,7 +5,6 @@ import {
     ArrowUpDownIcon,
     ArrowUpIcon,
     ChevronDownIcon,
-    ChevronLeftIcon,
     ChevronRightIcon,
     CopyIcon,
     ExternalLinkIcon,
@@ -31,6 +30,19 @@ import {
     ResizableTableCell,
     ResizableTableHead
 } from '@/components/data-table/ResizableTableParts.jsx';
+import {
+    DataTableEmptyRow,
+    DataTablePagination,
+    DataTableScrollArea,
+    DataTableSurface
+} from '@/components/data-table/VrcxDataTable.jsx';
+import {
+    PageBody,
+    PageFooter,
+    PageScaffold,
+    PageToolbar,
+    PageToolbarRow
+} from '@/components/layout/PageScaffold.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import { Location } from '@/components/Location.jsx';
@@ -2240,13 +2252,9 @@ export function FeedPage({ embedded = false } = {}) {
     });
 
     return (
-        <div
-            className={
-                embedded
-                    ? 'flex h-full min-h-0 flex-col p-3'
-                    : 'x-container feed x-container--auto-height flex h-full min-h-0 flex-col p-4'
-            }>
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
+        <PageScaffold embedded={embedded} className={embedded ? '' : 'feed'}>
+            <PageToolbar>
+                <PageToolbarRow>
                             <div className="flex shrink-0 flex-wrap items-center gap-2">
                                 <Popover open={dateFilterOpen} onOpenChange={setDateFilterOpen}>
                                     <PopoverTrigger asChild>
@@ -2291,6 +2299,7 @@ export function FeedPage({ embedded = false } = {}) {
                                     variant={favoritesOnly ? 'default' : 'outline'}
                                     size="icon-sm"
                                     title={t('view.feed.favorites_only_tooltip')}
+                                    aria-label={t('view.feed.favorites_only_tooltip')}
                                     onClick={() => setFavoritesOnly((current) => !current)}>
                                     <StarIcon className="size-4" />
                                 </Button>
@@ -2337,6 +2346,7 @@ export function FeedPage({ embedded = false } = {}) {
                                         type="button"
                                         variant="ghost"
                                         size="icon"
+                                        aria-label="Clear search"
                                         className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
                                         onClick={clearSearch}>
                                         <XIcon className="size-4" />
@@ -2369,17 +2379,20 @@ export function FeedPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="outline"
                                     size="icon"
+                                    aria-label="Refresh feed"
                                     onClick={() => setRefreshToken((current) => current + 1)}>
                                     <RefreshCwIcon
                                         className={cn('size-4', loadStatus === 'running' ? 'animate-spin' : '')}
                                     />
                                 </Button>
                             </div>
-                    </div>
+                </PageToolbarRow>
+            </PageToolbar>
 
-                    <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
-                        <div className="h-full overflow-auto">
-                        <Table className="vrcx-data-table table-fixed">
+            <PageBody>
+                <DataTableSurface>
+                    <DataTableScrollArea>
+                        <Table className="table-fixed">
                             <TableHeader>
                                 {table.getHeaderGroups().map((headerGroup) => (
                                     <TableRow key={headerGroup.id}>
@@ -2415,55 +2428,38 @@ export function FeedPage({ embedded = false } = {}) {
                                         </Fragment>
                                     ))
                                 ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                                            {loadStatus === 'running' ? (
-                                                <span className="inline-flex items-center gap-2">
-                                                    <LoaderCircleIcon className="size-4 animate-spin" />
-                                                    Loading feed rows
-                                                </span>
-                                            ) : favoritesOnly && !isFavoritesLoaded ? (
-                                                'Favorites are still hydrating.'
-                                            ) : loadStatus === 'error' ? (
-                                                'Feed query failed.'
-                                            ) : (
-                                                'No feed rows match the current filters.'
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
+                                    <DataTableEmptyRow colSpan={columns.length}>
+                                        {loadStatus === 'running' ? (
+                                            <span className="inline-flex items-center gap-2">
+                                                <LoaderCircleIcon className="size-4 animate-spin" />
+                                                Loading feed rows
+                                            </span>
+                                        ) : favoritesOnly && !isFavoritesLoaded ? (
+                                            'Favorites are still hydrating.'
+                                        ) : loadStatus === 'error' ? (
+                                            'Feed query failed.'
+                                        ) : (
+                                            'No feed rows match the current filters.'
+                                        )}
+                                    </DataTableEmptyRow>
                                 )}
                             </TableBody>
                         </Table>
-                        </div>
-                    </div>
+                    </DataTableScrollArea>
+                </DataTableSurface>
 
-                    <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div className="text-sm text-muted-foreground">
+                <PageFooter>
+                    <div className="text-sm text-muted-foreground">
                             {rows.length} rows
                             {favoritesOnly ? ' · Favorites only' : ''}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                disabled={!table.getCanPreviousPage()}
-                                onClick={() => table.previousPage()}>
-                                <ChevronLeftIcon className="size-4" />
-                            </Button>
-                            <span className="text-sm text-muted-foreground">
-                                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
-                            </span>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                disabled={!table.getCanNextPage()}
-                                onClick={() => table.nextPage()}>
-                                <ChevronRightIcon className="size-4" />
-                            </Button>
-                        </div>
                     </div>
+                    <DataTablePagination
+                        table={table}
+                        pageIndex={table.getState().pagination.pageIndex}
+                        pageCount={table.getPageCount() || 1}
+                    />
+                </PageFooter>
+            </PageBody>
             <PreviousInstancesTableDialog
                 open={previousInstancesOpen}
                 onOpenChange={setPreviousInstancesOpen}
@@ -2471,6 +2467,6 @@ export function FeedPage({ embedded = false } = {}) {
                 instances={previousInstancesRows}
                 onRowsChange={setPreviousInstancesRows}
             />
-        </div>
+        </PageScaffold>
     );
 }

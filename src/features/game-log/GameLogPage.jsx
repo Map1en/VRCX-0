@@ -4,7 +4,6 @@ import {
     ArrowUpDownIcon,
     ArrowUpIcon,
     CalendarRangeIcon,
-    ChevronLeftIcon,
     ChevronRightIcon,
     CopyIcon,
     ExternalLinkIcon,
@@ -40,9 +39,21 @@ import {
     ResizableTableCell,
     ResizableTableHead
 } from '@/components/data-table/ResizableTableParts.jsx';
+import {
+    DataTablePagination,
+    DataTableSurface
+} from '@/components/data-table/VrcxDataTable.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import { Location } from '@/components/Location.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
+import {
+    EmptyState,
+    LoadingState,
+    PageBody,
+    PageFooter,
+    PageScaffold,
+    PageToolbar
+} from '@/components/layout/PageScaffold.jsx';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { copyTextToClipboard, openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
@@ -583,14 +594,7 @@ function getGameLogColumnStyle(column) {
 }
 
 function GameLogEmptyState({ title, description }) {
-    return (
-        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
-                <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
-            </div>
-        </div>
-    );
+    return <EmptyState title={title} description={description} />;
 }
 
 function EmptyTableValue() {
@@ -2099,6 +2103,7 @@ export function GameLogPage({ embedded = false } = {}) {
                     size="icon"
                     variant={savedViewMode === 'sessions' ? 'default' : 'ghost'}
                     title="Sessions"
+                    aria-label="Show sessions"
                     onClick={() => {
                         setSavedViewMode('sessions');
                         void configRepository.setString('gameLogViewMode', 'sessions');
@@ -2110,6 +2115,7 @@ export function GameLogPage({ embedded = false } = {}) {
                     size="icon"
                     variant={savedViewMode === 'table' ? 'default' : 'ghost'}
                     title="Table"
+                    aria-label="Show table"
                     onClick={() => {
                         setSavedViewMode('table');
                         void configRepository.setString('gameLogViewMode', 'table');
@@ -2127,6 +2133,7 @@ export function GameLogPage({ embedded = false } = {}) {
                 variant={favoritesOnly ? 'default' : 'outline'}
                 size="icon"
                 title="Favorites only"
+                aria-label="Favorites only"
                 onClick={() => setActiveFavoritesOnly((current) => !current)}>
                 <StarIcon className="size-4" />
             </Button>
@@ -2152,7 +2159,8 @@ export function GameLogPage({ embedded = false } = {}) {
                             'h-8 shrink-0 gap-1.5',
                             (sessionDateFrom || sessionDateTo) && 'bg-accent text-accent-foreground'
                         )}
-                        title="Session date range">
+                        title="Session date range"
+                        aria-label="Session date range">
                         <CalendarRangeIcon className="size-4" />
                         {(sessionDateFrom || sessionDateTo) ? (
                             <Badge
@@ -2216,6 +2224,7 @@ export function GameLogPage({ embedded = false } = {}) {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
+                        aria-label="Clear search"
                         className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2"
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => {
@@ -2237,6 +2246,7 @@ export function GameLogPage({ embedded = false } = {}) {
                     variant="outline"
                     size="icon"
                     title="Refresh"
+                    aria-label="Refresh game log"
                     disabled={!currentUserId || gameLogDisabled || loadStatus === 'running'}
                     onClick={() => setRefreshToken((value) => value + 1)}>
                     {loadStatus === 'running' ? (
@@ -2274,14 +2284,9 @@ export function GameLogPage({ embedded = false } = {}) {
     }
 
     return (
-        <div
-            className={
-                embedded
-                    ? 'flex h-full min-h-0 flex-col p-3'
-                    : 'x-container x-container--auto-height flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden p-4 pb-0'
-            }>
+        <PageScaffold embedded={embedded}>
             <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
-                <div className="flex shrink-0 flex-col gap-2 border-b border-border pb-3">
+                <PageToolbar>
                     {savedViewMode === 'table' ? (
                         <div className="overflow-hidden pb-1">
                             <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -2318,16 +2323,11 @@ export function GameLogPage({ embedded = false } = {}) {
                         </div>
                     )}
                     {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
-                </div>
+                </PageToolbar>
 
-                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+                <PageBody>
                     {isLoading ? (
-                        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20">
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <LoaderCircleIcon className="size-5 animate-spin" />
-                                Loading the game log snapshot
-                            </div>
-                        </div>
+                        <LoadingState label="Loading the game log snapshot" />
                     ) : isError ? (
                         <GameLogEmptyState
                             title="Game log failed to load"
@@ -2365,7 +2365,7 @@ export function GameLogPage({ embedded = false } = {}) {
                         )
                     ) : hasRows ? (
                         <div className="flex min-h-0 flex-1 flex-col gap-3">
-                            <div className="vrcx-data-table min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-xl border">
+                            <DataTableSurface className="overflow-y-auto overflow-x-hidden">
                                 <table className="w-full table-fixed caption-bottom text-sm">
                                     <TableHeader>
                                         {table.getHeaderGroups().map((headerGroup) => (
@@ -2399,9 +2399,9 @@ export function GameLogPage({ embedded = false } = {}) {
                                         ))}
                                     </TableBody>
                                 </table>
-                            </div>
+                            </DataTableSurface>
 
-                            <div className="flex shrink-0 flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <PageFooter>
                                 <div className="text-sm text-muted-foreground">
                                     Showing{' '}
                                     <span className="font-medium text-foreground">
@@ -2413,30 +2413,12 @@ export function GameLogPage({ embedded = false } = {}) {
                                     </span>{' '}
                                     game log row{annotatedRows.length === 1 ? '' : 's'}
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={!table.getCanPreviousPage()}
-                                        onClick={() => table.previousPage()}>
-                                        <ChevronLeftIcon className="size-4" />
-                                        Previous
-                                    </Button>
-                                    <Badge variant="outline">
-                                        Page {pagination.pageIndex + 1} / {pageCount}
-                                    </Badge>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={!table.getCanNextPage()}
-                                        onClick={() => table.nextPage()}>
-                                        Next
-                                        <ChevronRightIcon className="size-4" />
-                                    </Button>
-                                </div>
-                            </div>
+                                <DataTablePagination
+                                    table={table}
+                                    pageIndex={pagination.pageIndex}
+                                    pageCount={pageCount}
+                                />
+                            </PageFooter>
                         </div>
                     ) : (
                         <GameLogEmptyState
@@ -2448,7 +2430,7 @@ export function GameLogPage({ embedded = false } = {}) {
                             }
                         />
                     )}
-                </div>
+                </PageBody>
             </div>
             <PreviousInstancesTableDialog
                 open={previousInstancesOpen}
@@ -2459,6 +2441,6 @@ export function GameLogPage({ embedded = false } = {}) {
                 onRowsChange={setPreviousInstancesRows}
                 autoOpenInfo={previousInstancesAutoInfo}
             />
-        </div>
+        </PageScaffold>
     );
 }

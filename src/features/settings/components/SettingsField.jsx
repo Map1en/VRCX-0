@@ -1,9 +1,14 @@
+import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button.jsx';
 
-export function Field({ label, description, children }) {
+export function Field({ label, description, children, className = '' }) {
     return (
-        <div className="grid gap-3 rounded-lg border p-4 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center">
-            <div className="space-y-1">
+        <div
+            className={cn(
+                'grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
+                className
+            )}>
+            <div className="flex min-w-0 flex-col gap-1">
                 <div className="text-sm font-medium">{label}</div>
                 {description ? <div className="text-xs text-muted-foreground">{description}</div> : null}
             </div>

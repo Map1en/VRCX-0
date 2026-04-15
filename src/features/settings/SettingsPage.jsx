@@ -1561,7 +1561,7 @@ export function SettingsPage() {
                             <CardTitle>{t('view.settings.general.general.header')}</CardTitle>
                             <CardDescription>{t('view.settings.general.general.version')}: {VERSION || '-'}</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <div className="flex flex-wrap gap-2">
                                 <Button type="button" variant="outline" size="sm" onClick={() => void openExternalLink('https://github.com/Map1en/VRCX-0')}>
                                     {t('view.settings.general.general.repository_url')}
@@ -1624,7 +1624,7 @@ export function SettingsPage() {
                         <CardHeader>
                             <CardTitle>{t('view.settings.appearance.appearance.header')}</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field label={t('view.settings.appearance.appearance.language')}>
                                 <Select value={locale || 'en'} onValueChange={(value) => void commit(() => setAppLanguagePreference(value))}>
                                     <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
@@ -1958,7 +1958,7 @@ export function SettingsPage() {
                             <CardTitle>{t('view.settings.advanced.advanced.screenshot_helper.header')}</CardTitle>
                             <CardDescription>{t('view.settings.advanced.advanced.screenshot_helper.description')}</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field
                                 label={t('view.settings.advanced.advanced.screenshot_helper.enable')}
                                 description={t('view.settings.advanced.advanced.screenshot_helper.description_tooltip')}>
@@ -2104,7 +2104,7 @@ export function SettingsPage() {
                                 </button>
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field label={t('view.settings.discord_presence.discord_presence.enable')}>
                                 <Switch
                                     checked={discordPrefs.discordActive}
@@ -2177,7 +2177,7 @@ export function SettingsPage() {
                             <CardTitle>{t('view.settings.advanced.advanced.translation_api.header')}</CardTitle>
                             <CardDescription>{t('view.settings.advanced.advanced.translation_api.enable_tooltip')}</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field label={t('view.settings.advanced.advanced.translation_api.enable')} description={t('view.settings.advanced.advanced.translation_api.enable_tooltip')}>
                                 <Switch
                                     checked={integrationPrefs.translationAPI}
@@ -2203,7 +2203,7 @@ export function SettingsPage() {
                             <CardTitle>{t('view.settings.advanced.advanced.youtube_api.header')}</CardTitle>
                             <CardDescription>{t('view.settings.advanced.advanced.youtube_api.enable_tooltip')}</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field label={t('view.settings.advanced.advanced.youtube_api.enable')} description={t('view.settings.advanced.advanced.youtube_api.enable_tooltip')}>
                                 <Switch
                                     checked={integrationPrefs.youtubeAPI}
@@ -2229,7 +2229,7 @@ export function SettingsPage() {
                             <CardTitle>{t('view.settings.advanced.advanced.remote_database.header')}</CardTitle>
                             <CardDescription>{t('view.settings.advanced.advanced.remote_database.enable_description')}</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field
                                 label={t('view.settings.advanced.advanced.remote_database.enable')}
                                 description={t('view.settings.advanced.advanced.remote_database.enable_description')}>
@@ -2261,7 +2261,7 @@ export function SettingsPage() {
                         <CardHeader>
                             <CardTitle>{t('view.settings.social.interaction.header')}</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field
                                 label={t('view.settings.appearance.user_dialog.recent_action_cooldown')}
                                 description={t('view.settings.appearance.user_dialog.recent_action_cooldown_description')}>
@@ -2347,7 +2347,7 @@ export function SettingsPage() {
                         <CardHeader>
                             <CardTitle>{t('view.settings.notifications.notifications.header')}</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field label={t('view.settings.notifications.notifications.layout')}>
                                 <Select
                                     value={prefs.notificationLayout}
@@ -2474,7 +2474,7 @@ export function SettingsPage() {
                         <CardHeader>
                             <CardTitle>{t('view.settings.advanced.advanced.vrchat_settings.header')}</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field
                                 label={t('view.settings.advanced.advanced.relaunch_vrchat.header')}
                                 description={t('view.settings.advanced.advanced.relaunch_vrchat.description')}>
@@ -2682,7 +2682,7 @@ export function SettingsPage() {
                         <CardHeader>
                             <CardTitle>{t('view.settings.advanced_groups.database.header')}</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field label={t('view.settings.advanced.advanced.sqlite_table_size.refresh')}>
                                 <Button type="button" variant="outline" size="sm" onClick={() => void refreshSqliteTableSizes()}>
                                     {t('view.settings.advanced.advanced.sqlite_table_size.refresh')}
@@ -2705,7 +2705,7 @@ export function SettingsPage() {
                         <CardHeader>
                             <CardTitle>{t('view.settings.advanced_groups.diagnostics.header')}</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col">
                             <Field label={t('view.profile.game_info.online_users')}>
                                 <div className="flex items-center gap-2">
                                     {onlineVisitCount !== null ? (
