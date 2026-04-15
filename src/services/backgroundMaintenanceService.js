@@ -545,7 +545,7 @@ async function backupVrcRegistry(name) {
 }
 
 async function tryAutoBackupVrcRegistry() {
-    if (!(await configRepository.getBool('vrcRegistryAutoBackup', false))) {
+    if (!(await configRepository.getBool('vrcRegistryAutoBackup', true))) {
         return;
     }
 
@@ -587,11 +587,11 @@ async function tryAutoBackupVrcRegistry() {
 }
 
 async function checkAutoBackupRestoreVrcRegistry() {
-    if (!(await configRepository.getBool('vrcRegistryAutoBackup', false))) {
+    if (!(await configRepository.getBool('vrcRegistryAutoBackup', true))) {
         return;
     }
 
-    if (!(await configRepository.getBool('vrcRegistryAskRestore', false))) {
+    if (!(await configRepository.getBool('vrcRegistryAskRestore', true))) {
         await tryAutoBackupVrcRegistry();
         return;
     }

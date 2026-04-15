@@ -60,7 +60,6 @@ async function restoreVrcRegistryBackup(key) {
         throw new Error('Registry backup not found.');
     }
 
-    await backend.app.DeleteVRChatRegistryFolder();
     await backend.app.SetVRChatRegistry(
         typeof backup.data === 'string' ? backup.data : JSON.stringify(backup.data || {})
     );
@@ -109,7 +108,6 @@ async function restoreVrcRegistryBackupFromFile() {
         }
     }
 
-    await backend.app.DeleteVRChatRegistryFolder();
     await backend.app.SetVRChatRegistry(json);
     await configRepository.setString('VRChatRegistryLastRestoreCheck', new Date().toJSON());
     return true;
