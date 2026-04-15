@@ -1,4 +1,7 @@
-import { dbVars } from '../database';
+import {
+    buildUserTableName,
+    normalizeUserTablePrefix
+} from './userTables.js';
 
 import sqliteService from '../../repositories/sqliteRepository.js';
 
@@ -7,34 +10,42 @@ const ACTIVITY_VIEW_KIND = {
     OVERLAP: 'overlap'
 };
 
-function normalizeActivityUserTablePrefix(userId) {
+function normalizeActivityUserTablePrefix(userId, label = 'userId') {
     const normalizedUserId =
         typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        return dbVars.userPrefix;
+        throw new Error(`Activity V2 requires ${label}`);
     }
 
-    let userPrefix = normalizedUserId.replaceAll('-', '').replaceAll('_', '');
-    if (/^\d/.test(userPrefix)) {
-        userPrefix = `_${userPrefix}`;
-    }
-    return userPrefix;
+    return normalizeUserTablePrefix(normalizedUserId);
 }
 
 function syncStateTableForUser(userId) {
-    return `${normalizeActivityUserTablePrefix(userId)}_activity_sync_state_v2`;
+    return buildUserTableName(
+        normalizeActivityUserTablePrefix(userId),
+        'activity_sync_state_v2'
+    );
 }
 
 function sessionsTableForUser(userId) {
-    return `${normalizeActivityUserTablePrefix(userId)}_activity_sessions_v2`;
+    return buildUserTableName(
+        normalizeActivityUserTablePrefix(userId),
+        'activity_sessions_v2'
+    );
 }
 
 function bucketCacheTableForUser(userId) {
-    return `${normalizeActivityUserTablePrefix(userId)}_activity_bucket_cache_v2`;
+    return buildUserTableName(
+        normalizeActivityUserTablePrefix(userId),
+        'activity_bucket_cache_v2'
+    );
 }
 
 function feedOnlineOfflineTableForOwner(ownerUserId) {
-    return `${normalizeActivityUserTablePrefix(ownerUserId)}_feed_online_offline`;
+    return buildUserTableName(
+        normalizeActivityUserTablePrefix(ownerUserId, 'ownerUserId'),
+        'feed_online_offline'
+    );
 }
 
 function parseJson(value, fallback) {
