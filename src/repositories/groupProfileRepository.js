@@ -138,7 +138,7 @@ function normalizeGroupProfile(group) {
 
     return {
         ...base,
-        id: normalizeEntityId(base.id ?? base.groupId),
+        id: normalizeEntityId(base.id || base.groupId),
         name: normalizeText(base.name),
         description: normalizeText(base.description),
         rules: normalizeText(base.rules),

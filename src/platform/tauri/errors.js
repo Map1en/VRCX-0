@@ -27,12 +27,12 @@ export function normalizePlatformError(error, fallbackMessage) {
         typeof error === 'string'
             ? error
             : (() => {
-                  try {
-                      return JSON.stringify(error);
-                  } catch {
-                      return String(error);
-                  }
-              })();
+                try {
+                    return JSON.stringify(error);
+                } catch {
+                    return String(error);
+                }
+            })();
 
     return new Error(details ? `${fallback}: ${details}` : fallback);
 }
