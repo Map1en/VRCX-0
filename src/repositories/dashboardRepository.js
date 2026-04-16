@@ -99,72 +99,83 @@ function sanitizeDashboard(dashboard, { generateMissingRowIds = true } = {}) {
     };
 }
 
-class DashboardRepository {
-    async getDashboards() {
-        const stored = await configRepository.getString(DASHBOARD_STORAGE_KEY, null);
-        if (!stored) {
-            return [];
-        }
-
-        try {
-            const parsed = JSON.parse(stored);
-            const source = Array.isArray(parsed?.dashboards) ? parsed.dashboards : [];
-            return source
-                .map((dashboard) => sanitizeDashboard(dashboard, { generateMissingRowIds: false }))
-                .filter(Boolean);
-        } catch {
-            return [];
-        }
+async function getDashboards() {
+    const stored = await configRepository.getString(DASHBOARD_STORAGE_KEY, null);
+    if (!stored) {
+        return [];
     }
 
-    async saveDashboards(dashboards = []) {
-        const sanitizedDashboards = (Array.isArray(dashboards) ? dashboards : [])
-            .map(sanitizeDashboard)
+    try {
+        const parsed = JSON.parse(stored);
+        const source = Array.isArray(parsed?.dashboards) ? parsed.dashboards : [];
+        return source
+            .map((dashboard) => sanitizeDashboard(dashboard, { generateMissingRowIds: false }))
             .filter(Boolean);
-
-        await configRepository.setString(
-            DASHBOARD_STORAGE_KEY,
-            JSON.stringify({ dashboards: sanitizedDashboards })
-        );
-
-        return sanitizedDashboards;
-    }
-
-    generateDashboardId() {
-        if (
-            typeof crypto !== 'undefined' &&
-            crypto &&
-            typeof crypto.randomUUID === 'function'
-        ) {
-            return crypto.randomUUID();
-        }
-
-        return `dashboard-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    }
-
-    generateNextDashboardName(dashboards = [], baseName = 'Dashboard') {
-        const normalizedBaseName =
-            typeof baseName === 'string' && baseName.trim() ? baseName.trim() : 'Dashboard';
-        const existingNames = new Set(
-            (Array.isArray(dashboards) ? dashboards : [])
-                .map((dashboard) => dashboard?.name)
-                .filter((name) => typeof name === 'string' && name)
-        );
-
-        if (!existingNames.has(normalizedBaseName)) {
-            return normalizedBaseName;
-        }
-
-        let index = 1;
-        while (existingNames.has(`${normalizedBaseName} ${index}`)) {
-            index += 1;
-        }
-
-        return `${normalizedBaseName} ${index}`;
+    } catch {
+        return [];
     }
 }
 
-const dashboardRepository = new DashboardRepository();
+async function saveDashboards(dashboards = []) {
+    const sanitizedDashboards = (Array.isArray(dashboards) ? dashboards : [])
+        .map(sanitizeDashboard)
+        .filter(Boolean);
 
-export { cloneRows, generateDashboardRowId, sanitizeDashboard, DashboardRepository };
+    await configRepository.setString(
+        DASHBOARD_STORAGE_KEY,
+        JSON.stringify({ dashboards: sanitizedDashboards })
+    );
+
+    return sanitizedDashboards;
+}
+
+function generateDashboardId() {
+    if (
+        typeof crypto !== 'undefined' &&
+        crypto &&
+        typeof crypto.randomUUID === 'function'
+    ) {
+        return crypto.randomUUID();
+    }
+
+    return `dashboard-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function generateNextDashboardName(dashboards = [], baseName = 'Dashboard') {
+    const normalizedBaseName =
+        typeof baseName === 'string' && baseName.trim() ? baseName.trim() : 'Dashboard';
+    const existingNames = new Set(
+        (Array.isArray(dashboards) ? dashboards : [])
+            .map((dashboard) => dashboard?.name)
+            .filter((name) => typeof name === 'string' && name)
+    );
+
+    if (!existingNames.has(normalizedBaseName)) {
+        return normalizedBaseName;
+    }
+
+    let index = 1;
+    while (existingNames.has(`${normalizedBaseName} ${index}`)) {
+        index += 1;
+    }
+
+    return `${normalizedBaseName} ${index}`;
+}
+
+const dashboardRepository = Object.freeze({
+    getDashboards,
+    saveDashboards,
+    generateDashboardId,
+    generateNextDashboardName
+});
+
+export {
+    cloneRows,
+    generateDashboardRowId,
+    sanitizeDashboard,
+    getDashboards,
+    saveDashboards,
+    generateDashboardId,
+    generateNextDashboardName
+};
 export default dashboardRepository;

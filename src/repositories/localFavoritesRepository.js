@@ -165,145 +165,167 @@ function normalizeGroupList(values) {
     ).sort((left, right) => left.localeCompare(right));
 }
 
-class LocalFavoritesRepository {
-    async getExplicitLocalFavoriteGroups(kind) {
-        const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
-        if (!key) {
-            return [];
-        }
-
-        return normalizeGroupList(await configRepository.getArray(key, []));
+async function getExplicitLocalFavoriteGroups(kind) {
+    const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
+    if (!key) {
+        return [];
     }
 
-    async createLocalFavoriteGroup({ kind, groupName }) {
-        const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
-        const normalizedGroupName = normalizeGroupName(groupName);
-        if (!key || !normalizedGroupName) {
-            throw new Error('LocalFavoritesRepository.createLocalFavoriteGroup requires kind and groupName.');
-        }
+    return normalizeGroupList(await configRepository.getArray(key, []));
+}
 
-        const groups = normalizeGroupList(await configRepository.getArray(key, []));
-        if (!groups.includes(normalizedGroupName)) {
-            await configRepository.setArray(key, [...groups, normalizedGroupName].sort());
-        }
+async function createLocalFavoriteGroup({ kind, groupName }) {
+    const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
+    const normalizedGroupName = normalizeGroupName(groupName);
+    if (!key || !normalizedGroupName) {
+        throw new Error('LocalFavoritesRepository.createLocalFavoriteGroup requires kind and groupName.');
     }
 
-    async getWorldFavorites() {
-        const rows = await sqliteRepository.query('SELECT * FROM favorite_world');
-        return Array.isArray(rows) ? rows.map(normalizeWorldFavoriteRow) : [];
-    }
-
-    async getAvatarFavorites() {
-        const rows = await sqliteRepository.query('SELECT * FROM favorite_avatar');
-        return Array.isArray(rows) ? rows.map(normalizeAvatarFavoriteRow) : [];
-    }
-
-    async getFriendFavorites() {
-        const rows = await sqliteRepository.query('SELECT * FROM favorite_friend');
-        return Array.isArray(rows) ? rows.map(normalizeFriendFavoriteRow) : [];
-    }
-
-    async getWorldCache() {
-        const rows = await sqliteRepository.query('SELECT * FROM cache_world');
-        return Array.isArray(rows) ? rows.map(normalizeWorldCacheRow) : [];
-    }
-
-    async getAvatarCache() {
-        const rows = await sqliteRepository.query('SELECT * FROM cache_avatar');
-        return Array.isArray(rows) ? rows.map(normalizeAvatarCacheRow) : [];
-    }
-
-    async addLocalFavorite({ kind, entityId, groupName }) {
-        const target = resolveLocalFavoriteDeleteTarget(kind);
-        const normalizedEntityId = normalizeEntityId(entityId);
-        const normalizedGroupName = normalizeGroupName(groupName);
-
-        if (!target || !normalizedEntityId || !normalizedGroupName) {
-            throw new Error('LocalFavoritesRepository.addLocalFavorite requires kind, entityId, and groupName.');
-        }
-
-        return sqliteRepository.executeNonQuery(
-            `INSERT OR REPLACE INTO ${target.table} (${target.column}, group_name, created_at) VALUES (${target.entityParam}, @group_name, @created_at)`,
-            {
-                [target.entityParam]: normalizedEntityId,
-                '@group_name': normalizedGroupName,
-                '@created_at': new Date().toJSON()
-            }
-        );
-    }
-
-    async removeLocalFavorite({ kind, entityId, groupName }) {
-        const target = resolveLocalFavoriteDeleteTarget(kind);
-        const normalizedEntityId = normalizeEntityId(entityId);
-        const normalizedGroupName = normalizeEntityId(groupName);
-
-        if (!target || !normalizedEntityId || !normalizedGroupName) {
-            throw new Error('LocalFavoritesRepository.removeLocalFavorite requires kind, entityId, and groupName.');
-        }
-
-        return sqliteRepository.executeNonQuery(
-            `DELETE FROM ${target.table} WHERE ${target.column} = @entity_id AND group_name = @group_name`,
-            {
-                '@entity_id': normalizedEntityId,
-                '@group_name': normalizedGroupName
-            }
-        );
-    }
-
-    async renameLocalFavoriteGroup({ kind, groupName, newGroupName }) {
-        const target = resolveLocalFavoriteDeleteTarget(kind);
-        const normalizedGroupName = normalizeGroupName(groupName);
-        const normalizedNewGroupName = normalizeGroupName(newGroupName);
-
-        if (!target || !normalizedGroupName || !normalizedNewGroupName) {
-            throw new Error('LocalFavoritesRepository.renameLocalFavoriteGroup requires kind, groupName, and newGroupName.');
-        }
-
-        const result = await sqliteRepository.executeNonQuery(
-            `UPDATE ${target.table} SET group_name = @new_group_name WHERE group_name = @group_name`,
-            {
-                '@new_group_name': normalizedNewGroupName,
-                '@group_name': normalizedGroupName
-            }
-        );
-
-        const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
-        if (key) {
-            const groups = normalizeGroupList(await configRepository.getArray(key, []))
-                .filter((value) => value !== normalizedGroupName);
-            await configRepository.setArray(key, [...groups, normalizedNewGroupName].sort());
-        }
-
-        return result;
-    }
-
-    async deleteLocalFavoriteGroup({ kind, groupName }) {
-        const target = resolveLocalFavoriteDeleteTarget(kind);
-        const normalizedGroupName = normalizeGroupName(groupName);
-
-        if (!target || !normalizedGroupName) {
-            throw new Error('LocalFavoritesRepository.deleteLocalFavoriteGroup requires kind and groupName.');
-        }
-
-        const result = await sqliteRepository.executeNonQuery(
-            `DELETE FROM ${target.table} WHERE group_name = @group_name`,
-            {
-                '@group_name': normalizedGroupName
-            }
-        );
-
-        const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
-        if (key) {
-            const groups = normalizeGroupList(await configRepository.getArray(key, []))
-                .filter((value) => value !== normalizedGroupName);
-            await configRepository.setArray(key, groups);
-        }
-
-        return result;
+    const groups = normalizeGroupList(await configRepository.getArray(key, []));
+    if (!groups.includes(normalizedGroupName)) {
+        await configRepository.setArray(key, [...groups, normalizedGroupName].sort());
     }
 }
 
-const localFavoritesRepository = new LocalFavoritesRepository();
+async function getWorldFavorites() {
+    const rows = await sqliteRepository.query('SELECT * FROM favorite_world');
+    return Array.isArray(rows) ? rows.map(normalizeWorldFavoriteRow) : [];
+}
 
-export { LocalFavoritesRepository };
+async function getAvatarFavorites() {
+    const rows = await sqliteRepository.query('SELECT * FROM favorite_avatar');
+    return Array.isArray(rows) ? rows.map(normalizeAvatarFavoriteRow) : [];
+}
+
+async function getFriendFavorites() {
+    const rows = await sqliteRepository.query('SELECT * FROM favorite_friend');
+    return Array.isArray(rows) ? rows.map(normalizeFriendFavoriteRow) : [];
+}
+
+async function getWorldCache() {
+    const rows = await sqliteRepository.query('SELECT * FROM cache_world');
+    return Array.isArray(rows) ? rows.map(normalizeWorldCacheRow) : [];
+}
+
+async function getAvatarCache() {
+    const rows = await sqliteRepository.query('SELECT * FROM cache_avatar');
+    return Array.isArray(rows) ? rows.map(normalizeAvatarCacheRow) : [];
+}
+
+async function addLocalFavorite({ kind, entityId, groupName }) {
+    const target = resolveLocalFavoriteDeleteTarget(kind);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    const normalizedGroupName = normalizeGroupName(groupName);
+
+    if (!target || !normalizedEntityId || !normalizedGroupName) {
+        throw new Error('LocalFavoritesRepository.addLocalFavorite requires kind, entityId, and groupName.');
+    }
+
+    return sqliteRepository.executeNonQuery(
+        `INSERT OR REPLACE INTO ${target.table} (${target.column}, group_name, created_at) VALUES (${target.entityParam}, @group_name, @created_at)`,
+        {
+            [target.entityParam]: normalizedEntityId,
+            '@group_name': normalizedGroupName,
+            '@created_at': new Date().toJSON()
+        }
+    );
+}
+
+async function removeLocalFavorite({ kind, entityId, groupName }) {
+    const target = resolveLocalFavoriteDeleteTarget(kind);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    const normalizedGroupName = normalizeEntityId(groupName);
+
+    if (!target || !normalizedEntityId || !normalizedGroupName) {
+        throw new Error('LocalFavoritesRepository.removeLocalFavorite requires kind, entityId, and groupName.');
+    }
+
+    return sqliteRepository.executeNonQuery(
+        `DELETE FROM ${target.table} WHERE ${target.column} = @entity_id AND group_name = @group_name`,
+        {
+            '@entity_id': normalizedEntityId,
+            '@group_name': normalizedGroupName
+        }
+    );
+}
+
+async function renameLocalFavoriteGroup({ kind, groupName, newGroupName }) {
+    const target = resolveLocalFavoriteDeleteTarget(kind);
+    const normalizedGroupName = normalizeGroupName(groupName);
+    const normalizedNewGroupName = normalizeGroupName(newGroupName);
+
+    if (!target || !normalizedGroupName || !normalizedNewGroupName) {
+        throw new Error('LocalFavoritesRepository.renameLocalFavoriteGroup requires kind, groupName, and newGroupName.');
+    }
+
+    const result = await sqliteRepository.executeNonQuery(
+        `UPDATE ${target.table} SET group_name = @new_group_name WHERE group_name = @group_name`,
+        {
+            '@new_group_name': normalizedNewGroupName,
+            '@group_name': normalizedGroupName
+        }
+    );
+
+    const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
+    if (key) {
+        const groups = normalizeGroupList(await configRepository.getArray(key, []))
+            .filter((value) => value !== normalizedGroupName);
+        await configRepository.setArray(key, [...groups, normalizedNewGroupName].sort());
+    }
+
+    return result;
+}
+
+async function deleteLocalFavoriteGroup({ kind, groupName }) {
+    const target = resolveLocalFavoriteDeleteTarget(kind);
+    const normalizedGroupName = normalizeGroupName(groupName);
+
+    if (!target || !normalizedGroupName) {
+        throw new Error('LocalFavoritesRepository.deleteLocalFavoriteGroup requires kind and groupName.');
+    }
+
+    const result = await sqliteRepository.executeNonQuery(
+        `DELETE FROM ${target.table} WHERE group_name = @group_name`,
+        {
+            '@group_name': normalizedGroupName
+        }
+    );
+
+    const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
+    if (key) {
+        const groups = normalizeGroupList(await configRepository.getArray(key, []))
+            .filter((value) => value !== normalizedGroupName);
+        await configRepository.setArray(key, groups);
+    }
+
+    return result;
+}
+
+const localFavoritesRepository = Object.freeze({
+    getExplicitLocalFavoriteGroups,
+    createLocalFavoriteGroup,
+    getWorldFavorites,
+    getAvatarFavorites,
+    getFriendFavorites,
+    getWorldCache,
+    getAvatarCache,
+    addLocalFavorite,
+    removeLocalFavorite,
+    renameLocalFavoriteGroup,
+    deleteLocalFavoriteGroup
+});
+
+export {
+    getExplicitLocalFavoriteGroups,
+    createLocalFavoriteGroup,
+    getWorldFavorites,
+    getAvatarFavorites,
+    getFriendFavorites,
+    getWorldCache,
+    getAvatarCache,
+    addLocalFavorite,
+    removeLocalFavorite,
+    renameLocalFavoriteGroup,
+    deleteLocalFavoriteGroup
+};
 export default localFavoritesRepository;

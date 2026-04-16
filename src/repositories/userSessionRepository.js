@@ -1,43 +1,45 @@
 import sqliteRepository from './sqliteRepository.js';
 import {
     buildInitUserTableStatements,
-    normalizeUserTablePrefix
+    normalizeUserTablePrefix as baseNormalizeUserTablePrefix
 } from '../services/database/userTables.js';
 
-class UserSessionRepository {
-    normalizeUserTablePrefix(userId) {
-        return normalizeUserTablePrefix(userId);
-    }
-
-    async initUserTables(userId) {
-        const userPrefix = normalizeUserTablePrefix(userId);
-        for (const sql of buildInitUserTableStatements(userPrefix)) {
-            await sqliteRepository.executeNonQuery(sql);
-        }
-
-        return {
-            userId: typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim(),
-            userPrefix
-        };
-    }
-
-    async purgeAvatarFeedData(userId, cutoffDate = null) {
-        const userPrefix = normalizeUserTablePrefix(userId);
-        if (cutoffDate) {
-            await sqliteRepository.executeNonQuery(
-                `DELETE FROM ${userPrefix}_feed_avatar WHERE created_at < @cutoff`,
-                {
-                    '@cutoff': cutoffDate
-                }
-            );
-            return;
-        }
-
-        await sqliteRepository.executeNonQuery(`DELETE FROM ${userPrefix}_feed_avatar`);
-    }
+function normalizeUserTablePrefix(userId) {
+    return baseNormalizeUserTablePrefix(userId);
 }
 
-const userSessionRepository = new UserSessionRepository();
+async function initUserTables(userId) {
+    const userPrefix = normalizeUserTablePrefix(userId);
+    for (const sql of buildInitUserTableStatements(userPrefix)) {
+        await sqliteRepository.executeNonQuery(sql);
+    }
 
-export { UserSessionRepository, normalizeUserTablePrefix };
+    return {
+        userId: typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim(),
+        userPrefix
+    };
+}
+
+async function purgeAvatarFeedData(userId, cutoffDate = null) {
+    const userPrefix = normalizeUserTablePrefix(userId);
+    if (cutoffDate) {
+        await sqliteRepository.executeNonQuery(
+            `DELETE FROM ${userPrefix}_feed_avatar WHERE created_at < @cutoff`,
+            {
+                '@cutoff': cutoffDate
+            }
+        );
+        return;
+    }
+
+    await sqliteRepository.executeNonQuery(`DELETE FROM ${userPrefix}_feed_avatar`);
+}
+
+const userSessionRepository = {
+    normalizeUserTablePrefix,
+    initUserTables,
+    purgeAvatarFeedData
+};
+
+export { normalizeUserTablePrefix, initUserTables, purgeAvatarFeedData };
 export default userSessionRepository;

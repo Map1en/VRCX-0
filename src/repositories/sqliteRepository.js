@@ -42,61 +42,66 @@ function showSQLiteErrorModal(error) {
     }
 }
 
-class SqliteRepository {
-    async query(sql, args = null) {
-        try {
-            return await backend.sqlite.execute(sql, args);
-        } catch (error) {
-            showSQLiteErrorModal(error);
-            throw normalizePlatformError(error, 'SQLite query failed');
-        }
-    }
-
-    async all(sql, args = null) {
-        return this.query(sql, args);
-    }
-
-    async execute(callbackOrSql, sqlOrArgs = null, maybeArgs = null) {
-        if (typeof callbackOrSql === 'function') {
-            const rows = await this.query(sqlOrArgs, maybeArgs);
-            if (Array.isArray(rows)) {
-                for (const row of rows) {
-                    callbackOrSql(row);
-                }
-            }
-            return rows;
-        }
-
-        return this.query(callbackOrSql, sqlOrArgs);
-    }
-
-    async executeNonQuery(sql, args = null) {
-        try {
-            return await backend.sqlite.executeNonQuery(sql, args);
-        } catch (error) {
-            showSQLiteErrorModal(error);
-            throw normalizePlatformError(error, 'SQLite non-query failed');
-        }
-    }
-
-    async run(sql, args = null) {
-        return this.executeNonQuery(sql, args);
-    }
-
-    async transaction(steps) {
-        await this.executeNonQuery('BEGIN');
-        try {
-            const result = await steps(this);
-            await this.executeNonQuery('COMMIT');
-            return result;
-        } catch (error) {
-            await this.executeNonQuery('ROLLBACK');
-            throw error;
-        }
+async function query(sql, args = null) {
+    try {
+        return await backend.sqlite.execute(sql, args);
+    } catch (error) {
+        showSQLiteErrorModal(error);
+        throw normalizePlatformError(error, 'SQLite query failed');
     }
 }
 
-const sqliteRepository = new SqliteRepository();
+async function all(sql, args = null) {
+    return query(sql, args);
+}
 
-export { SqliteRepository };
+async function execute(callbackOrSql, sqlOrArgs = null, maybeArgs = null) {
+    if (typeof callbackOrSql === 'function') {
+        const rows = await query(sqlOrArgs, maybeArgs);
+        if (Array.isArray(rows)) {
+            for (const row of rows) {
+                callbackOrSql(row);
+            }
+        }
+        return rows;
+    }
+
+    return query(callbackOrSql, sqlOrArgs);
+}
+
+async function executeNonQuery(sql, args = null) {
+    try {
+        return await backend.sqlite.executeNonQuery(sql, args);
+    } catch (error) {
+        showSQLiteErrorModal(error);
+        throw normalizePlatformError(error, 'SQLite non-query failed');
+    }
+}
+
+async function run(sql, args = null) {
+    return executeNonQuery(sql, args);
+}
+
+async function transaction(steps) {
+    await executeNonQuery('BEGIN');
+    try {
+        const result = await steps(sqliteRepository);
+        await executeNonQuery('COMMIT');
+        return result;
+    } catch (error) {
+        await executeNonQuery('ROLLBACK');
+        throw error;
+    }
+}
+
+const sqliteRepository = Object.freeze({
+    query,
+    all,
+    execute,
+    executeNonQuery,
+    run,
+    transaction
+});
+
+export { query, all, execute, executeNonQuery, run, transaction };
 export default sqliteRepository;

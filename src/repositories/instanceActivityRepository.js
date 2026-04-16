@@ -60,91 +60,97 @@ function normalizeWorldCacheRow(row) {
     };
 }
 
-class InstanceActivityRepository {
-    async getAvailableDates(userId) {
-        const normalizedUserId = normalizeString(userId);
-        if (!normalizedUserId) {
-            return [];
-        }
-
-        const rows = await sqliteRepository.query(
-            `SELECT created_at
-             FROM gamelog_join_leave
-             WHERE user_id = @userId
-             ORDER BY created_at DESC`,
-            {
-                '@userId': normalizedUserId
-            }
-        );
-
-        return Array.isArray(rows)
-            ? rows
-                .map((row) => (Array.isArray(row) ? row[0] : row?.created_at ?? row?.[0] ?? ''))
-                .filter(Boolean)
-            : [];
+async function getAvailableDates(userId) {
+    const normalizedUserId = normalizeString(userId);
+    if (!normalizedUserId) {
+        return [];
     }
 
-    async getInstanceActivityRows(startDate, endDate) {
-        const rows = await sqliteRepository.query(
-            `SELECT *
-             FROM gamelog_join_leave
-             WHERE type = 'OnPlayerLeft'
-               AND (
-                 strftime('%Y-%m-%dT%H:%M:%SZ', created_at, '-' || (time * 1.0 / 1000) || ' seconds')
-                    BETWEEN @utc_start_date AND @utc_end_date
-                 OR created_at BETWEEN @utc_start_date AND @utc_end_date
-               )
-             ORDER BY created_at ASC, id ASC`,
-            {
-                '@utc_start_date': startDate,
-                '@utc_end_date': endDate
-            }
-        );
-
-        return Array.isArray(rows)
-            ? rows
-                .map(normalizeInstanceActivityRow)
-                .filter((row) => row.location && row.location !== 'traveling')
-            : [];
-    }
-
-    async getWorldSummariesByIds(worldIds) {
-        const ids = Array.from(
-            new Set((Array.isArray(worldIds) ? worldIds : []).map(normalizeString).filter(Boolean))
-        );
-        if (!ids.length) {
-            return {};
+    const rows = await sqliteRepository.query(
+        `SELECT created_at
+         FROM gamelog_join_leave
+         WHERE user_id = @userId
+         ORDER BY created_at DESC`,
+        {
+            '@userId': normalizedUserId
         }
+    );
 
-        const params = {};
-        const placeholders = ids.map((id, index) => {
-            const key = `@worldId${index}`;
-            params[key] = id;
-            return key;
-        });
-
-        const rows = await sqliteRepository.query(
-            `SELECT *
-             FROM cache_world
-             WHERE id IN (${placeholders.join(', ')})`,
-            params
-        );
-
-        const map = {};
-        if (Array.isArray(rows)) {
-            for (const row of rows) {
-                const world = normalizeWorldCacheRow(row);
-                if (world.id) {
-                    map[world.id] = world;
-                }
-            }
-        }
-
-        return map;
-    }
+    return Array.isArray(rows)
+        ? rows
+            .map((row) => (Array.isArray(row) ? row[0] : row?.created_at ?? row?.[0] ?? ''))
+            .filter(Boolean)
+        : [];
 }
 
-const instanceActivityRepository = new InstanceActivityRepository();
+async function getInstanceActivityRows(startDate, endDate) {
+    const rows = await sqliteRepository.query(
+        `SELECT *
+         FROM gamelog_join_leave
+         WHERE type = 'OnPlayerLeft'
+           AND (
+             strftime('%Y-%m-%dT%H:%M:%SZ', created_at, '-' || (time * 1.0 / 1000) || ' seconds')
+                BETWEEN @utc_start_date AND @utc_end_date
+             OR created_at BETWEEN @utc_start_date AND @utc_end_date
+           )
+         ORDER BY created_at ASC, id ASC`,
+        {
+            '@utc_start_date': startDate,
+            '@utc_end_date': endDate
+        }
+    );
 
-export { InstanceActivityRepository };
+    return Array.isArray(rows)
+        ? rows
+            .map(normalizeInstanceActivityRow)
+            .filter((row) => row.location && row.location !== 'traveling')
+        : [];
+}
+
+async function getWorldSummariesByIds(worldIds) {
+    const ids = Array.from(
+        new Set((Array.isArray(worldIds) ? worldIds : []).map(normalizeString).filter(Boolean))
+    );
+    if (!ids.length) {
+        return {};
+    }
+
+    const params = {};
+    const placeholders = ids.map((id, index) => {
+        const key = `@worldId${index}`;
+        params[key] = id;
+        return key;
+    });
+
+    const rows = await sqliteRepository.query(
+        `SELECT *
+         FROM cache_world
+         WHERE id IN (${placeholders.join(', ')})`,
+        params
+    );
+
+    const map = {};
+    if (Array.isArray(rows)) {
+        for (const row of rows) {
+            const world = normalizeWorldCacheRow(row);
+            if (world.id) {
+                map[world.id] = world;
+            }
+        }
+    }
+
+    return map;
+}
+
+const instanceActivityRepository = {
+    getAvailableDates,
+    getInstanceActivityRows,
+    getWorldSummariesByIds
+};
+
+export {
+    getAvailableDates,
+    getInstanceActivityRows,
+    getWorldSummariesByIds
+};
 export default instanceActivityRepository;

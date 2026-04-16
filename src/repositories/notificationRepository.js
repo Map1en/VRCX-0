@@ -1,7 +1,9 @@
 import { safeJsonParse } from './baseRepository.js';
 import configRepository from './configRepository.js';
 import sqliteRepository from './sqliteRepository.js';
-import userSessionRepository, { normalizeUserTablePrefix } from './userSessionRepository.js';
+import userSessionRepository, {
+    normalizeUserTablePrefix
+} from './userSessionRepository.js';
 import webRepository from './webRepository.js';
 import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
 
@@ -30,7 +32,9 @@ export const NOTIFICATION_TYPES = Object.freeze([
 ]);
 
 function normalizeUserId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeEndpointDomain(endpointDomain) {
@@ -148,7 +152,10 @@ function isExpiredTimestamp(value) {
 
 function normalizeV2Notification(row) {
     const data = safeJsonParse(readColumn(row, 13, 'data') || '{}', {});
-    const responses = safeJsonParse(readColumn(row, 14, 'responses') || '[]', []);
+    const responses = safeJsonParse(
+        readColumn(row, 14, 'responses') || '[]',
+        []
+    );
     const details = safeJsonParse(readColumn(row, 15, 'details') || '{}', {});
 
     return {
@@ -175,7 +182,9 @@ function normalizeV2Notification(row) {
 }
 
 function matchesSearch(notification, search) {
-    const query = String(search || '').trim().toLowerCase();
+    const query = String(search || '')
+        .trim()
+        .toLowerCase();
     if (!query) {
         return true;
     }
@@ -194,223 +203,198 @@ function matchesSearch(notification, search) {
         notification.details?.requestMessage,
         notification.details?.responseMessage,
         notification.data?.groupName
-    ].some((value) => String(value || '').toLowerCase().includes(query));
+    ].some((value) =>
+        String(value || '')
+            .toLowerCase()
+            .includes(query)
+    );
 }
 
 function matchesFilters(notification, filters) {
     const normalizedFilters = Array.isArray(filters)
         ? filters.map((value) => String(value || '').trim()).filter(Boolean)
         : [];
-    return !normalizedFilters.length || normalizedFilters.includes(notification.type);
+    return (
+        !normalizedFilters.length ||
+        normalizedFilters.includes(notification.type)
+    );
 }
 
-class NotificationRepository {
-    async executeApi(path, { endpoint = '', method = 'GET', params = null } = {}) {
-        const requestOptions = {
-            url: buildUrl(path, method === 'GET' ? params : {}, endpoint),
-            method
+async function executeApi(
+    path,
+    { endpoint = '', method = 'GET', params = null } = {}
+) {
+    const requestOptions = {
+        url: buildUrl(path, method === 'GET' ? params : {}, endpoint),
+        method
+    };
+
+    if (method !== 'GET' && params !== null) {
+        requestOptions.headers = {
+            'Content-Type': 'application/json;charset=utf-8'
         };
-
-        if (method !== 'GET' && params !== null) {
-            requestOptions.headers = {
-                'Content-Type': 'application/json;charset=utf-8'
-            };
-            requestOptions.body = JSON.stringify(params ?? {});
-        }
-
-        const response = await webRepository.execute(requestOptions);
-        const json = parseJsonResponse(response.data);
-
-        if (response.status >= 400) {
-            throw createNotificationError(
-                unwrapErrorMessage(json, response.status),
-                response.status,
-                path,
-                json
-            );
-        }
-
-        if (json && typeof json === 'object' && 'error' in json) {
-            throw createNotificationError(
-                unwrapErrorMessage(json, response.status),
-                response.status,
-                path,
-                json
-            );
-        }
-
-        return {
-            json,
-            status: response.status,
-            raw: response.raw
-        };
+        requestOptions.body = JSON.stringify(params ?? {});
     }
 
-    async queryNotifications({ userId, search = '', filters = [] } = {}) {
-        const normalizedUserId = normalizeUserId(userId);
-        if (!normalizedUserId) {
-            return [];
+    const response = await webRepository.execute(requestOptions);
+    const json = parseJsonResponse(response.data);
+
+    if (response.status >= 400) {
+        throw createNotificationError(
+            unwrapErrorMessage(json, response.status),
+            response.status,
+            path,
+            json
+        );
+    }
+
+    if (json && typeof json === 'object' && 'error' in json) {
+        throw createNotificationError(
+            unwrapErrorMessage(json, response.status),
+            response.status,
+            path,
+            json
+        );
+    }
+
+    return {
+        json,
+        status: response.status,
+        raw: response.raw
+    };
+}
+
+async function queryNotifications({ userId, search = '', filters = [] } = {}) {
+    const normalizedUserId = normalizeUserId(userId);
+    if (!normalizedUserId) {
+        return [];
+    }
+
+    await userSessionRepository.initUserTables(normalizedUserId);
+    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
+    const [maxTableSize, searchLimit] = await Promise.all([
+        configRepository.getInt('maxTableSize_v2', 500),
+        configRepository.getInt('searchLimit', 50000)
+    ]);
+    const limit =
+        search || (Array.isArray(filters) && filters.length)
+            ? searchLimit
+            : maxTableSize;
+
+    const [v1Rows, v2Rows] = await Promise.all([
+        sqliteRepository.query(
+            `SELECT * FROM ${userPrefix}_notifications ORDER BY created_at DESC`
+        ),
+        sqliteRepository.query(
+            `SELECT * FROM ${userPrefix}_notifications_v2 ORDER BY created_at DESC`
+        )
+    ]);
+
+    const deduped = new Map();
+    for (const notification of [
+        ...(Array.isArray(v1Rows) ? v1Rows.map(normalizeV1Notification) : []),
+        ...(Array.isArray(v2Rows) ? v2Rows.map(normalizeV2Notification) : [])
+    ]) {
+        if (!notification.id) {
+            continue;
         }
+        const existing = deduped.get(notification.id);
+        if (
+            !existing ||
+            Number(notification.version) >= Number(existing.version)
+        ) {
+            deduped.set(notification.id, notification);
+        }
+    }
 
-        await userSessionRepository.initUserTables(normalizedUserId);
-        const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-        const [maxTableSize, searchLimit] = await Promise.all([
-            configRepository.getInt('maxTableSize_v2', 500),
-            configRepository.getInt('searchLimit', 50000)
-        ]);
-        const limit = search || (Array.isArray(filters) && filters.length) ? searchLimit : maxTableSize;
-
-        const [v1Rows, v2Rows] = await Promise.all([
-            sqliteRepository.query(
-                `SELECT * FROM ${userPrefix}_notifications ORDER BY created_at DESC`
-            ),
-            sqliteRepository.query(
-                `SELECT * FROM ${userPrefix}_notifications_v2 ORDER BY created_at DESC`
-            )
-        ]);
-
-        const deduped = new Map();
-        for (const notification of [
-            ...(Array.isArray(v1Rows) ? v1Rows.map(normalizeV1Notification) : []),
-            ...(Array.isArray(v2Rows) ? v2Rows.map(normalizeV2Notification) : [])
-        ]) {
-            if (!notification.id) {
-                continue;
+    return Array.from(deduped.values())
+        .filter((notification) => notification.id)
+        .filter((notification) => matchesFilters(notification, filters))
+        .filter((notification) => matchesSearch(notification, search))
+        .sort((left, right) => {
+            const leftTime = new Date(left.createdAt || 0).valueOf() || 0;
+            const rightTime = new Date(right.createdAt || 0).valueOf() || 0;
+            if (leftTime !== rightTime) {
+                return rightTime - leftTime;
             }
-            const existing = deduped.get(notification.id);
-            if (!existing || Number(notification.version) >= Number(existing.version)) {
-                deduped.set(notification.id, notification);
+            return String(right.id).localeCompare(String(left.id));
+        })
+        .slice(0, limit);
+}
+
+async function deleteNotification({ userId, id }) {
+    const normalizedUserId = normalizeUserId(userId);
+    const normalizedId =
+        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    if (!normalizedUserId || !normalizedId) {
+        return;
+    }
+
+    await userSessionRepository.initUserTables(normalizedUserId);
+    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
+    await sqliteRepository.transaction(async (tx) => {
+        await tx.executeNonQuery(
+            `DELETE FROM ${userPrefix}_notifications WHERE id = @id`,
+            {
+                '@id': normalizedId
             }
-        }
-
-        return Array.from(deduped.values())
-            .filter((notification) => notification.id)
-            .filter((notification) => matchesFilters(notification, filters))
-            .filter((notification) => matchesSearch(notification, search))
-            .sort((left, right) => {
-                const leftTime = new Date(left.createdAt || 0).valueOf() || 0;
-                const rightTime = new Date(right.createdAt || 0).valueOf() || 0;
-                if (leftTime !== rightTime) {
-                    return rightTime - leftTime;
-                }
-                return String(right.id).localeCompare(String(left.id));
-            })
-            .slice(0, limit);
-    }
-
-    async deleteNotification({ userId, id }) {
-        const normalizedUserId = normalizeUserId(userId);
-        const normalizedId = typeof id === 'string' ? id.trim() : String(id ?? '').trim();
-        if (!normalizedUserId || !normalizedId) {
-            return;
-        }
-
-        await userSessionRepository.initUserTables(normalizedUserId);
-        const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-        await sqliteRepository.transaction(async (tx) => {
-            await tx.executeNonQuery(`DELETE FROM ${userPrefix}_notifications WHERE id = @id`, {
+        );
+        await tx.executeNonQuery(
+            `DELETE FROM ${userPrefix}_notifications_v2 WHERE id = @id`,
+            {
                 '@id': normalizedId
-            });
-            await tx.executeNonQuery(`DELETE FROM ${userPrefix}_notifications_v2 WHERE id = @id`, {
+            }
+        );
+    });
+}
+
+async function expireNotification({ userId, id }) {
+    const normalizedUserId = normalizeUserId(userId);
+    const normalizedId =
+        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    if (!normalizedUserId || !normalizedId) {
+        return;
+    }
+
+    await userSessionRepository.initUserTables(normalizedUserId);
+    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
+    const now = new Date().toJSON();
+    await sqliteRepository.transaction(async (tx) => {
+        await tx.executeNonQuery(
+            `UPDATE ${userPrefix}_notifications SET expired = 1 WHERE id = @id`,
+            {
                 '@id': normalizedId
-            });
-        });
+            }
+        );
+        await tx.executeNonQuery(
+            `UPDATE ${userPrefix}_notifications_v2 SET expires_at = @expires_at, seen = 1 WHERE id = @id`,
+            {
+                '@id': normalizedId,
+                '@expires_at': now
+            }
+        );
+    });
+}
+
+async function markSeen({ userId, id, version, endpoint = '' }) {
+    const normalizedUserId = normalizeUserId(userId);
+    const normalizedId =
+        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    if (!normalizedUserId || !normalizedId) {
+        return;
     }
 
-    async expireNotification({ userId, id }) {
-        const normalizedUserId = normalizeUserId(userId);
-        const normalizedId = typeof id === 'string' ? id.trim() : String(id ?? '').trim();
-        if (!normalizedUserId || !normalizedId) {
-            return;
-        }
-
-        await userSessionRepository.initUserTables(normalizedUserId);
-        const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-        const now = new Date().toJSON();
-        await sqliteRepository.transaction(async (tx) => {
-            await tx.executeNonQuery(
-                `UPDATE ${userPrefix}_notifications SET expired = 1 WHERE id = @id`,
-                {
-                    '@id': normalizedId
-                }
-            );
-            await tx.executeNonQuery(
-                `UPDATE ${userPrefix}_notifications_v2 SET expires_at = @expires_at, seen = 1 WHERE id = @id`,
-                {
-                    '@id': normalizedId,
-                    '@expires_at': now
-                }
-            );
-        });
-    }
-
-    async markSeen({ userId, id, version, endpoint = '' }) {
-        const normalizedUserId = normalizeUserId(userId);
-        const normalizedId = typeof id === 'string' ? id.trim() : String(id ?? '').trim();
-        if (!normalizedUserId || !normalizedId) {
-            return;
-        }
-
-        if (Number(version) >= 2) {
-            await this.executeApi(`notifications/${encodeURIComponent(normalizedId)}/see`, {
+    if (Number(version) >= 2) {
+        await executeApi(
+            `notifications/${encodeURIComponent(normalizedId)}/see`,
+            {
                 endpoint,
                 method: 'POST'
-            });
-        } else {
-            await this.executeApi(
-                `auth/user/notifications/${encodeURIComponent(normalizedId)}/see`,
-                {
-                    endpoint,
-                    method: 'PUT'
-                }
-            );
-        }
-
-        if (Number(version) !== 2) {
-            return;
-        }
-
-        await userSessionRepository.initUserTables(normalizedUserId);
-        const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-        await sqliteRepository.executeNonQuery(
-            `UPDATE ${userPrefix}_notifications_v2 SET seen = 1 WHERE id = @id`,
-            {
-                '@id': normalizedId
             }
         );
-    }
-
-    async markSeenLocalBulk({ userId, ids }) {
-        const normalizedUserId = normalizeUserId(userId);
-        const normalizedIds = (Array.isArray(ids) ? ids : [ids])
-            .map((id) => (typeof id === 'string' ? id.trim() : String(id ?? '').trim()))
-            .filter(Boolean);
-        if (!normalizedUserId || !normalizedIds.length) {
-            return;
-        }
-
-        await userSessionRepository.initUserTables(normalizedUserId);
-        const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-        await sqliteRepository.transaction(async (tx) => {
-            for (const id of normalizedIds) {
-                await tx.executeNonQuery(
-                    `UPDATE ${userPrefix}_notifications_v2 SET seen = 1 WHERE id = @id`,
-                    {
-                        '@id': id
-                    }
-                );
-            }
-        });
-    }
-
-    async acceptFriendRequest({ id, endpoint = '' }) {
-        const normalizedId = typeof id === 'string' ? id.trim() : String(id ?? '').trim();
-        if (!normalizedId) {
-            return null;
-        }
-
-        return this.executeApi(
-            `auth/user/notifications/${encodeURIComponent(normalizedId)}/accept`,
+    } else {
+        await executeApi(
+            `auth/user/notifications/${encodeURIComponent(normalizedId)}/see`,
             {
                 endpoint,
                 method: 'PUT'
@@ -418,195 +402,306 @@ class NotificationRepository {
         );
     }
 
-    async hideRemoteNotification({ id, version, type = '', senderUserId = '', endpoint = '' }) {
-        const normalizedId = typeof id === 'string' ? id.trim() : String(id ?? '').trim();
-        const normalizedSenderUserId =
-            typeof senderUserId === 'string' ? senderUserId.trim() : String(senderUserId ?? '').trim();
-        if (!normalizedId) {
-            return null;
-        }
-
-        if (type === 'ignoredFriendRequest' && normalizedSenderUserId) {
-            return this.executeApi(
-                `user/${encodeURIComponent(normalizedSenderUserId)}/friendRequest`,
-                {
-                    endpoint,
-                    method: 'DELETE',
-                    params: {
-                        notificationId: normalizedId
-                    }
-                }
-            );
-        }
-
-        if (Number(version) >= 2) {
-            return this.executeApi(`notifications/${encodeURIComponent(normalizedId)}`, {
-                endpoint,
-                method: 'DELETE'
-            });
-        }
-
-        return this.executeApi(
-            `auth/user/notifications/${encodeURIComponent(normalizedId)}/hide`,
-            {
-                endpoint,
-                method: 'PUT'
-            }
-        );
+    if (Number(version) !== 2) {
+        return;
     }
 
-    async sendNotificationResponse({
-        id,
-        responseType,
-        responseData = '',
-        endpoint = ''
-    } = {}) {
-        const normalizedId = typeof id === 'string' ? id.trim() : String(id ?? '').trim();
-        const normalizedResponseType =
-            typeof responseType === 'string' ? responseType.trim() : String(responseType ?? '').trim();
-        if (!normalizedId || !normalizedResponseType) {
-            return null;
+    await userSessionRepository.initUserTables(normalizedUserId);
+    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
+    await sqliteRepository.executeNonQuery(
+        `UPDATE ${userPrefix}_notifications_v2 SET seen = 1 WHERE id = @id`,
+        {
+            '@id': normalizedId
         }
-
-        return this.executeApi(
-            `notifications/${encodeURIComponent(normalizedId)}/respond`,
-            {
-                endpoint,
-                method: 'POST',
-                params: {
-                    notificationId: normalizedId,
-                    responseType: normalizedResponseType,
-                    responseData: responseData ?? ''
-                }
-            }
-        );
-    }
-
-    async sendInviteResponse({ id, responseSlot, endpoint = '' } = {}) {
-        const normalizedId = typeof id === 'string' ? id.trim() : String(id ?? '').trim();
-        const normalizedSlot = Number.parseInt(responseSlot, 10);
-        if (!normalizedId || !Number.isFinite(normalizedSlot)) {
-            return null;
-        }
-
-        return this.executeApi(
-            `invite/${encodeURIComponent(normalizedId)}/response`,
-            {
-                endpoint,
-                method: 'POST',
-                params: {
-                    responseSlot: normalizedSlot,
-                    rsvp: true
-                }
-            }
-        );
-    }
-
-    async sendInviteResponsePhoto({ id, responseSlot, imageData, endpoint = '' } = {}) {
-        const normalizedId = typeof id === 'string' ? id.trim() : String(id ?? '').trim();
-        const normalizedSlot = Number.parseInt(responseSlot, 10);
-        const normalizedImageData =
-            typeof imageData === 'string' ? imageData.trim() : String(imageData ?? '').trim();
-        if (!normalizedId || !Number.isFinite(normalizedSlot) || !normalizedImageData) {
-            return null;
-        }
-
-        const path = `invite/${encodeURIComponent(normalizedId)}/response/photo`;
-        const response = await webRepository.execute({
-            url: buildUrl(path, {}, endpoint),
-            uploadImageLegacy: true,
-            postData: JSON.stringify({
-                responseSlot: normalizedSlot,
-                rsvp: true
-            }),
-            imageData: normalizedImageData
-        });
-        const json = parseJsonResponse(response.data);
-
-        if (response.status >= 400) {
-            throw createNotificationError(
-                unwrapErrorMessage(json, response.status),
-                response.status,
-                path,
-                json
-            );
-        }
-
-        if (json && typeof json === 'object' && 'error' in json) {
-            throw createNotificationError(
-                unwrapErrorMessage(json, response.status),
-                response.status,
-                path,
-                json
-            );
-        }
-
-        return {
-            json,
-            status: response.status,
-            raw: response.raw
-        };
-    }
-
-    async sendInvite({ receiverUserId, params = {}, endpoint = '' } = {}) {
-        const normalizedReceiverUserId =
-            typeof receiverUserId === 'string'
-                ? receiverUserId.trim()
-                : String(receiverUserId ?? '').trim();
-        if (!normalizedReceiverUserId) {
-            return null;
-        }
-
-        return this.executeApi(
-            `invite/${encodeURIComponent(normalizedReceiverUserId)}`,
-            {
-                endpoint,
-                method: 'POST',
-                params
-            }
-        );
-    }
-
-    async sendRequestInvite({ receiverUserId, params = {}, endpoint = '' } = {}) {
-        const normalizedReceiverUserId =
-            typeof receiverUserId === 'string'
-                ? receiverUserId.trim()
-                : String(receiverUserId ?? '').trim();
-        if (!normalizedReceiverUserId) {
-            return null;
-        }
-
-        return this.executeApi(
-            `requestInvite/${encodeURIComponent(normalizedReceiverUserId)}`,
-            {
-                endpoint,
-                method: 'POST',
-                params
-            }
-        );
-    }
-
-    async sendBoop({ userId, emojiId = '', endpoint = '' } = {}) {
-        const normalizedUserId =
-            typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
-        if (!normalizedUserId) {
-            return null;
-        }
-
-        const normalizedEmojiId =
-            typeof emojiId === 'string' ? emojiId.trim() : String(emojiId ?? '').trim();
-        return this.executeApi(
-            `users/${encodeURIComponent(normalizedUserId)}/boop`,
-            {
-                endpoint,
-                method: 'POST',
-                params: normalizedEmojiId ? { emojiId: normalizedEmojiId } : {}
-            }
-        );
-    }
+    );
 }
 
-const notificationRepository = new NotificationRepository();
+async function markSeenLocalBulk({ userId, ids }) {
+    const normalizedUserId = normalizeUserId(userId);
+    const normalizedIds = (Array.isArray(ids) ? ids : [ids])
+        .map((id) =>
+            typeof id === 'string' ? id.trim() : String(id ?? '').trim()
+        )
+        .filter(Boolean);
+    if (!normalizedUserId || !normalizedIds.length) {
+        return;
+    }
 
-export { NotificationRepository };
+    await userSessionRepository.initUserTables(normalizedUserId);
+    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
+    await sqliteRepository.transaction(async (tx) => {
+        for (const id of normalizedIds) {
+            await tx.executeNonQuery(
+                `UPDATE ${userPrefix}_notifications_v2 SET seen = 1 WHERE id = @id`,
+                {
+                    '@id': id
+                }
+            );
+        }
+    });
+}
+
+async function acceptFriendRequest({ id, endpoint = '' }) {
+    const normalizedId =
+        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    if (!normalizedId) {
+        return null;
+    }
+
+    return executeApi(
+        `auth/user/notifications/${encodeURIComponent(normalizedId)}/accept`,
+        {
+            endpoint,
+            method: 'PUT'
+        }
+    );
+}
+
+async function hideRemoteNotification({
+    id,
+    version,
+    type = '',
+    senderUserId = '',
+    endpoint = ''
+}) {
+    const normalizedId =
+        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    const normalizedSenderUserId =
+        typeof senderUserId === 'string'
+            ? senderUserId.trim()
+            : String(senderUserId ?? '').trim();
+    if (!normalizedId) {
+        return null;
+    }
+
+    if (type === 'ignoredFriendRequest' && normalizedSenderUserId) {
+        return executeApi(
+            `user/${encodeURIComponent(normalizedSenderUserId)}/friendRequest`,
+            {
+                endpoint,
+                method: 'DELETE',
+                params: {
+                    notificationId: normalizedId
+                }
+            }
+        );
+    }
+
+    if (Number(version) >= 2) {
+        return executeApi(`notifications/${encodeURIComponent(normalizedId)}`, {
+            endpoint,
+            method: 'DELETE'
+        });
+    }
+
+    return executeApi(
+        `auth/user/notifications/${encodeURIComponent(normalizedId)}/hide`,
+        {
+            endpoint,
+            method: 'PUT'
+        }
+    );
+}
+
+async function sendNotificationResponse({
+    id,
+    responseType,
+    responseData = '',
+    endpoint = ''
+} = {}) {
+    const normalizedId =
+        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    const normalizedResponseType =
+        typeof responseType === 'string'
+            ? responseType.trim()
+            : String(responseType ?? '').trim();
+    if (!normalizedId || !normalizedResponseType) {
+        return null;
+    }
+
+    return executeApi(
+        `notifications/${encodeURIComponent(normalizedId)}/respond`,
+        {
+            endpoint,
+            method: 'POST',
+            params: {
+                notificationId: normalizedId,
+                responseType: normalizedResponseType,
+                responseData: responseData ?? ''
+            }
+        }
+    );
+}
+
+async function sendInviteResponse({ id, responseSlot, endpoint = '' } = {}) {
+    const normalizedId =
+        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    const normalizedSlot = Number.parseInt(responseSlot, 10);
+    if (!normalizedId || !Number.isFinite(normalizedSlot)) {
+        return null;
+    }
+
+    return executeApi(`invite/${encodeURIComponent(normalizedId)}/response`, {
+        endpoint,
+        method: 'POST',
+        params: {
+            responseSlot: normalizedSlot,
+            rsvp: true
+        }
+    });
+}
+
+async function sendInviteResponsePhoto({
+    id,
+    responseSlot,
+    imageData,
+    endpoint = ''
+} = {}) {
+    const normalizedId =
+        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    const normalizedSlot = Number.parseInt(responseSlot, 10);
+    const normalizedImageData =
+        typeof imageData === 'string'
+            ? imageData.trim()
+            : String(imageData ?? '').trim();
+    if (
+        !normalizedId ||
+        !Number.isFinite(normalizedSlot) ||
+        !normalizedImageData
+    ) {
+        return null;
+    }
+
+    const path = `invite/${encodeURIComponent(normalizedId)}/response/photo`;
+    const response = await webRepository.execute({
+        url: buildUrl(path, {}, endpoint),
+        uploadImageLegacy: true,
+        postData: JSON.stringify({
+            responseSlot: normalizedSlot,
+            rsvp: true
+        }),
+        imageData: normalizedImageData
+    });
+    const json = parseJsonResponse(response.data);
+
+    if (response.status >= 400) {
+        throw createNotificationError(
+            unwrapErrorMessage(json, response.status),
+            response.status,
+            path,
+            json
+        );
+    }
+
+    if (json && typeof json === 'object' && 'error' in json) {
+        throw createNotificationError(
+            unwrapErrorMessage(json, response.status),
+            response.status,
+            path,
+            json
+        );
+    }
+
+    return {
+        json,
+        status: response.status,
+        raw: response.raw
+    };
+}
+
+async function sendInvite({ receiverUserId, params = {}, endpoint = '' } = {}) {
+    const normalizedReceiverUserId =
+        typeof receiverUserId === 'string'
+            ? receiverUserId.trim()
+            : String(receiverUserId ?? '').trim();
+    if (!normalizedReceiverUserId) {
+        return null;
+    }
+
+    return executeApi(
+        `invite/${encodeURIComponent(normalizedReceiverUserId)}`,
+        {
+            endpoint,
+            method: 'POST',
+            params
+        }
+    );
+}
+
+async function sendRequestInvite({
+    receiverUserId,
+    params = {},
+    endpoint = ''
+} = {}) {
+    const normalizedReceiverUserId =
+        typeof receiverUserId === 'string'
+            ? receiverUserId.trim()
+            : String(receiverUserId ?? '').trim();
+    if (!normalizedReceiverUserId) {
+        return null;
+    }
+
+    return executeApi(
+        `requestInvite/${encodeURIComponent(normalizedReceiverUserId)}`,
+        {
+            endpoint,
+            method: 'POST',
+            params
+        }
+    );
+}
+
+async function sendBoop({ userId, emojiId = '', endpoint = '' } = {}) {
+    const normalizedUserId =
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
+    if (!normalizedUserId) {
+        return null;
+    }
+
+    const normalizedEmojiId =
+        typeof emojiId === 'string'
+            ? emojiId.trim()
+            : String(emojiId ?? '').trim();
+    return executeApi(`users/${encodeURIComponent(normalizedUserId)}/boop`, {
+        endpoint,
+        method: 'POST',
+        params: normalizedEmojiId ? { emojiId: normalizedEmojiId } : {}
+    });
+}
+
+const notificationRepository = Object.freeze({
+    executeApi,
+    queryNotifications,
+    deleteNotification,
+    expireNotification,
+    markSeen,
+    markSeenLocalBulk,
+    acceptFriendRequest,
+    hideRemoteNotification,
+    sendNotificationResponse,
+    sendInviteResponse,
+    sendInviteResponsePhoto,
+    sendInvite,
+    sendRequestInvite,
+    sendBoop
+});
+
+export {
+    executeApi,
+    queryNotifications,
+    deleteNotification,
+    expireNotification,
+    markSeen,
+    markSeenLocalBulk,
+    acceptFriendRequest,
+    hideRemoteNotification,
+    sendNotificationResponse,
+    sendInviteResponse,
+    sendInviteResponsePhoto,
+    sendInvite,
+    sendRequestInvite,
+    sendBoop
+};
 export default notificationRepository;

@@ -109,193 +109,207 @@ function resolveAutoLoginStatus({
     };
 }
 
-class AuthRepository {
-    async getSavedCredentialsMap() {
-        const rawSavedCredentials = await configRepository.getObject('savedCredentials', {});
-        const source =
-            rawSavedCredentials && typeof rawSavedCredentials === 'object'
-                ? rawSavedCredentials
-                : {};
+async function getSavedCredentialsMap() {
+    const rawSavedCredentials = await configRepository.getObject('savedCredentials', {});
+    const source =
+        rawSavedCredentials && typeof rawSavedCredentials === 'object'
+            ? rawSavedCredentials
+            : {};
 
-        const normalized = {};
-        let edited = false;
+    const normalized = {};
+    let edited = false;
 
-        for (const [key, value] of Object.entries(source)) {
-            const normalizedRecord = normalizeSavedCredentialRecord(key, value);
-            if (!normalizedRecord.normalizedKey || !normalizedRecord.value) {
-                edited = true;
-                continue;
+    for (const [key, value] of Object.entries(source)) {
+        const normalizedRecord = normalizeSavedCredentialRecord(key, value);
+        if (!normalizedRecord.normalizedKey || !normalizedRecord.value) {
+            edited = true;
+            continue;
+        }
+
+        normalized[normalizedRecord.normalizedKey] = normalizedRecord.value;
+        edited = edited || normalizedRecord.edited;
+    }
+
+    if (edited || safeJsonStringify(source) !== safeJsonStringify(normalized)) {
+        await configRepository.setObject('savedCredentials', normalized);
+    }
+
+    return normalized;
+}
+
+async function getSavedCredential(userId) {
+    if (!userId) {
+        return null;
+    }
+
+    const savedCredentials = await getSavedCredentialsMap();
+    return savedCredentials[userId] ?? null;
+}
+
+async function deleteSavedCredential(userId) {
+    const savedCredentials = await getSavedCredentialsMap();
+    delete savedCredentials[userId];
+    await configRepository.setObject('savedCredentials', savedCredentials);
+
+    const lastUserLoggedIn = await configRepository.getString('lastUserLoggedIn', null);
+    if (lastUserLoggedIn === userId) {
+        await configRepository.remove('lastUserLoggedIn');
+    }
+
+    return getSavedAuthSnapshot();
+}
+
+async function setCustomEndpointEnabled(value) {
+    await configRepository.setBool('enableCustomEndpoint', Boolean(value));
+    return getSavedAuthSnapshot();
+}
+
+async function recordLoginSuccess({
+    user,
+    loginParams = {},
+    storedLoginParams = null,
+    saveCredentials = false
+}) {
+    const userId = asString(user?.id, '').trim();
+    if (!userId) {
+        throw new Error('AuthRepository.recordLoginSuccess requires a user id');
+    }
+
+    const savedCredentials = await getSavedCredentialsMap();
+    const existingRecord = savedCredentials[userId] ?? null;
+
+    if (saveCredentials) {
+        savedCredentials[userId] = {
+            user,
+            loginParams: normalizeLoginParams({
+                loginParams: storedLoginParams ?? loginParams
+            })
+        };
+        delete savedCredentials[userId].cookies;
+    } else if (existingRecord) {
+        savedCredentials[userId] = {
+            ...existingRecord,
+            user
+        };
+        const cookies = await webRepository.getCookies();
+        if (cookies !== undefined && cookies !== null && cookies !== '') {
+            savedCredentials[userId].cookies = cookies;
+        } else {
+            delete savedCredentials[userId].cookies;
+        }
+    }
+
+    await configRepository.setObject('savedCredentials', savedCredentials);
+    await configRepository.setString('lastUserLoggedIn', userId);
+    return getSavedAuthSnapshot();
+}
+
+async function recordLogout(userOrUserId, options = {}) {
+    const user =
+        userOrUserId && typeof userOrUserId === 'object'
+            ? userOrUserId
+            : null;
+    const userId = asString(user?.id ?? userOrUserId, '').trim();
+    const clearLastUserLoggedIn =
+        options.clearLastUserLoggedIn !== undefined
+            ? Boolean(options.clearLastUserLoggedIn)
+            : Boolean(userId);
+    if (userId) {
+        const savedCredentials = await getSavedCredentialsMap();
+        if (savedCredentials[userId]) {
+            if (user) {
+                savedCredentials[userId] = {
+                    ...savedCredentials[userId],
+                    user
+                };
             }
 
-            normalized[normalizedRecord.normalizedKey] = normalizedRecord.value;
-            edited = edited || normalizedRecord.edited;
-        }
-
-        if (edited || safeJsonStringify(source) !== safeJsonStringify(normalized)) {
-            await configRepository.setObject('savedCredentials', normalized);
-        }
-
-        return normalized;
-    }
-
-    async getSavedCredential(userId) {
-        if (!userId) {
-            return null;
-        }
-
-        const savedCredentials = await this.getSavedCredentialsMap();
-        return savedCredentials[userId] ?? null;
-    }
-
-    async deleteSavedCredential(userId) {
-        const savedCredentials = await this.getSavedCredentialsMap();
-        delete savedCredentials[userId];
-        await configRepository.setObject('savedCredentials', savedCredentials);
-
-        const lastUserLoggedIn = await configRepository.getString('lastUserLoggedIn', null);
-        if (lastUserLoggedIn === userId) {
-            await configRepository.remove('lastUserLoggedIn');
-        }
-
-        return this.getSavedAuthSnapshot();
-    }
-
-    async setCustomEndpointEnabled(value) {
-        await configRepository.setBool('enableCustomEndpoint', Boolean(value));
-        return this.getSavedAuthSnapshot();
-    }
-
-    async recordLoginSuccess({
-        user,
-        loginParams = {},
-        storedLoginParams = null,
-        saveCredentials = false
-    }) {
-        const userId = asString(user?.id, '').trim();
-        if (!userId) {
-            throw new Error('AuthRepository.recordLoginSuccess requires a user id');
-        }
-
-        const savedCredentials = await this.getSavedCredentialsMap();
-        const existingRecord = savedCredentials[userId] ?? null;
-
-        if (saveCredentials) {
-            savedCredentials[userId] = {
-                user,
-                loginParams: normalizeLoginParams({
-                    loginParams: storedLoginParams ?? loginParams
-                })
-            };
-            delete savedCredentials[userId].cookies;
-        } else if (existingRecord) {
-            savedCredentials[userId] = {
-                ...existingRecord,
-                user
-            };
-            const cookies = await webRepository.getCookies();
+            const cookies =
+                options.cookies !== undefined
+                    ? options.cookies
+                    : await webRepository.getCookies();
             if (cookies !== undefined && cookies !== null && cookies !== '') {
                 savedCredentials[userId].cookies = cookies;
             } else {
                 delete savedCredentials[userId].cookies;
             }
-        }
 
-        await configRepository.setObject('savedCredentials', savedCredentials);
-        await configRepository.setString('lastUserLoggedIn', userId);
-        return this.getSavedAuthSnapshot();
+            await configRepository.setObject('savedCredentials', savedCredentials);
+        }
     }
 
-    async recordLogout(userOrUserId, options = {}) {
-        const user =
-            userOrUserId && typeof userOrUserId === 'object'
-                ? userOrUserId
-                : null;
-        const userId = asString(user?.id ?? userOrUserId, '').trim();
-        const clearLastUserLoggedIn =
-            options.clearLastUserLoggedIn !== undefined
-                ? Boolean(options.clearLastUserLoggedIn)
-                : Boolean(userId);
-        if (userId) {
-            const savedCredentials = await this.getSavedCredentialsMap();
-            if (savedCredentials[userId]) {
-                if (user) {
-                    savedCredentials[userId] = {
-                        ...savedCredentials[userId],
-                        user
-                    };
-                }
-
-                const cookies =
-                    options.cookies !== undefined
-                        ? options.cookies
-                        : await webRepository.getCookies();
-                if (cookies !== undefined && cookies !== null && cookies !== '') {
-                    savedCredentials[userId].cookies = cookies;
-                } else {
-                    delete savedCredentials[userId].cookies;
-                }
-
-                await configRepository.setObject('savedCredentials', savedCredentials);
-            }
-        }
-
-        if (clearLastUserLoggedIn) {
-            await configRepository.remove('lastUserLoggedIn');
-        }
-        return this.getSavedAuthSnapshot();
+    if (clearLastUserLoggedIn) {
+        await configRepository.remove('lastUserLoggedIn');
     }
-
-    async getSavedAuthSnapshot() {
-        let [
-            savedCredentials,
-            lastUserLoggedIn,
-            legacyPrimaryPasswordEnabled,
-            enableCustomEndpoint,
-            autoLoginDelayEnabled,
-            autoLoginDelaySeconds
-        ] = await Promise.all([
-            this.getSavedCredentialsMap(),
-            configRepository.getString('lastUserLoggedIn', null),
-            configRepository.getBool('enablePrimaryPassword', false),
-            configRepository.getBool('enableCustomEndpoint', false),
-            configRepository.getBool('autoLoginDelayEnabled', false),
-            configRepository.getInt('autoLoginDelaySeconds', 0)
-        ]);
-
-        if (legacyPrimaryPasswordEnabled) {
-            savedCredentials = {};
-            lastUserLoggedIn = null;
-            await configRepository.setMany([
-                ['savedCredentials', '{}']
-            ]);
-            await configRepository.remove('enablePrimaryPassword');
-            await configRepository.remove('lastUserLoggedIn');
-        }
-
-        const autoLogin = resolveAutoLoginStatus({
-            lastUserLoggedIn,
-            savedCredentials,
-            autoLoginDelayEnabled,
-            autoLoginDelaySeconds
-        });
-
-        return {
-            lastUserLoggedIn,
-            savedCredentialCount: Object.keys(savedCredentials).length,
-            savedCredentials,
-            savedCredentialsList: sortSavedCredentials(savedCredentials, lastUserLoggedIn),
-            enableCustomEndpoint: Boolean(enableCustomEndpoint),
-            autoLoginDelayEnabled: Boolean(autoLoginDelayEnabled),
-            autoLoginDelaySeconds: Number.isFinite(autoLoginDelaySeconds)
-                ? autoLoginDelaySeconds
-                : 0,
-            autoLoginStatus: autoLogin.status,
-            autoLoginReason: autoLogin.reason
-        };
-    }
+    return getSavedAuthSnapshot();
 }
 
-const authRepository = new AuthRepository();
+async function getSavedAuthSnapshot() {
+    let [
+        savedCredentials,
+        lastUserLoggedIn,
+        legacyPrimaryPasswordEnabled,
+        enableCustomEndpoint,
+        autoLoginDelayEnabled,
+        autoLoginDelaySeconds
+    ] = await Promise.all([
+        getSavedCredentialsMap(),
+        configRepository.getString('lastUserLoggedIn', null),
+        configRepository.getBool('enablePrimaryPassword', false),
+        configRepository.getBool('enableCustomEndpoint', false),
+        configRepository.getBool('autoLoginDelayEnabled', false),
+        configRepository.getInt('autoLoginDelaySeconds', 0)
+    ]);
 
-export { AuthRepository };
+    if (legacyPrimaryPasswordEnabled) {
+        savedCredentials = {};
+        lastUserLoggedIn = null;
+        await configRepository.setMany([
+            ['savedCredentials', '{}']
+        ]);
+        await configRepository.remove('enablePrimaryPassword');
+        await configRepository.remove('lastUserLoggedIn');
+    }
+
+    const autoLogin = resolveAutoLoginStatus({
+        lastUserLoggedIn,
+        savedCredentials,
+        autoLoginDelayEnabled,
+        autoLoginDelaySeconds
+    });
+
+    return {
+        lastUserLoggedIn,
+        savedCredentialCount: Object.keys(savedCredentials).length,
+        savedCredentials,
+        savedCredentialsList: sortSavedCredentials(savedCredentials, lastUserLoggedIn),
+        enableCustomEndpoint: Boolean(enableCustomEndpoint),
+        autoLoginDelayEnabled: Boolean(autoLoginDelayEnabled),
+        autoLoginDelaySeconds: Number.isFinite(autoLoginDelaySeconds)
+            ? autoLoginDelaySeconds
+            : 0,
+        autoLoginStatus: autoLogin.status,
+        autoLoginReason: autoLogin.reason
+    };
+}
+
+const authRepository = Object.freeze({
+    getSavedCredentialsMap,
+    getSavedCredential,
+    deleteSavedCredential,
+    setCustomEndpointEnabled,
+    recordLoginSuccess,
+    recordLogout,
+    getSavedAuthSnapshot
+});
+
+export {
+    getSavedCredentialsMap,
+    getSavedCredential,
+    deleteSavedCredential,
+    setCustomEndpointEnabled,
+    recordLoginSuccess,
+    recordLogout,
+    getSavedAuthSnapshot
+};
 export default authRepository;

@@ -284,163 +284,181 @@ async function loadSessionEvents(locationSegments, favoriteUserIds) {
     });
 }
 
-class GameLogRepository {
-    async queryGameLog({ search = '', filters = [], favoriteUserIds = [] }) {
-        const [maxTableSize, searchLimit] = await Promise.all([
-            configRepository.getInt('maxTableSize_v2', 500),
-            configRepository.getInt('searchLimit', 50000)
-        ]);
+async function queryGameLog({ search = '', filters = [], favoriteUserIds = [] }) {
+    const [maxTableSize, searchLimit] = await Promise.all([
+        configRepository.getInt('maxTableSize_v2', 500),
+        configRepository.getInt('searchLimit', 50000)
+    ]);
 
-        database.setMaxTableSize(maxTableSize);
-        database.setSearchTableSize(searchLimit);
+    database.setMaxTableSize(maxTableSize);
+    database.setSearchTableSize(searchLimit);
 
-        const normalizedFilters = normalizeFilterList(filters);
-        const normalizedFavorites = Array.from(
-            new Set(
-                (Array.isArray(favoriteUserIds) ? favoriteUserIds : [])
-                    .map((value) => normalizeId(value))
-                    .filter(Boolean)
-            )
-        );
-        const normalizedSearch = String(search || '').trim();
+    const normalizedFilters = normalizeFilterList(filters);
+    const normalizedFavorites = Array.from(
+        new Set(
+            (Array.isArray(favoriteUserIds) ? favoriteUserIds : [])
+                .map((value) => normalizeId(value))
+                .filter(Boolean)
+        )
+    );
+    const normalizedSearch = String(search || '').trim();
 
-        if (normalizedSearch) {
-            return database.searchGameLogDatabase(
-                normalizedSearch,
-                normalizedFilters,
-                normalizedFavorites,
-                searchLimit
-            );
-        }
-
-        return database.lookupGameLogDatabase(normalizedFilters, normalizedFavorites, maxTableSize);
-    }
-
-    async queryLatestSessions({ search = '', filters = [], favoriteUserIds = [], dateFrom = '', dateTo = '', limit = 25 } = {}) {
-        const [maxTableSize, searchLimit] = await Promise.all([
-            configRepository.getInt('maxTableSize_v2', 500),
-            configRepository.getInt('searchLimit', 50000)
-        ]);
-        const normalizedLimit = normalizeSessionLimit(limit);
-        const normalizedFilters = normalizeFilterList(filters);
-        const normalizedFavoriteSet = normalizeFavoriteSet(favoriteUserIds);
-        const normalizedSearch = String(search || '').trim();
-        const normalizedDateFrom = normalizeDateBoundary(dateFrom, 'start');
-        const normalizedDateTo = normalizeDateBoundary(dateTo, 'end');
-        const fetchLimit = resolveSessionFetchLimit({
-            normalizedLimit,
-            normalizedFilters,
+    if (normalizedSearch) {
+        return database.searchGameLogDatabase(
             normalizedSearch,
-            favoriteUserIds: normalizedFavoriteSet,
-            maxTableSize,
+            normalizedFilters,
+            normalizedFavorites,
             searchLimit
-        });
-        if (normalizedSearch && !normalizedDateFrom && !normalizedDateTo) {
-            const fetchCount = SESSION_GLOBAL_SEARCH_INITIAL_LOCATIONS + 1;
-            const allLocationSegments = [];
-            const allEvents = [];
-            let beforeId = null;
-            let hasMore = true;
-            let latestFiltered = [];
-
-            while (
-                hasMore &&
-                latestFiltered.length < normalizedLimit &&
-                allLocationSegments.length < searchLimit
-            ) {
-                const batch = await database.getSessionsLocationSegments(beforeId, fetchCount);
-                if (!Array.isArray(batch) || batch.length === 0) {
-                    break;
-                }
-
-                const hasExtraTail = batch.length >= fetchCount;
-                if (hasExtraTail) {
-                    batch.pop();
-                }
-                if (batch.length === 0) {
-                    break;
-                }
-
-                const batchEvents = await loadSessionEvents(batch, normalizedFavoriteSet);
-                allLocationSegments.push(...batch);
-                allEvents.push(...batchEvents);
-                beforeId = batch[batch.length - 1].id;
-                hasMore = hasExtraTail && allLocationSegments.length < searchLimit;
-
-                const result = buildGameLogSessions(allLocationSegments, allEvents);
-                latestFiltered = filterSessions(result.segments ?? [], {
-                    filters: normalizedFilters,
-                    favoriteUserIds: normalizedFavoriteSet,
-                    search: normalizedSearch
-                }).slice(0, normalizedLimit);
-            }
-
-            return latestFiltered;
-        }
-
-        const locationSegments = normalizedDateFrom || normalizedDateTo
-            ? await database.getSessionsLocationSegmentsByDateRange(
-                normalizedDateFrom || '1970-01-01T00:00:00.000Z',
-                normalizedDateTo || new Date().toISOString(),
-                fetchLimit
-            )
-            : await database.getSessionsLocationSegments(null, fetchLimit);
-
-        if (!Array.isArray(locationSegments) || locationSegments.length === 0) {
-            return [];
-        }
-
-        const annotatedEvents = await loadSessionEvents(locationSegments, normalizedFavoriteSet);
-        const result = buildGameLogSessions(locationSegments, annotatedEvents);
-
-        return filterSessions(result.segments ?? [], {
-            filters: normalizedFilters,
-            favoriteUserIds: normalizedFavoriteSet,
-            search: normalizedSearch
-        }).slice(0, normalizedLimit);
-    }
-
-    async deleteGameLogEntry(row) {
-        await database.deleteGameLogEntry(row);
-    }
-
-    async getUserIdFromDisplayName(displayName) {
-        return database.getUserIdFromDisplayName(displayName);
-    }
-
-    async getPreviousInstancesByWorldId({ worldId }) {
-        const rows = await database.getPreviousInstancesByWorldId({ id: worldId });
-        if (rows instanceof Map) {
-            return Array.from(rows.values());
-        }
-        return Array.isArray(rows) ? rows : [];
-    }
-
-    async getWorldNameByWorldId(worldId) {
-        const normalizedWorldId = normalizeId(worldId);
-        if (!normalizedWorldId) {
-            return '';
-        }
-        return database.getGameLogWorldNameByWorldId(normalizedWorldId).catch(() => '');
-    }
-
-    async getAllUserStats({ userIds = [], displayNames = [] } = {}) {
-        return database.getAllUserStats(
-            (Array.isArray(userIds) ? userIds : []).map((value) => normalizeId(value)).filter(Boolean),
-            (Array.isArray(displayNames) ? displayNames : []).map((value) => String(value || '').trim()).filter(Boolean)
         );
     }
 
-    async getMutualCountForAllUsers() {
-        return database.getMutualCountForAllUsers();
-    }
-
-    async getMutualGraphMeta() {
-        return database.getMutualGraphMeta();
-    }
+    return database.lookupGameLogDatabase(normalizedFilters, normalizedFavorites, maxTableSize);
 }
 
-const gameLogRepository = new GameLogRepository();
+async function queryLatestSessions({ search = '', filters = [], favoriteUserIds = [], dateFrom = '', dateTo = '', limit = 25 } = {}) {
+    const [maxTableSize, searchLimit] = await Promise.all([
+        configRepository.getInt('maxTableSize_v2', 500),
+        configRepository.getInt('searchLimit', 50000)
+    ]);
+    const normalizedLimit = normalizeSessionLimit(limit);
+    const normalizedFilters = normalizeFilterList(filters);
+    const normalizedFavoriteSet = normalizeFavoriteSet(favoriteUserIds);
+    const normalizedSearch = String(search || '').trim();
+    const normalizedDateFrom = normalizeDateBoundary(dateFrom, 'start');
+    const normalizedDateTo = normalizeDateBoundary(dateTo, 'end');
+    const fetchLimit = resolveSessionFetchLimit({
+        normalizedLimit,
+        normalizedFilters,
+        normalizedSearch,
+        favoriteUserIds: normalizedFavoriteSet,
+        maxTableSize,
+        searchLimit
+    });
+    if (normalizedSearch && !normalizedDateFrom && !normalizedDateTo) {
+        const fetchCount = SESSION_GLOBAL_SEARCH_INITIAL_LOCATIONS + 1;
+        const allLocationSegments = [];
+        const allEvents = [];
+        let beforeId = null;
+        let hasMore = true;
+        let latestFiltered = [];
 
-export { GameLogRepository };
+        while (
+            hasMore &&
+            latestFiltered.length < normalizedLimit &&
+            allLocationSegments.length < searchLimit
+        ) {
+            const batch = await database.getSessionsLocationSegments(beforeId, fetchCount);
+            if (!Array.isArray(batch) || batch.length === 0) {
+                break;
+            }
+
+            const hasExtraTail = batch.length >= fetchCount;
+            if (hasExtraTail) {
+                batch.pop();
+            }
+            if (batch.length === 0) {
+                break;
+            }
+
+            const batchEvents = await loadSessionEvents(batch, normalizedFavoriteSet);
+            allLocationSegments.push(...batch);
+            allEvents.push(...batchEvents);
+            beforeId = batch[batch.length - 1].id;
+            hasMore = hasExtraTail && allLocationSegments.length < searchLimit;
+
+            const result = buildGameLogSessions(allLocationSegments, allEvents);
+            latestFiltered = filterSessions(result.segments ?? [], {
+                filters: normalizedFilters,
+                favoriteUserIds: normalizedFavoriteSet,
+                search: normalizedSearch
+            }).slice(0, normalizedLimit);
+        }
+
+        return latestFiltered;
+    }
+
+    const locationSegments = normalizedDateFrom || normalizedDateTo
+        ? await database.getSessionsLocationSegmentsByDateRange(
+            normalizedDateFrom || '1970-01-01T00:00:00.000Z',
+            normalizedDateTo || new Date().toISOString(),
+            fetchLimit
+        )
+        : await database.getSessionsLocationSegments(null, fetchLimit);
+
+    if (!Array.isArray(locationSegments) || locationSegments.length === 0) {
+        return [];
+    }
+
+    const annotatedEvents = await loadSessionEvents(locationSegments, normalizedFavoriteSet);
+    const result = buildGameLogSessions(locationSegments, annotatedEvents);
+
+    return filterSessions(result.segments ?? [], {
+        filters: normalizedFilters,
+        favoriteUserIds: normalizedFavoriteSet,
+        search: normalizedSearch
+    }).slice(0, normalizedLimit);
+}
+
+async function deleteGameLogEntry(row) {
+    await database.deleteGameLogEntry(row);
+}
+
+async function getUserIdFromDisplayName(displayName) {
+    return database.getUserIdFromDisplayName(displayName);
+}
+
+async function getPreviousInstancesByWorldId({ worldId }) {
+    const rows = await database.getPreviousInstancesByWorldId({ id: worldId });
+    if (rows instanceof Map) {
+        return Array.from(rows.values());
+    }
+    return Array.isArray(rows) ? rows : [];
+}
+
+async function getWorldNameByWorldId(worldId) {
+    const normalizedWorldId = normalizeId(worldId);
+    if (!normalizedWorldId) {
+        return '';
+    }
+    return database.getGameLogWorldNameByWorldId(normalizedWorldId).catch(() => '');
+}
+
+async function getAllUserStats({ userIds = [], displayNames = [] } = {}) {
+    return database.getAllUserStats(
+        (Array.isArray(userIds) ? userIds : []).map((value) => normalizeId(value)).filter(Boolean),
+        (Array.isArray(displayNames) ? displayNames : []).map((value) => String(value || '').trim()).filter(Boolean)
+    );
+}
+
+async function getMutualCountForAllUsers() {
+    return database.getMutualCountForAllUsers();
+}
+
+async function getMutualGraphMeta() {
+    return database.getMutualGraphMeta();
+}
+
+const gameLogRepository = Object.freeze({
+    queryGameLog,
+    queryLatestSessions,
+    deleteGameLogEntry,
+    getUserIdFromDisplayName,
+    getPreviousInstancesByWorldId,
+    getWorldNameByWorldId,
+    getAllUserStats,
+    getMutualCountForAllUsers,
+    getMutualGraphMeta
+});
+
+export {
+    queryGameLog,
+    queryLatestSessions,
+    deleteGameLogEntry,
+    getUserIdFromDisplayName,
+    getPreviousInstancesByWorldId,
+    getWorldNameByWorldId,
+    getAllUserStats,
+    getMutualCountForAllUsers,
+    getMutualGraphMeta
+};
 export default gameLogRepository;

@@ -80,62 +80,76 @@ function unwrapErrorMessage(json, status) {
     return `VRChat request failed (${status})`;
 }
 
-class VrchatSearchRepository {
-    async executeGet(path, params = {}, extra = {}, options = {}) {
-        const normalizedParams = normalizeParams(params);
-        const response = await webRepository.execute({
-            url: buildUrl(path, normalizedParams, options.endpoint).toString(),
-            method: 'GET'
-        });
-        const json = parseJsonResponse(response.data);
+async function executeGet(path, params = {}, extra = {}, options = {}) {
+    const normalizedParams = normalizeParams(params);
+    const response = await webRepository.execute({
+        url: buildUrl(path, normalizedParams, options.endpoint).toString(),
+        method: 'GET'
+    });
+    const json = parseJsonResponse(response.data);
 
-        if (response.status >= 400) {
-            throw new Error(unwrapErrorMessage(json, response.status));
-        }
-
-        if (json && typeof json === 'object' && 'error' in json) {
-            throw new Error(unwrapErrorMessage(json, response.status));
-        }
-
-        return {
-            json,
-            params: normalizedParams,
-            ...extra,
-            status: response.status,
-            raw: response.raw
-        };
+    if (response.status >= 400) {
+        throw new Error(unwrapErrorMessage(json, response.status));
     }
 
-    async getConfig(params = {}) {
-        return this.executeGet('config', params);
+    if (json && typeof json === 'object' && 'error' in json) {
+        throw new Error(unwrapErrorMessage(json, response.status));
     }
 
-    async getWorlds(params = {}, option, options = {}) {
-        const path =
-            typeof option === 'undefined' || option === null
-                ? 'worlds'
-                : `worlds/${encodeURIComponent(String(option))}`;
-        return this.executeGet(path, params, { option }, options);
-    }
-
-    async getUsers(params = {}, options = {}) {
-        return this.executeGet('users', params, {}, options);
-    }
-
-    async getGroups(params = {}) {
-        return this.executeGet('groups', params);
-    }
-
-    async getGroupsStrictSearch(params = {}, options = {}) {
-        return this.executeGet('groups/strictsearch', params, {}, options);
-    }
-
-    async getInstanceFromShortName(shortName, options = {}) {
-        return this.executeGet(`instances/s/${encodeURIComponent(String(shortName || '').trim())}`, {}, {}, options);
-    }
+    return {
+        json,
+        params: normalizedParams,
+        ...extra,
+        status: response.status,
+        raw: response.raw
+    };
 }
 
-const vrchatSearchRepository = new VrchatSearchRepository();
+async function getConfig(params = {}) {
+    return executeGet('config', params);
+}
 
-export { VrchatSearchRepository };
+async function getWorlds(params = {}, option, options = {}) {
+    const path =
+        typeof option === 'undefined' || option === null
+            ? 'worlds'
+            : `worlds/${encodeURIComponent(String(option))}`;
+    return executeGet(path, params, { option }, options);
+}
+
+async function getUsers(params = {}, options = {}) {
+    return executeGet('users', params, {}, options);
+}
+
+async function getGroups(params = {}) {
+    return executeGet('groups', params);
+}
+
+async function getGroupsStrictSearch(params = {}, options = {}) {
+    return executeGet('groups/strictsearch', params, {}, options);
+}
+
+async function getInstanceFromShortName(shortName, options = {}) {
+    return executeGet(`instances/s/${encodeURIComponent(String(shortName || '').trim())}`, {}, {}, options);
+}
+
+const vrchatSearchRepository = Object.freeze({
+    executeGet,
+    getConfig,
+    getWorlds,
+    getUsers,
+    getGroups,
+    getGroupsStrictSearch,
+    getInstanceFromShortName
+});
+
+export {
+    executeGet,
+    getConfig,
+    getWorlds,
+    getUsers,
+    getGroups,
+    getGroupsStrictSearch,
+    getInstanceFromShortName
+};
 export default vrchatSearchRepository;

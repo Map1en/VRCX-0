@@ -7,7 +7,7 @@ vi.mock('./webRepository.js', () => ({
 }));
 
 import webRepository from './webRepository.js';
-import { InstanceRepository } from './instanceRepository.js';
+import instanceRepository from './instanceRepository.js';
 
 describe('InstanceRepository', () => {
     beforeEach(() => {
@@ -20,9 +20,7 @@ describe('InstanceRepository', () => {
     });
 
     it('maps invite+ instance options to the VRChat create-instance payload', async () => {
-        const repository = new InstanceRepository();
-
-        await expect(repository.createInstance({
+        await expect(instanceRepository.createInstance({
             worldId: ' wrld_test ',
             ownerId: ' usr_owner ',
             accessType: 'invite+',
@@ -50,9 +48,7 @@ describe('InstanceRepository', () => {
     });
 
     it('maps group-only options without leaking role ids to non-member instances', async () => {
-        const repository = new InstanceRepository();
-
-        await repository.createInstance({
+        await instanceRepository.createInstance({
             worldId: 'wrld_group',
             accessType: 'group',
             groupId: ' grp_team ',
@@ -78,9 +74,7 @@ describe('InstanceRepository', () => {
     });
 
     it('includes group role ids only for members access instances', async () => {
-        const repository = new InstanceRepository();
-
-        await repository.createInstance({
+        await instanceRepository.createInstance({
             worldId: 'wrld_group',
             accessType: 'group',
             groupId: 'grp_team',
@@ -95,9 +89,7 @@ describe('InstanceRepository', () => {
     });
 
     it('rejects private instance creation before sending an ownerless request', async () => {
-        const repository = new InstanceRepository();
-
-        await expect(repository.createInstance({
+        await expect(instanceRepository.createInstance({
             worldId: 'wrld_test',
             accessType: 'friends'
         })).rejects.toThrow('requires an owner id');
@@ -106,9 +98,7 @@ describe('InstanceRepository', () => {
     });
 
     it('sends close-instance requests with the hard-close flag', async () => {
-        const repository = new InstanceRepository();
-
-        await repository.closeInstance({
+        await instanceRepository.closeInstance({
             location: 'wrld_test:12345',
             hardClose: true
         });
