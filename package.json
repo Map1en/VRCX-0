@@ -36,7 +36,7 @@
         "clsx": "^2.1.1",
         "dayjs": "^1.11.20",
         "echarts": "^6.0.0",
-        "i18next": "^26.0.4",
+        "i18next": "^26.0.5",
         "lightningcss": "^1.32.0",
         "lucide-react": "^1.8.0",
         "oxfmt": "^0.45.0",
