@@ -39,7 +39,7 @@ import {
 } from '@/components/data-table/DataTableView.jsx';
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
-import { getAvailablePlatforms, getPlatformInfo } from '@/lib/avatarPlatform.js';
+import { getAvailablePlatforms } from '@/lib/avatarPlatform.js';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import { cn } from '@/lib/utils.js';
 import { avatarProfileRepository, configRepository, mediaRepository, myAvatarRepository } from '@/repositories/index.js';
@@ -98,229 +98,40 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { openAvatarDialog } from '@/services/dialogService.js';
 import { AvatarStylesDialog } from './AvatarStylesDialog.jsx';
 import { ManageAvatarTagsDialog } from './ManageAvatarTagsDialog.jsx';
-
-const DEFAULT_PAGE_SIZES = [10, 25, 50];
-const DEFAULT_SORTING = [{ id: 'updated_at', desc: true }];
-const STORAGE_KEY = 'vrcx:table:my-avatars';
-const VIEW_MODES = ['grid', 'table'];
-const RELEASE_STATUS_OPTIONS = ['all', 'public', 'private'];
-const PLATFORM_OPTIONS = ['all', 'pc', 'android', 'ios'];
-const DEFAULT_CARD_SCALE = 0.6;
-const DEFAULT_CARD_SPACING = 1;
-const COLUMN_ID_ALIASES = {
-    releaseStatus: 'visibility',
-    action: 'actions'
-};
-const SORT_COLUMN_IDS = ['name', 'customTags', 'visibility', 'timeSpent', 'version', 'pcPerf', 'androidPerf', 'iosPerf', 'updated_at', 'created_at'];
-const COLUMN_IDS = [
-    'active',
-    'thumbnail',
-    'name',
-    'customTags',
-    'platforms',
-    'visibility',
-    'timeSpent',
-    'version',
-    'pcPerf',
-    'androidPerf',
-    'iosPerf',
-    'updated_at',
-    'created_at',
-    'actions'
-];
-
-function safeJsonParse(value) {
-    if (!value) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
-
-function readPersistedState() {
-    if (typeof window === 'undefined') {
-        return {};
-    }
-
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
-}
-
-function writePersistedState(patch) {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
-    const current = readPersistedState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
-}
-
-function normalizeColumnId(columnId) {
-    const normalized = typeof columnId === 'string' ? columnId.trim() : '';
-    if (!normalized) {
-        return '';
-    }
-
-    return COLUMN_ID_ALIASES[normalized] || normalized;
-}
-
-function sanitizeSorting(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_SORTING;
-    }
-
-    const allowedIds = new Set([
-        ...SORT_COLUMN_IDS
-    ]);
-    const filtered = value
-        .map((entry) =>
-            entry && typeof entry.id === 'string'
-                ? {
-                    ...entry,
-                    id: normalizeColumnId(entry.id)
-                }
-                : null
-        )
-        .filter((entry) => entry && allowedIds.has(entry.id));
-    return filtered.length ? filtered : DEFAULT_SORTING;
-}
-
-function sanitizePageSizes(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_PAGE_SIZES;
-    }
-
-    const normalized = Array.from(
-        new Set(
-            value
-                .map((entry) => Number.parseInt(entry, 10))
-                .filter((entry) => Number.isFinite(entry) && entry > 0)
-        )
-    ).sort((left, right) => left - right);
-
-    return normalized.length ? normalized : DEFAULT_PAGE_SIZES;
-}
-
-function resolvePageSize(candidate, allowed, fallback = DEFAULT_PAGE_SIZES[1]) {
-    const parsed = Number.parseInt(candidate, 10);
-    if (Number.isFinite(parsed) && parsed > 0) {
-        if (allowed.includes(parsed)) {
-            return parsed;
-        }
-
-        if (allowed.includes(fallback)) {
-            return fallback;
-        }
-
-        return allowed[0] ?? DEFAULT_PAGE_SIZES[0];
-    }
-
-    if (allowed.includes(fallback)) {
-        return fallback;
-    }
-
-    return allowed[0] ?? DEFAULT_PAGE_SIZES[0];
-}
-
-function sanitizeCardScale(value) {
-    const parsed = Number.parseFloat(value);
-    if (Number.isFinite(parsed)) {
-        return Math.min(1.4, Math.max(0.4, parsed));
-    }
-    return DEFAULT_CARD_SCALE;
-}
-
-function sanitizeCardSpacing(value) {
-    const parsed = Number.parseFloat(value);
-    if (Number.isFinite(parsed)) {
-        return Math.min(2, Math.max(0.6, parsed));
-    }
-    return DEFAULT_CARD_SPACING;
-}
-
-function sanitizeColumnVisibility(value) {
-    const visibility = {};
-    if (value && typeof value === 'object') {
-        for (const [rawColumnId, rawVisible] of Object.entries(value)) {
-            const columnId = normalizeColumnId(rawColumnId);
-            if (COLUMN_IDS.includes(columnId) && typeof rawVisible === 'boolean') {
-                visibility[columnId] = rawVisible;
-            }
-        }
-    }
-
-    return visibility;
-}
-
-function sanitizeColumnOrder(value) {
-    if (!Array.isArray(value)) {
-        return [...COLUMN_IDS];
-    }
-
-    const ordered = [];
-    for (const rawColumnId of value) {
-        const columnId = normalizeColumnId(rawColumnId);
-        if (COLUMN_IDS.includes(columnId) && !ordered.includes(columnId)) {
-            ordered.push(columnId);
-        }
-    }
-
-    for (const columnId of COLUMN_IDS) {
-        if (!ordered.includes(columnId)) {
-            ordered.push(columnId);
-        }
-    }
-
-    return ordered;
-}
-
-function sanitizeColumnSizing(value) {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
-
-    const sizing = {};
-    for (const [rawColumnId, rawWidth] of Object.entries(value)) {
-        const columnId = normalizeColumnId(rawColumnId);
-        const width = Number.parseInt(rawWidth, 10);
-        if (COLUMN_IDS.includes(columnId) && Number.isFinite(width) && width > 0) {
-            sizing[columnId] = width;
-        }
-    }
-
-    return sizing;
-}
-
-function toggleTagFilter(currentTags, tag) {
-    const next = new Set(currentTags);
-    if (next.has(tag)) {
-        next.delete(tag);
-    } else {
-        next.add(tag);
-    }
-    return next;
-}
-
-function matchesPlatformFilter(avatar, platformFilter) {
-    if (platformFilter === 'all') {
-        return true;
-    }
-
-    const platforms = getAvailablePlatforms(avatar?.unityPackages);
-    return Boolean(platforms?.isPC && platformFilter === 'pc') ||
-        Boolean(platforms?.isQuest && platformFilter === 'android') ||
-        Boolean(platforms?.isIos && platformFilter === 'ios');
-}
+import {
+    getMyAvatarPlatformInfo,
+    resolveMyAvatarActionDisabled,
+    resolveMyAvatarPerformanceLabel,
+    resolveMyAvatarTagBadgeStyle
+} from './myAvatarsDisplay.js';
+import {
+    collectMyAvatarTags,
+    filterMyAvatars,
+    toggleMyAvatarsTagFilter
+} from './myAvatarsFilters.js';
+import {
+    buildMyAvatarsGridRows,
+    getMyAvatarsGridMetrics,
+    getVisibleMyAvatarsGridRows
+} from './myAvatarsGrid.js';
+import {
+    MY_AVATARS_DEFAULT_CARD_SCALE,
+    MY_AVATARS_DEFAULT_CARD_SPACING,
+    MY_AVATARS_DEFAULT_PAGE_SIZES,
+    MY_AVATARS_PLATFORM_OPTIONS,
+    MY_AVATARS_RELEASE_STATUS_OPTIONS,
+    MY_AVATARS_VIEW_MODES,
+    readPersistedMyAvatarsState,
+    resolveMyAvatarsPageSize,
+    sanitizeMyAvatarsCardScale,
+    sanitizeMyAvatarsCardSpacing,
+    sanitizeMyAvatarsColumnOrder,
+    sanitizeMyAvatarsColumnSizing,
+    sanitizeMyAvatarsColumnVisibility,
+    sanitizeMyAvatarsPageSizes,
+    sanitizeMyAvatarsSorting,
+    writePersistedMyAvatarsState
+} from './myAvatarsState.js';
 
 function SortButton({ column, label, descFirst = false }) {
     const direction = column.getIsSorted();
@@ -385,22 +196,6 @@ function openAvatarDetails(avatar) {
         title: avatar?.name || undefined,
         seedData: avatar ?? null
     });
-}
-
-function getAvatarPlatformInfo(avatar) {
-    return getPlatformInfo(avatar?.unityPackages);
-}
-
-function resolvePerformanceLabel(value) {
-    if (!value) {
-        return '-';
-    }
-
-    return value;
-}
-
-function resolveActionDisabled(avatar, isUpdating) {
-    return isUpdating || !avatar?.id;
 }
 
 function AvatarActionMenuItems({
@@ -480,7 +275,7 @@ function AvatarActionsDropdown({
     isUpdating,
     onAction
 }) {
-    const disabled = resolveActionDisabled(avatar, isUpdating);
+    const disabled = resolveMyAvatarActionDisabled(avatar, isUpdating);
 
     return (
         <DropdownMenu>
@@ -541,7 +336,7 @@ function MyAvatarFilterPopover({
                     <div className="flex flex-col gap-1.5">
                         <div className="text-xs font-medium text-muted-foreground">Visibility</div>
                         <div className="flex flex-wrap gap-1">
-                            {RELEASE_STATUS_OPTIONS.map((option) => (
+                            {MY_AVATARS_RELEASE_STATUS_OPTIONS.map((option) => (
                                 <Button
                                     key={option}
                                     type="button"
@@ -556,7 +351,7 @@ function MyAvatarFilterPopover({
                     <div className="flex flex-col gap-1.5">
                         <div className="text-xs font-medium text-muted-foreground">Platform</div>
                         <div className="flex flex-wrap gap-1">
-                            {PLATFORM_OPTIONS.map((option) => (
+                            {MY_AVATARS_PLATFORM_OPTIONS.map((option) => (
                                 <Button
                                     key={option}
                                     type="button"
@@ -596,7 +391,7 @@ function MyAvatarFilterPopover({
                                                         color: color.text
                                                     }
                                             }
-                                            onClick={() => onTagFiltersChange((current) => toggleTagFilter(current, tag))}>
+                                            onClick={() => onTagFiltersChange((current) => toggleMyAvatarsTagFilter(current, tag))}>
                                             {tag}
                                         </Badge>
                                     );
@@ -625,7 +420,7 @@ function GridSettingsMenu({
     const cardSpacingPercent = Math.round(cardSpacing * 100);
 
     const updateCardScale = (value) => {
-        const nextValue = sanitizeCardScale(value);
+        const nextValue = sanitizeMyAvatarsCardScale(value);
         onCardScaleChange(nextValue);
         return nextValue;
     };
@@ -636,7 +431,7 @@ function GridSettingsMenu({
     };
 
     const updateCardSpacing = (value) => {
-        const nextValue = sanitizeCardSpacing(value);
+        const nextValue = sanitizeMyAvatarsCardSpacing(value);
         onCardSpacingChange(nextValue);
         return nextValue;
     };
@@ -700,7 +495,7 @@ function MyAvatarGridCard({
 }) {
     const isActive = avatar?.id === currentAvatarId;
     const platforms = getAvailablePlatforms(avatar?.unityPackages);
-    const disabled = resolveActionDisabled(avatar, isUpdating);
+    const disabled = resolveMyAvatarActionDisabled(avatar, isUpdating);
 
     return (
         <ContextMenu>
@@ -796,22 +591,6 @@ function MyAvatarGridCard({
     );
 }
 
-function resolveTagBadgeStyle(entry) {
-    const color = entry?.color
-        ? {
-            bg: entry.color,
-            text:
-                typeof entry.color === 'string'
-                    ? entry.color.replace(/\/ [\d.]+\)$/, ')')
-                    : entry.color
-        }
-        : getTagColor(entry?.tag || '');
-    return {
-        backgroundColor: color.bg,
-        color: color.text
-    };
-}
-
 function isRuntimeAuthTarget(authTarget) {
     const runtimeAuth = useRuntimeStore.getState().auth;
     return (
@@ -831,7 +610,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     const currentAvatarId = currentUserSnapshot?.currentAvatar || '';
     const previousAvatarSwapTime = Number(currentUserSnapshot?.$previousAvatarSwapTime) || 0;
 
-    const persistedState = useMemo(() => readPersistedState(), []);
+    const persistedState = useMemo(() => readPersistedMyAvatarsState(), []);
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);
@@ -851,9 +630,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     const [releaseStatusFilter, setReleaseStatusFilter] = useState('all');
     const [platformFilter, setPlatformFilter] = useState('all');
     const [tagFilters, setTagFilters] = useState(() => new Set());
-    const [cardScale, setCardScale] = useState(DEFAULT_CARD_SCALE);
-    const [cardSpacing, setCardSpacing] = useState(DEFAULT_CARD_SPACING);
-    const [pageSizes, setPageSizes] = useState(DEFAULT_PAGE_SIZES);
+    const [cardScale, setCardScale] = useState(MY_AVATARS_DEFAULT_CARD_SCALE);
+    const [cardSpacing, setCardSpacing] = useState(MY_AVATARS_DEFAULT_CARD_SPACING);
+    const [pageSizes, setPageSizes] = useState(MY_AVATARS_DEFAULT_PAGE_SIZES);
     const [refreshToken, setRefreshToken] = useState(0);
     const [manageTagsAvatar, setManageTagsAvatar] = useState(null);
     const [stylesAvatar, setStylesAvatar] = useState(null);
@@ -861,15 +640,15 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     const [savingTagsAvatarId, setSavingTagsAvatarId] = useState('');
     const [updatingAvatarId, setUpdatingAvatarId] = useState('');
     const [uploadingImageAvatarId, setUploadingImageAvatarId] = useState('');
-    const [sorting, setSorting] = useState(() => sanitizeSorting(persistedState.sorting));
+    const [sorting, setSorting] = useState(() => sanitizeMyAvatarsSorting(persistedState.sorting));
     const [columnVisibility, setColumnVisibility] = useState(() =>
-        sanitizeColumnVisibility(persistedState.columnVisibility)
+        sanitizeMyAvatarsColumnVisibility(persistedState.columnVisibility)
     );
     const [columnOrder, setColumnOrder] = useState(() =>
-        sanitizeColumnOrder(persistedState.columnOrder)
+        sanitizeMyAvatarsColumnOrder(persistedState.columnOrder)
     );
     const [columnSizing, setColumnSizing] = useState(() =>
-        sanitizeColumnSizing(persistedState.columnSizing)
+        sanitizeMyAvatarsColumnSizing(persistedState.columnSizing)
     );
     const [gridScrollMetrics, setGridScrollMetrics] = useState({
         scrollTop: 0,
@@ -878,10 +657,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     });
     const [pagination, setPagination] = useState(() => ({
         pageIndex: 0,
-        pageSize: resolvePageSize(
+        pageSize: resolveMyAvatarsPageSize(
             persistedState.pageSize,
-            DEFAULT_PAGE_SIZES,
-            DEFAULT_PAGE_SIZES[1]
+            MY_AVATARS_DEFAULT_PAGE_SIZES,
+            MY_AVATARS_DEFAULT_PAGE_SIZES[1]
         )
     }));
     const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -1296,11 +1075,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         let active = true;
 
         Promise.all([
-            getTablePageSizesPreference(DEFAULT_PAGE_SIZES),
-            configRepository.getInt('tablePageSize', DEFAULT_PAGE_SIZES[1]),
+            getTablePageSizesPreference(MY_AVATARS_DEFAULT_PAGE_SIZES),
+            configRepository.getInt('tablePageSize', MY_AVATARS_DEFAULT_PAGE_SIZES[1]),
             configRepository.getString('MyAvatarsViewMode', 'grid'),
-            configRepository.getString('VRCX_MyAvatarsCardScale', String(DEFAULT_CARD_SCALE)),
-            configRepository.getString('VRCX_MyAvatarsCardSpacing', String(DEFAULT_CARD_SPACING))
+            configRepository.getString('VRCX_MyAvatarsCardScale', String(MY_AVATARS_DEFAULT_CARD_SCALE)),
+            configRepository.getString('VRCX_MyAvatarsCardSpacing', String(MY_AVATARS_DEFAULT_CARD_SPACING))
         ])
             .then(([
                 nextPageSizes,
@@ -1313,17 +1092,17 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     return;
                 }
 
-                const resolvedPageSizes = sanitizePageSizes(nextPageSizes);
+                const resolvedPageSizes = sanitizeMyAvatarsPageSizes(nextPageSizes);
                 const parsedPersistedPageSize = Number.parseInt(persistedState.pageSize, 10);
                 const hasPersistedPageSize =
                     Number.isFinite(parsedPersistedPageSize) && parsedPersistedPageSize > 0;
-                const resolvedConfiguredPageSize = resolvePageSize(
+                const resolvedConfiguredPageSize = resolveMyAvatarsPageSize(
                     nextPageSize,
                     resolvedPageSizes,
-                    DEFAULT_PAGE_SIZES[1]
+                    MY_AVATARS_DEFAULT_PAGE_SIZES[1]
                 );
                 const resolvedActivePageSize = hasPersistedPageSize
-                    ? resolvePageSize(
+                    ? resolveMyAvatarsPageSize(
                         parsedPersistedPageSize,
                         resolvedPageSizes,
                         resolvedConfiguredPageSize
@@ -1331,7 +1110,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     : resolvedConfiguredPageSize;
 
                 setPageSizes((current) =>
-                    sanitizePageSizes([
+                    sanitizeMyAvatarsPageSizes([
                         ...current,
                         ...resolvedPageSizes,
                         resolvedConfiguredPageSize,
@@ -1344,9 +1123,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     pageSize: resolvedActivePageSize
                 }));
 
-                setViewMode(VIEW_MODES.includes(nextViewMode) ? nextViewMode : 'grid');
-                setCardScale(sanitizeCardScale(nextCardScale));
-                setCardSpacing(sanitizeCardSpacing(nextCardSpacing));
+                setViewMode(MY_AVATARS_VIEW_MODES.includes(nextViewMode) ? nextViewMode : 'grid');
+                setCardScale(sanitizeMyAvatarsCardScale(nextCardScale));
+                setCardSpacing(sanitizeMyAvatarsCardSpacing(nextCardSpacing));
             })
             .catch(() => {});
 
@@ -1359,12 +1138,12 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         if (!preferencesHydrated) {
             return;
         }
-        const resolvedPageSizes = sanitizePageSizes(tablePageSizesPreference);
+        const resolvedPageSizes = sanitizeMyAvatarsPageSizes(tablePageSizesPreference);
         setPageSizes(resolvedPageSizes);
         setPagination((current) => ({
             ...current,
             pageIndex: 0,
-            pageSize: resolvePageSize(current.pageSize, resolvedPageSizes)
+            pageSize: resolveMyAvatarsPageSize(current.pageSize, resolvedPageSizes)
         }));
     }, [preferencesHydrated, tablePageSizesPreference]);
 
@@ -1374,8 +1153,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             return;
         }
 
-        writePersistedState({
-            sorting: sanitizeSorting(sorting)
+        writePersistedMyAvatarsState({
+            sorting: sanitizeMyAvatarsSorting(sorting)
         });
     }, [sorting]);
 
@@ -1385,7 +1164,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             return;
         }
 
-        writePersistedState({
+        writePersistedMyAvatarsState({
             pageSize: pagination.pageSize
         });
     }, [pagination.pageSize]);
@@ -1396,10 +1175,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             return;
         }
 
-        writePersistedState({
-            columnVisibility: sanitizeColumnVisibility(columnVisibility),
-            columnOrder: sanitizeColumnOrder(columnOrder),
-            columnSizing: sanitizeColumnSizing(columnSizing)
+        writePersistedMyAvatarsState({
+            columnVisibility: sanitizeMyAvatarsColumnVisibility(columnVisibility),
+            columnOrder: sanitizeMyAvatarsColumnOrder(columnOrder),
+            columnSizing: sanitizeMyAvatarsColumnSizing(columnSizing)
         });
     }, [columnOrder, columnSizing, columnVisibility]);
 
@@ -1458,54 +1237,15 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         refreshToken
     ]);
 
-    const allTags = useMemo(() => {
-        const tagSet = new Set();
-        for (const avatar of avatars) {
-            for (const entry of avatar?.$tags || []) {
-                if (entry?.tag) {
-                    tagSet.add(entry.tag);
-                }
-            }
-        }
-        return Array.from(tagSet).sort((left, right) => left.localeCompare(right));
-    }, [avatars]);
+    const allTags = useMemo(() => collectMyAvatarTags(avatars), [avatars]);
 
     const filteredAvatars = useMemo(() => {
-        const searchValue = deferredSearchQuery.trim().toLowerCase();
-
-        return avatars.filter((avatar) => {
-            if (releaseStatusFilter !== 'all' && avatar?.releaseStatus !== releaseStatusFilter) {
-                return false;
-            }
-
-            if (!matchesPlatformFilter(avatar, platformFilter)) {
-                return false;
-            }
-
-            if (tagFilters.size > 0) {
-                const avatarTags = new Set((avatar?.$tags || []).map((entry) => entry.tag));
-                if (![...tagFilters].some((tag) => avatarTags.has(tag))) {
-                    return false;
-                }
-            }
-
-            if (!searchValue) {
-                return true;
-            }
-
-            return (
-                String(avatar?.name || '')
-                    .toLowerCase()
-                    .includes(searchValue) ||
-                String(avatar?.description || '')
-                    .toLowerCase()
-                    .includes(searchValue) ||
-                (avatar?.$tags || []).some((entry) =>
-                    String(entry?.tag || '')
-                        .toLowerCase()
-                        .includes(searchValue)
-                )
-            );
+        return filterMyAvatars({
+            avatars,
+            searchQuery: deferredSearchQuery,
+            platformFilter,
+            releaseStatusFilter,
+            tagFilters
         });
     }, [avatars, deferredSearchQuery, platformFilter, releaseStatusFilter, tagFilters]);
 
@@ -1661,7 +1401,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                 <Badge
                                     key={`${row.original.id}:${entry.tag}`}
                                     variant="secondary"
-                                    style={resolveTagBadgeStyle(entry)}>
+                                    style={resolveMyAvatarTagBadgeStyle(entry)}>
                                     {entry.tag}
                                 </Badge>
                             ))}
@@ -1713,33 +1453,33 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             },
             {
                 id: 'pcPerf',
-                accessorFn: (row) => getAvatarPlatformInfo(row)?.pc?.performanceRating || '',
+                accessorFn: (row) => getMyAvatarPlatformInfo(row)?.pc?.performanceRating || '',
                 meta: { label: t('dialog.avatar.info.pc_performance') },
                 header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.pc_performance')} />,
                 cell: ({ row }) => {
-                    const platformInfo = getAvatarPlatformInfo(row.original);
-                    return <span>{resolvePerformanceLabel(platformInfo?.pc?.performanceRating)}</span>;
+                    const platformInfo = getMyAvatarPlatformInfo(row.original);
+                    return <span>{resolveMyAvatarPerformanceLabel(platformInfo?.pc?.performanceRating)}</span>;
                 }
             },
             {
                 id: 'androidPerf',
                 accessorFn: (row) =>
-                    getAvatarPlatformInfo(row)?.android?.performanceRating || '',
+                    getMyAvatarPlatformInfo(row)?.android?.performanceRating || '',
                 meta: { label: t('dialog.avatar.info.android_performance') },
                 header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.android_performance')} />,
                 cell: ({ row }) => {
-                    const platformInfo = getAvatarPlatformInfo(row.original);
-                    return <span>{resolvePerformanceLabel(platformInfo?.android?.performanceRating)}</span>;
+                    const platformInfo = getMyAvatarPlatformInfo(row.original);
+                    return <span>{resolveMyAvatarPerformanceLabel(platformInfo?.android?.performanceRating)}</span>;
                 }
             },
             {
                 id: 'iosPerf',
-                accessorFn: (row) => getAvatarPlatformInfo(row)?.ios?.performanceRating || '',
+                accessorFn: (row) => getMyAvatarPlatformInfo(row)?.ios?.performanceRating || '',
                 meta: { label: t('dialog.avatar.info.ios_performance') },
                 header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.ios_performance')} />,
                 cell: ({ row }) => {
-                    const platformInfo = getAvatarPlatformInfo(row.original);
-                    return <span>{resolvePerformanceLabel(platformInfo?.ios?.performanceRating)}</span>;
+                    const platformInfo = getMyAvatarPlatformInfo(row.original);
+                    return <span>{resolveMyAvatarPerformanceLabel(platformInfo?.ios?.performanceRating)}</span>;
                 }
             },
             {
@@ -1813,41 +1553,35 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         columnResizeMode: 'onChange'
     });
 
-    const gridGap = Math.round(12 * cardSpacing);
-    const gridMinWidth = Math.round(Math.max(200, 320 * cardScale));
-    const gridColumnCount = Math.max(
-        1,
-        Math.floor((gridScrollMetrics.width + gridGap) / (gridMinWidth + gridGap)) || 1
+    const {
+        gridGap,
+        gridMinWidth,
+        gridColumnCount,
+        gridRowHeight
+    } = getMyAvatarsGridMetrics({
+        cardScale,
+        cardSpacing,
+        width: gridScrollMetrics.width
+    });
+    const gridRows = useMemo(
+        () =>
+            buildMyAvatarsGridRows({
+                avatars: filteredAvatars,
+                gridColumnCount,
+                gridRowHeight
+            }),
+        [filteredAvatars, gridColumnCount, gridRowHeight]
     );
-    const gridColumnWidth =
-        gridScrollMetrics.width > 0
-            ? Math.max(
-                gridMinWidth,
-                (gridScrollMetrics.width - gridGap * Math.max(0, gridColumnCount - 1)) / gridColumnCount
-            )
-            : gridMinWidth;
-    const gridRowHeight = Math.ceil(
-        Math.max(180, gridColumnWidth * 0.4 + Math.max(78, 116 * cardScale) + gridGap)
-    );
-    const gridRows = useMemo(() => {
-        const rows = [];
-        for (let index = 0; index < filteredAvatars.length; index += gridColumnCount) {
-            rows.push({
-                key: `grid-row:${index}`,
-                avatars: filteredAvatars.slice(index, index + gridColumnCount),
-                top: rows.length * gridRowHeight,
-                height: gridRowHeight
-            });
-        }
-        return rows;
-    }, [filteredAvatars, gridColumnCount, gridRowHeight]);
     const gridTotalHeight = gridRows.length * gridRowHeight;
-    const visibleGridRows = useMemo(() => {
-        const overscan = Math.max(480, gridScrollMetrics.viewportHeight);
-        const start = Math.max(0, gridScrollMetrics.scrollTop - overscan);
-        const end = gridScrollMetrics.scrollTop + gridScrollMetrics.viewportHeight + overscan;
-        return gridRows.filter((row) => row.top + row.height >= start && row.top <= end);
-    }, [gridRows, gridScrollMetrics.scrollTop, gridScrollMetrics.viewportHeight]);
+    const visibleGridRows = useMemo(
+        () =>
+            getVisibleMyAvatarsGridRows({
+                gridRows,
+                scrollTop: gridScrollMetrics.scrollTop,
+                viewportHeight: gridScrollMetrics.viewportHeight
+            }),
+        [gridRows, gridScrollMetrics.scrollTop, gridScrollMetrics.viewportHeight]
+    );
     const isLoading = loadStatus === 'running' && avatars.length === 0;
     const isError = loadStatus === 'error' && avatars.length === 0;
     const hasRows = filteredAvatars.length > 0;
@@ -1936,7 +1670,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                         <Select
                             value={String(pagination.pageSize)}
                             onValueChange={(value) => {
-                                const nextPageSize = resolvePageSize(value, pageSizes, pagination.pageSize);
+                                const nextPageSize = resolveMyAvatarsPageSize(value, pageSizes, pagination.pageSize);
                                 setPagination({
                                     pageIndex: 0,
                                     pageSize: nextPageSize

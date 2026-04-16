@@ -85,243 +85,32 @@ import {
 } from '@/ui/shadcn/dialog';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-const STORAGE_KEY = 'vrcx:table:notifications';
-const DEFAULT_PAGE_SIZES = [10, 25, 50, 100];
-const DEFAULT_SORTING = [{ id: 'created_at', desc: true }];
-const COLUMN_IDS = ['created_at', 'type', 'senderUsername', 'groupName', 'photo', 'message', 'action', 'trailing'];
-const LEGACY_COLUMN_ID_MAP = {
-    createdAt: 'created_at',
-    sender: 'senderUsername',
-    group: 'groupName',
-    actions: 'action'
-};
-
-function safeJsonParse(value) {
-    if (!value) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
-
-function readPersistedState() {
-    if (typeof window === 'undefined') {
-        return {};
-    }
-
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
-}
-
-function writePersistedState(patch) {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
-    const current = readPersistedState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
-}
-
-function normalizeColumnId(columnId) {
-    return LEGACY_COLUMN_ID_MAP[columnId] || columnId;
-}
-
-function sanitizeSorting(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_SORTING;
-    }
-
-    const allowedIds = new Set(['created_at', 'type', 'senderUsername', 'groupName']);
-    const filtered = value
-        .map((entry) => ({
-            ...entry,
-            id: normalizeColumnId(entry?.id)
-        }))
-        .filter((entry) => entry && typeof entry.id === 'string' && allowedIds.has(entry.id));
-    return filtered.length ? filtered : DEFAULT_SORTING;
-}
-
-function sanitizeNotificationFilters(value) {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value.filter((type) => NOTIFICATION_TYPES.includes(type));
-}
-
-function sanitizeColumnVisibility(value) {
-    const visibility = {};
-    if (!value || typeof value !== 'object') {
-        return visibility;
-    }
-
-    for (const [columnId, visible] of Object.entries(value)) {
-        const normalizedColumnId = normalizeColumnId(columnId);
-        if (COLUMN_IDS.includes(normalizedColumnId) && typeof visible === 'boolean') {
-            visibility[normalizedColumnId] = visible;
-        }
-    }
-    return visibility;
-}
-
-function sanitizeColumnOrder(value) {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    const order = [];
-    for (const columnId of value) {
-        const normalizedColumnId = normalizeColumnId(columnId);
-        if (COLUMN_IDS.includes(normalizedColumnId) && !order.includes(normalizedColumnId)) {
-            order.push(normalizedColumnId);
-        }
-    }
-    return order;
-}
-
-function sanitizeColumnSizing(value) {
-    const sizing = {};
-    if (!value || typeof value !== 'object') {
-        return sizing;
-    }
-
-    for (const [columnId, rawSize] of Object.entries(value)) {
-        const normalizedColumnId = normalizeColumnId(columnId);
-        const size = Number(rawSize);
-        if (COLUMN_IDS.includes(normalizedColumnId) && Number.isFinite(size) && size > 0) {
-            sizing[normalizedColumnId] = size;
-        }
-    }
-
-    return sizing;
-}
-
-function resolvePageSize(candidate) {
-    const parsed = Number.parseInt(candidate, 10);
-    return Number.isFinite(parsed) && DEFAULT_PAGE_SIZES.includes(parsed)
-        ? parsed
-        : DEFAULT_PAGE_SIZES[1];
-}
-
-function getNotificationCreatedAt(notification) {
-    return notification?.createdAt || notification?.created_at || '';
-}
-
-function getNotificationMessage(notification) {
-    const generatedInviteMessage = notification.details?.worldName
-        ? `This is a generated invite to ${notification.details.worldName}`
-        : '';
-    const message = notification.message === generatedInviteMessage ? '' : notification.message;
-    return [
-        notification.title,
-        message,
-        notification.details?.inviteMessage,
-        notification.details?.requestMessage,
-        notification.details?.responseMessage
-    ]
-        .map((value) => String(value || '').trim())
-        .filter(Boolean)
-        .join(notification.title && notification.message ? ', ' : ' ');
-}
-
-function getGroupLabel(notification, includeLinkText = false) {
-    return (
-        notification.data?.groupName ||
-        notification.details?.groupName ||
-        notification.groupName ||
-        (includeLinkText ? notification.linkText : '') ||
-        ''
-    );
-}
-
-function getNotificationGroupColumnLabel(notification) {
-    const isGroupLink = notification?.link?.startsWith('group:') || notification?.link?.startsWith('event:');
-    const explicitGroupLabel = getGroupLabel(notification, isGroupLink);
-    if (notification?.senderUserId?.startsWith('grp_') || notification?.type === 'groupChange') {
-        return notification?.senderUsername || explicitGroupLabel || '';
-    }
-    return explicitGroupLabel;
-}
-
-function matchesNotificationSearch(notification, search) {
-    const query = String(search || '').trim().toLowerCase();
-    if (!query) {
-        return true;
-    }
-
-    return [
-        notification.type,
-        notification.senderUsername,
-        notification.senderUserId,
-        notification.title,
-        notification.message,
-        notification.linkText,
-        notification.link,
-        notification.details?.worldName,
-        notification.details?.worldId,
-        notification.details?.inviteMessage,
-        notification.details?.requestMessage,
-        notification.details?.responseMessage,
-        notification.data?.groupName
-    ].some((value) => String(value || '').toLowerCase().includes(query));
-}
-
-function filterNotificationRows(rows, filters, search) {
-    const activeFilters = Array.isArray(filters) ? filters : [];
-    return (Array.isArray(rows) ? rows : []).filter((notification) => {
-        if (activeFilters.length && !activeFilters.includes(notification.type)) {
-            return false;
-        }
-        return matchesNotificationSearch(notification, search);
-    });
-}
-
-function normalizeWorldTarget(value) {
-    const text = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-    return parseLocation(text).worldId || text.split(':')[0] || text;
-}
-
-function resolveCurrentInviteLocation(gameState, currentUserSnapshot) {
-    const currentLocation = String(gameState?.currentLocation || '').trim();
-    if (currentLocation === 'traveling') {
-        return String(gameState?.currentDestination || '').trim();
-    }
-    return (
-        currentLocation ||
-        String(gameState?.currentDestination || '').trim() ||
-        String(currentUserSnapshot?.$locationTag || currentUserSnapshot?.location || '').trim()
-    );
-}
-
-function canDeclineNotification(notification) {
-    const type = notification?.type || '';
-    const link = notification?.link || '';
-    return (
-        type !== 'requestInviteResponse' &&
-        type !== 'inviteResponse' &&
-        type !== 'message' &&
-        type !== 'boop' &&
-        type !== 'groupChange' &&
-        !type.includes('group.') &&
-        !type.includes('moderation.') &&
-        !type.includes('instance.') &&
-        !link.startsWith('economy.')
-    );
-}
-
-function getResponseLabel(response) {
-    return response?.text || response?.type || 'Respond';
-}
+import {
+    NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES as DEFAULT_PAGE_SIZES,
+    readPersistedNotificationTableState as readPersistedState,
+    resolveNotificationPageSize as resolvePageSize,
+    safeJsonParse,
+    sanitizeNotificationColumnOrder as sanitizeColumnOrder,
+    sanitizeNotificationColumnSizing as sanitizeColumnSizing,
+    sanitizeNotificationColumnVisibility as sanitizeColumnVisibility,
+    sanitizeNotificationFilters,
+    sanitizeNotificationSorting as sanitizeSorting,
+    writePersistedNotificationTableState as writePersistedState
+} from './notificationTableState.js';
+import {
+    buildCachedInstanceMap,
+    canDeclineNotification,
+    filterNotificationRows,
+    getFileImageUrl,
+    getInviteCooldownLabel,
+    getNotificationCreatedAt,
+    getNotificationGroupColumnLabel,
+    getNotificationMessage,
+    getResponseLabel,
+    normalizeInviteMessageRows,
+    normalizeWorldTarget,
+    resolveCurrentInviteLocation
+} from './notificationRows.js';
 
 function getResponseIcon(response, notificationType) {
     if (response?.type === 'link') {
@@ -341,28 +130,6 @@ function getResponseIcon(response, notificationType) {
         default:
             return TagIcon;
     }
-}
-
-function getFileImageUrl(file) {
-    const versions = Array.isArray(file?.versions) ? file.versions : [];
-    const version = versions.at(-1);
-    const url = version?.file?.url || file?.url || file?.imageUrl || '';
-    return url ? convertFileUrlToImageUrl(url, 128) : '';
-}
-
-function getCachedInstanceLocation(instance) {
-    return String(instance?.location || instance?.instance?.location || instance?.instanceId || '').trim();
-}
-
-function buildCachedInstanceMap(instances) {
-    const map = new Map();
-    for (const instance of Array.isArray(instances) ? instances : []) {
-        const location = getCachedInstanceLocation(instance);
-        if (location) {
-            map.set(location, instance?.instance || instance);
-        }
-    }
-    return map;
 }
 
 function SortButton({ column, label }) {
@@ -422,7 +189,7 @@ function NotificationTypeFilterDropdown({ value, onChange, getTypeLabel = (type)
                                 const nextTypes = checked
                                     ? [...activeTypes, type]
                                     : activeTypes.filter((entry) => entry !== type);
-                                onChange(sanitizeNotificationFilters(nextTypes));
+                                onChange(sanitizeNotificationFilters(nextTypes, NOTIFICATION_TYPES));
                             }}
                             onSelect={(event) => event.preventDefault()}>
                             {getTypeLabel(type)}
@@ -432,42 +199,6 @@ function NotificationTypeFilterDropdown({ value, onChange, getTypeLabel = (type)
             </DropdownMenuContent>
         </DropdownMenu>
     );
-}
-
-function normalizeInviteMessageRows(value, messageType) {
-    const rows = Array.isArray(value)
-        ? value
-        : Array.isArray(value?.messages)
-            ? value.messages
-            : value && typeof value === 'object'
-                ? Object.values(value).filter((row) => row && typeof row === 'object')
-                : [];
-
-    return rows
-        .map((row, index) => ({
-            ...row,
-            slot: Number.parseInt(row?.slot ?? index, 10),
-            message: String(row?.message || row?.text || ''),
-            messageType
-        }))
-        .filter((row) => Number.isFinite(row.slot))
-        .sort((left, right) => left.slot - right.slot);
-}
-
-function getInviteCooldownLabel(updatedAt) {
-    if (!updatedAt) {
-        return '';
-    }
-    const updatedTime = new Date(updatedAt).getTime();
-    if (!Number.isFinite(updatedTime)) {
-        return String(updatedAt);
-    }
-    const remainingMs = updatedTime + 60 * 60 * 1000 - Date.now();
-    if (remainingMs <= 0) {
-        return '';
-    }
-    const minutes = Math.ceil(remainingMs / 60000);
-    return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`;
 }
 
 function InviteResponseMessageDialog({
@@ -590,6 +321,7 @@ function InviteResponseMessageDialog({
     const title = messageType === 'requestResponse'
         ? 'Invite request response message'
         : 'Invite response message';
+    const inviteCooldownNowMs = Date.now();
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -661,7 +393,7 @@ function InviteResponseMessageDialog({
                                     <TableCell className="font-mono text-xs">{row.slot}</TableCell>
                                     <TableCell className="whitespace-normal">{row.message || '—'}</TableCell>
                                     <TableCell className="text-right text-xs text-muted-foreground">
-                                        {getInviteCooldownLabel(row.updatedAt)}
+                                        {getInviteCooldownLabel(row.updatedAt, inviteCooldownNowMs)}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Button
@@ -1050,7 +782,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     return;
                 }
 
-                setActiveTypes(sanitizeNotificationFilters(safeJsonParse(savedFilters)));
+                setActiveTypes(sanitizeNotificationFilters(safeJsonParse(savedFilters), NOTIFICATION_TYPES));
                 setPreferencesReady(true);
             })
             .catch(() => {

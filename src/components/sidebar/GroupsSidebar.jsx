@@ -185,10 +185,20 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
             <ContextMenuTrigger asChild>
                 <div className="flex w-full items-center rounded-lg hover:bg-muted/50">
                     <Button
-                        type="button"
+                        asChild
                         variant="ghost"
-                        className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal"
-                        onClick={() => openGroupDialog({ groupId, title: name, seedData: instance?.group || instance })}>
+                        className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal">
+                        <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => openGroupDialog({ groupId, title: name, seedData: instance?.group || instance })}
+                            onKeyDown={(event) => {
+                                if (event.key !== 'Enter' && event.key !== ' ') {
+                                    return;
+                                }
+                                event.preventDefault();
+                                openGroupDialog({ groupId, title: name, seedData: instance?.group || instance });
+                            }}>
                             <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
                                 {iconUrl ? (
                                     <img src={iconUrl} alt="" className="size-full object-cover" />
@@ -220,6 +230,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
                                     )}
                                 </span>
                             </span>
+                        </div>
                     </Button>
                 </div>
             </ContextMenuTrigger>

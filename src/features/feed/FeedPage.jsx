@@ -108,234 +108,39 @@ import {
     TooltipTrigger
 } from '@/ui/shadcn/tooltip';
 
-const DEFAULT_PAGE_SIZES = [10, 25, 50];
-const DEFAULT_SORTING = [];
-const COLUMN_IDS = ['created_at', 'type', 'displayName', 'detail'];
-const ORDER_COLUMN_IDS = ['expander', ...COLUMN_IDS];
-const STORAGE_KEY = 'vrcx:table:feed';
-const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
-
-function safeJsonParse(value) {
-    if (!value) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
-
-function readPersistedState() {
-    if (typeof window === 'undefined') {
-        return {};
-    }
-
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
-}
-
-function writePersistedState(patch) {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
-    const current = readPersistedState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
-}
-
-function sanitizeSorting(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_SORTING;
-    }
-
-    const allowedIds = new Set(COLUMN_IDS);
-    const filtered = value.filter((entry) => entry && typeof entry.id === 'string' && allowedIds.has(entry.id));
-    return filtered.length ? filtered : DEFAULT_SORTING;
-}
-
-function sanitizePageSizes(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_PAGE_SIZES;
-    }
-
-    const sizes = value
-        .map((entry) => Number.parseInt(entry, 10))
-        .filter((entry) => Number.isFinite(entry) && entry > 0);
-    return sizes.length ? [...new Set(sizes)] : DEFAULT_PAGE_SIZES;
-}
-
-function sanitizeColumnVisibility(value) {
-    const visibility = {};
-    if (!value || typeof value !== 'object') {
-        return visibility;
-    }
-
-    for (const columnId of COLUMN_IDS) {
-        if (typeof value[columnId] === 'boolean') {
-            visibility[columnId] = value[columnId];
-        }
-    }
-    return visibility;
-}
-
-function sanitizeColumnOrder(value) {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value.filter((columnId) => ORDER_COLUMN_IDS.includes(columnId));
-}
-
-function sanitizeColumnSizing(value) {
-    const sizing = {};
-    if (!value || typeof value !== 'object') {
-        return sizing;
-    }
-
-    for (const columnId of ORDER_COLUMN_IDS) {
-        const size = Number(value[columnId]);
-        if (Number.isFinite(size) && size > 0) {
-            sizing[columnId] = size;
-        }
-    }
-
-    return sizing;
-}
-
-function resolvePageSize(candidate, pageSizes = DEFAULT_PAGE_SIZES, fallback = pageSizes[1] ?? DEFAULT_PAGE_SIZES[1]) {
-    const parsed = Number.parseInt(candidate, 10);
-    if (Number.isFinite(parsed) && parsed > 0 && pageSizes.includes(parsed)) {
-        return parsed;
-    }
-
-    return pageSizes.includes(fallback) ? fallback : (pageSizes[0] ?? DEFAULT_PAGE_SIZES[0]);
-}
-
-function normalizeId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function isUserIdLike(value) {
-    return /^usr_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        normalizeId(value)
-    );
-}
-
-function resolveDisplayNameCandidate(value, userId) {
-    const normalized = normalizeId(value);
-    if (
-        !normalized ||
-        normalized === normalizeId(userId) ||
-        normalized === UNKNOWN_FEED_USER_DISPLAY_NAME ||
-        isUserIdLike(normalized)
-    ) {
-        return '';
-    }
-    return normalized;
-}
-
-function resolveFeedUserId(row) {
-    const directUserId = normalizeId(
-        row?.userId ||
-            row?.senderUserId ||
-            row?.sender_user_id ||
-            row?.receiverUserId ||
-            row?.receiver_user_id ||
-            row?.targetUserId ||
-            row?.target_user_id ||
-            row?.user?.id ||
-            row?.user?.userId
-    );
-    if (directUserId) {
-        return directUserId;
-    }
-
-    for (const candidate of [row?.displayName, row?.username, row?.name]) {
-        const normalized = normalizeId(candidate);
-        if (isUserIdLike(normalized)) {
-            return normalized;
-        }
-    }
-
-    return '';
-}
-
-function resolveFeedUserDisplayName(row, friend, cachedDisplayName = '') {
-    const userId = resolveFeedUserId(row);
-    const rowDisplayName = resolveDisplayNameCandidate(row?.displayName, userId);
-    const friendDisplayName = resolveDisplayNameCandidate(friend?.displayName || friend?.username, userId);
-    const logDisplayName = resolveDisplayNameCandidate(cachedDisplayName, userId);
-    if (rowDisplayName) {
-        return rowDisplayName;
-    }
-    if (friendDisplayName) {
-        return friendDisplayName;
-    }
-    return logDisplayName || UNKNOWN_FEED_USER_DISPLAY_NAME;
-}
+import {
+    FEED_TABLE_DEFAULT_PAGE_SIZES as DEFAULT_PAGE_SIZES,
+    readPersistedFeedTableState as readPersistedState,
+    resolveFeedPageSize as resolvePageSize,
+    safeJsonParse,
+    sanitizeFeedColumnOrder as sanitizeColumnOrder,
+    sanitizeFeedColumnSizing as sanitizeColumnSizing,
+    sanitizeFeedColumnVisibility as sanitizeColumnVisibility,
+    sanitizeFeedPageSizes as sanitizePageSizes,
+    sanitizeFeedSorting as sanitizeSorting,
+    writePersistedFeedTableState as writePersistedState
+} from './feedTableState.js';
+import {
+    buildFeedFavoriteIdSet as buildFavoriteIdSet,
+    canRequestInviteFromFeedFriend,
+    collectMatchingLiveFeedEntries,
+    getFeedRowId,
+    mergeLiveFeedEntries,
+    normalizeFeedId as normalizeId,
+    parseDateInput,
+    resolveDisplayNameCandidate,
+    resolveFeedCurrentInviteLocation as resolveCurrentInviteLocation,
+    resolveFeedStatusMeta as resolveStatusMeta,
+    resolveFeedUserDisplayName,
+    resolveFeedUserId,
+    toDateInputValue,
+    toIsoRangeEnd,
+    toIsoRangeStart,
+    UNKNOWN_FEED_USER_DISPLAY_NAME
+} from './feedRows.js';
 
 function resolvePresenceLocation(profile) {
     return resolveFriendPresenceLocation(profile);
-}
-
-function normalizePresenceState(value) {
-    const state = normalizeId(value).toLowerCase();
-    if (state === 'offline:offline' || state.startsWith('offline ')) {
-        return 'offline';
-    }
-    if (state === 'private:private') {
-        return 'private';
-    }
-    if (state === 'traveling:traveling') {
-        return 'traveling';
-    }
-    return state;
-}
-
-function resolveFeedFriendStateBucket(friend, currentUserSnapshot) {
-    const friendId = normalizeId(friend?.id || friend?.userId);
-    const explicitState = normalizePresenceState(friend?.stateBucket || friend?.state);
-    if (explicitState === 'online' || explicitState === 'active' || explicitState === 'offline') {
-        return explicitState;
-    }
-    if (!friendId) {
-        return '';
-    }
-    if ((currentUserSnapshot?.onlineFriends || []).includes(friendId)) {
-        return 'online';
-    }
-    if ((currentUserSnapshot?.activeFriends || []).includes(friendId)) {
-        return 'active';
-    }
-    if ((currentUserSnapshot?.offlineFriends || []).includes(friendId)) {
-        return 'offline';
-    }
-    return '';
-}
-
-function canRequestInviteFromFeedFriend(friend, currentUserSnapshot) {
-    return resolveFeedFriendStateBucket(friend, currentUserSnapshot) === 'online';
-}
-
-function resolveCurrentInviteLocation(gameState, currentUserSnapshot) {
-    const currentLocation = normalizeId(gameState?.currentLocation);
-    if (currentLocation === 'traveling') {
-        return normalizeId(gameState?.currentDestination);
-    }
-
-    return (
-        currentLocation ||
-        normalizeId(gameState?.currentDestination) ||
-        normalizeId(currentUserSnapshot?.$locationTag || currentUserSnapshot?.location)
-    );
 }
 
 async function findAvatarByImageUrl({ imageUrl, avatarName }) {
@@ -376,185 +181,6 @@ async function findAvatarByImageUrl({ imageUrl, avatarName }) {
     )) || null;
 }
 
-function buildFavoriteIdSet(remoteFavoritesById, localFriendFavorites, selectedFavoriteGroupIds = []) {
-    const ids = new Set();
-    const selectedGroups = Array.isArray(selectedFavoriteGroupIds) ? selectedFavoriteGroupIds : [];
-    const hasRemoteGroupFilter = selectedGroups.some((groupKey) => !String(groupKey || '').startsWith('local:'));
-
-    for (const favorite of Object.values(remoteFavoritesById ?? {})) {
-        if (favorite?.type !== 'friend') {
-            continue;
-        }
-        if (hasRemoteGroupFilter && !selectedGroups.includes(favorite.$groupKey)) {
-            continue;
-        }
-        const favoriteId = normalizeId(favorite.favoriteId);
-        if (favoriteId) {
-            ids.add(favoriteId);
-        }
-    }
-
-    for (const groupIds of Object.values(localFriendFavorites ?? {})) {
-        if (!Array.isArray(groupIds)) {
-            continue;
-        }
-        for (const id of groupIds) {
-            const normalized = normalizeId(id);
-            if (normalized) {
-                ids.add(normalized);
-            }
-        }
-    }
-    return ids;
-}
-
-function feedSearchMatches(row, search) {
-    const query = String(search || '').trim().toUpperCase();
-    if (!query) {
-        return true;
-    }
-    if ((query.startsWith('WRLD_') || query.startsWith('GRP_')) && String(row?.location || '').toUpperCase().includes(query)) {
-        return true;
-    }
-    return [
-        row?.displayName,
-        row?.worldName,
-        row?.groupName,
-        row?.status,
-        row?.statusDescription,
-        row?.previousStatus,
-        row?.previousStatusDescription,
-        row?.bio,
-        row?.previousBio,
-        row?.avatarName,
-        row?.message
-    ].some((value) => String(value || '').toUpperCase().includes(query));
-}
-
-function feedEntryMatchesView({
-    currentUserId,
-    row,
-    activeFilters,
-    dateFrom,
-    dateTo,
-    favoriteIdSet,
-    favoritesOnly,
-    search
-}) {
-    if (!row || typeof row !== 'object') {
-        return false;
-    }
-    if (row.ownerUserId && row.ownerUserId !== currentUserId) {
-        return false;
-    }
-    if (Array.isArray(activeFilters) && activeFilters.length && !activeFilters.includes(row.type)) {
-        return false;
-    }
-    if (favoritesOnly && !favoriteIdSet.has(normalizeId(row.userId))) {
-        return false;
-    }
-    const start = toIsoRangeStart(dateFrom);
-    const end = toIsoRangeEnd(dateTo);
-    const createdAt = String(row.created_at || '');
-    if (start && createdAt && createdAt < start) {
-        return false;
-    }
-    if (end && createdAt && createdAt > end) {
-        return false;
-    }
-    return feedSearchMatches(row, search);
-}
-
-function getFeedRowId(row) {
-    if (row?.id != null) {
-        return `id:${row.id}`;
-    }
-    if (row?.rowId != null) {
-        return `row:${row.rowId}`;
-    }
-    const type = row?.type ?? '';
-    const createdAt = row?.created_at ?? row?.createdAt ?? '';
-    const userId = row?.userId ?? row?.senderUserId ?? '';
-    const location = row?.location ?? row?.details?.location ?? '';
-    const message = row?.message ?? '';
-    return `${type}:${createdAt}:${userId}:${location}:${message}`;
-}
-
-function collectMatchingLiveFeedEntries(entries, minSequence, context) {
-    const unseenEntries = (Array.isArray(entries) ? entries : [])
-        .filter((item) => item.sequence > minSequence);
-    if (!unseenEntries.length) {
-        return {
-            matchingEntries: [],
-            maxSequence: minSequence
-        };
-    }
-
-    const matchingEntries = unseenEntries
-        .map((item) => item.entry)
-        .filter((entry) => feedEntryMatchesView({
-            ...context,
-            row: entry
-        }));
-
-    return {
-        matchingEntries,
-        maxSequence: Math.max(...unseenEntries.map((item) => item.sequence))
-    };
-}
-
-function mergeLiveFeedEntries(rows, matchingEntries, maxRows) {
-    const nextRowsById = new Map();
-    for (const entry of [...matchingEntries].reverse()) {
-        nextRowsById.set(getFeedRowId(entry), entry);
-    }
-    for (const row of Array.isArray(rows) ? rows : []) {
-        const rowId = getFeedRowId(row);
-        if (!nextRowsById.has(rowId)) {
-            nextRowsById.set(rowId, row);
-        }
-    }
-    return Array.from(nextRowsById.values()).slice(0, maxRows);
-}
-
-function toIsoRangeStart(value) {
-    if (!value) {
-        return '';
-    }
-
-    const date = new Date(`${value}T00:00:00`);
-    return Number.isNaN(date.valueOf()) ? '' : date.toISOString();
-}
-
-function toIsoRangeEnd(value) {
-    if (!value) {
-        return '';
-    }
-
-    const date = new Date(`${value}T23:59:59.999`);
-    return Number.isNaN(date.valueOf()) ? '' : date.toISOString();
-}
-
-function parseDateInput(value) {
-    const normalizedValue = normalizeId(value);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
-        return undefined;
-    }
-    const [year, month, day] = normalizedValue.split('-').map((part) => Number.parseInt(part, 10));
-    const date = new Date(year, month - 1, day);
-    return Number.isNaN(date.valueOf()) ? undefined : date;
-}
-
-function toDateInputValue(date) {
-    if (!(date instanceof Date) || Number.isNaN(date.valueOf())) {
-        return '';
-    }
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
 function formatTimestamp(value) {
     if (!value) {
         return '-';
@@ -578,23 +204,6 @@ async function copyFeedText(text, label = 'Value') {
     }
     await copyTextToClipboard(value);
     toast.success(`${label} copied.`);
-}
-
-function resolveStatusMeta(status) {
-    switch (status) {
-        case 'active':
-            return { label: 'Online', className: 'bg-[var(--status-online)]' };
-        case 'join me':
-        case 'joinme':
-            return { label: 'Join Me', className: 'bg-[var(--status-joinme)]' };
-        case 'ask me':
-        case 'askme':
-            return { label: 'Ask Me', className: 'bg-[var(--status-askme)]' };
-        case 'busy':
-            return { label: 'Busy', className: 'bg-[var(--status-busy)]' };
-        default:
-            return { label: status || 'Offline', className: '' };
-    }
 }
 
 function FeedStatusBadge({ status, label }) {

@@ -23,8 +23,7 @@ import { toast } from 'sonner';
 
 import { Location } from '@/components/Location.jsx';
 import { cn } from '@/lib/utils.js';
-import { convertFileUrlToImageUrl, userImage } from '@/lib/entityMedia.js';
-import { formatCsvRow } from '@/shared/utils/csv.js';
+import { userImage } from '@/lib/entityMedia.js';
 import {
     avatarProfileRepository,
     configRepository,
@@ -88,6 +87,20 @@ import {
     clearFavoriteRemoteDetailsCache,
     useFavoriteRemoteDetails
 } from './useFavoriteRemoteDetails.js';
+import {
+    buildFavoriteExportCsv,
+    FAVORITES_EXPORT_ALL_VALUE as EXPORT_ALL_VALUE,
+    FAVORITES_EXPORT_NONE_VALUE as EXPORT_NONE_VALUE,
+    getFavoriteExportFieldOptions
+} from './favoritesExport.js';
+import {
+    favoriteGroupType,
+    normalizeFavoriteEntityId as normalizeEntityId,
+    normalizeFavoriteSearchValue as normalizeSearchValue,
+    resolveCurrentInviteLocation,
+    shrinkFavoriteImage as shrinkImage,
+    sortFavoriteItems as sortItems
+} from './favoritesItems.js';
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'];
 const EMPTY_ITEMS = Object.freeze([]);
@@ -112,49 +125,8 @@ const CARD_SPACING_CONFIG_KEYS = {
 };
 const CARD_SCALE_SLIDER = { min: 0.6, max: 1, step: 0.01 };
 const CARD_SPACING_SLIDER = { min: 0.5, max: 1.5, step: 0.05 };
-const EXPORT_ALL_VALUE = '__all__';
-const EXPORT_NONE_VALUE = '__none__';
-const FAVORITE_EXPORT_FIELD_OPTIONS = Object.freeze({
-    friend: Object.freeze([
-        { label: 'ID', value: 'id' },
-        { label: 'Name', value: 'name' },
-        { label: 'Status', value: 'status' },
-        { label: 'Group', value: 'group' },
-        { label: 'Source', value: 'source' }
-    ]),
-    entity: Object.freeze([
-        { label: 'ID', value: 'id' },
-        { label: 'Name', value: 'name' },
-        { label: 'Author', value: 'author' },
-        { label: 'Thumbnail', value: 'thumbnail' },
-        { label: 'Group', value: 'group' },
-        { label: 'Source', value: 'source' }
-    ])
-});
-
-function normalizeSearchValue(value) {
-    return typeof value === 'string' ? value.trim().toLowerCase() : '';
-}
-
-function normalizeEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
 function resolvePresenceLocation(profile) {
     return resolveFriendPresenceLocation(profile);
-}
-
-function resolveCurrentInviteLocation(gameState, currentUserSnapshot) {
-    const currentLocation = normalizeEntityId(gameState?.currentLocation);
-    if (currentLocation === 'traveling') {
-        return normalizeEntityId(gameState?.currentDestination);
-    }
-
-    return (
-        currentLocation ||
-        normalizeEntityId(gameState?.currentDestination) ||
-        normalizeEntityId(currentUserSnapshot?.$locationTag || currentUserSnapshot?.location)
-    );
 }
 
 function clampNumber(value, min, max, fallback) {
@@ -187,73 +159,6 @@ function splitterPercentToPx(value, width) {
         ? parsedWidth
         : SPLITTER_FALLBACK_WIDTH;
     return clampSplitterSizePx((Number(value) / 100) * safeWidth);
-}
-
-function sortItems(items, sortValue) {
-    return [...items].sort((left, right) => {
-        if (sortValue === 'players') {
-            const playerDelta = (right.playerCount || 0) - (left.playerCount || 0);
-            if (playerDelta !== 0) {
-                return playerDelta;
-            }
-            return 0;
-        }
-
-        if (sortValue === 'date') {
-            const orderDelta =
-                (left.orderIndex ?? Number.MAX_SAFE_INTEGER) -
-                (right.orderIndex ?? Number.MAX_SAFE_INTEGER);
-            if (orderDelta !== 0) {
-                return orderDelta;
-            }
-        }
-
-        const titleDelta = String(left.title || '').localeCompare(String(right.title || ''), undefined, {
-            sensitivity: 'base'
-        });
-        if (titleDelta !== 0) {
-            return titleDelta;
-        }
-
-        return String(left.id || '').localeCompare(String(right.id || ''));
-    });
-}
-
-function shrinkImage(url) {
-    const normalized = convertFileUrlToImageUrl(url, 128);
-    if (typeof normalized !== 'string' || !normalized) {
-        return '';
-    }
-    return normalized.includes('/256') ? normalized.replace('/256', '/128') : normalized;
-}
-
-function getFavoriteExportFieldOptions(kind) {
-    return kind === 'friend'
-        ? FAVORITE_EXPORT_FIELD_OPTIONS.friend
-        : FAVORITE_EXPORT_FIELD_OPTIONS.entity;
-}
-
-function buildFavoriteExportCsv(items, kind, selectedFields = null) {
-    const options = getFavoriteExportFieldOptions(kind);
-    const optionByValue = Object.fromEntries(options.map((option) => [option.value, option]));
-    const fields = (Array.isArray(selectedFields) && selectedFields.length ? selectedFields : options.map((option) => option.value))
-        .filter((field) => optionByValue[field]);
-    const labels = fields.map((field) => optionByValue[field].label);
-    const lines = [labels.join(',')];
-
-    for (const item of items) {
-        lines.push(formatCsvRow({
-            id: item.id,
-            name: item.title,
-            status: item.statusLabel || item.subtitle || '',
-            author: item.subtitle || '',
-            thumbnail: item.imageUrl || '',
-            group: item.groupLabel || item.groupKey || '',
-            source: item.source || ''
-        }, fields));
-    }
-
-    return lines.join('\n');
 }
 
 function FavoriteExportDialog({
@@ -386,16 +291,6 @@ function FavoriteExportDialog({
             </DialogContent>
         </Dialog>
     );
-}
-
-function favoriteGroupType(kind, group) {
-    if (group?.type) {
-        return group.type;
-    }
-    if (kind === 'world') {
-        return 'world';
-    }
-    return kind;
 }
 
 function FavoritesToolbar({

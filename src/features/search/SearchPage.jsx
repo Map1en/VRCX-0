@@ -28,8 +28,6 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService.js';
-import { replaceBioSymbols } from '@/shared/utils/base/string.js';
-import { languageMappings } from '@/shared/constants/language.js';
 import { convertFileUrlToImageUrl, getNameColour, userImage } from '@/lib/entityMedia.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { Button } from '@/ui/shadcn/button';
@@ -39,160 +37,15 @@ import { Input } from '@/ui/shadcn/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
-const PAGE_SIZE = 10;
-
-function emptyArray(value) {
-    return Array.isArray(value) ? value : [];
-}
-
-function dedupeById(items) {
-    const map = new Map();
-    for (const item of emptyArray(items)) {
-        if (item?.id) {
-            map.set(item.id, item);
-        }
-    }
-    return Array.from(map.values());
-}
-
-function resolveUserLanguages(user) {
-    if (Array.isArray(user?.$languages) && user.$languages.length) {
-        return user.$languages;
-    }
-
-    const tags = Array.isArray(user?.tags) ? user.tags : [];
-    return tags
-        .filter((tag) => typeof tag === 'string' && tag.startsWith('language_'))
-        .map((tag) => {
-            const key = tag.slice('language_'.length);
-            return {
-                key,
-                value: languageMappings[key] || key
-            };
-        })
-        .filter((entry) => entry.key);
-}
-
-function languageFlagLabel(languageKey) {
-    const countryCode = languageMappings[String(languageKey || '').toLowerCase()];
-    if (!countryCode || !/^[a-z]{2}$/i.test(countryCode)) {
-        return String(languageKey || '?').slice(0, 3).toUpperCase() || '?';
-    }
-
-    return String.fromCodePoint(
-        ...countryCode
-            .toUpperCase()
-            .split('')
-            .map((letter) => 0x1f1e6 + letter.charCodeAt(0) - 65)
-    );
-}
-
-function buildWorldSearchRequest(searchText, category, includeCommunityLabs, offset = 0) {
-    const params = {
-        n: PAGE_SIZE,
-        offset: Math.max(0, offset)
-    };
-    let option;
-
-    switch (category?.sortHeading) {
-        case 'featured':
-            params.sort = 'order';
-            params.featured = 'true';
-            break;
-        case 'trending':
-            params.sort = 'popularity';
-            params.featured = 'false';
-            break;
-        case 'updated':
-            params.sort = 'updated';
-            break;
-        case 'created':
-            params.sort = 'created';
-            break;
-        case 'publication':
-            params.sort = 'publicationDate';
-            break;
-        case 'shuffle':
-            params.sort = 'shuffle';
-            break;
-        case 'active':
-            option = 'active';
-            break;
-        case 'recent':
-            option = 'recent';
-            break;
-        case 'favorite':
-            option = 'favorites';
-            break;
-        case 'labs':
-            params.sort = 'labsPublicationDate';
-            break;
-        case 'heat':
-            params.sort = 'heat';
-            params.featured = 'false';
-            break;
-        default:
-            params.sort = 'relevance';
-            params.search = replaceBioSymbols(searchText);
-            break;
-    }
-
-    params.order = category?.sortOrder || 'descending';
-
-    if (category?.sortOwnership === 'mine') {
-        params.user = 'me';
-        params.releaseStatus = 'all';
-    }
-
-    if (category?.tag) {
-        params.tag = category.tag;
-    }
-
-    if (!includeCommunityLabs) {
-        params.tag = params.tag ? `${params.tag},system_approved` : 'system_approved';
-    }
-
-    return {
-        categoryIndex: category?.index ?? null,
-        option,
-        params
-    };
-}
-
-function buildGroupSearchRequest(searchText, offset = 0) {
-    return {
-        params: {
-            n: PAGE_SIZE,
-            offset: Math.max(0, offset),
-            query: replaceBioSymbols(searchText)
-        }
-    };
-}
-
-function buildAvatarSearchRequest(searchText, provider, offset = 0) {
-    return {
-        provider,
-        query: replaceBioSymbols(searchText),
-        offset: Math.max(0, offset)
-    };
-}
-
-function buildUserSearchRequest(
-    searchText,
-    searchByBio = false,
-    sortByLastLoggedIn = false,
-    offset = 0
-) {
-    return {
-        params: {
-            n: PAGE_SIZE,
-            offset: Math.max(0, offset),
-            search: replaceBioSymbols(searchText),
-            customFields: searchByBio ? 'bio' : 'displayName',
-            sort: sortByLastLoggedIn ? 'last_login' : 'relevance'
-        }
-    };
-}
+import { languageFlagLabel, resolveUserLanguages } from './searchDisplay.js';
+import {
+    buildAvatarSearchRequest,
+    buildGroupSearchRequest,
+    buildUserSearchRequest,
+    buildWorldSearchRequest,
+    SEARCH_PAGE_SIZE as PAGE_SIZE
+} from './searchRequests.js';
+import { dedupeById, emptyArray } from './searchResults.js';
 
 function SearchEmptyState() {
     return <EmptyState title="No data" className="min-h-56" />;

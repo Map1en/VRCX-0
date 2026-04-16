@@ -4,10 +4,12 @@ import { toast } from 'sonner';
 import { getPlatformInfo } from '@/lib/avatarPlatform.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis.js';
-import { compareUnityVersion } from '@/shared/utils/avatar.js';
 import { backend } from '@/platform/tauri/index.js';
 import { AvatarDialogTabbedView } from './AvatarDialogTabbedView.jsx';
-import { AvatarContentTagsDialog, AvatarStylesDialog } from './AvatarOwnerEditDialogs.jsx';
+import {
+    AvatarContentTagsDialog,
+    AvatarStylesDialog
+} from './AvatarOwnerEditDialogs.jsx';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import {
     avatarProfileRepository,
@@ -25,12 +27,19 @@ import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useDialogStore } from '@/state/dialogStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { extractFileId, extractFileVersion, extractVariantVersion } from '@/shared/utils/fileUtils.js';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
+import {
+    avatarGalleryImageUrl,
+    defaultAvatarSideData,
+    resolveAssetBundleArgs
+} from './avatar-dialog/avatarAssets.js';
+import { readAvatarCacheInfo } from './avatar-dialog/avatarCacheAdapter.js';
 
 function normalizeEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function AvatarDialogEmptyState({ title, description, loading = false }) {
@@ -43,139 +52,75 @@ function AvatarDialogEmptyState({ title, description, loading = false }) {
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
+                <div className="text-sm text-muted-foreground">
+                    {description}
+                </div>
             </div>
         </div>
     );
 }
 
-function defaultAvatarSideData() {
-    return {
-        galleryRows: [],
-        galleryImages: [],
-        fileAnalysis: {},
-        cache: {
-            inCache: false,
-            cacheSize: '',
-            cacheLocked: false,
-            cachePath: ''
-        }
-    };
-}
-
-function avatarGalleryImageUrl(file) {
-    const versions = Array.isArray(file?.versions) ? file.versions : [];
-    const latestVersion = versions[versions.length - 1];
-    return latestVersion?.file?.url || file?.url || file?.fileUrl || file?.imageUrl || '';
-}
-
-function isCacheCandidatePackage(unityPackage, sdkUnityVersion = '') {
-    if (!unityPackage || unityPackage.platform !== 'standalonewindows') {
-        return false;
-    }
-    if (unityPackage.variant && unityPackage.variant !== 'standard' && unityPackage.variant !== 'security') {
-        return false;
-    }
-    if (sdkUnityVersion && unityPackage.unitySortNumber && !compareUnityVersion(unityPackage.unitySortNumber, sdkUnityVersion)) {
-        return false;
-    }
-    return true;
-}
-
-function resolveAssetBundleArgs(avatar, sdkUnityVersion = '') {
-    const unityPackages = Array.isArray(avatar?.unityPackages) ? avatar.unityPackages : [];
-    let selectedPackage = null;
-    for (let index = unityPackages.length - 1; index >= 0; index -= 1) {
-        const unityPackage = unityPackages[index];
-        if (isCacheCandidatePackage(unityPackage, sdkUnityVersion)) {
-            selectedPackage = unityPackage;
-            break;
-        }
-    }
-    if (!selectedPackage && sdkUnityVersion) {
-        return resolveAssetBundleArgs(avatar, '');
-    }
-    const assetUrl = selectedPackage?.assetUrl || avatar?.assetUrl || '';
-    const fileId = extractFileId(assetUrl);
-    const fileVersion = Number.parseInt(extractFileVersion(assetUrl), 10);
-    const variant = !selectedPackage?.variant || selectedPackage.variant === 'standard'
-        ? 'security'
-        : selectedPackage.variant;
-    const variantVersion = Number.parseInt(extractVariantVersion(assetUrl), 10) || 0;
-    if (!fileId || !Number.isFinite(fileVersion)) {
-        return null;
-    }
-    return {
-        fileId,
-        fileVersion,
-        variant,
-        variantVersion
-    };
-}
-
-async function readAvatarCacheInfo(avatar, endpoint = '') {
-    const configResponse = await vrchatAuthRepository.getConfig({ endpoint }).catch(() => null);
-    const sdkUnityVersion = String(configResponse?.json?.sdkUnityVersion || '');
-    const args = resolveAssetBundleArgs(avatar, sdkUnityVersion);
-    if (!args) {
-        return defaultAvatarSideData().cache;
-    }
-    const cacheInfo = await backend.assetBundle.CheckVRChatCache(
-        args.fileId,
-        args.fileVersion,
-        args.variant,
-        args.variantVersion
-    );
-    const size = Number(cacheInfo?.Item1 ?? cacheInfo?.item1 ?? 0);
-    const cacheLocked = Boolean(cacheInfo?.Item2 ?? cacheInfo?.item2);
-    const cachePath = String(cacheInfo?.Item3 ?? cacheInfo?.item3 ?? '');
-    return {
-        inCache: size > 0,
-        cacheSize: size > 0 ? `${(size / 1048576).toFixed(2)} MB` : '',
-        cacheLocked,
-        cachePath
-    };
-}
-
 export function AvatarDialogContent({ avatarId, seedData = null }) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentAvatarId = useRuntimeStore((state) => state.auth.currentUserSnapshot?.currentAvatar || '');
+    const currentAvatarId = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot?.currentAvatar || ''
+    );
     const setAuthBootstrap = useRuntimeStore((state) => state.setAuthBootstrap);
-    const remoteFavoriteAvatarIds = useFavoriteStore((state) => state.favoriteAvatarIds);
-    const localFavoriteAvatarIds = useFavoriteStore((state) => state.localAvatarFavoritesList);
+    const remoteFavoriteAvatarIds = useFavoriteStore(
+        (state) => state.favoriteAvatarIds
+    );
+    const localFavoriteAvatarIds = useFavoriteStore(
+        (state) => state.localAvatarFavoritesList
+    );
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
     const closeDialog = useDialogStore((state) => state.closeDialog);
-    const updateEntityDialogMetadata = useDialogStore((state) => state.updateEntityDialogMetadata);
+    const updateEntityDialogMetadata = useDialogStore(
+        (state) => state.updateEntityDialogMetadata
+    );
     const [avatar, setAvatar] = useState(() =>
         seedData ? avatarProfileRepository.normalize(seedData) : null
     );
-    const [loadStatus, setLoadStatus] = useState(normalizedAvatarId ? 'running' : 'idle');
+    const [loadStatus, setLoadStatus] = useState(
+        normalizedAvatarId ? 'running' : 'idle'
+    );
     const [actionStatus, setActionStatus] = useState('idle');
     const [detail, setDetail] = useState('');
     const [memo, setMemo] = useState(() =>
         typeof seedData?.$memo === 'string' ? seedData.$memo : ''
     );
     const [avatarBlocked, setAvatarBlocked] = useState(false);
-    const [avatarSideData, setAvatarSideData] = useState(() => defaultAvatarSideData());
+    const [avatarSideData, setAvatarSideData] = useState(() =>
+        defaultAvatarSideData()
+    );
     const [imageCropRequest, setImageCropRequest] = useState(null);
     const [ownerEditor, setOwnerEditor] = useState(null);
     const actionStatusRef = useRef('idle');
     const memoRevisionRef = useRef(0);
     const moderationRevisionRef = useRef(0);
-    const activeAvatarTargetRef = useRef({ avatarId: normalizedAvatarId, endpoint: currentEndpoint });
+    const activeAvatarTargetRef = useRef({
+        avatarId: normalizedAvatarId,
+        endpoint: currentEndpoint
+    });
     const imageUploadInputRef = useRef(null);
     const imageUploadAvatarRef = useRef(null);
     const galleryUploadInputRef = useRef(null);
 
     useEffect(() => {
-        activeAvatarTargetRef.current = { avatarId: normalizedAvatarId, endpoint: currentEndpoint };
+        activeAvatarTargetRef.current = {
+            avatarId: normalizedAvatarId,
+            endpoint: currentEndpoint
+        };
     }, [currentEndpoint, normalizedAvatarId]);
 
     useEffect(() => {
-        setAvatar(seedData ? avatarProfileRepository.normalize(seedData) : null);
+        setAvatar(
+            seedData ? avatarProfileRepository.normalize(seedData) : null
+        );
     }, [seedData]);
 
     useEffect(() => {
@@ -228,8 +173,13 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             if (!active) {
                 return;
             }
-            const sdkUnityVersion = String(configResult.status === 'fulfilled' ? configResult.value?.json?.sdkUnityVersion || '' : '');
-            const galleryRows = galleryResult.status === 'fulfilled' ? galleryResult.value : [];
+            const sdkUnityVersion = String(
+                configResult.status === 'fulfilled'
+                    ? configResult.value?.json?.sdkUnityVersion || ''
+                    : ''
+            );
+            const galleryRows =
+                galleryResult.status === 'fulfilled' ? galleryResult.value : [];
             return Promise.allSettled([
                 readAvatarCacheInfo(avatar, currentEndpoint),
                 getFileAnalysisForUnityPackages({
@@ -243,9 +193,17 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 }
                 setAvatarSideData({
                     galleryRows,
-                    galleryImages: galleryRows.map(avatarGalleryImageUrl).filter(Boolean),
-                    fileAnalysis: fileAnalysisResult.status === 'fulfilled' ? fileAnalysisResult.value : {},
-                    cache: cacheResult.status === 'fulfilled' ? cacheResult.value : defaultAvatarSideData().cache
+                    galleryImages: galleryRows
+                        .map(avatarGalleryImageUrl)
+                        .filter(Boolean),
+                    fileAnalysis:
+                        fileAnalysisResult.status === 'fulfilled'
+                            ? fileAnalysisResult.value
+                            : {},
+                    cache:
+                        cacheResult.status === 'fulfilled'
+                            ? cacheResult.value
+                            : defaultAvatarSideData().cache
                 });
             });
         });
@@ -274,10 +232,16 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 }
 
                 const rows = Array.isArray(response.json) ? response.json : [];
-                setAvatarBlocked(rows.some((row) =>
-                    normalizeEntityId(row?.targetAvatarId) === normalizedAvatarId &&
-                    normalizeEntityId(row?.avatarModerationType).toLowerCase() === 'block'
-                ));
+                setAvatarBlocked(
+                    rows.some(
+                        (row) =>
+                            normalizeEntityId(row?.targetAvatarId) ===
+                                normalizedAvatarId &&
+                            normalizeEntityId(
+                                row?.avatarModerationType
+                            ).toLowerCase() === 'block'
+                    )
+                );
             })
             .catch(() => {
                 if (active && moderationRevisionRef.current === revision) {
@@ -302,7 +266,9 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             };
         }
 
-        setAvatar(seedData ? avatarProfileRepository.normalize(seedData) : null);
+        setAvatar(
+            seedData ? avatarProfileRepository.normalize(seedData) : null
+        );
         setMemo(typeof seedData?.$memo === 'string' ? seedData.$memo : '');
         setLoadStatus('running');
         setDetail('');
@@ -321,7 +287,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 setAvatar((currentAvatar) =>
                     memoRevisionRef.current === memoRevision
                         ? nextAvatar
-                        : { ...nextAvatar, $memo: currentAvatar?.$memo ?? nextAvatar.$memo ?? '' }
+                        : {
+                              ...nextAvatar,
+                              $memo:
+                                  currentAvatar?.$memo ?? nextAvatar.$memo ?? ''
+                          }
                 );
                 setLoadStatus('ready');
             })
@@ -331,11 +301,18 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 }
 
                 if (seedData) {
-                    const nextAvatar = avatarProfileRepository.normalize(seedData);
+                    const nextAvatar =
+                        avatarProfileRepository.normalize(seedData);
                     setAvatar((currentAvatar) =>
                         memoRevisionRef.current === memoRevision
                             ? nextAvatar
-                            : { ...nextAvatar, $memo: currentAvatar?.$memo ?? nextAvatar.$memo ?? '' }
+                            : {
+                                  ...nextAvatar,
+                                  $memo:
+                                      currentAvatar?.$memo ??
+                                      nextAvatar.$memo ??
+                                      ''
+                              }
                     );
                     setLoadStatus('ready');
                     setDetail(
@@ -349,7 +326,9 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 setAvatar(null);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error ? error.message : 'Failed to load the avatar profile.'
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load the avatar profile.'
                 );
             });
 
@@ -392,7 +371,10 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         return (
             <AvatarDialogEmptyState
                 title="Avatar profile unavailable"
-                description={detail || 'VRCX could not resolve an avatar snapshot for this dialog.'}
+                description={
+                    detail ||
+                    'VRCX could not resolve an avatar snapshot for this dialog.'
+                }
             />
         );
     }
@@ -402,28 +384,36 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         512
     );
     const platformInfo = getPlatformInfo(avatar.unityPackages);
-    const isCurrentAvatar = normalizeEntityId(currentAvatarId) === normalizeEntityId(avatar.id);
+    const isCurrentAvatar =
+        normalizeEntityId(currentAvatarId) === normalizeEntityId(avatar.id);
     const isFavorite = favoriteAvatarIds.has(normalizeEntityId(avatar.id));
     const canManageAvatar =
         normalizeEntityId(avatar.authorId) === normalizeEntityId(currentUserId);
     const localTags = Array.isArray(avatar.$tags) ? avatar.$tags : [];
     const remoteTags = Array.isArray(avatar.tags) ? avatar.tags : [];
     const contentTags = remoteTags.filter((tag) => tag.startsWith('content_'));
-    const authorTags = remoteTags.filter((tag) => tag.startsWith('author_tag_'));
+    const authorTags = remoteTags.filter((tag) =>
+        tag.startsWith('author_tag_')
+    );
     const otherTags = remoteTags.filter(
         (tag) => !tag.startsWith('content_') && !tag.startsWith('author_tag_')
     );
     const imposterPackage = Array.isArray(avatar.unityPackages)
-        ? avatar.unityPackages.find((unityPackage) => unityPackage?.variant === 'impostor')
+        ? avatar.unityPackages.find(
+              (unityPackage) => unityPackage?.variant === 'impostor'
+          )
         : null;
     const hasImposter = Boolean(imposterPackage);
-    const imposterVersion = normalizeEntityId(imposterPackage?.impostorizerVersion);
+    const imposterVersion = normalizeEntityId(
+        imposterPackage?.impostorizerVersion
+    );
     const canSelectAvatar =
         !avatarBlocked &&
         !isCurrentAvatar &&
         normalizeEntityId(avatar.id) &&
         (avatar.releaseStatus !== 'private' ||
-            normalizeEntityId(avatar.authorId) === normalizeEntityId(currentUserId));
+            normalizeEntityId(avatar.authorId) ===
+                normalizeEntityId(currentUserId));
     const canSelectFallbackAvatar = Boolean(
         avatar.id &&
         (platformInfo?.android?.platform || platformInfo?.ios?.platform)
@@ -456,7 +446,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             applyCurrentAvatarUpdate(nextAvatar);
             toast.success('Avatar refreshed.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to refresh avatar.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to refresh avatar.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -476,23 +470,32 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 avatarId: avatar.id,
                 endpoint: currentEndpoint
             });
-            const currentUserResponse = await vrchatAuthRepository.getCurrentUser({
-                endpoint: currentEndpoint
-            });
+            const currentUserResponse =
+                await vrchatAuthRepository.getCurrentUser({
+                    endpoint: currentEndpoint
+                });
             const nextUser =
-                currentUserResponse.json && typeof currentUserResponse.json === 'object'
+                currentUserResponse.json &&
+                typeof currentUserResponse.json === 'object'
                     ? currentUserResponse.json
                     : null;
             if (nextUser?.id) {
                 setAuthBootstrap({
                     currentUserId: nextUser.id,
-                    currentUserDisplayName: nextUser.displayName || nextUser.username || nextUser.id,
+                    currentUserDisplayName:
+                        nextUser.displayName ||
+                        nextUser.username ||
+                        nextUser.id,
                     currentUserSnapshot: nextUser
                 });
             }
             toast.success('Avatar selected.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to select avatar.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to select avatar.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -504,13 +507,15 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             endpoint: currentEndpoint
         });
         const nextUser =
-            currentUserResponse.json && typeof currentUserResponse.json === 'object'
+            currentUserResponse.json &&
+            typeof currentUserResponse.json === 'object'
                 ? currentUserResponse.json
                 : null;
         if (nextUser?.id) {
             setAuthBootstrap({
                 currentUserId: nextUser.id,
-                currentUserDisplayName: nextUser.displayName || nextUser.username || nextUser.id,
+                currentUserDisplayName:
+                    nextUser.displayName || nextUser.username || nextUser.id,
                 currentUserSnapshot: nextUser
             });
         }
@@ -544,7 +549,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             await refreshCurrentUserSnapshot();
             toast.success('Fallback avatar updated.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to select fallback avatar.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to select fallback avatar.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -587,9 +596,15 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                     ? response.json
                     : { ...avatar, releaseStatus: nextStatus }
             );
-            toast.success(isPublic ? 'Avatar made public.' : 'Avatar made private.');
+            toast.success(
+                isPublic ? 'Avatar made public.' : 'Avatar made private.'
+            );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update avatar release status.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update avatar release status.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -630,7 +645,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             );
             toast.success('Avatar renamed.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to rename avatar.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to rename avatar.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -672,7 +691,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             );
             toast.success('Avatar description updated.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update avatar description.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update avatar description.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -691,11 +714,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         setAvatar((currentAvatar) =>
             normalizeEntityId(currentAvatar?.id) === targetAvatarId
                 ? avatarProfileRepository.normalize(nextAvatar, {
-                    localTags: currentAvatar.$tags,
-                    timeSpent: currentAvatar.$timeSpent,
-                    memo: currentAvatar.$memo,
-                    cachedAvatar: currentAvatar.$isCached
-                })
+                      localTags: currentAvatar.$tags,
+                      timeSpent: currentAvatar.$timeSpent,
+                      memo: currentAvatar.$memo,
+                      cachedAvatar: currentAvatar.$isCached
+                  })
                 : currentAvatar
         );
     }
@@ -755,7 +778,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 closeDialog();
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete avatar.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete avatar.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -813,7 +840,8 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
 
     async function confirmAvatarImageUpload(blob) {
         const request = imageCropRequest;
-        const selectedAvatar = request?.avatar || imageUploadAvatarRef.current || avatar;
+        const selectedAvatar =
+            request?.avatar || imageUploadAvatarRef.current || avatar;
         const avatarId = normalizeEntityId(selectedAvatar?.id);
         const requestEndpoint = currentEndpoint;
         if (!blob || !avatarId) {
@@ -825,32 +853,46 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
 
         try {
             const base64Body = await readFileAsBase64(blob);
-            const base64File = await mediaRepository.resizeImageToFitLimits(base64Body);
+            const base64File =
+                await mediaRepository.resizeImageToFitLimits(base64Body);
             const result = await withUploadTimeout(
                 mediaRepository.uploadAvatarImageLegacy({
                     avatarId,
-                    imageUrl: selectedAvatar.imageUrl || selectedAvatar.thumbnailImageUrl || '',
+                    imageUrl:
+                        selectedAvatar.imageUrl ||
+                        selectedAvatar.thumbnailImageUrl ||
+                        '',
                     base64File,
                     blob,
                     endpoint: requestEndpoint
                 })
             );
             const activeTarget = activeAvatarTargetRef.current;
-            if (activeTarget.avatarId !== avatarId || activeTarget.endpoint !== requestEndpoint) {
+            if (
+                activeTarget.avatarId !== avatarId ||
+                activeTarget.endpoint !== requestEndpoint
+            ) {
                 return;
             }
-            const currentAvatar = avatarProfileRepository.normalize(result.avatar, {
-                localTags: selectedAvatar.$tags,
-                timeSpent: selectedAvatar.$timeSpent,
-                memo: selectedAvatar.$memo,
-                cachedAvatar: selectedAvatar.$isCached
-            });
+            const currentAvatar = avatarProfileRepository.normalize(
+                result.avatar,
+                {
+                    localTags: selectedAvatar.$tags,
+                    timeSpent: selectedAvatar.$timeSpent,
+                    memo: selectedAvatar.$memo,
+                    cachedAvatar: selectedAvatar.$isCached
+                }
+            );
             setAvatar(currentAvatar);
-            setDetail(`Avatar image updated for ${selectedAvatar.name || avatarId}.`);
+            setDetail(
+                `Avatar image updated for ${selectedAvatar.name || avatarId}.`
+            );
             toast.success('Avatar image updated.');
         } catch (error) {
             const message =
-                error instanceof Error ? error.message : 'Failed to upload avatar image.';
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to upload avatar image.';
             setDetail(message);
             toast.error(message);
         } finally {
@@ -947,7 +989,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
     }
 
     async function setAvatarBlock(enabled) {
-        if (!avatar.id || isCurrentAvatar || actionStatusRef.current !== 'idle') {
+        if (
+            !avatar.id ||
+            isCurrentAvatar ||
+            actionStatusRef.current !== 'idle'
+        ) {
             return;
         }
 
@@ -985,7 +1031,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             setAvatarBlocked(enabled);
             toast.success(enabled ? 'Avatar blocked.' : 'Avatar unblocked.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update avatar moderation.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update avatar moderation.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -1015,7 +1065,9 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             );
             toast.success(nextMemo ? 'Memo saved.' : 'Memo cleared.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to save memo.');
+            toast.error(
+                error instanceof Error ? error.message : 'Failed to save memo.'
+            );
         }
     }
 
@@ -1027,7 +1079,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         try {
             await backend.app.OpenFolderAndSelectItem(cachePath, true);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to open avatar cache folder.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to open avatar cache folder.'
+            );
         }
     }
 
@@ -1035,7 +1091,9 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         if (actionStatusRef.current !== 'idle') {
             return;
         }
-        const configResponse = await vrchatAuthRepository.getConfig({ endpoint: currentEndpoint }).catch(() => null);
+        const configResponse = await vrchatAuthRepository
+            .getConfig({ endpoint: currentEndpoint })
+            .catch(() => null);
         const args = resolveAssetBundleArgs(
             avatar,
             String(configResponse?.json?.sdkUnityVersion || '')
@@ -1060,7 +1118,11 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             );
             toast.success('Avatar cache deleted.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete avatar cache.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete avatar cache.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -1084,16 +1146,24 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         }
         const validation = validateImageUploadFile(file);
         if (!validation.ok) {
-            toast.error(validation.reason === 'too_large' ? 'Selected file is too large.' : 'Selected file is not an image.');
+            toast.error(
+                validation.reason === 'too_large'
+                    ? 'Selected file is too large.'
+                    : 'Selected file is not an image.'
+            );
             return;
         }
         actionStatusRef.current = 'gallery-upload';
         setActionStatus('gallery-upload');
         try {
             const base64Body = await readFileAsBase64(file);
-            await mediaRepository.uploadAvatarGalleryImage(base64Body, targetAvatarId, {
-                endpoint: requestEndpoint
-            });
+            await mediaRepository.uploadAvatarGalleryImage(
+                base64Body,
+                targetAvatarId,
+                {
+                    endpoint: requestEndpoint
+                }
+            );
             const galleryRows = await avatarProfileRepository.getAvatarGallery({
                 avatarId: targetAvatarId,
                 endpoint: requestEndpoint
@@ -1105,12 +1175,18 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 setAvatarSideData((current) => ({
                     ...current,
                     galleryRows,
-                    galleryImages: galleryRows.map(avatarGalleryImageUrl).filter(Boolean)
+                    galleryImages: galleryRows
+                        .map(avatarGalleryImageUrl)
+                        .filter(Boolean)
                 }));
                 toast.success('Avatar gallery image uploaded.');
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to upload avatar gallery image.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to upload avatar gallery image.'
+            );
         } finally {
             if (actionStatusRef.current === 'gallery-upload') {
                 actionStatusRef.current = 'idle';
@@ -1161,7 +1237,9 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 onRefresh={() => void refreshAvatarProfile()}
                 onSelect={() => void selectAvatar()}
                 onSelectFallback={() => void selectFallbackAvatar()}
-                onReleaseStatus={(nextStatus) => void updateReleaseStatus(nextStatus)}
+                onReleaseStatus={(nextStatus) =>
+                    void updateReleaseStatus(nextStatus)
+                }
                 onAvatarBlock={(enabled) => void setAvatarBlock(enabled)}
                 onEditMemo={() => void editMemo()}
                 onSaveMemo={(nextMemo) => saveMemo(nextMemo)}
@@ -1171,11 +1249,15 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 onRename={() => void renameAvatar()}
                 onChangeDescription={() => void changeAvatarDescription()}
                 onChangeContentTags={() => void changeAvatarContentTags()}
-                onChangeStylesAndAuthorTags={() => void changeAvatarStylesAndAuthorTags()}
+                onChangeStylesAndAuthorTags={() =>
+                    void changeAvatarStylesAndAuthorTags()
+                }
                 onChangeImage={() => void beginAvatarImageUpload()}
                 onCreateImposter={() => void updateAvatarImposter('create')}
                 onDeleteImposter={() => void updateAvatarImposter('delete')}
-                onRegenerateImposter={() => void updateAvatarImposter('regenerate')}
+                onRegenerateImposter={() =>
+                    void updateAvatarImposter('regenerate')
+                }
                 onDelete={() => void deleteAvatar()}
             />
             <AvatarContentTagsDialog
@@ -1183,15 +1265,21 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 avatar={avatar}
                 currentUserId={currentUserId}
                 endpoint={currentEndpoint}
-                onOpenChange={(open) => setOwnerEditor(open ? 'content-tags' : null)}
-                onSavedCurrentAvatar={(nextAvatar) => applyCurrentAvatarUpdate(nextAvatar)}
+                onOpenChange={(open) =>
+                    setOwnerEditor(open ? 'content-tags' : null)
+                }
+                onSavedCurrentAvatar={(nextAvatar) =>
+                    applyCurrentAvatarUpdate(nextAvatar)
+                }
             />
             <AvatarStylesDialog
                 open={ownerEditor === 'styles'}
                 avatar={avatar}
                 endpoint={currentEndpoint}
                 onOpenChange={(open) => setOwnerEditor(open ? 'styles' : null)}
-                onSavedCurrentAvatar={(nextAvatar) => applyCurrentAvatarUpdate(nextAvatar)}
+                onSavedCurrentAvatar={(nextAvatar) =>
+                    applyCurrentAvatarUpdate(nextAvatar)
+                }
             />
             <Input
                 ref={imageUploadInputRef}
@@ -1222,5 +1310,4 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
             />
         </>
     );
-
 }

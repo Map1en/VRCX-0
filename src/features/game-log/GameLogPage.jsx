@@ -58,7 +58,6 @@ import { copyTextToClipboard, openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { getTablePageSizesPreference } from '@/services/preferencesService.js';
-import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -101,381 +100,49 @@ import {
     TableRow
 } from '@/ui/shadcn/table';
 import { timeToText } from '@/lib/dateTime.js';
+import {
+    clampGameLogSessionDateInputRange,
+    GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS,
+    isoToGameLogDateInputValue,
+    parseGameLogDateInput,
+    toGameLogDateInputValue,
+    toGameLogIsoRangeEnd,
+    toGameLogIsoRangeStart
+} from './gameLogDateRange.js';
+import {
+    GAME_LOG_DEFAULT_PAGE_SIZES,
+    GAME_LOG_STRETCH_COLUMN_ID,
+    readPersistedGameLogState,
+    resolveGameLogPageSize,
+    sanitizeGameLogColumnOrder,
+    sanitizeGameLogColumnSizing,
+    sanitizeGameLogColumnVisibility,
+    sanitizeGameLogPageSizes,
+    sanitizeGameLogSorting,
+    writePersistedGameLogState
+} from './gameLogState.js';
+import {
+    annotateGameLogSessionEvent as annotateSessionEvent,
+    buildGameLogFavoriteIdSet as buildFavoriteIdSet,
+    canDeleteGameLogRow,
+    countGameLogSessionEvent as countSessionEvent,
+    describeGameLogDetail,
+    GAME_LOG_DETAILLESS_TYPES,
+    GAME_LOG_TYPE_LABELS as TYPE_LABELS,
+    getGameLogCopyTarget,
+    getGameLogExternalTarget,
+    getGameLogLocationTarget,
+    getGameLogRowKey,
+    getGameLogSessionKey,
+    resolveGameLogSessionDuration as resolveSessionDuration,
+    resolveGameLogWorldId as resolveWorldId,
+    resolveGameLogWorldTarget as resolveWorldTarget,
+    shouldLinkGameLogPrimaryDetailToWorld as shouldLinkPrimaryDetailToWorld
+} from './gameLogRows.js';
 
-const DEFAULT_PAGE_SIZES = [10, 25, 50];
-const DEFAULT_SORTING = [{ id: 'created_at', desc: true }];
-const COLUMN_IDS = ['spacer', 'created_at', 'type', 'displayName', 'detail', 'action'];
-const STRETCH_COLUMN_ID = 'detail';
-const STORAGE_KEY = 'vrcx:table:gameLog';
 const SESSION_FILTER_TYPES = ['Location', 'OnPlayerJoined', 'OnPlayerLeft', 'VideoPlay'];
-const SESSION_DATE_RANGE_MAX_DAYS = 7;
-const GAME_LOG_UNACTIONABLE_TYPES = new Set([
-    'OnPlayerJoined',
-    'OnPlayerLeft',
-    'Location',
-    'PortalSpawn'
-]);
-const GAME_LOG_DETAILLESS_TYPES = new Set([
-    'OnPlayerJoined',
-    'OnPlayerLeft',
-    'Notification'
-]);
-const TYPE_LABELS = {
-    Location: 'Location',
-    OnPlayerJoined: 'Player Joined',
-    OnPlayerLeft: 'Player Left',
-    PortalSpawn: 'Portal Spawn',
-    VideoPlay: 'Video Play',
-    Event: 'Event',
-    External: 'External',
-    StringLoad: 'String Load',
-    ImageLoad: 'Image Load'
-};
-function safeJsonParse(value) {
-    if (!value) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
-
-function readPersistedState() {
-    if (typeof window === 'undefined') {
-        return {};
-    }
-
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
-}
-
-function writePersistedState(patch) {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
-    const current = readPersistedState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
-}
-
-function sanitizeSorting(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_SORTING;
-    }
-
-    const filtered = value.filter(
-        (entry) => entry && typeof entry.id === 'string' && COLUMN_IDS.includes(entry.id)
-    );
-    return filtered.length ? filtered : DEFAULT_SORTING;
-}
-
-function sanitizePageSizes(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_PAGE_SIZES;
-    }
-
-    const normalized = Array.from(
-        new Set(
-            value
-                .map((entry) => Number.parseInt(entry, 10))
-                .filter((entry) => Number.isFinite(entry) && entry > 0)
-        )
-    ).sort((left, right) => left - right);
-
-    return normalized.length ? normalized : DEFAULT_PAGE_SIZES;
-}
-
-function sanitizeColumnVisibility(value) {
-    const visibility = {};
-    if (!value || typeof value !== 'object') {
-        return visibility;
-    }
-
-    for (const columnId of COLUMN_IDS) {
-        if (typeof value[columnId] === 'boolean') {
-            visibility[columnId] = value[columnId];
-        }
-    }
-
-    return visibility;
-}
-
-function sanitizeColumnOrder(value) {
-    if (!Array.isArray(value)) {
-        return COLUMN_IDS;
-    }
-
-    const orderedColumns = value.filter((columnId) => COLUMN_IDS.includes(columnId));
-    const missingColumns = COLUMN_IDS.filter((columnId) => !orderedColumns.includes(columnId));
-    const nextColumns = [...orderedColumns, ...missingColumns];
-    return ['spacer', ...nextColumns.filter((columnId) => columnId !== 'spacer')];
-}
-
-function sanitizeColumnSizing(value) {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
-
-    const sizing = {};
-    for (const columnId of COLUMN_IDS) {
-        const width = Number.parseInt(value[columnId], 10);
-        if (Number.isFinite(width) && width > 0) {
-            sizing[columnId] = width;
-        }
-    }
-    return sizing;
-}
-
-function resolvePageSize(candidate, allowed, fallback = DEFAULT_PAGE_SIZES[1]) {
-    const parsed = Number.parseInt(candidate, 10);
-    if (Number.isFinite(parsed) && parsed > 0) {
-        if (allowed.includes(parsed)) {
-            return parsed;
-        }
-
-        if (allowed.includes(fallback)) {
-            return fallback;
-        }
-
-        return allowed[0] ?? DEFAULT_PAGE_SIZES[0];
-    }
-
-    if (allowed.includes(fallback)) {
-        return fallback;
-    }
-
-    return allowed[0] ?? DEFAULT_PAGE_SIZES[0];
-}
-
 function normalizeId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function parseDateInput(value) {
-    const normalizedValue = normalizeId(value);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
-        return undefined;
-    }
-    const [year, month, day] = normalizedValue.split('-').map((part) => Number.parseInt(part, 10));
-    const date = new Date(year, month - 1, day);
-    return Number.isNaN(date.valueOf()) ? undefined : date;
-}
-
-function toDateInputValue(date) {
-    if (!(date instanceof Date) || Number.isNaN(date.valueOf())) {
-        return '';
-    }
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function isoToDateInputValue(value) {
-    const normalized = normalizeId(value);
-    if (!normalized) {
-        return '';
-    }
-    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
-        return normalized;
-    }
-    const date = new Date(normalized);
-    return toDateInputValue(date);
-}
-
-function toIsoRangeStart(value) {
-    const date = parseDateInput(value);
-    if (!date) {
-        return '';
-    }
-    date.setHours(0, 0, 0, 0);
-    return date.toISOString();
-}
-
-function toIsoRangeEnd(value) {
-    const date = parseDateInput(value);
-    if (!date) {
-        return '';
-    }
-    date.setHours(23, 59, 59, 999);
-    return date.toISOString();
-}
-
-function addCalendarDays(date, days) {
-    const nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    nextDate.setDate(nextDate.getDate() + days);
-    return nextDate;
-}
-
-function clampSessionDateInputRange(from, to) {
-    const startInput = normalizeId(from);
-    const endInput = normalizeId(to);
-    const startDate = parseDateInput(startInput);
-    const endDate = parseDateInput(endInput);
-    if (!startDate || !endDate) {
-        return [startInput, endInput];
-    }
-
-    const lowerDate = startDate <= endDate ? startDate : endDate;
-    const upperDate = startDate <= endDate ? endDate : startDate;
-    const maxUpperDate = addCalendarDays(lowerDate, SESSION_DATE_RANGE_MAX_DAYS);
-    if (upperDate <= maxUpperDate) {
-        return [toDateInputValue(lowerDate), toDateInputValue(upperDate)];
-    }
-
-    return [toDateInputValue(lowerDate), toDateInputValue(maxUpperDate)];
-}
-
-function buildFavoriteIdSet(localFriendFavorites) {
-    const ids = new Set();
-    for (const groupIds of Object.values(localFriendFavorites ?? {})) {
-        if (!Array.isArray(groupIds)) {
-            continue;
-        }
-        for (const id of groupIds) {
-            const normalized = normalizeId(id);
-            if (normalized) {
-                ids.add(normalized);
-            }
-        }
-    }
-    return ids;
-}
-
-function describeGameLogDetail(row) {
-    switch (row?.type) {
-        case 'Location':
-            return {
-                primary: row?.worldName || row?.location || '',
-                secondary: ''
-            };
-        case 'PortalSpawn':
-            return {
-                primary: row?.worldName || row?.instanceId || '',
-                secondary: ''
-            };
-        case 'OnPlayerJoined':
-        case 'OnPlayerLeft':
-        case 'Notification':
-            return {
-                primary: '',
-                secondary: ''
-            };
-        case 'VideoPlay': {
-            const videoLabel = row?.videoName || row?.videoUrl || '';
-            const leading = row?.videoId ? `${row.videoId}: ${videoLabel}` : videoLabel;
-            return {
-                primary: leading,
-                secondary: ''
-            };
-        }
-        case 'Event':
-            return {
-                primary: row?.data || '',
-                secondary: ''
-            };
-        case 'External':
-            return {
-                primary: row?.message || '',
-                secondary: ''
-            };
-        case 'StringLoad':
-        case 'ImageLoad':
-            return {
-                primary: row?.resourceUrl || '',
-                secondary: ''
-            };
-        default:
-            return {
-                primary: row?.message || row?.data || row?.location || '',
-                secondary: ''
-            };
-    }
-}
-
-function resolveWorldTarget(row) {
-    if (row?.type === 'PortalSpawn') {
-        const portalLocation = normalizeId(row?.instanceId) || normalizeId(row?.location);
-        if (parseLocation(portalLocation).worldId) {
-            return portalLocation;
-        }
-    }
-
-    const directLocation = normalizeId(row?.location);
-    if (parseLocation(directLocation).worldId) {
-        return directLocation;
-    }
-
-    const directWorldId = normalizeId(row?.worldId);
-    if (directWorldId) {
-        return directWorldId;
-    }
-
-    const directInstance = normalizeId(row?.instanceId);
-    return parseLocation(directInstance).worldId ? directInstance : '';
-}
-
-function resolveWorldId(row) {
-    const target = resolveWorldTarget(row);
-    return parseLocation(target).worldId || normalizeId(row?.worldId);
-}
-
-function shouldLinkPrimaryDetailToWorld(row) {
-    return (
-        row?.type === 'Location' ||
-        row?.type === 'PortalSpawn'
-    );
-}
-
-function getGameLogLocationTarget(row) {
-    if (row?.type === 'PortalSpawn') {
-        return normalizeId(row?.instanceId) || normalizeId(row?.location);
-    }
-    return normalizeId(row?.location) || normalizeId(row?.instanceId);
-}
-
-function getGameLogExternalTarget(row) {
-    if (row?.type === 'VideoPlay') {
-        if (row?.videoId === 'LSMedia' || row?.videoId === 'PopcornPalace') {
-            return '';
-        }
-        return row?.videoUrl || '';
-    }
-
-    if (row?.type === 'StringLoad' || row?.type === 'ImageLoad') {
-        return row?.resourceUrl || '';
-    }
-
-    return '';
-}
-
-function getGameLogCopyTarget(row) {
-    if (GAME_LOG_DETAILLESS_TYPES.has(row?.type)) {
-        return '';
-    }
-
-    if (row?.type === 'Event') {
-        return row?.data || '';
-    }
-
-    if (row?.type === 'VideoPlay') {
-        return row?.videoUrl || row?.videoName || row?.data || '';
-    }
-
-    if (row?.type === 'StringLoad' || row?.type === 'ImageLoad') {
-        return row?.resourceUrl || '';
-    }
-
-    return row?.data || row?.message || '';
 }
 
 async function openGameLogUser(row) {
@@ -546,27 +213,6 @@ async function openGameLogUser(row) {
     }
 }
 
-function canDeleteGameLogRow(row) {
-    return Boolean(row?.type && !GAME_LOG_UNACTIONABLE_TYPES.has(row.type));
-}
-
-function getGameLogRowKey(row) {
-    return [
-        row?.type,
-        row?.created_at,
-        row?.videoUrl,
-        row?.data,
-        row?.message,
-        row?.resourceUrl,
-        row?.location,
-        row?.rowId,
-        row?.id
-    ]
-        .map((value) => normalizeId(value))
-        .filter(Boolean)
-        .join(':');
-}
-
 function SortButton({ column, label }) {
     const direction = column.getIsSorted();
 
@@ -590,7 +236,7 @@ function SortButton({ column, label }) {
 }
 
 function getGameLogColumnStyle(column) {
-    if (column?.id !== STRETCH_COLUMN_ID) {
+    if (column?.id !== GAME_LOG_STRETCH_COLUMN_ID) {
         return undefined;
     }
 
@@ -644,44 +290,6 @@ function GameLogLocationDetail({ row, detailValue, worldTarget, onPreviousInstan
             ) : null}
         </div>
     );
-}
-
-function annotateSessionMember(member, favoriteIdSet, friendIdSet) {
-    const userId = normalizeId(member?.userId);
-    return {
-        ...member,
-        isFavorite: userId ? favoriteIdSet.has(userId) : false,
-        isFriend: userId ? friendIdSet.has(userId) : false
-    };
-}
-
-function annotateSessionEvent(event, favoriteIdSet, friendIdSet) {
-    const userId = normalizeId(event?.userId);
-    return {
-        ...event,
-        isFavorite: userId ? favoriteIdSet.has(userId) : Boolean(event?.isFavorite),
-        isFriend: userId ? friendIdSet.has(userId) : Boolean(event?.isFriend),
-        members: Array.isArray(event?.members)
-            ? event.members.map((member) => annotateSessionMember(member, favoriteIdSet, friendIdSet))
-            : []
-    };
-}
-
-function countSessionEvent(events, type) {
-    return events.reduce((count, event) => {
-        if (type === 'OnPlayerJoined' && event.type === 'JoinGroup') {
-            return count + (event.members?.length || event.count || 0);
-        }
-        if (type === 'OnPlayerLeft' && event.type === 'LeftGroup') {
-            return count + (event.members?.length || event.count || 0);
-        }
-        return count + (event.type === type ? 1 : 0);
-    }, 0);
-}
-
-function resolveSessionDuration(session) {
-    const duration = Number(session?.duration ?? 0);
-    return Number.isFinite(duration) && duration > 0 ? duration : 0;
 }
 
 function TypeFilterDropdown({ types, selectedTypes, onSelectedTypesChange }) {
@@ -1075,17 +683,6 @@ function GameLogSessionSegment({
     );
 }
 
-function getGameLogSessionKey(session) {
-    return [
-        session?.id,
-        session?.created_at,
-        session?.location
-    ]
-        .map((value) => normalizeId(value))
-        .filter(Boolean)
-        .join(':');
-}
-
 function GameLogSessionsView({
     sessions,
     isGameRunning,
@@ -1245,7 +842,7 @@ export function GameLogPage({ embedded = false } = {}) {
     const gameLogDisabled = usePreferencesStore((state) => state.gameLogDisabled);
     const tablePageSizesPreference = usePreferencesStore((state) => state.tablePageSizes);
 
-    const persistedState = useMemo(() => readPersistedState(), []);
+    const persistedState = useMemo(() => readPersistedGameLogState(), []);
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);
@@ -1275,27 +872,27 @@ export function GameLogPage({ embedded = false } = {}) {
     const [sessionDateDraftFrom, setSessionDateDraftFrom] = useState('');
     const [sessionDateDraftTo, setSessionDateDraftTo] = useState('');
     const [sessionDatePopoverOpen, setSessionDatePopoverOpen] = useState(false);
-    const [pageSizes, setPageSizes] = useState(DEFAULT_PAGE_SIZES);
-    const [sessionLimit, setSessionLimit] = useState(DEFAULT_PAGE_SIZES[1]);
+    const [pageSizes, setPageSizes] = useState(GAME_LOG_DEFAULT_PAGE_SIZES);
+    const [sessionLimit, setSessionLimit] = useState(GAME_LOG_DEFAULT_PAGE_SIZES[1]);
     const [savedViewMode, setSavedViewMode] = useState('sessions');
-    const [sorting, setSorting] = useState(() => sanitizeSorting(persistedState.sorting));
+    const [sorting, setSorting] = useState(() => sanitizeGameLogSorting(persistedState.sorting));
     const [columnVisibility, setColumnVisibility] = useState(() =>
-        sanitizeColumnVisibility(persistedState.columnVisibility)
+        sanitizeGameLogColumnVisibility(persistedState.columnVisibility)
     );
-    const [columnOrder, setColumnOrder] = useState(() => sanitizeColumnOrder(persistedState.columnOrder));
-    const [columnSizing, setColumnSizing] = useState(() => sanitizeColumnSizing(persistedState.columnSizing));
+    const [columnOrder, setColumnOrder] = useState(() => sanitizeGameLogColumnOrder(persistedState.columnOrder));
+    const [columnSizing, setColumnSizing] = useState(() => sanitizeGameLogColumnSizing(persistedState.columnSizing));
     const [pagination, setPagination] = useState(() => ({
         pageIndex: 0,
-        pageSize: resolvePageSize(
+        pageSize: resolveGameLogPageSize(
             persistedState.pageSize,
-            DEFAULT_PAGE_SIZES,
-            DEFAULT_PAGE_SIZES[1]
+            GAME_LOG_DEFAULT_PAGE_SIZES,
+            GAME_LOG_DEFAULT_PAGE_SIZES[1]
         )
     }));
     const deferredSearchQuery = useDeferredValue(searchQuery);
     const sessionDateDraftRange = useMemo(() => {
-        const from = parseDateInput(sessionDateDraftFrom);
-        const to = parseDateInput(sessionDateDraftTo);
+        const from = parseGameLogDateInput(sessionDateDraftFrom);
+        const to = parseGameLogDateInput(sessionDateDraftTo);
         return from || to ? { from, to } : undefined;
     }, [sessionDateDraftFrom, sessionDateDraftTo]);
     const todayDate = useMemo(() => new Date(), []);
@@ -1350,8 +947,8 @@ export function GameLogPage({ embedded = false } = {}) {
         let active = true;
 
         Promise.all([
-            getTablePageSizesPreference(DEFAULT_PAGE_SIZES),
-            configRepository.getInt('tablePageSize', DEFAULT_PAGE_SIZES[1]),
+            getTablePageSizesPreference(GAME_LOG_DEFAULT_PAGE_SIZES),
+            configRepository.getInt('tablePageSize', GAME_LOG_DEFAULT_PAGE_SIZES[1]),
             configRepository.getString('gameLogTableFilters', '[]'),
             configRepository.getBool('VRCX_gameLogTableVIPFilter', false),
             configRepository.getString('gameLogSessionsFilters', '[]'),
@@ -1376,17 +973,17 @@ export function GameLogPage({ embedded = false } = {}) {
                         return;
                     }
 
-                    const resolvedPageSizes = sanitizePageSizes(nextPageSizes);
+                    const resolvedPageSizes = sanitizeGameLogPageSizes(nextPageSizes);
                     const parsedPersistedPageSize = Number.parseInt(persistedState.pageSize, 10);
                     const hasPersistedPageSize =
                         Number.isFinite(parsedPersistedPageSize) && parsedPersistedPageSize > 0;
-                    const resolvedConfiguredPageSize = resolvePageSize(
+                    const resolvedConfiguredPageSize = resolveGameLogPageSize(
                         nextPageSize,
                         resolvedPageSizes,
-                        DEFAULT_PAGE_SIZES[1]
+                        GAME_LOG_DEFAULT_PAGE_SIZES[1]
                     );
                     const resolvedActivePageSize = hasPersistedPageSize
-                        ? resolvePageSize(
+                        ? resolveGameLogPageSize(
                             parsedPersistedPageSize,
                             resolvedPageSizes,
                             resolvedConfiguredPageSize
@@ -1394,7 +991,7 @@ export function GameLogPage({ embedded = false } = {}) {
                         : resolvedConfiguredPageSize;
 
                     setPageSizes((current) =>
-                        sanitizePageSizes([
+                        sanitizeGameLogPageSizes([
                             ...current,
                             ...resolvedPageSizes,
                             resolvedConfiguredPageSize,
@@ -1423,8 +1020,8 @@ export function GameLogPage({ embedded = false } = {}) {
                     setSessionFavoritesOnly(Boolean(nextSessionFavoritesOnly));
                     setSessionDateFrom(String(nextSessionDateFrom || ''));
                     setSessionDateTo(String(nextSessionDateTo || ''));
-                    setSessionDateDraftFrom(isoToDateInputValue(nextSessionDateFrom));
-                    setSessionDateDraftTo(isoToDateInputValue(nextSessionDateTo));
+                    setSessionDateDraftFrom(isoToGameLogDateInputValue(nextSessionDateFrom));
+                    setSessionDateDraftTo(isoToGameLogDateInputValue(nextSessionDateTo));
                     setSavedViewMode(
                         nextSavedViewMode === 'sessions' || nextSavedViewMode === 'table'
                             ? nextSavedViewMode
@@ -1449,14 +1046,14 @@ export function GameLogPage({ embedded = false } = {}) {
         if (!preferencesHydrated) {
             return;
         }
-        const resolvedPageSizes = sanitizePageSizes(tablePageSizesPreference);
+        const resolvedPageSizes = sanitizeGameLogPageSizes(tablePageSizesPreference);
         setPageSizes(resolvedPageSizes);
         setPagination((current) => ({
             ...current,
             pageIndex: 0,
-            pageSize: resolvePageSize(current.pageSize, resolvedPageSizes)
+            pageSize: resolveGameLogPageSize(current.pageSize, resolvedPageSizes)
         }));
-        setSessionLimit((current) => resolvePageSize(current, resolvedPageSizes));
+        setSessionLimit((current) => resolveGameLogPageSize(current, resolvedPageSizes));
     }, [preferencesHydrated, tablePageSizesPreference]);
 
     useEffect(() => {
@@ -1516,8 +1113,8 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        setSessionDateDraftFrom(isoToDateInputValue(sessionDateFrom));
-        setSessionDateDraftTo(isoToDateInputValue(sessionDateTo));
+        setSessionDateDraftFrom(isoToGameLogDateInputValue(sessionDateFrom));
+        setSessionDateDraftTo(isoToGameLogDateInputValue(sessionDateTo));
     }, [sessionDateFrom, sessionDatePopoverOpen, sessionDateTo]);
 
     useEffect(() => {
@@ -1526,8 +1123,8 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        writePersistedState({
-            sorting: sanitizeSorting(sorting)
+        writePersistedGameLogState({
+            sorting: sanitizeGameLogSorting(sorting)
         });
     }, [sorting]);
 
@@ -1537,7 +1134,7 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        writePersistedState({
+        writePersistedGameLogState({
             pageSize: pagination.pageSize
         });
     }, [pagination.pageSize]);
@@ -1548,10 +1145,10 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        writePersistedState({
-            columnVisibility: sanitizeColumnVisibility(columnVisibility),
-            columnOrder: sanitizeColumnOrder(columnOrder),
-            columnSizing: sanitizeColumnSizing(columnSizing)
+        writePersistedGameLogState({
+            columnVisibility: sanitizeGameLogColumnVisibility(columnVisibility),
+            columnOrder: sanitizeGameLogColumnOrder(columnOrder),
+            columnSizing: sanitizeGameLogColumnSizing(columnSizing)
         });
     }, [columnOrder, columnSizing, columnVisibility]);
 
@@ -2091,20 +1688,20 @@ export function GameLogPage({ embedded = false } = {}) {
     }
 
     function syncSessionDateDraft() {
-        setSessionDateDraftFrom(isoToDateInputValue(sessionDateFrom));
-        setSessionDateDraftTo(isoToDateInputValue(sessionDateTo));
+        setSessionDateDraftFrom(isoToGameLogDateInputValue(sessionDateFrom));
+        setSessionDateDraftTo(isoToGameLogDateInputValue(sessionDateTo));
     }
 
     function updateSessionDateDraftRange(range) {
-        const nextFrom = toDateInputValue(range?.from);
-        const nextTo = toDateInputValue(range?.to);
+        const nextFrom = toGameLogDateInputValue(range?.from);
+        const nextTo = toGameLogDateInputValue(range?.to);
         if (!nextFrom || !nextTo) {
             setSessionDateDraftFrom(nextFrom);
             setSessionDateDraftTo(nextTo);
             return;
         }
 
-        const [clampedFrom, clampedTo] = clampSessionDateInputRange(nextFrom, nextTo);
+        const [clampedFrom, clampedTo] = clampGameLogSessionDateInputRange(nextFrom, nextTo);
         setSessionDateDraftFrom(clampedFrom);
         setSessionDateDraftTo(clampedTo);
     }
@@ -2117,14 +1714,14 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        const [fromInput, toInput] = clampSessionDateInputRange(
+        const [fromInput, toInput] = clampGameLogSessionDateInputRange(
             sessionDateDraftFrom || sessionDateDraftTo,
             sessionDateDraftTo || sessionDateDraftFrom
         );
         setSessionDateDraftFrom(fromInput);
         setSessionDateDraftTo(toInput);
-        setSessionDateFrom(toIsoRangeStart(fromInput));
-        setSessionDateTo(toIsoRangeEnd(toInput));
+        setSessionDateFrom(toGameLogIsoRangeStart(fromInput));
+        setSessionDateTo(toGameLogIsoRangeEnd(toInput));
         setSessionDatePopoverOpen(false);
     }
 
@@ -2216,7 +1813,7 @@ export function GameLogPage({ embedded = false } = {}) {
                     <Calendar
                         mode="range"
                         numberOfMonths={2}
-                        max={SESSION_DATE_RANGE_MAX_DAYS}
+                        max={GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS}
                         selected={sessionDateDraftRange}
                         disabled={{ after: todayDate }}
                         onSelect={updateSessionDateDraftRange}
@@ -2224,7 +1821,7 @@ export function GameLogPage({ embedded = false } = {}) {
                     <div className="flex items-center justify-between gap-4 px-3 pb-3">
                         <div className="min-w-0 text-xs text-muted-foreground">
                             {[sessionDateDraftFrom || '...', sessionDateDraftTo || '...'].join(' - ')}
-                            <span className="ml-2">Max {SESSION_DATE_RANGE_MAX_DAYS} days</span>
+                            <span className="ml-2">Max {GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS} days</span>
                         </div>
                         <div className="flex justify-end gap-2">
                             <Button
@@ -2301,7 +1898,7 @@ export function GameLogPage({ embedded = false } = {}) {
                     <Select
                         value={String(pagination.pageSize)}
                         onValueChange={(value) => {
-                            const nextPageSize = resolvePageSize(value, pageSizes, pagination.pageSize);
+                            const nextPageSize = resolveGameLogPageSize(value, pageSizes, pagination.pageSize);
                             setPagination({
                                 pageIndex: 0,
                                 pageSize: nextPageSize

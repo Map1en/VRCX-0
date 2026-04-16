@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    AppleIcon,
     ArrowDownIcon,
     ArrowUpDownIcon,
     ArrowUpIcon,
     ExternalLinkIcon,
     HomeIcon,
     IdCardIcon,
-    MonitorIcon,
-    SmartphoneIcon,
     UserIcon,
     UsersIcon
 } from 'lucide-react';
@@ -49,10 +46,34 @@ import {
 import { database } from '@/services/database/index.js';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
-import { languageMappings } from '@/shared/constants/language.js';
 import { getFaviconUrl } from '@/shared/utils/urlUtils.js';
 import { convertFileUrlToImageUrl, getNameColour, openExternalLink, userImage } from '@/lib/entityMedia.js';
-import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
+import {
+    fileAnalysisSizeForPlatform,
+    formatCount,
+    getHomeWorldId,
+    getWorldImage,
+    languageClassName,
+    resolvePlatformBadge,
+    resolvePlatformMeta,
+    resolvePlatformMode,
+    resolveStatusMeta
+} from './playerListDisplay.js';
+import {
+    buildFavoriteIdSet,
+    buildPlayerSourceRows,
+    normalizeString,
+    parseTimeMs
+} from './playerListRows.js';
+import {
+    PLAYER_LIST_COLUMN_IDS as COLUMN_IDS,
+    readPersistedPlayerListState,
+    sanitizePlayerListColumnOrder,
+    sanitizePlayerListColumnSizing,
+    sanitizePlayerListColumnVisibility,
+    sanitizePlayerListSorting,
+    writePersistedPlayerListState
+} from './playerListState.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -71,321 +92,6 @@ import {
     TooltipContent,
     TooltipTrigger
 } from '@/ui/shadcn/tooltip';
-
-const STORAGE_KEY = 'vrcx:table:playerList';
-const COLUMN_IDS = [
-    'avatar',
-    'timer',
-    'displayName',
-    'rank',
-    'status',
-    'icon',
-    'platform',
-    'language',
-    'bioLink',
-    'note'
-];
-const DEFAULT_SORTING = [{ id: 'timer', desc: true }];
-
-function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function parseTimeMs(value) {
-    if (!value) {
-        return 0;
-    }
-
-    if (typeof value === 'number') {
-        return Number.isFinite(value) ? value : 0;
-    }
-    const text = normalizeString(value);
-    const numeric = Number(text);
-    if (Number.isFinite(numeric) && numeric > 0) {
-        return numeric;
-    }
-    const timestamp = Date.parse(text);
-    return Number.isFinite(timestamp) ? timestamp : 0;
-}
-
-function isLiveLocation(location) {
-    const normalized = normalizeString(location);
-    if (!normalized) {
-        return false;
-    }
-    const parsed = parseLocation(normalized);
-    return Boolean(parsed.worldId && !parsed.isOffline && !parsed.isPrivate && !parsed.isTraveling);
-}
-
-function safeJsonParse(value) {
-    if (!value) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
-
-function readPersistedState() {
-    if (typeof window === 'undefined') {
-        return {};
-    }
-
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
-}
-
-function writePersistedState(patch) {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
-    const current = readPersistedState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
-}
-
-function sanitizeSorting(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_SORTING;
-    }
-
-    const filtered = value.filter(
-        (entry) =>
-            entry &&
-            typeof entry.id === 'string' &&
-            COLUMN_IDS.includes(entry.id)
-    );
-
-    return filtered.length ? filtered : DEFAULT_SORTING;
-}
-
-function sanitizeColumnVisibility(value) {
-    const visibility = {};
-    if (value && typeof value === 'object') {
-        for (const columnId of COLUMN_IDS) {
-            if (typeof value[columnId] === 'boolean') {
-                visibility[columnId] = value[columnId];
-            }
-        }
-    }
-
-    return visibility;
-}
-
-function sanitizeColumnOrder(value) {
-    if (!Array.isArray(value)) {
-        return [...COLUMN_IDS];
-    }
-
-    const ordered = value.filter((columnId) => COLUMN_IDS.includes(columnId));
-    const missing = COLUMN_IDS.filter((columnId) => !ordered.includes(columnId));
-    return [...ordered, ...missing];
-}
-
-function sanitizeColumnSizing(value) {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
-
-    const sizing = {};
-    for (const columnId of COLUMN_IDS) {
-        const width = Number.parseInt(value[columnId], 10);
-        if (Number.isFinite(width) && width > 0) {
-            sizing[columnId] = width;
-        }
-    }
-    return sizing;
-}
-
-function buildFavoriteIdSet(remoteFavoriteIds, localFriendFavorites) {
-    const set = new Set();
-
-    for (const id of remoteFavoriteIds ?? []) {
-        const normalized = normalizeString(id);
-        if (normalized) {
-            set.add(normalized);
-        }
-    }
-
-    for (const values of Object.values(localFriendFavorites ?? {})) {
-        if (!Array.isArray(values)) {
-            continue;
-        }
-        for (const id of values) {
-            const normalized = normalizeString(id);
-            if (normalized) {
-                set.add(normalized);
-            }
-        }
-    }
-
-    return set;
-}
-
-function resolvePlatformMeta(platform) {
-    const normalized = normalizeString(platform).toLowerCase();
-
-    if (normalized === 'standalonewindows' || normalized === 'pc' || normalized === 'windows') {
-        return {
-            label: 'PC',
-            icon: MonitorIcon,
-            className: 'text-muted-foreground'
-        };
-    }
-
-    if (normalized === 'android' || normalized === 'quest') {
-        return {
-            label: 'Android',
-            icon: SmartphoneIcon,
-            className: 'text-muted-foreground'
-        };
-    }
-
-    if (normalized === 'ios') {
-        return {
-            label: 'iOS',
-            icon: AppleIcon,
-            className: 'text-muted-foreground'
-        };
-    }
-
-    return {
-        label: normalized || '',
-        icon: null,
-        className: 'text-muted-foreground'
-    };
-}
-
-function resolveStatusMeta(row) {
-    const indicatorClassName = userStatusIndicatorClassName(row, { showOffline: true, className: 'mr-1' });
-
-    if (row.isCurrentUser) {
-        return {
-            badgeVariant: 'default',
-            indicatorClassName,
-            label: row.statusDescription || ''
-        };
-    }
-
-    if (row.isFavorite) {
-        return {
-            badgeVariant: 'default',
-            indicatorClassName,
-            label: row.statusDescription || ''
-        };
-    }
-
-    if (row.isFriend) {
-        return {
-            badgeVariant: 'secondary',
-            indicatorClassName,
-            label: row.statusDescription || ''
-        };
-    }
-
-    return {
-        badgeVariant: 'outline',
-        indicatorClassName,
-        label: row.statusDescription || ''
-    };
-}
-
-function resolvePlatformMode(row) {
-    if (row?.inVRMode === true) {
-        return 'VR';
-    }
-    if (row?.inVRMode === false) {
-        return row?.platformLabel === 'Android' || row?.platformLabel === 'iOS' ? 'M' : 'D';
-    }
-    return '';
-}
-
-function getLanguageFlagLabel(languageKey) {
-    const key = normalizeString(languageKey).toLowerCase();
-    return languageMappings[key] || key || '';
-}
-
-function languageClassName(languageKey) {
-    return getLanguageFlagLabel(languageKey) || 'unknown';
-}
-
-function getHomeWorldId(homeLocation) {
-    if (!homeLocation) {
-        return '';
-    }
-
-    if (typeof homeLocation === 'string') {
-        return parseLocation(homeLocation).worldId || homeLocation;
-    }
-
-    return (
-        normalizeString(homeLocation.worldId) ||
-        normalizeString(homeLocation.id) ||
-        normalizeString(homeLocation.location)
-    );
-}
-
-function formatCount(value) {
-    const number = Number(value);
-    return Number.isFinite(number) ? number.toLocaleString() : '-';
-}
-
-function getWorldImage(world) {
-    const imageUrl = world?.thumbnailImageUrl || world?.imageUrl || '';
-    return imageUrl ? convertFileUrlToImageUrl(imageUrl, 256) : '';
-}
-
-function resolvePlatformBadge(platform) {
-    const normalized = normalizeString(platform).toLowerCase();
-    if (normalized === 'pc' || normalized === 'standalonewindows' || normalized === 'windows') {
-        return {
-            key: 'PC',
-            label: 'PC',
-            icon: MonitorIcon
-        };
-    }
-    if (normalized === 'quest' || normalized === 'android') {
-        return {
-            key: 'Quest',
-            label: 'Android',
-            icon: SmartphoneIcon
-        };
-    }
-    if (normalized === 'ios') {
-        return {
-            key: 'iOS',
-            label: 'iOS',
-            icon: AppleIcon
-        };
-    }
-    return {
-        key: platform,
-        label: platform,
-        icon: null
-    };
-}
-
-function fileAnalysisSizeForPlatform(fileAnalysis, platformKey) {
-    if (platformKey === 'PC') {
-        return fileAnalysis?.standalonewindows?._fileSize || '';
-    }
-    if (platformKey === 'Quest' || platformKey === 'Android') {
-        return fileAnalysis?.android?._fileSize || '';
-    }
-    if (platformKey === 'iOS') {
-        return fileAnalysis?.ios?._fileSize || '';
-    }
-    return '';
-}
 
 function CurrentWorldHeader({
     cacheInfo = defaultWorldCacheInfo(),
@@ -632,7 +338,7 @@ export function PlayerListPage({ embedded = false } = {}) {
     const gameLogDisabled = usePreferencesStore((state) => state.gameLogDisabled);
     const randomUserColours = usePreferencesStore((state) => state.randomUserColours);
 
-    const persistedState = useMemo(() => readPersistedState(), []);
+    const persistedState = useMemo(() => readPersistedPlayerListState(), []);
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);
 
@@ -654,15 +360,15 @@ export function PlayerListPage({ embedded = false } = {}) {
     const [currentWorldFileAnalysis, setCurrentWorldFileAnalysis] = useState({});
     const [currentWorldCacheInfo, setCurrentWorldCacheInfo] = useState(() => defaultWorldCacheInfo());
     const [clockNow, setClockNow] = useState(() => Date.now());
-    const [sorting, setSorting] = useState(() => sanitizeSorting(persistedState.sorting));
+    const [sorting, setSorting] = useState(() => sanitizePlayerListSorting(persistedState.sorting));
     const [columnVisibility, setColumnVisibility] = useState(() =>
-        sanitizeColumnVisibility(persistedState.columnVisibility)
+        sanitizePlayerListColumnVisibility(persistedState.columnVisibility)
     );
     const [columnOrder, setColumnOrder] = useState(() =>
-        sanitizeColumnOrder(persistedState.columnOrder)
+        sanitizePlayerListColumnOrder(persistedState.columnOrder)
     );
     const [columnSizing, setColumnSizing] = useState(() =>
-        sanitizeColumnSizing(persistedState.columnSizing)
+        sanitizePlayerListColumnSizing(persistedState.columnSizing)
     );
 
     useEffect(() => {
@@ -681,8 +387,8 @@ export function PlayerListPage({ embedded = false } = {}) {
             return;
         }
 
-        writePersistedState({
-            sorting: sanitizeSorting(sorting)
+        writePersistedPlayerListState({
+            sorting: sanitizePlayerListSorting(sorting)
         });
     }, [sorting]);
 
@@ -692,10 +398,10 @@ export function PlayerListPage({ embedded = false } = {}) {
             return;
         }
 
-        writePersistedState({
-            columnVisibility: sanitizeColumnVisibility(columnVisibility),
-            columnOrder: sanitizeColumnOrder(columnOrder),
-            columnSizing: sanitizeColumnSizing(columnSizing)
+        writePersistedPlayerListState({
+            columnVisibility: sanitizePlayerListColumnVisibility(columnVisibility),
+            columnOrder: sanitizePlayerListColumnOrder(columnOrder),
+            columnSizing: sanitizePlayerListColumnSizing(columnSizing)
         });
     }, [columnOrder, columnSizing, columnVisibility]);
 
@@ -813,51 +519,15 @@ export function PlayerListPage({ embedded = false } = {}) {
     );
 
     const playerSourceRows = useMemo(() => {
-        const rows = [];
-        const knownKeys = new Set();
-
-        const currentUserKey = normalizeString(currentUserId);
-        for (const row of Array.isArray(playerRows) ? playerRows : []) {
-            const rowUserId = normalizeString(row.userId);
-            if (currentUserKey && rowUserId === currentUserKey) {
-                continue;
-            }
-
-            const rowKey = rowUserId || normalizeString(row.id || row.rowId);
-            if (rowKey && knownKeys.has(rowKey)) {
-                continue;
-            }
-            rows.push(row);
-            if (rowKey) {
-                knownKeys.add(rowKey);
-            }
-        }
-
-        if (
-            currentUserKey &&
-            currentUserSnapshot &&
-            isGameRunning &&
-            isLiveLocation(context.location || currentUserLocation) &&
-            !knownKeys.has(currentUserKey)
-        ) {
-            const joinedAtMs = parseTimeMs(currentLocationStartedAt || context.createdAt);
-            rows.unshift({
-                id: currentUserKey,
-                userId: currentUserKey,
-                displayName:
-                    currentUserSnapshot.displayName ||
-                    currentUserSnapshot.username ||
-                    currentUserKey,
-                joinedAt: joinedAtMs ? new Date(joinedAtMs).toISOString() : '',
-                joinedAtMs,
-                lastDurationMs: 0,
-                ref: currentUserSnapshot,
-                source: 'runtime'
-            });
-            knownKeys.add(currentUserKey);
-        }
-
-        return rows;
+        return buildPlayerSourceRows({
+            playerRows,
+            currentUserId,
+            currentUserSnapshot,
+            isGameRunning,
+            context,
+            currentUserLocation,
+            currentLocationStartedAt
+        });
     }, [
         context.createdAt,
         context.location,
