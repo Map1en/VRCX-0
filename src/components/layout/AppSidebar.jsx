@@ -91,7 +91,7 @@ export function AppSidebar({ children }) {
                 side="left"
                 variant="sidebar"
                 collapsible="icon"
-                style={{ top: '2rem', height: 'calc(100svh - 2rem)' }}>
+                style={{ top: '2rem', bottom: 0, height: 'auto' }}>
                 <AppNavMenu isCollapsed={!sidebarOpen} />
             </Sidebar>
             {sidebarOpen ? (

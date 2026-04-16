@@ -26,7 +26,7 @@ function TitleBarButton({ label, className, children, onClick }) {
     );
 }
 
-export function AppTitleBar({ title = 'VRCX' }) {
+export function AppTitleBar({ title = '' }) {
     const [isMaximized, setIsMaximized] = useState(false);
 
     async function syncMaximizedState() {
@@ -58,10 +58,10 @@ export function AppTitleBar({ title = 'VRCX' }) {
 
     const MaximizeIcon = isMaximized ? SquareStackIcon : SquareIcon;
     const maximizeLabel = isMaximized ? 'Restore window' : 'Maximize window';
+    const detailTitle = title && title !== 'VRCX' ? title : '';
 
     return (
         <header
-            data-tauri-drag-region
             className="flex h-8 shrink-0 select-none items-center border-b bg-background text-foreground">
             <div
                 data-tauri-drag-region
@@ -76,11 +76,13 @@ export function AppTitleBar({ title = 'VRCX' }) {
                     className="shrink-0 text-xs font-semibold text-foreground">
                     VRCX
                 </span>
-                <span
-                    data-tauri-drag-region
-                    className="min-w-0 truncate text-xs text-muted-foreground">
-                    {title}
-                </span>
+                {detailTitle ? (
+                    <span
+                        data-tauri-drag-region
+                        className="min-w-0 truncate text-xs text-muted-foreground">
+                        {detailTitle}
+                    </span>
+                ) : null}
             </div>
             <div className="flex h-full shrink-0 items-center">
                 <TitleBarButton
