@@ -12,7 +12,18 @@ export {
     offBackendEvent,
     onBackendEvent
 } from './events.js';
-export { getCurrentWebviewWindow, getScaleFactor, setZoom, webview } from './webview.js';
+export {
+    closeWindow,
+    getCurrentWebviewWindow,
+    getCurrentWindow,
+    getScaleFactor,
+    isWindowMaximized,
+    minimizeWindow,
+    setZoom,
+    startDraggingWindow,
+    toggleMaximizeWindow,
+    webview
+} from './webview.js';
 export { convertFileSrc } from './assets.js';
 export { backend } from './backend.js';
 export { backend as default } from './backend.js';

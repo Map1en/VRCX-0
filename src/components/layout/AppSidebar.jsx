@@ -82,12 +82,16 @@ export function AppSidebar({ children }) {
     return (
         <SidebarProvider
             open={sidebarOpen}
-            className="relative h-screen min-h-0 w-full overflow-hidden"
+            className="relative h-full min-h-0 w-full overflow-hidden"
             style={{ '--sidebar-width': `${navWidth}px` }}
             onOpenChange={(open) => {
                 void setSidebarCollapsedPreference(!open);
             }}>
-            <Sidebar side="left" variant="sidebar" collapsible="icon">
+            <Sidebar
+                side="left"
+                variant="sidebar"
+                collapsible="icon"
+                style={{ top: '2rem', height: 'calc(100svh - 2rem)' }}>
                 <AppNavMenu isCollapsed={!sidebarOpen} />
             </Sidebar>
             {sidebarOpen ? (
