@@ -59,12 +59,31 @@ describe('feed table state helpers', () => {
         });
     });
 
+    it('treats browser storage failures as optional table state', () => {
+        Object.defineProperty(globalThis, 'window', {
+            configurable: true,
+            value: {
+                localStorage: {
+                    getItem() {
+                        throw new Error('storage blocked');
+                    },
+                    setItem() {
+                        throw new Error('storage blocked');
+                    }
+                }
+            }
+        });
+
+        expect(readPersistedFeedTableState()).toEqual({});
+        expect(() => writePersistedFeedTableState({ pageSize: 10 })).not.toThrow();
+    });
+
     it('sanitizes sorting, page sizes, columns, and page size selection', () => {
         expect(sanitizeFeedSorting([{ id: 'type', desc: false }, { id: 'bad', desc: true }])).toEqual([
             { id: 'type', desc: false }
         ]);
         expect(sanitizeFeedSorting([{ id: 'bad', desc: true }])).toBe(FEED_TABLE_DEFAULT_SORTING);
-        expect(sanitizeFeedPageSizes(['50', 10, 'bad', 10])).toEqual([50, 10]);
+        expect(sanitizeFeedPageSizes(['50', 10, 'bad', 10])).toEqual([10, 50]);
         expect(sanitizeFeedPageSizes(null)).toBe(FEED_TABLE_DEFAULT_PAGE_SIZES);
         expect(sanitizeFeedColumnVisibility({
             type: false,

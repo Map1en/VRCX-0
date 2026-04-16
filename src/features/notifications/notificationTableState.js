@@ -27,7 +27,11 @@ export function readPersistedNotificationTableState() {
         return {};
     }
 
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    try {
+        return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    } catch {
+        return {};
+    }
 }
 
 export function writePersistedNotificationTableState(patch) {
@@ -35,15 +39,19 @@ export function writePersistedNotificationTableState(patch) {
         return;
     }
 
-    const current = readPersistedNotificationTableState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
+    try {
+        const current = readPersistedNotificationTableState();
+        window.localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+                ...current,
+                ...patch,
+                updatedAt: Date.now()
+            })
+        );
+    } catch {
+        // Persisted table state is optional.
+    }
 }
 
 export function normalizeNotificationColumnId(columnId) {

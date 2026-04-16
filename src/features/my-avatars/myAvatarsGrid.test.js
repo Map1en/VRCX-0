@@ -93,4 +93,14 @@ describe('myAvatarsGrid', () => {
         expect(visibleRows.at(-1).top).toBeGreaterThanOrEqual(1400);
         expect(visibleRows.length).toBeLessThan(gridRows.length);
     });
+
+    it('returns no visible rows while grid rows are not ready yet', () => {
+        expect(
+            getVisibleMyAvatarsGridRows({
+                gridRows: null,
+                scrollTop: 0,
+                viewportHeight: 400
+            })
+        ).toEqual([]);
+    });
 });

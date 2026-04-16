@@ -32,10 +32,14 @@ export function readPersistedPlayerListState() {
         return {};
     }
 
-    return (
-        safeJsonParse(window.localStorage.getItem(PLAYER_LIST_STORAGE_KEY)) ??
-        {}
-    );
+    try {
+        return (
+            safeJsonParse(window.localStorage.getItem(PLAYER_LIST_STORAGE_KEY)) ??
+            {}
+        );
+    } catch {
+        return {};
+    }
 }
 
 export function writePersistedPlayerListState(patch) {
@@ -43,15 +47,19 @@ export function writePersistedPlayerListState(patch) {
         return;
     }
 
-    const current = readPersistedPlayerListState();
-    window.localStorage.setItem(
-        PLAYER_LIST_STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
+    try {
+        const current = readPersistedPlayerListState();
+        window.localStorage.setItem(
+            PLAYER_LIST_STORAGE_KEY,
+            JSON.stringify({
+                ...current,
+                ...patch,
+                updatedAt: Date.now()
+            })
+        );
+    } catch {
+        // Persisted table state is optional.
+    }
 }
 
 export function sanitizePlayerListSorting(value) {

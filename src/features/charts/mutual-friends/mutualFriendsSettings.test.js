@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
     clampMutualGraphNumber,
+    MUTUAL_GRAPH_EMPTY_USER_ID,
     MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY,
     normalizeExcludedMutualFriendIds,
     readExcludedMutualFriendIds,
@@ -29,11 +30,11 @@ afterEach(() => {
 });
 
 describe('mutualFriendsSettings', () => {
-    it('keeps saved hidden friend ids trimmed and ignores empty entries', () => {
-        installLocalStorage(JSON.stringify([' usr_a ', '', null, 'usr_b']));
+    it('keeps saved hidden friend ids trimmed and ignores unusable entries', () => {
+        installLocalStorage(JSON.stringify([' usr_a ', '', null, MUTUAL_GRAPH_EMPTY_USER_ID, 'usr_b']));
 
         expect(readExcludedMutualFriendIds()).toEqual(['usr_a', 'usr_b']);
-        expect(normalizeExcludedMutualFriendIds([' usr_c ', undefined, 'usr_d'])).toEqual([
+        expect(normalizeExcludedMutualFriendIds([' usr_c ', undefined, MUTUAL_GRAPH_EMPTY_USER_ID, 'usr_d'])).toEqual([
             'usr_c',
             'usr_d'
         ]);

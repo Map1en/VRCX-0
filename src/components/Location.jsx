@@ -86,6 +86,7 @@ export function Location({
     previousInstancesDisabled = false,
     stopPropagation = false,
     asButton = true,
+    showGroupLink = true,
     className = ''
 }) {
     const { t } = useI18n();
@@ -368,7 +369,7 @@ export function Location({
                             </span>
                         </LocationTrigger>
                     </LocationTooltip>
-                    {groupName ? (
+                    {showGroupLink && groupName ? (
                         <Button
                             type="button"
                             variant="link"

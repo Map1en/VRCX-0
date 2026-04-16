@@ -29,7 +29,11 @@ export function readPersistedGameLogState() {
         return {};
     }
 
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    try {
+        return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    } catch {
+        return {};
+    }
 }
 
 export function writePersistedGameLogState(patch) {
@@ -37,15 +41,19 @@ export function writePersistedGameLogState(patch) {
         return;
     }
 
-    const current = readPersistedGameLogState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
+    try {
+        const current = readPersistedGameLogState();
+        window.localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+                ...current,
+                ...patch,
+                updatedAt: Date.now()
+            })
+        );
+    } catch {
+        // Persisted table state is optional.
+    }
 }
 
 export function sanitizeGameLogSorting(value) {

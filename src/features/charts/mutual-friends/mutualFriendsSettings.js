@@ -34,7 +34,7 @@ export function isValidMutualFriendId(value) {
 }
 
 export function normalizeExcludedMutualFriendIds(value) {
-    return Array.isArray(value) ? value.map(normalizeMutualFriendId).filter(Boolean) : [];
+    return Array.isArray(value) ? value.map(normalizeMutualFriendId).filter(isValidMutualFriendId) : [];
 }
 
 export function readExcludedMutualFriendIds() {

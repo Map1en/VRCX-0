@@ -73,6 +73,19 @@ describe('friendListState', () => {
         });
         expect(readPersistedFriendListState()).toEqual({});
 
+        globalThis.window = {
+            localStorage: {
+                getItem() {
+                    throw new Error('storage blocked');
+                },
+                setItem() {
+                    throw new Error('storage blocked');
+                }
+            }
+        };
+        expect(readPersistedFriendListState()).toEqual({});
+        expect(() => writePersistedFriendListState({ pageSize: 10 })).not.toThrow();
+
         expect(sanitizeFriendListSorting([{ id: 'unknown', desc: true }])).toBe(
             FRIEND_LIST_DEFAULT_SORTING
         );

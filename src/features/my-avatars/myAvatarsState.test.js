@@ -80,6 +80,19 @@ describe('myAvatarsState', () => {
         });
 
         expect(readPersistedMyAvatarsState()).toEqual({});
+
+        globalThis.window = {
+            localStorage: {
+                getItem() {
+                    throw new Error('storage blocked');
+                },
+                setItem() {
+                    throw new Error('storage blocked');
+                }
+            }
+        };
+        expect(readPersistedMyAvatarsState()).toEqual({});
+        expect(() => writePersistedMyAvatarsState({ pageSize: 10 })).not.toThrow();
     });
 
     it('keeps supported sorting columns and migrates old column ids', () => {

@@ -55,7 +55,11 @@ export function readPersistedFriendListState() {
         return {};
     }
 
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    try {
+        return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    } catch {
+        return {};
+    }
 }
 
 export function writePersistedFriendListState(patch) {
@@ -63,15 +67,19 @@ export function writePersistedFriendListState(patch) {
         return;
     }
 
-    const current = readPersistedFriendListState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
+    try {
+        const current = readPersistedFriendListState();
+        window.localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+                ...current,
+                ...patch,
+                updatedAt: Date.now()
+            })
+        );
+    } catch {
+        // Persisted table state is optional.
+    }
 }
 
 export function sanitizeFriendListSorting(value) {

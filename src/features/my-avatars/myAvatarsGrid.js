@@ -59,5 +59,6 @@ export function getVisibleMyAvatarsGridRows({
     const overscan = Math.max(480, viewportHeight);
     const start = Math.max(0, scrollTop - overscan);
     const end = scrollTop + viewportHeight + overscan;
-    return gridRows.filter((row) => row.top + row.height >= start && row.top <= end);
+    const visibleGridRows = Array.isArray(gridRows) ? gridRows : [];
+    return visibleGridRows.filter((row) => row.top + row.height >= start && row.top <= end);
 }

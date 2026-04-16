@@ -73,6 +73,19 @@ describe('gameLogState', () => {
         });
         expect(readPersistedGameLogState()).toEqual({});
 
+        globalThis.window = {
+            localStorage: {
+                getItem() {
+                    throw new Error('storage blocked');
+                },
+                setItem() {
+                    throw new Error('storage blocked');
+                }
+            }
+        };
+        expect(readPersistedGameLogState()).toEqual({});
+        expect(() => writePersistedGameLogState({ pageSize: 10 })).not.toThrow();
+
         expect(sanitizeGameLogSorting([{ id: 'unknown', desc: true }])).toBe(
             GAME_LOG_DEFAULT_SORTING
         );

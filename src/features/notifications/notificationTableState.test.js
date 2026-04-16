@@ -66,6 +66,25 @@ describe('notification table state helpers', () => {
         });
     });
 
+    it('ignores unavailable browser storage for optional table state', () => {
+        Object.defineProperty(globalThis, 'window', {
+            configurable: true,
+            value: {
+                localStorage: {
+                    getItem() {
+                        throw new Error('storage blocked');
+                    },
+                    setItem() {
+                        throw new Error('storage blocked');
+                    }
+                }
+            }
+        });
+
+        expect(readPersistedNotificationTableState()).toEqual({});
+        expect(() => writePersistedNotificationTableState({ pageSize: 10 })).not.toThrow();
+    });
+
     it('normalizes legacy column ids and keeps only sortable notification columns', () => {
         expect(normalizeNotificationColumnId('createdAt')).toBe('created_at');
         expect(normalizeNotificationColumnId('sender')).toBe('senderUsername');

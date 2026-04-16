@@ -6,6 +6,8 @@ import {
 export function buildMutualFriendsBaseGraph(snapshot, meta, friendsById, excludedFriendIds = []) {
     const nodeMap = new Map();
     const edgeMap = new Map();
+    const metaMap = meta instanceof Map ? meta : new Map();
+    const friends = friendsById && typeof friendsById === 'object' ? friendsById : {};
     const excluded = new Set((excludedFriendIds || []).map(normalizeMutualFriendId).filter(Boolean));
 
     function ensureNode(id) {
@@ -14,8 +16,8 @@ export function buildMutualFriendsBaseGraph(snapshot, meta, friendsById, exclude
             return null;
         }
         if (!nodeMap.has(normalizedId)) {
-            const friend = friendsById[normalizedId];
-            const metadata = meta.get(normalizedId) || { lastFetchedAt: null, optedOut: false };
+            const friend = friends[normalizedId];
+            const metadata = metaMap.get(normalizedId) || { lastFetchedAt: null, optedOut: false };
             nodeMap.set(normalizedId, {
                 id: normalizedId,
                 label: friend?.displayName || friend?.username || normalizedId,

@@ -54,6 +54,20 @@ describe('mutualFriendsGraphData', () => {
         expect(graph.links).toEqual([{ source: 'usr_a', target: 'usr_b' }]);
     });
 
+    it('still renders cached relationships when optional metadata is missing', () => {
+        const graph = buildMutualFriendsBaseGraph(
+            new Map([['usr_a', ['usr_b']]]),
+            null,
+            null
+        );
+
+        expect(graph.nodes.map((node) => [node.id, node.label, node.degree])).toEqual([
+            ['usr_a', 'usr_a', 1],
+            ['usr_b', 'usr_b', 1]
+        ]);
+        expect(graph.links).toEqual([{ source: 'usr_a', target: 'usr_b' }]);
+    });
+
     it('keeps direct neighbors visible when searching for a person in the graph', () => {
         const graph = {
             nodes: [

@@ -57,7 +57,11 @@ export function readPersistedMyAvatarsState() {
         return {};
     }
 
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    try {
+        return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    } catch {
+        return {};
+    }
 }
 
 export function writePersistedMyAvatarsState(patch) {
@@ -65,15 +69,19 @@ export function writePersistedMyAvatarsState(patch) {
         return;
     }
 
-    const current = readPersistedMyAvatarsState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
+    try {
+        const current = readPersistedMyAvatarsState();
+        window.localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+                ...current,
+                ...patch,
+                updatedAt: Date.now()
+            })
+        );
+    } catch {
+        // Persisted table state is optional.
+    }
 }
 
 export function normalizeMyAvatarsColumnId(columnId) {

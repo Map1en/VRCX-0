@@ -34,6 +34,18 @@ describe('playerListState', () => {
     it('uses the default player-list table shape when saved state is missing or invalid', () => {
         expect(safeJsonParse('{bad json')).toBeNull();
         expect(readPersistedPlayerListState()).toEqual({});
+        globalThis.window = {
+            localStorage: {
+                getItem() {
+                    throw new Error('storage blocked');
+                },
+                setItem() {
+                    throw new Error('storage blocked');
+                }
+            }
+        };
+        expect(readPersistedPlayerListState()).toEqual({});
+        expect(() => writePersistedPlayerListState({ columnOrder: ['avatar'] })).not.toThrow();
         expect(sanitizePlayerListSorting(null)).toEqual(
             DEFAULT_PLAYER_LIST_SORTING
         );

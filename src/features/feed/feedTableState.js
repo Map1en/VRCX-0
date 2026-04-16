@@ -22,7 +22,11 @@ export function readPersistedFeedTableState() {
         return {};
     }
 
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    try {
+        return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+    } catch {
+        return {};
+    }
 }
 
 export function writePersistedFeedTableState(patch) {
@@ -30,15 +34,19 @@ export function writePersistedFeedTableState(patch) {
         return;
     }
 
-    const current = readPersistedFeedTableState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
+    try {
+        const current = readPersistedFeedTableState();
+        window.localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+                ...current,
+                ...patch,
+                updatedAt: Date.now()
+            })
+        );
+    } catch {
+        // Persisted table state is optional.
+    }
 }
 
 export function sanitizeFeedSorting(value) {
@@ -59,7 +67,7 @@ export function sanitizeFeedPageSizes(value) {
     const sizes = value
         .map((entry) => Number.parseInt(entry, 10))
         .filter((entry) => Number.isFinite(entry) && entry > 0);
-    return sizes.length ? [...new Set(sizes)] : FEED_TABLE_DEFAULT_PAGE_SIZES;
+    return sizes.length ? [...new Set(sizes)].sort((left, right) => left - right) : FEED_TABLE_DEFAULT_PAGE_SIZES;
 }
 
 export function sanitizeFeedColumnVisibility(value) {

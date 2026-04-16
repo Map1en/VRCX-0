@@ -21,7 +21,11 @@ function loadSidePanelWidth() {
     if (typeof window === 'undefined') {
         return 320;
     }
-    return clampSidePanelWidth(window.localStorage.getItem(sidePanelStorageKey));
+    try {
+        return clampSidePanelWidth(window.localStorage.getItem(sidePanelStorageKey));
+    } catch {
+        return 320;
+    }
 }
 
 function shouldShowSidePanel(pathname) {
@@ -35,7 +39,11 @@ export function AppShellLayout() {
     const showSidePanel = shouldShowSidePanel(location.pathname);
 
     useEffect(() => {
-        window.localStorage.setItem(sidePanelStorageKey, String(sidePanelWidth));
+        try {
+            window.localStorage.setItem(sidePanelStorageKey, String(sidePanelWidth));
+        } catch {
+            // Persisted layout state is optional.
+        }
     }, [sidePanelWidth]);
 
     useEffect(() => {
