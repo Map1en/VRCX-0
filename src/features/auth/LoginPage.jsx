@@ -503,7 +503,7 @@ export function LoginPage() {
         : snapshot?.lastUserLoggedIn || 'last session';
 
     return (
-        <div className="relative flex min-h-screen w-full items-center justify-center p-6">
+        <div className="relative flex min-h-full w-full items-center justify-center p-6">
             <div className="absolute left-2 top-2 flex items-center gap-2">
                 <LanguagesIcon className="size-4 text-muted-foreground" />
                 <Select
