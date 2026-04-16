@@ -19,54 +19,54 @@ function normalizeFriendLogRow(row) {
     };
 }
 
-class FriendLogRepository {
-    async getFriendLogCurrent(userId) {
-        const userPrefix = normalizeUserTablePrefix(userId);
-        const rows = await sqliteRepository.query(
-            `SELECT user_id, display_name, trust_level, friend_number FROM ${userPrefix}_friend_log_current ORDER BY friend_number ASC, display_name COLLATE NOCASE ASC, user_id ASC`
-        );
+async function getFriendLogCurrent(userId) {
+    const userPrefix = normalizeUserTablePrefix(userId);
+    const rows = await sqliteRepository.query(
+        `SELECT user_id, display_name, trust_level, friend_number FROM ${userPrefix}_friend_log_current ORDER BY friend_number ASC, display_name COLLATE NOCASE ASC, user_id ASC`
+    );
 
-        if (!Array.isArray(rows)) {
-            return [];
-        }
-
-        return rows
-            .map(normalizeFriendLogRow)
-            .filter((row) => typeof row.userId === 'string' && row.userId.trim());
+    if (!Array.isArray(rows)) {
+        return [];
     }
 
-    async replaceFriendLogCurrent(userId, entries = []) {
-        const userPrefix = normalizeUserTablePrefix(userId);
-
-        await sqliteRepository.transaction(async (tx) => {
-            await tx.executeNonQuery(`DELETE FROM ${userPrefix}_friend_log_current`);
-
-            for (const entry of entries) {
-                if (!entry?.userId) {
-                    continue;
-                }
-
-                await tx.executeNonQuery(
-                    `INSERT OR REPLACE INTO ${userPrefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES (@user_id, @display_name, @trust_level, @friend_number)`,
-                    {
-                        '@user_id': entry.userId,
-                        '@display_name': entry.displayName ?? '',
-                        '@trust_level': entry.trustLevel ?? 'Visitor',
-                        '@friend_number': Number.parseInt(entry.friendNumber ?? 0, 10) || 0
-                    }
-                );
-            }
-        });
-
-        return {
-            userId:
-                typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim(),
-            count: Array.isArray(entries) ? entries.length : 0
-        };
-    }
+    return rows
+        .map(normalizeFriendLogRow)
+        .filter((row) => typeof row.userId === 'string' && row.userId.trim());
 }
 
-const friendLogRepository = new FriendLogRepository();
+async function replaceFriendLogCurrent(userId, entries = []) {
+    const userPrefix = normalizeUserTablePrefix(userId);
 
-export { FriendLogRepository };
+    await sqliteRepository.transaction(async (tx) => {
+        await tx.executeNonQuery(`DELETE FROM ${userPrefix}_friend_log_current`);
+
+        for (const entry of entries) {
+            if (!entry?.userId) {
+                continue;
+            }
+
+            await tx.executeNonQuery(
+                `INSERT OR REPLACE INTO ${userPrefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES (@user_id, @display_name, @trust_level, @friend_number)`,
+                {
+                    '@user_id': entry.userId,
+                    '@display_name': entry.displayName ?? '',
+                    '@trust_level': entry.trustLevel ?? 'Visitor',
+                    '@friend_number': Number.parseInt(entry.friendNumber ?? 0, 10) || 0
+                }
+            );
+        }
+    });
+
+    return {
+        userId: typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim(),
+        count: Array.isArray(entries) ? entries.length : 0
+    };
+}
+
+const friendLogRepository = {
+    getFriendLogCurrent,
+    replaceFriendLogCurrent
+};
+
+export { getFriendLogCurrent, replaceFriendLogCurrent };
 export default friendLogRepository;

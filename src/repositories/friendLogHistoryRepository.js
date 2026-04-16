@@ -53,77 +53,78 @@ function normalizeFriendLogHistoryRow(row) {
     return normalizedRow;
 }
 
-class FriendLogHistoryRepository {
-    async getFriendLogHistory(userId, options = {}) {
-        const userPrefix = normalizeUserTablePrefix(userId);
-        const whereClauses = [];
-        const args = {};
+async function getFriendLogHistory(userId, options = {}) {
+    const userPrefix = normalizeUserTablePrefix(userId);
+    const whereClauses = [];
+    const args = {};
 
-        const normalizedTargetUserId =
-            typeof options.targetUserId === 'string'
-                ? options.targetUserId.trim()
-                : String(options.targetUserId ?? '').trim();
-        if (normalizedTargetUserId) {
-            whereClauses.push('user_id = @user_id');
-            args['@user_id'] = normalizedTargetUserId;
-        }
-
-        const normalizedTypes = Array.isArray(options.types)
-            ? options.types
-                  .map((entry) =>
-                      typeof entry === 'string' ? entry.trim() : String(entry ?? '').trim()
-                  )
-                  .filter((entry) => entry && FRIEND_LOG_TYPES.includes(entry))
-            : [];
-        if (normalizedTypes.length) {
-            const typePlaceholders = normalizedTypes.map((type, index) => {
-                const key = `@type_${index}`;
-                args[key] = type;
-                return key;
-            });
-            whereClauses.push(`type IN (${typePlaceholders.join(', ')})`);
-        }
-
-        const whereSql = whereClauses.length ? ` WHERE ${whereClauses.join(' AND ')}` : '';
-        const rows = await sqliteRepository.query(
-            `SELECT id, created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number FROM ${userPrefix}_friend_log_history${whereSql} ORDER BY created_at DESC, id DESC`,
-            args
-        );
-
-        if (!Array.isArray(rows)) {
-            return [];
-        }
-
-        return rows
-            .map(normalizeFriendLogHistoryRow)
-            .filter((row) => typeof row.userId === 'string' && row.userId.trim());
+    const normalizedTargetUserId =
+        typeof options.targetUserId === 'string'
+            ? options.targetUserId.trim()
+            : String(options.targetUserId ?? '').trim();
+    if (normalizedTargetUserId) {
+        whereClauses.push('user_id = @user_id');
+        args['@user_id'] = normalizedTargetUserId;
     }
 
-    async deleteFriendLogHistory(userId, entry) {
-        const userPrefix = normalizeUserTablePrefix(userId);
-        const rowId = Number.parseInt(entry?.rowId ?? 0, 10) || 0;
+    const normalizedTypes = Array.isArray(options.types)
+        ? options.types
+              .map((entry) =>
+                  typeof entry === 'string' ? entry.trim() : String(entry ?? '').trim()
+              )
+              .filter((entry) => entry && FRIEND_LOG_TYPES.includes(entry))
+        : [];
+    if (normalizedTypes.length) {
+        const typePlaceholders = normalizedTypes.map((type, index) => {
+            const key = `@type_${index}`;
+            args[key] = type;
+            return key;
+        });
+        whereClauses.push(`type IN (${typePlaceholders.join(', ')})`);
+    }
 
-        if (rowId > 0) {
-            return sqliteRepository.executeNonQuery(
-                `DELETE FROM ${userPrefix}_friend_log_history WHERE id = @row_id`,
-                {
-                    '@row_id': rowId
-                }
-            );
-        }
+    const whereSql = whereClauses.length ? ` WHERE ${whereClauses.join(' AND ')}` : '';
+    const rows = await sqliteRepository.query(
+        `SELECT id, created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number FROM ${userPrefix}_friend_log_history${whereSql} ORDER BY created_at DESC, id DESC`,
+        args
+    );
 
+    if (!Array.isArray(rows)) {
+        return [];
+    }
+
+    return rows
+        .map(normalizeFriendLogHistoryRow)
+        .filter((row) => typeof row.userId === 'string' && row.userId.trim());
+}
+
+async function deleteFriendLogHistory(userId, entry) {
+    const userPrefix = normalizeUserTablePrefix(userId);
+    const rowId = Number.parseInt(entry?.rowId ?? 0, 10) || 0;
+
+    if (rowId > 0) {
         return sqliteRepository.executeNonQuery(
-            `DELETE FROM ${userPrefix}_friend_log_history WHERE created_at = @created_at AND type = @type AND user_id = @user_id`,
+            `DELETE FROM ${userPrefix}_friend_log_history WHERE id = @row_id`,
             {
-                '@created_at': entry?.created_at ?? '',
-                '@type': entry?.type ?? '',
-                '@user_id': entry?.userId ?? ''
+                '@row_id': rowId
             }
         );
     }
+
+    return sqliteRepository.executeNonQuery(
+        `DELETE FROM ${userPrefix}_friend_log_history WHERE created_at = @created_at AND type = @type AND user_id = @user_id`,
+        {
+            '@created_at': entry?.created_at ?? '',
+            '@type': entry?.type ?? '',
+            '@user_id': entry?.userId ?? ''
+        }
+    );
 }
 
-const friendLogHistoryRepository = new FriendLogHistoryRepository();
+const friendLogHistoryRepository = {
+    getFriendLogHistory,
+    deleteFriendLogHistory
+};
 
-export { FRIEND_LOG_TYPES, FriendLogHistoryRepository };
+export { FRIEND_LOG_TYPES, getFriendLogHistory, deleteFriendLogHistory };
 export default friendLogHistoryRepository;

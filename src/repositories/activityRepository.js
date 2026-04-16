@@ -106,195 +106,209 @@ async function insertSessions(tx, userId, tableName, sessions = []) {
     }
 }
 
-class ActivityRepository {
-    async getSelfActivitySourceSlice({ fromDays, toDays = 0 }) {
-        const fromDateIso = new Date(Date.now() - fromDays * 86400000).toISOString();
-        const toDateIso =
-            toDays > 0 ? new Date(Date.now() - toDays * 86400000).toISOString() : '';
+async function getSelfActivitySourceSlice({ fromDays, toDays = 0 }) {
+    const fromDateIso = new Date(Date.now() - fromDays * 86400000).toISOString();
+    const toDateIso =
+        toDays > 0 ? new Date(Date.now() - toDays * 86400000).toISOString() : '';
 
-        const rows = await sqliteRepository.query(
-            `
-                SELECT created_at, time
+    const rows = await sqliteRepository.query(
+        `
+            SELECT created_at, time
+            FROM (
+                SELECT created_at, time, 0 AS sort_group
                 FROM (
-                    SELECT created_at, time, 0 AS sort_group
-                    FROM (
-                        SELECT created_at, time
-                        FROM gamelog_location
-                        WHERE created_at < @fromDateIso
-                        ORDER BY created_at DESC
-                        LIMIT 1
-                    )
-                    UNION ALL
-                    SELECT created_at, time, 1 AS sort_group
+                    SELECT created_at, time
                     FROM gamelog_location
-                    WHERE created_at >= @fromDateIso
-                      ${toDateIso ? 'AND created_at < @toDateIso' : ''}
-                    ${
-                        toDateIso
-                            ? `UNION ALL
-                    SELECT created_at, time, 2 AS sort_group
-                    FROM (
-                        SELECT created_at, time
-                        FROM gamelog_location
-                        WHERE created_at >= @toDateIso
-                        ORDER BY created_at
-                        LIMIT 1
-                    )`
-                            : ''
-                    }
+                    WHERE created_at < @fromDateIso
+                    ORDER BY created_at DESC
+                    LIMIT 1
                 )
-                ORDER BY created_at ASC, sort_group ASC
-            `,
-            {
-                '@fromDateIso': fromDateIso,
-                '@toDateIso': toDateIso
-            }
-        );
-
-        if (!Array.isArray(rows)) {
-            return [];
+                UNION ALL
+                SELECT created_at, time, 1 AS sort_group
+                FROM gamelog_location
+                WHERE created_at >= @fromDateIso
+                  ${toDateIso ? 'AND created_at < @toDateIso' : ''}
+                ${
+                    toDateIso
+                        ? `UNION ALL
+                SELECT created_at, time, 2 AS sort_group
+                FROM (
+                    SELECT created_at, time
+                    FROM gamelog_location
+                    WHERE created_at >= @toDateIso
+                    ORDER BY created_at
+                    LIMIT 1
+                )`
+                        : ''
+                }
+            )
+            ORDER BY created_at ASC, sort_group ASC
+        `,
+        {
+            '@fromDateIso': fromDateIso,
+            '@toDateIso': toDateIso
         }
+    );
 
-        return rows
-            .map(normalizeLocationRow)
-            .filter((row) => typeof row?.created_at === 'string' && row.created_at);
+    if (!Array.isArray(rows)) {
+        return [];
     }
 
-    async getSelfActivitySourceAfter({ afterCreatedAt, inclusive = false }) {
-        const operator = inclusive ? '>=' : '>';
-        const rows = await sqliteRepository.query(
-            `SELECT created_at, time
-             FROM gamelog_location
-             WHERE created_at ${operator} @afterCreatedAt
-             ORDER BY created_at`,
-            {
-                '@afterCreatedAt': afterCreatedAt
-            }
-        );
-
-        if (!Array.isArray(rows)) {
-            return [];
-        }
-
-        return rows
-            .map(normalizeLocationRow)
-            .filter((row) => typeof row?.created_at === 'string' && row.created_at);
-    }
-
-    async getActivitySyncState(userId) {
-        const normalizedUserId =
-            typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
-        if (!normalizedUserId) {
-            return null;
-        }
-
-        const rows = await sqliteRepository.query(
-            `SELECT user_id, updated_at, is_self, source_last_created_at, pending_session_start_at, cached_range_days
-             FROM ${getSyncStateTable(normalizedUserId)}
-             WHERE user_id = @userId
-             LIMIT 1`,
-            {
-                '@userId': normalizedUserId
-            }
-        );
-
-        if (!Array.isArray(rows) || rows.length === 0) {
-            return null;
-        }
-
-        return normalizeActivitySyncStateRow(rows[0], normalizedUserId);
-    }
-
-    async upsertActivitySyncState(entry) {
-        const normalizedUserId =
-            typeof entry?.userId === 'string'
-                ? entry.userId.trim()
-                : String(entry?.userId ?? '').trim();
-        if (!normalizedUserId) {
-            throw new Error('ActivityRepository.upsertActivitySyncState requires a user id.');
-        }
-
-        await sqliteRepository.executeNonQuery(
-            `INSERT OR REPLACE INTO ${getSyncStateTable(normalizedUserId)}
-             (user_id, updated_at, is_self, source_last_created_at, pending_session_start_at, cached_range_days)
-             VALUES (@userId, @updatedAt, @isSelf, @sourceLastCreatedAt, @pendingSessionStartAt, @cachedRangeDays)`,
-            {
-                '@userId': normalizedUserId,
-                '@updatedAt': entry.updatedAt || '',
-                '@isSelf': entry.isSelf ? 1 : 0,
-                '@sourceLastCreatedAt': entry.sourceLastCreatedAt || '',
-                '@pendingSessionStartAt': entry.pendingSessionStartAt ?? null,
-                '@cachedRangeDays': Number.parseInt(entry.cachedRangeDays ?? 0, 10) || 0
-            }
-        );
-    }
-
-    async getActivitySessions(userId) {
-        const normalizedUserId =
-            typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
-        if (!normalizedUserId) {
-            return [];
-        }
-
-        const rows = await sqliteRepository.query(
-            `SELECT start_at, end_at, is_open_tail, source_revision
-             FROM ${getSessionsTable(normalizedUserId)}
-             WHERE user_id = @userId
-             ORDER BY start_at`,
-            {
-                '@userId': normalizedUserId
-            }
-        );
-
-        if (!Array.isArray(rows)) {
-            return [];
-        }
-
-        return rows
-            .map(normalizeActivitySessionRow)
-            .filter((row) => Number.isFinite(row?.start) && Number.isFinite(row?.end));
-    }
-
-    async replaceActivitySessions(userId, sessions = []) {
-        const normalizedUserId =
-            typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
-        const tableName = getSessionsTable(normalizedUserId);
-
-        await sqliteRepository.transaction(async (tx) => {
-            await tx.executeNonQuery(`DELETE FROM ${tableName} WHERE user_id = @userId`, {
-                '@userId': normalizedUserId
-            });
-            await insertSessions(tx, normalizedUserId, tableName, sessions);
-        });
-    }
-
-    async appendActivitySessions({
-        userId,
-        sessions = [],
-        replaceFromStartAt = null
-    }) {
-        const normalizedUserId =
-            typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
-        const tableName = getSessionsTable(normalizedUserId);
-
-        await sqliteRepository.transaction(async (tx) => {
-            if (replaceFromStartAt !== null && replaceFromStartAt !== undefined) {
-                await tx.executeNonQuery(
-                    `DELETE FROM ${tableName}
-                     WHERE user_id = @userId AND start_at >= @replaceFromStartAt`,
-                    {
-                        '@userId': normalizedUserId,
-                        '@replaceFromStartAt': replaceFromStartAt
-                    }
-                );
-            }
-
-            await insertSessions(tx, normalizedUserId, tableName, sessions);
-        });
-    }
+    return rows
+        .map(normalizeLocationRow)
+        .filter((row) => typeof row?.created_at === 'string' && row.created_at);
 }
 
-const activityRepository = new ActivityRepository();
+async function getSelfActivitySourceAfter({ afterCreatedAt, inclusive = false }) {
+    const operator = inclusive ? '>=' : '>';
+    const rows = await sqliteRepository.query(
+        `SELECT created_at, time
+         FROM gamelog_location
+         WHERE created_at ${operator} @afterCreatedAt
+         ORDER BY created_at`,
+        {
+            '@afterCreatedAt': afterCreatedAt
+        }
+    );
 
-export { ActivityRepository };
+    if (!Array.isArray(rows)) {
+        return [];
+    }
+
+    return rows
+        .map(normalizeLocationRow)
+        .filter((row) => typeof row?.created_at === 'string' && row.created_at);
+}
+
+async function getActivitySyncState(userId) {
+    const normalizedUserId =
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+    if (!normalizedUserId) {
+        return null;
+    }
+
+    const rows = await sqliteRepository.query(
+        `SELECT user_id, updated_at, is_self, source_last_created_at, pending_session_start_at, cached_range_days
+         FROM ${getSyncStateTable(normalizedUserId)}
+         WHERE user_id = @userId
+         LIMIT 1`,
+        {
+            '@userId': normalizedUserId
+        }
+    );
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+        return null;
+    }
+
+    return normalizeActivitySyncStateRow(rows[0], normalizedUserId);
+}
+
+async function upsertActivitySyncState(entry) {
+    const normalizedUserId =
+        typeof entry?.userId === 'string'
+            ? entry.userId.trim()
+            : String(entry?.userId ?? '').trim();
+    if (!normalizedUserId) {
+        throw new Error('ActivityRepository.upsertActivitySyncState requires a user id.');
+    }
+
+    await sqliteRepository.executeNonQuery(
+        `INSERT OR REPLACE INTO ${getSyncStateTable(normalizedUserId)}
+         (user_id, updated_at, is_self, source_last_created_at, pending_session_start_at, cached_range_days)
+         VALUES (@userId, @updatedAt, @isSelf, @sourceLastCreatedAt, @pendingSessionStartAt, @cachedRangeDays)`,
+        {
+            '@userId': normalizedUserId,
+            '@updatedAt': entry.updatedAt || '',
+            '@isSelf': entry.isSelf ? 1 : 0,
+            '@sourceLastCreatedAt': entry.sourceLastCreatedAt || '',
+            '@pendingSessionStartAt': entry.pendingSessionStartAt ?? null,
+            '@cachedRangeDays': Number.parseInt(entry.cachedRangeDays ?? 0, 10) || 0
+        }
+    );
+}
+
+async function getActivitySessions(userId) {
+    const normalizedUserId =
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+    if (!normalizedUserId) {
+        return [];
+    }
+
+    const rows = await sqliteRepository.query(
+        `SELECT start_at, end_at, is_open_tail, source_revision
+         FROM ${getSessionsTable(normalizedUserId)}
+         WHERE user_id = @userId
+         ORDER BY start_at`,
+        {
+            '@userId': normalizedUserId
+        }
+    );
+
+    if (!Array.isArray(rows)) {
+        return [];
+    }
+
+    return rows
+        .map(normalizeActivitySessionRow)
+        .filter((row) => Number.isFinite(row?.start) && Number.isFinite(row?.end));
+}
+
+async function replaceActivitySessions(userId, sessions = []) {
+    const normalizedUserId =
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+    const tableName = getSessionsTable(normalizedUserId);
+
+    await sqliteRepository.transaction(async (tx) => {
+        await tx.executeNonQuery(`DELETE FROM ${tableName} WHERE user_id = @userId`, {
+            '@userId': normalizedUserId
+        });
+        await insertSessions(tx, normalizedUserId, tableName, sessions);
+    });
+}
+
+async function appendActivitySessions({
+    userId,
+    sessions = [],
+    replaceFromStartAt = null
+}) {
+    const normalizedUserId =
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+    const tableName = getSessionsTable(normalizedUserId);
+
+    await sqliteRepository.transaction(async (tx) => {
+        if (replaceFromStartAt !== null && replaceFromStartAt !== undefined) {
+            await tx.executeNonQuery(
+                `DELETE FROM ${tableName}
+                 WHERE user_id = @userId AND start_at >= @replaceFromStartAt`,
+                {
+                    '@userId': normalizedUserId,
+                    '@replaceFromStartAt': replaceFromStartAt
+                }
+            );
+        }
+
+        await insertSessions(tx, normalizedUserId, tableName, sessions);
+    });
+}
+
+const activityRepository = Object.freeze({
+    getSelfActivitySourceSlice,
+    getSelfActivitySourceAfter,
+    getActivitySyncState,
+    upsertActivitySyncState,
+    getActivitySessions,
+    replaceActivitySessions,
+    appendActivitySessions
+});
+
+export {
+    getSelfActivitySourceSlice,
+    getSelfActivitySourceAfter,
+    getActivitySyncState,
+    upsertActivitySyncState,
+    getActivitySessions,
+    replaceActivitySessions,
+    appendActivitySessions
+};
 export default activityRepository;
