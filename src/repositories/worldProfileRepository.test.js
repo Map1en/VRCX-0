@@ -7,7 +7,7 @@ vi.mock('./webRepository.js', () => ({
 }));
 
 import webRepository from './webRepository.js';
-import { WorldProfileRepository } from './worldProfileRepository.js';
+import worldProfileRepository from './worldProfileRepository.js';
 
 describe('WorldProfileRepository', () => {
     beforeEach(() => {
@@ -15,9 +15,7 @@ describe('WorldProfileRepository', () => {
     });
 
     it('normalizes raw world API data into the shape dialogs and lists consume', () => {
-        const repository = new WorldProfileRepository();
-
-        expect(repository.normalize({
+        expect(worldProfileRepository.normalize({
             id: ' wrld_123 ',
             name: ' Test World ',
             description: '  A world  ',
@@ -67,14 +65,13 @@ describe('WorldProfileRepository', () => {
     });
 
     it('builds GET URLs with endpoint, scalar params, repeated array params, and skipped nulls', async () => {
-        const repository = new WorldProfileRepository();
         vi.mocked(webRepository.execute).mockResolvedValue({
             status: 200,
             data: '{"ok":true}',
             raw: { source: 'web' }
         });
 
-        const response = await repository.executeGet(
+        const response = await worldProfileRepository.executeGet(
             'worlds',
             {
                 tag: ['featured', null, 'labs'],
@@ -101,7 +98,6 @@ describe('WorldProfileRepository', () => {
     });
 
     it('throws request errors with status, endpoint, and parsed payload details', async () => {
-        const repository = new WorldProfileRepository();
         vi.mocked(webRepository.execute).mockResolvedValue({
             status: 404,
             data: JSON.stringify({
@@ -112,7 +108,7 @@ describe('WorldProfileRepository', () => {
             raw: {}
         });
 
-        await expect(repository.executeGet('worlds/wrld_missing')).rejects.toMatchObject({
+        await expect(worldProfileRepository.executeGet('worlds/wrld_missing')).rejects.toMatchObject({
             message: 'World not found',
             status: 404,
             endpoint: 'worlds/wrld_missing',

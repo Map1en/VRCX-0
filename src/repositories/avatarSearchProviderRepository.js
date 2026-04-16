@@ -102,154 +102,162 @@ function normalizeAvatarProviderItem(avatar) {
     };
 }
 
-class AvatarSearchProviderRepository {
-    async getConfig() {
-        const [enabled, providerListValue, selectedProviderValue] = await Promise.all([
-            configRepository.getBool('avatarRemoteDatabase', true),
-            configRepository.getString(
-                'VRCX_avatarRemoteDatabaseProviderList',
-                `["${DEFAULT_PROVIDER}"]`
-            ),
-            configRepository.getString('VRCX_avatarRemoteDatabaseProvider', '')
-        ]);
+async function getConfig() {
+    const [enabled, providerListValue, selectedProviderValue] = await Promise.all([
+        configRepository.getBool('avatarRemoteDatabase', true),
+        configRepository.getString(
+            'VRCX_avatarRemoteDatabaseProviderList',
+            `["${DEFAULT_PROVIDER}"]`
+        ),
+        configRepository.getString('VRCX_avatarRemoteDatabaseProvider', '')
+    ]);
 
-        let parsedProviderList = safeJsonParse(providerListValue, null);
-        if (!Array.isArray(parsedProviderList)) {
-            parsedProviderList = [DEFAULT_PROVIDER];
-        }
-
-        if (selectedProviderValue && !parsedProviderList.includes(selectedProviderValue)) {
-            parsedProviderList = [...parsedProviderList, selectedProviderValue];
-        }
-
-        const providerList = normalizeProviderList(parsedProviderList);
-        if (JSON.stringify(providerList) !== JSON.stringify(parsedProviderList)) {
-            await configRepository.setString(
-                'VRCX_avatarRemoteDatabaseProviderList',
-                JSON.stringify(providerList)
-            );
-        }
-
-        if (selectedProviderValue) {
-            await configRepository.remove('avatarRemoteDatabaseProvider');
-        }
-        const selectedProvider = providerList.includes(selectedProviderValue)
-            ? selectedProviderValue
-            : providerList[0] || '';
-
-        return {
-            enabled: Boolean(enabled) && providerList.length > 0,
-            providerList,
-            selectedProvider
-        };
+    let parsedProviderList = safeJsonParse(providerListValue, null);
+    if (!Array.isArray(parsedProviderList)) {
+        parsedProviderList = [DEFAULT_PROVIDER];
     }
 
-    async saveConfig({ enabled, providerList, selectedProvider = '' }) {
-        const normalizedProviderList = normalizeProviderList(providerList);
-        const persistedSelectedProvider =
-            normalizeString(selectedProvider) ||
-            await configRepository.getString('VRCX_avatarRemoteDatabaseProvider', '');
-        const resolvedSelectedProvider = normalizedProviderList.includes(persistedSelectedProvider)
-            ? persistedSelectedProvider
-            : normalizedProviderList[0] || '';
-        await Promise.all([
-            configRepository.setString(
-                'VRCX_avatarRemoteDatabaseProviderList',
-                JSON.stringify(normalizedProviderList)
-            ),
-            configRepository.setBool(
-                'VRCX_avatarRemoteDatabase',
-                Boolean(enabled) && normalizedProviderList.length > 0
-            ),
-            resolvedSelectedProvider
-                ? configRepository.setString('VRCX_avatarRemoteDatabaseProvider', resolvedSelectedProvider)
-                : configRepository.remove('VRCX_avatarRemoteDatabaseProvider')
-        ]);
-
-        const savedConfig = {
-            enabled: Boolean(enabled) && normalizedProviderList.length > 0,
-            providerList: normalizedProviderList,
-            selectedProvider: resolvedSelectedProvider
-        };
-        publishAvatarSearchProviderConfig(savedConfig);
-        return savedConfig;
+    if (selectedProviderValue && !parsedProviderList.includes(selectedProviderValue)) {
+        parsedProviderList = [...parsedProviderList, selectedProviderValue];
     }
 
-    async saveSelectedProvider(provider) {
-        const normalizedProvider = normalizeString(provider);
-        if (!normalizedProvider) {
-            return '';
-        }
-        await configRepository.setString('VRCX_avatarRemoteDatabaseProvider', normalizedProvider);
-        publishPreferenceChanged('VRCX_avatarRemoteDatabaseProvider', normalizedProvider);
-        return normalizedProvider;
+    const providerList = normalizeProviderList(parsedProviderList);
+    if (JSON.stringify(providerList) !== JSON.stringify(parsedProviderList)) {
+        await configRepository.setString(
+            'VRCX_avatarRemoteDatabaseProviderList',
+            JSON.stringify(providerList)
+        );
     }
 
-    async getVrcxId() {
-        let id = await configRepository.getString('id', '');
-        if (!id) {
-            id = globalThis.crypto?.randomUUID?.() || '';
-            if (id) {
-                await configRepository.setString('id', id);
-            }
-        }
-        return id;
+    if (selectedProviderValue) {
+        await configRepository.remove('avatarRemoteDatabaseProvider');
     }
+    const selectedProvider = providerList.includes(selectedProviderValue)
+        ? selectedProviderValue
+        : providerList[0] || '';
 
-    async search({ provider, query }) {
-        const normalizedProvider = normalizeString(provider);
-        const normalizedQuery = normalizeString(query);
-        if (!normalizedProvider) {
-            throw new Error('Avatar provider is not configured.');
-        }
-        if (normalizedQuery.length < 3) {
-            throw new Error('Avatar search requires at least 3 characters.');
-        }
-
-        const [url, vrcxId] = await Promise.all([
-            Promise.resolve(buildProviderSearchUrl(normalizedProvider, normalizedQuery)),
-            this.getVrcxId()
-        ]);
-
-        const response = await webRepository.execute({
-            url,
-            method: 'GET',
-            headers: {
-                Referer: 'https://vrcx.app',
-                'VRCX-ID': vrcxId
-            }
-        });
-        const json = parseResponse(response.data);
-
-        if (response.status !== 200) {
-            throw new Error(`Avatar search failed (${response.status})`);
-        }
-        if (!Array.isArray(json)) {
-            throw new Error('Avatar provider returned an unsupported response.');
-        }
-
-        const avatars = new Map();
-        for (const item of json) {
-            const avatar = normalizeAvatarProviderItem(item);
-            if (avatar.id && !avatars.has(avatar.id)) {
-                avatars.set(avatar.id, avatar);
-            }
-        }
-
-        return {
-            avatars: Array.from(avatars.values()),
-            provider: normalizedProvider,
-            query: normalizedQuery,
-            status: response.status,
-            raw: response.raw
-        };
-    }
+    return {
+        enabled: Boolean(enabled) && providerList.length > 0,
+        providerList,
+        selectedProvider
+    };
 }
 
-const avatarSearchProviderRepository = new AvatarSearchProviderRepository();
+async function saveConfig({ enabled, providerList, selectedProvider = '' }) {
+    const normalizedProviderList = normalizeProviderList(providerList);
+    const persistedSelectedProvider =
+        normalizeString(selectedProvider) ||
+        await configRepository.getString('VRCX_avatarRemoteDatabaseProvider', '');
+    const resolvedSelectedProvider = normalizedProviderList.includes(persistedSelectedProvider)
+        ? persistedSelectedProvider
+        : normalizedProviderList[0] || '';
+    await Promise.all([
+        configRepository.setString(
+            'VRCX_avatarRemoteDatabaseProviderList',
+            JSON.stringify(normalizedProviderList)
+        ),
+        configRepository.setBool(
+            'VRCX_avatarRemoteDatabase',
+            Boolean(enabled) && normalizedProviderList.length > 0
+        ),
+        resolvedSelectedProvider
+            ? configRepository.setString('VRCX_avatarRemoteDatabaseProvider', resolvedSelectedProvider)
+            : configRepository.remove('VRCX_avatarRemoteDatabaseProvider')
+    ]);
+
+    const savedConfig = {
+        enabled: Boolean(enabled) && normalizedProviderList.length > 0,
+        providerList: normalizedProviderList,
+        selectedProvider: resolvedSelectedProvider
+    };
+    publishAvatarSearchProviderConfig(savedConfig);
+    return savedConfig;
+}
+
+async function saveSelectedProvider(provider) {
+    const normalizedProvider = normalizeString(provider);
+    if (!normalizedProvider) {
+        return '';
+    }
+    await configRepository.setString('VRCX_avatarRemoteDatabaseProvider', normalizedProvider);
+    publishPreferenceChanged('VRCX_avatarRemoteDatabaseProvider', normalizedProvider);
+    return normalizedProvider;
+}
+
+async function getVrcxId() {
+    let id = await configRepository.getString('id', '');
+    if (!id) {
+        id = globalThis.crypto?.randomUUID?.() || '';
+        if (id) {
+            await configRepository.setString('id', id);
+        }
+    }
+    return id;
+}
+
+async function search({ provider, query }) {
+    const normalizedProvider = normalizeString(provider);
+    const normalizedQuery = normalizeString(query);
+    if (!normalizedProvider) {
+        throw new Error('Avatar provider is not configured.');
+    }
+    if (normalizedQuery.length < 3) {
+        throw new Error('Avatar search requires at least 3 characters.');
+    }
+
+    const [url, vrcxId] = await Promise.all([
+        Promise.resolve(buildProviderSearchUrl(normalizedProvider, normalizedQuery)),
+        getVrcxId()
+    ]);
+
+    const response = await webRepository.execute({
+        url,
+        method: 'GET',
+        headers: {
+            Referer: 'https://vrcx.app',
+            'VRCX-ID': vrcxId
+        }
+    });
+    const json = parseResponse(response.data);
+
+    if (response.status !== 200) {
+        throw new Error(`Avatar search failed (${response.status})`);
+    }
+    if (!Array.isArray(json)) {
+        throw new Error('Avatar provider returned an unsupported response.');
+    }
+
+    const avatars = new Map();
+    for (const item of json) {
+        const avatar = normalizeAvatarProviderItem(item);
+        if (avatar.id && !avatars.has(avatar.id)) {
+            avatars.set(avatar.id, avatar);
+        }
+    }
+
+    return {
+        avatars: Array.from(avatars.values()),
+        provider: normalizedProvider,
+        query: normalizedQuery,
+        status: response.status,
+        raw: response.raw
+    };
+}
+
+const avatarSearchProviderRepository = Object.freeze({
+    getConfig,
+    saveConfig,
+    saveSelectedProvider,
+    getVrcxId,
+    search
+});
 
 export {
     AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS,
-    AvatarSearchProviderRepository
+    getConfig,
+    saveConfig,
+    saveSelectedProvider,
+    getVrcxId,
+    search
 };
 export default avatarSearchProviderRepository;

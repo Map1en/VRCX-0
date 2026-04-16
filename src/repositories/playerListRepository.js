@@ -124,158 +124,159 @@ function findAnonymousPlayerKeyForLeave(playersByKey, event) {
     return nameMatches.length ? nameMatches[0].playerKey : '';
 }
 
-class PlayerListRepository {
-    async resolveCurrentLocationContext(currentLocation) {
-        const normalizedLocation = normalizeString(currentLocation);
+async function resolveCurrentLocationContext(currentLocation) {
+    const normalizedLocation = normalizeString(currentLocation);
 
-        if (isLiveLocation(normalizedLocation)) {
-            const exactRows = await sqliteRepository.all(
-                `SELECT created_at, location, world_id, world_name, time, group_name
-                 FROM gamelog_location
-                 WHERE location = @location
-                 ORDER BY id DESC
-                 LIMIT 1`,
-                {
-                    '@location': normalizedLocation
-                }
-            );
-
-            if (Array.isArray(exactRows) && exactRows.length > 0) {
-                return {
-                    ...mapLocationRow(exactRows[0]),
-                    source: 'database'
-                };
-            }
-
-            const parsedLocation = parseLocation(normalizedLocation);
-            return {
-                createdAt: '',
-                location: normalizedLocation,
-                worldId: parsedLocation.worldId || '',
-                worldName: parsedLocation.worldId || normalizedLocation,
-                time: 0,
-                groupName: '',
-                source: 'runtime'
-            };
-        }
-
-        if (normalizedLocation) {
-            return {
-                createdAt: '',
-                location: normalizedLocation,
-                worldId: '',
-                worldName: '',
-                time: 0,
-                groupName: '',
-                source: 'runtime'
-            };
-        }
-
-        const latestRows = await sqliteRepository.all(
+    if (isLiveLocation(normalizedLocation)) {
+        const exactRows = await sqliteRepository.all(
             `SELECT created_at, location, world_id, world_name, time, group_name
              FROM gamelog_location
+             WHERE location = @location
              ORDER BY id DESC
-             LIMIT 1`
+             LIMIT 1`,
+            {
+                '@location': normalizedLocation
+            }
         );
 
-        if (Array.isArray(latestRows) && latestRows.length > 0) {
+        if (Array.isArray(exactRows) && exactRows.length > 0) {
             return {
-                ...mapLocationRow(latestRows[0]),
+                ...mapLocationRow(exactRows[0]),
                 source: 'database'
             };
         }
 
+        const parsedLocation = parseLocation(normalizedLocation);
         return {
             createdAt: '',
-            location: '',
+            location: normalizedLocation,
+            worldId: parsedLocation.worldId || '',
+            worldName: parsedLocation.worldId || normalizedLocation,
+            time: 0,
+            groupName: '',
+            source: 'runtime'
+        };
+    }
+
+    if (normalizedLocation) {
+        return {
+            createdAt: '',
+            location: normalizedLocation,
             worldId: '',
             worldName: '',
             time: 0,
             groupName: '',
-            source: 'none'
+            source: 'runtime'
         };
     }
 
-    async getCurrentInstanceSnapshot({ currentUserId = '', currentLocation = '' } = {}) {
-        const context = await this.resolveCurrentLocationContext(currentLocation);
+    const latestRows = await sqliteRepository.all(
+        `SELECT created_at, location, world_id, world_name, time, group_name
+         FROM gamelog_location
+         ORDER BY id DESC
+         LIMIT 1`
+    );
 
-        if (!isLiveLocation(context.location)) {
-            return {
-                context,
-                players: []
-            };
-        }
-
-        const rows = await sqliteRepository.all(
-            `SELECT id, created_at, type, display_name, user_id, time
-             FROM gamelog_join_leave
-             WHERE location = @location
-             ORDER BY id ASC`,
-            {
-                '@location': context.location
-            }
-        );
-
-        const playersByKey = new Map();
-        const normalizedCurrentUserId = normalizeString(currentUserId);
-
-        for (const [rowIndex, row] of (Array.isArray(rows) ? rows : []).entries()) {
-            const event = mapJoinLeaveRow(row);
-            const playerKey = buildPlayerKey(event.userId) || buildAnonymousPlayerKey(event, rowIndex);
-
-            if (event.type === 'OnPlayerJoined') {
-                playersByKey.set(playerKey, {
-                    id: playerKey,
-                    userId: event.userId,
-                    displayName: event.displayName || event.userId || playerKey,
-                    joinedAt: event.createdAt,
-                    joinedAtMs: parseDateMs(event.createdAt),
-                    lastDurationMs: event.time
-                });
-            } else if (event.type === 'OnPlayerLeft') {
-                if (event.userId) {
-                    playersByKey.delete(playerKey);
-                } else {
-                    const anonymousPlayerKey = findAnonymousPlayerKeyForLeave(playersByKey, event);
-                    if (anonymousPlayerKey) {
-                        playersByKey.delete(anonymousPlayerKey);
-                    }
-                }
-            }
-        }
-
-        const players = Array.from(playersByKey.values())
-            .filter((player) => {
-                const normalizedUserId = normalizeString(player.userId);
-                if (normalizedCurrentUserId && normalizedUserId === normalizedCurrentUserId) {
-                    return false;
-                }
-
-                return Boolean(player.displayName || normalizedUserId);
-            })
-            .sort((left, right) => {
-                if (left.joinedAtMs !== right.joinedAtMs) {
-                    return left.joinedAtMs - right.joinedAtMs;
-                }
-
-                return String(left.displayName || left.userId || '').localeCompare(
-                    String(right.displayName || right.userId || ''),
-                    undefined,
-                    { sensitivity: 'base' }
-                );
-            });
-
+    if (Array.isArray(latestRows) && latestRows.length > 0) {
         return {
-            context: {
-                ...context,
-                playerCount: players.length
-            },
-            players
+            ...mapLocationRow(latestRows[0]),
+            source: 'database'
         };
     }
+
+    return {
+        createdAt: '',
+        location: '',
+        worldId: '',
+        worldName: '',
+        time: 0,
+        groupName: '',
+        source: 'none'
+    };
 }
 
-const playerListRepository = new PlayerListRepository();
+async function getCurrentInstanceSnapshot({ currentUserId = '', currentLocation = '' } = {}) {
+    const context = await resolveCurrentLocationContext(currentLocation);
 
-export { PlayerListRepository };
+    if (!isLiveLocation(context.location)) {
+        return {
+            context,
+            players: []
+        };
+    }
+
+    const rows = await sqliteRepository.all(
+        `SELECT id, created_at, type, display_name, user_id, time
+         FROM gamelog_join_leave
+         WHERE location = @location
+         ORDER BY id ASC`,
+        {
+            '@location': context.location
+        }
+    );
+
+    const playersByKey = new Map();
+    const normalizedCurrentUserId = normalizeString(currentUserId);
+
+    for (const [rowIndex, row] of (Array.isArray(rows) ? rows : []).entries()) {
+        const event = mapJoinLeaveRow(row);
+        const playerKey = buildPlayerKey(event.userId) || buildAnonymousPlayerKey(event, rowIndex);
+
+        if (event.type === 'OnPlayerJoined') {
+            playersByKey.set(playerKey, {
+                id: playerKey,
+                userId: event.userId,
+                displayName: event.displayName || event.userId || playerKey,
+                joinedAt: event.createdAt,
+                joinedAtMs: parseDateMs(event.createdAt),
+                lastDurationMs: event.time
+            });
+        } else if (event.type === 'OnPlayerLeft') {
+            if (event.userId) {
+                playersByKey.delete(playerKey);
+            } else {
+                const anonymousPlayerKey = findAnonymousPlayerKeyForLeave(playersByKey, event);
+                if (anonymousPlayerKey) {
+                    playersByKey.delete(anonymousPlayerKey);
+                }
+            }
+        }
+    }
+
+    const players = Array.from(playersByKey.values())
+        .filter((player) => {
+            const normalizedUserId = normalizeString(player.userId);
+            if (normalizedCurrentUserId && normalizedUserId === normalizedCurrentUserId) {
+                return false;
+            }
+
+            return Boolean(player.displayName || normalizedUserId);
+        })
+        .sort((left, right) => {
+            if (left.joinedAtMs !== right.joinedAtMs) {
+                return left.joinedAtMs - right.joinedAtMs;
+            }
+
+            return String(left.displayName || left.userId || '').localeCompare(
+                String(right.displayName || right.userId || ''),
+                undefined,
+                { sensitivity: 'base' }
+            );
+        });
+
+    return {
+        context: {
+            ...context,
+            playerCount: players.length
+        },
+        players
+    };
+}
+
+const playerListRepository = Object.freeze({
+    resolveCurrentLocationContext,
+    getCurrentInstanceSnapshot
+});
+
+export { resolveCurrentLocationContext, getCurrentInstanceSnapshot };
 export default playerListRepository;

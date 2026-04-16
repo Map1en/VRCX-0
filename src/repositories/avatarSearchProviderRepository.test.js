@@ -28,7 +28,7 @@ vi.mock('./avatarProfileRepository.js', () => ({
 
 import { publishPreferenceChanged } from '@/lib/preferenceEvents.js';
 import avatarProfileRepository from './avatarProfileRepository.js';
-import { AvatarSearchProviderRepository } from './avatarSearchProviderRepository.js';
+import avatarSearchProviderRepository from './avatarSearchProviderRepository.js';
 import configRepository from './configRepository.js';
 import webRepository from './webRepository.js';
 
@@ -56,7 +56,6 @@ describe('AvatarSearchProviderRepository', () => {
     });
 
     it('normalizes legacy provider lists and preserves a selected custom provider', async () => {
-        const repository = new AvatarSearchProviderRepository();
         const customProvider = 'https://avatars.example.test/search';
         const selectedProvider = 'https://selected.example.test/search';
         vi.mocked(configRepository.getString).mockImplementation((key, fallback = '') => {
@@ -74,7 +73,7 @@ describe('AvatarSearchProviderRepository', () => {
             return Promise.resolve(fallback);
         });
 
-        await expect(repository.getConfig()).resolves.toEqual({
+        await expect(avatarSearchProviderRepository.getConfig()).resolves.toEqual({
             enabled: true,
             providerList: [
                 DEFAULT_PROVIDER,
@@ -96,7 +95,6 @@ describe('AvatarSearchProviderRepository', () => {
     });
 
     it('builds provider search requests and deduplicates normalized avatar ids', async () => {
-        const repository = new AvatarSearchProviderRepository();
         vi.mocked(configRepository.getString).mockImplementation((key, fallback = '') => {
             if (key === 'id') {
                 return Promise.resolve('client-id');
@@ -126,7 +124,7 @@ describe('AvatarSearchProviderRepository', () => {
             raw: { provider: true }
         });
 
-        const result = await repository.search({
+        const result = await avatarSearchProviderRepository.search({
             provider: ' https://avatars.example.test/search ',
             query: ' alpha '
         });
@@ -160,13 +158,11 @@ describe('AvatarSearchProviderRepository', () => {
     });
 
     it('validates provider and query before calling the network', async () => {
-        const repository = new AvatarSearchProviderRepository();
-
-        await expect(repository.search({
+        await expect(avatarSearchProviderRepository.search({
             provider: '',
             query: 'avatar'
         })).rejects.toThrow('Avatar provider is not configured');
-        await expect(repository.search({
+        await expect(avatarSearchProviderRepository.search({
             provider: DEFAULT_PROVIDER,
             query: 'ab'
         })).rejects.toThrow('at least 3 characters');
@@ -175,9 +171,7 @@ describe('AvatarSearchProviderRepository', () => {
     });
 
     it('publishes normalized config after saving provider preferences', async () => {
-        const repository = new AvatarSearchProviderRepository();
-
-        await expect(repository.saveConfig({
+        await expect(avatarSearchProviderRepository.saveConfig({
             enabled: true,
             providerList: [
                 'https://api.avtrdb.com/v2/avatar/search/vrcx',
