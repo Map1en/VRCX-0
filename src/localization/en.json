@@ -228,6 +228,7 @@
         "login": {
             "savedAccounts": "Saved Accounts",
             "login": "Login",
+            "signingIn": "Signing in...",
             "register": "Register",
             "forgotPassword": "Forgot Password?",
             "updater": "Updater",
@@ -237,10 +238,20 @@
             "field": {
                 "username": "Username or Email",
                 "password": "Password",
-                "saveCredentials": "Save Credentials",
+                "saveCredentials": "Save Account",
                 "devEndpoint": "Dev Endpoint",
                 "endpoint": "Endpoint",
                 "websocket": "WebSocket"
+            },
+            "placeholder": {
+                "account": "VRChat account",
+                "password": "VRChat password"
+            },
+            "footer": {
+                "builtForPlayers": "Built for VRChat players",
+                "deviceStorage": "Everything stays on your device",
+                "github": "GitHub",
+                "discord": "Discord"
             },
             "language_detect": {
                 "title": "Language Detected",

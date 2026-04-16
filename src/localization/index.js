@@ -8,7 +8,8 @@ async function getLocalizedStrings(code) {
 }
 
 function getLanguageName(code) {
-    return String(localizedStrings[`./${code}.json`]?.language ?? code);
+    return String(localizedStrings[`./${code}.json`]?.language ?? code)
+        .replace(/\s+\([^)]+\)$/, '');
 }
 
 /**

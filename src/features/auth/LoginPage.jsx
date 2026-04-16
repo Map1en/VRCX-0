@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-    LanguagesIcon,
+    NetworkIcon,
     Trash2Icon,
     UserIcon
 } from 'lucide-react';
@@ -21,9 +21,14 @@ import {
     executeSavedCredentialLogin
 } from '@/services/authExecutionService.js';
 import { executeReactAutoLogin } from '@/services/authAutoLoginService.js';
-import { setAppLanguagePreference } from '@/services/preferencesService.js';
+import {
+    loadPreferenceSnapshot,
+    setAppLanguagePreference,
+    setProxyServerPreference
+} from '@/services/preferencesService.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { useShellStore } from '@/state/shellStore.js';
+import { usePreferencesStore } from '@/state/preferencesStore.js';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -43,6 +48,13 @@ import {
     CardHeader,
     CardTitle
 } from '@/ui/shadcn/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/ui/shadcn/dialog';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import {
@@ -71,6 +83,8 @@ export function LoginPage() {
     const location = useLocation();
     const { t } = useI18n();
     const locale = useShellStore((state) => state.locale);
+    const proxyServer = usePreferencesStore((state) => state.proxyServer);
+    const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
     const sessionPhase = useSessionStore((state) => state.sessionPhase);
     const databaseReady = useSessionStore((state) => state.databaseReady);
     const [snapshot, setSnapshot] = useState(null);
@@ -78,6 +92,9 @@ export function LoginPage() {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isProxyDialogOpen, setIsProxyDialogOpen] = useState(false);
+    const [proxyInput, setProxyInput] = useState('');
+    const [isSavingProxySettings, setIsSavingProxySettings] = useState(false);
     const [isUpdatingEndpointSetting, setIsUpdatingEndpointSetting] = useState(false);
     const [activeSavedUserId, setActiveSavedUserId] = useState('');
     const [autoLoginState, setAutoLoginState] = useState({
@@ -96,6 +113,10 @@ export function LoginPage() {
     });
     const autoLoginSuppressedKeyRef = useRef('');
     const autoLoginAbortRef = useRef(null);
+
+    useEffect(() => {
+        setProxyInput(proxyServer || '');
+    }, [proxyServer]);
 
     const redirectQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = sanitizeRedirectTarget(
@@ -385,6 +406,36 @@ export function LoginPage() {
         }
     }
 
+    async function openProxyDialog() {
+        if (!preferencesHydrated) {
+            try {
+                await loadPreferenceSnapshot();
+            } catch (error) {
+                toast.error(error instanceof Error ? error.message : 'Failed to load proxy settings.');
+            }
+        }
+        setProxyInput(usePreferencesStore.getState().proxyServer || '');
+        setIsProxyDialogOpen(true);
+    }
+
+    async function saveProxySettings(event) {
+        event.preventDefault();
+        setIsSavingProxySettings(true);
+        try {
+            const nextProxyServer = proxyInput.trim();
+            const currentProxyServer = usePreferencesStore.getState().proxyServer || '';
+            if (nextProxyServer !== currentProxyServer) {
+                await setProxyServerPreference(nextProxyServer);
+                return;
+            }
+            setIsProxyDialogOpen(false);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to save proxy settings.');
+        } finally {
+            setIsSavingProxySettings(false);
+        }
+    }
+
     async function handleCustomEndpointToggle(checked) {
         cancelPendingAutoLogin('Automatic login was skipped because the login form changed.');
         const previousValue = Boolean(snapshot?.enableCustomEndpoint);
@@ -503,31 +554,45 @@ export function LoginPage() {
         : snapshot?.lastUserLoggedIn || 'last session';
 
     return (
-        <div className="relative flex min-h-screen w-full items-center justify-center p-6">
-            <div className="absolute left-2 top-2 flex items-center gap-2">
-                <LanguagesIcon className="size-4 text-muted-foreground" />
-                <Select
-                    value={locale}
-                    disabled={isAuthBusy}
-                    onValueChange={(value) => void handleLanguageChange(value)}>
-                    <SelectTrigger className="w-44">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {languageCodes.map((code) => (
-                                <SelectItem key={code} value={code}>
-                                    {getLanguageName(code)}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </div>
-
-            <div className="flex w-full max-w-4xl flex-col gap-3">
-                <div className={cn('grid min-h-[380px] gap-2', hasSavedAccounts && 'md:grid-cols-[1fr_auto_1fr]')}>
-                    <div className="flex flex-col gap-3">
+        <div className="relative flex min-h-full w-full flex-col overflow-y-auto bg-background p-6">
+            <div className="flex flex-1 items-center justify-center">
+                <div className="flex w-full max-w-4xl flex-col gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="min-w-0">
+                            <div className="truncate text-lg font-semibold">VRCX-0</div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Select
+                            value={locale}
+                            disabled={isAuthBusy}
+                            onValueChange={(value) => void handleLanguageChange(value)}>
+                            <SelectTrigger size="sm" className="w-36">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {languageCodes.map((code) => (
+                                        <SelectItem key={code} value={code}>
+                                            {getLanguageName(code)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void openProxyDialog()}>
+                            <NetworkIcon data-icon="inline-start" />
+                            {t('view.login.proxy_settings')}
+                        </Button>
+                    </div>
+                </div>
+                <div className={cn('grid min-h-[380px] items-stretch gap-2', hasSavedAccounts && 'md:grid-cols-[1fr_auto_1fr]')}>
+                    <div className="flex h-full flex-col gap-3">
                         {shouldShowAutoLogin ? (
                             <Card>
                                 <CardContent className="flex flex-wrap items-center gap-3 p-3 text-sm">
@@ -563,12 +628,12 @@ export function LoginPage() {
                             </Card>
                         ) : null}
 
-                        <Card>
+                        <Card className="flex flex-1 flex-col">
                             <CardHeader>
                                 <CardTitle className="text-center">{t('view.login.login')}</CardTitle>
                             </CardHeader>
-                            <CardContent className="flex flex-col gap-4">
-                                <form className="flex flex-col gap-4" onSubmit={handleManualLoginSubmit}>
+                            <CardContent className="flex flex-1 flex-col gap-4">
+                                <form className="flex flex-1 flex-col gap-4" onSubmit={handleManualLoginSubmit}>
                                     <FieldGroup className="gap-3">
                                         <Field>
                                             <FieldLabel htmlFor="react-login-username">
@@ -578,7 +643,7 @@ export function LoginPage() {
                                                 id="react-login-username"
                                                 autoComplete="username"
                                                 disabled={isAuthBusy}
-                                                placeholder={t('view.login.field.username')}
+                                                placeholder={t('view.login.placeholder.account')}
                                                 value={loginForm.username}
                                                 onChange={(event) => {
                                                     cancelPendingAutoLogin(
@@ -600,7 +665,7 @@ export function LoginPage() {
                                                 type="password"
                                                 autoComplete="current-password"
                                                 disabled={isAuthBusy}
-                                                placeholder={t('view.login.field.password')}
+                                                placeholder={t('view.login.placeholder.password')}
                                                 value={loginForm.password}
                                                 onChange={(event) => {
                                                     cancelPendingAutoLogin(
@@ -615,7 +680,7 @@ export function LoginPage() {
                                         </Field>
                                     </FieldGroup>
 
-                                    <div className="flex flex-wrap items-center gap-6">
+                                    <div className="flex flex-wrap items-center justify-end gap-4">
                                         <Field orientation="horizontal" className="w-auto">
                                             <Checkbox
                                                 id="react-login-save-credentials"
@@ -635,71 +700,13 @@ export function LoginPage() {
                                                 {t('view.login.field.saveCredentials')}
                                             </FieldLabel>
                                         </Field>
-                                        <Field orientation="horizontal" className="w-auto">
-                                            <Checkbox
-                                                id="react-login-dev-endpoint"
-                                                checked={loginForm.enableCustomEndpoint}
-                                                disabled={isUpdatingEndpointSetting || isAuthBusy}
-                                                onCheckedChange={(checked) =>
-                                                    void handleCustomEndpointToggle(checked)
-                                                }
-                                            />
-                                            <FieldLabel htmlFor="react-login-dev-endpoint">
-                                                {t('view.login.field.devEndpoint')}
-                                            </FieldLabel>
-                                        </Field>
                                     </div>
 
-                                    {loginForm.enableCustomEndpoint ? (
-                                        <FieldGroup className="grid gap-4 md:grid-cols-2">
-                                            <Field>
-                                                <FieldLabel htmlFor="react-login-endpoint">
-                                                    {t('view.login.field.endpoint')}
-                                                </FieldLabel>
-                                                <Input
-                                                    id="react-login-endpoint"
-                                                    disabled={isAuthBusy}
-                                                    placeholder={DEFAULT_ENDPOINT_DOMAIN}
-                                                    value={loginForm.endpoint}
-                                                    onChange={(event) => {
-                                                        cancelPendingAutoLogin(
-                                                            'Automatic login was skipped because the login form changed.'
-                                                        );
-                                                        setLoginForm((current) => ({
-                                                            ...current,
-                                                            endpoint: event.target.value
-                                                        }));
-                                                    }}
-                                                />
-                                            </Field>
-                                            <Field>
-                                                <FieldLabel htmlFor="react-login-websocket">
-                                                    {t('view.login.field.websocket')}
-                                                </FieldLabel>
-                                                <Input
-                                                    id="react-login-websocket"
-                                                    disabled={isAuthBusy}
-                                                    placeholder={DEFAULT_WEBSOCKET_DOMAIN}
-                                                    value={loginForm.websocket}
-                                                    onChange={(event) => {
-                                                        cancelPendingAutoLogin(
-                                                            'Automatic login was skipped because the login form changed.'
-                                                        );
-                                                        setLoginForm((current) => ({
-                                                            ...current,
-                                                            websocket: event.target.value
-                                                        }));
-                                                    }}
-                                                />
-                                            </Field>
-                                        </FieldGroup>
-                                    ) : null}
-
-                                    <Button type="submit" size="lg" className="w-full" disabled={isAuthBusy}>
+                                    <Button type="submit" size="lg" className="mt-auto w-full" disabled={isAuthBusy}>
                                         {isSubmitting ? (
                                             <>
                                                 <Spinner data-icon="inline-start" />
-                                                Authenticating...
+                                                {t('view.login.signingIn')}
                                             </>
                                         ) : (
                                             t('view.login.login')
@@ -714,11 +721,6 @@ export function LoginPage() {
                                     onClick={() => void openExternalLink('https://vrchat.com/register')}>
                                     {t('view.login.register')}
                                 </Button>
-                            </CardContent>
-                        </Card>
-
-                        <div className="flex flex-col gap-1 text-center text-xs text-muted-foreground">
-                            <p>
                                 <Button
                                     type="button"
                                     variant="link"
@@ -726,18 +728,15 @@ export function LoginPage() {
                                     onClick={() => void openExternalLink('https://vrchat.com/home/password')}>
                                     {t('view.login.forgotPassword')}
                                 </Button>
-                            </p>
-                            <p>{t('view.settings.general.legal_notice.info')}</p>
-                            <p>{t('view.settings.general.legal_notice.disclaimer1')}</p>
-                            <p>{t('view.settings.general.legal_notice.disclaimer2')}</p>
-                        </div>
+                            </CardContent>
+                        </Card>
 
                     </div>
 
                     {hasSavedAccounts ? (
                         <>
                             <div className="hidden w-px bg-border md:block" />
-                            <Card className="flex min-h-0 flex-col">
+                            <Card className="flex h-full min-h-0 flex-col">
                                 <CardHeader>
                                     <CardTitle className="text-center">{t('view.login.savedAccounts')}</CardTitle>
                                 </CardHeader>
@@ -808,7 +807,133 @@ export function LoginPage() {
                         </>
                     ) : null}
                 </div>
+                </div>
             </div>
+            <div className="mt-4 flex shrink-0 flex-col items-center justify-center gap-1 text-center text-[0.7rem] text-muted-foreground/65">
+                <div className="flex items-center justify-center gap-2">
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="h-auto p-0 text-[0.7rem] text-muted-foreground/75"
+                        onClick={() => void openExternalLink('https://github.com/Map1en/VRCX-0')}>
+                        {t('view.login.footer.github')}
+                    </Button>
+                    <span aria-hidden="true">|</span>
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="h-auto p-0 text-[0.7rem] text-muted-foreground/75"
+                        onClick={() => void openExternalLink('https://discord.gg/bnEVqwSp')}>
+                        {t('view.login.footer.discord')}
+                    </Button>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+                    <span>{t('view.login.footer.builtForPlayers')}</span>
+                    <span aria-hidden="true">|</span>
+                    <span>{t('view.login.footer.deviceStorage')}</span>
+                </div>
+            </div>
+
+            <Dialog open={isProxyDialogOpen} onOpenChange={setIsProxyDialogOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{t('view.login.proxy_settings')}</DialogTitle>
+                    </DialogHeader>
+                    <form className="flex flex-col gap-4" onSubmit={saveProxySettings}>
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="react-login-proxy">
+                                    <NetworkIcon className="size-4" />
+                                    {t('status_bar.proxy')}
+                                </FieldLabel>
+                                <Input
+                                    id="react-login-proxy"
+                                    disabled={isSavingProxySettings}
+                                    placeholder="127.0.0.1:7890"
+                                    value={proxyInput}
+                                    onChange={(event) => setProxyInput(event.target.value)}
+                                />
+                            </Field>
+                            <Field orientation="horizontal" className="w-auto">
+                                <Checkbox
+                                    id="react-login-dev-endpoint"
+                                    checked={loginForm.enableCustomEndpoint}
+                                    disabled={isSavingProxySettings || isUpdatingEndpointSetting || isAuthBusy}
+                                    onCheckedChange={(checked) =>
+                                        void handleCustomEndpointToggle(checked)
+                                    }
+                                />
+                                <FieldLabel htmlFor="react-login-dev-endpoint">
+                                    {t('view.login.field.devEndpoint')}
+                                </FieldLabel>
+                            </Field>
+                            {loginForm.enableCustomEndpoint ? (
+                                <FieldGroup className="grid gap-4 md:grid-cols-2">
+                                    <Field>
+                                        <FieldLabel htmlFor="react-login-endpoint">
+                                            {t('view.login.field.endpoint')}
+                                        </FieldLabel>
+                                        <Input
+                                            id="react-login-endpoint"
+                                            disabled={isSavingProxySettings || isAuthBusy}
+                                            placeholder={DEFAULT_ENDPOINT_DOMAIN}
+                                            value={loginForm.endpoint}
+                                            onChange={(event) => {
+                                                cancelPendingAutoLogin(
+                                                    'Automatic login was skipped because the login form changed.'
+                                                );
+                                                setLoginForm((current) => ({
+                                                    ...current,
+                                                    endpoint: event.target.value
+                                                }));
+                                            }}
+                                        />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel htmlFor="react-login-websocket">
+                                            {t('view.login.field.websocket')}
+                                        </FieldLabel>
+                                        <Input
+                                            id="react-login-websocket"
+                                            disabled={isSavingProxySettings || isAuthBusy}
+                                            placeholder={DEFAULT_WEBSOCKET_DOMAIN}
+                                            value={loginForm.websocket}
+                                            onChange={(event) => {
+                                                cancelPendingAutoLogin(
+                                                    'Automatic login was skipped because the login form changed.'
+                                                );
+                                                setLoginForm((current) => ({
+                                                    ...current,
+                                                    websocket: event.target.value
+                                                }));
+                                            }}
+                                        />
+                                    </Field>
+                                </FieldGroup>
+                            ) : null}
+                        </FieldGroup>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={isSavingProxySettings}
+                                onClick={() => setIsProxyDialogOpen(false)}>
+                                {t('prompt.proxy_settings.close')}
+                            </Button>
+                            <Button type="submit" disabled={isSavingProxySettings}>
+                                {isSavingProxySettings ? (
+                                    <>
+                                        <Spinner data-icon="inline-start" />
+                                        {t('common.actions.save')}
+                                    </>
+                                ) : (
+                                    t('common.actions.save')
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
                 <AlertDialogContent>
