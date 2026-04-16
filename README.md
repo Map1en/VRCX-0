@@ -82,7 +82,7 @@ cd VRCX-0
 npm install
 
 # run (dev)
-npm run tauri dev
+npm run tauri:dev
 ```
 
 ---
@@ -191,7 +191,7 @@ cd VRCX-0
 npm install
 
 # 启动开发环境
-npm run tauri dev
+npm run tauri:dev
 ```
 
 ---
