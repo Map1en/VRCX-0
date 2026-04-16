@@ -22,198 +22,212 @@ function createTableStatements(userPrefix) {
     ];
 }
 
-class MutualGraphRepository {
-    async ensureTables(userId) {
-        const userPrefix = normalizeUserTablePrefix(userId);
-        for (const sql of createTableStatements(userPrefix)) {
-            await sqliteRepository.executeNonQuery(sql);
+async function ensureTables(userId) {
+    const userPrefix = normalizeUserTablePrefix(userId);
+    for (const sql of createTableStatements(userPrefix)) {
+        await sqliteRepository.executeNonQuery(sql);
+    }
+    return userPrefix;
+}
+
+async function getSnapshot(userId) {
+    const userPrefix = await ensureTables(userId);
+    const friendTable = `${userPrefix}_mutual_graph_friends`;
+    const linkTable = `${userPrefix}_mutual_graph_links`;
+    const metaTable = `${userPrefix}_mutual_graph_meta`;
+
+    const [friendRows, linkRows, metaRows] = await Promise.all([
+        sqliteRepository.query(`SELECT friend_id FROM ${friendTable}`),
+        sqliteRepository.query(`SELECT friend_id, mutual_id FROM ${linkTable}`),
+        sqliteRepository.query(
+            `SELECT friend_id, last_fetched_at, opted_out FROM ${metaTable}`
+        )
+    ]);
+
+    const snapshot = new Map();
+    const meta = new Map();
+
+    for (const row of friendRows ?? []) {
+        const friendId = readColumn(row, 0, 'friend_id');
+        if (friendId && !snapshot.has(friendId)) {
+            snapshot.set(friendId, []);
         }
-        return userPrefix;
     }
 
-    async getSnapshot(userId) {
-        const userPrefix = await this.ensureTables(userId);
-        const friendTable = `${userPrefix}_mutual_graph_friends`;
-        const linkTable = `${userPrefix}_mutual_graph_links`;
-        const metaTable = `${userPrefix}_mutual_graph_meta`;
-
-        const [friendRows, linkRows, metaRows] = await Promise.all([
-            sqliteRepository.query(`SELECT friend_id FROM ${friendTable}`),
-            sqliteRepository.query(`SELECT friend_id, mutual_id FROM ${linkTable}`),
-            sqliteRepository.query(
-                `SELECT friend_id, last_fetched_at, opted_out FROM ${metaTable}`
-            )
-        ]);
-
-        const snapshot = new Map();
-        const meta = new Map();
-
-        for (const row of friendRows ?? []) {
-            const friendId = readColumn(row, 0, 'friend_id');
-            if (friendId && !snapshot.has(friendId)) {
-                snapshot.set(friendId, []);
-            }
+    for (const row of linkRows ?? []) {
+        const friendId = readColumn(row, 0, 'friend_id');
+        const mutualId = readColumn(row, 1, 'mutual_id');
+        if (!friendId || !mutualId) {
+            continue;
         }
 
-        for (const row of linkRows ?? []) {
-            const friendId = readColumn(row, 0, 'friend_id');
-            const mutualId = readColumn(row, 1, 'mutual_id');
-            if (!friendId || !mutualId) {
-                continue;
-            }
-
-            const links = snapshot.get(friendId) ?? [];
-            links.push(mutualId);
-            snapshot.set(friendId, links);
-        }
-
-        for (const row of metaRows ?? []) {
-            const friendId = readColumn(row, 0, 'friend_id');
-            if (!friendId) {
-                continue;
-            }
-
-            meta.set(friendId, {
-                lastFetchedAt: readColumn(row, 1, 'last_fetched_at') || null,
-                optedOut: Number(readColumn(row, 2, 'opted_out')) === 1
-            });
-        }
-
-        return {
-            snapshot,
-            meta
-        };
+        const links = snapshot.get(friendId) ?? [];
+        links.push(mutualId);
+        snapshot.set(friendId, links);
     }
 
-    async getMutualFriends({ friendId, offset = 0, n = 100 } = {}) {
-        const normalizedFriendId =
-            typeof friendId === 'string' ? friendId.trim() : String(friendId ?? '').trim();
-        if (!normalizedFriendId) {
-            throw new Error('MutualGraphRepository.getMutualFriends requires a friend id.');
+    for (const row of metaRows ?? []) {
+        const friendId = readColumn(row, 0, 'friend_id');
+        if (!friendId) {
+            continue;
         }
 
-        return vrchatFriendRepository.executeGet(
-            `users/${encodeURIComponent(normalizedFriendId)}/mutuals/friends`,
-            {
-                userId: normalizedFriendId,
-                offset,
-                n
-            }
-        );
-    }
-
-    async saveSnapshot(userId, entries) {
-        const userPrefix = await this.ensureTables(userId);
-        const friendTable = `${userPrefix}_mutual_graph_friends`;
-        const linkTable = `${userPrefix}_mutual_graph_links`;
-        const metaTable = `${userPrefix}_mutual_graph_meta`;
-        const pairs = entries instanceof Map ? entries : new Map();
-
-        await sqliteRepository.transaction(async (tx) => {
-            await tx.executeNonQuery(
-                `DELETE FROM ${linkTable} WHERE friend_id NOT IN (SELECT friend_id FROM ${metaTable} WHERE opted_out = 1)`
-            );
-            await tx.executeNonQuery(
-                `DELETE FROM ${friendTable} WHERE friend_id NOT IN (SELECT friend_id FROM ${metaTable} WHERE opted_out = 1)`
-            );
-
-            const friendIds = Array.from(pairs.keys()).filter(Boolean);
-            if (friendIds.length) {
-                const args = {};
-                const placeholders = friendIds.map((friendId, index) => {
-                    const key = `@friendId${index}`;
-                    args[key] = String(friendId);
-                    return key;
-                });
-                await tx.executeNonQuery(
-                    `DELETE FROM ${linkTable} WHERE friend_id IN (${placeholders.join(', ')})`,
-                    args
-                );
-            }
-
-            await insertFriendRows(tx, friendTable, friendIds);
-
-            const edgeRows = [];
-            pairs.forEach((mutualIds, friendId) => {
-                if (!friendId) {
-                    return;
-                }
-                const collection = mutualIds instanceof Set ? Array.from(mutualIds) : mutualIds;
-                for (const mutualId of Array.isArray(collection) ? collection : []) {
-                    if (mutualId) {
-                        edgeRows.push([String(friendId), String(mutualId)]);
-                    }
-                }
-            });
-            await insertEdgeRows(tx, linkTable, edgeRows);
+        meta.set(friendId, {
+            lastFetchedAt: readColumn(row, 1, 'last_fetched_at') || null,
+            optedOut: Number(readColumn(row, 2, 'opted_out')) === 1
         });
     }
 
-    async updateMutualsForFriend(userId, friendId, mutualIds) {
-        const normalizedFriendId =
-            typeof friendId === 'string' ? friendId.trim() : String(friendId ?? '').trim();
-        if (!normalizedFriendId) {
-            return;
-        }
-
-        const userPrefix = await this.ensureTables(userId);
-        const friendTable = `${userPrefix}_mutual_graph_friends`;
-        const linkTable = `${userPrefix}_mutual_graph_links`;
-        const collection = Array.isArray(mutualIds) ? mutualIds.filter(Boolean) : [];
-
-        await sqliteRepository.transaction(async (tx) => {
-            await insertFriendRows(tx, friendTable, [normalizedFriendId]);
-            await tx.executeNonQuery(`DELETE FROM ${linkTable} WHERE friend_id = @friendId`, {
-                '@friendId': normalizedFriendId
-            });
-            await insertEdgeRows(
-                tx,
-                linkTable,
-                collection.map((mutualId) => [normalizedFriendId, String(mutualId)])
-            );
-        });
-    }
-
-    async upsertMeta(userId, friendId, { lastFetchedAt, optedOut } = {}) {
-        const normalizedFriendId =
-            typeof friendId === 'string' ? friendId.trim() : String(friendId ?? '').trim();
-        if (!normalizedFriendId) {
-            return;
-        }
-
-        const userPrefix = await this.ensureTables(userId);
-        await sqliteRepository.executeNonQuery(
-            `INSERT OR REPLACE INTO ${userPrefix}_mutual_graph_meta (friend_id, last_fetched_at, opted_out)
-             VALUES (@friendId, @lastFetchedAt, @optedOut)`,
-            {
-                '@friendId': normalizedFriendId,
-                '@lastFetchedAt': lastFetchedAt || new Date().toISOString(),
-                '@optedOut': optedOut ? 1 : 0
-            }
-        );
-    }
-
-    async bulkUpsertMeta(userId, entries) {
-        if (!(entries instanceof Map) || entries.size === 0) {
-            return;
-        }
-
-        const userPrefix = await this.ensureTables(userId);
-        const metaTable = `${userPrefix}_mutual_graph_meta`;
-        const rows = [];
-        const now = new Date().toISOString();
-        entries.forEach((entry, friendId) => {
-            if (friendId) {
-                rows.push([String(friendId), entry?.lastFetchedAt || now, entry?.optedOut ? 1 : 0]);
-            }
-        });
-        await insertMetaRows(sqliteRepository, metaTable, rows);
+    return {
+        snapshot,
+        meta
     }
 }
 
-const mutualGraphRepository = new MutualGraphRepository();
+async function getMutualFriends({ friendId, offset = 0, n = 100 } = {}) {
+    const normalizedFriendId =
+        typeof friendId === 'string' ? friendId.trim() : String(friendId ?? '').trim();
+    if (!normalizedFriendId) {
+        throw new Error('MutualGraphRepository.getMutualFriends requires a friend id.');
+    }
 
-export { MutualGraphRepository };
+    return vrchatFriendRepository.executeGet(
+        `users/${encodeURIComponent(normalizedFriendId)}/mutuals/friends`,
+        {
+            userId: normalizedFriendId,
+            offset,
+            n
+        }
+    );
+}
+
+async function saveSnapshot(userId, entries) {
+    const userPrefix = await ensureTables(userId);
+    const friendTable = `${userPrefix}_mutual_graph_friends`;
+    const linkTable = `${userPrefix}_mutual_graph_links`;
+    const metaTable = `${userPrefix}_mutual_graph_meta`;
+    const pairs = entries instanceof Map ? entries : new Map();
+
+    await sqliteRepository.transaction(async (tx) => {
+        await tx.executeNonQuery(
+            `DELETE FROM ${linkTable} WHERE friend_id NOT IN (SELECT friend_id FROM ${metaTable} WHERE opted_out = 1)`
+        );
+        await tx.executeNonQuery(
+            `DELETE FROM ${friendTable} WHERE friend_id NOT IN (SELECT friend_id FROM ${metaTable} WHERE opted_out = 1)`
+        );
+
+        const friendIds = Array.from(pairs.keys()).filter(Boolean);
+        if (friendIds.length) {
+            const args = {};
+            const placeholders = friendIds.map((friendId, index) => {
+                const key = `@friendId${index}`;
+                args[key] = String(friendId);
+                return key;
+            });
+            await tx.executeNonQuery(
+                `DELETE FROM ${linkTable} WHERE friend_id IN (${placeholders.join(', ')})`,
+                args
+            );
+        }
+
+        await insertFriendRows(tx, friendTable, friendIds);
+
+        const edgeRows = [];
+        pairs.forEach((mutualIds, friendId) => {
+            if (!friendId) {
+                return;
+            }
+            const collection = mutualIds instanceof Set ? Array.from(mutualIds) : mutualIds;
+            for (const mutualId of Array.isArray(collection) ? collection : []) {
+                if (mutualId) {
+                    edgeRows.push([String(friendId), String(mutualId)]);
+                }
+            }
+        });
+        await insertEdgeRows(tx, linkTable, edgeRows);
+    });
+}
+
+async function updateMutualsForFriend(userId, friendId, mutualIds) {
+    const normalizedFriendId =
+        typeof friendId === 'string' ? friendId.trim() : String(friendId ?? '').trim();
+    if (!normalizedFriendId) {
+        return;
+    }
+
+    const userPrefix = await ensureTables(userId);
+    const friendTable = `${userPrefix}_mutual_graph_friends`;
+    const linkTable = `${userPrefix}_mutual_graph_links`;
+    const collection = Array.isArray(mutualIds) ? mutualIds.filter(Boolean) : [];
+
+    await sqliteRepository.transaction(async (tx) => {
+        await insertFriendRows(tx, friendTable, [normalizedFriendId]);
+        await tx.executeNonQuery(`DELETE FROM ${linkTable} WHERE friend_id = @friendId`, {
+            '@friendId': normalizedFriendId
+        });
+        await insertEdgeRows(
+            tx,
+            linkTable,
+            collection.map((mutualId) => [normalizedFriendId, String(mutualId)])
+        );
+    });
+}
+
+async function upsertMeta(userId, friendId, { lastFetchedAt, optedOut } = {}) {
+    const normalizedFriendId =
+        typeof friendId === 'string' ? friendId.trim() : String(friendId ?? '').trim();
+    if (!normalizedFriendId) {
+        return;
+    }
+
+    const userPrefix = await ensureTables(userId);
+    await sqliteRepository.executeNonQuery(
+        `INSERT OR REPLACE INTO ${userPrefix}_mutual_graph_meta (friend_id, last_fetched_at, opted_out)
+         VALUES (@friendId, @lastFetchedAt, @optedOut)`,
+        {
+            '@friendId': normalizedFriendId,
+            '@lastFetchedAt': lastFetchedAt || new Date().toISOString(),
+            '@optedOut': optedOut ? 1 : 0
+        }
+    );
+}
+
+async function bulkUpsertMeta(userId, entries) {
+    if (!(entries instanceof Map) || entries.size === 0) {
+        return;
+    }
+
+    const userPrefix = await ensureTables(userId);
+    const metaTable = `${userPrefix}_mutual_graph_meta`;
+    const rows = [];
+    const now = new Date().toISOString();
+    entries.forEach((entry, friendId) => {
+        if (friendId) {
+            rows.push([String(friendId), entry?.lastFetchedAt || now, entry?.optedOut ? 1 : 0]);
+        }
+    });
+    await insertMetaRows(sqliteRepository, metaTable, rows);
+}
+
+const mutualGraphRepository = Object.freeze({
+    ensureTables,
+    getSnapshot,
+    getMutualFriends,
+    saveSnapshot,
+    updateMutualsForFriend,
+    upsertMeta,
+    bulkUpsertMeta
+});
+
+export {
+    ensureTables,
+    getSnapshot,
+    getMutualFriends,
+    saveSnapshot,
+    updateMutualsForFriend,
+    upsertMeta,
+    bulkUpsertMeta
+};
 export default mutualGraphRepository;
 
 async function insertFriendRows(tx, friendTable, friendIds) {
