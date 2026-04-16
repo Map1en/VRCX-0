@@ -107,7 +107,7 @@ export function AppShellLayout() {
 
     return (
         <AppSidebar>
-            <div className="flex h-screen min-h-0 min-w-0 flex-col overflow-hidden bg-background">
+            <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background">
                 <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
                     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                         <Outlet />

@@ -557,42 +557,42 @@ export function LoginPage() {
         <div className="relative flex min-h-full w-full flex-col overflow-y-auto bg-background p-6">
             <div className="flex flex-1 items-center justify-center">
                 <div className="flex w-full max-w-4xl flex-col gap-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                        <div className="min-w-0">
-                            <div className="truncate text-lg font-semibold">VRCX-0</div>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <div className="min-w-0">
+                                <div className="truncate text-lg font-semibold">VRCX-0</div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Select
+                                value={locale}
+                                disabled={isAuthBusy}
+                                onValueChange={(value) => void handleLanguageChange(value)}>
+                                <SelectTrigger size="sm" className="w-36">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {languageCodes.map((code) => (
+                                            <SelectItem key={code} value={code}>
+                                                {getLanguageName(code)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void openProxyDialog()}>
+                                <NetworkIcon data-icon="inline-start" />
+                                {t('view.login.proxy_settings')}
+                            </Button>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Select
-                            value={locale}
-                            disabled={isAuthBusy}
-                            onValueChange={(value) => void handleLanguageChange(value)}>
-                            <SelectTrigger size="sm" className="w-36">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {languageCodes.map((code) => (
-                                        <SelectItem key={code} value={code}>
-                                            {getLanguageName(code)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void openProxyDialog()}>
-                            <NetworkIcon data-icon="inline-start" />
-                            {t('view.login.proxy_settings')}
-                        </Button>
-                    </div>
-                </div>
-                <div className={cn('grid min-h-[380px] items-stretch gap-2', hasSavedAccounts && 'md:grid-cols-[1fr_auto_1fr]')}>
-                    <div className="flex h-full flex-col gap-3">
+                    <div className={cn('grid min-h-[380px] items-stretch gap-2', hasSavedAccounts && 'md:grid-cols-[1fr_auto_1fr]')}>
+                        <div className="flex h-full flex-col gap-3">
                         {shouldShowAutoLogin ? (
                             <Card>
                                 <CardContent className="flex flex-wrap items-center gap-3 p-3 text-sm">
