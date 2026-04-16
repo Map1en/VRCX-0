@@ -591,7 +591,7 @@ export function LoginPage() {
                             </Button>
                         </div>
                     </div>
-                    <div className={cn('grid min-h-[380px] items-stretch gap-2', hasSavedAccounts && 'md:grid-cols-[1fr_auto_1fr]')}>
+                    <div className={cn('grid min-h-95 items-stretch gap-2', hasSavedAccounts && 'md:grid-cols-[1fr_auto_1fr]')}>
                         <div className="flex h-full flex-col gap-3">
                         {shouldShowAutoLogin ? (
                             <Card>
@@ -809,8 +809,8 @@ export function LoginPage() {
                 </div>
                 </div>
             </div>
-            <div className="mt-4 flex shrink-0 flex-col items-center justify-center gap-1 text-center text-[0.7rem] text-muted-foreground/65">
-                <div className="flex items-center justify-center gap-2">
+            <div className="mt-4 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-1 text-center text-[0.7rem] text-muted-foreground/65">
+                <div className="flex justify-end">
                     <Button
                         type="button"
                         variant="link"
@@ -818,7 +818,9 @@ export function LoginPage() {
                         onClick={() => void openExternalLink('https://github.com/Map1en/VRCX-0')}>
                         {t('view.login.footer.github')}
                     </Button>
-                    <span aria-hidden="true">|</span>
+                </div>
+                <span aria-hidden="true">|</span>
+                <div className="flex justify-start">
                     <Button
                         type="button"
                         variant="link"
@@ -827,11 +829,9 @@ export function LoginPage() {
                         {t('view.login.footer.discord')}
                     </Button>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-                    <span>{t('view.login.footer.builtForPlayers')}</span>
-                    <span aria-hidden="true">|</span>
-                    <span>{t('view.login.footer.deviceStorage')}</span>
-                </div>
+                <span className="justify-self-end">{t('view.login.footer.builtForPlayers')}</span>
+                <span aria-hidden="true">|</span>
+                <span className="justify-self-start">{t('view.login.footer.deviceStorage')}</span>
             </div>
 
             <Dialog open={isProxyDialogOpen} onOpenChange={setIsProxyDialogOpen}>
