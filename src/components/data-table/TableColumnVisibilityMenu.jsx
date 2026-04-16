@@ -6,16 +6,17 @@ import {
     Settings2Icon
 } from 'lucide-react';
 
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
+} from '@/ui/shadcn/dropdown-menu';
 
 function resolveColumnLabel(column) {
     const metaLabel = column.columnDef?.meta?.label;
@@ -86,61 +87,63 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="gap-2">
-                    <Settings2Icon className="size-4" />
+                <Button type="button" variant="outline" size="sm">
+                    <Settings2Icon data-icon="inline-start" />
                     {label}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-h-96 w-72 overflow-y-auto">
                 <DropdownMenuLabel>Table layout</DropdownMenuLabel>
-                <DropdownMenuItem
-                    className="gap-2"
-                    onSelect={(event) => {
-                        event.preventDefault();
-                        resetTableLayout(table, onResetLayout);
-                    }}>
-                    <RotateCcwIcon className="size-4" />
-                    Reset columns
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuItem
+                        onSelect={(event) => {
+                            event.preventDefault();
+                            resetTableLayout(table, onResetLayout);
+                        }}>
+                        <RotateCcwIcon data-icon="inline-start" />
+                        Reset columns
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                {columns.map((column) => {
-                    const columnIndex = columnOrderIndexById.get(column.id) ?? -1;
-                    const columnLabel = resolveColumnLabel(column);
-                    const canMoveUp = columnIndex > 0;
-                    const canMoveDown = columnIndex >= 0 && columnIndex < columnOrder.length - 1;
+                <DropdownMenuGroup>
+                    {columns.map((column) => {
+                        const columnIndex = columnOrderIndexById.get(column.id) ?? -1;
+                        const columnLabel = resolveColumnLabel(column);
+                        const canMoveUp = columnIndex > 0;
+                        const canMoveDown = columnIndex >= 0 && columnIndex < columnOrder.length - 1;
 
-                    return (
-                        <Fragment key={column.id}>
-                            <DropdownMenuCheckboxItem
-                                className="gap-2"
-                                checked={column.getIsVisible()}
-                                onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
-                                onSelect={(event) => event.preventDefault()}>
-                                <span className="min-w-0 flex-1 truncate">{columnLabel}</span>
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuItem
-                                className="gap-2 pl-8 text-xs text-muted-foreground"
-                                disabled={!canMoveUp}
-                                onSelect={(event) => {
-                                    event.preventDefault();
-                                    moveColumn(table, column.id, -1, columnOrder);
-                                }}>
-                                <ArrowUpIcon className="size-3.5" />
-                                Move up
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                className="gap-2 pl-8 text-xs text-muted-foreground"
-                                disabled={!canMoveDown}
-                                onSelect={(event) => {
-                                    event.preventDefault();
-                                    moveColumn(table, column.id, 1, columnOrder);
-                                }}>
-                                <ArrowDownIcon className="size-3.5" />
-                                Move down
-                            </DropdownMenuItem>
-                        </Fragment>
-                    );
-                })}
+                        return (
+                            <Fragment key={column.id}>
+                                <DropdownMenuCheckboxItem
+                                    checked={column.getIsVisible()}
+                                    onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
+                                    onSelect={(event) => event.preventDefault()}>
+                                    <span className="min-w-0 flex-1 truncate">{columnLabel}</span>
+                                </DropdownMenuCheckboxItem>
+                                <DropdownMenuItem
+                                    inset
+                                    disabled={!canMoveUp}
+                                    onSelect={(event) => {
+                                        event.preventDefault();
+                                        moveColumn(table, column.id, -1, columnOrder);
+                                    }}>
+                                    <ArrowUpIcon data-icon="inline-start" />
+                                    Move up
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    inset
+                                    disabled={!canMoveDown}
+                                    onSelect={(event) => {
+                                        event.preventDefault();
+                                        moveColumn(table, column.id, 1, columnOrder);
+                                    }}>
+                                    <ArrowDownIcon data-icon="inline-start" />
+                                    Move down
+                                </DropdownMenuItem>
+                            </Fragment>
+                        );
+                    })}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );

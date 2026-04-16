@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     CheckIcon,
     EyeOffIcon,
-    LoaderCircleIcon,
     RefreshCcwIcon,
     Settings2Icon,
     UserIcon
@@ -27,18 +26,21 @@ import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     Sheet,
     SheetContent,
     SheetHeader,
     SheetTitle,
     SheetTrigger
-} from '@/ui/shadcn/sheet.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover.jsx';
-import { ScrollArea } from '@/ui/shadcn/scroll-area.jsx';
+} from '@/ui/shadcn/sheet';
+import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { ScrollArea } from '@/ui/shadcn/scroll-area';
+import { Slider } from '@/ui/shadcn/slider';
+import { Spinner } from '@/ui/shadcn/spinner';
 import GraphLayoutWorker from './graphLayoutWorker.js?worker&inline';
 
 const LAYOUT_ITERATIONS_MIN = 300;
@@ -221,11 +223,11 @@ function buildPickerOption(userId, friendsById, fallbackName = '', degree = null
     };
 }
 
-function UserPickerRow({ option, selected = false, multiple = false }) {
+function UserPickerRow({ option, selected = false, multiple = false, showSelection = true }) {
     const imageUrl = option?.user ? userImage(option.user, true, '64') : '';
 
     return (
-        <span className="flex w-full items-center p-1.5 text-left text-[13px]">
+        <span className="flex w-full items-center p-1.5 text-left text-sm">
             <span className="mr-2.5 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted">
                 {imageUrl ? (
                     <img
@@ -239,7 +241,7 @@ function UserPickerRow({ option, selected = false, multiple = false }) {
                 )}
             </span>
             <span className="min-w-0 flex-1 overflow-hidden">
-                <span className="block truncate font-medium leading-[18px]">
+                <span className="block truncate font-medium leading-5">
                     {option?.label || option?.value}
                 </span>
                 {Number.isFinite(option?.degree) ? (
@@ -248,16 +250,18 @@ function UserPickerRow({ option, selected = false, multiple = false }) {
                     </span>
                 ) : null}
             </span>
-            {multiple ? (
-                <Checkbox
-                    checked={selected}
-                    tabIndex={-1}
-                    aria-hidden="true"
-                    className="ml-auto"
-                />
-            ) : (
-                <CheckIcon className={cn('ml-auto size-4', selected ? 'opacity-100' : 'opacity-0')} />
-            )}
+            {showSelection ? (
+                multiple ? (
+                    <Checkbox
+                        checked={selected}
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        className="ml-auto"
+                    />
+                ) : (
+                    <CheckIcon className={cn('ml-auto size-4', selected ? 'opacity-100' : 'opacity-0')} />
+                )
+            ) : null}
         </span>
     );
 }
@@ -266,7 +270,7 @@ function GraphLoadingState() {
     return (
         <div className="flex min-h-80 items-center justify-center rounded-xl border border-dashed bg-muted/20">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <LoaderCircleIcon className="size-5 animate-spin" />
+                <Spinner className="size-5" />
                 Loading mutual graph snapshot.
             </div>
         </div>
@@ -276,7 +280,7 @@ function GraphLoadingState() {
 function GraphEmptyState({ title, description }) {
     return (
         <div className="flex min-h-80 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-md space-y-2">
+            <div className="flex max-w-md flex-col gap-2">
                 <div className="text-sm font-medium">{title}</div>
                 <div className="text-sm text-muted-foreground">{description}</div>
             </div>
@@ -1016,7 +1020,7 @@ export function MutualFriendsPage() {
         }
 
         let active = true;
-        const isDarkMode = resolvedTheme === 'dark' || resolvedTheme === 'midnight';
+        const isDarkMode = resolvedTheme === 'dark';
         void buildSigmaGraph({
             nodes: filteredGraph.nodes,
             links: filteredGraph.links,
@@ -1368,27 +1372,30 @@ export function MutualFriendsPage() {
                                         placeholder={t('view.charts.mutual_friend.actions.go_to_friend')}
                                     />
                                     <ScrollArea className="mt-2 h-72">
-                                        <div className="space-y-1 pr-2">
-                                            <button
+                                        <div className="flex flex-col gap-1 pr-2">
+                                            <Button
                                                 type="button"
-                                                className="flex w-full items-center rounded-md p-1.5 text-left text-[13px] hover:bg-muted"
+                                                variant="ghost"
+                                                className="h-auto w-full justify-start p-1.5 text-left font-normal"
                                                 onClick={() => {
                                                     selectNode('');
                                                     setNodePickerOpen(false);
                                                 }}>
                                                 <span className="min-w-0 flex-1 truncate">No selection</span>
                                                 <CheckIcon
+                                                    data-icon="inline-end"
                                                     className={cn(
-                                                        'ml-auto size-4',
+                                                        'ml-auto',
                                                         selectedNodeId ? 'opacity-0' : 'opacity-100'
                                                     )}
                                                 />
-                                            </button>
+                                            </Button>
                                             {filteredNodeOptions.map((option) => (
-                                                <button
+                                                <Button
                                                     key={option.value}
                                                     type="button"
-                                                    className="w-full rounded-md hover:bg-muted"
+                                                    variant="ghost"
+                                                    className="h-auto w-full justify-start p-0 text-left font-normal"
                                                     onClick={() => {
                                                         selectNode(option.value);
                                                         setNodePickerOpen(false);
@@ -1398,7 +1405,7 @@ export function MutualFriendsPage() {
                                                         option={option}
                                                         selected={option.value === selectedNodeId}
                                                     />
-                                                </button>
+                                                </Button>
                                             ))}
                                             {!filteredNodeOptions.length ? (
                                                 <div className="p-3 text-xs text-muted-foreground">
@@ -1416,7 +1423,7 @@ export function MutualFriendsPage() {
                         {selectedNode ? (
                             <>
                                 <Button type="button" variant="outline" size="sm" onClick={handleOpenSelectedNode}>
-                                    <UserIcon className="mr-2 size-4" />
+                                    <UserIcon data-icon="inline-start" />
                                     Open
                                 </Button>
                                 <Button
@@ -1425,11 +1432,15 @@ export function MutualFriendsPage() {
                                     size="sm"
                                     disabled={nodeRefreshId === selectedNode.id}
                                     onClick={handleRefreshSelectedNode}>
-                                    <RefreshCcwIcon className="mr-2 size-4" />
+                                    {nodeRefreshId === selectedNode.id ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : (
+                                        <RefreshCcwIcon data-icon="inline-start" />
+                                    )}
                                     {nodeRefreshId === selectedNode.id ? 'Refreshing...' : 'Refresh'}
                                 </Button>
                                 <Button type="button" variant="outline" size="sm" onClick={handleHideSelectedNode}>
-                                    <EyeOffIcon className="mr-2 size-4" />
+                                    <EyeOffIcon data-icon="inline-start" />
                                     Hide
                                 </Button>
                             </>
@@ -1438,14 +1449,15 @@ export function MutualFriendsPage() {
                             type="button"
                             variant="ghost"
                             size="icon"
+                            aria-label="Refresh mutual graph"
                             onClick={() => setReloadToken((value) => value + 1)}
                             disabled={fetchProgress.isFetching}>
-                            <RefreshCcwIcon className="size-4" />
+                            {fetchProgress.isFetching ? <Spinner data-icon="inline-start" /> : <RefreshCcwIcon data-icon="inline-start" />}
                         </Button>
                         <Sheet>
                             <SheetTrigger asChild>
-                                <Button type="button" variant="ghost" size="icon">
-                                    <Settings2Icon className="size-4" />
+                                <Button type="button" variant="ghost" size="icon" aria-label={t('view.charts.mutual_friend.settings.title')}>
+                                    <Settings2Icon data-icon="inline-start" />
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="right" className="w-90 overflow-y-auto">
@@ -1453,85 +1465,77 @@ export function MutualFriendsPage() {
                                     <SheetTitle>{t('view.charts.mutual_friend.settings.title')}</SheetTitle>
                                 </SheetHeader>
                                 <div className="grid gap-5 p-4 pt-0 text-sm">
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <div className="flex items-center justify-between">
                                             <span>{t('view.charts.mutual_friend.settings.layout_iterations')}</span>
                                             <span className="tabular-nums text-muted-foreground">{layoutSettings.layoutIterations}</span>
                                         </div>
-                                        <input
-                                            type="range"
+                                        <Slider
                                             min={LAYOUT_ITERATIONS_MIN}
                                             max={LAYOUT_ITERATIONS_MAX}
-                                            step="100"
-                                            value={layoutSettings.layoutIterations}
-                                            onChange={(event) => {
-                                                const nextValue = clampNumber(event.target.value, LAYOUT_ITERATIONS_MIN, LAYOUT_ITERATIONS_MAX, LAYOUT_DEFAULTS.layoutIterations);
+                                            step={100}
+                                            value={[layoutSettings.layoutIterations]}
+                                            onValueChange={([value]) => {
+                                                const nextValue = clampNumber(value, LAYOUT_ITERATIONS_MIN, LAYOUT_ITERATIONS_MAX, LAYOUT_DEFAULTS.layoutIterations);
                                                 setLayoutSettings((current) => ({ ...current, layoutIterations: nextValue }));
                                                 void configRepository.setInt('MutualGraphLayoutIterations', nextValue);
                                             }}
-                                            className="w-full accent-primary"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <div className="flex items-center justify-between">
                                             <span>{t('view.charts.mutual_friend.settings.layout_spacing')}</span>
                                             <span className="tabular-nums text-muted-foreground">{layoutSettings.layoutSpacing}</span>
                                         </div>
-                                        <input
-                                            type="range"
+                                        <Slider
                                             min={LAYOUT_SPACING_MIN}
                                             max={LAYOUT_SPACING_MAX}
-                                            step="1"
-                                            value={layoutSettings.layoutSpacing}
-                                            onChange={(event) => {
-                                                const nextValue = clampNumber(event.target.value, LAYOUT_SPACING_MIN, LAYOUT_SPACING_MAX, LAYOUT_DEFAULTS.layoutSpacing);
+                                            step={1}
+                                            value={[layoutSettings.layoutSpacing]}
+                                            onValueChange={([value]) => {
+                                                const nextValue = clampNumber(value, LAYOUT_SPACING_MIN, LAYOUT_SPACING_MAX, LAYOUT_DEFAULTS.layoutSpacing);
                                                 setLayoutSettings((current) => ({ ...current, layoutSpacing: nextValue }));
                                                 void configRepository.setInt('MutualGraphLayoutSpacing', nextValue);
                                             }}
-                                            className="w-full accent-primary"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <div className="flex items-center justify-between">
                                             <span>{t('view.charts.mutual_friend.settings.edge_curvature')}</span>
                                             <span className="tabular-nums text-muted-foreground">{layoutSettings.edgeCurvature.toFixed(2)}</span>
                                         </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="0.2"
-                                            step="0.01"
-                                            value={layoutSettings.edgeCurvature}
-                                            onChange={(event) => {
-                                                const nextValue = clampNumber(event.target.value, 0, 0.2, LAYOUT_DEFAULTS.edgeCurvature);
+                                        <Slider
+                                            min={EDGE_CURVATURE_MIN}
+                                            max={EDGE_CURVATURE_MAX}
+                                            step={0.01}
+                                            value={[layoutSettings.edgeCurvature]}
+                                            onValueChange={([value]) => {
+                                                const nextValue = clampNumber(value, EDGE_CURVATURE_MIN, EDGE_CURVATURE_MAX, LAYOUT_DEFAULTS.edgeCurvature);
                                                 const rounded = Number(nextValue.toFixed(2));
                                                 setLayoutSettings((current) => ({ ...current, edgeCurvature: rounded }));
                                                 void configRepository.setFloat('MutualGraphEdgeCurvature', rounded);
                                             }}
-                                            className="w-full accent-primary"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <div className="flex items-center justify-between">
                                             <span>{t('view.charts.mutual_friend.settings.community_separation')}</span>
                                             <span className="tabular-nums text-muted-foreground">{layoutSettings.communitySeparation.toFixed(1)}</span>
                                         </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="3"
-                                            step="0.1"
-                                            value={layoutSettings.communitySeparation}
-                                            onChange={(event) => {
-                                                const nextValue = clampNumber(event.target.value, 0, 3, LAYOUT_DEFAULTS.communitySeparation);
+                                        <Slider
+                                            min={COMMUNITY_SEPARATION_MIN}
+                                            max={COMMUNITY_SEPARATION_MAX}
+                                            step={0.1}
+                                            value={[layoutSettings.communitySeparation]}
+                                            onValueChange={([value]) => {
+                                                const nextValue = clampNumber(value, COMMUNITY_SEPARATION_MIN, COMMUNITY_SEPARATION_MAX, LAYOUT_DEFAULTS.communitySeparation);
                                                 const rounded = Number(nextValue.toFixed(1));
                                                 setLayoutSettings((current) => ({ ...current, communitySeparation: rounded }));
                                                 void configRepository.setFloat('MutualGraphCommunitySeparation', rounded);
                                             }}
-                                            className="w-full accent-primary"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <div className="flex items-center justify-between">
                                             <span>{t('view.charts.mutual_friend.settings.exclude_friends')}</span>
                                             <span className="tabular-nums text-muted-foreground">
@@ -1544,30 +1548,31 @@ export function MutualFriendsPage() {
                                             placeholder={t('view.charts.mutual_friend.settings.exclude_friends_placeholder')}
                                         />
                                         <ScrollArea className="h-72 rounded-md border">
-                                            <div className="space-y-1 p-1 pr-2">
+                                            <div className="flex flex-col gap-1 p-1 pr-2">
                                                 {filteredExcludeOptions.map((option) => {
                                                     const selected = excludedFriendIdSet.has(option.value);
                                                     return (
-                                                        <div
+                                                        <Field
                                                             key={option.value}
-                                                            role="checkbox"
-                                                            aria-checked={selected}
-                                                            tabIndex={0}
-                                                            className="cursor-pointer rounded-md hover:bg-muted"
-                                                            onClick={() => toggleExcludedFriendId(option.value)}
-                                                            onKeyDown={(event) => {
-                                                                if (event.key !== 'Enter' && event.key !== ' ') {
-                                                                    return;
-                                                                }
-                                                                event.preventDefault();
-                                                                toggleExcludedFriendId(option.value);
-                                                            }}>
-                                                            <UserPickerRow
-                                                                option={option}
-                                                                selected={selected}
-                                                                multiple
+                                                            orientation="horizontal"
+                                                            className="gap-0 rounded-md p-0 hover:bg-muted">
+                                                            <Checkbox
+                                                                id={`mutual-excluded-friend-${option.value}`}
+                                                                checked={selected}
+                                                                onCheckedChange={() => toggleExcludedFriendId(option.value)}
+                                                                className="ml-2"
                                                             />
-                                                        </div>
+                                                            <FieldLabel
+                                                                htmlFor={`mutual-excluded-friend-${option.value}`}
+                                                                className="min-w-0 flex-1 cursor-pointer font-normal">
+                                                                <UserPickerRow
+                                                                    option={option}
+                                                                    selected={selected}
+                                                                    multiple
+                                                                    showSelection={false}
+                                                                />
+                                                            </FieldLabel>
+                                                        </Field>
                                                     );
                                                 })}
                                                 {!filteredExcludeOptions.length ? (
@@ -1628,7 +1633,7 @@ export function MutualFriendsPage() {
                     ) : (
                         <div
                             ref={setGraphElementRef}
-                            className={cn('h-[calc(100vh-260px)] min-h-[520px] w-full flex-1 rounded-lg bg-transparent', resolvedTheme === 'midnight' ? 'border-primary/20' : '')}
+                            className="h-[calc(100vh-260px)] min-h-[520px] w-full flex-1 rounded-lg bg-transparent"
                         />
                     )}
                 </div>

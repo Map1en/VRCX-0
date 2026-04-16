@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { convertFileUrlToImageUrl, copyTextToClipboard, openExternalLink, userImage } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import { groupProfileRepository, mediaRepository } from '@/repositories/index.js';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
@@ -37,8 +38,8 @@ import { languageMappings } from '@/shared/constants/language.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useModalStore } from '@/state/modalStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -46,18 +47,20 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
+import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Label } from '@/ui/shadcn/label';
+import { Textarea } from '@/ui/shadcn/textarea';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
 import {
     EntityActionDropdown,
     EntityActionItem,
@@ -71,7 +74,7 @@ import {
     EntityInfoGrid,
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
 
 function firstArray(...values) {
@@ -224,15 +227,20 @@ function PostList({ rows, group, onPreviewImage, canManagePosts, onEditPost, onD
             {rows.map((post, index) => {
                 const image = rowRawImage(post);
                 return (
-                    <div key={post?.id || `${post?.title || 'post'}:${index}`} className="box-border flex w-full items-center p-1.5 text-[13px]">
+                    <div key={post?.id || `${post?.title || 'post'}:${index}`} className="box-border flex w-full items-center p-1.5 text-sm">
                         <div className="min-w-0 flex-1 overflow-hidden">
-                            <span className="block truncate font-medium leading-[18px]">{post?.title || 'Post'}</span>
+                            <span className="block truncate font-medium leading-5">{post?.title || 'Post'}</span>
                             {image ? (
-                                <button type="button" className="mr-1.5 inline-block align-top" onClick={() => onPreviewImage?.(image, post?.title || 'Post')}>
-                                    <img src={convertFileUrlToImageUrl(image, 128)} alt="" className="size-[60px] rounded-md object-cover" />
-                                </button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="mr-1.5 h-auto p-0 align-top"
+                                    aria-label={`Preview ${post?.title || 'post'} image`}
+                                    onClick={() => onPreviewImage?.(image, post?.title || 'Post')}>
+                                    <img src={convertFileUrlToImageUrl(image, 128)} alt="" className="size-16 rounded-md object-cover" />
+                                </Button>
                             ) : null}
-                            <pre className="inline-block whitespace-pre-wrap align-top text-xs font-[inherit] text-muted-foreground">{post?.text || '—'}</pre>
+                            <pre className="inline-block whitespace-pre-wrap align-top text-xs font-sans text-muted-foreground">{post?.text || '—'}</pre>
                             <div className="mt-1 flex flex-wrap items-center justify-end gap-1.5 text-xs text-muted-foreground">
                                 {Array.isArray(post?.roleIds) && post.roleIds.length ? (
                                     <span className="inline-flex items-center gap-1">
@@ -245,11 +253,11 @@ function PostList({ rows, group, onPreviewImage, canManagePosts, onEditPost, onD
                                 {post?.updatedAt ? <span>{formatDateFilter(post.updatedAt, 'long')}</span> : null}
                                 {canManagePosts ? (
                                     <>
-                                        <Button type="button" size="icon-sm" variant="ghost" className="size-6" onClick={() => onEditPost?.(post)}>
-                                            <PencilIcon className="size-4" />
+                                        <Button type="button" size="icon-sm" variant="ghost" aria-label="Edit post" onClick={() => onEditPost?.(post)}>
+                                            <PencilIcon data-icon="inline-start" />
                                         </Button>
-                                        <Button type="button" size="icon-sm" variant="ghost" className="size-6" onClick={() => onDeletePost?.(post)}>
-                                            <Trash2Icon className="size-4" />
+                                        <Button type="button" size="icon-sm" variant="ghost" aria-label="Delete post" onClick={() => onDeletePost?.(post)}>
+                                            <Trash2Icon data-icon="inline-start" />
                                         </Button>
                                     </>
                                 ) : null}
@@ -309,23 +317,24 @@ function PhotoGalleryRows({ rows, group, loading, error, onPreviewImage }) {
             {galleryEntries.map(({ gallery, rows: galleryRows }) => (
                 <TabsContent key={gallery.id} value={gallery.id} className="m-0">
                     {gallery.description ? <div className="px-2 py-1 text-sm text-muted-foreground">{gallery.description}</div> : null}
-                    <div className="grid max-h-[600px] gap-4 overflow-y-auto pt-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid max-h-[60vh] gap-4 overflow-y-auto pt-2 sm:grid-cols-2 lg:grid-cols-3">
                         {galleryRows.map((row, index) => {
                             const image = rowImage(row, 'photos');
                             return (
-                                <button
+                                <Button
                                     key={`${rowLabel(row)}:${index}`}
                                     type="button"
-                                    className="overflow-hidden rounded-md border text-left text-sm hover:bg-muted/50"
+                                    variant="ghost"
+                                    className="h-auto w-full flex-col items-stretch overflow-hidden rounded-md border p-0 text-left text-sm"
                                     onClick={() => onPreviewImage?.(rowRawImage(row), rowLabel(row))}>
                                     {image ? (
-                                        <img src={image} alt={rowLabel(row)} className="max-h-[200px] w-full object-contain" />
+                                        <img src={image} alt={rowLabel(row)} className="max-h-52 w-full object-contain" />
                                     ) : (
-                                        <div className="flex h-[200px] w-full items-center justify-center bg-muted">
-                                            <ImageIcon className="size-6 text-muted-foreground" />
+                                        <div className="flex h-52 w-full items-center justify-center bg-muted">
+                                            <ImageIcon data-icon="inline-start" className="size-6 text-muted-foreground" />
                                         </div>
                                     )}
-                                </button>
+                                </Button>
                             );
                         })}
                     </div>
@@ -365,10 +374,11 @@ function RowList({ rows, group = null, kind = '', loading = false, error = '', o
                 const subtitle = memberRoles.join(', ') ||
                     row?.user?.displayName || row?.displayName || '';
                 return (
-                    <button
+                    <Button
                         key={`${label}:${index}`}
                         type="button"
-                        className="box-border flex w-[167px] cursor-pointer items-center p-1.5 text-left text-[13px] hover:rounded-[25px_5px_5px_25px] hover:bg-muted/50"
+                        variant="ghost"
+                        className="box-border h-auto w-44 justify-start p-1.5 text-left text-sm"
                         onClick={() => {
                             if (kind === 'members' && memberUserId) {
                                 openUserDialog({ userId: memberUserId, title: row?.user?.displayName || undefined, seedData: row?.user || null });
@@ -378,22 +388,22 @@ function RowList({ rows, group = null, kind = '', loading = false, error = '', o
                             <img src={image} alt="" className="mr-2.5 size-9 shrink-0 rounded-full object-cover" />
                         ) : (
                             <div className="mr-2.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                                <UserIcon className="size-4 text-muted-foreground" />
+                                <UserIcon data-icon="inline-start" className="size-4 text-muted-foreground" />
                             </div>
                         )}
                         <span className="min-w-0 flex-1 overflow-hidden">
-                            <span className="block truncate font-medium leading-[18px]">{label}</span>
+                            <span className="block truncate font-medium leading-5">{label}</span>
                             {subtitle ? <span className="block truncate text-xs text-muted-foreground">{subtitle}</span> : null}
                             {kind === 'members' ? (
                                 <span className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                                    {row?.isRepresenting ? <TagIcon className="size-3.5" /> : null}
-                                    {row?.visibility && row.visibility !== 'visible' ? <EyeIcon className="size-3.5" /> : null}
-                                    {row?.isSubscribedToAnnouncements === false ? <MessageSquareIcon className="size-3.5" /> : null}
-                                    {row?.managerNotes ? <PencilIcon className="size-3.5" /> : null}
+                                    {row?.isRepresenting ? <TagIcon data-icon="inline-start" /> : null}
+                                    {row?.visibility && row.visibility !== 'visible' ? <EyeIcon data-icon="inline-start" /> : null}
+                                    {row?.isSubscribedToAnnouncements === false ? <MessageSquareIcon data-icon="inline-start" /> : null}
+                                    {row?.managerNotes ? <PencilIcon data-icon="inline-start" /> : null}
                                 </span>
                             ) : null}
                         </span>
-                    </button>
+                    </Button>
                 );
             })}
         </div>
@@ -503,7 +513,7 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
 
     return (
         <EntityInfoBlock label="Instances" full>
-            <div className="mt-1 space-y-2">
+            <div className="mt-1 flex flex-col gap-2">
                 {instances.map((instance, index) => {
                     const location = getInstanceLocation(instance);
                     const parsedLocation = parseLocation(location);
@@ -512,12 +522,13 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                     return (
                         <div key={`${location || getInstanceTitle(instance)}:${index}`} className="w-full">
                             <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <button
+                                <Button
                                     type="button"
-                                    className="min-w-0 truncate text-left hover:underline"
+                                    variant="link"
+                                    className="h-auto min-w-0 justify-start truncate p-0 text-left"
                                     onClick={() => openWorldDialog({ worldId: worldId || location, title: getInstanceTitle(instance) || undefined })}>
                                     {getInstanceTitle(instance) || 'World'}
-                                </button>
+                                </Button>
                                 {location ? (
                                     <span className="min-w-0 truncate text-xs text-muted-foreground">
                                         <LocationWorld
@@ -539,18 +550,19 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                                     </span>
                                 ) : null}
                                 {location ? (
-                                    <Button type="button" size="icon-sm" variant="ghost" className="size-6" onClick={() => void launch(location)}>
-                                        <PlayIcon className="size-4" />
+                                    <Button type="button" size="icon-sm" variant="ghost" aria-label="Launch instance" onClick={() => void launch(location)}>
+                                        <PlayIcon data-icon="inline-start" />
                                     </Button>
                                 ) : null}
                             </div>
                             {users.length ? (
                                 <div className="mt-1 flex flex-wrap items-start">
                                     {users.map((user, userIndex) => (
-                                        <button
+                                        <Button
                                             key={`${user?.id || user?.userId || user?.displayName || 'user'}:${userIndex}`}
                                             type="button"
-                                            className="box-border flex w-[167px] cursor-pointer items-center p-1.5 text-left text-[13px] hover:rounded-[25px_5px_5px_25px] hover:bg-muted/50"
+                                            variant="ghost"
+                                            className="box-border h-auto w-44 justify-start p-1.5 text-left text-sm"
                                             onClick={() => {
                                                 const userId = user?.id || user?.userId || user?.user_id || user?.user?.id || user?.user?.userId;
                                                 if (userId) {
@@ -559,12 +571,12 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                                             }}>
                                             <img src={userImage(user, true, '64')} alt="" className="mr-2.5 size-9 shrink-0 rounded-full object-cover" />
                                             <span className="min-w-0 flex-1 overflow-hidden">
-                                                <span className="block truncate font-medium leading-[18px]">
+                                                <span className="block truncate font-medium leading-5">
                                                     {user?.displayName || user?.display_name || user?.username || user?.user?.displayName || user?.user?.username || 'User'}
                                                 </span>
                                                 <span className="block truncate text-xs text-muted-foreground">{user?.location === 'traveling' ? 'traveling' : user?.status || user?.user?.status || ''}</span>
                                             </span>
-                                        </button>
+                                        </Button>
                                     ))}
                                 </div>
                             ) : null}
@@ -828,11 +840,11 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                             <div className="mb-3 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2">
                                     <Button type="button" size="sm" variant="outline" disabled={loading} onClick={() => setReloadToken((value) => value + 1)}>
-                                        <RefreshCwIcon className="size-3.5" />
+                                        <RefreshCwIcon data-icon="inline-start" />
                                         Refresh
                                     </Button>
                                     <Button type="button" size="sm" variant="outline" disabled={!rows.length} onClick={() => downloadJsonFile(`${group.id}_${activeTab}.json`, rows)}>
-                                        <DownloadIcon className="size-3.5" />
+                                        <DownloadIcon data-icon="inline-start" />
                                         JSON
                                     </Button>
                                     <span className="text-sm text-muted-foreground">{filteredRows.length}/{rows.length}</span>
@@ -853,7 +865,9 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                     }}>
                                         <SelectTrigger size="sm" className="w-24"><SelectValue /></SelectTrigger>
                                         <SelectContent>
-                                            {[10, 25, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                            <SelectGroup>
+                                                {[10, 25, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -882,12 +896,13 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                                     <tr key={`${label}:${date}:${index}`} className="border-b last:border-b-0">
                                                         <td className="px-3 py-2 align-top">
                                                             {userId ? (
-                                                                <button
+                                                                <Button
                                                                     type="button"
-                                                                    className="max-w-52 truncate text-left font-medium hover:underline"
+                                                                    variant="link"
+                                                                    className="h-auto max-w-52 justify-start truncate p-0 text-left font-medium"
                                                                     onClick={() => openUserDialog({ userId, title: label, seedData: row?.user || null })}>
                                                                     {label}
-                                                                </button>
+                                                                </Button>
                                                             ) : (
                                                                 <span className="font-medium">{label}</span>
                                                             )}
@@ -1018,8 +1033,8 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                     <DialogTitle>{isEdit ? 'Edit group post' : 'Create group post'}</DialogTitle>
                     <DialogDescription>{group?.name || 'Group'}</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                    <div className="space-y-1.5">
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
                         <Label htmlFor="group-post-title">Title</Label>
                         <Input
                             id="group-post-title"
@@ -1028,7 +1043,7 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                             disabled={submitting}
                         />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="flex flex-col gap-1.5">
                         <Label htmlFor="group-post-text">Message</Label>
                         <Textarea
                             id="group-post-text"
@@ -1040,16 +1055,17 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                         />
                     </div>
                     {!isEdit ? (
-                        <label className="flex items-center gap-2 text-sm">
+                        <Field orientation="horizontal" data-disabled={submitting}>
                             <Checkbox
+                                id="group-post-send-notification"
                                 checked={Boolean(form.sendNotification)}
                                 disabled={submitting}
                                 onCheckedChange={(checked) => updateForm({ sendNotification: checked === true })}
                             />
-                            <span>Send notification</span>
-                        </label>
+                            <FieldLabel htmlFor="group-post-send-notification">Send notification</FieldLabel>
+                        </Field>
                     ) : null}
-                    <div className="space-y-1.5">
+                    <div className="flex flex-col gap-1.5">
                         <Label>Post visibility</Label>
                         <div className="flex flex-wrap gap-2">
                             {['public', 'group'].map((visibility) => (
@@ -1066,21 +1082,24 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                         </div>
                     </div>
                     {form.visibility === 'group' ? (
-                        <div className="space-y-1.5">
+                        <div className="flex flex-col gap-1.5">
                             <Label>Roles</Label>
                             {roles.length ? (
-                                <div className="grid max-h-48 gap-2 overflow-auto rounded-md border p-2 sm:grid-cols-2">
+                                <FieldGroup data-slot="checkbox-group" className="grid max-h-48 gap-2 overflow-auto rounded-md border p-2 sm:grid-cols-2">
                                     {roles.map((role) => (
-                                        <label key={role.id || role.name} className="flex items-center gap-2 text-sm">
+                                        <Field key={role.id || role.name} orientation="horizontal" data-disabled={submitting || !role.id}>
                                             <Checkbox
+                                                id={`group-post-role-${role.id || role.name}`}
                                                 checked={roleIds.includes(role.id)}
                                                 disabled={submitting || !role.id}
                                                 onCheckedChange={(checked) => toggleRole(role.id, checked === true)}
                                             />
-                                            <span className="min-w-0 truncate">{role.name || role.id}</span>
-                                        </label>
+                                            <FieldLabel htmlFor={`group-post-role-${role.id || role.name}`} className="min-w-0 truncate">
+                                                {role.name || role.id}
+                                            </FieldLabel>
+                                        </Field>
                                     ))}
-                                </div>
+                                </FieldGroup>
                             ) : (
                                 <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                                     No roles.
@@ -1088,7 +1107,7 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                             )}
                         </div>
                     ) : null}
-                    <div className="space-y-1.5">
+                    <div className="flex flex-col gap-1.5">
                         <Label htmlFor="group-post-image-id">Image</Label>
                         <div className="flex gap-2">
                             <Input
@@ -1108,18 +1127,22 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                         {galleryOptions.length ? (
                             <div className="grid max-h-56 gap-2 overflow-auto rounded-md border p-2 sm:grid-cols-2">
                                 {galleryOptions.map((option) => (
-                                    <button
+                                    <Button
                                         key={option.id}
                                         type="button"
+                                        variant="outline"
                                         disabled={submitting}
-                                        className={`flex min-w-0 gap-2 rounded-md border p-2 text-left text-sm hover:bg-muted/50 ${form.imageId === option.id ? 'border-primary' : ''}`}
+                                        className={cn(
+                                            'h-auto w-full min-w-0 justify-start gap-2 p-2 text-left text-sm',
+                                            form.imageId === option.id && 'border-primary'
+                                        )}
                                         onClick={() => updateForm({ imageId: option.id })}>
-                                        {option.image ? <img src={option.image} alt="" className="size-12 shrink-0 rounded object-cover" /> : <ImageIcon className="size-12 shrink-0 rounded border p-3 text-muted-foreground" />}
+                                        {option.image ? <img src={option.image} alt="" className="size-12 shrink-0 rounded object-cover" /> : <ImageIcon data-icon="inline-start" className="size-12 shrink-0 rounded border p-3 text-muted-foreground" />}
                                         <span className="min-w-0">
                                             <span className="block truncate font-medium">{option.label}</span>
                                             <span className="block truncate font-mono text-xs text-muted-foreground">{option.id}</span>
                                         </span>
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         ) : (
@@ -1578,7 +1601,7 @@ export function GroupDialogTabbedView({
             <EntityDialogHeader
                 imageUrl={iconUrl}
                 imageAlt={group.name || 'Group'}
-                imageClassName="size-[120px]"
+                imageClassName="size-32"
                 imagePlaceholder={<UsersIcon className="size-8 text-muted-foreground" />}
                 onImageClick={iconUrl ? () => openImagePreview({ url: iconUrl, title: groupTitle }) : null}
                 titlePrefix={isGroupOwner ? <span className="shrink-0">👑</span> : null}
@@ -1590,37 +1613,42 @@ export function GroupDialogTabbedView({
                 badges={
                     <>
                         {group.ownerId ? (
-                            <button type="button" onClick={() => openUserDialog({
-                                userId: group.ownerId,
-                                title: ownerLabel || undefined,
-                                seedData: ownerLabel
-                                    ? { id: group.ownerId, displayName: ownerLabel }
-                                    : null
-                            })}>
-                                <Badge variant="outline"><UserIcon className="mr-1 size-3.5" />{ownerLabel || 'Owner'}</Badge>
-                            </button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="xs"
+                                onClick={() => openUserDialog({
+                                    userId: group.ownerId,
+                                    title: ownerLabel || undefined,
+                                    seedData: ownerLabel
+                                        ? { id: group.ownerId, displayName: ownerLabel }
+                                        : null
+                                })}>
+                                <UserIcon data-icon="inline-start" />
+                                {ownerLabel || 'Owner'}
+                            </Button>
                         ) : null}
                         {languageRows.map((language) => (
                             <Badge key={`${language.key}:${language.value}`} variant="outline" title={`${language.value || language.key} (${language.key})`}>
                                 {languageMappings[String(language.key).toLowerCase()] ? String(language.key).toUpperCase() : (language.value || language.key)}
                             </Badge>
                         ))}
-                        {group.privacy ? <Badge variant="outline"><ShieldIcon className="mr-1 size-3.5" />{group.privacy}</Badge> : null}
+                        {group.privacy ? <Badge variant="outline"><ShieldIcon data-icon="inline-start" />{group.privacy}</Badge> : null}
                         {group.membershipStatus ? <Badge variant="secondary">{group.membershipStatus}</Badge> : null}
-                        {group.isVerified ? <Badge><BadgeCheckIcon className="mr-1 size-3.5" />Verified</Badge> : null}
-                        <Badge variant="outline"><UsersIcon className="mr-1 size-3.5" />{group.memberCount} members</Badge>
-                        {group.onlineMemberCount > 0 ? <Badge variant="outline"><UsersIcon className="mr-1 size-3.5" />{group.onlineMemberCount} online</Badge> : null}
+                        {group.isVerified ? <Badge><BadgeCheckIcon data-icon="inline-start" />Verified</Badge> : null}
+                        <Badge variant="outline"><UsersIcon data-icon="inline-start" />{group.memberCount} members</Badge>
+                        {group.onlineMemberCount > 0 ? <Badge variant="outline"><UsersIcon data-icon="inline-start" />{group.onlineMemberCount} online</Badge> : null}
                     </>
                 }
                 actions={
                     <>
                         {memberStatus === 'requested' ? (
-                            <Button type="button" size="icon-lg" variant="outline" className="rounded-full" disabled={actionStatus === 'cancel-request'} onClick={onCancelRequest}>
-                                <XIcon className="size-4" />
+                            <Button type="button" size="icon-lg" variant="outline" className="rounded-full" aria-label="Cancel join request" disabled={actionStatus === 'cancel-request'} onClick={onCancelRequest}>
+                                <XIcon data-icon="inline-start" />
                             </Button>
                         ) : !isMember ? (
-                            <Button type="button" size="icon-lg" className="rounded-full" disabled={!canJoin || actionStatus === 'join'} onClick={onJoin}>
-                                <LogInIcon className="size-4" />
+                            <Button type="button" size="icon-lg" className="rounded-full" aria-label="Join group" disabled={!canJoin || actionStatus === 'join'} onClick={onJoin}>
+                                <LogInIcon data-icon="inline-start" />
                             </Button>
                         ) : null}
                         <EntityActionDropdown busy={actionStatus !== 'idle'}>
@@ -1688,12 +1716,14 @@ export function GroupDialogTabbedView({
             <EntityDialogTabs value={activeTab} onValueChange={changeTab} tabs={tabs}>
                 <EntityDialogTabContent value="info">
                     {bannerUrl ? (
-                        <button
+                        <Button
                             type="button"
-                            className="mb-3 w-full overflow-hidden rounded-md bg-muted"
+                            variant="ghost"
+                            className="mb-3 h-auto w-full overflow-hidden rounded-md bg-muted p-0"
+                            aria-label={`Preview ${groupTitle} banner`}
                             onClick={() => openImagePreview({ url: bannerUrl, title: groupTitle })}>
                             <img src={bannerUrl} alt={group.name || 'Group banner'} className="aspect-[6/1] w-full object-cover" />
-                        </button>
+                        </Button>
                     ) : null}
                     <EntityInfoGrid>
                         <GroupInstanceRows instances={activeInstances} currentUserId={currentUserId} endpoint={currentEndpoint} />
@@ -1701,11 +1731,16 @@ export function GroupDialogTabbedView({
                             <EntityInfoBlock label="Announcement" full>
                                 <span className="block truncate text-sm">{group.announcement.title || 'Announcement'}</span>
                                 {group.announcement.imageUrl ? (
-                                    <button type="button" className="mr-1.5 mt-1.5 inline-block align-top" onClick={() => openImagePreview({ url: convertFileUrlToImageUrl(group.announcement.imageUrl, 1024), title: group.announcement.title || 'Announcement' })}>
-                                        <img src={convertFileUrlToImageUrl(group.announcement.imageUrl, 128)} alt="" className="size-[60px] rounded-md object-cover" />
-                                    </button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="mr-1.5 mt-1.5 h-auto p-0 align-top"
+                                        aria-label={`Preview ${group.announcement.title || 'announcement'} image`}
+                                        onClick={() => openImagePreview({ url: convertFileUrlToImageUrl(group.announcement.imageUrl, 1024), title: group.announcement.title || 'Announcement' })}>
+                                        <img src={convertFileUrlToImageUrl(group.announcement.imageUrl, 128)} alt="" className="size-16 rounded-md object-cover" />
+                                    </Button>
                                 ) : null}
-                                <pre className="inline-block whitespace-pre-wrap align-top text-xs font-[inherit] text-muted-foreground">{group.announcement.text || '—'}</pre>
+                                <pre className="inline-block whitespace-pre-wrap align-top text-xs font-sans text-muted-foreground">{group.announcement.text || '—'}</pre>
                                 <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                                     {announcementRoleNames(group.announcement, group).length ? (
                                         <span className="inline-flex items-center gap-1" title={announcementRoleNames(group.announcement, group).join(', ')}>
@@ -1715,16 +1750,17 @@ export function GroupDialogTabbedView({
                                     ) : null}
                                     {announcementUserId(group.announcement, 'author') || announcementUserLabel(group.announcement, 'author') ? (
                                         announcementUserId(group.announcement, 'author') ? (
-                                            <button
+                                            <Button
                                                 type="button"
-                                                className="inline-flex items-center gap-1 hover:underline"
+                                                variant="link"
+                                                className="h-auto gap-1 p-0 text-xs font-normal"
                                                 onClick={() => openUserDialog({
                                                     userId: announcementUserId(group.announcement, 'author'),
                                                     title: announcementUserLabel(group.announcement, 'author') || undefined
                                                 })}>
                                                 <span>Author:</span>
                                                 <span className="font-medium text-foreground">{announcementUserLabel(group.announcement, 'author') || announcementUserId(group.announcement, 'author')}</span>
-                                            </button>
+                                            </Button>
                                         ) : (
                                             <span className="inline-flex items-center gap-1">
                                                 <span>Author:</span>
@@ -1734,16 +1770,17 @@ export function GroupDialogTabbedView({
                                     ) : null}
                                     {announcementUserId(group.announcement, 'editor') || announcementUserLabel(group.announcement, 'editor') ? (
                                         announcementUserId(group.announcement, 'editor') ? (
-                                            <button
+                                            <Button
                                                 type="button"
-                                                className="inline-flex items-center gap-1 hover:underline"
+                                                variant="link"
+                                                className="h-auto gap-1 p-0 text-xs font-normal"
                                                 onClick={() => openUserDialog({
                                                     userId: announcementUserId(group.announcement, 'editor'),
                                                     title: announcementUserLabel(group.announcement, 'editor') || undefined
                                                 })}>
                                                 <span>Edited by:</span>
                                                 <span className="font-medium text-foreground">{announcementUserLabel(group.announcement, 'editor') || announcementUserId(group.announcement, 'editor')}</span>
-                                            </button>
+                                            </Button>
                                         ) : (
                                             <span className="inline-flex items-center gap-1">
                                                 <span>Edited by:</span>
@@ -1768,7 +1805,7 @@ export function GroupDialogTabbedView({
                         ) : null}
                         {group.rules ? (
                             <EntityInfoBlock label="Rules" full>
-                                <pre className="whitespace-pre-wrap text-xs font-[inherit] text-muted-foreground">{group.rules}</pre>
+                                <pre className="whitespace-pre-wrap text-xs font-sans text-muted-foreground">{group.rules}</pre>
                             </EntityInfoBlock>
                         ) : null}
                         <EntityInfoBlock label="Members" value={`${group.memberCount || 0} (${group.onlineMemberCount || 0})`} />
@@ -1781,7 +1818,7 @@ export function GroupDialogTabbedView({
                         {group.links.length ? (
                             <EntityInfoBlock label="Links" full>
                                 <div className="flex flex-wrap gap-1.5">
-                                    {group.links.map((link) => <Button key={link} type="button" variant="ghost" size="sm" className="h-6 px-1.5 text-xs" onClick={() => openExternalLink(link)}><ExternalLinkIcon className="size-3.5" />{link}</Button>)}
+                                    {group.links.map((link) => <Button key={link} type="button" variant="ghost" size="xs" onClick={() => openExternalLink(link)}><ExternalLinkIcon data-icon="inline-start" />{link}</Button>)}
                                 </div>
                             </EntityInfoBlock>
                         ) : null}
@@ -1811,7 +1848,7 @@ export function GroupDialogTabbedView({
                         ) : null}
                     </EntityInfoGrid>
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="posts" className="space-y-2">
+                <EntityDialogTabContent value="posts" className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                         <div className="text-sm text-muted-foreground">{filteredPosts.length}/{posts.length} posts</div>
                         <Input
@@ -1833,7 +1870,7 @@ export function GroupDialogTabbedView({
                         onDeletePost={(post) => void deleteGroupPost(post)}
                     />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="members" className="space-y-2">
+                <EntityDialogTabContent value="members" className="flex flex-col gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="text-sm text-muted-foreground">{filteredMembers.length}/{group.memberCount || members.length} members</div>
                         <Button type="button" size="sm" variant="outline" disabled={remoteStatus.members === 'running'} onClick={() => void loadTab('members', { force: true })}>
@@ -1843,7 +1880,7 @@ export function GroupDialogTabbedView({
                             Load All
                         </Button>
                         <Button type="button" size="sm" variant="outline" disabled={!members.length} onClick={() => downloadJsonFile(`${group.id}_members.json`, members)}>
-                            <DownloadIcon className="size-3.5" />
+                            <DownloadIcon data-icon="inline-start" />
                             JSON
                         </Button>
                         <Select value={memberSort} onValueChange={setMemberSort} disabled={remoteStatus.members === 'running'}>
@@ -1851,10 +1888,12 @@ export function GroupDialogTabbedView({
                                 <SelectValue placeholder="Sort" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="joinedAt:desc">Joined newest</SelectItem>
-                                <SelectItem value="joinedAt:asc">Joined oldest</SelectItem>
-                                <SelectItem value="user.displayName:asc">Name A-Z</SelectItem>
-                                <SelectItem value="user.displayName:desc">Name Z-A</SelectItem>
+                                <SelectGroup>
+                                    <SelectItem value="joinedAt:desc">Joined newest</SelectItem>
+                                    <SelectItem value="joinedAt:asc">Joined oldest</SelectItem>
+                                    <SelectItem value="user.displayName:asc">Name A-Z</SelectItem>
+                                    <SelectItem value="user.displayName:desc">Name Z-A</SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                         <Select
@@ -1865,12 +1904,14 @@ export function GroupDialogTabbedView({
                                 <SelectValue placeholder="Role" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All roles</SelectItem>
-                                {group.roles.map((role) => (
-                                    <SelectItem key={role.id || role.name} value={role.id || role.name}>
-                                        {role.name || 'Role'}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    <SelectItem value="all">All roles</SelectItem>
+                                    {group.roles.map((role) => (
+                                        <SelectItem key={role.id || role.name} value={role.id || role.name}>
+                                            {role.name || 'Role'}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                         <Input
@@ -1882,7 +1923,7 @@ export function GroupDialogTabbedView({
                     </div>
                     <RowList rows={filteredMembers} group={group} kind="members" loading={remoteStatus.members === 'running'} error={remoteErrors.members} />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="photos" className="space-y-2">
+                <EntityDialogTabContent value="photos" className="flex flex-col gap-2">
                     <RowList
                         rows={photos}
                         group={group}

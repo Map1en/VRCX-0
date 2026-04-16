@@ -15,7 +15,7 @@ import {
     Tooltip,
     TooltipContent,
     TooltipTrigger
-} from '@/ui/shadcn/tooltip.jsx';
+} from '@/ui/shadcn/tooltip';
 
 function normalizeLocationObject(locationObject) {
     if (typeof locationObject === 'string') {

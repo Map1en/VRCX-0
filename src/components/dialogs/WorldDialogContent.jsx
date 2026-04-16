@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { LoaderCircleIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl, copyTextToClipboard } from '@/lib/entityMedia.js';
@@ -38,8 +37,8 @@ import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useLaunchStore } from '@/state/launchStore.js';
 import { buildLegacyInstanceTag, getLaunchURL } from '@/shared/utils/instance.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -47,17 +46,20 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
+} from '@/ui/shadcn/dialog';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Label } from '@/ui/shadcn/label';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 function normalizeEntityId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
@@ -66,10 +68,10 @@ function normalizeEntityId(value) {
 function WorldDialogEmptyState({ title, description, loading = false }) {
     return (
         <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
+            <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <LoaderCircleIcon className="size-5 animate-spin text-muted-foreground" />
+                        <Spinner className="size-5 text-muted-foreground" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
@@ -271,11 +273,13 @@ function WorldNewInstanceDialog({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {accessTypeOptions.map((option) => (
-                                        <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        {accessTypeOptions.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -286,11 +290,13 @@ function WorldNewInstanceDialog({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {regionOptions.map((region) => (
-                                        <SelectItem key={region} value={region}>
-                                            {region}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        {regionOptions.map((region) => (
+                                            <SelectItem key={region} value={region}>
+                                                {region}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -307,11 +313,13 @@ function WorldNewInstanceDialog({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {groupAccessTypeOptions.map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectGroup>
+                                                {groupAccessTypeOptions.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -321,14 +329,26 @@ function WorldNewInstanceDialog({
                                         <Input value={form.roleIds} disabled={Boolean(request?.created)} onChange={(event) => patchForm({ roleIds: event.target.value })} />
                                     </div>
                                 ) : null}
-                                <label className="flex items-center gap-2 text-sm">
-                                    <Checkbox checked={form.queueEnabled} disabled={Boolean(request?.created)} onCheckedChange={(value) => patchForm({ queueEnabled: Boolean(value) })} />
-                                    Queue enabled
-                                </label>
-                                <label className="flex items-center gap-2 text-sm">
-                                    <Checkbox checked={form.ageGate} disabled={Boolean(request?.created)} onCheckedChange={(value) => patchForm({ ageGate: Boolean(value) })} />
-                                    Age gate
-                                </label>
+                                <FieldGroup data-slot="checkbox-group">
+                                    <Field orientation="horizontal" data-disabled={Boolean(request?.created)}>
+                                        <Checkbox
+                                            id="world-instance-queue-enabled"
+                                            checked={form.queueEnabled}
+                                            disabled={Boolean(request?.created)}
+                                            onCheckedChange={(value) => patchForm({ queueEnabled: Boolean(value) })}
+                                        />
+                                        <FieldLabel htmlFor="world-instance-queue-enabled">Queue enabled</FieldLabel>
+                                    </Field>
+                                    <Field orientation="horizontal" data-disabled={Boolean(request?.created)}>
+                                        <Checkbox
+                                            id="world-instance-age-gate"
+                                            checked={form.ageGate}
+                                            disabled={Boolean(request?.created)}
+                                            onCheckedChange={(value) => patchForm({ ageGate: Boolean(value) })}
+                                        />
+                                        <FieldLabel htmlFor="world-instance-age-gate">Age gate</FieldLabel>
+                                    </Field>
+                                </FieldGroup>
                             </>
                         ) : null}
                         <div className="grid gap-2">
@@ -344,11 +364,13 @@ function WorldNewInstanceDialog({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {accessTypeOptions.map((option) => (
-                                        <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        {accessTypeOptions.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -359,11 +381,13 @@ function WorldNewInstanceDialog({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {regionOptions.map((region) => (
-                                        <SelectItem key={region} value={region}>
-                                            {region}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        {regionOptions.map((region) => (
+                                            <SelectItem key={region} value={region}>
+                                                {region}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -390,27 +414,37 @@ function WorldNewInstanceDialog({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {groupAccessTypeOptions.map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectGroup>
+                                                {groupAccessTypeOptions.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </>
                         ) : null}
                         {form.accessType === 'group' ? (
-                            <label className="flex items-center gap-2 text-sm">
-                                <Checkbox checked={form.ageGate} onCheckedChange={(value) => patchForm({ ageGate: Boolean(value) })} />
-                                Age gate
-                            </label>
+                            <Field orientation="horizontal">
+                                <Checkbox
+                                    id="world-launch-age-gate"
+                                    checked={form.ageGate}
+                                    onCheckedChange={(value) => patchForm({ ageGate: Boolean(value) })}
+                                />
+                                <FieldLabel htmlFor="world-launch-age-gate">Age gate</FieldLabel>
+                            </Field>
                         ) : null}
                         {(form.accessType === 'invite' || form.accessType === 'friends') ? (
-                            <label className="flex items-center gap-2 text-sm">
-                                <Checkbox checked={form.strict} onCheckedChange={(value) => patchForm({ strict: Boolean(value) })} />
-                                Strict
-                            </label>
+                            <Field orientation="horizontal">
+                                <Checkbox
+                                    id="world-launch-strict"
+                                    checked={form.strict}
+                                    onCheckedChange={(value) => patchForm({ strict: Boolean(value) })}
+                                />
+                                <FieldLabel htmlFor="world-launch-strict">Strict</FieldLabel>
+                            </Field>
                         ) : null}
                     </TabsContent>
                 </Tabs>
@@ -1605,7 +1639,7 @@ export function WorldDialogContent({
                     }
                 }}
             />
-            <input
+            <Input
                 ref={imageUploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}

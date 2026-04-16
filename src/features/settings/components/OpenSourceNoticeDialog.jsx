@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { openExternalLink } from '@/lib/entityMedia.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
 
 function buildAssetUrl(relativePath) {
     return new URL(relativePath, window.location.href).toString();
@@ -99,7 +99,7 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
                         {t('dialog.open_source.notice_location_prefix')} <code>{noticePath}</code>
                     </DialogDescription>
                 </DialogHeader>
-                <div className="min-h-0 space-y-4 overflow-hidden">
+                <div className="flex min-h-0 flex-col gap-4 overflow-hidden">
                     <Input
                         value={searchQuery}
                         placeholder={t('dialog.open_source.search_placeholder')}
@@ -115,18 +115,19 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
                         </div>
                     ) : (
                         <div className="grid min-h-0 gap-4 md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-                            <div className="max-h-[30rem] space-y-2 overflow-y-auto pr-1">
+                            <div className="flex max-h-[30rem] flex-col gap-2 overflow-y-auto pr-1">
                                 {filteredEntries.map((entry) => (
-                                    <button
+                                    <Button
                                         key={entry.id}
                                         type="button"
-                                        className={`w-full rounded-md border p-3 text-left text-sm hover:bg-muted/40 ${entry.id === selectedEntry?.id ? 'border-primary bg-accent' : ''}`}
+                                        variant={entry.id === selectedEntry?.id ? 'secondary' : 'outline'}
+                                        className="h-auto w-full flex-col items-start justify-start p-3 text-left font-normal"
                                         onClick={() => setSelectedEntryId(entry.id)}>
                                         <span className="block truncate font-medium">{entry.name}</span>
                                         <span className="block truncate text-xs text-muted-foreground">
                                             {entry.version || t('dialog.open_source.no_version')}{' \u00b7 '}{entry.license}
                                         </span>
-                                    </button>
+                                    </Button>
                                 ))}
                                 {!filteredEntries.length ? (
                                     <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
@@ -143,7 +144,7 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
                                                 {selectedEntry.license}{' \u00b7 '}{selectedEntry.sourceLabel || ''}
                                             </CardDescription>
                                         </CardHeader>
-                                        <CardContent className="space-y-3">
+                                        <CardContent className="flex flex-col gap-3">
                                             <div className="flex flex-wrap gap-2">
                                                 {selectedEntry.projectUrl ? (
                                                     <Button type="button" size="sm" variant="outline" onClick={() => void openExternalLink(selectedEntry.projectUrl)}>

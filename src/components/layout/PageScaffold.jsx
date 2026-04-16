@@ -1,6 +1,13 @@
-import { LoaderCircleIcon } from 'lucide-react';
-
 import { cn } from '@/lib/utils.js';
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle
+} from '@/ui/shadcn/empty';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 export function PageScaffold({
     embedded = false,
@@ -28,6 +35,30 @@ export function PageToolbar({ className = '', children }) {
         <div className={cn('flex shrink-0 flex-col gap-2 border-b border-border pb-3', className)}>
             {children}
         </div>
+    );
+}
+
+export function PageHeader({ className = '', children }) {
+    return (
+        <div className={cn('flex shrink-0 flex-col gap-1 p-1.5', className)}>
+            {children}
+        </div>
+    );
+}
+
+export function PageTitle({ className = '', children }) {
+    return (
+        <h1 className={cn('font-heading text-lg leading-none font-medium text-foreground', className)}>
+            {children}
+        </h1>
+    );
+}
+
+export function PageDescription({ className = '', children }) {
+    return (
+        <p className={cn('text-sm text-muted-foreground', className)}>
+            {children}
+        </p>
     );
 }
 
@@ -68,26 +99,26 @@ export function EmptyState({
     children
 }) {
     return (
-        <div
-            className={cn(
-                'flex min-h-72 flex-1 items-center justify-center rounded-md border border-dashed bg-muted/20 p-6 text-center',
-                className
-            )}>
-            <div className={cn('flex max-w-sm flex-col items-center gap-2', contentClassName)}>
-                {Icon ? <Icon className="size-5 text-muted-foreground" /> : null}
-                {title ? <div className="text-sm font-medium">{title}</div> : null}
-                {description ? <div className="text-sm text-muted-foreground">{description}</div> : null}
-                {children}
-            </div>
-        </div>
+        <Empty className={cn('min-h-72', className)}>
+            <EmptyHeader className={contentClassName}>
+                {Icon ? (
+                    <EmptyMedia variant="icon">
+                        <Icon />
+                    </EmptyMedia>
+                ) : null}
+                {title ? <EmptyTitle>{title}</EmptyTitle> : null}
+                {description ? <EmptyDescription>{description}</EmptyDescription> : null}
+            </EmptyHeader>
+            {children ? <EmptyContent>{children}</EmptyContent> : null}
+        </Empty>
     );
 }
 
 export function LoadingState({ label, className = '' }) {
     return (
         <EmptyState className={className}>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <LoaderCircleIcon className="size-5 animate-spin" />
+            <div className="flex items-center gap-2">
+                <Spinner />
                 {label}
             </div>
         </EmptyState>

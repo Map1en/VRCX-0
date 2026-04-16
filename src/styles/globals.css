@@ -1,7 +1,9 @@
 @import 'tailwindcss';
-@import 'tw-animate-css';
 @import './animated-emoji.css';
 @import './flags.css';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -42,6 +44,11 @@
     --status-offline-alt: #808080;
     --status-offline-card: #737f8d;
     --status-active: #f4e05e;
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
 }
 
 .dark {
@@ -80,6 +87,11 @@
     --status-offline-alt: #808080;
     --status-offline-card: #737f8d;
     --status-active: #f4e05e;
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
 }
 
 @theme inline {
@@ -114,6 +126,16 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
     --radius-xl: calc(var(--radius) + 4px);
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', sans-serif;
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
@@ -129,10 +151,13 @@
     }
 
     body {
-        @apply bg-background text-foreground antialiased;
+        @apply antialiased bg-background text-foreground;
         font-family: var(--vrcx-app-font-family, system-ui);
         margin: 0;
         min-height: 100vh;
+    }
+  html {
+    @apply font-sans;
     }
 }
 
@@ -195,11 +220,7 @@
         @apply py-1;
     }
 
-    .is-comfortable-table [data-slot='table-cell'] {
-        @apply py-1.5;
-    }
-
-    .is-striped-table .vrcx-data-table [data-slot='table-body'] [data-slot='table-row']:nth-child(even) {
+    .is-striped-table .app-data-table [data-slot='table-body'] [data-slot='table-row']:nth-child(even) {
         @apply bg-muted/20;
     }
 

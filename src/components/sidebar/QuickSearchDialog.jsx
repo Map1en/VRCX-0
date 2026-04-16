@@ -13,8 +13,9 @@ import { openAvatarDialog, openGroupDialog, openUserDialog, openWorldDialog } fr
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
 
 const RESULT_LIMIT = 8;
 
@@ -216,9 +217,10 @@ function ResultRow({ item, onSelect }) {
                     : UsersIcon;
 
     return (
-        <button
+        <Button
             type="button"
-            className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-muted/50"
+            variant="ghost"
+            className="h-auto w-full justify-start gap-3 px-2 py-2 text-left font-normal"
             onClick={() => onSelect(item)}>
             <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                 {item.imageUrl ? (
@@ -233,7 +235,7 @@ function ResultRow({ item, onSelect }) {
                     <span className="block truncate text-xs text-muted-foreground">{item.subtitle}</span>
                 ) : null}
             </span>
-        </button>
+        </Button>
     );
 }
 
@@ -420,7 +422,7 @@ export function QuickSearchDialog({ open, onOpenChange }) {
                 </div>
                 <div className="max-h-[min(420px,55vh)] overflow-y-auto overflow-x-hidden p-2">
                     {normalizedQuery.length < 2 ? (
-                        <div className="space-y-2 p-2 text-sm text-muted-foreground">
+                        <div className="flex flex-col gap-2 p-2 text-sm text-muted-foreground">
                             <div className="font-medium text-foreground">{t('side_panel.search_categories')}</div>
                             <div>{t('side_panel.search_friends')} - {t('side_panel.search_scope_all')}</div>
                             <div>{t('side_panel.search_avatars')} - {t('side_panel.search_scope_avatars')}</div>

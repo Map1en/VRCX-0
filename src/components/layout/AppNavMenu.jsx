@@ -40,14 +40,17 @@ import { useI18n } from '@/app/hooks/use-i18n.js';
 import {
     ContextMenu,
     ContextMenuContent,
+    ContextMenuGroup,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
+} from '@/ui/shadcn/context-menu';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -55,7 +58,7 @@ import {
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
+} from '@/ui/shadcn/dropdown-menu';
 import {
     SidebarContent,
     SidebarFooter,
@@ -69,11 +72,12 @@ import {
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem
-} from '@/ui/shadcn/sidebar.jsx';
+} from '@/ui/shadcn/sidebar';
 import { backend } from '@/platform/index.js';
 import { logoutFromReactShell } from '@/services/authExecutionService.js';
 import { directAccessParse } from '@/services/directAccessService.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import {
     setSidebarCollapsedPreference,
     setTableDensityPreference,
@@ -121,15 +125,11 @@ const toolIconByKey = {
     gallery: ImageIcon,
     'screenshot-metadata': ImageIcon
 };
-const themeModeOptions = ['system', 'light', 'dark', 'midnight'];
+const themeModeOptions = ['system', 'light', 'dark'];
 const tableDensityOptions = [
     {
         value: 'standard',
         labelKey: 'view.settings.appearance.appearance.table_density_standard'
-    },
-    {
-        value: 'comfortable',
-        labelKey: 'view.settings.appearance.appearance.table_density_comfortable'
     },
     {
         value: 'compact',
@@ -152,7 +152,7 @@ function themeModeLabel(themeMode, t) {
     return t(`view.settings.appearance.appearance.theme_mode_${themeMode}`);
 }
 
-function NavIcon({ entry, className = 'size-4' }) {
+function NavIcon({ entry, className = undefined }) {
     const toolKey = String(entry?.index || entry?.key || '').replace(/^tool-/, '');
     const Icon =
         iconByKey[entry?.index] ||
@@ -162,12 +162,12 @@ function NavIcon({ entry, className = 'size-4' }) {
     return <Icon className={className} />;
 }
 
-function NotifiedNavIcon({ entry, isNotified, className = 'size-4' }) {
+function NotifiedNavIcon({ entry, isNotified, className = undefined }) {
     return (
         <span className="relative inline-flex size-4 shrink-0 items-center justify-center">
             <NavIcon entry={entry} className={className} />
             {isNotified ? (
-                <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" aria-hidden="true" />
+                <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-destructive" aria-hidden="true" />
             ) : null}
         </span>
     );
@@ -241,15 +241,17 @@ function DashboardEntryAction({ entry, onEditDashboard, onDeleteDashboard, onUnp
     }
 
     const trigger = compact ? (
-        <button
+        <Button
             type="button"
+            variant="ghost"
+            size="icon"
             className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-md text-sidebar-foreground opacity-0 hover:bg-sidebar-accent group-hover/menu-sub-item:opacity-100 focus:opacity-100"
             onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
             }}>
-            <MoreHorizontalIcon className="size-3.5" />
-        </button>
+            <MoreHorizontalIcon data-icon="inline-start" />
+        </Button>
     ) : (
         <SidebarMenuAction
             type="button"
@@ -258,7 +260,7 @@ function DashboardEntryAction({ entry, onEditDashboard, onDeleteDashboard, onUnp
                 event.preventDefault();
                 event.stopPropagation();
             }}>
-            <MoreHorizontalIcon className="size-4" />
+            <MoreHorizontalIcon />
         </SidebarMenuAction>
     );
 
@@ -266,35 +268,37 @@ function DashboardEntryAction({ entry, onEditDashboard, onDeleteDashboard, onUnp
         <DropdownMenu>
             <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="start" className="w-48">
-                {isDashboard ? (
-                    <>
-                        <DropdownMenuItem
-                            onSelect={() => {
-                                void onEditDashboard(entry);
-                            }}>
-                            <PencilIcon className="size-4" />
-                            {t('nav_menu.edit_dashboard')}
-                        </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    {isDashboard ? (
+                        <>
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    void onEditDashboard(entry);
+                                }}>
+                                <PencilIcon />
+                                {t('nav_menu.edit_dashboard')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => {
+                                    void onDeleteDashboard(entry);
+                                }}>
+                                <Trash2Icon />
+                                {t('nav_menu.delete_dashboard')}
+                            </DropdownMenuItem>
+                        </>
+                    ) : null}
+                    {isTool ? (
                         <DropdownMenuItem
                             variant="destructive"
                             onSelect={() => {
-                                void onDeleteDashboard(entry);
+                                void onUnpinTool(entry);
                             }}>
-                            <Trash2Icon className="size-4" />
-                            {t('nav_menu.delete_dashboard')}
+                            <Trash2Icon />
+                            {t('nav_menu.custom_nav.unpin_from_nav')}
                         </DropdownMenuItem>
-                    </>
-                ) : null}
-                {isTool ? (
-                    <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={() => {
-                            void onUnpinTool(entry);
-                        }}>
-                        <Trash2Icon className="size-4" />
-                        {t('nav_menu.custom_nav.unpin_from_nav')}
-                    </DropdownMenuItem>
-                ) : null}
+                    ) : null}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -321,26 +325,28 @@ function NavItemContextMenu({
             <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
             <ContextMenuContent className="w-56">
                 {hasNotifications ? (
-                    <>
+                    <ContextMenuGroup>
                         <ContextMenuItem
                             onSelect={() => {
                                 void onMarkAllRead();
                             }}>
                             {t('nav_menu.mark_all_read')}
                         </ContextMenuItem>
-                        <ContextMenuSeparator />
-                    </>
+                    </ContextMenuGroup>
                 ) : null}
+                {hasNotifications ? <ContextMenuSeparator /> : null}
                 {showCreateDashboard ? (
-                    <ContextMenuItem
-                        onSelect={() => {
-                            void onCreateDashboard();
-                        }}>
-                        {t('dashboard.new_dashboard')}
-                    </ContextMenuItem>
+                    <ContextMenuGroup>
+                        <ContextMenuItem
+                            onSelect={() => {
+                                void onCreateDashboard();
+                            }}>
+                            {t('dashboard.new_dashboard')}
+                        </ContextMenuItem>
+                    </ContextMenuGroup>
                 ) : null}
                 {isDashboard ? (
-                    <>
+                    <ContextMenuGroup>
                         <ContextMenuItem
                             onSelect={() => {
                                 void onEditDashboard(entry);
@@ -354,23 +360,25 @@ function NavItemContextMenu({
                             }}>
                             {t('nav_menu.delete_dashboard')}
                         </ContextMenuItem>
-                        <ContextMenuSeparator />
-                    </>
+                    </ContextMenuGroup>
                 ) : null}
+                {isDashboard ? <ContextMenuSeparator /> : null}
                 {isTool ? (
-                    <>
+                    <ContextMenuGroup>
                         <ContextMenuItem
                             onSelect={() => {
                                 void onUnpinTool(entry);
                             }}>
                             {t('nav_menu.custom_nav.unpin_from_nav')}
                         </ContextMenuItem>
-                        <ContextMenuSeparator />
-                    </>
+                    </ContextMenuGroup>
                 ) : null}
-                <ContextMenuItem onSelect={onOpenCustomNav}>
-                    {t('nav_menu.custom_nav.header')}
-                </ContextMenuItem>
+                {isTool ? <ContextMenuSeparator /> : null}
+                <ContextMenuGroup>
+                    <ContextMenuItem onSelect={onOpenCustomNav}>
+                        {t('nav_menu.custom_nav.header')}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
             </ContextMenuContent>
         </ContextMenu>
     );
@@ -381,13 +389,15 @@ function CollapsedFolderDropdownEntry({ entry, isNotified, onSelect, onEditDashb
     const isTool = isToolEntry(entry);
     if (!isDashboard && !isTool) {
         return (
-            <DropdownMenuItem
-                onSelect={() => {
-                    void onSelect(entry);
-                }}>
-                <NotifiedNavIcon entry={entry} isNotified={isNotified} />
-                <span>{labelForEntry(entry, t)}</span>
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+                <DropdownMenuItem
+                    onSelect={() => {
+                        void onSelect(entry);
+                    }}>
+                    <NotifiedNavIcon entry={entry} isNotified={isNotified} />
+                    <span>{labelForEntry(entry, t)}</span>
+                </DropdownMenuItem>
+            </DropdownMenuGroup>
         );
     }
 
@@ -398,21 +408,23 @@ function CollapsedFolderDropdownEntry({ entry, isNotified, onSelect, onEditDashb
                 <span>{labelForEntry(entry, t)}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent side="right" align="start" className="w-48">
-                <DropdownMenuItem
-                    onSelect={() => {
-                        void onSelect(entry);
-                    }}>
-                    <NotifiedNavIcon entry={entry} isNotified={isNotified} />
-                    <span>{labelForEntry(entry, t)}</span>
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuItem
+                        onSelect={() => {
+                            void onSelect(entry);
+                        }}>
+                        <NotifiedNavIcon entry={entry} isNotified={isNotified} />
+                        <span>{labelForEntry(entry, t)}</span>
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 {isDashboard ? (
-                    <>
+                    <DropdownMenuGroup>
                         <DropdownMenuItem
                             onSelect={() => {
                                 void onEditDashboard(entry);
                             }}>
-                            <PencilIcon className="size-4" />
+                            <PencilIcon />
                             {t('nav_menu.edit_dashboard')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -420,20 +432,22 @@ function CollapsedFolderDropdownEntry({ entry, isNotified, onSelect, onEditDashb
                             onSelect={() => {
                                 void onDeleteDashboard(entry);
                             }}>
-                            <Trash2Icon className="size-4" />
+                            <Trash2Icon />
                             {t('nav_menu.delete_dashboard')}
                         </DropdownMenuItem>
-                    </>
+                    </DropdownMenuGroup>
                 ) : null}
                 {isTool ? (
-                    <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={() => {
-                            void onUnpinTool(entry);
-                        }}>
-                        <Trash2Icon className="size-4" />
-                        {t('nav_menu.custom_nav.unpin_from_nav')}
-                    </DropdownMenuItem>
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => {
+                                void onUnpinTool(entry);
+                            }}>
+                            <Trash2Icon />
+                            {t('nav_menu.custom_nav.unpin_from_nav')}
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
                 ) : null}
             </DropdownMenuSubContent>
         </DropdownMenuSub>
@@ -523,7 +537,7 @@ function NavMenuFolderItem({
                     onClick={() => setOpen((current) => !current)}>
                     <NotifiedNavIcon entry={item} isNotified={isNotified} />
                     <span>{label}</span>
-                    <ChevronRightIcon className={`ml-auto size-4 transition-transform ${open ? 'rotate-90' : ''}`} />
+                    <ChevronRightIcon className={cn('ml-auto transition-transform', open && 'rotate-90')} />
                 </SidebarMenuButton>
                 {open ? (
                     <SidebarMenuSub>
@@ -546,7 +560,7 @@ function NavMenuFolderItem({
                                         onClick={() => {
                                             void onSelect(entry);
                                         }}>
-                                        <NotifiedNavIcon entry={entry} isNotified={isEntryNotified(entry, notifiedKeys)} />
+                                        <NotifiedNavIcon entry={entry} isNotified={isEntryNotified(entry, notifiedKeys)} className="size-4" />
                                         <span>{labelForEntry(entry, t)}</span>
                                     </SidebarMenuSubButton>
                                     <DashboardEntryAction
@@ -923,7 +937,7 @@ export function AppNavMenu({ isCollapsed }) {
                                 onClick={() => {
                                     void handleCreateDashboard();
                                 }}>
-                                <PlusIcon className="size-4" />
+                                <PlusIcon />
                                 <span>{t('dashboard.new_dashboard')}</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -997,7 +1011,7 @@ export function AppNavMenu({ isCollapsed }) {
                                                             />
                                                             <span>{labelForEntry(item, t)}</span>
                                                             {item.action === 'direct-access' && !isCollapsed ? (
-                                                                <span className="ml-auto text-[10px] text-muted-foreground">
+                                                                <span className="ml-auto text-xs text-muted-foreground">
                                                                     Ctrl D
                                                                 </span>
                                                             ) : null}
@@ -1010,7 +1024,7 @@ export function AppNavMenu({ isCollapsed }) {
                                                             />
                                                             <span>{labelForEntry(item, t)}</span>
                                                             {item.action === 'direct-access' && !isCollapsed ? (
-                                                                <span className="ml-auto text-[10px] text-muted-foreground">
+                                                                <span className="ml-auto text-xs text-muted-foreground">
                                                                     Ctrl D
                                                                 </span>
                                                             ) : null}
@@ -1040,25 +1054,29 @@ export function AppNavMenu({ isCollapsed }) {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton tooltip={t('nav_tooltip.help_support')}>
-                                    <HelpCircleIcon className="size-4" />
+                                    <HelpCircleIcon />
                                     <span>{t('nav_tooltip.help_support')}</span>
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent side="right" align="start" className="w-56">
                                 <DropdownMenuLabel>{t('nav_menu.resources')}</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => void openExternalLink(links.wiki)}>
-                                    {t('nav_menu.wiki')}
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => void openExternalLink(links.wiki)}>
+                                        {t('nav_menu.wiki')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuLabel>{t('nav_menu.get_help')}</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => void openExternalLink(links.github)}>
-                                    {t('nav_menu.github')}
-                                </DropdownMenuItem>
-                                {links.discord ? (
-                                    <DropdownMenuItem onClick={() => void openExternalLink(links.discord)}>
-                                        {t('nav_menu.discord')}
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => void openExternalLink(links.github)}>
+                                        {t('nav_menu.github')}
                                     </DropdownMenuItem>
-                                ) : null}
+                                    {links.discord ? (
+                                        <DropdownMenuItem onClick={() => void openExternalLink(links.discord)}>
+                                            {t('nav_menu.discord')}
+                                        </DropdownMenuItem>
+                                    ) : null}
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </SidebarMenuItem>
@@ -1069,7 +1087,7 @@ export function AppNavMenu({ isCollapsed }) {
                             onClick={() => {
                                 void setThemeModePreference(themeMode === 'light' ? 'dark' : 'light');
                             }}>
-                            {themeMode === 'light' ? <MoonIcon className="size-4" /> : <SunIcon className="size-4" />}
+                            {themeMode === 'light' ? <MoonIcon /> : <SunIcon />}
                             <span>{t('nav_tooltip.toggle_theme')}</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -1079,9 +1097,9 @@ export function AppNavMenu({ isCollapsed }) {
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton tooltip={t('nav_tooltip.manage')}>
                                     <span className="relative inline-flex size-4 items-center justify-center">
-                                        <SettingsIcon className="size-4" />
+                                        <SettingsIcon />
                                         {hasPendingUpdate ? (
-                                            <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" />
+                                            <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-destructive" />
                                         ) : null}
                                     </span>
                                     <span>{t('nav_tooltip.manage')}</span>
@@ -1095,45 +1113,50 @@ export function AppNavMenu({ isCollapsed }) {
                                         alt="VRCX-0"
                                         onClick={() => void openExternalLink(links.github)}
                                     />
-                                    <button
+                                    <Button
                                         type="button"
-                                        className="flex min-w-0 flex-col text-left"
+                                        variant="ghost"
+                                        className="h-auto min-w-0 flex-col items-start gap-0 p-0 text-left font-normal hover:bg-transparent"
                                         onClick={() => void openExternalLink(links.github)}>
                                         <span className="flex items-center gap-1 truncate text-sm font-medium">
                                             VRCX-0
-                                            <HeartIcon className="size-3 fill-current stroke-none text-primary" />
+                                            <HeartIcon data-icon="inline-end" className="fill-current stroke-none text-primary" />
                                         </span>
                                         <span className="text-xs text-muted-foreground">{appVersion}</span>
-                                    </button>
+                                    </Button>
                                 </div>
                                 <DropdownMenuSeparator />
                                 {hasPendingUpdate ? (
-                                    <>
+                                    <DropdownMenuGroup>
                                         <DropdownMenuItem
                                             onClick={() => useRuntimeStore.getState().setSystemHostOpen('updaterOpen', true)}>
                                             {t('nav_menu.update_available')}
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                    </>
+                                    </DropdownMenuGroup>
                                 ) : null}
-                                <DropdownMenuItem onClick={() => navigate(routePathByName.settings)}>
-                                    {t('nav_tooltip.settings')}
-                                </DropdownMenuItem>
+                                {hasPendingUpdate ? <DropdownMenuSeparator /> : null}
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => navigate(routePathByName.settings)}>
+                                        {t('nav_tooltip.settings')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>
                                         {t('view.settings.appearance.appearance.theme_mode')}
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent side="right" align="start" className="w-48">
-                                        {themeModeOptions.map((mode) => (
-                                            <DropdownMenuCheckboxItem
-                                                key={mode}
-                                                checked={themeMode === mode}
-                                                onSelect={() => {
-                                                    void setThemeModePreference(mode);
-                                                }}>
-                                                {themeModeLabel(mode, t)}
-                                            </DropdownMenuCheckboxItem>
-                                        ))}
+                                        <DropdownMenuGroup>
+                                            {themeModeOptions.map((mode) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={mode}
+                                                    checked={themeMode === mode}
+                                                    onSelect={() => {
+                                                        void setThemeModePreference(mode);
+                                                    }}>
+                                                    {themeModeLabel(mode, t)}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
                                 <DropdownMenuSub>
@@ -1141,41 +1164,47 @@ export function AppNavMenu({ isCollapsed }) {
                                         {t('view.settings.appearance.appearance.table_density')}
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent side="right" align="start" className="w-48">
-                                        {tableDensityOptions.map((option) => (
-                                            <DropdownMenuCheckboxItem
-                                                key={option.value}
-                                                checked={tableDensity === option.value}
-                                                onSelect={() => {
-                                                    void setTableDensityPreference(option.value);
-                                                }}>
-                                                {t(option.labelKey)}
-                                            </DropdownMenuCheckboxItem>
-                                        ))}
+                                        <DropdownMenuGroup>
+                                            {tableDensityOptions.map((option) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={option.value}
+                                                    checked={tableDensity === option.value}
+                                                    onSelect={() => {
+                                                        void setTableDensityPreference(option.value);
+                                                    }}>
+                                                    {t(option.labelKey)}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
-                                <DropdownMenuItem onClick={() => setCustomNavDialogOpen(true)}>
-                                    {t('nav_menu.custom_nav.header')}
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => setCustomNavDialogOpen(true)}>
+                                        {t('nav_menu.custom_nav.header')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    variant="destructive"
-                                    disabled={!isLoggedIn}
-                                    onClick={() => {
-                                        void logoutFromReactShell()
-                                            .then((didLogout) => {
-                                                if (didLogout) {
-                                                    navigate('/login', { replace: true });
-                                                }
-                                            })
-                                            .catch((error) => {
-                                                toast.error(
-                                                    error instanceof Error ? error.message : 'Failed to sign out of VRCX.'
-                                                );
-                                            });
-                                    }}>
-                                    <LogOutIcon className="size-4" />
-                                    {t('dialog.user.actions.logout')}
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        disabled={!isLoggedIn}
+                                        onClick={() => {
+                                            void logoutFromReactShell()
+                                                .then((didLogout) => {
+                                                    if (didLogout) {
+                                                        navigate('/login', { replace: true });
+                                                    }
+                                                })
+                                                .catch((error) => {
+                                                    toast.error(
+                                                        error instanceof Error ? error.message : 'Failed to sign out of VRCX.'
+                                                    );
+                                                });
+                                        }}>
+                                        <LogOutIcon />
+                                        {t('dialog.user.actions.logout')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </SidebarMenuItem>
@@ -1187,7 +1216,7 @@ export function AppNavMenu({ isCollapsed }) {
                             onClick={() => {
                                 void setSidebarCollapsedPreference(sidebarOpen);
                             }}>
-                            {sidebarOpen ? <PanelLeftCloseIcon className="size-4" /> : <PanelLeftOpenIcon className="size-4" />}
+                            {sidebarOpen ? <PanelLeftCloseIcon /> : <PanelLeftOpenIcon />}
                             <span>{sidebarOpen ? t('nav_tooltip.collapse_menu') : t('nav_tooltip.expand_menu')}</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

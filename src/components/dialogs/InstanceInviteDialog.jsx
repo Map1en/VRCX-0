@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LoaderCircleIcon, PlusIcon, UserIcon, UsersIcon } from 'lucide-react';
+import { PlusIcon, UserIcon, UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Location } from '@/components/Location.jsx';
@@ -14,8 +14,8 @@ import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -23,15 +23,18 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Input } from '@/ui/shadcn/input';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 function normalizeId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
@@ -273,38 +276,42 @@ export function InstanceInviteDialog({
                     <DialogTitle>Invite</DialogTitle>
                     <DialogDescription>Choose online friends to invite to this instance.</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 overflow-hidden">
+                <div className="flex flex-col gap-4 overflow-hidden">
                     <div className="rounded-md border bg-muted/30 p-3 text-sm">
                         <Location location={location} link={false} asButton={false} className="cursor-default" />
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <Button type="button" size="sm" variant="outline" disabled={!currentUserId || sending} onClick={() => addUserIds([currentUserId])}>
-                            <UserIcon className="size-4" />
+                            <UserIcon data-icon="inline-start" />
                             Add Self
                         </Button>
                         <Button type="button" size="sm" variant="outline" disabled={!friendsInCurrentInstanceIds.length || sending} onClick={() => addUserIds(friendsInCurrentInstanceIds)}>
-                            <UsersIcon className="size-4" />
+                            <UsersIcon data-icon="inline-start" />
                             Add Friends In Instance
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button type="button" size="sm" variant="outline" disabled={sending || (!favoriteGroupItems.remote.length && !favoriteGroupItems.local.length)}>
-                                    <PlusIcon className="size-4" />
+                                    <PlusIcon data-icon="inline-start" />
                                     Add Favorite Friends
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-56">
-                                {favoriteGroupItems.remote.map((group) => (
-                                    <DropdownMenuItem key={group.key} onSelect={() => addUserIds(group.userIds)}>
-                                        {group.label}
-                                    </DropdownMenuItem>
-                                ))}
+                                <DropdownMenuGroup>
+                                    {favoriteGroupItems.remote.map((group) => (
+                                        <DropdownMenuItem key={group.key} onSelect={() => addUserIds(group.userIds)}>
+                                            {group.label}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuGroup>
                                 {favoriteGroupItems.remote.length && favoriteGroupItems.local.length ? <DropdownMenuSeparator /> : null}
-                                {favoriteGroupItems.local.map((group) => (
-                                    <DropdownMenuItem key={group.key} onSelect={() => addUserIds(group.userIds)}>
-                                        {group.label}
-                                    </DropdownMenuItem>
-                                ))}
+                                <DropdownMenuGroup>
+                                    {favoriteGroupItems.local.map((group) => (
+                                        <DropdownMenuItem key={group.key} onSelect={() => addUserIds(group.userIds)}>
+                                            {group.label}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -322,8 +329,18 @@ export function InstanceInviteDialog({
                                 const checked = selectedUserIds.includes(userId);
                                 const imageUrl = friend ? userImage(friend, true) : userImage(currentUser, true);
                                 return (
-                                    <label key={userId} className="flex cursor-pointer items-center gap-3 border-b px-3 py-2 last:border-b-0">
-                                        <Checkbox checked={checked} disabled={sending} onCheckedChange={() => toggleUserId(userId)} />
+                                    <Field
+                                        key={userId}
+                                        orientation="horizontal"
+                                        data-disabled={sending}
+                                        className="cursor-pointer gap-3 border-b px-3 py-2 last:border-b-0">
+                                        <Checkbox
+                                            id={`invite-user-${userId}`}
+                                            checked={checked}
+                                            disabled={sending}
+                                            onCheckedChange={() => toggleUserId(userId)}
+                                        />
+                                        <FieldLabel htmlFor={`invite-user-${userId}`} className="min-w-0 flex-1 cursor-pointer items-center gap-3 font-normal">
                                         {imageUrl ? (
                                             <img src={imageUrl} alt="" loading="lazy" className="size-8 rounded-full object-cover" />
                                         ) : (
@@ -334,7 +351,8 @@ export function InstanceInviteDialog({
                                         <span className="min-w-0 flex-1">
                                             <span className="block truncate text-sm font-medium">{displayName}</span>
                                         </span>
-                                    </label>
+                                        </FieldLabel>
+                                    </Field>
                                 );
                             })
                         ) : (
@@ -349,7 +367,7 @@ export function InstanceInviteDialog({
                         Cancel
                     </Button>
                     <Button type="button" disabled={sending || !selectedUserIds.length} onClick={() => void sendInvites()}>
-                        {sending ? <LoaderCircleIcon className="size-4 animate-spin" /> : null}
+                        {sending ? <Spinner data-icon="inline-start" /> : null}
                         Invite
                     </Button>
                 </DialogFooter>

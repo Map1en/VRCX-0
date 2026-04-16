@@ -6,14 +6,15 @@ import { cn } from '@/lib/utils.js';
 import { Location } from '@/components/Location.jsx';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Card, CardContent } from '@/ui/shadcn/card.jsx';
+import { Card, CardContent } from '@/ui/shadcn/card';
 import {
     ContextMenu,
     ContextMenuContent,
+    ContextMenuGroup,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
+} from '@/ui/shadcn/context-menu';
 
 function getInitials(value) {
     const source = String(value || '').trim();
@@ -169,7 +170,6 @@ function resolveStatusTone(friend, currentUser) {
     if (status === 'join me') {
         return {
             dotClassName: 'bg-[var(--status-joinme)] shadow-[0_0_8px_var(--status-joinme)]',
-            badgeClassName: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
             label: 'Join Me'
         };
     }
@@ -177,7 +177,6 @@ function resolveStatusTone(friend, currentUser) {
     if (status === 'ask me') {
         return {
             dotClassName: 'bg-[var(--status-askme)] shadow-[0_0_8px_var(--status-askme)]',
-            badgeClassName: 'border-sky-500/30 bg-sky-500/10 text-sky-700',
             label: 'Ask Me'
         };
     }
@@ -185,7 +184,6 @@ function resolveStatusTone(friend, currentUser) {
     if (status === 'busy') {
         return {
             dotClassName: 'bg-[var(--status-busy)] shadow-[0_0_8px_var(--status-busy)]',
-            badgeClassName: 'border-rose-500/30 bg-rose-500/10 text-rose-700',
             label: 'Busy'
         };
     }
@@ -193,7 +191,6 @@ function resolveStatusTone(friend, currentUser) {
     if (status === 'online') {
         return {
             dotClassName: 'bg-[var(--status-online)] shadow-[0_0_8px_var(--status-online)]',
-            badgeClassName: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
             label: 'Online'
         };
     }
@@ -208,14 +205,12 @@ function resolveStatusTone(friend, currentUser) {
                     : 'border-[var(--status-online)] shadow-[0_0_8px_var(--status-online)]';
         return {
             dotClassName: cn('border-2 bg-transparent', colorClassName),
-            badgeClassName: 'border-amber-500/30 bg-amber-500/10 text-amber-700',
             label: 'Active'
         };
     }
 
     return {
         dotClassName: status === 'offline' ? 'bg-[var(--status-offline-card)]' : 'hidden',
-        badgeClassName: 'border-border bg-muted text-muted-foreground',
         label: 'Offline'
     };
 }
@@ -320,7 +315,7 @@ export function FriendLocationCard({
                                 />
                             </div>
 
-                            <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex min-w-0 flex-1 flex-col gap-1">
                                 <div
                                     className="truncate font-semibold"
                                     style={{ fontSize: `${16 * cardScale}px` }}>
@@ -329,7 +324,7 @@ export function FriendLocationCard({
                             </div>
                         </div>
 
-                        <div className="min-h-0 space-y-2 overflow-hidden text-sm">
+                        <div className="flex min-h-0 flex-col gap-2 overflow-hidden text-sm">
                             {displayInstanceInfo ? (
                                 <div
                                     className="flex w-full min-w-0 items-start gap-2 text-left text-muted-foreground"
@@ -364,44 +359,52 @@ export function FriendLocationCard({
                 </Card>
             </ContextMenuTrigger>
             <ContextMenuContent className="w-56">
-                <ContextMenuItem disabled={!canOpenUser} onSelect={onOpenUser}>
-                    <UserIcon className="size-4" />
-                    User
-                </ContextMenuItem>
-                <ContextMenuItem disabled={!canOpenWorld} onSelect={onOpenWorld}>
-                    <GlobeIcon className="size-4" />
-                    {worldActionLabel}
-                </ContextMenuItem>
-                <ContextMenuItem disabled={!canOpenGroup} onSelect={onOpenGroup}>
-                    <UsersIcon className="size-4" />
-                    {groupActionLabel}
-                </ContextMenuItem>
+                <ContextMenuGroup>
+                    <ContextMenuItem disabled={!canOpenUser} onSelect={onOpenUser}>
+                        <UserIcon />
+                        User
+                    </ContextMenuItem>
+                    <ContextMenuItem disabled={!canOpenWorld} onSelect={onOpenWorld}>
+                        <GlobeIcon />
+                        {worldActionLabel}
+                    </ContextMenuItem>
+                    <ContextMenuItem disabled={!canOpenGroup} onSelect={onOpenGroup}>
+                        <UsersIcon />
+                        {groupActionLabel}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
                 <ContextMenuSeparator />
-                <ContextMenuItem disabled={!canUseFriendLocation} onSelect={() => void onLaunchLocation?.()}>
-                    <ExternalLinkIcon className="size-4" />
-                    Launch in VRChat
-                </ContextMenuItem>
-                <ContextMenuItem disabled={!canUseFriendLocation} onSelect={() => void onSelfInviteLocation?.()}>
-                    <ExternalLinkIcon className="size-4" />
-                    Self invite
-                </ContextMenuItem>
+                <ContextMenuGroup>
+                    <ContextMenuItem disabled={!canUseFriendLocation} onSelect={() => void onLaunchLocation?.()}>
+                        <ExternalLinkIcon />
+                        Launch in VRChat
+                    </ContextMenuItem>
+                    <ContextMenuItem disabled={!canUseFriendLocation} onSelect={() => void onSelfInviteLocation?.()}>
+                        <ExternalLinkIcon />
+                        Self invite
+                    </ContextMenuItem>
+                </ContextMenuGroup>
                 <ContextMenuSeparator />
-                <ContextMenuItem disabled={!canSendInvite} onSelect={() => void onSendInvite?.()}>
-                    Send invite
-                </ContextMenuItem>
-                <ContextMenuItem disabled={!canRequestInvite} onSelect={() => void onRequestInvite?.()}>
-                    Request invite
-                </ContextMenuItem>
-                <ContextMenuItem disabled={!canBoop} onSelect={() => void onSendBoop?.()}>
-                    Send boop
-                </ContextMenuItem>
+                <ContextMenuGroup>
+                    <ContextMenuItem disabled={!canSendInvite} onSelect={() => void onSendInvite?.()}>
+                        Send invite
+                    </ContextMenuItem>
+                    <ContextMenuItem disabled={!canRequestInvite} onSelect={() => void onRequestInvite?.()}>
+                        Request invite
+                    </ContextMenuItem>
+                    <ContextMenuItem disabled={!canBoop} onSelect={() => void onSendBoop?.()}>
+                        Send boop
+                    </ContextMenuItem>
+                </ContextMenuGroup>
                 <ContextMenuSeparator />
-                <ContextMenuItem disabled={!friend?.id} onSelect={() => void copyCardText(friend?.id, 'User ID')}>
-                    Copy user ID
-                </ContextMenuItem>
-                <ContextMenuItem disabled={!rawLocation} onSelect={() => void copyCardText(rawLocation, 'Location')}>
-                    Copy location
-                </ContextMenuItem>
+                <ContextMenuGroup>
+                    <ContextMenuItem disabled={!friend?.id} onSelect={() => void copyCardText(friend?.id, 'User ID')}>
+                        Copy user ID
+                    </ContextMenuItem>
+                    <ContextMenuItem disabled={!rawLocation} onSelect={() => void copyCardText(rawLocation, 'Location')}>
+                        Copy location
+                    </ContextMenuItem>
+                </ContextMenuGroup>
             </ContextMenuContent>
         </ContextMenu>
     );

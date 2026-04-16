@@ -5,16 +5,16 @@ import { timeToText } from '@/lib/dateTime.js';
 import { database } from '@/services/database/index.js';
 import { openWorldDialog } from '@/services/dialogService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 function formatDate(value) {
     if (!value) {
@@ -194,9 +194,13 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                                             <tr key={`${location}:${instance?.created_at || instance?.createdAt || index}`} className="border-b last:border-b-0">
                                                 <td className="px-3 py-2 align-top text-xs text-muted-foreground">{formatDate(instance?.created_at || instance?.createdAt)}</td>
                                                 <td className="px-3 py-2 align-top text-xs">
-                                                    <button type="button" className="max-w-full text-left hover:underline" onClick={() => openInfo(instance)}>
+                                                    <Button
+                                                        type="button"
+                                                        variant="link"
+                                                        className="h-auto max-w-full justify-start p-0 text-left font-normal"
+                                                        onClick={() => openInfo(instance)}>
                                                         <span className="block truncate font-mono">{rowTitle(instance)}</span>
-                                                    </button>
+                                                    </Button>
                                                 </td>
                                                 <td className="px-3 py-2 align-top text-xs text-muted-foreground">
                                                     {[instance?.worldName, instance?.groupName].filter(Boolean).join(' / ') || '—'}
@@ -236,7 +240,7 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                     ) : (
                         <div className="h-full overflow-auto p-2">
                             {chartRows.length ? (
-                                <div className="space-y-2">
+                                <div className="flex flex-col gap-2">
                                     {chartRows.map((instance, index) => {
                                         const location = rowLocation(instance);
                                         const durationValue = rowDurationValue(instance);
@@ -244,12 +248,16 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                                         return (
                                             <div key={`${location}:${instance?.created_at || instance?.createdAt || index}`} className="rounded-md border bg-muted/10 p-3">
                                                 <div className="flex items-start justify-between gap-3">
-                                                    <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openInfo(instance)}>
-                                                        <div className="truncate text-sm font-medium">{rowTitle(instance)}</div>
-                                                        <div className="truncate text-xs text-muted-foreground">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        className="h-auto min-w-0 flex-1 flex-col items-start justify-start p-0 text-left font-normal hover:bg-transparent"
+                                                        onClick={() => openInfo(instance)}>
+                                                        <span className="truncate text-sm font-medium">{rowTitle(instance)}</span>
+                                                        <span className="truncate text-xs text-muted-foreground">
                                                             {[formatDate(instance?.created_at || instance?.createdAt), instance?.groupName].filter(Boolean).join(' · ') || '—'}
-                                                        </div>
-                                                    </button>
+                                                        </span>
+                                                    </Button>
                                                     <Badge variant="outline" className="shrink-0 tabular-nums">
                                                         {rowDuration(instance)}
                                                     </Badge>
@@ -307,7 +315,7 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                             <div><span className="text-muted-foreground">World</span><div>{infoRow?.worldName || '—'}</div></div>
                             <div><span className="text-muted-foreground">Group</span><div>{infoRow?.groupName || '—'}</div></div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-medium">Players</h4>
                                 <span className="text-xs text-muted-foreground">{infoData.players.length} players</span>

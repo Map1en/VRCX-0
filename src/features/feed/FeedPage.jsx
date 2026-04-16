@@ -10,7 +10,6 @@ import {
     ExternalLinkIcon,
     ListFilterIcon,
     LockIcon,
-    LoaderCircleIcon,
     RefreshCwIcon,
     StarIcon,
     XIcon
@@ -35,7 +34,7 @@ import {
     DataTablePagination,
     DataTableScrollArea,
     DataTableSurface
-} from '@/components/data-table/VrcxDataTable.jsx';
+} from '@/components/data-table/DataTableView.jsx';
 import {
     PageBody,
     PageFooter,
@@ -75,44 +74,45 @@ import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Calendar } from '@/ui/shadcn/calendar.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import { Calendar } from '@/ui/shadcn/calendar';
 import {
     ContextMenu,
     ContextMenuContent,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover.jsx';
+} from '@/ui/shadcn/context-menu';
+import { Input } from '@/ui/shadcn/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
     TableCell,
     TableHeader,
     TableRow
-} from '@/ui/shadcn/table.jsx';
+} from '@/ui/shadcn/table';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger
-} from '@/ui/shadcn/tooltip.jsx';
+} from '@/ui/shadcn/tooltip';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
 const DEFAULT_SORTING = [];
 const COLUMN_IDS = ['created_at', 'type', 'displayName', 'detail'];
 const ORDER_COLUMN_IDS = ['expander', ...COLUMN_IDS];
 const STORAGE_KEY = 'vrcx:table:feed';
-const MAX_RENDERED_FEED_ROWS = 5000;
 const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
 
 function safeJsonParse(value) {
@@ -622,8 +622,8 @@ function escapeHtml(value) {
 function formatDifferenceHtml(
     oldValue,
     newValue,
-    markerAddition = '<span class="rounded bg-emerald-500/15 px-0.5 text-emerald-700">{{text}}</span>',
-    markerDeletion = '<span class="rounded bg-red-500/15 px-0.5 text-red-700 line-through">{{text}}</span>'
+    markerAddition = '<span class="rounded bg-primary/10 px-0.5 text-primary">{{text}}</span>',
+    markerDeletion = '<span class="rounded bg-destructive/10 px-0.5 text-destructive line-through">{{text}}</span>'
 ) {
     const oldWords = escapeHtml(oldValue)
         .split(/\s+/)
@@ -724,19 +724,21 @@ function SortButton({ column, label }) {
     const direction = column.getIsSorted();
 
     return (
-        <button
+        <Button
             type="button"
-            className="inline-flex items-center gap-1 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+            variant="ghost"
+            size="sm"
+            className="h-auto justify-start gap-1 px-1 py-0 text-left text-xs font-medium uppercase tracking-wide"
             onClick={() => column.toggleSorting(direction === 'asc')}>
             <span>{label}</span>
             {direction === 'asc' ? (
-                <ArrowUpIcon className="size-3.5" />
+                <ArrowUpIcon data-icon="inline-end" />
             ) : direction === 'desc' ? (
-                <ArrowDownIcon className="size-3.5" />
+                <ArrowDownIcon data-icon="inline-end" />
             ) : (
-                <ArrowUpDownIcon className="size-3.5" />
+                <ArrowUpDownIcon data-icon="inline-end" />
             )}
-        </button>
+        </Button>
     );
 }
 
@@ -885,15 +887,16 @@ function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
     }
 
     return (
-        <div className="space-y-0.5">
-            <button
+        <div className="flex flex-col gap-0.5">
+            <Button
                 type="button"
-                className={cn('inline-flex w-fit items-center gap-1 text-left', imageUrl ? 'cursor-pointer hover:underline' : 'cursor-default')}
+                variant="link"
+                className="h-auto w-fit justify-start p-0 text-left font-normal"
                 disabled={!imageUrl}
                 onClick={() => void openAvatarAuthorTarget()}>
                 {label}
-                {avatarType === 'own' ? <LockIcon className="size-4" /> : null}
-            </button>
+                {avatarType === 'own' ? <LockIcon data-icon="inline-end" /> : null}
+            </Button>
             {Array.isArray(avatarTags) && avatarTags.length ? (
                 <div className="truncate text-xs text-muted-foreground">
                     {avatarTags.map((tag) => String(tag).replace('content_', '')).join(', ')}
@@ -1015,7 +1018,7 @@ function FeedUserLink({
     const userLabel = resolvedDisplayName || displayName || UNKNOWN_FEED_USER_DISPLAY_NAME;
 
     const trigger = (
-        <div className="min-w-0 space-y-0.5">
+        <div className="flex min-w-0 flex-col gap-0.5">
             <Button
                 type="button"
                 variant="link"
@@ -1313,9 +1316,11 @@ function FeedExpandedRow({
                     <div className="inline-block w-40 align-top">
                         {previousImage ? (
                             <>
-                                <button
+                                <Button
                                     type="button"
-                                    className="block cursor-pointer"
+                                    variant="ghost"
+                                    className="h-auto p-0"
+                                    aria-label="Preview previous avatar"
                                     onClick={() => onPreviewImage?.({
                                         url: row.previousCurrentAvatarImageUrl || previousImage,
                                         title: row.previousAvatarName || 'Previous avatar'
@@ -1326,7 +1331,7 @@ function FeedExpandedRow({
                                         className="h-30 w-40 rounded object-cover"
                                         loading="lazy"
                                     />
-                                </button>
+                                </Button>
                                 <br />
                                 <AvatarInfoLine
                                     imageUrl={previousImage}
@@ -1344,9 +1349,11 @@ function FeedExpandedRow({
                     <div className="inline-block w-40 align-top">
                         {currentImage ? (
                             <>
-                                <button
+                                <Button
                                     type="button"
-                                    className="block cursor-pointer"
+                                    variant="ghost"
+                                    className="h-auto p-0"
+                                    aria-label="Preview current avatar"
                                     onClick={() => onPreviewImage?.({
                                         url: row.currentAvatarImageUrl || currentImage,
                                         title: row.avatarName || 'Current avatar'
@@ -1357,7 +1364,7 @@ function FeedExpandedRow({
                                         className="h-30 w-40 rounded object-cover"
                                         loading="lazy"
                                     />
-                                </button>
+                                </Button>
                                 <br />
                                 <AvatarInfoLine
                                     imageUrl={currentImage}
@@ -2095,9 +2102,9 @@ export function FeedPage({ embedded = false } = {}) {
                             className="size-8"
                             onClick={() => row.toggleExpanded()}>
                             {row.getIsExpanded() ? (
-                                <ChevronDownIcon className="size-4" />
+                                <ChevronDownIcon data-icon="icon" />
                             ) : (
-                                <ChevronRightIcon className="size-4" />
+                                <ChevronRightIcon data-icon="icon" />
                             )}
                         </Button>
                     ) : null
@@ -2259,7 +2266,7 @@ export function FeedPage({ embedded = false } = {}) {
                                 <Popover open={dateFilterOpen} onOpenChange={setDateFilterOpen}>
                                     <PopoverTrigger asChild>
                                         <Button type="button" variant="outline" size="sm" className="gap-1.5">
-                                            <ListFilterIcon className="size-4" />
+                                            <ListFilterIcon data-icon="inline-start" />
                                             {t('view.feed.filter')}
                                             {activeFilterCount ? (
                                                 <Badge variant="secondary" className="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs">
@@ -2301,7 +2308,7 @@ export function FeedPage({ embedded = false } = {}) {
                                     title={t('view.feed.favorites_only_tooltip')}
                                     aria-label={t('view.feed.favorites_only_tooltip')}
                                     onClick={() => setFavoritesOnly((current) => !current)}>
-                                    <StarIcon className="size-4" />
+                                    <StarIcon data-icon="icon" />
                                 </Button>
                             </div>
 
@@ -2349,7 +2356,7 @@ export function FeedPage({ embedded = false } = {}) {
                                         aria-label="Clear search"
                                         className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
                                         onClick={clearSearch}>
-                                        <XIcon className="size-4" />
+                                        <XIcon data-icon="icon" />
                                     </Button>
                                 ) : null}
                             </div>
@@ -2368,11 +2375,13 @@ export function FeedPage({ embedded = false } = {}) {
                                         <SelectValue placeholder="Rows" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {pageSizes.map((size) => (
-                                            <SelectItem key={size} value={String(size)}>
-                                                {size} rows
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {pageSizes.map((size) => (
+                                                <SelectItem key={size} value={String(size)}>
+                                                    {size} rows
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                                 <Button
@@ -2381,9 +2390,11 @@ export function FeedPage({ embedded = false } = {}) {
                                     size="icon"
                                     aria-label="Refresh feed"
                                     onClick={() => setRefreshToken((current) => current + 1)}>
-                                    <RefreshCwIcon
-                                        className={cn('size-4', loadStatus === 'running' ? 'animate-spin' : '')}
-                                    />
+                                    {loadStatus === 'running' ? (
+                                        <Spinner data-icon="icon" />
+                                    ) : (
+                                        <RefreshCwIcon data-icon="icon" />
+                                    )}
                                 </Button>
                             </div>
                 </PageToolbarRow>
@@ -2431,7 +2442,7 @@ export function FeedPage({ embedded = false } = {}) {
                                     <DataTableEmptyRow colSpan={columns.length}>
                                         {loadStatus === 'running' ? (
                                             <span className="inline-flex items-center gap-2">
-                                                <LoaderCircleIcon className="size-4 animate-spin" />
+                                                <Spinner />
                                                 Loading feed rows
                                             </span>
                                         ) : favoritesOnly && !isFavoritesLoaded ? (

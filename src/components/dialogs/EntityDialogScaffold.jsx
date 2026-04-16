@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
-import { LoaderCircleIcon, MoreHorizontalIcon, RefreshCwIcon } from 'lucide-react';
+import { MoreHorizontalIcon, RefreshCwIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils.js';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Button } from '@/ui/shadcn/button';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 function EntityDialogScaffold({ className, children }) {
     return (
@@ -42,17 +44,18 @@ function EntityDialogHeader({
 }) {
     return (
         <div className="flex shrink-0 flex-col gap-4 md:flex-row md:items-start">
-            <button
+            <Button
                 type="button"
+                variant="ghost"
                 disabled={!imageUrl || !onImageClick}
                 onClick={onImageClick}
                 className={cn(
-                    'flex aspect-[4/3] w-40 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted disabled:pointer-events-none',
+                    'h-auto aspect-[4/3] w-40 shrink-0 overflow-hidden rounded-md border bg-muted p-0 disabled:pointer-events-none',
                     imageUrl && onImageClick ? 'cursor-pointer' : 'cursor-default',
                     imageClassName
                 )}>
                 {imageUrl ? <img src={imageUrl} alt={imageAlt || ''} className="size-full object-cover" /> : imagePlaceholder}
-            </button>
+            </Button>
 
             <div className="min-w-0 flex-1">
                 <div className="flex items-start gap-3">
@@ -61,9 +64,9 @@ function EntityDialogHeader({
                             <div className="flex min-w-0 items-center gap-1.5 break-words text-lg font-semibold leading-tight">
                                 {titlePrefix}
                                 {onTitleClick ? (
-                                    <button type="button" className="min-w-0 break-words text-left hover:underline" onClick={onTitleClick}>
+                                    <Button type="button" variant="link" className="h-auto min-w-0 justify-start break-words p-0 text-left text-lg font-semibold whitespace-normal" onClick={onTitleClick}>
                                         {title}
-                                    </button>
+                                    </Button>
                                 ) : (
                                     <span className="min-w-0 break-words">{title}</span>
                                 )}
@@ -71,9 +74,9 @@ function EntityDialogHeader({
                             </div>
                             {subtitle ? (
                                 onSubtitleClick ? (
-                                    <button type="button" className="break-all font-mono text-sm text-muted-foreground hover:underline" onClick={onSubtitleClick}>
+                                    <Button type="button" variant="link" className="h-auto justify-start break-all p-0 text-left font-mono text-sm text-muted-foreground whitespace-normal" onClick={onSubtitleClick}>
                                         {subtitle}
-                                    </button>
+                                    </Button>
                                 ) : (
                                     <div className="break-all font-mono text-sm text-muted-foreground">
                                         {subtitle}
@@ -115,7 +118,7 @@ function EntityDialogTabs({ value, onValueChange, tabs, children }) {
                     <TabsTrigger
                         key={tab.value}
                         value={tab.value}
-                        className="h-10 flex-none rounded-none border-0 bg-transparent px-3 text-muted-foreground shadow-none after:bottom-0 after:bg-primary hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent">
+                        className="h-10 flex-none rounded-none border-0 bg-transparent px-3 text-muted-foreground shadow-none after:bottom-0 after:bg-primary hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none">
                         {tab.label}
                     </TabsTrigger>
                 ))}
@@ -158,9 +161,9 @@ function EntityMemoTextarea({ label = 'Memo', value = '', placeholder = '', onSa
     }
 
     return (
-        <div className="box-border flex w-full cursor-default items-center p-1.5 text-[13px]">
+        <div className="box-border flex w-full cursor-default items-center p-1.5 text-sm">
             <div className="flex-1 overflow-hidden">
-                <span className="block truncate font-medium leading-[18px]">{label}</span>
+                <span className="block truncate font-medium leading-5">{label}</span>
                 <Textarea
                     value={draft}
                     rows={2}
@@ -185,18 +188,16 @@ function EntityActionDropdown({ children, busy = false, dangerous = false, indic
                     variant={dangerous ? 'destructive' : 'outline'}
                     aria-label="Open entity actions"
                     className="relative">
-                    {busy ? (
-                        <LoaderCircleIcon className="size-4 animate-spin" />
-                    ) : (
-                        <MoreHorizontalIcon className="size-4" />
-                    )}
+                    {busy ? <Spinner data-icon="inline-start" /> : <MoreHorizontalIcon data-icon="inline-start" />}
                     {indicator ? (
-                        <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-emerald-500" />
+                        <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" />
                     ) : null}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-56">
-                {children}
+                <DropdownMenuGroup>
+                    {children}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -214,7 +215,7 @@ function EntityActionItem({ children, icon: Icon, destructive = false, disabled 
                 }
                 onSelect?.(event);
             }}>
-            {Icon ? <Icon className="size-4" /> : null}
+            {Icon ? <Icon /> : null}
             <span className="min-w-0 flex-1">{children}</span>
             {shortcut ? <span className="ml-auto">{shortcut}</span> : null}
         </DropdownMenuItem>
@@ -248,7 +249,7 @@ function EntityRawJson({ value, valueFactory }) {
         <div className="flex flex-col gap-2">
             <div className="flex justify-end">
                 <Button type="button" size="sm" variant="outline" onClick={() => void refreshJson()} disabled={refreshing}>
-                    <RefreshCwIcon className={cn('size-3.5', refreshing ? 'animate-spin' : '')} />
+                    {refreshing ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
                     Refresh
                 </Button>
             </div>
@@ -274,12 +275,12 @@ function EntityInfoBlock({ label, value, mono = false, full = false, wide = fals
             type={onClick ? 'button' : undefined}
             onClick={onClick}
             className={cn(
-                'box-border flex items-center p-1.5 text-left text-[13px]',
-                full ? 'w-full' : wide ? 'w-[350px]' : 'w-[167px]',
+                'flex items-center p-1.5 text-left text-sm',
+                full ? 'w-full' : wide ? 'w-80' : 'w-44',
                 onClick ? 'cursor-pointer hover:rounded-md hover:bg-muted/50' : 'cursor-default'
             )}>
             <div className="min-w-0 flex-1 overflow-hidden">
-                <span className="block truncate font-medium leading-[18px]">{label}</span>
+                <span className="block truncate font-medium leading-snug">{label}</span>
                 {children || (
                     <span className={cn('block truncate text-xs', mono ? 'font-mono' : '')}>
                         {value || '—'}

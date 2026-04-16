@@ -1,20 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-    AppleIcon,
-    BanIcon,
-    Clock3Icon,
-    HeartIcon,
-    ImageIcon,
-    LoaderCircleIcon,
-    MonitorIcon,
-    RefreshCwIcon,
-    SmartphoneIcon,
-    UserIcon
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { getPlatformInfo } from '@/lib/avatarPlatform.js';
-import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis.js';
 import { compareUnityVersion } from '@/shared/utils/avatar.js';
@@ -22,14 +9,12 @@ import { backend } from '@/platform/tauri/index.js';
 import { AvatarDialogTabbedView } from './AvatarDialogTabbedView.jsx';
 import { AvatarContentTagsDialog, AvatarStylesDialog } from './AvatarOwnerEditDialogs.jsx';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
-import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu.jsx';
 import {
     avatarProfileRepository,
     memoRepository,
     mediaRepository,
     vrchatAuthRepository
 } from '@/repositories/index.js';
-import { openUserDialog } from '@/services/dialogService.js';
 import {
     IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
@@ -41,54 +26,26 @@ import { useDialogStore } from '@/state/dialogStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { extractFileId, extractFileVersion, extractVariantVersion } from '@/shared/utils/fileUtils.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Separator } from '@/ui/shadcn/separator.jsx';
+import { Input } from '@/ui/shadcn/input';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 function normalizeEntityId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
 }
 
-function Section({ label, value, mono = false, children }) {
-    return (
-        <div className="space-y-1">
-            <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                {label}
-            </div>
-            {children ? (
-                children
-            ) : (
-                <div className={mono ? 'break-all font-mono text-sm' : 'text-sm'}>
-                    {value || '—'}
-                </div>
-            )}
-        </div>
-    );
-}
-
 function AvatarDialogEmptyState({ title, description, loading = false }) {
     return (
         <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
+            <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <LoaderCircleIcon className="size-5 animate-spin text-muted-foreground" />
+                        <Spinner className="size-5 text-muted-foreground" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
                 <div className="text-sm text-muted-foreground">{description}</div>
             </div>
         </div>
-    );
-}
-
-function PlatformBadge({ label, rating, icon: Icon }) {
-    return (
-        <Badge variant="outline">
-            {Icon ? <Icon className="mr-1 size-3.5" /> : null}
-            {label}
-            {rating ? <span className="ml-1 border-l pl-1">{rating}</span> : null}
-        </Badge>
     );
 }
 
@@ -1236,14 +1193,14 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 onOpenChange={(open) => setOwnerEditor(open ? 'styles' : null)}
                 onSavedCurrentAvatar={(nextAvatar) => applyCurrentAvatarUpdate(nextAvatar)}
             />
-            <input
+            <Input
                 ref={imageUploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"
                 onChange={onFileChangeAvatarImage}
             />
-            <input
+            <Input
                 ref={galleryUploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}

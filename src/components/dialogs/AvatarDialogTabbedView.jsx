@@ -25,8 +25,8 @@ import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils.js';
 import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu.jsx';
 import { openUserDialog } from '@/services/dialogService.js';
 import { useModalStore } from '@/state/modalStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     EntityActionDropdown,
     EntityActionItem,
@@ -170,9 +170,11 @@ export function AvatarDialogTabbedView({
                         {avatarBlocked ? <Badge variant="destructive">Blocked</Badge> : null}
                         {isFavorite ? <Badge><HeartIcon className="mr-1 size-3.5 fill-current" />Favorite</Badge> : null}
                         {avatar.$isCached ? (
-                            <button type="button" onClick={onOpenCache}>
-                                <Badge variant="outline">{avatar.$cacheSize ? `${avatar.$cacheSize} Cache` : 'Local cache'}</Badge>
-                            </button>
+                            <Badge asChild variant="outline">
+                                <Button type="button" variant="ghost" onClick={onOpenCache}>
+                                    {avatar.$cacheSize ? `${avatar.$cacheSize} Cache` : 'Local cache'}
+                                </Button>
+                            </Badge>
                         ) : null}
                         {hasImposter ? <Badge variant="outline">Impostor{imposterVersion ? ` v${imposterVersion}` : ''}</Badge> : null}
                         {avatar.styles?.primary || avatar.styles?.secondary ? <Badge variant="outline">Styles {avatar.styles?.primary || ''}{avatar.styles?.secondary ? ` / ${avatar.styles.secondary}` : ''}</Badge> : null}
@@ -188,13 +190,13 @@ export function AvatarDialogTabbedView({
                 actions={
                     <>
                         {avatar.$isCached ? (
-                            <Button type="button" size="icon-lg" variant="outline" className="rounded-full" disabled={actionStatus === 'cache'} onClick={onDeleteCache}>
-                                <Trash2Icon className="size-4" />
+                            <Button type="button" size="icon-lg" variant="outline" className="rounded-full" aria-label="Delete cached avatar" disabled={actionStatus === 'cache'} onClick={onDeleteCache}>
+                                <Trash2Icon data-icon="inline-start" />
                             </Button>
                         ) : null}
                         <FavoriteActionMenu kind="avatar" entityId={avatar.id} entity={avatar} />
-                        <Button type="button" size="icon-lg" className="rounded-full" disabled={!canSelectAvatar || actionStatus === 'selecting'} onClick={onSelect}>
-                            <CheckCircleIcon className="size-4" />
+                        <Button type="button" size="icon-lg" className="rounded-full" aria-label="Select avatar" disabled={!canSelectAvatar || actionStatus === 'selecting'} onClick={onSelect}>
+                            <CheckCircleIcon data-icon="inline-start" />
                         </Button>
                         <EntityActionDropdown busy={actionStatus !== 'idle'} dangerous={avatarBlocked}>
                             <EntityActionItem icon={RefreshCwIcon} disabled={actionStatus === 'refresh'} onSelect={onRefresh}>Refresh</EntityActionItem>
@@ -249,26 +251,27 @@ export function AvatarDialogTabbedView({
                     <EntityInfoGrid>
                     {galleryImages.length || canManageAvatar ? (
                         <EntityInfoBlock label="Gallery" full>
-                            <div className="mt-2 w-full space-y-2">
+                            <div className="mt-2 flex w-full flex-col gap-2">
                                 {canManageAvatar ? (
                                     <Button type="button" size="sm" variant="outline" disabled={actionStatus === 'gallery-upload'} onClick={onUploadGallery}>
-                                        <UploadIcon className="size-3.5" />
+                                        <UploadIcon data-icon="inline-start" />
                                         Upload
                                     </Button>
                                 ) : null}
                                 {galleryImages.length ? (
-                                    <div className="space-y-2">
-                                        <button
+                                    <div className="flex flex-col gap-2">
+                                        <Button
                                             type="button"
                                             disabled={!currentGalleryImage}
-                                            className="flex h-52 w-full items-center justify-center overflow-hidden rounded-md border bg-muted/20"
+                                            variant="outline"
+                                            className="h-52 w-full overflow-hidden bg-muted/20 p-0"
                                             onClick={() => openImagePreview({ url: currentGalleryImage, title: avatar.name || 'Avatar' })}>
                                             {currentGalleryImage ? (
                                                 <img src={currentGalleryImage} alt="" className="size-full object-contain" />
                                             ) : (
-                                                <ImageIcon className="size-8 text-muted-foreground" />
+                                                <ImageIcon data-icon="inline-start" className="size-8 text-muted-foreground" />
                                             )}
-                                        </button>
+                                        </Button>
                                         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                                             <Button
                                                 type="button"
@@ -299,9 +302,9 @@ export function AvatarDialogTabbedView({
                     ) : null}
                     {listings.length ? (
                         <EntityInfoBlock label="Published Listings" full>
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 {listings.map((listing, index) => (
-                                    <div key={`${listing?.id || listing?.platform || index}`} className="box-border flex items-center p-1.5 text-[13px]">
+                                    <div key={`${listing?.id || listing?.platform || index}`} className="box-border flex items-center p-1.5 text-sm">
                                         <div className="font-medium">{listing?.displayName || listing?.name || listing?.platform || listing?.id || 'Listing'}</div>
                                         <div className="text-xs text-muted-foreground">{listing?.description || listing?.createdAt || listing?.id || ''}</div>
                                     </div>

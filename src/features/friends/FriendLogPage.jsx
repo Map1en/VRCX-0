@@ -4,9 +4,6 @@ import {
     ArrowRightIcon,
     ArrowUpDownIcon,
     ArrowUpIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    LoaderCircleIcon,
     RefreshCwIcon,
     SearchIcon,
     Trash2Icon,
@@ -25,36 +22,52 @@ import {
     ResizableTableHead
 } from '@/components/data-table/ResizableTableParts.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
+import {
+    DataTablePagination,
+    DataTableScrollArea,
+    DataTableSurface
+} from '@/components/data-table/DataTableView.jsx';
+import {
+    EmptyState,
+    LoadingState,
+    PageBody,
+    PageFooter,
+    PageScaffold,
+    PageToolbar,
+    PageToolbarRow
+} from '@/components/layout/PageScaffold.jsx';
 import { configRepository, friendLogHistoryRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { getTablePageSizesPreference } from '@/services/preferencesService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
     TableHeader,
     TableRow
-} from '@/ui/shadcn/table.jsx';
+} from '@/ui/shadcn/table';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
@@ -249,31 +262,26 @@ function SortButton({ column, label }) {
     const direction = column.getIsSorted();
 
     return (
-        <button
+        <Button
             type="button"
-            className="inline-flex items-center gap-1 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+            variant="ghost"
+            size="sm"
+            className="h-auto justify-start px-0 py-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
             onClick={() => column.toggleSorting(direction === 'asc')}>
             <span>{label}</span>
             {direction === 'asc' ? (
-                <ArrowUpIcon className="size-3.5" />
+                <ArrowUpIcon data-icon="inline-end" />
             ) : direction === 'desc' ? (
-                <ArrowDownIcon className="size-3.5" />
+                <ArrowDownIcon data-icon="inline-end" />
             ) : (
-                <ArrowUpDownIcon className="size-3.5" />
+                <ArrowUpDownIcon data-icon="inline-end" />
             )}
-        </button>
+        </Button>
     );
 }
 
 function FriendLogEmptyState({ title, description }) {
-    return (
-        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
-                <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
-            </div>
-        </div>
-    );
+    return <EmptyState title={title} description={description} />;
 }
 
 function friendLogTypeLabel(type, t) {
@@ -295,25 +303,29 @@ function FriendLogTypeFilterDropdown({ value, onChange }) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuItem onSelect={() => onChange([])}>
-                    {t('view.friend_log.filter_placeholder')}
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuItem onSelect={() => onChange([])}>
+                        {t('view.friend_log.filter_placeholder')}
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                {FRIEND_LOG_TYPES.map((type) => (
-                    <DropdownMenuCheckboxItem
-                        key={type}
-                        checked={valueSet.has(type)}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={(checked) => {
-                            onChange(
-                                checked
-                                    ? [...value, type]
-                                    : value.filter((entry) => entry !== type)
-                            );
-                        }}>
-                        {friendLogTypeLabel(type, t)}
-                    </DropdownMenuCheckboxItem>
-                ))}
+                <DropdownMenuGroup>
+                    {FRIEND_LOG_TYPES.map((type) => (
+                        <DropdownMenuCheckboxItem
+                            key={type}
+                            checked={valueSet.has(type)}
+                            onSelect={(event) => event.preventDefault()}
+                            onCheckedChange={(checked) => {
+                                onChange(
+                                    checked
+                                        ? [...value, type]
+                                        : value.filter((entry) => entry !== type)
+                                );
+                            }}>
+                            {friendLogTypeLabel(type, t)}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -322,9 +334,10 @@ function FriendLogTypeFilterDropdown({ value, onChange }) {
 function renderUserCell(row) {
     const displayName = row?.displayName || row?.userId || '';
     const userLabel = row?.userId ? (
-        <button
+        <Button
             type="button"
-            className="text-left text-sm font-medium hover:underline"
+            variant="link"
+            className="h-auto justify-start p-0 text-left text-sm font-medium"
             onClick={() =>
                 openUserDialog({
                     userId: row.userId,
@@ -332,7 +345,7 @@ function renderUserCell(row) {
                 })
             }>
             {displayName}
-        </button>
+        </Button>
     ) : (
         <div className="text-sm font-medium">{displayName}</div>
     );
@@ -769,9 +782,12 @@ export function FriendLogPage({ embedded = false } = {}) {
                     const rowKey = getFriendLogRowKey(row.original, rowsOwnerUserId);
                     return (
                         <div className="flex justify-end">
-                            <button
+                            <Button
                                 type="button"
-                                className="inline-flex h-6 items-center justify-center text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                                size="icon-xs"
+                                variant="ghost"
+                                className="text-muted-foreground hover:text-foreground"
+                                aria-label={t('common.actions.delete')}
                                 disabled={
                                     !currentUserId ||
                                     rowsOwnerUserId !== normalizeUserId(currentUserId) ||
@@ -784,13 +800,13 @@ export function FriendLogPage({ embedded = false } = {}) {
                                     })
                                 }>
                                 {deletingRowKey === rowKey ? (
-                                    <LoaderCircleIcon className="size-4 animate-spin" />
+                                    <Spinner data-icon="inline-start" />
                                 ) : shiftHeld ? (
-                                    <XIcon className="size-4 text-destructive" />
+                                    <XIcon data-icon="inline-start" className="text-destructive" />
                                 ) : (
-                                    <Trash2Icon className="size-4" />
+                                    <Trash2Icon data-icon="inline-start" />
                                 )}
-                            </button>
+                            </Button>
                         </div>
                     );
                 }
@@ -829,21 +845,14 @@ export function FriendLogPage({ embedded = false } = {}) {
         columnResizeMode: 'onChange'
     });
 
-    const pageCount = Math.max(1, table.getPageCount());
     const hasRows = orderedRows.length > 0;
     const isLoading = loadStatus === 'running' && rows.length === 0;
     const isError = loadStatus === 'error' && rows.length === 0;
 
     return (
-        <div
-            className={
-                embedded
-                    ? 'flex h-full min-h-0 flex-col p-3'
-                    : 'x-container x-container--auto-height flex h-full min-h-0 flex-col p-4 pb-0'
-            }>
-            <div className="flex h-full min-h-0 flex-col gap-3">
-                <div className="flex shrink-0 flex-col gap-2 pb-2">
-                    <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+        <PageScaffold embedded={embedded}>
+            <PageToolbar>
+                    <PageToolbarRow className="xl:justify-between">
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                             <FriendLogTypeFilterDropdown value={selectedTypes} onChange={setSelectedTypes} />
                             <div className="relative min-w-56 flex-1">
@@ -860,12 +869,13 @@ export function FriendLogPage({ embedded = false } = {}) {
                                 variant="outline"
                                 size="icon"
                                 title="Refresh"
+                                aria-label="Refresh friend log"
                                 disabled={!currentUserId || loadStatus === 'running'}
                                 onClick={() => setRefreshToken((value) => value + 1)}>
                                 {loadStatus === 'running' ? (
-                                    <LoaderCircleIcon className="size-4 animate-spin" />
+                                    <Spinner data-icon="inline-start" />
                                 ) : (
-                                    <RefreshCwIcon className="size-4" />
+                                    <RefreshCwIcon data-icon="inline-start" />
                                 )}
                             </Button>
                         </div>
@@ -884,26 +894,23 @@ export function FriendLogPage({ embedded = false } = {}) {
                                     <SelectValue placeholder="Rows" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {pageSizes.map((size) => (
-                                        <SelectItem key={size} value={String(size)}>
-                                            {size}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        {pageSizes.map((size) => (
+                                            <SelectItem key={size} value={String(size)}>
+                                                {size}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
-                    </div>
+                    </PageToolbarRow>
                     {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
-                </div>
+            </PageToolbar>
 
-                <div className="flex min-h-0 flex-1 flex-col gap-3">
+                <PageBody>
                     {isLoading ? (
-                        <div className="flex min-h-72 flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/20">
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <LoaderCircleIcon className="size-5 animate-spin" />
-                                Loading the friend log history snapshot
-                            </div>
-                        </div>
+                        <LoadingState label="Loading the friend log history snapshot" />
                     ) : isError ? (
                         <FriendLogEmptyState
                             title="Friend log failed to load"
@@ -911,9 +918,9 @@ export function FriendLogPage({ embedded = false } = {}) {
                         />
                     ) : hasRows ? (
                         <>
-                            <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
-                                <div className="h-full overflow-auto">
-                                    <Table className="vrcx-data-table table-fixed">
+                            <DataTableSurface>
+                                <DataTableScrollArea>
+                                    <Table className="app-data-table table-fixed">
                                         <TableHeader>
                                             {table.getHeaderGroups().map((headerGroup) => (
                                                 <TableRow key={headerGroup.id}>
@@ -933,10 +940,10 @@ export function FriendLogPage({ embedded = false } = {}) {
                                             ))}
                                         </TableBody>
                                     </Table>
-                                </div>
-                            </div>
+                                </DataTableScrollArea>
+                            </DataTableSurface>
 
-                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <PageFooter>
                                 <div className="text-sm text-muted-foreground">
                                     Showing{' '}
                                     <span className="font-medium text-foreground">
@@ -948,30 +955,8 @@ export function FriendLogPage({ embedded = false } = {}) {
                                     </span>{' '}
                                     log row{orderedRows.length === 1 ? '' : 's'}
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={!table.getCanPreviousPage()}
-                                        onClick={() => table.previousPage()}>
-                                        <ChevronLeftIcon className="size-4" />
-                                        Previous
-                                    </Button>
-                                    <Badge variant="outline">
-                                        Page {pagination.pageIndex + 1} / {pageCount}
-                                    </Badge>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={!table.getCanNextPage()}
-                                        onClick={() => table.nextPage()}>
-                                        Next
-                                        <ChevronRightIcon className="size-4" />
-                                    </Button>
-                                </div>
-                            </div>
+                                <DataTablePagination table={table} pageIndex={pagination.pageIndex} />
+                            </PageFooter>
                         </>
                     ) : (
                         <FriendLogEmptyState
@@ -979,8 +964,7 @@ export function FriendLogPage({ embedded = false } = {}) {
                             description="Broaden the type filters or search query to see more history."
                         />
                     )}
-                </div>
-            </div>
-        </div>
+                </PageBody>
+        </PageScaffold>
     );
 }

@@ -17,7 +17,6 @@
         "tauri:build": "tauri build",
         "lint": "npm run lint:oxlint",
         "lint:oxlint": "oxlint .",
-        "typecheck:js": "tsc -p tsconfig.checkjs.json --pretty false",
         "test": "vitest run --config vitest.config.js",
         "test:watch": "vitest --config vitest.config.js",
         "build:licenses": "node ./build-scripts/generate-third-party-licenses.js",
@@ -62,13 +61,18 @@
         "npm": ">=11.5.0"
     },
     "dependencies": {
+        "@fontsource-variable/geist": "^5.2.8",
+        "@fontsource-variable/inter": "^5.2.8",
         "@sigma/edge-curve": "^3.1.0",
         "@sigma/node-border": "^3.0.0",
         "@tauri-apps/api": "^2.10.1",
+        "date-fns": "^4.1.0",
         "graphology": "^0.26.0",
         "graphology-communities-louvain": "^2.0.2",
         "graphology-layout-forceatlas2": "^0.10.1",
         "graphology-layout-noverlap": "^0.4.2",
+        "next-themes": "^0.4.6",
+        "shadcn": "^4.2.0",
         "sigma": "^3.0.2"
     }
 }

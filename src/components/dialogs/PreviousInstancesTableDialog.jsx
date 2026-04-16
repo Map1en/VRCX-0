@@ -18,17 +18,17 @@ import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 const INFO_CHART_BAR_WIDTH = 12;
 
@@ -189,7 +189,7 @@ function InstanceOwnerCell({ userId, location = '', endpoint = '' }) {
             onClick={() => openUserDialog({ userId, title: displayName || undefined })}>
             <span className="truncate">{displayName || userId}</span>
             {displayName && displayName !== userId ? (
-                <span className="max-w-full truncate text-[10px] text-muted-foreground">{userId}</span>
+                <span className="max-w-full truncate text-xs text-muted-foreground">{userId}</span>
             ) : null}
         </Button>
     );
@@ -230,7 +230,7 @@ function markerForEntry(entry) {
 
 function createInfoChartTooltipElement(detailEntry, hour12) {
     const container = document.createElement('div');
-    container.className = 'min-w-[180px]';
+    container.className = 'min-w-44';
 
     const title = document.createElement('div');
     title.style.fontWeight = '600';
@@ -442,8 +442,7 @@ function PreviousInstanceInfoChart({ rows }) {
             return;
         }
 
-        const themeName =
-            resolvedTheme === 'dark' || resolvedTheme === 'midnight' ? 'dark' : null;
+        const themeName = resolvedTheme === 'dark' ? 'dark' : null;
         let chart = chartInstanceRef.current;
 
         if (!chart || chartThemeRef.current !== themeName) {
@@ -710,7 +709,9 @@ function PreviousInstancesTableDialog({
                             }}>
                             <SelectTrigger size="sm" className="w-24"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                {[10, 25, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                <SelectGroup>
+                                    {[10, 25, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>
@@ -722,7 +723,7 @@ function PreviousInstancesTableDialog({
                                     <th className="w-44 px-3 py-2">
                                         <Button type="button" variant="ghost" size="sm" className="h-auto px-1" onClick={() => setSortDesc((value) => !value)}>
                                             Created
-                                            {sortDesc ? <ArrowDownIcon className="size-3.5" /> : <ArrowUpIcon className="size-3.5" />}
+                                            {sortDesc ? <ArrowDownIcon data-icon="inline-end" /> : <ArrowUpIcon data-icon="inline-end" />}
                                         </Button>
                                     </th>
                                     <th className="px-3 py-2">Location</th>
@@ -738,10 +739,17 @@ function PreviousInstancesTableDialog({
                                     return (
                                         <tr key={`${location}:${row?.id || row?.created_at || row?.createdAt || index}`} className="border-b last:border-b-0">
                                             <td className="px-3 py-2 align-top text-xs text-muted-foreground">{formatDate(row?.created_at || row?.createdAt)}</td>
-                                            <td className="max-w-[26rem] px-3 py-2 align-top text-xs">
-                                                <button type="button" className="max-w-full text-left hover:underline" onClick={() => openInfo(row)}>
+                                            <td className="relative max-w-[26rem] px-3 py-2 align-top text-xs">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    className="absolute inset-0 h-full w-full rounded-none p-0 hover:bg-muted"
+                                                    onClick={() => openInfo(row)}>
+                                                    <span className="sr-only">Open instance details</span>
+                                                </Button>
+                                                <div className="pointer-events-none relative z-10 max-w-full text-left">
                                                     {location ? renderLocationCell(row) : '—'}
-                                                </button>
+                                                </div>
                                             </td>
                                             <td className="px-3 py-2 align-top text-xs text-muted-foreground">
                                                 {[row?.worldName, row?.groupName].filter(Boolean).join(' / ') || '—'}
@@ -768,7 +776,7 @@ function PreviousInstancesTableDialog({
                                                         Info
                                                     </Button>
                                                     <Button type="button" size="sm" variant="outline" disabled={!location} onClick={() => void deleteRow(row)}>
-                                                        <Trash2Icon className="size-3.5" />
+                                                        <Trash2Icon data-icon="inline-start" />
                                                         Delete
                                                     </Button>
                                                 </div>

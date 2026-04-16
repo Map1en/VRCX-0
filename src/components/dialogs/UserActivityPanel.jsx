@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ImageIcon, LoaderCircleIcon, RefreshCwIcon } from 'lucide-react';
+import { ImageIcon, RefreshCwIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import configRepository from '@/repositories/configRepository.js';
@@ -10,9 +10,11 @@ import { buildDailySummary } from '@/shared/utils/activityEngine.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Switch } from '@/ui/shadcn/switch';
 
 const ACTIVITY_SELF_PERIOD_KEY = 'VRCX_activitySelfPeriodDays';
 const ACTIVITY_FRIEND_PERIOD_KEY = 'VRCX_activityFriendPeriodDays';
@@ -34,7 +36,7 @@ function getDisplayDayLabels(weekStartsOn) {
 function HeatmapGrid({ rawBuckets = [], normalizedBuckets = [], dayLabels, weekStartsOn }) {
     return (
         <div className="mt-2 min-w-0 overflow-x-auto">
-            <div className="grid min-w-[720px] grid-cols-[42px_repeat(24,minmax(18px,1fr))] gap-1 text-[10px] text-muted-foreground">
+            <div className="grid min-w-[720px] grid-cols-[42px_repeat(24,minmax(18px,1fr))] gap-1 text-xs text-muted-foreground">
                 <div />
                 {HOUR_LABELS.map((hour, index) => (
                     <div key={hour} className="text-center">{index % 3 === 0 ? hour.slice(0, 2) : ''}</div>
@@ -106,7 +108,7 @@ function DailyPlaytime({ sessions, rangeDays }) {
                     Daily Avg: <strong className="text-foreground">{timeToText(avgDailyMs)}</strong>
                 </span>
             </div>
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
                 {visibleRows.map((item) => (
                     <div key={item.date} className="grid grid-cols-[6rem_1fr_4rem] items-center gap-2 text-xs">
                         <span className="truncate text-muted-foreground">{item.date}</span>
@@ -137,14 +139,15 @@ function TopWorldRows({ worlds, sortBy }) {
                 const value = world[key] || 0;
                 const barWidth = maxValue > 0 ? `${Math.max((value / maxValue) * 100, 8)}%` : '0%';
                 return (
-                    <button
+                    <Button
                         key={world.worldId || index}
                         type="button"
-                        className="group flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left hover:bg-muted/50"
+                        variant="ghost"
+                        className="h-auto w-full items-start justify-start gap-3 rounded-lg px-3 py-2 text-left font-normal"
                         onClick={() => openWorldDialog({ worldId: world.worldId, title: world.worldName || undefined })}>
                         <span className="mt-1 w-5 shrink-0 text-right font-mono text-xs font-bold text-muted-foreground">#{index + 1}</span>
                         <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-sm bg-muted">
-                            <ImageIcon className="size-3.5 text-muted-foreground" />
+                            <ImageIcon data-icon="inline-start" className="text-muted-foreground" />
                         </span>
                         <span className="min-w-0 flex-1">
                             <span className="flex items-baseline justify-between gap-2">
@@ -157,7 +160,7 @@ function TopWorldRows({ worlds, sortBy }) {
                                 <span className="block h-full rounded-full bg-muted-foreground/45" style={{ width: barWidth }} />
                             </span>
                         </span>
-                    </button>
+                    </Button>
                 );
             })}
         </div>
@@ -446,9 +449,10 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                         size="icon-sm"
                         className="rounded-full"
                         disabled={loading}
+                        aria-label="Refresh activity"
                         title="Refresh activity"
                         onClick={() => void refreshData({ forceRefresh: true })}>
-                        {loading ? <LoaderCircleIcon className="size-4 animate-spin" /> : <RefreshCwIcon className="size-4" />}
+                        {loading ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
                     </Button>
                     {filteredEventCount > 0 ? (
                         <span className="text-sm text-muted-foreground">{filteredEventCount} events</span>
@@ -462,12 +466,14 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {fullCacheReady ? <SelectItem value="0">All Time</SelectItem> : null}
-                                {fullCacheReady ? <SelectItem value="365">365 Days</SelectItem> : null}
-                                {fullCacheReady ? <SelectItem value="180">180 Days</SelectItem> : null}
-                                <SelectItem value="90">90 Days</SelectItem>
-                                <SelectItem value="30">30 Days</SelectItem>
-                                <SelectItem value="7">7 Days</SelectItem>
+                                <SelectGroup>
+                                    {fullCacheReady ? <SelectItem value="0">All Time</SelectItem> : null}
+                                    {fullCacheReady ? <SelectItem value="365">365 Days</SelectItem> : null}
+                                    {fullCacheReady ? <SelectItem value="180">180 Days</SelectItem> : null}
+                                    <SelectItem value="90">90 Days</SelectItem>
+                                    <SelectItem value="30">30 Days</SelectItem>
+                                    <SelectItem value="7">7 Days</SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>
@@ -496,7 +502,7 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
 
             {loading && !hasAnyData ? (
                 <div className="mt-8 flex flex-1 flex-col items-center justify-center gap-2">
-                    <LoaderCircleIcon className="size-5 animate-spin" />
+                    <Spinner className="size-5" />
                     <span className="text-sm text-muted-foreground">Preparing activity data</span>
                     <span className="text-xs text-muted-foreground">This can take a moment on the first load.</span>
                 </div>
@@ -527,23 +533,27 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                     <div className="mb-2 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">Overlap</span>
-                            {overlapLoading ? <LoaderCircleIcon className="size-3.5 animate-spin" /> : null}
+                            {overlapLoading ? <Spinner className="size-3.5" /> : null}
                         </div>
                         {hasOverlapData ? (
                             <div className="flex items-center gap-1.5">
                                 <Switch checked={excludeHoursEnabled} onCheckedChange={(value) => void changeExcludeHours(value)} />
                                 <span className="whitespace-nowrap text-sm text-muted-foreground">Exclude Hours</span>
                                 <Select value={excludeStartHour} onValueChange={(value) => void changeExcludeRange('start', value)}>
-                                    <SelectTrigger size="sm" className="h-6 w-[78px] px-2 text-sm"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger size="sm" className="h-6 w-20 px-2 text-sm"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {HOUR_LABELS.map((label, index) => <SelectItem key={label} value={String(index)}>{label}</SelectItem>)}
+                                        <SelectGroup>
+                                            {HOUR_LABELS.map((label, index) => <SelectItem key={label} value={String(index)}>{label}</SelectItem>)}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                                 <span className="text-xs text-muted-foreground">-</span>
                                 <Select value={excludeEndHour} onValueChange={(value) => void changeExcludeRange('end', value)}>
-                                    <SelectTrigger size="sm" className="h-6 w-[78px] px-2 text-sm"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger size="sm" className="h-6 w-20 px-2 text-sm"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {HOUR_LABELS.map((label, index) => <SelectItem key={label} value={String(index)}>{label}</SelectItem>)}
+                                        <SelectGroup>
+                                            {HOUR_LABELS.map((label, index) => <SelectItem key={label} value={String(index)}>{label}</SelectItem>)}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -583,22 +593,30 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                     <div className="mb-2 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">Most Visited Worlds</span>
-                            {topWorldsLoading ? <LoaderCircleIcon className="size-3.5 animate-spin" /> : null}
+                            {topWorldsLoading ? <Spinner className="size-3.5" /> : null}
                         </div>
                         <div className="flex items-center gap-4">
                             {currentHomeWorldId ? (
-                                <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                    <Switch checked={excludeHomeWorldEnabled} onCheckedChange={(value) => void changeExcludeHomeWorld(value)} />
-                                    <span className="whitespace-nowrap">Exclude Home World</span>
-                                </label>
+                                <Field orientation="horizontal" className="w-auto gap-1.5 text-muted-foreground">
+                                    <Switch
+                                        id="activity-exclude-home-world"
+                                        checked={excludeHomeWorldEnabled}
+                                        onCheckedChange={(value) => void changeExcludeHomeWorld(value)}
+                                    />
+                                    <FieldLabel htmlFor="activity-exclude-home-world" className="whitespace-nowrap text-sm font-normal text-muted-foreground">
+                                        Exclude Home World
+                                    </FieldLabel>
+                                </Field>
                             ) : null}
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-muted-foreground">Sort By</span>
                                 <Select value={topWorldsSortBy} onValueChange={(value) => void changeTopWorldsSort(value)} disabled={topWorldsLoading}>
                                     <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="time">Time</SelectItem>
-                                        <SelectItem value="count">Count</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="time">Time</SelectItem>
+                                            <SelectItem value="count">Count</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -606,7 +624,7 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                     </div>
                     {topWorldsLoading && !topWorlds.length ? (
                         <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
-                            <LoaderCircleIcon className="size-4 animate-spin" />
+                            <Spinner />
                             Loading worlds...
                         </div>
                     ) : (

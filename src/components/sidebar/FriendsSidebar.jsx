@@ -14,13 +14,15 @@ import {
     ContextMenu,
     ContextMenuCheckboxItem,
     ContextMenuContent,
+    ContextMenuGroup,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuSub,
     ContextMenuSubContent,
     ContextMenuSubTrigger,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
+} from '@/ui/shadcn/context-menu';
+import { Button } from '@/ui/shadcn/button';
 import { configRepository, notificationRepository, userProfileRepository, vrchatSearchRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
@@ -222,18 +224,18 @@ function resolveSidebarStatusDotClassName(friend, currentUser, isCurrentUser = f
         return '';
     }
 
-    if (source?.pendingOffline) {
-        return 'bg-[var(--status-offline)]';
-    }
-
     if (isCurrentUser || userId === currentUser?.id) {
-        if (state === 'offline' || (location === 'offline' && state !== 'online')) {
-            return 'bg-[var(--status-offline)]';
+        if (source?.pendingOffline || state === 'offline' || (location === 'offline' && state !== 'online')) {
+            return '';
         }
         if (state === 'active') {
             return 'bg-[var(--status-active)]';
         }
         return legacyStatusDotClassName(status) || (state === 'online' ? 'bg-[var(--status-online)]' : '');
+    }
+
+    if (source?.pendingOffline) {
+        return 'bg-[var(--status-offline)]';
     }
 
     if (source?.isFriend === false && friend?.isFriend === false) {
@@ -346,6 +348,7 @@ function CurrentUserActionItems({
     t,
     MenuItem,
     CheckboxItem,
+    Group,
     Separator,
     Sub,
     SubTrigger,
@@ -354,67 +357,89 @@ function CurrentUserActionItems({
 }) {
     return (
         <>
-            <MenuItem onSelect={() => actions.open()}>
-                {t('common.actions.open')}
-            </MenuItem>
+            <Group>
+                <MenuItem onSelect={() => actions.open()}>
+                    {t('common.actions.open')}
+                </MenuItem>
+            </Group>
             <Separator />
-            <Sub>
-                <SubTrigger>
-                    {t('dialog.user.actions.edit_status')}
-                </SubTrigger>
-                <SubContent side="left" align="start" className="w-48">
-                    {statusOptions.map((option) => (
-                        <CheckboxItem
-                            key={option.value}
-                            checked={friend?.status === option.value}
-                            onSelect={() => void actions.changeStatus(option.value)}>
-                            <i className={userStatusIndicatorClassName(option.value, { className: 'mr-2' })} />
-                            {t(option.labelKey)}
-                        </CheckboxItem>
-                    ))}
-                </SubContent>
-            </Sub>
-            <MenuItem onSelect={() => void actions.editStatusDescription()}>
-                {t('view.settings.general.automation.change_status_description')}
-            </MenuItem>
-            {Array.isArray(friend?.statusHistory) && friend.statusHistory.length ? (
+            <Group>
                 <Sub>
                     <SubTrigger>
-                        {t('dialog.social_status.history')}
+                        {t('dialog.user.actions.edit_status')}
                     </SubTrigger>
-                    <SubContent side="left" align="start" className="w-56">
-                        <CheckboxItem
-                            checked={!friend?.statusDescription}
-                            onSelect={() => void actions.setStatusDescription('')}>
-                            {t('dialog.gallery_select.none')}
-                        </CheckboxItem>
-                        <Separator />
-                        {friend.statusHistory.slice(0, 10).map((item, index) => (
-                            <CheckboxItem
-                                key={`${item}:${index}`}
-                                checked={friend?.statusDescription === item}
-                                onSelect={() => void actions.setStatusDescription(item)}>
-                                <span className="max-w-44 truncate">{item}</span>
-                            </CheckboxItem>
-                        ))}
+                    <SubContent side="left" align="start" className="w-48">
+                        <Group>
+                            {statusOptions.map((option) => (
+                                <CheckboxItem
+                                    key={option.value}
+                                    checked={friend?.status === option.value}
+                                    onSelect={() => void actions.changeStatus(option.value)}>
+                                    <i className={userStatusIndicatorClassName(option.value, { className: 'mr-2' })} />
+                                    {t(option.labelKey)}
+                                </CheckboxItem>
+                            ))}
+                        </Group>
                     </SubContent>
                 </Sub>
+                <MenuItem onSelect={() => void actions.editStatusDescription()}>
+                    {t('view.settings.general.automation.change_status_description')}
+                </MenuItem>
+            </Group>
+            {Array.isArray(friend?.statusHistory) && friend.statusHistory.length ? (
+                <>
+                    <Separator />
+                    <Group>
+                        <Sub>
+                            <SubTrigger>
+                                {t('dialog.social_status.history')}
+                            </SubTrigger>
+                            <SubContent side="left" align="start" className="w-56">
+                                <Group>
+                                    <CheckboxItem
+                                        checked={!friend?.statusDescription}
+                                        onSelect={() => void actions.setStatusDescription('')}>
+                                        {t('dialog.gallery_select.none')}
+                                    </CheckboxItem>
+                                </Group>
+                                <Separator />
+                                <Group>
+                                    {friend.statusHistory.slice(0, 10).map((item, index) => (
+                                        <CheckboxItem
+                                            key={`${item}:${index}`}
+                                            checked={friend?.statusDescription === item}
+                                            onSelect={() => void actions.setStatusDescription(item)}>
+                                            <span className="max-w-44 truncate">{item}</span>
+                                        </CheckboxItem>
+                                    ))}
+                                </Group>
+                            </SubContent>
+                        </Sub>
+                    </Group>
+                </>
             ) : null}
             {statusPresets.length ? (
-                <Sub>
-                    <SubTrigger>
-                        {t('dialog.social_status.presets')}
-                    </SubTrigger>
-                    <SubContent side="left" align="start" className="w-56">
-                        {statusPresets.map((preset, index) => (
-                            <MenuItem
-                                key={`${preset?.status || 'status'}:${preset?.statusDescription || ''}:${index}`}
-                                onSelect={() => void actions.applyStatusPreset(preset)}>
-                                <span className="max-w-44 truncate">{statusPresetLabel(preset, t)}</span>
-                            </MenuItem>
-                        ))}
-                    </SubContent>
-                </Sub>
+                <>
+                    <Separator />
+                    <Group>
+                        <Sub>
+                            <SubTrigger>
+                                {t('dialog.social_status.presets')}
+                            </SubTrigger>
+                            <SubContent side="left" align="start" className="w-56">
+                                <Group>
+                                    {statusPresets.map((preset, index) => (
+                                        <MenuItem
+                                            key={`${preset?.status || 'status'}:${preset?.statusDescription || ''}:${index}`}
+                                            onSelect={() => void actions.applyStatusPreset(preset)}>
+                                            <span className="max-w-44 truncate">{statusPresetLabel(preset, t)}</span>
+                                        </MenuItem>
+                                    ))}
+                                </Group>
+                            </SubContent>
+                        </Sub>
+                    </Group>
+                </>
             ) : null}
         </>
     );
@@ -430,6 +455,7 @@ function FriendActionItems({
     actions,
     t,
     MenuItem,
+    Group,
     Separator,
     recentActionVersion = 0
 }) {
@@ -437,28 +463,34 @@ function FriendActionItems({
     const recentRequestInvite = recentActionVersion >= 0 && isActionRecent(friend?.id, 'Request Invite');
     return (
         <>
-            <MenuItem onSelect={() => actions.open()}>
-                {t('common.actions.open')}
-            </MenuItem>
+            <Group>
+                <MenuItem onSelect={() => actions.open()}>
+                    {t('common.actions.open')}
+                </MenuItem>
+            </Group>
             <Separator />
-            <MenuItem disabled={!canUseFriendLocation} onSelect={() => void actions.launch(friendLocation)}>
-                {t('dialog.user.info.launch_invite_tooltip')}
-            </MenuItem>
-            <MenuItem disabled={!canUseFriendLocation} onSelect={() => void actions.selfInvite(friendLocation)}>
-                {t('dialog.user.info.self_invite_tooltip')}
-            </MenuItem>
+            <Group>
+                <MenuItem disabled={!canUseFriendLocation} onSelect={() => void actions.launch(friendLocation)}>
+                    {t('dialog.user.info.launch_invite_tooltip')}
+                </MenuItem>
+                <MenuItem disabled={!canUseFriendLocation} onSelect={() => void actions.selfInvite(friendLocation)}>
+                    {t('dialog.user.info.self_invite_tooltip')}
+                </MenuItem>
+            </Group>
             <Separator />
-            <MenuItem disabled={!canSendInvite} onSelect={() => void actions.invite(friend)}>
-                <span className="min-w-0 flex-1">{t('dialog.user.actions.invite')}</span>
-                {recentInvite ? <ClockIcon className="ml-auto size-3.5 text-muted-foreground" /> : null}
-            </MenuItem>
-            <MenuItem disabled={!canRequestInvite} onSelect={() => void actions.requestInvite(friend)}>
-                <span className="min-w-0 flex-1">{t('dialog.user.actions.request_invite')}</span>
-                {recentRequestInvite ? <ClockIcon className="ml-auto size-3.5 text-muted-foreground" /> : null}
-            </MenuItem>
-            <MenuItem disabled={!canBoop} onSelect={() => void actions.boop(friend)}>
-                {t('dialog.user.actions.send_boop')}
-            </MenuItem>
+            <Group>
+                <MenuItem disabled={!canSendInvite} onSelect={() => void actions.invite(friend)}>
+                    <span className="min-w-0 flex-1">{t('dialog.user.actions.invite')}</span>
+                    {recentInvite ? <ClockIcon className="ml-auto text-muted-foreground" /> : null}
+                </MenuItem>
+                <MenuItem disabled={!canRequestInvite} onSelect={() => void actions.requestInvite(friend)}>
+                    <span className="min-w-0 flex-1">{t('dialog.user.actions.request_invite')}</span>
+                    {recentRequestInvite ? <ClockIcon className="ml-auto text-muted-foreground" /> : null}
+                </MenuItem>
+                <MenuItem disabled={!canBoop} onSelect={() => void actions.boop(friend)}>
+                    {t('dialog.user.actions.send_boop')}
+                </MenuItem>
+            </Group>
         </>
     );
 }
@@ -522,29 +554,30 @@ function FriendRow({
         <ContextMenu>
             <ContextMenuTrigger asChild>
                 <div className="flex w-full items-center rounded-lg hover:bg-muted/50">
-                    <button
+                    <Button
                         type="button"
-                        className="flex min-w-0 flex-1 items-center gap-2 p-1.5 text-left text-[13px]"
+                        variant="ghost"
+                        className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal"
                         onClick={actions.open}>
                         <span className="relative flex size-9 shrink-0 items-center justify-center overflow-visible">
                             <span className="relative z-0 flex size-full items-center justify-center overflow-hidden rounded-full border bg-muted">
                                 {imageUrl ? (
                                     <img src={imageUrl} alt="" className="size-full object-cover" />
                                 ) : (
-                                    <UserIcon className="size-4 text-muted-foreground" />
+                                    <UserIcon data-icon="inline-start" className="text-muted-foreground" />
                                 )}
                             </span>
                             {statusDotClassName ? (
                                 <span
                                     className={cn(
-                                        'absolute bottom-0.5 right-0.5 z-10 size-2.5 rounded-full border-2 border-background',
+                                        'absolute -bottom-0.5 -right-0.5 z-10 size-3.75 rounded-full border-3 border-background',
                                         statusDotClassName
                                     )}
                                 />
                             ) : null}
                         </span>
                         <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium leading-[18px]" style={nameStyle}>{displayName}</span>
+                            <span className="block truncate font-medium leading-5" style={nameStyle}>{displayName}</span>
                             <span className="block truncate text-xs text-muted-foreground">
                                 {showLocationSubline ? (
                                     <Location
@@ -560,7 +593,7 @@ function FriendRow({
                                 )}
                             </span>
                         </span>
-                    </button>
+                    </Button>
                 </div>
             </ContextMenuTrigger>
             <ContextMenuContent className="w-56">
@@ -571,6 +604,7 @@ function FriendRow({
                         t={t}
                         MenuItem={ContextMenuItem}
                         CheckboxItem={ContextMenuCheckboxItem}
+                        Group={ContextMenuGroup}
                         Separator={ContextMenuSeparator}
                         Sub={ContextMenuSub}
                         SubTrigger={ContextMenuSubTrigger}
@@ -588,6 +622,7 @@ function FriendRow({
                         actions={actions}
                         t={t}
                         MenuItem={ContextMenuItem}
+                        Group={ContextMenuGroup}
                         Separator={ContextMenuSeparator}
                         recentActionVersion={recentActionVersion}
                     />
@@ -616,16 +651,18 @@ function estimateFriendSidebarRowSize(row) {
 
 function FriendSectionHeader({ id, title, count, open, onToggle }) {
     return (
-        <button
+        <Button
             type="button"
-            className="flex w-full items-center py-1.5 pt-4 text-left text-xs"
+            variant="ghost"
+            size="sm"
+            className="h-auto w-full justify-start px-0 py-1.5 pt-4 text-left text-xs font-normal hover:bg-transparent"
             onClick={() => onToggle(id)}>
-            <ChevronDownIcon className={`size-4 transition-transform ${open ? '' : '-rotate-90'}`} />
+            <ChevronDownIcon data-icon="inline-start" className={cn('transition-transform', !open && '-rotate-90')} />
             <span className="ml-1.5">
                 {title}
                 {count !== null && count !== undefined ? ` \u2014 ${count}` : ''}
             </span>
-        </button>
+        </Button>
     );
 }
 
@@ -668,7 +705,7 @@ export function FriendsSidebar({ prefs }) {
     const [openGroups, setOpenGroups] = useState(defaultGroupState);
     const [statusPresets, setStatusPresets] = useState([]);
     const [recentActionVersion, setRecentActionVersion] = useState(0);
-    const isDarkMode = themeMode === 'dark' || themeMode === 'midnight' ||
+    const isDarkMode = themeMode === 'dark' ||
         (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUser),
@@ -1405,7 +1442,7 @@ export function FriendsSidebar({ prefs }) {
                 );
             case 'favorite-group-header':
                 return (
-                    <div className="flex w-full items-center px-1.5 py-1 text-left text-[11px] text-muted-foreground">
+                    <div className="flex w-full items-center px-1.5 py-1 text-left text-xs text-muted-foreground">
                         {row.label} - {row.count}
                     </div>
                 );

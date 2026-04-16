@@ -4,14 +4,15 @@ import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { avatarSearchProviderRepository } from '@/repositories/index.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dialog';
+import { Field, FieldGroup } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
 
 function providerListKey(providerList) {
     return JSON.stringify(
@@ -99,10 +100,11 @@ export function AvatarProviderSettingsDialog({
                 <DialogHeader>
                     <DialogTitle>{t('dialog.avatar_database_provider.header')}</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-2">
+                <FieldGroup className="gap-2">
                     {draftProviderList.map((provider, index) => (
-                        <div key={`avatar-provider-${index}`} className="flex items-center gap-2">
+                        <Field key={`avatar-provider-${index}`} orientation="horizontal" data-disabled={isSaving}>
                             <Input
+                                aria-label={`Avatar provider ${index + 1}`}
                                 value={provider}
                                 disabled={isSaving}
                                 onChange={(event) => updateProvider(index, event.target.value)}
@@ -112,17 +114,18 @@ export function AvatarProviderSettingsDialog({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
+                                aria-label={`Remove avatar provider ${index + 1}`}
                                 disabled={isSaving}
                                 onClick={() => removeProvider(index)}>
-                                <Trash2Icon className="size-4" />
+                                <Trash2Icon data-icon="inline-start" />
                             </Button>
-                        </div>
+                        </Field>
                     ))}
                     <Button type="button" size="sm" disabled={isSaving} onClick={addProvider}>
-                        <PlusIcon className="size-4" />
+                        <PlusIcon data-icon="inline-start" />
                         {t('dialog.avatar_database_provider.add_provider')}
                     </Button>
-                </div>
+                </FieldGroup>
             </DialogContent>
         </Dialog>
     );

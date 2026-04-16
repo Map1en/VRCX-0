@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { PlusIcon, SaveIcon, XIcon } from 'lucide-react';
 
 import { TAG_COLORS, getTagColor } from '@/shared/constants/tags.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -11,8 +11,9 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dialog';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
 
 function normalizeTagName(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
@@ -111,27 +112,33 @@ export function ManageAvatarTagsDialog({
                     <DialogDescription>{avatarName}</DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4">
-                    <div className="flex gap-2">
-                        <Input
-                            value={newTagName}
-                            onChange={(event) => setNewTagName(event.target.value)}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                    event.preventDefault();
-                                    addTag();
-                                }
-                            }}
-                            placeholder="Add a local tag"
-                            disabled={saving}
-                        />
-                        <Button type="button" variant="outline" className="gap-2" onClick={addTag} disabled={saving}>
-                            <PlusIcon className="size-4" />
-                            Add
-                        </Button>
-                    </div>
+                <div className="flex flex-col gap-4">
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="avatar-tag-name">Add local tag</FieldLabel>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="avatar-tag-name"
+                                    value={newTagName}
+                                    onChange={(event) => setNewTagName(event.target.value)}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            addTag();
+                                        }
+                                    }}
+                                    placeholder="Tag name"
+                                    disabled={saving}
+                                />
+                                <Button type="button" variant="outline" onClick={addTag} disabled={saving}>
+                                    <PlusIcon data-icon="inline-start" />
+                                    Add
+                                </Button>
+                            </div>
+                        </Field>
+                    </FieldGroup>
 
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         {tagEntries.length > 0 ? (
                             tagEntries.map((entry) => {
                                 const tagColor = resolveTagColor(entry);
@@ -151,10 +158,9 @@ export function ManageAvatarTagsDialog({
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                className="h-8 gap-1"
                                                 onClick={() => removeTag(entry.tag)}
                                                 disabled={saving}>
-                                                <XIcon className="size-3.5" />
+                                                <XIcon data-icon="inline-start" />
                                                 Remove
                                             </Button>
                                         </div>
@@ -164,14 +170,17 @@ export function ManageAvatarTagsDialog({
                                                     (entry.color && entry.color === color.bg) ||
                                                     (!entry.color && getTagColor(entry.tag).name === color.name);
                                                 return (
-                                                    <button
+                                                    <Button
                                                         key={color.name}
                                                         type="button"
-                                                        className="size-6 rounded-md border transition-transform hover:scale-110 disabled:opacity-50"
+                                                        size="icon-sm"
+                                                        variant="outline"
+                                                        className={selected ? 'size-6 p-0 ring-2 ring-ring ring-offset-2' : 'size-6 p-0'}
                                                         style={{
                                                             backgroundColor: color.bg.replace('/ 0.2)', '/ 1)')
                                                         }}
                                                         aria-label={color.label}
+                                                        aria-pressed={selected}
                                                         title={color.label}
                                                         disabled={saving}
                                                         data-selected={selected ? 'true' : undefined}
@@ -201,10 +210,9 @@ export function ManageAvatarTagsDialog({
                     </Button>
                     <Button
                         type="button"
-                        className="gap-2"
                         disabled={saving || !avatarId}
                         onClick={() => onSave({ avatarId, tags: tagEntries })}>
-                        <SaveIcon className="size-4" />
+                        <SaveIcon data-icon="inline-start" />
                         Save
                     </Button>
                 </DialogFooter>

@@ -6,7 +6,6 @@ import {
     EyeIcon,
     GiftIcon,
     ImageIcon,
-    LoaderCircleIcon,
     RefreshCwIcon,
     Trash2Icon,
     UploadIcon,
@@ -19,6 +18,7 @@ import { useI18n } from '@/app/hooks/use-i18n.js';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { formatDateFilter } from '@/lib/dateTime.js';
+import { cn } from '@/lib/utils.js';
 import { mediaRepository, vrchatAuthRepository } from '@/repositories/index.js';
 import userProfileRepository from '@/repositories/userProfileRepository.js';
 import { DEFAULT_ENDPOINT_DOMAIN } from '@/repositories/vrchatAuthRepository.js';
@@ -33,37 +33,40 @@ import {
     validateImageUploadFile,
     withUploadTimeout
 } from '@/shared/utils/imageUpload.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle
-} from '@/ui/shadcn/card.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+} from '@/ui/shadcn/card';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
+} from '@/ui/shadcn/dialog';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Label } from '@/ui/shadcn/label';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Tabs,
     TabsContent,
     TabsList,
     TabsTrigger
-} from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/tabs';
 
 const FILE_TABS = {
     gallery: { tag: 'gallery', titleKey: 'dialog.gallery_icons.gallery', aspectClass: 'aspect-[4/3]', max: 64 },
@@ -175,7 +178,7 @@ function validateImageFile(file, t) {
 function EmptyState({ title, description }) {
     return (
         <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
+            <div className="flex max-w-sm flex-col gap-2">
                 <div className="text-sm font-medium">{title}</div>
                 <div className="text-sm text-muted-foreground">{description}</div>
             </div>
@@ -186,7 +189,7 @@ function EmptyState({ title, description }) {
 function LoadingState() {
     return (
         <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20">
-            <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
+            <Spinner className="size-6 text-muted-foreground" />
         </div>
     );
 }
@@ -745,7 +748,7 @@ export function GalleryPage() {
 
     return (
         <div className="gallery-page x-container flex min-h-0 flex-1 flex-col p-6">
-            <input
+            <Input
                 ref={uploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}
@@ -754,13 +757,13 @@ export function GalleryPage() {
             />
             <div className="ml-2 flex items-center gap-2">
                 <Button variant="ghost" size="sm" className="mr-3" onClick={() => navigate('/tools')}>
-                    <ArrowLeftIcon className="size-4" />
+                    <ArrowLeftIcon data-icon="inline-start" />
                     {t('nav_tooltip.tools')}
                 </Button>
                 <span className="header">{t('dialog.gallery_icons.header')}</span>
                 {uploadingTab ? <Badge variant="outline">Uploading {uploadingTab}</Badge> : null}
                 <Button variant="outline" size="sm" className="ml-auto" onClick={() => void refreshAll()}>
-                    <RefreshCwIcon className="size-4" />
+                    <RefreshCwIcon data-icon="inline-start" />
                     {t('dialog.gallery_icons.refresh')}
                 </Button>
             </div>
@@ -787,7 +790,7 @@ export function GalleryPage() {
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Button variant="outline" size="sm" onClick={() => void refreshTab(tab)}>
-                                            <RefreshCwIcon className="size-4" />
+                                            <RefreshCwIcon data-icon="inline-start" />
                                             {t('dialog.gallery_icons.refresh')}
                                         </Button>
                                         <Button
@@ -796,7 +799,7 @@ export function GalleryPage() {
                                             disabled={!isVrcPlusSupporter || Boolean(uploadingTab)}
                                             onClick={() => beginUpload(tab)}
                                         >
-                                            <UploadIcon className="size-4" />
+                                            <UploadIcon data-icon="inline-start" />
                                             {t('dialog.gallery_icons.upload')}
                                         </Button>
                                         {tab === 'gallery' ? (
@@ -806,7 +809,7 @@ export function GalleryPage() {
                                                 disabled={!profilePicOverride || Boolean(mutatingKey)}
                                                 onClick={() => void setProfileField('profilePicOverride', '')}
                                             >
-                                                <XIcon className="size-4" />
+                                                <XIcon data-icon="inline-start" />
                                                 {t('dialog.gallery_icons.clear')}
                                             </Button>
                                         ) : null}
@@ -817,7 +820,7 @@ export function GalleryPage() {
                                                 disabled={!userIcon || Boolean(mutatingKey)}
                                                 onClick={() => void setProfileField('userIcon', '')}
                                             >
-                                                <XIcon className="size-4" />
+                                                <XIcon data-icon="inline-start" />
                                                 {t('dialog.gallery_icons.clear')}
                                             </Button>
                                         ) : null}
@@ -825,41 +828,51 @@ export function GalleryPage() {
                                 </div>
                                 {tab === 'emojis' ? (
                                     <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/20 p-3">
-                                        <div className="min-w-56 space-y-1">
+                                        <div className="flex min-w-56 flex-col gap-1">
                                             <Label>{t('dialog.gallery_icons.emoji_animation_styles')}</Label>
                                             <Select value={emojiAnimationStyle} onValueChange={setEmojiAnimationStyle}>
                                                 <SelectTrigger className="w-full">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {Object.keys(emojiAnimationStyleList).map((styleName) => (
-                                                        <SelectItem key={styleName} value={styleName}>
-                                                            {styleName}
-                                                        </SelectItem>
-                                                    ))}
+                                                    <SelectGroup>
+                                                        {Object.keys(emojiAnimationStyleList).map((styleName) => (
+                                                            <SelectItem key={styleName} value={styleName}>
+                                                                {styleName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <label className="flex h-9 items-center gap-2 text-sm">
-                                            <Checkbox checked={emojiAnimType} onCheckedChange={(value) => setEmojiAnimType(Boolean(value))} />
-                                            {t('dialog.gallery_icons.emoji_animation_type')}
-                                        </label>
+                                        <Field orientation="horizontal" className="h-9 w-auto">
+                                            <Checkbox
+                                                id="gallery-emoji-animation-type"
+                                                checked={emojiAnimType}
+                                                onCheckedChange={(value) => setEmojiAnimType(Boolean(value))}
+                                            />
+                                            <FieldLabel htmlFor="gallery-emoji-animation-type">{t('dialog.gallery_icons.emoji_animation_type')}</FieldLabel>
+                                        </Field>
                                         {emojiAnimType ? (
                                             <>
-                                                <div className="w-28 space-y-1">
+                                                <div className="flex w-28 flex-col gap-1">
                                                     <Label>{t('dialog.gallery_icons.emoji_animation_fps')}</Label>
                                                     <Input type="number" min={1} max={64} value={emojiAnimFps} onChange={(event) => setEmojiAnimFps(event.target.value)} />
                                                 </div>
-                                                <div className="w-28 space-y-1">
+                                                <div className="flex w-28 flex-col gap-1">
                                                     <Label>{t('dialog.gallery_icons.emoji_animation_frame_count')}</Label>
                                                     <Input type="number" min={2} max={64} value={emojiAnimFrameCount} onChange={(event) => setEmojiAnimFrameCount(event.target.value)} />
                                                 </div>
-                                                <label className="flex h-9 items-center gap-2 text-sm">
-                                                    <Checkbox checked={emojiAnimLoopPingPong} onCheckedChange={(value) => setEmojiAnimLoopPingPong(Boolean(value))} />
-                                                    {t('dialog.gallery_icons.emoji_loop_pingpong')}
-                                                </label>
+                                                <Field orientation="horizontal" className="h-9 w-auto">
+                                                    <Checkbox
+                                                        id="gallery-emoji-loop-pingpong"
+                                                        checked={emojiAnimLoopPingPong}
+                                                        onCheckedChange={(value) => setEmojiAnimLoopPingPong(Boolean(value))}
+                                                    />
+                                                    <FieldLabel htmlFor="gallery-emoji-loop-pingpong">{t('dialog.gallery_icons.emoji_loop_pingpong')}</FieldLabel>
+                                                </Field>
                                                 <Button variant="outline" size="sm" onClick={() => void openExternalLink('https://vrcemoji.com')}>
-                                                    <ExternalLinkIcon className="size-4" />
+                                                    <ExternalLinkIcon data-icon="inline-start" />
                                                     {t('dialog.gallery_icons.create_animated_emoji')}
                                                 </Button>
                                             </>
@@ -877,20 +890,24 @@ export function GalleryPage() {
                                             const activeFileId = tab === 'gallery' ? extractFileId(profilePicOverride) : extractFileId(userIcon);
                                             const profileField = tab === 'gallery' ? 'profilePicOverride' : tab === 'icons' ? 'userIcon' : '';
                                             const isCurrent = activeFileId === file.id;
-                                            const isMutating = mutatingKey === `${tab}:${file.id}`;
-                                            return (
-                                                <Card key={file.id} className={`overflow-hidden ${isCurrent ? 'ring-2 ring-primary' : ''}`}>
-                                                    {imageUrl ? (
-                                                        <button type="button" className="block w-full" onClick={() => setPreview({ id: file.id, url: imageUrl })}>
-                                                            <img src={imageUrl} alt={file.id} loading="lazy" className={`${definition.aspectClass} w-full object-cover`} />
-                                                        </button>
-                                                    ) : (
-                                                        <div className={`flex ${definition.aspectClass} w-full items-center justify-center bg-muted text-muted-foreground`}>
-                                                            <ImageIcon className="size-8" />
+                                                    const isMutating = mutatingKey === `${tab}:${file.id}`;
+                                                    return (
+                                                        <Card key={file.id} className={cn('overflow-hidden', isCurrent && 'ring-2 ring-primary')}>
+                                                            {imageUrl ? (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    className="h-auto w-full rounded-none p-0"
+                                                                    onClick={() => setPreview({ id: file.id, url: imageUrl })}>
+                                                                    <img src={imageUrl} alt={file.id} loading="lazy" className={cn(definition.aspectClass, 'w-full object-cover')} />
+                                                                </Button>
+                                                            ) : (
+                                                                <div className={cn('flex w-full items-center justify-center bg-muted text-muted-foreground', definition.aspectClass)}>
+                                                                    <ImageIcon className="size-8" />
                                                         </div>
                                                     )}
-                                                    <CardContent className="space-y-3 p-4">
-                                                        <div className="space-y-1">
+                                                    <CardContent className="flex flex-col gap-3 p-4">
+                                                        <div className="flex flex-col gap-1">
                                                             <div className="line-clamp-1 text-sm font-medium">{file.displayName || file.name || file.id}</div>
                                                             <div className="text-xs text-muted-foreground">
                                                                 {Array.isArray(file.versions) ? `${file.versions.length} version(s)` : 'No version data'}
@@ -906,17 +923,17 @@ export function GalleryPage() {
                                                         </div>
                                                         <div className="flex flex-wrap gap-2">
                                                             <Button variant="outline" size="sm" disabled={!imageUrl} onClick={() => setPreview({ id: file.id, url: imageUrl })}>
-                                                                <EyeIcon className="size-4" />
+                                                                <EyeIcon data-icon="inline-start" />
                                                                 Preview
                                                             </Button>
                                                             {profileField ? (
                                                                 <Button variant={isCurrent ? 'default' : 'outline'} size="sm" disabled={!isVrcPlusSupporter || isMutating || !currentUserId} onClick={() => void setProfileField(profileField, file.id)}>
-                                                                    <CheckIcon className="size-4" />
+                                                                    <CheckIcon data-icon="inline-start" />
                                                                     {tab === 'icons' ? 'Icon' : 'Profile'}
                                                                 </Button>
                                                             ) : null}
-                                                            <Button variant="ghost" size="sm" disabled={isMutating} className="text-destructive" onClick={() => void deleteFileAsset(tab, file.id)}>
-                                                                <Trash2Icon className="size-4" />
+                                                            <Button variant="destructive" size="sm" disabled={isMutating} onClick={() => void deleteFileAsset(tab, file.id)}>
+                                                                <Trash2Icon data-icon="inline-start" />
                                                                 Delete
                                                             </Button>
                                                         </div>
@@ -941,7 +958,7 @@ export function GalleryPage() {
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Button variant="outline" size="sm" onClick={() => void refreshTab('prints')}>
-                                        <RefreshCwIcon className="size-4" />
+                                        <RefreshCwIcon data-icon="inline-start" />
                                         {t('dialog.gallery_icons.refresh')}
                                     </Button>
                                     <Button
@@ -950,13 +967,13 @@ export function GalleryPage() {
                                         disabled={!isVrcPlusSupporter || Boolean(uploadingTab)}
                                         onClick={() => beginUpload('prints')}
                                     >
-                                        <UploadIcon className="size-4" />
+                                        <UploadIcon data-icon="inline-start" />
                                         {t('dialog.gallery_icons.upload')}
                                     </Button>
                                 </div>
                             </div>
                             <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/20 p-3">
-                                <div className="w-80 max-w-full space-y-1">
+                                <div className="flex w-80 max-w-full flex-col gap-1">
                                     <Label>{t('dialog.gallery_icons.note')}</Label>
                                     <Input
                                         maxLength={32}
@@ -965,10 +982,14 @@ export function GalleryPage() {
                                         placeholder={t('dialog.gallery_icons.note')}
                                     />
                                 </div>
-                                <label className="flex h-9 items-center gap-2 text-sm">
-                                    <Checkbox checked={printCropBorder} onCheckedChange={(value) => setPrintCropBorder(Boolean(value))} />
-                                    {t('dialog.gallery_icons.crop_print_border')}
-                                </label>
+                                <Field orientation="horizontal" className="h-9 w-auto">
+                                    <Checkbox
+                                        id="gallery-print-crop-border"
+                                        checked={printCropBorder}
+                                        onCheckedChange={(value) => setPrintCropBorder(Boolean(value))}
+                                    />
+                                    <FieldLabel htmlFor="gallery-print-crop-border">{t('dialog.gallery_icons.crop_print_border')}</FieldLabel>
+                                </Field>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -982,30 +1003,34 @@ export function GalleryPage() {
                                         return (
                                             <Card key={print.id} className="overflow-hidden">
                                                 {imageUrl ? (
-                                                    <button type="button" className="block w-full" onClick={() => setPreview({ id: print.id, url: imageUrl, title: getPrintFileName(print) })}>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        className="h-auto w-full rounded-none p-0"
+                                                        onClick={() => setPreview({ id: print.id, url: imageUrl, title: getPrintFileName(print) })}>
                                                         <img src={imageUrl} alt={print.note || print.id} loading="lazy" className="aspect-[16/9] w-full object-cover" />
-                                                    </button>
+                                                    </Button>
                                                 ) : (
                                                     <div className="flex aspect-[16/9] w-full items-center justify-center bg-muted text-muted-foreground">
                                                         <ImageIcon className="size-8" />
                                                     </div>
                                                 )}
-                                                <CardContent className="space-y-3 p-4">
-                                                    <div className="space-y-1">
+                                                <CardContent className="flex flex-col gap-3 p-4">
+                                                    <div className="flex flex-col gap-1">
                                                         <div className="line-clamp-1 text-sm font-medium">{print.note || print.id}</div>
                                                         <div className="line-clamp-1 text-xs text-muted-foreground">{print.worldName || print.worldId || '\u00A0'}</div>
                                                         <div className="line-clamp-1 font-mono text-xs text-muted-foreground">{print.authorName || print.authorId || '\u00A0'}</div>
                                                         {print.createdAt ? (
-                                                            <div className="line-clamp-1 font-mono text-[11px] text-muted-foreground">{formatDateFilter(print.createdAt, 'long')}</div>
+                                                            <div className="line-clamp-1 font-mono text-xs text-muted-foreground">{formatDateFilter(print.createdAt, 'long')}</div>
                                                         ) : null}
                                                     </div>
                                                     <div className="flex flex-wrap gap-2">
                                                         <Button variant="outline" size="sm" disabled={!imageUrl} onClick={() => setPreview({ id: print.id, url: imageUrl, title: getPrintFileName(print) })}>
-                                                            <EyeIcon className="size-4" />
+                                                            <EyeIcon data-icon="inline-start" />
                                                             Preview
                                                         </Button>
-                                                        <Button variant="ghost" size="sm" disabled={isMutating} className="text-destructive" onClick={() => void deletePrint(print.id)}>
-                                                            <Trash2Icon className="size-4" />
+                                                        <Button variant="destructive" size="sm" disabled={isMutating} onClick={() => void deletePrint(print.id)}>
+                                                            <Trash2Icon data-icon="inline-start" />
                                                             Delete
                                                         </Button>
                                                     </div>
@@ -1030,11 +1055,11 @@ export function GalleryPage() {
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Button variant="outline" size="sm" onClick={() => void refreshTab('inventory')}>
-                                        <RefreshCwIcon className="size-4" />
+                                        <RefreshCwIcon data-icon="inline-start" />
                                         {t('dialog.gallery_icons.refresh')}
                                     </Button>
                                     <Button variant="outline" size="sm" disabled={mutatingKey === 'inventory:redeem'} onClick={() => void redeemReward()}>
-                                        <GiftIcon className="size-4" />
+                                        <GiftIcon data-icon="inline-start" />
                                         {t('dialog.gallery_icons.redeem')}
                                     </Button>
                                 </div>
@@ -1060,19 +1085,23 @@ export function GalleryPage() {
                                         return (
                                             <Card key={item.id} className="overflow-hidden">
                                                 {item.imageUrl ? (
-                                                    <button type="button" className="block w-full" onClick={() => setPreview({ id: item.id, url: item.imageUrl, title: item.name || item.id })}>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        className="h-auto w-full rounded-none p-0"
+                                                        onClick={() => setPreview({ id: item.id, url: item.imageUrl, title: item.name || item.id })}>
                                                         <img src={item.imageUrl} alt={item.name || item.id} loading="lazy" className="aspect-square w-full object-cover" />
-                                                    </button>
+                                                    </Button>
                                                 ) : (
                                                     <div className="flex aspect-square w-full items-center justify-center bg-muted text-muted-foreground">
                                                         <ImageIcon className="size-8" />
                                                     </div>
                                                 )}
-                                                <CardContent className="space-y-3 p-4">
-                                                    <div className="space-y-1">
+                                                <CardContent className="flex flex-col gap-3 p-4">
+                                                    <div className="flex flex-col gap-1">
                                                         <div className="line-clamp-1 text-sm font-medium">{item.name || item.id}</div>
                                                         {item.description ? <div className="line-clamp-1 text-xs text-muted-foreground">{item.description}</div> : null}
-                                                        {item.created_at ? <div className="line-clamp-1 font-mono text-[11px] text-muted-foreground">{formatDateFilter(item.created_at, 'long')}</div> : null}
+                                                        {item.created_at ? <div className="line-clamp-1 font-mono text-xs text-muted-foreground">{formatDateFilter(item.created_at, 'long')}</div> : null}
                                                         <Badge variant="outline">{typeLabel}</Badge>
                                                     </div>
                                                     {item.itemType === 'bundle' ? (

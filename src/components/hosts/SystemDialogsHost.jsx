@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -10,13 +10,18 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dialog';
+import {
+    Field,
+    FieldContent,
+    FieldGroup,
+    FieldLabel
+} from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Textarea } from '@/ui/shadcn/textarea';
 import { backend } from '@/platform/index.js';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { configRepository } from '@/repositories/index.js';
@@ -160,7 +165,7 @@ function UpdaterDialog({ open, onOpenChange }) {
                         Current version {formatReleaseDisplayVersion(VERSION || '') || '-'}.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <FieldGroup>
                     <Tabs value={branch} onValueChange={(value) => setBranch(sanitizeBranch(value))}>
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="Stable">Stable</TabsTrigger>
@@ -172,15 +177,17 @@ function UpdaterDialog({ open, onOpenChange }) {
                             <SelectValue placeholder={loading ? 'Loading releases' : 'Select release'} />
                         </SelectTrigger>
                         <SelectContent>
-                            {releases.map((release) => (
-                                <SelectItem key={release.canonicalVersion} value={release.canonicalVersion}>
-                                    {release.displayName}
-                                </SelectItem>
-                            ))}
+                            <SelectGroup>
+                                {releases.map((release) => (
+                                    <SelectItem key={release.canonicalVersion} value={release.canonicalVersion}>
+                                        {release.displayName}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
                     {downloading ? (
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <div className="h-2 overflow-hidden rounded-full bg-muted">
                                 <div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} />
                             </div>
@@ -197,7 +204,7 @@ function UpdaterDialog({ open, onOpenChange }) {
                     {detail ? (
                         <div className="text-sm text-muted-foreground">{detail}</div>
                     ) : null}
-                </div>
+                </FieldGroup>
                 <DialogFooter>
                     {downloading ? (
                         <Button type="button" variant="outline" onClick={() => void handleCancel()}>
@@ -424,17 +431,21 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         Create, restore, or remove saved VRChat registry backups.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                    <div className="space-y-2 rounded-md border p-3 text-sm">
-                        <div className="flex items-center justify-between gap-4">
-                            <span>Auto backup</span>
-                            <Switch checked={autoBackup} disabled={loading} onCheckedChange={(value) => void handleAutoBackupChange(value)} />
-                        </div>
-                        <div className="flex items-center justify-between gap-4">
-                            <span>Ask to restore</span>
-                            <Switch checked={askRestore} disabled={loading} onCheckedChange={(value) => void handleAskRestoreChange(value)} />
-                        </div>
-                    </div>
+                <FieldGroup>
+                    <FieldGroup className="gap-3 rounded-md border p-3">
+                        <Field orientation="horizontal" data-disabled={loading}>
+                            <FieldContent>
+                                <FieldLabel htmlFor="registry-auto-backup">Auto backup</FieldLabel>
+                            </FieldContent>
+                            <Switch id="registry-auto-backup" checked={autoBackup} disabled={loading} onCheckedChange={(value) => void handleAutoBackupChange(value)} />
+                        </Field>
+                        <Field orientation="horizontal" data-disabled={loading}>
+                            <FieldContent>
+                                <FieldLabel htmlFor="registry-ask-restore">Ask to restore</FieldLabel>
+                            </FieldContent>
+                            <Switch id="registry-ask-restore" checked={askRestore} disabled={loading} onCheckedChange={(value) => void handleAskRestoreChange(value)} />
+                        </Field>
+                    </FieldGroup>
                     <Select
                         value={selectedKey}
                         onValueChange={setSelectedKey}
@@ -443,11 +454,13 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                             <SelectValue placeholder={loading ? 'Loading backups' : 'Select backup'} />
                         </SelectTrigger>
                         <SelectContent>
-                            {backups.map((backup) => (
-                                <SelectItem key={backup.key} value={backup.key}>
-                                    {formatBackupLabel(backup)}
-                                </SelectItem>
-                            ))}
+                            <SelectGroup>
+                                {backups.map((backup) => (
+                                    <SelectItem key={backup.key} value={backup.key}>
+                                        {formatBackupLabel(backup)}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
                     {selectedBackup ? (
@@ -459,7 +472,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                     {detail ? (
                         <div className="text-sm text-muted-foreground">{detail}</div>
                     ) : null}
-                </div>
+                </FieldGroup>
                 <DialogFooter>
                     <Button type="button" variant="outline" disabled={loading} onClick={() => void refreshBackups()}>
                         Refresh
@@ -567,32 +580,32 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
                         {t('dialog.launch_options.description')} {t('dialog.launch_options.example')}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <FieldGroup>
                     <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
                         <div>--fps=144</div>
                         <div>--enable-debug-gui</div>
                         <div>--enable-sdk-log-levels</div>
                         <div>--enable-udon-debug-logging</div>
                     </div>
-                    <div className="space-y-2">
-                        <Label>{t('dialog.launch_options.header')}</Label>
+                    <Field>
+                        <FieldLabel>{t('dialog.launch_options.header')}</FieldLabel>
                         <Textarea
                             rows={3}
                             value={launchArguments}
                             placeholder="e.g. --fps=144 --enable-sdk-log-levels"
                             onChange={(event) => setLaunchArguments(event.target.value)}
                         />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('dialog.launch_options.path_override')}</Label>
+                    </Field>
+                    <Field>
+                        <FieldLabel>{t('dialog.launch_options.path_override')}</FieldLabel>
                         <Input
                             value={vrcLaunchPathOverride}
                             placeholder="C:\\Program Files (x86)\\Steam\\steamapps\\common\\VRChat\\launch.exe"
                             spellCheck={false}
                             onChange={(event) => setVrcLaunchPathOverride(event.target.value)}
                         />
-                    </div>
-                </div>
+                    </Field>
+                </FieldGroup>
                 <DialogFooter>
                     <Button
                         type="button"
@@ -771,7 +784,7 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                         {t('dialog.config_json.description1')} {t('dialog.config_json.description2')}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <FieldGroup>
                     <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-3 text-sm">
                         <span>{t('dialog.config_json.cache_size')}: {cacheSize}</span>
                         <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => void loadConfig()}>
@@ -786,8 +799,8 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                     </div>
 
                     {configFields.map(([key, label, placeholder, type]) => (
-                        <div key={key} className="space-y-2">
-                            <Label>{label}</Label>
+                        <Field key={key}>
+                            <FieldLabel>{label}</FieldLabel>
                             <div className="flex gap-2">
                                 <Input
                                     type={type}
@@ -803,7 +816,7 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                                     </Button>
                                 ) : null}
                             </div>
-                        </div>
+                        </Field>
                     ))}
 
                     <div className="grid gap-4 md:grid-cols-3">
@@ -827,25 +840,27 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                         />
                     </div>
 
-                    <label className="flex items-center gap-2 text-sm">
+                    <Field orientation="horizontal">
                         <Checkbox
+                            id="vrchat-config-picture-sort-by-date"
                             checked={Boolean(config.picture_output_split_by_date)}
                             onCheckedChange={(checked) =>
                                 setConfig((current) => ({ ...current, picture_output_split_by_date: Boolean(checked) }))
                             }
                         />
-                        {t('dialog.config_json.picture_sort_by_date')}
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
+                        <FieldLabel htmlFor="vrchat-config-picture-sort-by-date">{t('dialog.config_json.picture_sort_by_date')}</FieldLabel>
+                    </Field>
+                    <Field orientation="horizontal">
                         <Checkbox
+                            id="vrchat-config-disable-rich-presence"
                             checked={Boolean(config.disableRichPresence)}
                             onCheckedChange={(checked) =>
                                 setConfig((current) => ({ ...current, disableRichPresence: Boolean(checked) }))
                             }
                         />
-                        {t('dialog.config_json.disable_discord_presence')}
-                    </label>
-                </div>
+                        <FieldLabel htmlFor="vrchat-config-disable-rich-presence">{t('dialog.config_json.disable_discord_presence')}</FieldLabel>
+                    </Field>
+                </FieldGroup>
                 <DialogFooter>
                     <Button
                         type="button"
@@ -867,21 +882,23 @@ function VRChatConfigDialog({ open, onOpenChange }) {
 
 function ResolutionSelect({ label, value, rows, onValueChange }) {
     return (
-        <div className="space-y-2">
-            <Label>{label}</Label>
+        <Field>
+            <FieldLabel>{label}</FieldLabel>
             <Select value={value} onValueChange={onValueChange}>
                 <SelectTrigger>
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    {rows.map((row) => (
-                        <SelectItem key={row.name} value={getResolutionKey(row)}>
-                            {row.name}
-                        </SelectItem>
-                    ))}
+                    <SelectGroup>
+                        {rows.map((row) => (
+                            <SelectItem key={row.name} value={getResolutionKey(row)}>
+                                {row.name}
+                            </SelectItem>
+                        ))}
+                    </SelectGroup>
                 </SelectContent>
             </Select>
-        </div>
+        </Field>
     );
 }
 

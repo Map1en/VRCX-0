@@ -11,7 +11,6 @@ import {
     ExternalLinkIcon,
     HeartIcon,
     LanguagesIcon,
-    LoaderCircleIcon,
     LogOutIcon,
     MailIcon,
     MapPinIcon,
@@ -38,6 +37,7 @@ import { Location } from '@/components/Location.jsx';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import { convertFileUrlToImageUrl, copyTextToClipboard, openExternalLink, userImage } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import { userStatusDotClassName } from '@/lib/userStatus.js';
 import { backend } from '@/platform/tauri/backend.js';
@@ -62,26 +62,30 @@ import { parseLocation } from '@/shared/utils/location.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import {
     EntityActionDropdown,
     EntityActionItem,
@@ -300,7 +304,7 @@ function UserTitleLanguageFlags({ languages }) {
                 return (
                     <span
                         key={`${key}:${language?.value || ''}`}
-                        className={`flags inline-block ${flagClassName}`}
+                        className={cn('flags inline-block', flagClassName)}
                         title={tooltip}
                         aria-label={tooltip}
                     />
@@ -693,78 +697,83 @@ function UserGroupCard({
     const visibility = groupMemberVisibility(group);
     const memberCount = Number(group?.memberCount ?? group?.member_count ?? group?.membershipCount ?? group?.membership_count ?? 0) || 0;
     return (
-        <div className={`box-border flex ${editable ? 'w-[220px]' : 'w-[167px]'} items-center p-1.5 text-[13px] hover:rounded-[25px_5px_5px_25px] hover:bg-muted/50`}>
+        <div className={cn('flex items-center gap-1 p-1 text-sm', editable ? 'w-56' : 'w-44')}>
             {selectable ? (
                 <Checkbox
                     checked={selected}
                     disabled={busy}
                     aria-label={`Select ${label || 'group'}`}
-                    className="mr-1.5 shrink-0"
+                    className="shrink-0"
                     onCheckedChange={(checked) => onSelectionChange?.(group, checked === true)}
                 />
             ) : null}
-            <button
+            <Button
                 type="button"
-                className="flex min-w-0 flex-1 cursor-pointer items-center text-left"
+                variant="ghost"
+                className="h-auto min-w-0 flex-1 justify-start gap-2 px-1.5 py-1.5 text-left font-normal"
                 onClick={() => openRow(displayGroup, 'group')}>
                 {image ? (
-                    <img src={image} alt="" className="mr-2.5 size-9 shrink-0 rounded-full object-cover" />
+                    <img src={image} alt="" className="size-9 shrink-0 rounded-full object-cover" />
                 ) : (
-                    <div className="mr-2.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                        <UsersIcon className="size-4 text-muted-foreground" />
-                    </div>
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <UsersIcon data-icon="inline-start" className="size-4 text-muted-foreground" />
+                    </span>
                 )}
                 <span className="min-w-0 flex-1 overflow-hidden">
-                    <span className="block truncate font-medium leading-[18px]">{label || '—'}</span>
+                    <span className="block truncate font-medium leading-snug">{label || '—'}</span>
                     <span className="inline-flex max-w-full items-center truncate text-xs text-muted-foreground">
                         {group?.isRepresenting || group?.is_representing ? <TagIcon className="mr-1.5 size-3.5 shrink-0" aria-label="Representing" /> : null}
                         {visibility !== 'visible' ? <EyeIcon className="mr-1.5 size-3.5 shrink-0" aria-label={`Visibility ${visibility}`} /> : null}
                         <span className="truncate">({memberCount})</span>
                     </span>
                 </span>
-            </button>
+            </Button>
             {editable ? (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button type="button" size="icon-sm" variant="ghost" className="ml-1 shrink-0" disabled={busy} title="Manage group membership">
-                            <SettingsIcon className="size-3.5" />
+                        <Button type="button" size="icon-sm" variant="ghost" className="ml-1 shrink-0" disabled={busy} title="Manage group membership" aria-label="Manage group membership">
+                            <SettingsIcon data-icon="inline-start" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         {onMove ? (
                             <>
-                                <DropdownMenuItem onSelect={() => void onMove(group, 'top')}>
-                                    <DownloadIcon className="size-4 rotate-180" />
-                                    Move Top
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => void onMove(group, 'up')}>
-                                    <ArrowUpIcon className="size-4" />
-                                    Move Up
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => void onMove(group, 'down')}>
-                                    <ArrowDownIcon className="size-4" />
-                                    Move Down
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => void onMove(group, 'bottom')}>
-                                    <DownloadIcon className="size-4" />
-                                    Move Bottom
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onSelect={() => void onMove(group, 'top')}>
+                                        <DownloadIcon className="rotate-180" />
+                                        Move Top
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => void onMove(group, 'up')}>
+                                        <ArrowUpIcon />
+                                        Move Up
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => void onMove(group, 'down')}>
+                                        <ArrowDownIcon />
+                                        Move Down
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => void onMove(group, 'bottom')}>
+                                        <DownloadIcon />
+                                        Move Bottom
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                             </>
                         ) : null}
-                        <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'visible')}>
-                            Visibility: Everyone
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'friends')}>
-                            Visibility: Friends
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'hidden')}>
-                            Visibility: Hidden
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onSelect={() => onLeave?.(group)}>
-                            <LogOutIcon className="size-4" />
-                            Leave Group
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'visible')}>
+                                Visibility: Everyone
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'friends')}>
+                                Visibility: Friends
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'hidden')}>
+                                Visibility: Hidden
+                            </DropdownMenuItem>
+                            <DropdownMenuItem variant="destructive" onSelect={() => onLeave?.(group)}>
+                                <LogOutIcon />
+                                Leave Group
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
                     </DropdownMenuContent>
                 </DropdownMenu>
             ) : null}
@@ -849,31 +858,32 @@ function EntityList({
                 const travelingTimestamp = kind === 'user' ? userTravelingTimestamp(row) : 0;
                 const dotClassName = kind === 'user' ? userStatusDotClassName(row) : '';
                 return (
-                    <button
+                    <Button
                         key={`${row?.id || row?.userId || label}:${index}`}
                         type="button"
-                        className="box-border flex w-[167px] cursor-pointer items-center p-1.5 text-left text-[13px] hover:rounded-[25px_5px_5px_25px] hover:bg-muted/50"
+                        variant="ghost"
+                        className="h-auto w-44 justify-start gap-2 px-1.5 py-1.5 text-left font-normal"
                         onClick={() => openRow(row, kind)}>
-                        <span className="relative mr-2.5 size-9 shrink-0">
+                        <span className="relative size-9 shrink-0">
                             {image ? (
                                 <img src={image} alt="" className="size-9 rounded-full object-cover" />
                             ) : (
                                 <span className="flex size-9 items-center justify-center rounded-full bg-muted">
-                                    <UserIcon className="size-4 text-muted-foreground" />
+                                    <UserIcon data-icon="inline-start" className="size-4 text-muted-foreground" />
                                 </span>
                             )}
-                            {dotClassName ? <span className={`absolute bottom-0 right-0 z-10 size-2.5 rounded-full border border-background ${dotClassName}`} /> : null}
+                            {dotClassName ? <span className={cn('absolute bottom-0 right-0 z-10 size-2.5 rounded-full border border-background', dotClassName)} /> : null}
                         </span>
                         <span className="min-w-0 flex-1 overflow-hidden">
-                            <span className="block truncate font-medium leading-[18px]" style={kind === 'user' && row?.$userColour ? { color: row.$userColour } : undefined}>{label || '—'}</span>
+                            <span className="block truncate font-medium leading-snug" style={kind === 'user' && row?.$userColour ? { color: row.$userColour } : undefined}>{label || '—'}</span>
                             {travelingTimestamp ? (
                                 <span className="block truncate text-xs text-muted-foreground">
-                                    <LoaderCircleIcon className="mr-1 inline-block size-3 animate-spin" />
+                                    <Spinner data-icon="inline-start" className="mr-1 inline-block" />
                                     {timeToText(Date.now() - travelingTimestamp)}
                                 </span>
                             ) : subtitle ? <span className="block truncate text-xs text-muted-foreground">{subtitle}</span> : null}
                         </span>
-                    </button>
+                    </Button>
                 );
             })}
         </div>
@@ -918,7 +928,7 @@ function UserGroupSection({
     }
 
     return (
-        <section className="space-y-2">
+        <section className="flex flex-col gap-2">
             <div className="flex items-baseline gap-1.5">
                 <span className="text-base font-bold">{title}</span>
                 <span className="text-xs text-muted-foreground">{countText || rows.length}</span>
@@ -1923,7 +1933,7 @@ export function UserDialogTabbedView({
             <EntityDialogHeader
                 imageUrl={imageUrl}
                 imageAlt={profile.displayName || profile.id || 'User'}
-                imageClassName="h-[120px] w-[160px]"
+                imageClassName="aspect-[4/3] w-40"
                 onImageClick={imageUrl ? () => openImagePreview({ url: imageUrl, title: profile.displayName || profile.username || 'User' }) : null}
                 imagePlaceholder={<UsersIcon className="size-8 text-muted-foreground" />}
                 title={profile.displayName || profile.username || 'User'}
@@ -1932,7 +1942,7 @@ export function UserDialogTabbedView({
                     <>
                         <UserTitleLanguageFlags languages={profileLanguages} />
                         {previousDisplayNames.length ? (
-                            <Badge variant="outline" className="shrink-0 text-[11px]" title={previousDisplayNamesTitle}>
+                            <Badge variant="outline" className="shrink-0 text-xs" title={previousDisplayNamesTitle}>
                                 Names {previousDisplayNames.length}
                             </Badge>
                         ) : null}
@@ -1950,13 +1960,13 @@ export function UserDialogTabbedView({
                         {isFriend ? <Badge variant="secondary">Friend</Badge> : null}
                         {isFavorite ? (
                             <Badge>
-                                <HeartIcon className="mr-1 size-3.5 fill-current" />
+                                <HeartIcon data-icon="inline-start" className="fill-current" />
                                 Favorite
                             </Badge>
                         ) : null}
                         {profile.$isModerator ? (
                             <Badge variant="secondary">
-                                <ShieldCheckIcon className="mr-1 size-3.5" />
+                                <ShieldCheckIcon data-icon="inline-start" />
                                 Moderator
                             </Badge>
                         ) : null}
@@ -1979,46 +1989,54 @@ export function UserDialogTabbedView({
                         {moderationState.mute ? <Badge variant="destructive">Muted</Badge> : null}
                         <Badge variant="outline">{profile.$trustLevel || 'Visitor'}</Badge>
                         <Badge variant="outline">
-                            {PlatformIcon ? <PlatformIcon className="mr-1 size-3.5" /> : null}
+                            {PlatformIcon ? <PlatformIcon data-icon="inline-start" /> : null}
                             {platform.label}
                         </Badge>
                         {profile.discordId ? (
-                            <button type="button" onClick={() => void openDiscordProfile(profile.discordId)}>
-                                <Badge variant="outline">Discord</Badge>
-                            </button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="xs"
+                                className="h-5 rounded-4xl px-2 py-0.5 text-xs"
+                                onClick={() => void openDiscordProfile(profile.discordId)}>
+                                Discord
+                            </Button>
                         ) : null}
                     </>
                 }
                 mediaBadges={
                     <>
                         {profile.userIcon ? (
-                            <button type="button" onClick={() => openImagePreview({ url: convertFileUrlToImageUrl(profile.userIcon, 512), title: profile.displayName || profile.username || 'User' })}>
+                            <Button type="button" variant="ghost" size="icon" className="size-8 overflow-hidden p-0" onClick={() => openImagePreview({ url: convertFileUrlToImageUrl(profile.userIcon, 512), title: profile.displayName || profile.username || 'User' })}>
                                 <img src={convertFileUrlToImageUrl(profile.userIcon, 64)} alt="" className="size-8 rounded-md object-cover" />
-                            </button>
+                            </Button>
                         ) : null}
                         {Array.isArray(profile.badges) ? profile.badges.filter((badge) => badge?.badgeImageUrl).map((badge) => (
                             <Popover key={badge.badgeId || badge.id || badge.badgeName}>
                                 <PopoverTrigger asChild>
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="ghost"
+                                        size="icon"
                                         title={`${badge.badgeName || 'Badge'}${badge.hidden ? ' (Hidden)' : ''}`}
-                                        className="rounded-sm"
+                                        className="size-8 rounded-sm p-0"
                                         onClick={(event) => event.stopPropagation()}>
                                         <img
                                             src={badge.badgeImageUrl}
                                             alt={badge.badgeName || ''}
-                                            className={`size-8 rounded-sm object-cover ${badge.hidden ? 'grayscale' : ''}`}
+                                            className={cn('size-8 rounded-sm object-cover', badge.hidden && 'grayscale')}
                                         />
-                                    </button>
+                                    </Button>
                                 </PopoverTrigger>
-                                <PopoverContent side="bottom" className="w-72 space-y-3">
-                                    <button
+                                <PopoverContent side="bottom" className="flex w-72 flex-col gap-3">
+                                    <Button
                                         type="button"
-                                        className="block w-full"
+                                        variant="ghost"
+                                        className="h-auto w-full p-0"
                                         onClick={() => badge.badgeImageUrl && openImagePreview({ url: badge.badgeImageUrl, title: badge.badgeName || profile.displayName || profile.username || 'Badge' })}>
                                         <img src={badge.badgeImageUrl} alt={badge.badgeName || ''} className="max-h-56 w-full rounded-md object-contain" />
-                                    </button>
-                                    <div className="space-y-1 text-sm">
+                                    </Button>
+                                    <div className="flex flex-col gap-1 text-sm">
                                         <div className="font-medium">
                                             {badge.badgeName || 'Badge'}
                                             {badge.hidden ? <span className="ml-1 text-xs text-muted-foreground">(Hidden)</span> : null}
@@ -2027,24 +2045,26 @@ export function UserDialogTabbedView({
                                         {badge.assignedAt ? <div className="text-xs font-mono text-muted-foreground">Assigned: {formatStatsDate(badge.assignedAt)}</div> : null}
                                     </div>
                                     {isCurrentUser ? (
-                                        <div className="space-y-2 border-t pt-3 text-sm">
-                                            <label className="flex items-center gap-2">
+                                        <FieldGroup data-slot="checkbox-group" className="border-t pt-3 text-sm">
+                                            <Field orientation="horizontal">
                                                 <Checkbox
                                                     checked={Boolean(badge.hidden)}
                                                     disabled={actionStatus !== 'idle' || !onToggleBadgeVisibility}
+                                                    aria-label="Hidden"
                                                     onCheckedChange={(checked) => onToggleBadgeVisibility?.(badge, Boolean(checked))}
                                                 />
-                                                <span>Hidden</span>
-                                            </label>
-                                            <label className="flex items-center gap-2">
+                                                <FieldLabel>Hidden</FieldLabel>
+                                            </Field>
+                                            <Field orientation="horizontal">
                                                 <Checkbox
                                                     checked={Boolean(badge.showcased)}
                                                     disabled={actionStatus !== 'idle' || !onToggleBadgeShowcased}
+                                                    aria-label="Showcased"
                                                     onCheckedChange={(checked) => onToggleBadgeShowcased?.(badge, Boolean(checked))}
                                                 />
-                                                <span>Showcased</span>
-                                            </label>
-                                        </div>
+                                                <FieldLabel>Showcased</FieldLabel>
+                                            </Field>
+                                        </FieldGroup>
                                     ) : null}
                                 </PopoverContent>
                             </Popover>
@@ -2223,8 +2243,8 @@ export function UserDialogTabbedView({
             <EntityDialogTabs value={activeTab} onValueChange={changeTab} tabs={tabs}>
                 <EntityDialogTabContent value="info">
                     {visiblePresenceLocation ? (
-                        <div className="mb-2 space-y-2 border-b border-border pb-2">
-                            <div className="space-y-1 text-sm">
+                        <div className="mb-2 flex flex-col gap-2 border-b border-border pb-2">
+                            <div className="flex flex-col gap-1 text-sm">
                                 {visiblePresenceLocation.includes(':') ? (
                                     <InstanceActionBar
                                         location={visiblePresenceLocation}
@@ -2271,18 +2291,18 @@ export function UserDialogTabbedView({
                                 )}
                             </div>
                             {locationOwnerRow || locationPlayerUsers.length ? (
-                                <div className="max-h-[150px] space-y-2 overflow-auto">
+                                <div className="flex max-h-36 flex-col gap-2 overflow-auto">
                                     {locationOwnerRow ? (
-                                        <div className="space-y-1">
-                                            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                                 {t('dialog.user.info.instance_creator')}
                                             </div>
                                             <EntityList rows={[locationOwnerRow]} kind="user" />
                                         </div>
                                     ) : null}
                                     {locationPlayerUsers.length ? (
-                                        <div className="space-y-1">
-                                            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                                 {t('dialog.user.info.instance_users')} {locationPlayerUsers.length}
                                             </div>
                                             <EntityList rows={locationPlayerUsers} kind="user" />
@@ -2295,18 +2315,18 @@ export function UserDialogTabbedView({
                     <EntityInfoGrid>
                         {profile.note && !hideUserNotes ? (
                             <EntityInfoBlock label="Note" full onClick={onEditMemo}>
-                                <pre className="max-h-[210px] whitespace-pre-wrap text-xs font-[inherit] text-muted-foreground">{profile.note}</pre>
+                                <pre className="max-h-52 whitespace-pre-wrap text-xs font-sans text-muted-foreground">{profile.note}</pre>
                             </EntityInfoBlock>
                         ) : null}
                         {memo && !hideUserMemos ? (
                             <EntityInfoBlock label="Memo" full onClick={onEditMemo}>
-                                <pre className="max-h-[210px] whitespace-pre-wrap text-xs font-[inherit] text-muted-foreground">{memo}</pre>
+                                <pre className="max-h-52 whitespace-pre-wrap text-xs font-sans text-muted-foreground">{memo}</pre>
                             </EntityInfoBlock>
                         ) : null}
                         <EntityInfoBlock label="Avatar Info" full>
                             {currentAvatarTarget ? (
                                 <Button type="button" variant="link" className="h-auto justify-start p-0 text-left text-xs" onClick={() => openAvatarDialog(currentAvatarDialogArgs)}>
-                                    <UserIcon className="mr-1 size-3.5" />
+                                    <UserIcon data-icon="inline-start" />
                                     {currentAvatarDisplayName || 'Avatar'}
                                 </Button>
                             ) : <span className="block truncate text-xs">—</span>}
@@ -2315,9 +2335,10 @@ export function UserDialogTabbedView({
                             {representedGroupStatus === 'running' ? (
                                 <span className="block text-xs text-muted-foreground">Loading...</span>
                             ) : representedGroup?.isRepresenting ? (
-                                <button
+                                <Button
                                     type="button"
-                                    className="flex max-w-full items-center gap-2 text-left text-xs hover:underline"
+                                    variant="ghost"
+                                    className="h-auto max-w-full justify-start gap-2 p-0 text-left text-xs font-normal whitespace-normal hover:bg-transparent hover:underline"
                                     onClick={() => openGroupDialog({
                                         groupId: representedGroup.groupId,
                                         title: representedGroup.name || undefined,
@@ -2351,24 +2372,25 @@ export function UserDialogTabbedView({
                                             {representedGroup.memberCount ? `${representedGroup.memberCount} members` : ''}
                                         </span>
                                     </span>
-                                </button>
+                                </Button>
                             ) : (
                                 <span className="block text-xs text-muted-foreground">—</span>
                             )}
                         </EntityInfoBlock>
                         <EntityInfoBlock label="Bio" full>
                             <div className="flex items-start gap-2">
-                                <pre className="max-h-[210px] min-w-0 flex-1 overflow-auto whitespace-pre-wrap text-xs font-[inherit] text-muted-foreground">{visibleBio}</pre>
+                                <pre className="max-h-52 min-w-0 flex-1 overflow-auto whitespace-pre-wrap text-xs font-sans text-muted-foreground">{visibleBio}</pre>
                                 {profile.bio ? (
                                     <Button
                                         type="button"
-                                        size="icon-sm"
+                                        size="icon-xs"
                                         variant="ghost"
-                                        className="h-6 w-6 shrink-0"
+                                        className="shrink-0"
                                         disabled={bioTranslationLoading}
                                         title={translatedBioActive ? 'Show original bio' : 'Translate bio'}
+                                        aria-label={translatedBioActive ? 'Show original bio' : 'Translate bio'}
                                         onClick={() => void toggleBioTranslation()}>
-                                        {bioTranslationLoading ? <LoaderCircleIcon className="size-3 animate-spin" /> : <LanguagesIcon className="size-3" />}
+                                        {bioTranslationLoading ? <Spinner data-icon="inline-start" /> : <LanguagesIcon data-icon="inline-start" />}
                                     </Button>
                                 ) : null}
                             </div>
@@ -2379,14 +2401,14 @@ export function UserDialogTabbedView({
                                             key={link}
                                             type="button"
                                             variant="ghost"
-                                            size="icon-sm"
-                                            className="size-6"
+                                            size="icon-xs"
                                             title={link}
+                                            aria-label={`Open ${link}`}
                                             onClick={() => openExternalLink(link)}>
                                             {getFaviconUrl(link) ? (
                                                 <img src={getFaviconUrl(link)} alt="" className="size-4" />
                                             ) : (
-                                                <ExternalLinkIcon className="size-4" />
+                                                <ExternalLinkIcon data-icon="inline-start" />
                                             )}
                                         </Button>
                                     ))}
@@ -2463,27 +2485,29 @@ export function UserDialogTabbedView({
                                                 type="button"
                                                 aria-label="Open user copy menu"
                                                 title="Copy user details"
-                                                className="ml-1 size-6 rounded-full p-0"
-                                                size="icon-sm"
+                                                className="ml-1"
+                                                size="icon-xs"
                                                 variant="ghost"
                                                 onClick={(event) => event.stopPropagation()}>
-                                                <CopyIcon className="size-4" />
+                                                <CopyIcon data-icon="inline-start" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="start">
-                                            <DropdownMenuItem onSelect={() => void copyUserText(profile.id, 'User ID')}>
-                                                Copy User ID
-                                            </DropdownMenuItem>
-                                            {userUrl ? (
-                                                <DropdownMenuItem onSelect={() => void copyUserText(userUrl, 'User URL')}>
-                                                    Copy User URL
+                                            <DropdownMenuGroup>
+                                                <DropdownMenuItem onSelect={() => void copyUserText(profile.id, 'User ID')}>
+                                                    Copy User ID
                                                 </DropdownMenuItem>
-                                            ) : null}
-                                            {profile.displayName ? (
-                                                <DropdownMenuItem onSelect={() => void copyUserText(profile.displayName, 'Display name')}>
-                                                    Copy Display Name
-                                                </DropdownMenuItem>
-                                            ) : null}
+                                                {userUrl ? (
+                                                    <DropdownMenuItem onSelect={() => void copyUserText(userUrl, 'User URL')}>
+                                                        Copy User URL
+                                                    </DropdownMenuItem>
+                                                ) : null}
+                                                {profile.displayName ? (
+                                                    <DropdownMenuItem onSelect={() => void copyUserText(profile.displayName, 'Display name')}>
+                                                        Copy Display Name
+                                                    </DropdownMenuItem>
+                                                ) : null}
+                                            </DropdownMenuGroup>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 ) : null}
@@ -2500,23 +2524,25 @@ export function UserDialogTabbedView({
                         ) : null}
                     </EntityInfoGrid>
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="mutual" className="space-y-2">
+                <EntityDialogTabContent value="mutual" className="flex flex-col gap-2">
                     <SearchHeader searchKey="mutual" tab="mutual" rows={mutualFriends} filteredRows={filteredMutualFriends} placeholder="Search mutual friends">
                         <span className="text-sm text-muted-foreground">Sort By</span>
                         <Select value={mutualSort} onValueChange={setMutualSort} disabled={remoteStatus.mutual === 'running'}>
                             <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                {Object.entries(userDialogMutualFriendSortingOptions).map(([key, option]) => (
-                                    <SelectItem key={key} value={option.value}>
-                                        {t(option.name)}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    {Object.entries(userDialogMutualFriendSortingOptions).map(([key, option]) => (
+                                        <SelectItem key={key} value={option.value}>
+                                            {t(option.name)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </SearchHeader>
                     <EntityList rows={visibleMutualFriends} kind="user" loading={remoteStatus.mutual === 'running'} error={remoteErrors.mutual} />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="groups" className="space-y-2">
+                <EntityDialogTabContent value="groups" className="flex flex-col gap-2">
                     <SearchHeader searchKey="groups" tab="groups" rows={profileGroups} filteredRows={filteredProfileGroups} placeholder="Search groups">
                         {!groupEditMode ? (
                             <>
@@ -2524,11 +2550,13 @@ export function UserDialogTabbedView({
                                 <Select value={effectiveGroupSort} onValueChange={setGroupSort} disabled={remoteStatus.groups === 'running'}>
                                     <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(userDialogGroupSortingOptions).map(([key, option]) => (
-                                            <SelectItem key={key} value={option.value} disabled={option.value === 'inGame' && !isCurrentUser}>
-                                                {t(option.name)}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {Object.entries(userDialogGroupSortingOptions).map(([key, option]) => (
+                                                <SelectItem key={key} value={option.value} disabled={option.value === 'inGame' && !isCurrentUser}>
+                                                    {t(option.name)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </>
@@ -2571,32 +2599,34 @@ export function UserDialogTabbedView({
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button type="button" size="sm" variant="outline" disabled={groupActionId === '__bulk_groups__'}>
-                                                    <SettingsIcon className="size-3.5" />
+                                                    <SettingsIcon data-icon="inline-start" />
                                                     Bulk Actions
                                                     {selectedGroupCount ? <span className="text-xs text-muted-foreground">({selectedGroupCount})</span> : null}
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="start">
-                                                <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('visible')}>
-                                                    <EyeIcon className="size-4" />
-                                                    Set Selected Visible
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('hidden')}>
-                                                    <EyeIcon className="size-4" />
-                                                    Set Selected Hidden
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('friends')}>
-                                                    <UsersIcon className="size-4" />
-                                                    Set Selected Friends
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => exportUserGroups(selectedUserGroups)}>
-                                                    <DownloadIcon className="size-4" />
-                                                    Export {selectedGroupCount ? 'Selected' : 'All'} Groups
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem variant="destructive" disabled={!selectedGroupCount} onSelect={() => void leaveSelectedGroups()}>
-                                                    <LogOutIcon className="size-4" />
-                                                    Leave Selected
-                                                </DropdownMenuItem>
+                                                <DropdownMenuGroup>
+                                                    <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('visible')}>
+                                                        <EyeIcon />
+                                                        Set Selected Visible
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('hidden')}>
+                                                        <EyeIcon />
+                                                        Set Selected Hidden
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('friends')}>
+                                                        <UsersIcon />
+                                                        Set Selected Friends
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => exportUserGroups(selectedUserGroups)}>
+                                                        <DownloadIcon />
+                                                        Export {selectedGroupCount ? 'Selected' : 'All'} Groups
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem variant="destructive" disabled={!selectedGroupCount} onSelect={() => void leaveSelectedGroups()}>
+                                                        <LogOutIcon />
+                                                        Leave Selected
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuGroup>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </>
@@ -2620,7 +2650,7 @@ export function UserDialogTabbedView({
                             onGroupSelectionChange={setGroupSelected}
                         />
                     ) : userGroupSections.ownGroups.length || userGroupSections.mutualGroups.length || userGroupSections.remainingGroups.length ? (
-                        <div className="space-y-4">
+                        <div className="flex flex-col gap-4">
                             <UserGroupSection
                                 title={t('dialog.user.groups.own_groups')}
                                 rows={userGroupSections.ownGroups}
@@ -2664,8 +2694,8 @@ export function UserDialogTabbedView({
                         <EntityBlank />
                     )}
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="worlds" className="space-y-4">
-                    <div className="space-y-2">
+                <EntityDialogTabContent value="worlds" className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap items-center gap-2">
                             <div className="text-sm text-muted-foreground">{filteredProfileWorlds.length}/{profileWorlds.length}</div>
                             <Button type="button" size="sm" variant="outline" disabled={remoteStatus.worlds === 'running'} onClick={() => void loadTab('worlds', { force: true })}>
@@ -2681,26 +2711,30 @@ export function UserDialogTabbedView({
                             <Select value={worldSort} onValueChange={changeWorldSort} disabled={remoteStatus.worlds === 'running'}>
                                 <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="name">Name</SelectItem>
-                                    <SelectItem value="updated">Updated</SelectItem>
-                                    <SelectItem value="created">Created</SelectItem>
-                                    <SelectItem value="favorites">Favorites</SelectItem>
-                                    <SelectItem value="popularity">Popularity</SelectItem>
+                                    <SelectGroup>
+                                        <SelectItem value="name">Name</SelectItem>
+                                        <SelectItem value="updated">Updated</SelectItem>
+                                        <SelectItem value="created">Created</SelectItem>
+                                        <SelectItem value="favorites">Favorites</SelectItem>
+                                        <SelectItem value="popularity">Popularity</SelectItem>
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                             <span className="text-sm text-muted-foreground">Order By</span>
                             <Select value={worldOrder} onValueChange={changeWorldOrder} disabled={remoteStatus.worlds === 'running'}>
                                 <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="descending">Descending</SelectItem>
-                                    <SelectItem value="ascending">Ascending</SelectItem>
+                                    <SelectGroup>
+                                        <SelectItem value="descending">Descending</SelectItem>
+                                        <SelectItem value="ascending">Ascending</SelectItem>
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
                         <EntityList rows={filteredProfileWorlds} kind="world" loading={remoteStatus.worlds === 'running'} error={remoteErrors.worlds} />
                     </div>
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="favorite-worlds" className="space-y-2">
+                <EntityDialogTabContent value="favorite-worlds" className="flex flex-col gap-2">
                     <SearchHeader searchKey="favoriteWorlds" tab="favorite-worlds" rows={favoriteWorlds} filteredRows={filteredFavoriteWorlds} placeholder="Search favorite worlds" />
                     <FavoriteWorldGroups
                         groups={remoteData.favoriteWorldGroups}
@@ -2711,10 +2745,10 @@ export function UserDialogTabbedView({
                         error={remoteErrors['favorite-worlds']}
                     />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="avatars" className="space-y-2">
+                <EntityDialogTabContent value="avatars" className="flex flex-col gap-2">
                     {currentAvatarTarget ? (
                         <Button type="button" variant="link" className="h-auto justify-start p-0 text-left" onClick={() => openAvatarDialog(currentAvatarDialogArgs)}>
-                            <UserIcon className="mr-1 size-3.5" />
+                            <UserIcon data-icon="inline-start" />
                             Current Avatar: {currentAvatarDisplayName || 'Avatar'}
                         </Button>
                     ) : null}
@@ -2735,18 +2769,22 @@ export function UserDialogTabbedView({
                                 <Select value={avatarSort} onValueChange={changeAvatarSort} disabled={remoteStatus.avatars === 'running'}>
                                     <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="name">Name</SelectItem>
-                                        <SelectItem value="update">Updated</SelectItem>
-                                        <SelectItem value="createdAt">Uploaded</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="name">Name</SelectItem>
+                                            <SelectItem value="update">Updated</SelectItem>
+                                            <SelectItem value="createdAt">Uploaded</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                                 <span className="text-sm text-muted-foreground">Group By</span>
                                 <Select value={avatarReleaseStatus} onValueChange={changeAvatarReleaseStatus} disabled={remoteStatus.avatars === 'running'}>
                                     <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        <SelectItem value="public">Public</SelectItem>
-                                        <SelectItem value="private">Private</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="all">All</SelectItem>
+                                            <SelectItem value="public">Public</SelectItem>
+                                            <SelectItem value="private">Private</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </>
@@ -2754,7 +2792,7 @@ export function UserDialogTabbedView({
                     </div>
                     <EntityList rows={visibleProfileAvatars} kind="avatar" loading={remoteStatus.avatars === 'running'} error={remoteErrors.avatars} />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="activity" className="space-y-4">
+                <EntityDialogTabContent value="activity" className="flex flex-col gap-4">
                     <UserActivityPanel profile={profile} isCurrentUser={isCurrentUser} active={activeTab === 'activity'} />
                 </EntityDialogTabContent>
                 <EntityDialogTabContent value="json"><EntityRawJson value={{ profile, memo, moderationState, isFriend, isFavorite }} /></EntityDialogTabContent>

@@ -1,5 +1,5 @@
 export type NotificationLayoutPreference = 'notification-center' | 'table';
-export type TableDensityPreference = 'standard' | 'comfortable' | 'compact';
+export type TableDensityPreference = 'standard' | 'compact';
 export type TranslationApiType = 'google' | 'openai';
 
 export interface TableLimitsPreference {

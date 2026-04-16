@@ -33,9 +33,20 @@ const initialState = {
     trayIconNotify: false
 };
 
-const tableDensityValues = new Set(['standard', 'comfortable', 'compact']);
+const themeModeValues = new Set(['system', 'light', 'dark']);
+const tableDensityValues = new Set(['standard', 'compact']);
+
+function normalizeThemeMode(value) {
+    if (value === 'midnight') {
+        return 'dark';
+    }
+    return themeModeValues.has(value) ? value : 'system';
+}
 
 export function normalizeTableDensity(value) {
+    if (value === 'comfortable') {
+        return 'standard';
+    }
     return tableDensityValues.has(value) ? value : 'standard';
 }
 
@@ -100,7 +111,7 @@ export const useShellStore = create((set, get) => ({
         set({ locale: locale || 'en' });
     },
     setThemeMode(themeMode) {
-        set({ themeMode: themeMode || 'system' });
+        set({ themeMode: normalizeThemeMode(themeMode) });
     },
     setTableDensity(tableDensity) {
         set({ tableDensity: normalizeTableDensity(tableDensity) });

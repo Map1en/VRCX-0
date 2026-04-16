@@ -1,20 +1,23 @@
 import { useRef, useState } from 'react';
-import { CheckIcon, HeartIcon, LoaderCircleIcon } from 'lucide-react';
+import { HeartIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { localFavoritesRepository, vrchatFavoriteRepository } from '@/repositories/index.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
+    DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 function normalizeEntityId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
@@ -234,12 +237,11 @@ export function FavoriteActionMenu({ kind, entityId, entity = null, label = 'Fav
                     type="button"
                     size="sm"
                     variant={remoteFavorite ? 'default' : 'outline'}
-                    className="gap-2"
                     disabled={actionStatus !== 'idle'}>
                     {actionStatus !== 'idle' ? (
-                        <LoaderCircleIcon className="size-4 animate-spin" />
+                        <Spinner data-icon="inline-start" />
                     ) : (
-                        <HeartIcon className={remoteFavorite ? 'size-4 fill-current' : 'size-4'} />
+                        <HeartIcon data-icon="inline-start" className={remoteFavorite ? 'fill-current' : ''} />
                     )}
                     {remoteFavorite ? 'Favorited' : label}
                 </Button>
@@ -248,71 +250,83 @@ export function FavoriteActionMenu({ kind, entityId, entity = null, label = 'Fav
                 <DropdownMenuLabel>VRChat favorites</DropdownMenuLabel>
                 {remoteFavorite ? (
                     <>
-                        <DropdownMenuItem disabled>
-                            {remoteFavorite.$groupKey || remoteFavorite.tags?.[0] || 'Current group'}
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem disabled>
+                                {remoteFavorite.$groupKey || remoteFavorite.tags?.[0] || 'Current group'}
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={(event) => {
-                                event.preventDefault();
-                                void deleteFavorite();
-                            }}>
-                            Remove favorite
-                        </DropdownMenuItem>
-                    </>
-                ) : groups.length ? (
-                    groups.map((group) => {
-                        const isFull =
-                            Number(group.capacity) > 0 &&
-                            (Number(group.count) || 0) >= Number(group.capacity);
-
-                        return (
+                        <DropdownMenuGroup>
                             <DropdownMenuItem
-                                key={group.key}
-                                disabled={isFull}
+                                variant="destructive"
                                 onSelect={(event) => {
                                     event.preventDefault();
-                                    void addFavorite(group);
+                                    void deleteFavorite();
                                 }}>
-                                {formatGroupLabel(group)}
+                                Remove favorite
                             </DropdownMenuItem>
-                        );
-                    })
+                        </DropdownMenuGroup>
+                    </>
+                ) : groups.length ? (
+                    <DropdownMenuGroup>
+                        {groups.map((group) => {
+                            const isFull =
+                                Number(group.capacity) > 0 &&
+                                (Number(group.count) || 0) >= Number(group.capacity);
+
+                            return (
+                                <DropdownMenuItem
+                                    key={group.key}
+                                    disabled={isFull}
+                                    onSelect={(event) => {
+                                        event.preventDefault();
+                                        void addFavorite(group);
+                                    }}>
+                                    {formatGroupLabel(group)}
+                                </DropdownMenuItem>
+                            );
+                        })}
+                    </DropdownMenuGroup>
                 ) : (
-                    <DropdownMenuItem disabled>
-                        No favorite groups loaded
-                    </DropdownMenuItem>
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem disabled>
+                            No favorite groups loaded
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>
                     {kind === 'avatar' ? 'Local avatar favorites' : 'Local favorites'}
                 </DropdownMenuLabel>
                 {localGroups.length ? (
-                    localGroups.map((groupName) => {
-                        const isLocalFavorite = hasLocalFavorite(localFavorites, groupName, normalizedEntityId);
-                        const disabled = kind === 'avatar' && !isLocalFavorite && !isLocalUserVrcPlusSupporter;
-                        return (
-                            <DropdownMenuItem
-                                key={groupName}
-                                disabled={disabled}
-                                onSelect={(event) => {
-                                    event.preventDefault();
-                                    if (isLocalFavorite) {
-                                        void removeLocalFavoriteFromGroup(groupName);
-                                    } else {
-                                        void addLocalFavoriteToGroup(groupName);
-                                    }
-                                }}>
-                                {isLocalFavorite ? <CheckIcon className="size-4" /> : null}
-                                {localGroupLabel(localFavorites, groupName)}
-                            </DropdownMenuItem>
-                        );
-                    })
+                    <DropdownMenuGroup>
+                        {localGroups.map((groupName) => {
+                            const isLocalFavorite = hasLocalFavorite(localFavorites, groupName, normalizedEntityId);
+                            const disabled = kind === 'avatar' && !isLocalFavorite && !isLocalUserVrcPlusSupporter;
+                            return (
+                                <DropdownMenuCheckboxItem
+                                    key={groupName}
+                                    checked={isLocalFavorite}
+                                    disabled={disabled}
+                                    onSelect={(event) => event.preventDefault()}
+                                    onCheckedChange={() => {
+                                        if (isLocalFavorite) {
+                                            void removeLocalFavoriteFromGroup(groupName);
+                                        } else {
+                                            void addLocalFavoriteToGroup(groupName);
+                                        }
+                                    }}>
+                                    {localGroupLabel(localFavorites, groupName)}
+                                </DropdownMenuCheckboxItem>
+                            );
+                        })}
+                    </DropdownMenuGroup>
                 ) : (
-                    <DropdownMenuItem disabled>
-                        No local favorite groups loaded
-                    </DropdownMenuItem>
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem disabled>
+                            No local favorite groups loaded
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
                 )}
             </DropdownMenuContent>
         </DropdownMenu>

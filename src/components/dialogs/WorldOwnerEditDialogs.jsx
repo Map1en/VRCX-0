@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Trash2Icon } from 'lucide-react';
 
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dialog';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 const CONTENT_TAGS = [
     ['contentHorror', 'content_horror', 'Horror'],
@@ -134,47 +135,47 @@ function WorldTagsDialog({ open, onOpenChange, world, saving = false, onSave }) 
                 <DialogHeader>
                     <DialogTitle>World Tags</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm">
-                        <Checkbox checked={draft.avatarScalingDisabled} disabled={saving} onCheckedChange={(checked) => updateDraft({ avatarScalingDisabled: checked === true })} />
-                        Avatar scaling disabled
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                        <Checkbox checked={draft.focusViewDisabled} disabled={saving} onCheckedChange={(checked) => updateDraft({ focusViewDisabled: checked === true })} />
-                        Focus view disabled
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                        <Checkbox checked={draft.debugAllowed} disabled={saving} onCheckedChange={(checked) => updateDraft({ debugAllowed: checked === true })} />
-                        Enable debugging
-                    </label>
-                    <div className="space-y-1.5">
-                        <div className="text-xs text-muted-foreground">Author tags</div>
+                <FieldGroup className="gap-3">
+                    <Field orientation="horizontal">
+                        <Checkbox id="world-tag-avatar-scaling-disabled" checked={draft.avatarScalingDisabled} disabled={saving} onCheckedChange={(checked) => updateDraft({ avatarScalingDisabled: checked === true })} />
+                        <FieldLabel htmlFor="world-tag-avatar-scaling-disabled">Avatar scaling disabled</FieldLabel>
+                    </Field>
+                    <Field orientation="horizontal">
+                        <Checkbox id="world-tag-focus-view-disabled" checked={draft.focusViewDisabled} disabled={saving} onCheckedChange={(checked) => updateDraft({ focusViewDisabled: checked === true })} />
+                        <FieldLabel htmlFor="world-tag-focus-view-disabled">Focus view disabled</FieldLabel>
+                    </Field>
+                    <Field orientation="horizontal">
+                        <Checkbox id="world-tag-debug-allowed" checked={draft.debugAllowed} disabled={saving} onCheckedChange={(checked) => updateDraft({ debugAllowed: checked === true })} />
+                        <FieldLabel htmlFor="world-tag-debug-allowed">Enable debugging</FieldLabel>
+                    </Field>
+                    <Field>
+                        <FieldLabel>Author tags</FieldLabel>
                         <Textarea rows={2} value={draft.authorTags} disabled={saving} className="resize-none" onChange={(event) => updateDraft({ authorTags: event.target.value })} />
-                    </div>
-                    <div className="space-y-1.5">
-                        <div className="text-xs text-muted-foreground">Content tags</div>
+                    </Field>
+                    <Field>
+                        <FieldLabel>Content tags</FieldLabel>
                         <div className="grid grid-cols-2 gap-2">
                             {CONTENT_TAGS.map(([key, , label]) => (
-                                <label key={key} className="flex items-center gap-2 text-sm">
-                                    <Checkbox checked={draft[key]} disabled={saving} onCheckedChange={(checked) => updateDraft({ [key]: checked === true })} />
-                                    {label}
-                                </label>
+                                <Field key={key} orientation="horizontal">
+                                    <Checkbox id={`world-content-tag-${key}`} checked={draft[key]} disabled={saving} onCheckedChange={(checked) => updateDraft({ [key]: checked === true })} />
+                                    <FieldLabel htmlFor={`world-content-tag-${key}`}>{label}</FieldLabel>
+                                </Field>
                             ))}
                         </div>
                         <Textarea rows={2} value={draft.contentTags} disabled={saving} className="resize-none" onChange={(event) => updateDraft({ contentTags: event.target.value })} />
-                    </div>
-                    <div className="space-y-1.5">
-                        <div className="text-xs text-muted-foreground">Default content settings</div>
+                    </Field>
+                    <Field>
+                        <FieldLabel>Default content settings</FieldLabel>
                         <div className="grid grid-cols-2 gap-2">
                             {FEATURE_TAGS.map(([key, , label]) => (
-                                <label key={key} className="flex items-center gap-2 text-sm">
-                                    <Checkbox checked={draft[key]} disabled={saving} onCheckedChange={(checked) => updateDraft({ [key]: checked === true })} />
-                                    {label}
-                                </label>
+                                <Field key={key} orientation="horizontal">
+                                    <Checkbox id={`world-feature-tag-${key}`} checked={draft[key]} disabled={saving} onCheckedChange={(checked) => updateDraft({ [key]: checked === true })} />
+                                    <FieldLabel htmlFor={`world-feature-tag-${key}`}>{label}</FieldLabel>
+                                </Field>
                             ))}
                         </div>
-                    </div>
-                </div>
+                    </Field>
+                </FieldGroup>
                 <DialogFooter>
                     <Button type="button" variant="secondary" disabled={saving} onClick={() => onOpenChange?.(false)}>Cancel</Button>
                     <Button type="button" disabled={saving} onClick={() => onSave?.(buildWorldTags(draft, world?.tags))}>Save</Button>
@@ -203,12 +204,12 @@ function WorldAllowedDomainsDialog({ open, onOpenChange, world, saving = false, 
                 <DialogHeader>
                     <DialogTitle>Allowed Video Player Domains</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                     {urlList.map((domain, index) => (
                         <div key={index} className="flex items-center gap-2">
                             <Input value={domain} disabled={saving} onChange={(event) => updateDomain(index, event.target.value)} />
                             <Button type="button" variant="ghost" size="icon-sm" disabled={saving} onClick={() => setUrlList((current) => current.filter((_, currentIndex) => currentIndex !== index))}>
-                                <Trash2Icon className="size-4" />
+                                <Trash2Icon data-icon="inline-start" />
                             </Button>
                         </div>
                     ))}

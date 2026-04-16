@@ -1,52 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-    BadgeCheckIcon,
-    ExternalLinkIcon,
-    GlobeIcon,
-    LogInIcon,
-    LogOutIcon,
-    LoaderCircleIcon,
-    RefreshCwIcon,
-    ShieldIcon,
-    UserIcon,
-    UsersIcon
-} from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDateFilter } from '@/lib/dateTime.js';
 import { convertFileUrlToImageUrl, openExternalLink } from '@/lib/entityMedia.js';
 import { GroupDialogTabbedView } from './GroupDialogTabbedView.jsx';
 import { groupProfileRepository } from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
-import { openUserDialog } from '@/services/dialogService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useDialogStore } from '@/state/dialogStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Separator } from '@/ui/shadcn/separator.jsx';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 function normalizeEntityId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function Section({ label, value, mono = false, children }) {
-    return (
-        <div className="space-y-1">
-            <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                {label}
-            </div>
-            {children ? (
-                children
-            ) : (
-                <div className={mono ? 'break-all font-mono text-sm' : 'text-sm'}>
-                    {value || '—'}
-                </div>
-            )}
-        </div>
-    );
 }
 
 function normalizeLocation(value) {
@@ -162,10 +129,10 @@ function mergeGroupInstances(baseInstances, { groupId, friendsById, currentUserS
 function GroupDialogEmptyState({ title, description, loading = false }) {
     return (
         <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
+            <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <LoaderCircleIcon className="size-5 animate-spin text-muted-foreground" />
+                        <Spinner className="size-5 text-muted-foreground" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>

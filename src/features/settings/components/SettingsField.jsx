@@ -1,47 +1,116 @@
+import { Children, cloneElement, isValidElement, useId } from 'react';
 import { cn } from '@/lib/utils.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import {
+    Field as ShadcnField,
+    FieldContent,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+    FieldTitle
+} from '@/ui/shadcn/field';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
-export function Field({ label, description, children, className = '' }) {
+function getAttachableControl(children) {
+    if (Children.count(children) !== 1) {
+        return null;
+    }
+
+    const child = Children.only(children);
+
+    if (!isValidElement(child)) {
+        return null;
+    }
+
+    if (child.props.children != null) {
+        return null;
+    }
+
+    return child;
+}
+
+function applyControlProps(children, controlId, invalid) {
+    const child = getAttachableControl(children);
+
+    if (!child) {
+        return children;
+    }
+
+    return cloneElement(child, {
+        id: child.props.id || controlId,
+        'aria-invalid': child.props['aria-invalid'] || invalid || undefined
+    });
+}
+
+export function Field({
+    label,
+    description,
+    children,
+    className = '',
+    contentClassName = '',
+    controlClassName = '',
+    controlId,
+    error,
+    invalid = false,
+    disabled = false
+}) {
+    const isInvalid = invalid || Boolean(error);
+    const generatedControlId = useId();
+    const attachableControl = getAttachableControl(children);
+    const labelControlId = controlId || attachableControl?.props.id || (attachableControl ? generatedControlId : undefined);
+
     return (
-        <div
+        <ShadcnField
+            data-disabled={disabled || undefined}
+            data-invalid={isInvalid || undefined}
             className={cn(
                 'grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
                 className
             )}>
-            <div className="flex min-w-0 flex-col gap-1">
-                <div className="text-sm font-medium">{label}</div>
-                {description ? <div className="text-xs text-muted-foreground">{description}</div> : null}
+            <FieldContent className={contentClassName}>
+                <FieldLabel htmlFor={labelControlId}>{label}</FieldLabel>
+                {description ? <FieldDescription>{description}</FieldDescription> : null}
+                {error ? <FieldError>{error}</FieldError> : null}
+            </FieldContent>
+            <div className={cn('justify-self-start lg:justify-self-end', controlClassName)}>
+                {applyControlProps(children, labelControlId, isInvalid)}
             </div>
-            <div className="justify-self-start lg:justify-self-end">{children}</div>
-        </div>
+        </ShadcnField>
     );
 }
 
 export function SettingsSectionHeading({ title, description }) {
     return (
-        <div className="border-b pb-2 pt-2 first:pt-0">
-            <div className="text-sm font-semibold text-foreground">{title}</div>
-            {description ? <div className="mt-1 text-xs text-muted-foreground">{description}</div> : null}
+        <div className="flex flex-col gap-1 border-b pb-2 pt-2 first:pt-0">
+            <FieldTitle>{title}</FieldTitle>
+            {description ? <FieldDescription>{description}</FieldDescription> : null}
         </div>
     );
 }
 
+export { FieldDescription, FieldError, FieldGroup };
+
 export function SegmentedPreference({ options, value, onChange }) {
     return (
-        <div className="inline-flex overflow-hidden rounded-md border">
+        <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={value}
+            onValueChange={(nextValue) => {
+                if (nextValue) {
+                    onChange?.(nextValue);
+                }
+            }}>
             {options.map((option) => (
-                <Button
+                <ToggleGroupItem
                     key={option.value}
-                    type="button"
-                    variant={value === option.value ? 'default' : 'ghost'}
-                    size="sm"
-                    className="rounded-none border-r last:border-r-0"
-                    aria-pressed={value === option.value}
-                    onClick={() => onChange?.(option.value)}>
+                    value={option.value}
+                    aria-label={option.label}>
                     {option.label}
-                </Button>
+                </ToggleGroupItem>
             ))}
-        </div>
+        </ToggleGroup>
     );
 }
 

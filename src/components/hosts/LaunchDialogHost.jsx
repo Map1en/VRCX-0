@@ -16,7 +16,7 @@ import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/location.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import { InstanceInviteDialog } from '@/components/dialogs/InstanceInviteDialog.jsx';
 import {
     Dialog,
@@ -25,14 +25,19 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import {
+    Field,
+    FieldLabel
+} from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
 
 const emptyDetails = {
     tag: '',
@@ -103,10 +108,10 @@ function buildCachedInstanceMap(instances) {
 
 function LaunchField({ label, value, notice = '', onCopy }) {
     return (
-        <div className="space-y-1.5">
+        <Field>
             <div className="flex items-center gap-1.5 text-sm font-medium">
-                <span>{label}</span>
-                {notice ? <InfoIcon className="size-3.5 text-muted-foreground" title={notice} /> : null}
+                <FieldLabel>{label}</FieldLabel>
+                {notice ? <InfoIcon className="text-muted-foreground" title={notice} /> : null}
             </div>
             <div className="flex items-center gap-2">
                 <Input
@@ -120,12 +125,13 @@ function LaunchField({ label, value, notice = '', onCopy }) {
                     size="icon-sm"
                     variant="ghost"
                     className="shrink-0 rounded-full"
+                    aria-label={`Copy ${label}`}
                     disabled={!value}
                     onClick={onCopy}>
-                    <CopyIcon className="size-4" />
+                    <CopyIcon data-icon="inline-start" />
                 </Button>
             </div>
-        </div>
+        </Field>
     );
 }
 
@@ -278,7 +284,7 @@ export function LaunchDialogHost() {
                         <DialogDescription>Open, copy, invite, or self-invite to this VRChat instance.</DialogDescription>
                     </DialogHeader>
 
-                    <div className={cn('space-y-4', loading ? 'opacity-60' : '')}>
+                    <div className={cn('flex flex-col gap-4', loading ? 'opacity-60' : '')}>
                         <LaunchField
                             label="URL"
                             value={details.url}
@@ -341,16 +347,18 @@ export function LaunchDialogHost() {
                                         disabled={!canUseResolvedInstance || Boolean(busy)}
                                         className="rounded-l-none border-l border-primary-foreground/25"
                                         aria-label="More launch options">
-                                        <MoreHorizontalIcon className="size-4" />
+                                        <MoreHorizontalIcon data-icon="inline-start" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem onSelect={() => void runAction('launch-vr', () => selectLaunchMode(false))}>
-                                        Launch
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => void runAction('launch-desktop', () => selectLaunchMode(true))}>
-                                        Start as Desktop
-                                    </DropdownMenuItem>
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem onSelect={() => void runAction('launch-vr', () => selectLaunchMode(false))}>
+                                            Launch
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => void runAction('launch-desktop', () => selectLaunchMode(true))}>
+                                            Start as Desktop
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>

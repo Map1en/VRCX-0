@@ -29,16 +29,17 @@ import {
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { getNotificationTs } from '@/shared/utils/notificationCategory.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Separator } from '@/ui/shadcn/separator.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import { Separator } from '@/ui/shadcn/separator';
 import {
     Sheet,
     SheetContent,
     SheetHeader,
     SheetTitle
-} from '@/ui/shadcn/sheet.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/sheet';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
@@ -243,21 +244,27 @@ function NotificationRow({
 
     return (
         <div className="mb-1.5 flex gap-2 rounded-md border bg-card p-2 text-card-foreground">
-            <button type="button" className="shrink-0" onClick={() => openSender(notification)}>
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-9 shrink-0 p-0"
+                onClick={() => openSender(notification)}>
                 <NotificationAvatar notification={notification} />
-            </button>
+            </Button>
             <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 items-center gap-2">
-                    <button
+                    <Button
                         type="button"
-                        className="min-w-0 flex-1 truncate text-left text-sm font-medium hover:underline"
+                        variant="ghost"
+                        className="h-auto min-w-0 flex-1 justify-start p-0 text-left text-sm font-medium hover:bg-transparent"
                         onClick={() => openSender(notification)}>
-                        {getSenderName(notification)}
-                    </button>
-                    <Badge variant="secondary" className="shrink-0 text-[10px]">
+                        <span className="truncate">{getSenderName(notification)}</span>
+                    </Button>
+                    <Badge variant="secondary" className="shrink-0 text-xs">
                         {notification?.type || 'unknown'}
                     </Badge>
-                    {isUnseen ? <span className="size-2 shrink-0 rounded-full bg-blue-500" /> : null}
+                    {isUnseen ? <span className="size-2 shrink-0 rounded-full bg-primary" /> : null}
                 </div>
                 {message ? (
                     <div className="mt-1 truncate text-xs text-muted-foreground">{message}</div>
@@ -267,50 +274,50 @@ function NotificationRow({
                 ) : null}
             </div>
             <div className="flex shrink-0 flex-col items-end justify-between gap-1">
-                {timeLabel ? <span className="text-[10px] text-muted-foreground">{timeLabel}</span> : null}
+                {timeLabel ? <span className="text-xs text-muted-foreground">{timeLabel}</span> : null}
                 <div className="flex items-center gap-1">
                     {remoteActionsVisible && notification.type === 'friendRequest' ? (
                         <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="size-6"
+                            size="icon-xs"
+                            aria-label="Accept"
                             title="Accept"
                             onClick={() => void onAcceptFriendRequest(notification)}>
-                            <CheckIcon className="size-3.5" />
+                            <CheckIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
                     {remoteActionsVisible && notification.type === 'requestInvite' && canInviteFromCurrentLocation ? (
                         <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="size-6"
+                            size="icon-xs"
+                            aria-label="Invite"
                             title="Invite"
                             onClick={() => void onAcceptRequestInvite(notification)}>
-                            <SendIcon className="size-3.5" />
+                            <SendIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
                     {remoteActionsVisible && notification.type === 'invite' ? (
                         <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="size-6"
+                            size="icon-xs"
+                            aria-label="Decline with message"
                             title="Decline with message"
                             onClick={() => void onSendInviteResponseWithMessage(notification, 'response')}>
-                            <MessageCircleIcon className="size-3.5" />
+                            <MessageCircleIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
                     {remoteActionsVisible && notification.type === 'requestInvite' ? (
                         <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="size-6"
+                            size="icon-xs"
+                            aria-label="Decline with message"
                             title="Decline with message"
                             onClick={() => void onSendInviteResponseWithMessage(notification, 'requestResponse')}>
-                            <MessageCircleIcon className="size-3.5" />
+                            <MessageCircleIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
                     {remoteActionsVisible
@@ -319,14 +326,14 @@ function NotificationRow({
                                 key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
                                 type="button"
                                 variant="ghost"
-                                size="icon"
-                                className="size-6"
+                                size="icon-xs"
+                                aria-label={getResponseLabel(response)}
                                 title={getResponseLabel(response)}
                                 onClick={() => void onSendNotificationResponse(notification, response)}>
                                 {response?.type === 'link' ? (
-                                    <ExternalLinkIcon className="size-3.5" />
+                                    <ExternalLinkIcon data-icon="inline-start" />
                                 ) : (
-                                    <CheckIcon className="size-3.5" />
+                                    <CheckIcon data-icon="inline-start" />
                                 )}
                             </Button>
                         ))
@@ -335,44 +342,44 @@ function NotificationRow({
                         <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="size-6"
+                            size="icon-xs"
+                            aria-label="Decline"
                             title="Decline"
                             onClick={() => void onHideNotification(notification)}>
-                            <XIcon className="size-3.5" />
+                            <XIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
                     {hasLink ? (
                         <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="size-6"
+                            size="icon-xs"
+                            aria-label="Open notification link"
                             onClick={() => openNotificationLink(notification.link)}>
-                            <ExternalLinkIcon className="size-3.5" />
+                            <ExternalLinkIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
                     {isUnseen ? (
                         <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="size-6"
+                            size="icon-xs"
+                            aria-label="Mark seen"
                             onClick={() => {
                                 void onMarkSeen(notification);
                             }}>
-                            <CheckIcon className="size-3.5" />
+                            <CheckIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
                     {shouldShowDeleteLog(notification) ? (
                         <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="size-6"
+                            size="icon-xs"
+                            aria-label="Delete log"
                             title="Delete log"
                             onClick={() => void onDeleteNotification(notification)}>
-                            <Trash2Icon className="size-3.5" />
+                            <Trash2Icon data-icon="inline-start" />
                         </Button>
                     ) : null}
                 </div>
@@ -423,7 +430,7 @@ function NotificationList({
                         row.section ? (
                             <div key={row.key} className="flex items-center gap-2 px-2 py-2">
                                 <Separator className="flex-1" />
-                                <span className="shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground">
+                                <span className="shrink-0 text-xs uppercase tracking-wider text-muted-foreground">
                                     {t('side_panel.notification_center.past_notifications')}
                                 </span>
                                 <Separator className="flex-1" />
@@ -766,15 +773,19 @@ export function VrcNotificationCenterHost() {
                             <Button
                                 type="button"
                                 variant="ghost"
-                                size="icon"
-                                className="size-7"
+                                size="icon-sm"
+                                aria-label={t('side_panel.refresh_tooltip')}
                                 disabled={loadStatus === 'running'}
                                 onClick={() => {
                                     void loadForCurrentUser().catch((error) => {
                                         toast.error(error instanceof Error ? error.message : 'Failed to refresh notifications.');
                                     });
                                 }}>
-                                <RefreshCcwIcon className={`size-4 ${loadStatus === 'running' ? 'animate-spin' : ''}`} />
+                                {loadStatus === 'running' ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <RefreshCcwIcon data-icon="inline-start" />
+                                )}
                             </Button>
                         </div>
                     </div>

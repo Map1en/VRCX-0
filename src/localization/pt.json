@@ -832,7 +832,6 @@
           "theme_mode_system": "Sistema",
           "theme_mode_light": "Claro",
           "theme_mode_dark": "Escuro",
-          "theme_mode_midnight": "Meia-noite",
           "theme_mode_blue": "Azul",
           "theme_mode_darkblue": "Azul Escuro",
           "theme_mode_amoled": "Amoled",
@@ -865,7 +864,6 @@
           "use_official_status_colors_description": "Corresponder às cores de status originais do VRChat",
           "table_density": "Densidade da Tabela",
           "table_density_standard": "Padrão",
-          "table_density_comfortable": "Confortável",
           "table_density_compact": "Compacto",
           "table_entries_settings": "Configurações de Entradas da Tabela",
           "table_entries_settings_description": "Ajustar quantas entradas são carregadas e exibidas em listas grandes"

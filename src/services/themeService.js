@@ -1,7 +1,7 @@
 import { backend } from '@/platform/index.js';
 import { useShellStore } from '@/state/shellStore.js';
 
-const VALID_THEME_MODES = new Set(['light', 'dark', 'midnight', 'system']);
+const VALID_THEME_MODES = new Set(['light', 'dark', 'system']);
 const DEFAULT_ZOOM_LEVEL = 100;
 const MIN_ZOOM_LEVEL = 30;
 const MAX_ZOOM_LEVEL = 300;
@@ -89,6 +89,10 @@ export const APP_FONT_FAMILIES = Object.freeze(Object.keys(APP_FONT_CONFIG));
 export const APP_CJK_FONT_PACKS = Object.freeze(Object.keys(APP_CJK_FONT_PACK_CONFIG));
 
 export function resolveThemeMode(value) {
+    if (value === 'midnight') {
+        return 'dark';
+    }
+
     if (VALID_THEME_MODES.has(value)) {
         return value;
     }
@@ -181,8 +185,7 @@ export function applyAppFontPreferences({
 
 export async function syncNativeTheme(themeMode) {
     const resolvedTheme = getResolvedThemeMode(themeMode);
-    const nativeTheme =
-        resolvedTheme === 'midnight' ? 2 : resolvedTheme === 'dark' ? 1 : 0;
+    const nativeTheme = resolvedTheme === 'dark' ? 1 : 0;
 
     await backend.app.ChangeTheme(nativeTheme);
 }
@@ -190,7 +193,7 @@ export async function syncNativeTheme(themeMode) {
 export async function applyThemeMode(themeMode) {
     const normalized = resolveThemeMode(themeMode);
     const resolvedTheme = getResolvedThemeMode(normalized);
-    const shouldUseDarkClass = resolvedTheme === 'dark' || resolvedTheme === 'midnight';
+    const shouldUseDarkClass = resolvedTheme === 'dark';
 
     document.documentElement.classList.toggle('dark', shouldUseDarkClass);
     document.documentElement.setAttribute('data-theme', resolvedTheme);

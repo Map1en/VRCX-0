@@ -869,7 +869,6 @@
                     "theme_mode_system": "跟随系统",
                     "theme_mode_light": "浅色",
                     "theme_mode_dark": "深色",
-                    "theme_mode_midnight": "午夜",
                     "theme_mode_blue": "蓝色",
                     "theme_mode_darkblue": "深蓝色",
                     "theme_mode_amoled": "纯黑（Amoled）",
@@ -905,7 +904,6 @@
                     "use_official_status_colors_description": "匹配游戏内的状态颜色。",
                     "table_density": "行高密度",
                     "table_density_standard": "标准",
-                    "table_density_comfortable": "舒适",
                     "table_density_compact": "紧凑",
                     "table_entries_settings": "条目读取设置",
                     "table_entries_settings_description": "控制读取列表和进行搜索时加载的条目数量"

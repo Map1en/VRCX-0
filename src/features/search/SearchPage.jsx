@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     GlobeIcon,
-    LoaderCircleIcon,
     SettingsIcon,
     Trash2Icon,
     UserIcon,
@@ -11,13 +10,14 @@ import {
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { AvatarProviderSettingsDialog } from '@/components/search/AvatarProviderSettingsDialog.jsx';
 import { SearchPagination } from '@/components/search/SearchPagination.jsx';
+import { cn } from '@/lib/utils.js';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import {
     AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS,
     avatarSearchProviderRepository,
-    configRepository,
     userProfileRepository,
     vrchatSearchRepository,
     worldProfileRepository
@@ -32,11 +32,12 @@ import { replaceBioSymbols } from '@/shared/utils/base/string.js';
 import { languageMappings } from '@/shared/constants/language.js';
 import { convertFileUrlToImageUrl, getNameColour, userImage } from '@/lib/entityMedia.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 const PAGE_SIZE = 10;
 
@@ -194,28 +195,21 @@ function buildUserSearchRequest(
 }
 
 function SearchEmptyState() {
-    return (
-        <div className="flex h-full min-h-56 items-center justify-center text-sm text-muted-foreground">
-            No data
-        </div>
-    );
+    return <EmptyState title="No data" className="min-h-56" />;
 }
 
 function SearchLoadingState() {
-    return (
-        <div className="flex h-full min-h-56 items-center justify-center">
-            <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
-        </div>
-    );
+    return <LoadingState label="Loading" className="min-h-56" />;
 }
 
 function AvatarCard({ avatar }) {
     const imageUrl = avatar.thumbnailImageUrl || avatar.imageUrl;
 
     return (
-        <button
+        <Button
             type="button"
-            className="min-w-0 rounded-lg border p-3 text-left transition-colors hover:bg-muted/40"
+            variant="outline"
+            className="h-auto w-full min-w-0 flex-col items-stretch justify-start p-3 text-left font-normal whitespace-normal"
             onClick={() =>
                 openAvatarDialog({
                     avatarId: avatar.id,
@@ -232,24 +226,25 @@ function AvatarCard({ avatar }) {
                 />
             ) : (
                 <div className="flex aspect-[16/10] w-full items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                    <UserIcon className="size-8" />
+                    <UserIcon data-icon="inline-start" className="size-8" />
                 </div>
             )}
-            <div className="mt-2 min-w-0 space-y-1">
+            <div className="mt-2 flex min-w-0 flex-col gap-1">
                 <div className="truncate text-sm font-medium">{avatar.name || ''}</div>
                 <div className="truncate text-xs text-muted-foreground">
                     {avatar.authorName || ''}
                 </div>
             </div>
-        </button>
+        </Button>
     );
 }
 
 function WorldCard({ world }) {
     return (
-        <button
+        <Button
             type="button"
-            className="min-w-0 rounded-lg border p-3 text-left transition-colors hover:bg-muted/40"
+            variant="outline"
+            className="h-auto w-full min-w-0 flex-col items-stretch justify-start p-3 text-left font-normal whitespace-normal"
             onClick={() =>
                 openWorldDialog({
                     worldId: world.id,
@@ -266,10 +261,10 @@ function WorldCard({ world }) {
                 />
             ) : (
                 <div className="flex aspect-[16/10] w-full items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                    <GlobeIcon className="size-8" />
+                    <GlobeIcon data-icon="inline-start" className="size-8" />
                 </div>
             )}
-            <div className="mt-2 min-w-0 space-y-1">
+            <div className="mt-2 flex min-w-0 flex-col gap-1">
                 <div className="truncate text-sm font-medium">{world.name}</div>
                 <div className="truncate text-xs text-muted-foreground">
                     {world.occupants
@@ -277,7 +272,7 @@ function WorldCard({ world }) {
                         : world.authorName || ''}
                 </div>
             </div>
-        </button>
+        </Button>
     );
 }
 
@@ -292,9 +287,10 @@ function UserRow({ user, randomUserColours, isDarkMode }) {
                 : undefined;
 
     return (
-        <button
+        <Button
             type="button"
-            className="flex w-full items-center gap-3 border-b px-3 py-2 text-left transition-colors hover:bg-muted/40"
+            variant="ghost"
+            className="h-auto w-full justify-start gap-3 rounded-none border-b px-3 py-2 text-left font-normal whitespace-normal"
             onClick={() =>
                 openUserDialog({
                     userId: user.id,
@@ -311,7 +307,7 @@ function UserRow({ user, randomUserColours, isDarkMode }) {
                 />
             ) : (
                 <div className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                    <UserIcon className="size-5" />
+                    <UserIcon data-icon="inline-start" className="size-5" />
                 </div>
             )}
             <div className="min-w-0 flex-1">
@@ -320,7 +316,7 @@ function UserRow({ user, randomUserColours, isDarkMode }) {
                         {user.displayName || ''}
                     </div>
                     <span
-                        className={`shrink-0 text-xs font-normal ${user.$trustClass || 'text-muted-foreground'}`}
+                        className={cn('shrink-0 text-xs font-normal', user.$trustClass || 'text-muted-foreground')}
                         style={trustStyle}>
                         {user.$trustLevel || ''}
                     </span>
@@ -339,7 +335,7 @@ function UserRow({ user, randomUserColours, isDarkMode }) {
                     </div>
                 ) : null}
             </div>
-        </button>
+        </Button>
     );
 }
 
@@ -351,9 +347,10 @@ function GroupRow({ group }) {
             : group.shortCode || group.discriminator || null;
 
     return (
-        <button
+        <Button
             type="button"
-            className="flex w-full items-center gap-3 border-b px-3 py-2 text-left transition-colors hover:bg-muted/40"
+            variant="ghost"
+            className="h-auto w-full justify-start gap-3 rounded-none border-b px-3 py-2 text-left font-normal whitespace-normal"
             onClick={() =>
                 openGroupDialog({
                     groupId: group.id,
@@ -370,7 +367,7 @@ function GroupRow({ group }) {
                 />
             ) : (
                 <div className="flex size-14 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                    <UsersIcon className="size-5" />
+                    <UsersIcon data-icon="inline-start" className="size-5" />
                 </div>
             )}
             <div className="min-w-0 flex-1">
@@ -383,7 +380,7 @@ function GroupRow({ group }) {
                     {group.description || ''}
                 </div>
             </div>
-        </button>
+        </Button>
     );
 }
 
@@ -888,7 +885,7 @@ export function SearchPage() {
                             <Input
                                 value={searchText}
                                 placeholder={searchPlaceholder}
-                                className={`min-w-0 flex-1 ${searchText ? 'pr-8' : ''}`}
+                                className={cn('min-w-0 flex-1', searchText && 'pr-8')}
                                 onChange={(event) => setSearchText(event.target.value)}
                                 onKeyDown={(event) => {
                                     if (event.key === 'Enter') {
@@ -898,23 +895,26 @@ export function SearchPage() {
                                 }}
                             />
                             {searchText ? (
-                                <button
+                                <Button
                                     type="button"
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+                                    aria-label="Clear input"
                                     onClick={() => setSearchText('')}>
-                                    <XIcon className="size-3.5" />
-                                    <span className="sr-only">Clear input</span>
-                                </button>
+                                    <XIcon data-icon="inline-start" />
+                                </Button>
                             ) : null}
                         </div>
                         <Button
                             type="button"
-                            className="ml-2 rounded-full"
+                            className="ml-2"
                             size="icon"
                             variant="ghost"
                             title={t('view.search.clear_results_tooltip')}
+                            aria-label={t('view.search.clear_results_tooltip')}
                             onClick={handleClearSearch}>
-                            <Trash2Icon className="size-4" />
+                            <Trash2Icon data-icon="inline-start" />
                             <span className="sr-only">{t('view.search.clear_results_tooltip')}</span>
                         </Button>
                     </div>
@@ -922,22 +922,26 @@ export function SearchPage() {
 
                 <TabsContent value="user" forceMount className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden">
                     <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
-                        <div className="mb-3 flex shrink-0 justify-end gap-4">
-                            <label className="inline-flex items-center gap-2 text-sm">
+                        <FieldGroup
+                            data-slot="checkbox-group"
+                            className="mb-3 flex shrink-0 flex-row flex-wrap justify-end gap-4">
+                            <Field orientation="horizontal" className="w-auto">
                                 <Checkbox
+                                    id="search-user-by-bio"
                                     checked={searchUserByBio}
                                     onCheckedChange={(checked) => setSearchUserByBio(checked === true)}
                                 />
-                                <span>{t('view.search.user.search_by_bio')}</span>
-                            </label>
-                            <label className="inline-flex items-center gap-2 text-sm">
+                                <FieldLabel htmlFor="search-user-by-bio">{t('view.search.user.search_by_bio')}</FieldLabel>
+                            </Field>
+                            <Field orientation="horizontal" className="w-auto">
                                 <Checkbox
+                                    id="search-user-sort-by-last-logged-in"
                                     checked={searchUserSortByLastLoggedIn}
                                     onCheckedChange={(checked) => setSearchUserSortByLastLoggedIn(checked === true)}
                                 />
-                                <span>{t('view.search.user.sort_by_last_logged_in')}</span>
-                            </label>
-                        </div>
+                                <FieldLabel htmlFor="search-user-sort-by-last-logged-in">{t('view.search.user.sort_by_last_logged_in')}</FieldLabel>
+                            </Field>
+                        </FieldGroup>
 
                         <div className="min-h-0 flex-1 overflow-y-auto">
                             {isUserLoading ? (
@@ -970,13 +974,18 @@ export function SearchPage() {
                 <TabsContent value="world" forceMount className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden">
                     <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
                         <div className="mb-4 flex w-full shrink-0 justify-end gap-2">
-                            <label className="inline-flex items-center gap-2 text-sm">
-                                <Checkbox
-                                    checked={includeCommunityLabs}
-                                    onCheckedChange={(checked) => setIncludeCommunityLabs(checked === true)}
-                                />
-                                <span>{t('view.search.world.community_lab')}</span>
-                            </label>
+                            <FieldGroup
+                                data-slot="checkbox-group"
+                                className="w-auto flex-row items-center gap-2">
+                                <Field orientation="horizontal" className="w-auto">
+                                    <Checkbox
+                                        id="search-world-community-lab"
+                                        checked={includeCommunityLabs}
+                                        onCheckedChange={(checked) => setIncludeCommunityLabs(checked === true)}
+                                    />
+                                    <FieldLabel htmlFor="search-world-community-lab">{t('view.search.world.community_lab')}</FieldLabel>
+                                </Field>
+                            </FieldGroup>
                             <Select
                                 value={selectedWorldCategory}
                                 onValueChange={handleWorldCategoryChange}
@@ -985,11 +994,13 @@ export function SearchPage() {
                                     <SelectValue placeholder={t('view.search.world.category')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {worldCategories.map((row) => (
-                                        <SelectItem key={row.index} value={String(row.index)}>
-                                            {row.name}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        {worldCategories.map((row) => (
+                                            <SelectItem key={row.index} value={String(row.index)}>
+                                                {row.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1029,11 +1040,13 @@ export function SearchPage() {
                                         <SelectValue placeholder={t('view.search.avatar.search_provider')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {avatarProviderList.filter(Boolean).map((provider) => (
-                                            <SelectItem key={provider} value={provider}>
-                                                {provider}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {avatarProviderList.filter(Boolean).map((provider) => (
+                                                <SelectItem key={provider} value={provider}>
+                                                    {provider}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             ) : (
@@ -1045,8 +1058,9 @@ export function SearchPage() {
                                 type="button"
                                 size="sm"
                                 variant="outline"
+                                aria-label={t('view.search.avatar.search_provider')}
                                 onClick={() => setIsAvatarProviderDialogOpen(true)}>
-                                <SettingsIcon className="size-4" />
+                                <SettingsIcon data-icon="inline-start" />
                             </Button>
                         </div>
 

@@ -1,29 +1,36 @@
-import { useEffect, useMemo, useState } from 'react';
+import { cloneElement, isValidElement, useEffect, useMemo, useState } from 'react';
 import { ArrowDownIcon, ArrowUpIcon, BellIcon, ChevronDownIcon, RefreshCwIcon, SearchIcon, SettingsIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { cn } from '@/lib/utils.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     ContextMenu,
     ContextMenuContent,
+    ContextMenuGroup,
     ContextMenuItem,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
+} from '@/ui/shadcn/context-menu';
 import {
     Dialog,
     DialogContent,
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Separator } from '@/ui/shadcn/separator.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+} from '@/ui/shadcn/dialog';
+import {
+    Field,
+    FieldContent,
+    FieldLabel
+} from '@/ui/shadcn/field';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Separator } from '@/ui/shadcn/separator';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { configRepository } from '@/repositories/index.js';
 import { bootstrapFavorites } from '@/services/favoriteBootstrapService.js';
 import { bootstrapFriendRoster } from '@/services/friendBootstrapService.js';
@@ -97,12 +104,18 @@ function moveArrayItem(values, index, delta) {
     return next;
 }
 
-function SettingRow({ label, children }) {
+function SettingRow({ id, label, children }) {
+    const control = id && isValidElement(children)
+        ? cloneElement(children, { id })
+        : children;
+
     return (
-        <label className="flex items-center justify-between gap-3 text-xs">
-            <span className="min-w-0 flex-1">{label}</span>
-            {children}
-        </label>
+        <Field orientation="horizontal" className="gap-3 text-xs">
+            <FieldContent>
+                <FieldLabel htmlFor={id} className="text-xs">{label}</FieldLabel>
+            </FieldContent>
+            {control}
+        </Field>
     );
 }
 
@@ -113,12 +126,14 @@ function SortSelect({ value, disabled, onChange, placeholder = 'None', t }) {
                 <SelectValue placeholder={placeholder} />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="__none__">{t('dialog.gallery_select.none')}</SelectItem>
-                {sortOptions.map(([option, labelKey]) => (
-                    <SelectItem key={option} value={option}>
-                        {t(labelKey)}
-                    </SelectItem>
-                ))}
+                <SelectGroup>
+                    <SelectItem value="__none__">{t('dialog.gallery_select.none')}</SelectItem>
+                    {sortOptions.map(([option, labelKey]) => (
+                        <SelectItem key={option} value={option}>
+                            {t(labelKey)}
+                        </SelectItem>
+                    ))}
+                </SelectGroup>
             </SelectContent>
         </Select>
     );
@@ -378,28 +393,29 @@ export function SidePanel({ className = '', style = undefined }) {
     return (
         <aside className={cn('flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l bg-background', className)} style={style}>
             <div className="flex shrink-0 items-center gap-1 px-2 py-2">
-                <button
+                <Button
                     type="button"
-                    className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border bg-transparent px-3 text-left text-sm shadow-xs hover:border-ring"
+                    variant="outline"
+                    className="h-9 min-w-0 flex-1 justify-start gap-2 px-3 text-left font-normal"
                     onClick={() => setQuickSearchOpen(true)}>
-                    <SearchIcon className="size-4 shrink-0 opacity-50" />
+                    <SearchIcon data-icon="inline-start" className="opacity-50" />
                     <span className="min-w-0 flex-1 truncate text-muted-foreground">
                         {t('side_panel.search_placeholder')}
                     </span>
-                    <span className="rounded border px-1 text-[10px] text-muted-foreground">Ctrl</span>
-                    <span className="rounded border px-1 text-[10px] text-muted-foreground">K</span>
-                </button>
+                    <span className="rounded border px-1 text-xs text-muted-foreground">Ctrl</span>
+                    <span className="rounded border px-1 text-xs text-muted-foreground">K</span>
+                </Button>
                 <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-8 rounded-full"
+                    aria-label={t('side_panel.refresh_tooltip')}
                     disabled={isRefreshing}
                     onClick={() => {
                         void refreshFriends();
                     }}
                     title={t('side_panel.refresh_tooltip')}>
-                    <RefreshCwIcon className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    {isRefreshing ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
                 </Button>
                 {notificationLayout !== 'table' ? (
                     vrcUnseenNotificationCount ? (
@@ -409,26 +425,29 @@ export function SidePanel({ className = '', style = undefined }) {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="relative size-8 rounded-full"
+                                    className="relative"
+                                    aria-label={t('side_panel.notification_center.title')}
                                     onClick={() => openVrcNotificationCenter()}
                                     title={t('side_panel.notification_center.title')}>
-                                    <BellIcon className="size-4" />
-                                    <span className="absolute right-2 top-2 size-1.5 rounded-full bg-red-500" />
+                                    <BellIcon data-icon="inline-start" />
+                                    <span className="absolute right-2 top-2 size-1.5 rounded-full bg-destructive" />
                                 </Button>
                             </ContextMenuTrigger>
                             <ContextMenuContent className="w-48">
-                                <ContextMenuItem
-                                    onSelect={() => {
-                                        void markAllVrcNotificationsSeen()
-                                            .then(() => {
-                                                removeNavNotification('notification');
-                                            })
-                                            .catch((error) => {
-                                                toast.error(error instanceof Error ? error.message : 'Failed to mark notifications as seen.');
-                                            });
-                                    }}>
-                                    {t('nav_menu.mark_all_read')}
-                                </ContextMenuItem>
+                                <ContextMenuGroup>
+                                    <ContextMenuItem
+                                        onSelect={() => {
+                                            void markAllVrcNotificationsSeen()
+                                                .then(() => {
+                                                    removeNavNotification('notification');
+                                                })
+                                                .catch((error) => {
+                                                    toast.error(error instanceof Error ? error.message : 'Failed to mark notifications as seen.');
+                                                });
+                                        }}>
+                                        {t('nav_menu.mark_all_read')}
+                                    </ContextMenuItem>
+                                </ContextMenuGroup>
                             </ContextMenuContent>
                         </ContextMenu>
                     ) : (
@@ -437,28 +456,29 @@ export function SidePanel({ className = '', style = undefined }) {
                             variant="ghost"
                             size="icon"
                             className="relative size-8 rounded-full"
+                            aria-label={t('side_panel.notification_center.title')}
                             onClick={() => openVrcNotificationCenter()}
                             onContextMenu={(event) => {
                                 event.preventDefault();
                                 toast.info(t('side_panel.notification_center.no_unseen_notifications'));
                             }}
                             title={t('side_panel.notification_center.title')}>
-                            <BellIcon className="size-4" />
+                            <BellIcon data-icon="inline-start" />
                         </Button>
                     )
                 ) : null}
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon" className="size-8 rounded-full">
-                            <SettingsIcon className="size-4" />
+                        <Button type="button" variant="ghost" size="icon" className="size-8 rounded-full" aria-label="Side panel settings">
+                            <SettingsIcon data-icon="inline-start" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent side="bottom" align="end" className="w-72 p-3">
                         <div className="flex flex-col gap-2.5">
-                            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                 {t('side_panel.settings.display')}
                             </span>
-                            <SettingRow label={t('side_panel.settings.group_by_instance')}>
+                            <SettingRow id="side-panel-group-by-instance" label={t('side_panel.settings.group_by_instance')}>
                                 <Switch
                                     checked={prefs.sidebarGroupByInstance}
                                     onCheckedChange={(value) => updateBoolPreference('sidebarGroupByInstance', value)}
@@ -466,13 +486,13 @@ export function SidePanel({ className = '', style = undefined }) {
                             </SettingRow>
                             {prefs.sidebarGroupByInstance ? (
                                 <>
-                                    <SettingRow label={t('side_panel.settings.hide_friends_in_same_instance')}>
+                                    <SettingRow id="side-panel-hide-friends-in-same-instance" label={t('side_panel.settings.hide_friends_in_same_instance')}>
                                         <Switch
                                             checked={prefs.isHideFriendsInSameInstance}
                                             onCheckedChange={(value) => updateBoolPreference('isHideFriendsInSameInstance', value)}
                                         />
                                     </SettingRow>
-                                    <SettingRow label={t('side_panel.settings.same_instance_above_favorites')}>
+                                    <SettingRow id="side-panel-same-instance-above-favorites" label={t('side_panel.settings.same_instance_above_favorites')}>
                                         <Switch
                                             checked={prefs.isSameInstanceAboveFavorites}
                                             onCheckedChange={(value) => updateBoolPreference('isSameInstanceAboveFavorites', value)}
@@ -480,23 +500,28 @@ export function SidePanel({ className = '', style = undefined }) {
                                     </SettingRow>
                                 </>
                             ) : null}
-                            <SettingRow label={t('side_panel.settings.split_favorite_friends')}>
+                            <SettingRow id="side-panel-split-favorite-friends" label={t('side_panel.settings.split_favorite_friends')}>
                                 <Switch
                                     checked={prefs.isSidebarDivideByFriendGroup}
                                     onCheckedChange={(value) => updateBoolPreference('isSidebarDivideByFriendGroup', value)}
                                 />
                             </SettingRow>
                             <Separator />
-                            <button
+                            <Button
                                 type="button"
-                                className="flex w-full items-center justify-between py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto w-full justify-between px-0 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
                                 onClick={() => setIsAdvancedOpen((current) => !current)}>
                                 {t('side_panel.settings.advanced')}
-                                <ChevronDownIcon className={`size-3.5 transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`} />
-                            </button>
+                                <ChevronDownIcon
+                                    data-icon="inline-end"
+                                    className={cn('transition-transform', isAdvancedOpen && 'rotate-180')}
+                                />
+                            </Button>
                             {isAdvancedOpen ? (
                                 <div className="flex flex-col gap-2.5">
-                                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
                                         {t('side_panel.settings.sorting')}
                                     </span>
                                     <SortSelect
@@ -520,25 +545,29 @@ export function SidePanel({ className = '', style = undefined }) {
                                         t={t}
                                     />
                                     <Separator />
-                                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
                                         {t('side_panel.settings.favorites_section')}
                                     </span>
                                     <div className="rounded-md border">
-                                        <div className="border-b px-2 py-1.5 text-[11px] text-muted-foreground">
+                                        <div className="border-b px-2 py-1.5 text-xs text-muted-foreground">
                                             {selectedFavoriteGroupLabel || t('side_panel.settings.favorite_groups_placeholder')}
                                         </div>
                                         <div className="max-h-[min(24rem,50vh)] overflow-auto p-1">
                                             {favoriteGroupItems.length ? (
                                                 favoriteGroupItems.map((group) => (
-                                                    <label
+                                                    <Field
                                                         key={group.key}
-                                                        className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-muted/50">
+                                                        orientation="horizontal"
+                                                        className="cursor-pointer gap-2 rounded px-1.5 py-1 text-xs hover:bg-muted/50">
                                                         <Checkbox
+                                                            id={`sidebar-favorite-${group.key}`}
                                                             checked={resolvedSidebarFavoriteGroups.includes(group.key)}
                                                             onCheckedChange={(checked) => toggleFavoriteGroup(group.key, Boolean(checked))}
                                                         />
-                                                        <span className="min-w-0 flex-1 truncate">{group.label}</span>
-                                                    </label>
+                                                        <FieldLabel htmlFor={`sidebar-favorite-${group.key}`} className="min-w-0 flex-1 truncate text-xs">
+                                                            {group.label}
+                                                        </FieldLabel>
+                                                    </Field>
                                                 ))
                                             ) : (
                                                 <div className="px-1.5 py-1 text-xs text-muted-foreground">
@@ -583,7 +612,7 @@ export function SidePanel({ className = '', style = undefined }) {
                     <DialogHeader>
                         <DialogTitle>{t('side_panel.settings.edit_group_order')}</DialogTitle>
                     </DialogHeader>
-                    <div className="max-h-[50vh] space-y-1 overflow-auto py-2">
+                    <div className="flex max-h-[50vh] flex-col gap-1 overflow-auto py-2">
                         {favoriteGroupOrderDraft.map((group, index) => (
                             <div key={group.key} className="flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm">
                                 <span className="min-w-0 flex-1 truncate">{group.label}</span>
@@ -591,17 +620,19 @@ export function SidePanel({ className = '', style = undefined }) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
+                                    aria-label={`Move ${group.label} up`}
                                     disabled={index === 0}
                                     onClick={() => setFavoriteGroupOrderDraft((current) => moveArrayItem(current, index, -1))}>
-                                    <ArrowUpIcon className="size-3.5" />
+                                    <ArrowUpIcon data-icon="inline-start" />
                                 </Button>
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
+                                    aria-label={`Move ${group.label} down`}
                                     disabled={index === favoriteGroupOrderDraft.length - 1}
                                     onClick={() => setFavoriteGroupOrderDraft((current) => moveArrayItem(current, index, 1))}>
-                                    <ArrowDownIcon className="size-3.5" />
+                                    <ArrowDownIcon data-icon="inline-start" />
                                 </Button>
                             </div>
                         ))}

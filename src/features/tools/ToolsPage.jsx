@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { cn } from '@/lib/utils.js';
 import { configRepository } from '@/repositories/index.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { getToolsByCategory, toolCategories } from '@/shared/constants/tools.js';
 import { triggerToolByKey } from '@/services/toolActionService.js';
@@ -25,58 +25,48 @@ const defaultCollapsedState = {
 
 function ToolItem({ icon, title, description, pinLabel, unpinLabel, navEligible, isPinned, onClick, onPin, onUnpin }) {
     return (
-        <div
-            role="button"
-            tabIndex={0}
-            className="group flex cursor-pointer gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-accent/50"
-            onClick={onClick}
-            onKeyDown={(event) => {
-                if (event.target !== event.currentTarget) {
-                    return;
-                }
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    onClick?.();
-                }
-            }}>
-            <div className="flex size-10 flex-none items-center justify-center bg-transparent">
-                <i className={cn(icon, 'inline-flex items-center justify-center text-2xl')} />
-            </div>
-            <div className="min-w-0 flex-1">
-                <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1 font-medium">{title}</div>
-                    {navEligible ? (
-                        <Button
-                            type="button"
-                            size="icon-xs"
-                            variant={isPinned ? 'secondary' : 'ghost'}
-                            className="opacity-0 transition-opacity group-hover:opacity-100"
-                            title={isPinned ? unpinLabel : pinLabel}
-                            aria-label={isPinned ? unpinLabel : pinLabel}
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                if (isPinned) {
-                                    onUnpin?.();
-                                } else {
-                                    onPin?.();
-                                }
-                            }}>
-                            <span className="relative inline-flex size-4">
-                                <i className="ri-side-bar-line inline-flex size-4 items-center justify-center text-base" />
-                                <span className="absolute -top-1 -right-1 grid size-2.5 place-items-center rounded-full bg-background shadow-sm">
-                                    <i
-                                        className={cn(
-                                            isPinned ? 'ri-subtract-line' : 'ri-add-line',
-                                            'inline-flex size-2 items-center justify-center text-[10px]'
-                                        )}
-                                    />
-                                </span>
-                            </span>
-                        </Button>
-                    ) : null}
+        <div className="group flex gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-accent/50">
+            <Button
+                type="button"
+                variant="ghost"
+                className="h-auto min-w-0 flex-1 items-start justify-start gap-3 p-0 text-left font-normal whitespace-normal hover:bg-transparent"
+                onClick={onClick}>
+                <div className="flex size-10 flex-none items-center justify-center bg-transparent">
+                    <i className={cn(icon, 'inline-flex items-center justify-center text-2xl')} />
                 </div>
-                <div className="mt-1 text-sm text-muted-foreground">{description}</div>
-            </div>
+                <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 font-medium">{title}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">{description}</div>
+                </div>
+            </Button>
+            {navEligible ? (
+                <Button
+                    type="button"
+                    size="icon-xs"
+                    variant={isPinned ? 'secondary' : 'ghost'}
+                    className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                    title={isPinned ? unpinLabel : pinLabel}
+                    aria-label={isPinned ? unpinLabel : pinLabel}
+                    onClick={() => {
+                        if (isPinned) {
+                            onUnpin?.();
+                        } else {
+                            onPin?.();
+                        }
+                    }}>
+                    <span className="relative inline-flex size-4">
+                        <i className="ri-side-bar-line inline-flex size-4 items-center justify-center text-base" />
+                        <span className="absolute -top-1 -right-1 grid size-2.5 place-items-center rounded-full bg-background shadow-sm">
+                            <i
+                                className={cn(
+                                    isPinned ? 'ri-subtract-line' : 'ri-add-line',
+                                    'inline-flex size-2 items-center justify-center text-xs'
+                                )}
+                            />
+                        </span>
+                    </span>
+                </Button>
+            ) : null}
         </div>
     );
 }
@@ -287,9 +277,10 @@ export function ToolsPage() {
                 <div className="mt-5 px-5">
                     {categories.map((category) => (
                         <div key={category.key} className="mb-6">
-                            <button
+                            <Button
                                 type="button"
-                                className="mb-3 flex cursor-pointer items-center rounded-lg p-2 px-3 text-left transition-all duration-200 ease-in-out"
+                                variant="ghost"
+                                className="mb-3 h-auto justify-start px-3 py-2 text-left"
                                 onClick={() =>
                                     saveCollapsedState({
                                         ...collapsed,
@@ -305,7 +296,7 @@ export function ToolsPage() {
                                 <span className="ml-1.5 text-base font-semibold">
                                     {translateWithFallback(category.labelKey)}
                                 </span>
-                            </button>
+                            </Button>
 
                             {!collapsed[category.key] ? (
                                 <div className="ml-4 grid grid-cols-1 gap-4 lg:grid-cols-2">

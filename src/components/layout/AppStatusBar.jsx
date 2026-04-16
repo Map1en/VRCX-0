@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BellIcon, ClockIcon, MonitorIcon, RadioIcon, ZoomInIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { cn } from '@/lib/utils.js';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
     ContextMenuCheckboxItem,
@@ -13,13 +14,13 @@ import {
     ContextMenuSubContent,
     ContextMenuSubTrigger,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/context-menu';
+import { Input } from '@/ui/shadcn/input';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger
-} from '@/ui/shadcn/tooltip.jsx';
+} from '@/ui/shadcn/tooltip';
 
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
@@ -153,8 +154,8 @@ function formatStatusDate(value) {
 }
 
 function StatusDot({ active, warn = false }) {
-    const color = active ? 'bg-green-500' : warn ? 'bg-yellow-500' : 'bg-muted-foreground/40';
-    return <span className={`inline-block size-2 shrink-0 rounded-full ${color}`} />;
+    const color = warn ? 'bg-destructive' : active ? 'bg-primary' : 'bg-muted-foreground/40';
+    return <span className={cn('inline-block size-2 shrink-0 rounded-full', color)} />;
 }
 
 function StatusSegment({ visible = true, active = false, warn = false, label, value, children, onClick, tooltip }) {
@@ -165,20 +166,22 @@ function StatusSegment({ visible = true, active = false, warn = false, label, va
     const content = (
         <>
             <StatusDot active={active} warn={warn} />
-            <span className="text-[10px] text-muted-foreground">{label}</span>
-            {value ? <span className="truncate text-[11px] text-foreground">{value}</span> : null}
+            <span className="text-xs text-muted-foreground">{label}</span>
+            {value ? <span className="truncate text-xs text-foreground">{value}</span> : null}
             {children}
         </>
     );
 
     if (typeof onClick === 'function') {
         const segment = (
-            <button
+            <Button
                 type="button"
-                className="flex h-6 min-w-0 items-center gap-1.5 border-r px-2 text-left hover:bg-muted"
+                variant="ghost"
+                size="sm"
+                className="h-6 min-w-0 justify-start gap-1.5 rounded-none border-r px-2 text-left font-normal"
                 onClick={onClick}>
                 {content}
-            </button>
+            </Button>
         );
         if (!tooltip) {
             return segment;
@@ -428,7 +431,7 @@ export function AppStatusBar() {
                                 label="VRChat"
                                 value={isGameRunning ? gameDuration || 'running' : 'stopped'}
                                 tooltip={
-                                    <div className="space-y-1 text-xs">
+                                    <div className="flex flex-col gap-1 text-xs">
                                         {isGameRunning ? (
                                             <>
                                                 <div className="flex justify-between gap-4">
@@ -461,7 +464,7 @@ export function AppStatusBar() {
                                         )}
                                     </div>
                                 }>
-                                {currentWorld ? <span className="max-w-56 truncate text-[11px] text-muted-foreground">{currentWorld}</span> : null}
+                                {currentWorld ? <span className="max-w-56 truncate text-xs text-muted-foreground">{currentWorld}</span> : null}
                             </StatusSegment>
                             <StatusSegment
                                 visible={visibility.servers}
@@ -476,7 +479,7 @@ export function AppStatusBar() {
                                 active={Boolean(runtimeTransport.websocketConnected)}
                                 label="WebSocket"
                                 value={`${messagesPerMinute}/min`}>
-                                <span className="text-[10px] text-muted-foreground">
+                                <span className="text-xs text-muted-foreground">
                                     {runtimeTransport.messageCount} total
                                 </span>
                             </StatusSegment>
@@ -491,7 +494,7 @@ export function AppStatusBar() {
                                     });
                                 }}>
                                 {nowPlayingProgress ? (
-                                    <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                                         {nowPlayingProgress}
                                     </span>
                                 ) : null}
@@ -499,7 +502,7 @@ export function AppStatusBar() {
                         </div>
 
                         <div className="flex shrink-0 items-center justify-end overflow-hidden">
-                            <div className="hidden items-center border-r px-2 text-[10px] text-muted-foreground md:flex">
+                            <div className="hidden items-center border-r px-2 text-xs text-muted-foreground md:flex">
                                 <MonitorIcon className="mr-1 size-3.5" />
                                 Boot {bootStatus} · {transportStatus} · {locale}
                             </div>
@@ -507,7 +510,7 @@ export function AppStatusBar() {
                                 ? visibleClocks.map((clock, index) => (
                                       <div
                                           key={`${clock.offset}-${index}`}
-                                          className="flex h-6 items-center gap-1.5 border-r px-2 text-[10px] tabular-nums">
+                                          className="flex h-6 items-center gap-1.5 border-r px-2 text-xs tabular-nums">
                                           <ClockIcon className="size-3.5 text-muted-foreground" />
                                           {formatClock(nowMs, clock.offset)}
                                       </div>
@@ -527,15 +530,15 @@ export function AppStatusBar() {
                                                 event.currentTarget.blur();
                                             }
                                         }}
-                                        className="h-5 w-14 px-1 py-0 text-center text-[11px]"
+                                        className="h-5 w-14 px-1 py-0 text-center text-xs"
                                     />
-                                    <span className="text-[10px] text-muted-foreground">
+                                    <span className="text-xs text-muted-foreground">
                                         {formatZoomPercentage(zoomLevel)}
                                     </span>
                                 </div>
                             ) : null}
                             {visibility.uptime ? (
-                                <div className="flex h-6 items-center gap-1.5 border-r px-2 text-[10px] tabular-nums">
+                                <div className="flex h-6 items-center gap-1.5 border-r px-2 text-xs tabular-nums">
                                     <RadioIcon className="size-3.5 text-muted-foreground" />
                                     {formatAppUptime(nowMs, appStartedAtRef.current)}
                                 </div>
@@ -546,10 +549,10 @@ export function AppStatusBar() {
                                 size="sm"
                                 className="relative h-6 gap-1.5 rounded-none px-2"
                                 onClick={() => openNotifications(true)}>
-                                <BellIcon className="size-3.5" />
+                                <BellIcon data-icon="inline-start" />
                                 Notifications
                                 {unreadCount > 0 ? (
-                                    <Badge className="ml-1 min-w-5 justify-center px-1.5 py-0 text-[10px] leading-5">
+                                    <Badge className="ml-1 min-w-5 justify-center px-1.5 py-0 text-xs leading-5">
                                         {unreadCount}
                                     </Badge>
                                 ) : null}

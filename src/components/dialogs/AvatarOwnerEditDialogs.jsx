@@ -1,28 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2Icon, UserIcon } from 'lucide-react';
+import { UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { avatarProfileRepository } from '@/repositories/index.js';
 import { cn } from '@/lib/utils.js';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
+} from '@/ui/shadcn/dialog';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 const contentTagOptions = [
     { value: 'content_horror', label: 'Horror' },
@@ -88,29 +90,37 @@ function AvatarOwnerRow({ avatar, selected, onToggle }) {
     const imageUrl = convertFileUrlToImageUrl(avatar.thumbnailImageUrl || avatar.imageUrl, 128);
     const tagText = contentTagsCsv(Array.isArray(avatar.tags) ? avatar.tags : []);
     return (
-        <button
-            type="button"
+        <div
             className={cn(
-                'box-border flex w-[335px] cursor-pointer items-center p-1.5 text-left text-[13px] hover:rounded-[25px_5px_5px_25px] hover:bg-muted/50',
-                selected ? 'bg-muted/40' : ''
-            )}
-            onClick={onToggle}>
+                'flex w-80 items-center rounded-md text-sm',
+                selected && 'bg-muted/40'
+            )}>
+            <Button
+                type="button"
+                variant="ghost"
+                className="h-auto min-w-0 flex-1 justify-start p-1.5 text-left"
+                aria-pressed={selected}
+                onClick={onToggle}>
             {imageUrl ? (
                 <img src={imageUrl} alt="" className="mr-2.5 size-9 shrink-0 rounded-full object-cover" />
             ) : (
                 <div className="mr-2.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <UserIcon className="size-4 text-muted-foreground" />
+                    <UserIcon data-icon="inline-start" className="text-muted-foreground" />
                 </div>
             )}
             <span className="min-w-0 flex-1 overflow-hidden">
-                <span className="block truncate font-medium leading-[18px]">{avatar.name || avatar.id}</span>
+                <span className="block truncate font-medium leading-5">{avatar.name || avatar.id}</span>
                 <span className="block truncate text-xs text-muted-foreground">{avatar.releaseStatus || 'unknown'}</span>
                 <span className="block truncate text-xs text-muted-foreground">{tagText || '—'}</span>
             </span>
-            <span className="ml-2" onClick={(event) => event.stopPropagation()}>
-                <Checkbox checked={selected} onCheckedChange={onToggle} />
-            </span>
-        </button>
+            </Button>
+            <Checkbox
+                checked={selected}
+                className="mx-2 shrink-0"
+                aria-label={`Select ${avatar.name || avatar.id || 'avatar'}`}
+                onCheckedChange={onToggle}
+            />
+        </div>
     );
 }
 
@@ -274,30 +284,32 @@ export function AvatarContentTagsDialog({
                 <DialogHeader>
                     <DialogTitle>Change Content Tags</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
+                <FieldGroup>
                     <div className="grid gap-2 sm:grid-cols-2">
                         {contentTagOptions.map((option) => (
-                            <Label key={option.value} className="inline-flex items-center gap-2">
-                                <Checkbox checked={selectedTagsSet.has(option.value)} onCheckedChange={() => toggleBuiltInTag(option.value)} />
-                                <span>{option.label}</span>
-                            </Label>
+                            <Field key={option.value} orientation="horizontal">
+                                <Checkbox id={`avatar-content-tag-${option.value}`} checked={selectedTagsSet.has(option.value)} onCheckedChange={() => toggleBuiltInTag(option.value)} />
+                                <FieldLabel htmlFor={`avatar-content-tag-${option.value}`}>{option.label}</FieldLabel>
+                            </Field>
                         ))}
                     </div>
-                    <Textarea
-                        rows={2}
-                        value={selectedTagsCsv}
-                        className="resize-none"
-                        placeholder="horror,gore,violence,adult,sex"
-                        onChange={(event) => setSelectedTagsCsv(event.target.value)}
-                    />
+                    <Field>
+                        <Textarea
+                            rows={2}
+                            value={selectedTagsCsv}
+                            className="resize-none"
+                            placeholder="horror,gore,violence,adult,sex"
+                            onChange={(event) => setSelectedTagsCsv(event.target.value)}
+                        />
+                    </Field>
                     <div className="flex items-center gap-2">
                         <Button type="button" size="sm" variant="outline" onClick={toggleAllAvatars}>
                             {ownAvatars.length === selectedAvatarIds.length ? 'Select None' : 'Select All'}
                         </Button>
                         <span className="text-sm text-muted-foreground">{selectedAvatarIds.length} / {ownAvatars.length}</span>
-                        {loading ? <Loader2Icon className="size-4 animate-spin text-muted-foreground" /> : null}
+                        {loading ? <Spinner className="text-muted-foreground" /> : null}
                     </div>
-                    <div className="flex max-h-[300px] min-h-[60px] flex-wrap items-start overflow-auto">
+                    <div className="flex max-h-72 min-h-16 flex-wrap items-start overflow-auto">
                         {ownAvatars.map((entry) => (
                             <AvatarOwnerRow
                                 key={entry.id}
@@ -307,7 +319,7 @@ export function AvatarContentTagsDialog({
                             />
                         ))}
                     </div>
-                </div>
+                </FieldGroup>
                 <DialogFooter>
                     <Button type="button" variant="secondary" disabled={saving} onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button type="button" disabled={saving || loading || !selectedAvatarIds.length} onClick={() => void save()}>Save</Button>
@@ -421,40 +433,44 @@ export function AvatarStylesDialog({
                 <DialogHeader>
                     <DialogTitle>Change Styles and Author Tags</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Primary Style</Label>
+                <FieldGroup>
+                    <Field>
+                        <FieldLabel>Primary Style</FieldLabel>
                         <Select value={primaryStyle || noneValue} disabled={loading} onValueChange={(value) => setPrimaryStyle(value === noneValue ? '' : value)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select style" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value={noneValue}>None</SelectItem>
-                                {styles.map((style) => (
-                                    <SelectItem key={style.id || style.styleName} value={style.styleName}>{style.styleName}</SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    <SelectItem value={noneValue}>None</SelectItem>
+                                    {styles.map((style) => (
+                                        <SelectItem key={style.id || style.styleName} value={style.styleName}>{style.styleName}</SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Secondary Style</Label>
+                    </Field>
+                    <Field>
+                        <FieldLabel>Secondary Style</FieldLabel>
                         <Select value={secondaryStyle || noneValue} disabled={loading} onValueChange={(value) => setSecondaryStyle(value === noneValue ? '' : value)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select style" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value={noneValue}>None</SelectItem>
-                                {styles.map((style) => (
-                                    <SelectItem key={style.id || style.styleName} value={style.styleName}>{style.styleName}</SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    <SelectItem value={noneValue}>None</SelectItem>
+                                    {styles.map((style) => (
+                                        <SelectItem key={style.id || style.styleName} value={style.styleName}>{style.styleName}</SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Author Tags</Label>
+                    </Field>
+                    <Field>
+                        <FieldLabel>Author Tags</FieldLabel>
                         <Textarea rows={2} className="resize-none" value={authorTags} onChange={(event) => setAuthorTags(event.target.value)} />
-                    </div>
-                </div>
+                    </Field>
+                </FieldGroup>
                 <DialogFooter>
                     <Button type="button" variant="secondary" disabled={saving} onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button type="button" disabled={saving || loading} onClick={() => void save()}>Save</Button>

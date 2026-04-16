@@ -5,7 +5,6 @@ import {
     ArrowUpIcon,
     ChevronDownIcon,
     EyeOffIcon,
-    LoaderCircleIcon,
     StarIcon,
     UserIcon,
     UserMinusIcon,
@@ -31,7 +30,7 @@ import {
     DataTablePagination,
     DataTableScrollArea,
     DataTableSurface
-} from '@/components/data-table/VrcxDataTable.jsx';
+} from '@/components/data-table/DataTableView.jsx';
 import {
     EmptyState,
     LoadingState,
@@ -63,42 +62,44 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { getFaviconUrl } from '@/shared/utils/urlUtils.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
     TableHeader,
     TableRow
-} from '@/ui/shadcn/table.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
+} from '@/ui/shadcn/table';
+import { Switch } from '@/ui/shadcn/switch';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger
-} from '@/ui/shadcn/tooltip.jsx';
+} from '@/ui/shadcn/tooltip';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
 const DEFAULT_SORTING = [{ id: 'friendNumber', desc: true }];
@@ -452,9 +453,10 @@ function SortButton({ column, label, descFirst = false }) {
     const direction = column.getIsSorted();
 
     return (
-        <button
+        <Button
             type="button"
-            className="inline-flex items-center gap-1 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+            variant="ghost"
+            className="h-auto justify-start gap-1 p-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
             onClick={() => {
                 if (!direction && descFirst) {
                     column.toggleSorting(true);
@@ -464,13 +466,13 @@ function SortButton({ column, label, descFirst = false }) {
             }}>
             <span>{label}</span>
             {direction === 'asc' ? (
-                <ArrowUpIcon className="size-3.5" />
+                <ArrowUpIcon data-icon="inline-end" />
             ) : direction === 'desc' ? (
-                <ArrowDownIcon className="size-3.5" />
+                <ArrowDownIcon data-icon="inline-end" />
             ) : (
-                <ArrowUpDownIcon className="size-3.5" />
+                <ArrowUpDownIcon data-icon="inline-end" />
             )}
-        </button>
+        </Button>
     );
 }
 
@@ -488,29 +490,31 @@ function FriendListSearchFilterDropdown({ value, onChange }) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="h-9 w-[150px] justify-between">
+                <Button type="button" variant="outline" className="h-9 w-36 justify-between">
                     <span className="truncate">{label}</span>
-                    <ChevronDownIcon className="size-4 text-muted-foreground" />
+                    <ChevronDownIcon data-icon="inline-end" className="text-muted-foreground" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
-                {SEARCH_FILTERS.map((filter) => (
-                    <DropdownMenuCheckboxItem
-                        key={filter.id}
-                        checked={activeFilters.has(filter.id)}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={(checked) => {
-                            const next = new Set(activeFilters);
-                            if (checked) {
-                                next.add(filter.id);
-                            } else {
-                                next.delete(filter.id);
-                            }
-                            onChange(next);
-                        }}>
-                        {filter.label}
-                    </DropdownMenuCheckboxItem>
-                ))}
+                <DropdownMenuGroup>
+                    {SEARCH_FILTERS.map((filter) => (
+                        <DropdownMenuCheckboxItem
+                            key={filter.id}
+                            checked={activeFilters.has(filter.id)}
+                            onSelect={(event) => event.preventDefault()}
+                            onCheckedChange={(checked) => {
+                                const next = new Set(activeFilters);
+                                if (checked) {
+                                    next.add(filter.id);
+                                } else {
+                                    next.delete(filter.id);
+                                }
+                                onChange(next);
+                            }}>
+                            {filter.label}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -1349,11 +1353,13 @@ export function FriendListPage({ embedded = false } = {}) {
                     return links.length ? (
                         <div className="flex items-center gap-1">
                             {links.map((link) => (
-                                <button
+                                <Button
                                     key={link}
                                     type="button"
                                     title={link}
-                                    className="rounded-sm border p-1"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    className="size-7"
                                     onClick={(event) => {
                                         event.stopPropagation();
                                         void openExternalLink(link);
@@ -1363,9 +1369,9 @@ export function FriendListPage({ embedded = false } = {}) {
                                         src={getFaviconUrl(link)}
                                         alt=""
                                         className="size-4"
-                                        loading="lazy"
-                                    />
-                                </button>
+                                            loading="lazy"
+                                        />
+                                    </Button>
                             ))}
                         </div>
                     ) : null;
@@ -1489,7 +1495,7 @@ export function FriendListPage({ embedded = false } = {}) {
                                 void confirmDeleteFriend(row.original);
                             }}
                         >
-                            <UserMinusIcon className="size-4" />
+                            <UserMinusIcon data-icon="inline-start" />
                         </Button>
                     );
                 }
@@ -1561,7 +1567,7 @@ export function FriendListPage({ embedded = false } = {}) {
                         title={t('view.friend_list.favorites_only_tooltip')}
                         aria-label={t('view.friend_list.favorites_only_tooltip')}
                         onClick={() => setFavoritesOnly((current) => !current)}>
-                        <StarIcon className={cn('size-4', favoritesOnly ? 'fill-current' : '')} />
+                        <StarIcon data-icon="inline-start" className={cn(favoritesOnly ? 'fill-current' : '')} />
                     </Button>
                     <FriendListSearchFilterDropdown
                         value={activeSearchFilterIds}
@@ -1571,7 +1577,7 @@ export function FriendListPage({ embedded = false } = {}) {
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
                         placeholder={t('view.friend_list.search_placeholder')}
-                        className="h-9 w-[250px]"
+                        className="h-9 w-64"
                     />
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1588,6 +1594,7 @@ export function FriendListPage({ embedded = false } = {}) {
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{t('view.friend_list.bulk_unfriend')}</span>
                         <Switch
+                            aria-label={t('view.friend_list.bulk_unfriend')}
                             checked={bulkUnfriendMode}
                             disabled={!currentUserId || isBulkDeleting}
                             onCheckedChange={setBulkUnfriendMode}
@@ -1599,7 +1606,7 @@ export function FriendListPage({ embedded = false } = {}) {
                         className="h-9 gap-2"
                         disabled={isMutualOptOut || isMutualFetching || !currentUserId}
                         onClick={() => void loadMutualFriends()}>
-                        {isMutualFetching ? <LoaderCircleIcon className="size-4 animate-spin" /> : null}
+                        {isMutualFetching ? <Spinner data-icon="inline-start" /> : null}
                         {t('view.friend_list.load_mutual_friends')}
                     </Button>
                     <Button
@@ -1627,11 +1634,13 @@ export function FriendListPage({ embedded = false } = {}) {
                             <SelectValue placeholder="Page size" />
                         </SelectTrigger>
                         <SelectContent>
-                            {pageSizes.map((size) => (
-                                <SelectItem key={size} value={String(size)}>
-                                    {size}
-                                </SelectItem>
-                            ))}
+                            <SelectGroup>
+                                {pageSizes.map((size) => (
+                                    <SelectItem key={size} value={String(size)}>
+                                        {size}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
                 </div>
@@ -1673,6 +1682,18 @@ export function FriendListPage({ embedded = false } = {}) {
                                         <TableRow
                                             key={row.id}
                                             className="cursor-pointer"
+                                            tabIndex={0}
+                                            aria-label={`Open ${row.original?.displayName || row.original?.username || 'friend'}`}
+                                            onKeyDown={(event) => {
+                                                if (event.key !== 'Enter' && event.key !== ' ') {
+                                                    return;
+                                                }
+                                                event.preventDefault();
+                                                openUserDialog({
+                                                    userId: row.original?.id,
+                                                    title: row.original?.displayName || row.original?.username || undefined
+                                                });
+                                            }}
                                             onClick={() =>
                                                 openUserDialog({
                                                     userId: row.original?.id,
@@ -1721,11 +1742,11 @@ export function FriendListPage({ embedded = false } = {}) {
             </PageBody>
 
             <Dialog open={userLoadProgress.open} onOpenChange={(open) => !open && cancelFriendUserDetailsLoad()}>
-                <DialogContent showCloseButton={false} className="sm:max-w-[420px]">
+                <DialogContent showCloseButton={false} className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>Loading friend details</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <div className="h-4 overflow-hidden rounded-full border bg-muted">
                             <div className="h-full bg-primary" style={{ width: `${userLoadPercent}%` }} />
                         </div>

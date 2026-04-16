@@ -4,7 +4,6 @@ import {
     CopyIcon,
     GlobeIcon,
     ImageIcon,
-    LoaderCircleIcon,
     LockIcon,
     DownloadIcon,
     EllipsisIcon,
@@ -48,28 +47,30 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
 import { parseLocation, resolveFriendPresenceLocation } from '@/shared/utils/location.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuSub,
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/ui/shadcn/resizable.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/ui/shadcn/resizable';
 import {
     Select,
     SelectContent,
@@ -77,9 +78,11 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/select';
+import { Slider } from '@/ui/shadcn/slider';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Switch } from '@/ui/shadcn/switch';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 import {
     clearFavoriteRemoteDetailsCache,
@@ -318,17 +321,20 @@ function FavoriteExportDialog({
                         Review the CSV content before copying it to the clipboard.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex flex-wrap gap-3">
+                <FieldGroup data-slot="checkbox-group" className="flex flex-row flex-wrap gap-3">
                     {fieldOptions.map((option) => (
-                        <label key={option.value} className="inline-flex items-center gap-2 text-sm">
+                        <Field key={option.value} orientation="horizontal" className="w-auto items-center">
                             <Checkbox
+                                id={`favorite-export-field-${kind}-${option.value}`}
                                 checked={selectedFields.includes(option.value)}
                                 onCheckedChange={(checked) => toggleField(option.value, Boolean(checked))}
                             />
-                            <span>{option.label}</span>
-                        </label>
+                            <FieldLabel htmlFor={`favorite-export-field-${kind}-${option.value}`}>
+                                {option.label}
+                            </FieldLabel>
+                        </Field>
                     ))}
-                </div>
+                </FieldGroup>
                 <div className="flex flex-wrap items-center gap-2">
                     <Select value={remoteGroupKey} onValueChange={setRemoteGroupKey}>
                         <SelectTrigger size="sm" className="min-w-52">
@@ -416,7 +422,7 @@ function FavoritesToolbar({
     return (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <Select value={sortValue} onValueChange={onSortValueChange}>
-                <SelectTrigger size="sm" className="min-w-[200px]">
+                <SelectTrigger size="sm" className="min-w-48">
                     <span className="flex items-center gap-2">
                         <ArrowUpDownIcon className="size-4" />
                         <SelectValue placeholder="Sort favorites" />
@@ -431,7 +437,7 @@ function FavoritesToolbar({
                 </SelectContent>
             </Select>
 
-            <div className="flex min-w-[280px] flex-1 items-center gap-2">
+            <div className="flex min-w-72 flex-1 items-center gap-2">
                 <div className="relative flex-1">
                     <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -446,7 +452,7 @@ function FavoritesToolbar({
                                 type="button"
                                 size="xs"
                                 variant={searchMode === 'name' ? 'default' : 'ghost'}
-                                className="h-5 px-1.5 text-[11px]"
+                                className="h-5 px-1.5 text-xs"
                                 onClick={() => onSearchModeChange('name')}>
                                 Name
                             </Button>
@@ -454,7 +460,7 @@ function FavoritesToolbar({
                                 type="button"
                                 size="xs"
                                 variant={searchMode === 'tag' ? 'default' : 'ghost'}
-                                className="h-5 px-1.5 text-[11px]"
+                                className="h-5 px-1.5 text-xs"
                                 onClick={() => onSearchModeChange('tag')}>
                                 Tag
                             </Button>
@@ -465,8 +471,9 @@ function FavoritesToolbar({
                             size="icon-xs"
                             variant="ghost"
                             className="absolute right-1 top-1/2 -translate-y-1/2"
+                            aria-label="Clear search"
                             onClick={() => onSearchChange('')}>
-                            <XIcon className="size-3" />
+                            <XIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
                 </div>
@@ -476,65 +483,58 @@ function FavoritesToolbar({
                     size="icon-sm"
                     variant="ghost"
                     className="rounded-full"
+                    aria-label="Refresh favorites"
                     disabled={refreshing}
                     onClick={onRefresh}>
-                    {refreshing ? <LoaderCircleIcon className="size-4 animate-spin" /> : <RefreshCwIcon className="size-4" />}
+                    {refreshing ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
                 </Button>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button type="button" size="icon-sm" variant="ghost" className="rounded-full">
-                            <EllipsisIcon className="size-4" />
+                        <Button type="button" size="icon-sm" variant="ghost" className="rounded-full" aria-label="Favorite options">
+                            <EllipsisIcon data-icon="inline-start" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-44">
-                        <div className="min-w-[220px] px-3 py-2" onClick={(event) => event.stopPropagation()}>
-                            <div className="mb-2 flex items-center justify-between text-[13px] font-semibold">
-                                <span>Scale</span>
-                                <span className="text-xs text-muted-foreground">{cardScalePercent}%</span>
-                            </div>
-                            <input
-                                type="range"
-                                min={CARD_SCALE_SLIDER.min}
-                                max={CARD_SCALE_SLIDER.max}
-                                step={CARD_SCALE_SLIDER.step}
-                                value={cardScale}
-                                className="w-full"
-                                onChange={(event) => onCardScaleChange(event.target.value)}
-                            />
-                        </div>
-                        <div className="min-w-[220px] px-3 py-2" onClick={(event) => event.stopPropagation()}>
-                            <div className="mb-2 flex items-center justify-between text-[13px] font-semibold">
-                                <span>Spacing</span>
-                                <span className="text-xs text-muted-foreground">{cardSpacingPercent}%</span>
-                            </div>
-                            <input
-                                type="range"
-                                min={CARD_SPACING_SLIDER.min}
-                                max={CARD_SPACING_SLIDER.max}
-                                step={CARD_SPACING_SLIDER.step}
-                                value={cardSpacing}
-                                className="w-full"
-                                onChange={(event) => onCardSpacingChange(event.target.value)}
-                            />
-                        </div>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <FieldGroup className="gap-3 px-3 py-2" onClick={(event) => event.stopPropagation()}>
+                            <Field>
+                                <div className="flex items-center justify-between text-sm font-semibold">
+                                    <FieldLabel>Scale</FieldLabel>
+                                    <span className="text-xs text-muted-foreground">{cardScalePercent}%</span>
+                                </div>
+                                <Slider
+                                    min={CARD_SCALE_SLIDER.min}
+                                    max={CARD_SCALE_SLIDER.max}
+                                    step={CARD_SCALE_SLIDER.step}
+                                    value={[cardScale]}
+                                    onValueChange={(value) => onCardScaleChange(value[0])}
+                                />
+                            </Field>
+                            <Field>
+                                <div className="flex items-center justify-between text-sm font-semibold">
+                                    <FieldLabel>Spacing</FieldLabel>
+                                    <span className="text-xs text-muted-foreground">{cardSpacingPercent}%</span>
+                                </div>
+                                <Slider
+                                    min={CARD_SPACING_SLIDER.min}
+                                    max={CARD_SPACING_SLIDER.max}
+                                    step={CARD_SPACING_SLIDER.step}
+                                    value={[cardSpacing]}
+                                    onValueChange={(value) => onCardSpacingChange(value[0])}
+                                />
+                            </Field>
+                        </FieldGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            onSelect={(event) => {
-                                event.preventDefault();
-                                onImport();
-                            }}>
-                            <UploadIcon className="size-4" />
-                            Import
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onSelect={(event) => {
-                                event.preventDefault();
-                                onExport();
-                            }}>
-                            <DownloadIcon className="size-4" />
-                            Export
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem onSelect={onImport}>
+                                <UploadIcon data-icon="inline-start" />
+                                Import
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={onExport}>
+                                <DownloadIcon data-icon="inline-start" />
+                                Export
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
@@ -545,8 +545,8 @@ function FavoritesToolbar({
 function FavoritesEmptyState({ title, description }) {
     return (
         <div className="flex h-full min-h-60 items-center justify-center p-6 text-center">
-            <div className="max-w-sm space-y-2">
-                <div className="text-[13px] font-medium">{title}</div>
+            <div className="flex max-w-sm flex-col gap-2">
+                <div className="text-sm font-medium">{title}</div>
                 <div className="text-sm text-muted-foreground">{description}</div>
             </div>
         </div>
@@ -557,7 +557,7 @@ function FavoritesLoadingState({ title }) {
     return (
         <div className="flex h-full min-h-60 items-center justify-center">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <LoaderCircleIcon className="size-5 animate-spin" />
+                <Spinner />
                 <span>{title}</span>
             </div>
         </div>
@@ -577,19 +577,18 @@ function GroupMenu({
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button type="button" size="icon-xs" variant="ghost" className="rounded-full" onClick={(event) => event.stopPropagation()}>
-                        <EllipsisIcon className="size-4" />
+                    <Button type="button" size="icon-xs" variant="ghost" className="rounded-full" aria-label="History group options" onClick={(event) => event.stopPropagation()}>
+                        <EllipsisIcon data-icon="inline-start" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="right" align="start" className="w-44">
-                    <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={(event) => {
-                            event.preventDefault();
-                            onHistoryClear(group);
-                        }}>
-                        Clear
-                    </DropdownMenuItem>
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => onHistoryClear(group)}>
+                            Clear
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
         );
@@ -599,43 +598,39 @@ function GroupMenu({
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button type="button" size="icon-xs" variant="ghost" className="rounded-full" onClick={(event) => event.stopPropagation()}>
-                        <MoreHorizontalIcon className="size-4" />
+                    <Button type="button" size="icon-xs" variant="ghost" className="rounded-full" aria-label="Remote group options" onClick={(event) => event.stopPropagation()}>
+                        <MoreHorizontalIcon data-icon="inline-start" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="right" align="start" className="w-52">
-                    <DropdownMenuItem
-                        onSelect={(event) => {
-                            event.preventDefault();
-                            onRemoteRename(group);
-                        }}>
-                        Rename
-                    </DropdownMenuItem>
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem onSelect={() => onRemoteRename(group)}>
+                            Rename
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
                     <DropdownMenuSub>
                         <DropdownMenuSubTrigger>Visibility</DropdownMenuSubTrigger>
                         <DropdownMenuSubContent className="w-40">
-                            {VISIBILITY_OPTIONS.map((visibility) => (
-                                <DropdownMenuCheckboxItem
-                                    key={visibility}
-                                    checked={group.visibility === visibility}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        onRemoteVisibility(group, visibility);
-                                    }}>
-                                    {visibility}
-                                </DropdownMenuCheckboxItem>
-                            ))}
+                            <DropdownMenuGroup>
+                                {VISIBILITY_OPTIONS.map((visibility) => (
+                                    <DropdownMenuCheckboxItem
+                                        key={visibility}
+                                        checked={group.visibility === visibility}
+                                        onSelect={() => onRemoteVisibility(group, visibility)}>
+                                        {visibility}
+                                    </DropdownMenuCheckboxItem>
+                                ))}
+                            </DropdownMenuGroup>
                         </DropdownMenuSubContent>
                     </DropdownMenuSub>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={(event) => {
-                            event.preventDefault();
-                            onRemoteClear(group);
-                        }}>
-                        Clear
-                    </DropdownMenuItem>
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => onRemoteClear(group)}>
+                            Clear
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
         );
@@ -644,26 +639,21 @@ function GroupMenu({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" size="icon-xs" variant="ghost" className="rounded-full" onClick={(event) => event.stopPropagation()}>
-                    <EllipsisIcon className="size-4" />
+                <Button type="button" size="icon-xs" variant="ghost" className="rounded-full" aria-label="Local group options" onClick={(event) => event.stopPropagation()}>
+                    <EllipsisIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="start" className="w-48">
-                <DropdownMenuItem
-                    onSelect={(event) => {
-                        event.preventDefault();
-                        onLocalRename(group);
-                    }}>
-                    Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={(event) => {
-                        event.preventDefault();
-                        onLocalDelete(group);
-                    }}>
-                    Delete
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuItem onSelect={() => onLocalRename(group)}>
+                        Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={() => onLocalDelete(group)}>
+                        Delete
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -701,9 +691,10 @@ function GroupRailSection({
                         size="icon-sm"
                         variant="ghost"
                         className="rounded-full"
+                        aria-label={`Refresh ${title}`}
                         disabled={loading}
                         onClick={onRefresh}>
-                        {loading ? <LoaderCircleIcon className="size-4 animate-spin" /> : <RefreshCcwIcon className="size-4" />}
+                        {loading ? <Spinner data-icon="inline-start" /> : <RefreshCcwIcon data-icon="inline-start" />}
                     </Button>
                 ) : null}
             </div>
@@ -712,7 +703,7 @@ function GroupRailSection({
                     Array.from({ length: 5 }, (_, index) => (
                         <div
                             key={`group-placeholder-${index}`}
-                            className="pointer-events-none flex w-full items-start justify-between rounded-lg border border-border px-3 py-2 text-left text-[13px] opacity-70">
+                            className="pointer-events-none flex w-full items-start justify-between rounded-lg border border-border px-3 py-2 text-left text-sm opacity-70">
                             <div className="min-w-0">
                                 <div className="truncate font-semibold">Group {index + 1}</div>
                                 <div className="mt-1 h-3 w-14 rounded bg-muted" />
@@ -725,35 +716,34 @@ function GroupRailSection({
                         return (
                             <div
                                 key={`${group.source}:${group.key}`}
-                                role="button"
-                                tabIndex={0}
                                 className={cn(
-                                    'flex w-full items-start justify-between rounded-lg border px-3 py-2 text-left text-[13px] transition-colors hover:bg-muted',
+                                    'flex w-full items-start justify-between rounded-lg border transition-colors hover:bg-muted',
                                     isActive ? 'border-primary bg-primary/5' : 'border-border'
-                                )}
-                                onClick={() => onSelect(group)}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter' || event.key === ' ') {
-                                        event.preventDefault();
-                                        onSelect(group);
-                                    }
-                                }}>
-                                <div className="min-w-0">
-                                    <div className="truncate font-semibold">{group.label}</div>
-                                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                        {group.visibility ? <span>{group.visibility}</span> : null}
-                                        {group.capacity ? <span>{group.count}/{group.capacity}</span> : <span>{group.count}</span>}
-                                    </div>
+                                )}>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-auto min-w-0 flex-1 justify-start whitespace-normal rounded-lg px-3 py-2 text-left hover:bg-transparent"
+                                    onClick={() => onSelect(group)}>
+                                    <span className="min-w-0">
+                                        <span className="block truncate font-semibold">{group.label}</span>
+                                        <span className="mt-1 flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+                                            {group.visibility ? <span>{group.visibility}</span> : null}
+                                            {group.capacity ? <span>{group.count}/{group.capacity}</span> : <span>{group.count}</span>}
+                                        </span>
+                                    </span>
+                                </Button>
+                                <div className="shrink-0 py-1 pr-1">
+                                    <GroupMenu
+                                        group={group}
+                                        onRemoteRename={onRemoteRename}
+                                        onRemoteVisibility={onRemoteVisibility}
+                                        onRemoteClear={onRemoteClear}
+                                        onLocalRename={onLocalRename}
+                                        onLocalDelete={onLocalDelete}
+                                        onHistoryClear={onHistoryClear}
+                                    />
                                 </div>
-                                <GroupMenu
-                                    group={group}
-                                    onRemoteRename={onRemoteRename}
-                                    onRemoteVisibility={onRemoteVisibility}
-                                    onRemoteClear={onRemoteClear}
-                                    onLocalRename={onLocalRename}
-                                    onLocalDelete={onLocalDelete}
-                                    onHistoryClear={onHistoryClear}
-                                />
                             </div>
                         );
                     })
@@ -761,14 +751,15 @@ function GroupRailSection({
                     <div className="py-3 text-center text-xs text-muted-foreground">No data</div>
                 )}
                 {showNewGroup && !creating ? (
-                    <button
+                    <Button
                         type="button"
-                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                        variant="outline"
+                        className="w-full border-dashed"
                         disabled={loading}
                         onClick={onStartCreate}>
-                        <PlusIcon className="size-4" />
+                        <PlusIcon data-icon="inline-start" />
                         <span>New Group</span>
-                    </button>
+                    </Button>
                 ) : null}
                 {showNewGroup && creating ? (
                     <Input
@@ -815,7 +806,7 @@ function FavoritesContentHeader({
                     <span>{title}</span>
                     {subtitle ? <small className="text-xs font-normal text-muted-foreground">{subtitle}</small> : null}
                 </div>
-                <div className="flex items-center gap-2 text-[13px]">
+                <div className="flex items-center gap-2 text-sm">
                     <span>Edit mode</span>
                     <Switch
                         checked={editMode}
@@ -835,12 +826,12 @@ function FavoritesContentHeader({
                         </Button>
                         {showCopyButton ? (
                             <Button type="button" size="sm" variant="outline" disabled={!hasSelection} onClick={onCopySelection}>
-                                <CopyIcon className="size-4" />
+                                <CopyIcon data-icon="inline-start" />
                                 Copy
                             </Button>
                         ) : null}
                         <Button type="button" size="sm" variant="outline" disabled={!hasSelection} onClick={onBulkRemove}>
-                            <Trash2Icon className="size-4" />
+                            <Trash2Icon data-icon="inline-start" />
                             Bulk Unfavorite
                         </Button>
                     </div>
@@ -913,15 +904,27 @@ function FavoriteCard({
     const cardPaddingX = Math.max(4, Math.round(10 * cardScale * cardSpacing));
     const cardGap = Math.max(4, Math.round(8 * cardSpacing));
     const mediaSize = Math.max(28, Math.round(48 * cardScale));
+    const openCard = () => openHandler?.();
+    const handleCardKeyDown = (event) => {
+        if (!openHandler || (event.key !== 'Enter' && event.key !== ' ')) {
+            return;
+        }
+        event.preventDefault();
+        openHandler();
+    };
 
     return (
         <div
-            className="flex min-w-[220px] cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-sm transition-colors hover:bg-muted"
+            className="flex min-w-56 cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-sm transition-colors hover:bg-muted"
             style={{
                 gap: `${cardGap}px`,
                 padding: `${cardPaddingY}px ${cardPaddingX}px`
             }}
-            onClick={openHandler ?? undefined}>
+            role={openHandler ? 'button' : undefined}
+            tabIndex={openHandler ? 0 : undefined}
+            aria-label={openHandler ? `Open ${item.title || 'favorite item'}` : undefined}
+            onKeyDown={handleCardKeyDown}
+            onClick={openHandler ? openCard : undefined}>
             <div className={cn(
                 'flex size-12 shrink-0 items-center justify-center overflow-hidden bg-muted',
                 item.kind === 'friend' ? 'rounded-full' : 'rounded-sm'
@@ -962,13 +965,14 @@ function FavoriteCard({
                     <div className="truncate text-xs text-muted-foreground">{item.subtitle}</div>
                 )}
                 {showGroupLabel ? (
-                    <div className="truncate text-[11px] text-muted-foreground">
+                    <div className="truncate text-xs text-muted-foreground">
                         {item.source === 'remote' ? 'VRChat' : 'Local'} / {item.groupLabel}
                     </div>
                 ) : null}
             </div>
             {editMode ? (
                 <Checkbox
+                    aria-label={`Select ${item.title || 'favorite item'}`}
                     checked={selected}
                     onClick={(event) => event.stopPropagation()}
                     onCheckedChange={(checked) => onToggleSelect(Boolean(checked))}
@@ -981,113 +985,95 @@ function FavoriteCard({
                             size="icon-sm"
                             variant="ghost"
                             className="rounded-full"
+                            aria-label="Favorite item options"
                             disabled={removing}
                             onClick={(event) => event.stopPropagation()}>
                             {removing ? (
-                                <LoaderCircleIcon className="size-4 animate-spin" />
+                                <Spinner data-icon="inline-start" />
                             ) : (
-                                <MoreHorizontalIcon className="size-4" />
+                                <MoreHorizontalIcon data-icon="inline-start" />
                             )}
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                            onSelect={(event) => {
-                                event.preventDefault();
-                                openHandler?.();
-                            }}>
-                            View details
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem onSelect={() => openHandler?.()}>
+                                View details
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
                         {item.kind === 'friend' ? (
                             <>
-                                <DropdownMenuItem
-                                    disabled={isCurrentUser || !isFriendOnline || !onFriendRequestInvite}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        onFriendRequestInvite?.(item);
-                                    }}>
-                                    Request invite
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    disabled={isCurrentUser || !canSendInvite || !onFriendInvite}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        onFriendInvite?.(item);
-                                    }}>
-                                    Send invite
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    disabled={isCurrentUser || !canBoop || !onFriendBoop}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        onFriendBoop?.(item);
-                                    }}>
-                                    Send boop
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        disabled={isCurrentUser || !isFriendOnline || !onFriendRequestInvite}
+                                        onSelect={() => onFriendRequestInvite?.(item)}>
+                                        Request invite
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        disabled={isCurrentUser || !canSendInvite || !onFriendInvite}
+                                        onSelect={() => onFriendInvite?.(item)}>
+                                        Send invite
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        disabled={isCurrentUser || !canBoop || !onFriendBoop}
+                                        onSelect={() => onFriendBoop?.(item)}>
+                                        Send boop
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    disabled={!canUseFriendLocation || !onFriendLaunch}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        onFriendLaunch?.(item);
-                                    }}>
-                                    Launch in VRChat
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    disabled={!canUseFriendLocation || !onFriendSelfInvite}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        onFriendSelfInvite?.(item);
-                                    }}>
-                                    Self invite
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        disabled={!canUseFriendLocation || !onFriendLaunch}
+                                        onSelect={() => onFriendLaunch?.(item)}>
+                                        Launch in VRChat
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        disabled={!canUseFriendLocation || !onFriendSelfInvite}
+                                        onSelect={() => onFriendSelfInvite?.(item)}>
+                                        Self invite
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                             </>
                         ) : null}
                         {item.kind === 'world' ? (
-                            <>
+                            <DropdownMenuGroup>
                                 <DropdownMenuItem
                                     disabled={!onWorldNewInstance}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        onWorldNewInstance?.(item);
-                                    }}>
+                                    onSelect={() => onWorldNewInstance?.(item)}>
                                     New instance
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     disabled={!onWorldSelfInvite}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        onWorldSelfInvite?.(item);
-                                    }}>
+                                    onSelect={() => onWorldSelfInvite?.(item)}>
                                     New instance and self invite
                                 </DropdownMenuItem>
-                            </>
+                            </DropdownMenuGroup>
                         ) : null}
                         {item.kind === 'avatar' ? (
-                            <DropdownMenuItem
-                                disabled={!canSelectAvatar}
-                                onSelect={(event) => {
-                                    event.preventDefault();
-                                    onAvatarSelect?.(item);
-                                }}>
-                                Select avatar
-                            </DropdownMenuItem>
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem
+                                    disabled={!canSelectAvatar}
+                                    onSelect={() => onAvatarSelect?.(item)}>
+                                    Select avatar
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
                         ) : null}
                         {canRemoveLocal || canRemoveRemote ? (
                             <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    variant="destructive"
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        if (canRemoveLocal) {
-                                            onRemoveLocal(item);
-                                            return;
-                                        }
-                                        onRemoveRemote(item);
-                                    }}>
-                                    {item.source === 'local' ? 'Delete' : 'Unfavorite'}
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        onSelect={() => {
+                                            if (canRemoveLocal) {
+                                                onRemoveLocal(item);
+                                                return;
+                                            }
+                                            onRemoveRemote(item);
+                                        }}>
+                                        {item.source === 'local' ? 'Delete' : 'Unfavorite'}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                             </>
                         ) : null}
                     </DropdownMenuContent>
@@ -2533,11 +2519,10 @@ function FavoritesPage({ kind, embedded = false }) {
 
     return (
         <div
-            className={
-                embedded
-                    ? 'flex h-full min-h-0 flex-1 flex-col p-4 pb-0'
-                    : 'x-container flex h-full min-h-0 flex-1 flex-col pb-0'
-            }>
+            className={cn(
+                'flex h-full min-h-0 flex-1 flex-col',
+                embedded ? 'p-4 pb-0' : 'x-container pb-0'
+            )}>
             <FavoritesToolbar
                 kind={kind}
                 sortValue={sortValue}

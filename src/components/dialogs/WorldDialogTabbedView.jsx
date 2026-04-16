@@ -10,7 +10,6 @@ import {
     HomeIcon,
     ImageIcon,
     LineChartIcon,
-    LoaderCircleIcon,
     MessageSquareIcon,
     MonitorIcon,
     PencilIcon,
@@ -32,14 +31,16 @@ import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { timeToText } from '@/lib/dateTime.js';
 import { convertFileUrlToImageUrl, copyTextToClipboard, openExternalLink, userImage } from '@/lib/entityMedia.js';
 import { userStatusDotClassName } from '@/lib/userStatus.js';
+import { cn } from '@/lib/utils.js';
 import { groupProfileRepository, instanceRepository, playerListRepository, userProfileRepository } from '@/repositories/index.js';
 import { parseLocation } from '@/shared/utils/location.js';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     EntityActionDropdown,
     EntityActionItem,
@@ -58,7 +59,7 @@ import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx
 
 function Section({ label, value, mono = false, children }) {
     return (
-        <div className="space-y-1">
+        <div className="flex flex-col gap-1">
             <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">{label}</div>
             {children || <div className={mono ? 'break-all font-mono text-sm' : 'text-sm'}>{value || '—'}</div>}
         </div>
@@ -70,7 +71,7 @@ function PlatformBadge({ name, fileSize = '' }) {
     const Icon = normalized === 'pc' ? MonitorIcon : normalized === 'quest' ? SmartphoneIcon : null;
     return (
         <Badge variant="outline">
-            {Icon ? <Icon className="mr-1 size-3.5" /> : null}
+            {Icon ? <Icon data-icon="inline-start" /> : null}
             {name}
             {fileSize ? <span className="ml-1 border-l pl-1">{fileSize}</span> : null}
         </Badge>
@@ -467,31 +468,32 @@ function InstanceUserTiles({ instance }) {
                 const subtitle = instanceUserSubtitle(user);
                 const travelingTimestamp = instanceUserTravelingTimestamp(user);
                 return (
-                    <button
+                    <Button
                         key={`${userId || displayName || 'user'}:${index}`}
                         type="button"
-                        className="box-border flex w-[167px] cursor-pointer items-center p-1.5 text-left text-[13px] hover:rounded-[25px_5px_5px_25px] hover:bg-muted/50"
+                        variant="ghost"
+                        className="h-auto w-44 justify-start gap-2 px-1.5 py-1.5 text-left font-normal"
                         onClick={() => userId && openUserDialog({ userId, title: displayName || undefined, seedData: user })}>
-                        <span className="relative mr-2.5 size-9 shrink-0">
+                        <span className="relative size-9 shrink-0">
                             {image ? (
                                 <img src={image} alt="" className="size-9 rounded-full object-cover" />
                             ) : (
                                 <span className="flex size-9 items-center justify-center rounded-full bg-muted">
-                                    <UserIcon className="size-4 text-muted-foreground" />
+                                    <UserIcon data-icon="inline-start" className="size-4 text-muted-foreground" />
                                 </span>
                             )}
-                            {dotClassName ? <span className={`absolute bottom-0 right-0 z-10 size-2.5 rounded-full border border-background ${dotClassName}`} /> : null}
+                            {dotClassName ? <span className={cn('absolute bottom-0 right-0 z-10 size-2.5 rounded-full border border-background', dotClassName)} /> : null}
                         </span>
                         <span className="min-w-0 flex-1 overflow-hidden">
-                            <span className="block truncate font-medium leading-[18px]" style={user?.$userColour ? { color: user.$userColour } : undefined}>{displayName}</span>
+                            <span className="block truncate font-medium leading-snug" style={user?.$userColour ? { color: user.$userColour } : undefined}>{displayName}</span>
                             {travelingTimestamp ? (
                                 <span className="block truncate text-xs text-muted-foreground">
-                                    <LoaderCircleIcon className="mr-1 inline-block size-3 animate-spin" />
+                                    <Spinner aria-hidden="true" aria-label={undefined} role="presentation" className="mr-1 inline-block size-3" />
                                     {timeToText(Date.now() - travelingTimestamp)}
                                 </span>
                             ) : subtitle ? <span className="block truncate text-xs text-muted-foreground">{subtitle}</span> : null}
                         </span>
-                    </button>
+                    </Button>
                 );
             })}
         </div>
@@ -947,13 +949,15 @@ export function WorldDialogTabbedView({
                 badges={
                     <>
                         <Badge variant={world.releaseStatus === 'public' ? 'default' : 'outline'}>{world.isLabs ? 'Labs' : world.releaseStatus || 'Unknown'}</Badge>
-                        {world.capacity > 0 ? <Badge variant="outline"><UsersIcon className="mr-1 size-3.5" />Capacity {world.capacity}</Badge> : null}
-                        {world.occupants > 0 ? <Badge variant="outline"><UsersIcon className="mr-1 size-3.5" />Occupants {world.occupants}</Badge> : null}
-                        {world.favorites > 0 ? <Badge variant="outline"><HeartIcon className="mr-1 size-3.5" />Favorites {world.favorites}</Badge> : null}
+                        {world.capacity > 0 ? <Badge variant="outline"><UsersIcon data-icon="inline-start" />Capacity {world.capacity}</Badge> : null}
+                        {world.occupants > 0 ? <Badge variant="outline"><UsersIcon data-icon="inline-start" />Occupants {world.occupants}</Badge> : null}
+                        {world.favorites > 0 ? <Badge variant="outline"><HeartIcon data-icon="inline-start" />Favorites {world.favorites}</Badge> : null}
                         {world.$isCached ? (
-                            <button type="button" onClick={onOpenCache}>
-                                <Badge variant="outline">{world.$cacheSize ? `${world.$cacheSize} Cache` : 'Local cache'}</Badge>
-                            </button>
+                            <Badge asChild variant="outline">
+                                <Button type="button" variant="ghost" onClick={onOpenCache}>
+                                    {world.$cacheSize ? `${world.$cacheSize} Cache` : 'Local cache'}
+                                </Button>
+                            </Badge>
                         ) : null}
                         {platformRows.map((platform) => (
                             <PlatformBadge
@@ -970,8 +974,8 @@ export function WorldDialogTabbedView({
                 actions={
                     <>
                         {world.$isCached ? (
-                            <Button type="button" size="icon-lg" variant="outline" className="rounded-full" disabled={actionStatus === 'cache'} onClick={onDeleteCache}>
-                                <Trash2Icon className="size-4" />
+                            <Button type="button" size="icon-lg" variant="outline" aria-label="Delete cached world" disabled={actionStatus === 'cache'} onClick={onDeleteCache}>
+                                <Trash2Icon data-icon="inline-start" />
                             </Button>
                         ) : null}
                         <FavoriteActionMenu kind="world" entityId={world.id} entity={world} />
@@ -1015,7 +1019,7 @@ export function WorldDialogTabbedView({
                 }
             />
             <EntityDialogTabs value={activeTab} onValueChange={changeTab} tabs={tabs}>
-                <EntityDialogTabContent value="instances" className="space-y-4">
+                <EntityDialogTabContent value="instances" className="flex flex-col gap-4">
                     <div className="flex flex-wrap items-center gap-3 text-sm">
                         <span className="inline-flex items-center gap-1"><UserIcon className="size-4" />Public {world.publicOccupants ?? 0}</span>
                         <span className="inline-flex items-center gap-1"><UserIcon className="size-4" />Private {world.privateOccupants ?? 0}</span>
@@ -1040,10 +1044,10 @@ export function WorldDialogTabbedView({
                         <Section label="Capacity" value={world.capacity ? String(world.capacity) : '—'} />
                         <Section label="Occupants" value={world.occupants ? String(world.occupants) : '—'} />
                     </div>
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         {isInstanceLocation ? (
                             <Button type="button" disabled={actionStatus === 'launching'} onClick={onLaunch}>
-                                <PlayIcon className="size-4" />
+                                <PlayIcon data-icon="inline-start" />
                                 Launch Current Instance
                             </Button>
                         ) : null}

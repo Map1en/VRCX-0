@@ -8,7 +8,6 @@ import {
     CopyIcon,
     ExternalLinkIcon,
     FileTextIcon,
-    LoaderCircleIcon,
     LogInIcon,
     LogOutIcon,
     LogsIcon,
@@ -42,7 +41,7 @@ import {
 import {
     DataTablePagination,
     DataTableSurface
-} from '@/components/data-table/VrcxDataTable.jsx';
+} from '@/components/data-table/DataTableView.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import { Location } from '@/components/Location.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
@@ -66,38 +65,41 @@ import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Calendar } from '@/ui/shadcn/calendar.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import { Calendar } from '@/ui/shadcn/calendar';
 import {
     ContextMenu,
     ContextMenuContent,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
-} from '@/ui/shadcn/context-menu.jsx';
+} from '@/ui/shadcn/context-menu';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Input } from '@/ui/shadcn/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     TableBody,
     TableHeader,
     TableRow
-} from '@/ui/shadcn/table.jsx';
+} from '@/ui/shadcn/table';
 import { timeToText } from '@/lib/dateTime.js';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
@@ -569,19 +571,21 @@ function SortButton({ column, label }) {
     const direction = column.getIsSorted();
 
     return (
-        <button
+        <Button
             type="button"
-            className="inline-flex items-center gap-1 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+            variant="ghost"
+            size="sm"
+            className="h-auto justify-start px-0 py-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
             onClick={() => column.toggleSorting(direction === 'asc')}>
             <span>{label}</span>
             {direction === 'asc' ? (
-                <ArrowUpIcon className="size-3.5" />
+                <ArrowUpIcon data-icon="inline-end" />
             ) : direction === 'desc' ? (
-                <ArrowDownIcon className="size-3.5" />
+                <ArrowDownIcon data-icon="inline-end" />
             ) : (
-                <ArrowUpDownIcon className="size-3.5" />
+                <ArrowUpDownIcon data-icon="inline-end" />
             )}
-        </button>
+        </Button>
     );
 }
 
@@ -692,29 +696,33 @@ function TypeFilterDropdown({ types, selectedTypes, onSelectedTypesChange }) {
                             ? `${selectedTypes.length}/${types.length}`
                             : t('view.game_log.filter_placeholder')}
                     </span>
-                    <ChevronRightIcon className="size-4 rotate-90 text-muted-foreground" />
+                    <ChevronRightIcon data-icon="inline-end" className="rotate-90 text-muted-foreground" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuItem onSelect={() => onSelectedTypesChange([])}>
-                    {t('view.search.avatar.all')}
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuItem onSelect={() => onSelectedTypesChange([])}>
+                        {t('view.search.avatar.all')}
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                {types.map((type) => (
-                    <DropdownMenuCheckboxItem
-                        key={type}
-                        checked={selectedTypes.includes(type)}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={(checked) => {
-                            onSelectedTypesChange(
-                                checked
-                                    ? [...selectedTypes, type]
-                                    : selectedTypes.filter((entry) => entry !== type)
-                            );
-                        }}>
-                        {t(`view.game_log.filters.${type}`)}
-                    </DropdownMenuCheckboxItem>
-                ))}
+                <DropdownMenuGroup>
+                    {types.map((type) => (
+                        <DropdownMenuCheckboxItem
+                            key={type}
+                            checked={selectedTypes.includes(type)}
+                            onSelect={(event) => event.preventDefault()}
+                            onCheckedChange={(checked) => {
+                                onSelectedTypesChange(
+                                    checked
+                                        ? [...selectedTypes, type]
+                                        : selectedTypes.filter((entry) => entry !== type)
+                                );
+                            }}>
+                            {t(`view.game_log.filters.${type}`)}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -767,12 +775,12 @@ function renderSessionMember(member) {
     return (
         <div
             key={`${userId}:${member?.created_at || displayName}`}
-            className="flex items-center gap-1 rounded px-2 py-px text-[0.8125rem] text-muted-foreground hover:bg-muted/30">
+            className="flex items-center gap-1 rounded px-2 py-px text-sm text-muted-foreground hover:bg-muted/30">
             {canOpenUser ? (
                 <Button
                     type="button"
                     variant="link"
-                    className="h-auto p-0 text-[0.8125rem]"
+                    className="h-auto p-0 text-sm"
                     onClick={() => void openGameLogUser(member)}>
                     {displayName}
                 </Button>
@@ -808,11 +816,12 @@ function SessionEventRow({ event }) {
 
         return (
             <div className="py-0.5">
-                <button
+                <Button
                     type="button"
-                    className="flex min-h-7 w-full cursor-pointer items-center gap-1.5 rounded border-none bg-transparent px-2 py-0.5 text-left text-[0.8125rem] text-muted-foreground hover:bg-muted/50"
+                    variant="ghost"
+                    className="flex min-h-7 w-full cursor-pointer items-center gap-1.5 rounded border-none bg-transparent px-2 py-0.5 text-left text-sm text-muted-foreground hover:bg-muted/50"
                     onClick={() => setIsExpanded((current) => !current)}>
-                    <span className="min-w-[5.5rem] shrink-0 text-[0.75rem] tabular-nums text-muted-foreground">
+                    <span className="min-w-[5.5rem] shrink-0 text-xs tabular-nums text-muted-foreground">
                         {formatDateFilter(event?.created_at, 'short')}
                     </span>
                     <div className="min-w-[7rem] shrink-0">
@@ -824,11 +833,13 @@ function SessionEventRow({ event }) {
                         {count} player{count === 1 ? '' : 's'} {isJoin ? 'joined' : 'left'}
                     </span>
                     <ChevronRightIcon
-                        className={`size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ${
-                            isExpanded ? 'rotate-90' : ''
-                        }`}
+                        data-icon="inline-end"
+                        className={cn(
+                            'shrink-0 text-muted-foreground transition-transform duration-150',
+                            isExpanded && 'rotate-90'
+                        )}
                     />
-                </button>
+                </Button>
                 {isExpanded ? (
                     <div className="py-0.5 pb-1 pl-20">
                         {groupMembers.map(renderSessionMember)}
@@ -839,9 +850,9 @@ function SessionEventRow({ event }) {
     }
 
     return (
-        <div className={`py-0.5 ${isLeave ? 'text-muted-foreground' : ''}`}>
-            <div className="flex min-h-7 items-center gap-1.5 rounded px-2 py-0.5 text-[0.8125rem] hover:bg-muted/50">
-                <span className="min-w-[5.5rem] shrink-0 text-[0.75rem] tabular-nums text-muted-foreground">
+        <div className={cn('py-0.5', isLeave && 'text-muted-foreground')}>
+            <div className="flex min-h-7 items-center gap-1.5 rounded px-2 py-0.5 text-sm hover:bg-muted/50">
+                <span className="min-w-[5.5rem] shrink-0 text-xs tabular-nums text-muted-foreground">
                     {formatDateFilter(event?.created_at, 'short')}
                 </span>
                 <div className="min-w-[7rem] shrink-0">
@@ -856,20 +867,21 @@ function SessionEventRow({ event }) {
                             <div className="flex min-w-0 flex-1 cursor-default items-center gap-1 truncate text-left">
                                 <VideoIcon className="shrink-0 text-xs" />
                                 {showVideoLink ? (
-                                    <button
+                                    <Button
                                         type="button"
-                                        className="min-w-0 truncate text-left"
+                                        variant="link"
+                                        className="h-auto min-w-0 justify-start p-0 text-left font-normal text-foreground"
                                         onClick={(eventObject) => {
                                             eventObject.stopPropagation();
                                             void openExternalLink(event.videoUrl);
                                         }}>
-                                        {videoLabel}
-                                    </button>
+                                        <span className="truncate">{videoLabel}</span>
+                                    </Button>
                                 ) : (
                                     <span className="truncate">{videoLabel}</span>
                                 )}
                                 {event?.playCount > 1 ? (
-                                    <Badge variant="secondary" className="h-4 shrink-0 px-1 text-[0.625rem]">
+                                    <Badge variant="secondary" className="h-4 shrink-0 px-1 text-xs">
                                         {t('view.game_log.sessions.play_count', { count: event.playCount })}
                                     </Badge>
                                 ) : null}
@@ -879,33 +891,37 @@ function SessionEventRow({ event }) {
                             {showVideoLink ? (
                                 <>
                                     <ContextMenuItem onSelect={() => void openExternalLink(event.videoUrl)}>
-                                        <ExternalLinkIcon className="size-4" />
+                                        <ExternalLinkIcon data-icon="inline-start" />
                                         {t('common.actions.open_link')}
                                     </ContextMenuItem>
                                     <ContextMenuSeparator />
                                 </>
                             ) : null}
                             <ContextMenuItem onSelect={() => void copyTextToClipboard(event?.videoUrl || videoLabel)}>
-                                <CopyIcon className="size-4" />
+                                <CopyIcon data-icon="inline-start" />
                                 {t('common.actions.copy')}
                             </ContextMenuItem>
                         </ContextMenuContent>
                     </ContextMenu>
                     ) : (
-                        <button
+                        <Button
                             type="button"
-                            className={`flex min-w-0 flex-1 items-center gap-1 truncate text-left ${userId || event?.displayName ? 'cursor-pointer' : 'cursor-default'}`}
+                            variant="ghost"
+                            className={cn(
+                                'h-auto min-w-0 flex-1 justify-start gap-1 px-0 py-0 text-left font-normal hover:bg-transparent',
+                                userId || event?.displayName ? 'cursor-pointer' : 'cursor-default'
+                            )}
                             onClick={() => void openGameLogUser(event)}>
-                            <EventIcon className="shrink-0 text-xs" />
+                            <EventIcon data-icon="inline-start" />
                             <span className="truncate">{displayName}</span>
                         {event?.isFriend ? (
                             <span className="ml-1">{event?.isFavorite ? '⭐' : '💚'}</span>
                         ) : null}
-                    </button>
+                    </Button>
                 )}
 
                 {isVideo && event?.displayName ? (
-                    <span className="shrink-0 text-[0.75rem] text-muted-foreground">{event.displayName}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{event.displayName}</span>
                 ) : null}
             </div>
         </div>
@@ -956,75 +972,92 @@ function GameLogSessionSegment({
     }, [shouldShowLiveDuration]);
 
     return (
-        <div className={`border-b border-border ${isLast ? 'border-b-0' : ''}`}>
-            <div
-                role="button"
-                tabIndex={0}
-                className="sticky top-0 z-[5] flex w-full cursor-pointer items-center gap-2 border-b border-border bg-muted/80 px-3 py-2 text-left transition-colors hover:bg-muted"
-                onClick={toggleCollapsed}
-                onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        toggleCollapsed();
-                    }
-                }}>
-                <ChevronRightIcon
-                    className={`size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ${
-                        collapsed ? '' : 'rotate-90'
-                    }`}
-                />
-                <div className="min-w-0 flex-1">
-                    {sessionLocation ? (
-                        <div className="flex min-w-0 items-center gap-1.5">
-                            <Location
-                                location={sessionLocation}
-                                hint={session.worldName || worldTarget}
-                                grouphint={session.groupName || ''}
-                                enableContextMenu
-                                stopPropagation
-                                className="min-w-0 text-sm"
-                            />
-                            {durationText ? (
-                                <Badge
-                                    variant="outline"
-                                    className="h-4 shrink-0 px-1 text-[0.625rem] tabular-nums"
-                                    title="Time spent in this instance">
-                                    {durationText}
-                                </Badge>
-                            ) : null}
-                        </div>
-                    ) : (
-                        <span className="truncate text-sm" />
-                    )}
-                </div>
-                <span className="shrink-0 text-[0.6875rem] text-muted-foreground">
-                    {formatDateFilter(session.created_at, 'long')}
-                </span>
-                {!durationText && isLatest && isGameRunning ? (
-                    <Badge variant="outline" className="h-4 shrink-0 px-1 text-[0.625rem]">
-                        {t('common.current_session')}
-                    </Badge>
-                ) : null}
-                <div className="ml-auto flex min-w-0 max-w-full shrink-0 items-center justify-end gap-2 text-[0.6875rem] text-muted-foreground">
-                    {session.events?.length ? (
-                        <>
-                            {joinedCount ? (
-                            <span className="flex items-center gap-0.5" title={TYPE_LABELS.OnPlayerJoined}>
-                                <LogInIcon className="size-3" /> {joinedCount}
-                            </span>
-                            ) : null}
-                            {leftCount ? (
-                            <span className="flex items-center gap-0.5" title={TYPE_LABELS.OnPlayerLeft}>
-                                <LogOutIcon className="size-3" /> {leftCount}
-                            </span>
-                            ) : null}
-                            {videoCount ? (
-                            <span className="flex items-center gap-0.5" title={TYPE_LABELS.VideoPlay}>
-                                <VideoIcon className="size-3" /> {videoCount}
-                            </span>
-                            ) : null}
-                        </>
+        <div className={cn('border-b border-border', isLast && 'border-b-0')}>
+            <div className="sticky top-0 z-[5] border-b border-border bg-muted/80 transition-colors">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    aria-expanded={!collapsed}
+                    aria-label={collapsed ? 'Expand game log session' : 'Collapse game log session'}
+                    className="absolute inset-0 z-0 h-full w-full rounded-none p-0 hover:bg-muted"
+                    onClick={toggleCollapsed}>
+                    <span className="sr-only">
+                        {collapsed ? 'Expand game log session' : 'Collapse game log session'}
+                    </span>
+                </Button>
+                <div className="pointer-events-none relative z-10 flex w-full items-center gap-2 px-3 py-2 text-left">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-expanded={!collapsed}
+                        aria-label={collapsed ? 'Expand game log session' : 'Collapse game log session'}
+                        className="pointer-events-auto -ml-1 size-6 shrink-0"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            toggleCollapsed();
+                        }}>
+                        <ChevronRightIcon
+                            data-icon="inline-start"
+                            className={cn(
+                                'shrink-0 text-muted-foreground transition-transform duration-150',
+                                !collapsed && 'rotate-90'
+                            )}
+                        />
+                    </Button>
+                    <div className="min-w-0 flex-1">
+                        {sessionLocation ? (
+                            <div className="flex min-w-0 items-center gap-1.5">
+                                <Location
+                                    location={sessionLocation}
+                                    hint={session.worldName || worldTarget}
+                                    grouphint={session.groupName || ''}
+                                    enableContextMenu
+                                    stopPropagation
+                                    className="pointer-events-auto min-w-0 text-sm"
+                                />
+                                {durationText ? (
+                                    <Badge
+                                        variant="outline"
+                                        className="h-4 shrink-0 px-1 text-xs tabular-nums"
+                                        title="Time spent in this instance">
+                                        {durationText}
+                                    </Badge>
+                                ) : null}
+                            </div>
+                        ) : (
+                            <span className="truncate text-sm" />
+                        )}
+                    </div>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                        {formatDateFilter(session.created_at, 'long')}
+                    </span>
+                    {!durationText && isLatest && isGameRunning ? (
+                        <Badge variant="outline" className="h-4 shrink-0 px-1 text-xs">
+                            {t('common.current_session')}
+                        </Badge>
                     ) : null}
+                    <div className="ml-auto flex min-w-0 max-w-full shrink-0 items-center justify-end gap-2 text-xs text-muted-foreground">
+                        {session.events?.length ? (
+                            <>
+                                {joinedCount ? (
+                                    <span className="flex items-center gap-0.5" title={TYPE_LABELS.OnPlayerJoined}>
+                                        <LogInIcon className="size-3" /> {joinedCount}
+                                    </span>
+                                ) : null}
+                                {leftCount ? (
+                                    <span className="flex items-center gap-0.5" title={TYPE_LABELS.OnPlayerLeft}>
+                                        <LogOutIcon className="size-3" /> {leftCount}
+                                    </span>
+                                ) : null}
+                                {videoCount ? (
+                                    <span className="flex items-center gap-0.5" title={TYPE_LABELS.VideoPlay}>
+                                        <VideoIcon className="size-3" /> {videoCount}
+                                    </span>
+                                ) : null}
+                            </>
+                        ) : null}
+                    </div>
                 </div>
             </div>
 
@@ -1180,10 +1213,10 @@ function GameLogSessionsView({
                 })}
                 <div
                     ref={sentinelRef}
-                    className="flex items-center justify-center py-4 pb-6 text-[0.8125rem] text-muted-foreground">
+                    className="flex items-center justify-center py-4 pb-6 text-sm text-muted-foreground">
                     {isLoadingMore ? (
                         <>
-                            <LoaderCircleIcon className="mr-2 size-4 animate-spin" />
+                            <Spinner data-icon="inline-start" className="mr-2" />
                             {t('common.load_more')}...
                         </>
                     ) : hasMore ? (
@@ -1923,24 +1956,28 @@ export function GameLogPage({ embedded = false } = {}) {
                                         <Button
                                             type="button"
                                             variant="ghost"
+                                            size="icon"
+                                            aria-label="Open link"
                                             className="size-6 p-0"
                                             onClick={(event) => {
                                                 event.stopPropagation();
                                                 void openExternalLink(externalTarget);
                                             }}>
-                                            <ExternalLinkIcon className="size-3.5" />
+                                            <ExternalLinkIcon data-icon="inline-start" />
                                         </Button>
                                     ) : null}
                                     {copyTarget ? (
                                         <Button
                                             type="button"
                                             variant="ghost"
+                                            size="icon"
+                                            aria-label="Copy detail"
                                             className="size-6 p-0"
                                             onClick={(event) => {
                                                 event.stopPropagation();
                                                 void copyGameLogDetail(row.original);
                                             }}>
-                                            <CopyIcon className="size-3.5" />
+                                            <CopyIcon data-icon="inline-start" />
                                         </Button>
                                     ) : null}
                                 </div>
@@ -1971,6 +2008,8 @@ export function GameLogPage({ embedded = false } = {}) {
                                 <Button
                                     type="button"
                                     variant="ghost"
+                                    size="icon"
+                                    aria-label={shiftHeld ? 'Delete game log row without confirmation' : 'Delete game log row'}
                                     className="size-6 p-0 text-muted-foreground hover:text-destructive"
                                     disabled={deletingGameLogKey === rowKey}
                                     onClick={(event) =>
@@ -1979,11 +2018,11 @@ export function GameLogPage({ embedded = false } = {}) {
                                         })
                                     }>
                                     {deletingGameLogKey === rowKey ? (
-                                        <LoaderCircleIcon className="size-4 animate-spin" />
+                                        <Spinner data-icon="inline-start" />
                                     ) : shiftHeld ? (
-                                        <XIcon className="size-4 text-destructive" />
+                                        <XIcon data-icon="inline-start" className="text-destructive" />
                                     ) : (
-                                        <Trash2Icon className="size-4" />
+                                        <Trash2Icon data-icon="inline-start" />
                                     )}
                                 </Button>
                             ) : null}
@@ -1991,13 +2030,15 @@ export function GameLogPage({ embedded = false } = {}) {
                                 <Button
                                     type="button"
                                     variant="ghost"
+                                    size="icon"
+                                    aria-label="Show previous instances"
                                     className="size-6 p-0 text-muted-foreground hover:text-foreground"
                                     disabled={loadingPreviousInstancesKey === rowKey}
                                     onClick={() => void openPreviousInstancesForRow(row.original)}>
                                     {loadingPreviousInstancesKey === rowKey ? (
-                                        <LoaderCircleIcon className="size-4 animate-spin" />
+                                        <Spinner data-icon="inline-start" />
                                     ) : (
-                                        <FileTextIcon className="size-4" />
+                                        <FileTextIcon data-icon="inline-start" />
                                     )}
                                 </Button>
                             ) : null}
@@ -2108,7 +2149,7 @@ export function GameLogPage({ embedded = false } = {}) {
                         setSavedViewMode('sessions');
                         void configRepository.setString('gameLogViewMode', 'sessions');
                     }}>
-                    <LogsIcon className="size-4" />
+                    <LogsIcon data-icon="inline-start" />
                 </Button>
                 <Button
                     type="button"
@@ -2120,7 +2161,7 @@ export function GameLogPage({ embedded = false } = {}) {
                         setSavedViewMode('table');
                         void configRepository.setString('gameLogViewMode', 'table');
                     }}>
-                    <Table2Icon className="size-4" />
+                    <Table2Icon data-icon="inline-start" />
                 </Button>
             </div>
         );
@@ -2135,7 +2176,7 @@ export function GameLogPage({ embedded = false } = {}) {
                 title="Favorites only"
                 aria-label="Favorites only"
                 onClick={() => setActiveFavoritesOnly((current) => !current)}>
-                <StarIcon className="size-4" />
+                <StarIcon data-icon="inline-start" />
             </Button>
         );
     }
@@ -2161,7 +2202,7 @@ export function GameLogPage({ embedded = false } = {}) {
                         )}
                         title="Session date range"
                         aria-label="Session date range">
-                        <CalendarRangeIcon className="size-4" />
+                        <CalendarRangeIcon data-icon="inline-start" />
                         {(sessionDateFrom || sessionDateTo) ? (
                             <Badge
                                 variant="secondary"
@@ -2231,7 +2272,7 @@ export function GameLogPage({ embedded = false } = {}) {
                             setSearchDraft('');
                             setSearchQuery('');
                         }}>
-                        <XIcon className="size-4" />
+                        <XIcon data-icon="inline-start" />
                     </Button>
                 ) : null}
             </div>
@@ -2250,9 +2291,9 @@ export function GameLogPage({ embedded = false } = {}) {
                     disabled={!currentUserId || gameLogDisabled || loadStatus === 'running'}
                     onClick={() => setRefreshToken((value) => value + 1)}>
                     {loadStatus === 'running' ? (
-                        <LoaderCircleIcon className="size-4 animate-spin" />
+                        <Spinner data-icon="inline-start" />
                     ) : (
-                        <RefreshCwIcon className="size-4" />
+                        <RefreshCwIcon data-icon="inline-start" />
                     )}
                 </Button>
                 {savedViewMode === 'table' ? <TableColumnVisibilityMenu table={table} /> : null}
@@ -2271,11 +2312,13 @@ export function GameLogPage({ embedded = false } = {}) {
                             <SelectValue placeholder="Page size" />
                         </SelectTrigger>
                         <SelectContent>
-                            {pageSizes.map((size) => (
-                                <SelectItem key={size} value={String(size)}>
-                                    {size}
-                                </SelectItem>
-                            ))}
+                            <SelectGroup>
+                                {pageSizes.map((size) => (
+                                    <SelectItem key={size} value={String(size)}>
+                                        {size}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
                 ) : null}

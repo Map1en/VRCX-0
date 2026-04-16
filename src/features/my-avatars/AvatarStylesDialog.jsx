@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LoaderCircleIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { myAvatarRepository } from '@/repositories/index.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -12,16 +11,18 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
+} from '@/ui/shadcn/dialog';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 const CLEAR_STYLE_VALUE = '__clear__';
 
@@ -242,9 +243,9 @@ export function AvatarStylesDialog({
                     <DialogTitle>Set Avatar Styles</DialogTitle>
                     <DialogDescription>{avatar?.name || avatarId || 'Avatar'}</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Primary style</Label>
+                <FieldGroup>
+                    <Field>
+                        <FieldLabel>Primary style</FieldLabel>
                         <Select
                             value={primaryStyle || CLEAR_STYLE_VALUE}
                             onValueChange={(value) =>
@@ -254,17 +255,19 @@ export function AvatarStylesDialog({
                                 <SelectValue placeholder="Select style" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value={CLEAR_STYLE_VALUE}>None</SelectItem>
-                                {styleNames.map((styleName) => (
-                                    <SelectItem key={styleName} value={styleName}>
-                                        {styleName}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    <SelectItem value={CLEAR_STYLE_VALUE}>None</SelectItem>
+                                    {styleNames.map((styleName) => (
+                                        <SelectItem key={styleName} value={styleName}>
+                                            {styleName}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Secondary style</Label>
+                    </Field>
+                    <Field>
+                        <FieldLabel>Secondary style</FieldLabel>
                         <Select
                             value={secondaryStyle || CLEAR_STYLE_VALUE}
                             onValueChange={(value) =>
@@ -274,37 +277,39 @@ export function AvatarStylesDialog({
                                 <SelectValue placeholder="Select style" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value={CLEAR_STYLE_VALUE}>None</SelectItem>
-                                {styleNames.map((styleName) => (
-                                    <SelectItem key={styleName} value={styleName}>
-                                        {styleName}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    <SelectItem value={CLEAR_STYLE_VALUE}>None</SelectItem>
+                                    {styleNames.map((styleName) => (
+                                        <SelectItem key={styleName} value={styleName}>
+                                            {styleName}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Author tags</Label>
+                    </Field>
+                    <Field>
+                        <FieldLabel>Author tags</FieldLabel>
                         <Textarea
                             value={authorTags}
                             onChange={(event) => setAuthorTags(event.target.value)}
                             rows={3}
                             placeholder="comma,separated,tags"
                         />
-                    </div>
+                    </Field>
                     {loadStatus === 'error' ? (
-                        <div className="text-sm text-muted-foreground">
+                        <FieldDescription>
                             Style list could not be loaded. Unknown style selections will be preserved.
-                        </div>
+                        </FieldDescription>
                     ) : null}
-                </div>
+                </FieldGroup>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
                     <Button type="button" disabled={saving || loadStatus === 'running'} onClick={() => void saveStyles()}>
                         {saving || loadStatus === 'running' ? (
-                            <LoaderCircleIcon className="size-4 animate-spin" />
+                            <Spinner data-icon="inline-start" />
                         ) : null}
                         Save
                     </Button>

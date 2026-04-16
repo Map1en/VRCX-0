@@ -10,7 +10,6 @@ import {
     ChevronRightIcon,
     CheckIcon,
     ExternalLinkIcon,
-    LoaderCircleIcon,
     MessageCircleIcon,
     PencilIcon,
     RefreshCcwIcon,
@@ -30,6 +29,7 @@ import {
 
 import { convertFileUrlToImageUrl, openExternalLink } from '@/lib/entityMedia.js';
 import { formatDateFilter } from '@/lib/dateTime.js';
+import { cn } from '@/lib/utils.js';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import {
     ResizableTableCell,
@@ -62,17 +62,19 @@ import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/shadcn/table.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Input } from '@/ui/shadcn/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/shadcn/table';
 import {
     Dialog,
     DialogContent,
@@ -80,8 +82,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dialog';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 const STORAGE_KEY = 'vrcx:table:notifications';
 const DEFAULT_PAGE_SIZES = [10, 25, 50, 100];
@@ -366,19 +368,21 @@ function buildCachedInstanceMap(instances) {
 function SortButton({ column, label }) {
     const direction = column.getIsSorted();
     return (
-        <button
+        <Button
             type="button"
-            className="inline-flex items-center gap-1 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+            variant="ghost"
+            size="sm"
+            className="h-auto justify-start px-1 py-0 text-left"
             onClick={() => column.toggleSorting(direction === 'asc')}>
             <span>{label}</span>
             {direction === 'asc' ? (
-                <ArrowUpIcon className="size-3.5" />
+                <ArrowUpIcon data-icon="inline-end" />
             ) : direction === 'desc' ? (
-                <ArrowDownIcon className="size-3.5" />
+                <ArrowDownIcon data-icon="inline-end" />
             ) : (
-                <ArrowUpDownIcon className="size-3.5" />
+                <ArrowUpDownIcon data-icon="inline-end" />
             )}
-        </button>
+        </Button>
     );
 }
 
@@ -404,25 +408,27 @@ function NotificationTypeFilterDropdown({ value, onChange, getTypeLabel = (type)
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="h-9 min-w-[260px] flex-1 justify-start truncate">
+                <Button type="button" variant="outline" className="h-9 min-w-0 flex-1 basis-64 justify-start truncate">
                     {label}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="max-h-96 w-80 overflow-y-auto">
-                {NOTIFICATION_TYPES.map((type) => (
-                    <DropdownMenuCheckboxItem
-                        key={type}
-                        checked={activeTypes.includes(type)}
-                        onCheckedChange={(checked) => {
-                            const nextTypes = checked
-                                ? [...activeTypes, type]
-                                : activeTypes.filter((entry) => entry !== type);
-                            onChange(sanitizeNotificationFilters(nextTypes));
-                        }}
-                        onSelect={(event) => event.preventDefault()}>
-                        {getTypeLabel(type)}
-                    </DropdownMenuCheckboxItem>
-                ))}
+                <DropdownMenuGroup>
+                    {NOTIFICATION_TYPES.map((type) => (
+                        <DropdownMenuCheckboxItem
+                            key={type}
+                            checked={activeTypes.includes(type)}
+                            onCheckedChange={(checked) => {
+                                const nextTypes = checked
+                                    ? [...activeTypes, type]
+                                    : activeTypes.filter((entry) => entry !== type);
+                                onChange(sanitizeNotificationFilters(nextTypes));
+                            }}
+                            onSelect={(event) => event.preventDefault()}>
+                            {getTypeLabel(type)}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -628,14 +634,26 @@ function InviteResponseMessageDialog({
                             {loading ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                        <LoaderCircleIcon className="mr-2 inline size-4 animate-spin" />
-                                        Loading invite messages.
+                                        <div className="inline-flex items-center gap-2">
+                                            <Spinner className="size-4" />
+                                            Loading invite messages.
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ) : rows.length ? rows.map((row) => (
                                 <TableRow
                                     key={`${messageType}:${row.slot}`}
-                                    className={confirmRow?.slot === row.slot ? 'cursor-pointer bg-muted/70' : 'cursor-pointer'}
+                                    className={cn('cursor-pointer', confirmRow?.slot === row.slot && 'bg-muted/70')}
+                                    tabIndex={0}
+                                    aria-label={`Select invite message slot ${row.slot}`}
+                                    onKeyDown={(event) => {
+                                        if (event.key !== 'Enter' && event.key !== ' ') {
+                                            return;
+                                        }
+                                        event.preventDefault();
+                                        setEditingRow(null);
+                                        setConfirmRow(row);
+                                    }}
                                     onClick={() => {
                                         setEditingRow(null);
                                         setConfirmRow(row);
@@ -650,12 +668,13 @@ function InviteResponseMessageDialog({
                                             type="button"
                                             variant="ghost"
                                             size="icon-xs"
+                                            aria-label={`Edit slot ${row.slot}`}
                                             disabled={sending}
                                             onClick={(event) => {
                                                 event.stopPropagation();
                                                 beginEdit(row);
                                             }}>
-                                            <PencilIcon className="size-3.5" />
+                                            <PencilIcon data-icon="inline-start" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -670,7 +689,7 @@ function InviteResponseMessageDialog({
                     </Table>
                 </div>
                 {editingRow ? (
-                    <div className="space-y-2 rounded-md border p-3">
+                    <div className="flex flex-col gap-2 rounded-md border p-3">
                         <div className="text-sm font-medium">Edit and send slot {editingRow.slot}</div>
                         <Textarea
                             value={editMessage}
@@ -690,7 +709,7 @@ function InviteResponseMessageDialog({
                                     size="sm"
                                     disabled={sending || !editMessage.trim()}
                                     onClick={() => void sendRow(editingRow, editMessage.trim())}>
-                                    {sending ? <LoaderCircleIcon className="size-3.5 animate-spin" /> : <SendIcon className="size-3.5" />}
+                                    {sending ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
                                     Send
                                 </Button>
                             </div>
@@ -707,7 +726,7 @@ function InviteResponseMessageDialog({
                                 Cancel
                             </Button>
                             <Button type="button" size="sm" disabled={sending} onClick={() => void sendRow(confirmRow)}>
-                                {sending ? <LoaderCircleIcon className="size-3.5 animate-spin" /> : <SendIcon className="size-3.5" />}
+                                {sending ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
                                 Confirm
                             </Button>
                         </div>
@@ -715,7 +734,7 @@ function InviteResponseMessageDialog({
                 ) : null}
                 <DialogFooter>
                     <Button type="button" variant="outline" disabled={loading || sending} onClick={() => void loadRows()}>
-                        <RefreshCcwIcon className="size-3.5" />
+                        <RefreshCcwIcon data-icon="inline-start" />
                         Refresh
                     </Button>
                     <Button type="button" variant="secondary" disabled={sending} onClick={() => onOpenChange(false)}>
@@ -825,14 +844,14 @@ function BoopReplyDialog({
                     <DialogTitle>Send boop</DialogTitle>
                     <DialogDescription>{displayName}</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                     {!emojiId ? (
                         <div className="rounded-md border p-3 text-sm text-muted-foreground">
                             No custom emoji selected. The default boop will be sent.
                         </div>
                     ) : null}
                     {isLocalUserVrcPlusSupporter ? (
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <div className="flex flex-wrap items-center gap-2">
                                 <Input
                                     value={emojiSearch}
@@ -847,8 +866,8 @@ function BoopReplyDialog({
                             </div>
                         <div className="min-h-0 max-h-[48vh] overflow-y-auto rounded-md border p-2">
                             {loading ? (
-                                <div className="flex h-28 items-center justify-center text-sm text-muted-foreground">
-                                    <LoaderCircleIcon className="mr-2 size-4 animate-spin" />
+                                <div className="flex h-28 items-center justify-center gap-2 text-sm text-muted-foreground">
+                                    <Spinner className="size-4" />
                                     Loading emojis.
                                 </div>
                             ) : filteredEmojiRows.length ? (
@@ -860,14 +879,12 @@ function BoopReplyDialog({
                                         }
                                         const selected = emojiId === emoji.id;
                                         return (
-                                            <button
+                                            <Button
                                                 key={emoji.id}
                                                 type="button"
-                                                className={
-                                                    selected
-                                                        ? 'rounded-xl border border-primary bg-primary/10 p-2'
-                                                        : 'rounded-xl border border-transparent p-2 hover:border-border hover:bg-muted'
-                                                }
+                                                variant={selected ? 'secondary' : 'outline'}
+                                                className="h-auto w-full flex-col p-2"
+                                                aria-pressed={selected}
                                                 disabled={sending}
                                                 onClick={() => setEmojiId(selected ? '' : emoji.id)}>
                                                 <img
@@ -875,7 +892,7 @@ function BoopReplyDialog({
                                                     alt={emoji.name || emoji.id}
                                                     className="mx-auto size-20 object-contain"
                                                 />
-                                            </button>
+                                            </Button>
                                         );
                                     })}
                                 </div>
@@ -905,14 +922,14 @@ function BoopReplyDialog({
                         variant="outline"
                         disabled={loading || sending}
                         onClick={() => void loadEmojiRows()}>
-                        <RefreshCcwIcon className="size-3.5" />
+                        <RefreshCcwIcon data-icon="inline-start" />
                         Refresh
                     </Button>
                     <Button type="button" variant="secondary" disabled={sending} onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
                     <Button type="button" disabled={sending || !notification?.senderUserId} onClick={() => void handleSend()}>
-                        {sending ? <LoaderCircleIcon className="size-3.5 animate-spin" /> : <SendIcon className="size-3.5" />}
+                        {sending ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
                         Send
                     </Button>
                 </DialogFooter>
@@ -1564,9 +1581,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                         </Badge>
                     );
                     return notificationTypeIsClickable(notification) ? (
-                        <button type="button" className="text-left" onClick={() => openNotificationTypeTarget(notification)}>
+                        <Button type="button" variant="ghost" size="sm" className="h-auto p-0" onClick={() => openNotificationTypeTarget(notification)}>
                             {badge}
-                        </button>
+                        </Button>
                     ) : badge;
                 }
             },
@@ -1579,17 +1596,17 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     const notification = row.original;
                     if (notification.senderUserId && !notification.senderUserId.startsWith('grp_')) {
                         return (
-                            <button type="button" className="block max-w-48 truncate text-left text-sm hover:underline" onClick={() => openUserDialog({ userId: notification.senderUserId, title: notification.senderUsername || undefined })}>
-                                {notification.senderUsername || 'User'}
-                            </button>
+                            <Button type="button" variant="link" className="h-auto max-w-48 justify-start p-0 text-left font-normal" onClick={() => openUserDialog({ userId: notification.senderUserId, title: notification.senderUsername || undefined })}>
+                                <span className="truncate">{notification.senderUsername || 'User'}</span>
+                            </Button>
                         );
                     }
                     if (notification.link?.startsWith('user:')) {
                         const userId = notification.link.slice('user:'.length);
                         return (
-                            <button type="button" className="block max-w-48 truncate text-left text-sm hover:underline" onClick={() => openUserDialog({ userId, title: notification.linkText || notification.senderUsername || undefined })}>
-                                {notification.linkText || notification.senderUsername || 'User'}
-                            </button>
+                            <Button type="button" variant="link" className="h-auto max-w-48 justify-start p-0 text-left font-normal" onClick={() => openUserDialog({ userId, title: notification.linkText || notification.senderUsername || undefined })}>
+                                <span className="truncate">{notification.linkText || notification.senderUsername || 'User'}</span>
+                            </Button>
                         );
                     }
                     if (notification.senderUsername && !notification.senderUserId?.startsWith('grp_')) {
@@ -1615,9 +1632,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                 : '';
                     if (!label) return null;
                     return groupId ? (
-                        <button type="button" className="block max-w-48 truncate text-left text-sm hover:underline" onClick={() => openGroupDialog({ groupId, title: label })}>
-                            {label}
-                        </button>
+                        <Button type="button" variant="link" className="h-auto max-w-48 justify-start p-0 text-left font-normal" onClick={() => openGroupDialog({ groupId, title: label })}>
+                            <span className="truncate">{label}</span>
+                        </Button>
                     ) : (
                         <div className="max-w-48 truncate text-sm">{label}</div>
                     );
@@ -1631,10 +1648,22 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 cell: ({ row }) => {
                     const imageUrl = row.original.details?.imageUrl || row.original.imageUrl || '';
                     if (!imageUrl || imageUrl.startsWith('default_')) return null;
+                    const previewLabel = getNotificationMessage(row.original) || t('table.notification.photo');
                     return (
-                        <button type="button" className="block" onClick={() => openNotificationImagePreview(row.original)}>
-                            <img src={convertFileUrlToImageUrl(imageUrl, 64)} alt="" className="size-10 rounded-md object-cover" />
-                        </button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-auto p-1"
+                            aria-label={`Preview notification image: ${previewLabel}`}
+                            onClick={() => openNotificationImagePreview(row.original)}>
+                            <img
+                                src={convertFileUrlToImageUrl(imageUrl, 64)}
+                                alt={previewLabel}
+                                width={40}
+                                height={40}
+                                className="size-10 rounded-md object-cover"
+                            />
+                        </Button>
                     );
                 }
             },
@@ -1649,7 +1678,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     const message = getNotificationMessage(notification);
                     const worldId = notification.details?.worldId || notification.data?.worldId || notification.location || '';
                     return (
-                        <div className="min-w-0 space-y-1">
+                        <div className="flex min-w-0 flex-col gap-1">
                             {message ? <div className="max-w-xl truncate text-sm">{message}</div> : null}
                             {worldId ? (
                                 <NotificationLocationLink
@@ -1659,10 +1688,10 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                 />
                             ) : null}
                             {notification.link ? (
-                                <button type="button" className="inline-flex max-w-xl items-center gap-1 truncate text-left text-xs text-muted-foreground hover:underline" onClick={() => openNotificationLink(notification.link)}>
-                                    <ExternalLinkIcon className="size-3" />
-                                    {notification.linkText || notification.link}
-                                </button>
+                                <Button type="button" variant="link" size="sm" className="h-auto max-w-xl justify-start p-0 text-left font-normal" onClick={() => openNotificationLink(notification.link)}>
+                                    <ExternalLinkIcon data-icon="inline-start" />
+                                    <span className="truncate">{notification.linkText || notification.link}</span>
+                                </Button>
                             ) : null}
                         </div>
                     );
@@ -1684,27 +1713,28 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     return (
                         <div className="flex flex-wrap items-center justify-end gap-2">
                             {remoteActionsVisible && notification.type === 'friendRequest' ? (
-                                <Button type="button" variant="ghost" size="icon-xs" title="Accept" onClick={() => void acceptFriendRequest(notification)}>
-                                    <CheckIcon className="size-3" />
+                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Accept friend request" title="Accept" onClick={() => void acceptFriendRequest(notification)}>
+                                    <CheckIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
                             {remoteActionsVisible && notification.type === 'requestInvite' && canInviteFromCurrentLocation ? (
-                                <Button type="button" variant="ghost" size="icon-xs" title="Invite" onClick={() => void acceptRequestInvite(notification)}>
-                                    <SendIcon className="size-3" />
+                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Send invite" title="Invite" onClick={() => void acceptRequestInvite(notification)}>
+                                    <SendIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
                             {remoteActionsVisible && notification.type === 'invite' ? (
-                                <Button type="button" variant="ghost" size="icon-xs" title="Decline with message" onClick={() => void sendInviteResponseWithMessage(notification, 'response')}>
-                                    <SendIcon className="size-3" />
+                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Decline with message" title="Decline with message" onClick={() => void sendInviteResponseWithMessage(notification, 'response')}>
+                                    <SendIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
                             {remoteActionsVisible && notification.type === 'requestInvite' ? (
-                                <Button type="button" variant="ghost" size="icon-xs" title="Decline with message" onClick={() => void sendInviteResponseWithMessage(notification, 'requestResponse')}>
-                                    <SendIcon className="size-3" />
+                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Decline with message" title="Decline with message" onClick={() => void sendInviteResponseWithMessage(notification, 'requestResponse')}>
+                                    <SendIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
                             {remoteActionsVisible
                                 ? responses.map((response) => {
+                                    const label = getResponseLabel(response);
                                     const ResponseIcon = getResponseIcon(response, notification.type);
                                     return (
                                         <Button
@@ -1712,26 +1742,27 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                             type="button"
                                             variant="ghost"
                                             size="icon-xs"
-                                            title={getResponseLabel(response)}
+                                            aria-label={label}
+                                            title={label}
                                             onClick={() => void sendNotificationResponse(notification, response)}>
-                                            <ResponseIcon className="size-3" />
+                                            <ResponseIcon data-icon="inline-start" />
                                         </Button>
                                     );
                                 })
                                 : null}
                             {remoteActionsVisible && canDeclineNotification(notification) ? (
-                                <Button type="button" variant="ghost" size="icon-xs" title="Decline" onClick={(event) => void hideNotification(notification, { skipConfirm: shiftHeld || event.shiftKey })}>
-                                    <XIcon className={shiftHeld ? 'size-3 text-destructive' : 'size-3'} />
+                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Decline notification" title="Decline" onClick={(event) => void hideNotification(notification, { skipConfirm: shiftHeld || event.shiftKey })}>
+                                    <XIcon data-icon="inline-start" className={cn(shiftHeld && 'text-destructive')} />
                                 </Button>
                             ) : null}
                             {notification.version === 2 && !notification.seen ? (
-                                <Button type="button" variant="ghost" size="icon-xs" title="Seen" onClick={() => void markSeen(notification)}>
-                                    <CheckIcon className="size-3" />
+                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Mark notification seen" title="Seen" onClick={() => void markSeen(notification)}>
+                                    <CheckIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
                             {localDeleteVisible ? (
-                                <Button type="button" variant="ghost" size="icon-xs" title="Delete log" onClick={(event) => void deleteNotification(notification, { skipConfirm: shiftHeld || event.shiftKey })}>
-                                    {shiftHeld ? <XIcon className="size-3.5 text-destructive" /> : <Trash2Icon className="size-3.5" />}
+                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Delete notification log" title="Delete log" onClick={(event) => void deleteNotification(notification, { skipConfirm: shiftHeld || event.shiftKey })}>
+                                    {shiftHeld ? <XIcon data-icon="inline-start" className="text-destructive" /> : <Trash2Icon data-icon="inline-start" />}
                                 </Button>
                             ) : null}
                         </div>
@@ -1769,11 +1800,10 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     return (
         <>
         <div
-            className={
-                embedded
-                    ? 'flex h-full min-h-0 flex-col gap-3 p-3'
-                    : 'x-container x-container--auto-height flex h-full min-h-0 flex-col gap-3 p-4 pb-0'
-            }>
+            className={cn(
+                'flex h-full min-h-0 flex-col gap-3',
+                embedded ? 'p-3' : 'x-container x-container--auto-height p-4 pb-0'
+            )}>
             <div className="flex flex-wrap items-center gap-2">
                 <NotificationTypeFilterDropdown
                     value={activeTypes}
@@ -1784,16 +1814,17 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Search"
-                    className="h-9 w-[150px] flex-[0.4]"
+                    className="h-9 min-w-36 flex-1 sm:max-w-52"
                 />
                 <Button
                     type="button"
                     variant="ghost"
                     size="icon-sm"
+                    aria-label="Refresh notifications"
                     className="rounded-full"
                     disabled={loadStatus === 'running'}
                     onClick={() => setReloadToken((value) => value + 1)}>
-                    <RefreshCcwIcon className={loadStatus === 'running' ? 'size-4 animate-spin' : 'size-4'} />
+                    {loadStatus === 'running' ? <Spinner data-icon="inline-start" /> : <RefreshCcwIcon data-icon="inline-start" />}
                 </Button>
                 <TableColumnVisibilityMenu table={table} />
                 <Select
@@ -1803,11 +1834,13 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                         <SelectValue placeholder="Rows" />
                     </SelectTrigger>
                     <SelectContent>
-                        {DEFAULT_PAGE_SIZES.map((value) => (
-                            <SelectItem key={value} value={String(value)}>
-                                {value}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            {DEFAULT_PAGE_SIZES.map((value) => (
+                                <SelectItem key={value} value={String(value)}>
+                                    {value}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
                 {activeTypes.length ? (
@@ -1821,7 +1854,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
 
             <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
                 <div className="h-full overflow-auto">
-                    <Table className="vrcx-data-table table-fixed">
+                    <Table className="app-data-table table-fixed">
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
@@ -1855,14 +1888,14 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="text-sm text-muted-foreground">{rows.length} notifications in view</div>
                 <div className="flex items-center gap-2">
-                    <Button type="button" variant="outline" size="icon" disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()}>
-                        <ChevronLeftIcon className="size-4" />
+                    <Button type="button" variant="outline" size="icon" aria-label="Previous notification page" disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()}>
+                        <ChevronLeftIcon data-icon="inline-start" />
                     </Button>
                     <span className="text-sm text-muted-foreground">
                         Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
                     </span>
-                    <Button type="button" variant="outline" size="icon" disabled={!table.getCanNextPage()} onClick={() => table.nextPage()}>
-                        <ChevronRightIcon className="size-4" />
+                    <Button type="button" variant="outline" size="icon" aria-label="Next notification page" disabled={!table.getCanNextPage()} onClick={() => table.nextPage()}>
+                        <ChevronRightIcon data-icon="inline-start" />
                     </Button>
                 </div>
             </div>

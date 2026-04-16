@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     BoxIcon,
     HeartIcon,
-    LoaderCircleIcon,
     MapPinIcon,
     PencilIcon,
     SettingsIcon
@@ -10,27 +9,30 @@ import {
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
+import { cn } from '@/lib/utils.js';
 import { FEED_FILTER_TYPES, feedRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFeedLiveStore } from '@/state/feedLiveStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
     TableCell,
     TableRow
-} from '@/ui/shadcn/table.jsx';
+} from '@/ui/shadcn/table';
 
 import {
     buildFavoriteIdSet,
@@ -138,12 +140,13 @@ function FeedUserName({ row, friend, className = '' }) {
     }
 
     return (
-        <button
+        <Button
             type="button"
-            className={`shrink-0 cursor-pointer text-left hover:underline ${className}`}
+            variant="link"
+            className={cn('h-auto shrink-0 cursor-pointer justify-start p-0 text-left font-normal', className)}
             onClick={() => openFeedUser(row, friend)}>
             {displayName}
-        </button>
+        </Button>
     );
 }
 
@@ -178,7 +181,7 @@ function FeedStatusDot({ status = '' }) {
                     ? 'bg-[var(--status-busy)]'
                     : '';
 
-    return className ? <span className={`mr-1 mt-1 size-2.5 shrink-0 rounded-full ${className}`} /> : null;
+    return className ? <span className={cn('mr-1 mt-1 size-2.5 shrink-0 rounded-full', className)} /> : null;
 }
 
 function FeedEntryContent({ row, friend, t }) {
@@ -381,31 +384,35 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     const settingsMenu = configUpdater ? (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon-sm">
-                    <SettingsIcon className="size-3.5" />
+                <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
+                    <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-                {FEED_FILTER_TYPES.map((filterType) => (
-                    <DropdownMenuCheckboxItem
-                        key={filterType}
-                        checked={isDashboardWidgetFilterActive(config, filterType)}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={() =>
-                            configUpdater(
-                                getNextDashboardWidgetFilterConfig(config, filterType, FEED_FILTER_TYPES)
-                            )
-                        }>
-                        {t(`view.feed.filters.${filterType}`)}
-                    </DropdownMenuCheckboxItem>
-                ))}
+                <DropdownMenuGroup>
+                    {FEED_FILTER_TYPES.map((filterType) => (
+                        <DropdownMenuCheckboxItem
+                            key={filterType}
+                            checked={isDashboardWidgetFilterActive(config, filterType)}
+                            onSelect={(event) => event.preventDefault()}
+                            onCheckedChange={() =>
+                                configUpdater(
+                                    getNextDashboardWidgetFilterConfig(config, filterType, FEED_FILTER_TYPES)
+                                )
+                            }>
+                            {t(`view.feed.filters.${filterType}`)}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                    checked={showType}
-                    onSelect={(event) => event.preventDefault()}
-                    onCheckedChange={(checked) => configUpdater({ ...config, showType: Boolean(checked) })}>
-                    {t('dashboard.widget.config.show_type')}
-                </DropdownMenuCheckboxItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuCheckboxItem
+                        checked={showType}
+                        onSelect={(event) => event.preventDefault()}
+                        onCheckedChange={(checked) => configUpdater({ ...config, showType: Boolean(checked) })}>
+                        {t('dashboard.widget.config.show_type')}
+                    </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     ) : null;
@@ -438,8 +445,8 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
 
     if (loadStatus === 'running' && annotatedRows.length === 0) {
         return renderShell(
-            <div className="flex min-h-[180px] flex-1 items-center justify-center text-sm text-muted-foreground">
-                <LoaderCircleIcon className="mr-2 size-4 animate-spin" />
+            <div className="flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Spinner />
                 Loading feed widget
             </div>
         );
@@ -468,18 +475,18 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto">
-                <Table className="vrcx-data-table table-fixed">
+                <Table className="app-data-table table-fixed">
                     <TableBody>
                         {annotatedRows.map((row, index) => (
                             <TableRow
                                 key={`${row.type || 'feed'}-${row.created_at || index}-${index}`}>
                                 <TableCell
-                                    className="w-24 align-top text-[11px] tabular-nums text-muted-foreground"
+                                    className="w-24 align-top text-xs tabular-nums text-muted-foreground"
                                     title={formatWidgetExactTime(row.created_at)}>
                                     {formatWidgetTime(row.created_at)}
                                 </TableCell>
                                 {showType ? (
-                                    <TableCell className="w-20 align-top text-[11px] text-muted-foreground">
+                                    <TableCell className="w-20 align-top text-xs text-muted-foreground">
                                         {row.type || ''}
                                     </TableCell>
                                 ) : null}

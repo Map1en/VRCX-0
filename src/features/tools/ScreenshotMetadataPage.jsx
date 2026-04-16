@@ -10,7 +10,6 @@ import {
     FolderOpenIcon,
     FolderSearchIcon,
     ImageIcon,
-    LoaderCircleIcon,
     SearchIcon,
     Trash2Icon,
     UploadIcon,
@@ -28,23 +27,25 @@ import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { withUploadTimeout } from '@/shared/utils/imageUpload.js';
 import { parseVrchatScreenshotDateFromFileName } from '@/shared/utils/screenshot.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle
-} from '@/ui/shadcn/card.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/card';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
@@ -52,7 +53,7 @@ import {
     TableHead,
     TableHeader,
     TableRow
-} from '@/ui/shadcn/table.jsx';
+} from '@/ui/shadcn/table';
 
 const searchTypes = [
     {
@@ -235,10 +236,10 @@ function normalizeMetadata(metadata, extra) {
 function EmptyState({ title, description, loading = false }) {
     return (
         <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
+            <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
+                        <Spinner className="size-6 text-muted-foreground" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
@@ -253,13 +254,15 @@ function SearchSortHead({ label, sortKey, sort, onToggle }) {
     const Icon = active ? (sort.asc ? ArrowUpIcon : ArrowDownIcon) : ArrowUpDownIcon;
 
     return (
-        <button
+        <Button
             type="button"
-            className="inline-flex items-center gap-1 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+            variant="ghost"
+            size="sm"
+            className="h-auto justify-start px-0 py-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
             onClick={() => onToggle(sortKey)}>
             <span>{label}</span>
-            <Icon className="size-3.5" />
-        </button>
+            <Icon data-icon="inline-end" />
+        </Button>
     );
 }
 
@@ -296,9 +299,10 @@ function MetadataAuthorLink({ author, endpoint }) {
     }
 
     return (
-        <button
+        <Button
             type="button"
-            className="flex items-center gap-1 text-left text-sm text-muted-foreground hover:underline"
+            variant="link"
+            className="h-auto justify-start gap-1 p-0 text-left text-muted-foreground"
             title={userId}
             onClick={() =>
                 openUserDialog({
@@ -306,9 +310,9 @@ function MetadataAuthorLink({ author, endpoint }) {
                     title: displayName || userId
                 })
             }>
-            <CameraIcon className="size-3.5 shrink-0" />
+            <CameraIcon data-icon="inline-start" />
             <span className="truncate">{displayName || userId}</span>
-        </button>
+        </Button>
     );
 }
 
@@ -778,7 +782,7 @@ export function ScreenshotMetadataPage() {
         <div className="screenshot-metadata-page x-container flex min-h-0 flex-1 flex-col overflow-hidden p-6">
             <div className="ml-2 flex items-center gap-2">
                 <Button variant="ghost" size="sm" className="mr-3" onClick={() => navigate('/tools')}>
-                    <ArrowLeftIcon className="size-4" />
+                    <ArrowLeftIcon data-icon="inline-start" />
                     {t('nav_tooltip.tools')}
                 </Button>
                 <span className="header">{t('dialog.screenshot_metadata.header')}</span>
@@ -789,11 +793,11 @@ export function ScreenshotMetadataPage() {
             <div className="my-2 flex flex-col gap-3 xl:flex-row xl:items-center">
                     <div className="flex flex-wrap gap-2">
                         <Button variant="outline" size="sm" onClick={() => void browseForScreenshot()}>
-                            <FolderSearchIcon className="size-4" />
+                            <FolderSearchIcon data-icon="inline-start" />
                             {t('dialog.screenshot_metadata.browse')}
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => void loadLastScreenshot()}>
-                            <ImageIcon className="size-4" />
+                            <ImageIcon data-icon="inline-start" />
                             {t('dialog.screenshot_metadata.last_screenshot')}
                         </Button>
                         <Button
@@ -802,7 +806,7 @@ export function ScreenshotMetadataPage() {
                             disabled={!metadata?.filePath}
                             onClick={() => void openFolder()}
                         >
-                            <FolderOpenIcon className="size-4" />
+                            <FolderOpenIcon data-icon="inline-start" />
                             {t('dialog.screenshot_metadata.open_folder')}
                         </Button>
                         <Button
@@ -811,7 +815,7 @@ export function ScreenshotMetadataPage() {
                             disabled={!metadata?.filePath}
                             onClick={() => void copyImage()}
                         >
-                            <CopyIcon className="size-4" />
+                            <CopyIcon data-icon="inline-start" />
                             {t('dialog.screenshot_metadata.copy_image')}
                         </Button>
                         <Button
@@ -820,7 +824,7 @@ export function ScreenshotMetadataPage() {
                             disabled={!metadata?.filePath || !isVrcPlusSupporter || isUploadingScreenshot}
                             onClick={() => void uploadScreenshotToGallery()}
                         >
-                            <UploadIcon className="size-4" />
+                            <UploadIcon data-icon="inline-start" />
                             {t('dialog.screenshot_metadata.upload')}
                         </Button>
                         <Button
@@ -829,7 +833,7 @@ export function ScreenshotMetadataPage() {
                             disabled={!metadata?.filePath || isDeletingMetadata}
                             onClick={() => void deleteMetadata()}
                         >
-                            <Trash2Icon className="size-4" />
+                            <Trash2Icon data-icon="inline-start" />
                             {t('dialog.screenshot_metadata.delete_metadata')}
                         </Button>
                     </div>
@@ -857,11 +861,13 @@ export function ScreenshotMetadataPage() {
                                 />
                             </SelectTrigger>
                             <SelectContent>
-                                {searchTypes.map((type) => (
-                                    <SelectItem key={type.value} value={type.value}>
-                                        {t(type.labelKey)}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    {searchTypes.map((type) => (
+                                        <SelectItem key={type.value} value={type.value}>
+                                            {t(type.labelKey)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                         <Button onClick={() => void runSearch()}>Search</Button>
@@ -888,7 +894,7 @@ export function ScreenshotMetadataPage() {
                             description="Resolving file list and metadata summaries."
                         />
                     ) : (
-                        <Table className="vrcx-data-table">
+                        <Table className="app-data-table">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>
@@ -943,6 +949,17 @@ export function ScreenshotMetadataPage() {
                                         key={row.filePath}
                                         data-state={row.filePath === selectedPath ? 'selected' : undefined}
                                         className="cursor-pointer"
+                                        tabIndex={0}
+                                        aria-label={`Open screenshot ${row.dateLabel || row.fileName || row.filePath}`}
+                                        onKeyDown={(event) => {
+                                            if (event.key !== 'Enter' && event.key !== ' ') {
+                                                return;
+                                            }
+                                            event.preventDefault();
+                                            setSelectedPath(row.filePath);
+                                            setSearchViewMode('detail');
+                                            void loadScreenshot(row.filePath, false);
+                                        }}
                                         onClick={() => {
                                             setSelectedPath(row.filePath);
                                             setSearchViewMode('detail');
@@ -975,7 +992,7 @@ export function ScreenshotMetadataPage() {
                 <Card className="flex min-h-0 flex-col">
                     <CardHeader>
                         <div className="flex items-center justify-between gap-4">
-                            <div className="space-y-1">
+                            <div className="flex flex-col gap-1">
                                 <CardTitle>Preview</CardTitle>
                                 <CardDescription>
                                     {metadata?.fileName || t('dialog.screenshot_metadata.drag')}
@@ -983,12 +1000,12 @@ export function ScreenshotMetadataPage() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button variant="outline" size="sm" onClick={() => void navigatePrev()}>
-                                    <ArrowLeftIcon className="size-4" />
+                                    <ArrowLeftIcon data-icon="inline-start" />
                                     Prev
                                 </Button>
                                 <Button variant="outline" size="sm" onClick={() => void navigateNext()}>
                                     Next
-                                    <ArrowRightIcon className="size-4" />
+                                    <ArrowRightIcon data-icon="inline-end" />
                                 </Button>
                             </div>
                         </div>
@@ -1005,17 +1022,22 @@ export function ScreenshotMetadataPage() {
                                 description="Fetching embedded metadata and file details."
                             />
                         ) : imageUrl ? (
-                            <img
-                                src={imageUrl}
-                                alt={metadata?.fileName || 'Screenshot preview'}
-                                className="max-h-[70vh] w-full cursor-pointer rounded-lg object-contain"
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="h-auto w-full p-0 hover:bg-transparent"
                                 onClick={() =>
                                     openImagePreview({
                                         url: imageUrl,
                                         title: metadata?.fileName || 'Screenshot preview'
                                     })
-                                }
-                            />
+                                }>
+                                <img
+                                    src={imageUrl}
+                                    alt={metadata?.fileName || 'Screenshot preview'}
+                                    className="max-h-[70vh] w-full rounded-lg object-contain"
+                                />
+                            </Button>
                         ) : (
                             <EmptyState
                                 title={t('dialog.screenshot_metadata.drag')}
@@ -1032,7 +1054,7 @@ export function ScreenshotMetadataPage() {
                             Metadata extracted from the selected VRChat screenshot.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6 overflow-y-auto">
+                    <CardContent className="flex flex-col gap-6 overflow-y-auto">
                         {searchRows.length ? (
                             <Button
                                 type="button"
@@ -1040,7 +1062,7 @@ export function ScreenshotMetadataPage() {
                                 size="sm"
                                 className="mb-2"
                                 onClick={() => setSearchViewMode('table')}>
-                                <ArrowLeftIcon className="size-3.5" />
+                                <ArrowLeftIcon data-icon="inline-start" />
                                 {t('dialog.screenshot_metadata.back_to_results', {
                                     count: searchRows.length
                                 })}
@@ -1052,7 +1074,7 @@ export function ScreenshotMetadataPage() {
                             </pre>
                         ) : metadata ? (
                             <>
-                                <section className="space-y-2">
+                                <section className="flex flex-col gap-2">
                                     <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
                                         {t('dialog.screenshot_metadata.section_location')}
                                     </div>
@@ -1069,29 +1091,43 @@ export function ScreenshotMetadataPage() {
                                     <MetadataAuthorLink author={metadata.author} endpoint={currentEndpoint} />
                                 </section>
 
-                                <section className="space-y-2 border-t pt-4">
+                                <section className="flex flex-col gap-2 border-t pt-4">
                                     <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
                                         {t('dialog.screenshot_metadata.section_players')} (
                                         {metadata.players.length})
                                     </div>
                                     {metadata.players.length ? (
                                         <div className="flex flex-wrap gap-2">
-                                            {metadata.players.map((player) => (
-                                                <Badge
-                                                    key={`${player.id}-${player.displayName}`}
-                                                    variant="secondary"
-                                                    className={player.id ? 'cursor-pointer' : ''}
-                                                    onClick={() =>
-                                                        player.id &&
-                                                        openUserDialog({
-                                                            userId: player.id,
-                                                            title: player.displayName || player.id
-                                                        })
-                                                    }>
-                                                    <UsersIcon className="size-3" />
-                                                    {player.displayName}
-                                                </Badge>
-                                            ))}
+                                            {metadata.players.map((player) => {
+                                                const playerLabel = player.displayName || player.id || 'Unknown player';
+                                                const playerContent = (
+                                                    <>
+                                                        <UsersIcon data-icon="inline-start" />
+                                                        {playerLabel}
+                                                    </>
+                                                );
+
+                                                return player.id ? (
+                                                    <Button
+                                                        key={`${player.id}-${player.displayName}`}
+                                                        variant="secondary"
+                                                        size="xs"
+                                                        type="button"
+                                                        className="rounded-full"
+                                                        onClick={() =>
+                                                            openUserDialog({
+                                                                userId: player.id,
+                                                                title: playerLabel
+                                                            })
+                                                        }>
+                                                        {playerContent}
+                                                    </Button>
+                                                ) : (
+                                                    <Badge key={`${player.id}-${player.displayName}`} variant="secondary">
+                                                        {playerContent}
+                                                    </Badge>
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div className="text-sm text-muted-foreground">
@@ -1100,7 +1136,7 @@ export function ScreenshotMetadataPage() {
                                     )}
                                 </section>
 
-                                <section className="space-y-2 border-t pt-4">
+                                <section className="flex flex-col gap-2 border-t pt-4">
                                     <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
                                         {t('dialog.screenshot_metadata.section_file_info')}
                                     </div>
@@ -1116,7 +1152,7 @@ export function ScreenshotMetadataPage() {
                                 </section>
 
                                 {metadata.note ? (
-                                    <section className="space-y-2 border-t pt-4">
+                                    <section className="flex flex-col gap-2 border-t pt-4">
                                         <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
                                             {t('dialog.screenshot_metadata.section_note')}
                                         </div>
@@ -1127,7 +1163,7 @@ export function ScreenshotMetadataPage() {
                                 ) : null}
 
                                 {metadata.application ? (
-                                    <section className="space-y-2 border-t pt-4">
+                                    <section className="flex flex-col gap-2 border-t pt-4">
                                         <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
                                             Application
                                         </div>

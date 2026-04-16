@@ -6,8 +6,8 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+} from '@/ui/shadcn/dialog';
+import { Button } from '@/ui/shadcn/button';
 import {
     Select,
     SelectContent,
@@ -15,7 +15,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
 import {
     Table,
     TableBody,
@@ -23,8 +23,8 @@ import {
     TableHead,
     TableHeader,
     TableRow
-} from '@/ui/shadcn/table.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/table';
+import { Textarea } from '@/ui/shadcn/textarea';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFavoriteImportStore } from '@/state/favoriteImportStore.js';
 import {
@@ -238,7 +238,7 @@ export function FavoriteImportHost() {
                 </div>
 
                 {errors ? (
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setErrors('')}>
                             Clear errors
                         </Button>
@@ -268,10 +268,10 @@ export function FavoriteImportHost() {
                                                 <img
                                                     alt=""
                                                     src={getRowImage(row)}
-                                                    className="h-10 w-10 rounded object-cover"
+                                                    className="size-10 rounded object-cover"
                                                 />
                                             ) : (
-                                                <div className="h-10 w-10 rounded bg-muted" />
+                                                <div className="size-10 rounded bg-muted" />
                                             )}
                                         </TableCell>
                                         <TableCell>{getRowName(type, row)}</TableCell>

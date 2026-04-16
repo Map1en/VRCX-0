@@ -4,7 +4,6 @@ import {
     BookmarkIcon,
     CheckIcon,
     HistoryIcon,
-    LoaderCircleIcon,
     MonitorIcon,
     SmartphoneIcon,
     XIcon
@@ -12,6 +11,7 @@ import {
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
 import {
     configRepository,
@@ -43,8 +43,8 @@ import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -52,15 +52,16 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
@@ -68,7 +69,9 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 function normalizeUserId(value) {
     return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
@@ -533,10 +536,10 @@ function resolveFriendRequestState(profile) {
 function UserDialogEmptyState({ title, description, loading = false }) {
     return (
         <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
+            <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <LoaderCircleIcon className="size-5 animate-spin text-muted-foreground" />
+                        <Spinner className="size-5 text-muted-foreground" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
@@ -2904,9 +2907,9 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                             Update your social status and status description.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-5">
-                        <div className="space-y-2">
-                            <div className="text-sm font-medium">Status description</div>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel>Status description</FieldLabel>
                             <div className="flex items-center gap-2">
                                 <Input
                                     value={socialStatusDraft.statusDescription}
@@ -2933,7 +2936,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                                 statusDescription: ''
                                             }));
                                         }}>
-                                        <XIcon />
+                                        <XIcon data-icon="inline-start" />
                                     </Button>
                                 ) : null}
                                 <DropdownMenu>
@@ -2944,7 +2947,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                             size="icon"
                                             disabled={actionStatus !== 'idle'}
                                             aria-label="Status history">
-                                            <HistoryIcon />
+                                            <HistoryIcon data-icon="inline-start" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="max-w-72">
@@ -2974,28 +2977,35 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                             <div className="text-xs text-muted-foreground">
                                 {socialStatusDraft.statusDescription.length}/32
                             </div>
-                        </div>
-                        <div className="space-y-2" role="radiogroup" aria-label="Social status">
+                        </Field>
+                        <Field>
+                            <FieldLabel>Social status</FieldLabel>
+                            <ToggleGroup
+                                type="single"
+                                variant="outline"
+                                value={socialStatusDraft.status}
+                                orientation="vertical"
+                                spacing={2}
+                                className="w-full"
+                                aria-label="Social status"
+                                onValueChange={(nextStatus) => {
+                                    if (!nextStatus) {
+                                        return;
+                                    }
+                                    setSocialStatusDraft((draft) => ({
+                                        ...draft,
+                                        status: nextStatus
+                                    }));
+                                }}>
                             {selfStatusOptions.map((option) => {
                                 const selected = socialStatusDraft.status === option.value;
                                 return (
-                                    <button
+                                    <ToggleGroupItem
                                         key={option.value}
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={selected}
+                                        value={option.value}
+                                        aria-label={option.label}
                                         disabled={actionStatus !== 'idle'}
-                                        className={[
-                                            'flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors',
-                                            selected ? 'border-primary bg-primary/10' : 'border-border bg-background hover:bg-accent',
-                                            actionStatus !== 'idle' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-                                        ].join(' ')}
-                                        onClick={() => {
-                                            setSocialStatusDraft((draft) => ({
-                                                ...draft,
-                                                status: option.value
-                                            }));
-                                        }}>
+                                        className="h-auto w-full justify-start gap-3 px-3 py-2">
                                         <i
                                             className={userStatusIndicatorClassName(option.value, {
                                                 showOffline: true,
@@ -3003,14 +3013,15 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                             })}
                                         />
                                         <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                                        {selected ? <CheckIcon className="size-4 shrink-0 text-primary" /> : null}
-                                    </button>
+                                        {selected ? <CheckIcon data-icon="inline-end" /> : null}
+                                    </ToggleGroupItem>
                                 );
                             })}
-                        </div>
+                            </ToggleGroup>
+                        </Field>
                         {statusPresets.length ? (
-                            <div className="space-y-2">
-                                <div className="text-xs font-medium text-muted-foreground">Presets</div>
+                            <Field>
+                                <FieldLabel>Presets</FieldLabel>
                                 <div className="flex flex-wrap gap-2">
                                     {statusPresets.map((preset, index) => {
                                         const presetStatus = normalizeSelfStatusInput(preset?.status) || 'active';
@@ -3019,66 +3030,54 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                         return (
                                             <div
                                                 key={`${presetStatus}:${presetDescription}:${index}`}
-                                                role="button"
-                                                tabIndex={actionStatus === 'idle' ? 0 : -1}
-                                                aria-disabled={actionStatus !== 'idle'}
-                                                className={[
-                                                    'group inline-flex max-w-52 items-center gap-1.5 rounded-md border bg-background py-1 pr-1 pl-2 text-xs transition-colors hover:bg-accent',
-                                                    actionStatus !== 'idle' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-                                                ].join(' ')}
-                                                onKeyDown={(event) => {
-                                                    if (event.key === 'Enter' || event.key === ' ') {
-                                                        event.preventDefault();
-                                                        if (actionStatus !== 'idle') {
-                                                            return;
-                                                        }
+                                                className="inline-flex max-w-52 items-center">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="xs"
+                                                    className="min-w-0 justify-start rounded-r-none border-r-0"
+                                                    disabled={actionStatus !== 'idle'}
+                                                    aria-label={`Apply status preset ${label}`}
+                                                    onClick={() => {
                                                         setSocialStatusDraft({
                                                             status: presetStatus,
                                                             statusDescription: presetDescription
                                                         });
-                                                    }
-                                                }}
-                                                onClick={() => {
-                                                    if (actionStatus !== 'idle') {
-                                                        return;
-                                                    }
-                                                    setSocialStatusDraft({
-                                                        status: presetStatus,
-                                                        statusDescription: presetDescription
-                                                    });
-                                                }}>
-                                                <i
-                                                    className={userStatusIndicatorClassName(presetStatus, {
-                                                        showOffline: true,
-                                                        className: 'shrink-0'
-                                                    })}
-                                                />
-                                                <span className="min-w-0 truncate">{label}</span>
-                                                <button
+                                                    }}>
+                                                    <i
+                                                        className={userStatusIndicatorClassName(presetStatus, {
+                                                            showOffline: true,
+                                                            className: 'shrink-0'
+                                                        })}
+                                                    />
+                                                    <span className="min-w-0 truncate">{label}</span>
+                                                </Button>
+                                                <Button
                                                     type="button"
-                                                    className="inline-flex size-5 shrink-0 items-center justify-center rounded-md opacity-70 hover:bg-muted"
+                                                    variant="outline"
+                                                    size="icon-xs"
+                                                    className="shrink-0 rounded-l-none"
                                                     disabled={actionStatus !== 'idle'}
                                                     aria-label="Remove status preset"
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
+                                                    onClick={() => {
                                                         void removeSelfStatusPreset(index);
                                                     }}>
-                                                    <XIcon className="size-3" />
-                                                </button>
+                                                    <XIcon data-icon="inline-start" />
+                                                </Button>
                                             </div>
                                         );
                                     })}
                                 </div>
-                            </div>
+                            </Field>
                         ) : null}
-                    </div>
+                    </FieldGroup>
                     <DialogFooter>
                         <Button
                             type="button"
                             variant="outline"
                             disabled={actionStatus !== 'idle'}
                             onClick={() => void saveSelfStatusPreset()}>
-                            <BookmarkIcon />
+                            <BookmarkIcon data-icon="inline-start" />
                             Save Preset
                         </Button>
                         <Button
@@ -3111,7 +3110,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                             Add or remove the languages shown on your profile.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                         <div className="flex min-h-8 flex-wrap gap-2">
                             {currentLanguageRows.length ? (
                                 currentLanguageRows.map((language) => (
@@ -3120,17 +3119,16 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                         variant="outline"
                                         className="gap-1.5 pr-1"
                                         title={languageOptionLabel(language)}>
-                                        <span className={`flags inline-block shrink-0 ${languageFlagClassName(language.key)}`} />
+                                        <span className={cn('flags inline-block shrink-0', languageFlagClassName(language.key))} />
                                         <span>{languageOptionLabel(language)}</span>
                                         <Button
                                             type="button"
                                             variant="ghost"
                                             size="icon-xs"
-                                            className="ml-1 size-5"
                                             disabled={actionStatus !== 'idle'}
                                             aria-label={`Remove ${languageOptionLabel(language)}`}
                                             onClick={() => void removeSelfLanguage(language.key)}>
-                                            <XIcon />
+                                            <XIcon data-icon="inline-start" />
                                         </Button>
                                     </Badge>
                                 ))
@@ -3168,7 +3166,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                             key={option.key}
                                             value={option.key}
                                             textValue={languageOptionLabel(option)}>
-                                            <span className={`flags mr-1.5 inline-block shrink-0 ${languageFlagClassName(option.key)}`} />
+                                            <span className={cn('flags mr-1.5 inline-block shrink-0', languageFlagClassName(option.key))} />
                                             {languageOptionLabel(option)}
                                         </SelectItem>
                                     ))}

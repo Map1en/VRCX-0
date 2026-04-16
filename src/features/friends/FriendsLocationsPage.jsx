@@ -3,7 +3,6 @@ import {
     ChevronDownIcon,
     GlobeIcon,
     LayersIcon,
-    LoaderCircleIcon,
     SearchIcon,
     Settings2Icon,
     UsersIcon
@@ -11,6 +10,7 @@ import {
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { cn } from '@/lib/utils.js';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import {
@@ -28,12 +28,19 @@ import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import {
+    Field,
+    FieldContent,
+    FieldGroup,
+    FieldLabel
+} from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { Slider } from '@/ui/shadcn/slider';
+import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { Location } from '@/components/Location.jsx';
 import { FriendLocationCard } from '@/components/friends/FriendLocationCard.jsx';
@@ -649,14 +656,7 @@ function matchesSearch(friend, searchQuery, favoriteIds) {
 }
 
 function FriendsLocationsEmptyState({ title, description }) {
-    return (
-        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-sm space-y-2">
-                <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
-            </div>
-        </div>
-    );
+    return <EmptyState title={title} description={description} />;
 }
 
 export function FriendsLocationsPage({ embedded = false } = {}) {
@@ -1425,7 +1425,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
     function renderSectionHeader(section) {
         return (
             <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-xl border bg-muted/20 px-3 py-2 md:flex-row md:items-center md:justify-between">
-                <div className="min-w-0 space-y-1 overflow-hidden">
+                <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
                     <div className="flex flex-wrap items-center gap-2">
                         <LayersIcon className="size-4 text-muted-foreground" />
                         <div className="min-w-0 truncate font-medium">
@@ -1456,14 +1456,13 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                className="h-8 gap-1"
                                 onClick={() =>
                                     openWorldDialog({
                                         worldId: resolveWorldDialogTarget(section),
                                         title: section.title
                                     })
                                 }>
-                                <GlobeIcon className="size-3.5" />
+                                <GlobeIcon data-icon="inline-start" />
                                 World
                             </Button>
                         ) : null}
@@ -1472,14 +1471,13 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                className="h-8 gap-1"
                                 onClick={() =>
                                     openGroupDialog({
                                         groupId: section.groupId,
                                         title: undefined
                                     })
                                 }>
-                                <UsersIcon className="size-3.5" />
+                                <UsersIcon data-icon="inline-start" />
                                 Group
                             </Button>
                         ) : null}
@@ -1491,19 +1489,21 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
 
     function renderFavoriteGroupHeader(section) {
         return (
-            <button
+            <Button
                 type="button"
-                className="flex w-full cursor-pointer select-none items-center gap-1.5 px-1 py-1.5 text-left text-[13px] font-semibold hover:opacity-80"
+                variant="ghost"
+                className="h-auto w-full cursor-pointer select-none justify-start gap-1.5 px-1 py-1.5 text-left text-sm font-semibold"
                 onClick={() => toggleFavoriteGroup(section.groupKey)}>
                 <ChevronDownIcon
+                    data-icon="inline-start"
                     className={cn(
-                        'size-4 shrink-0 transition-transform duration-200 ease-in-out',
+                        'shrink-0 transition-transform duration-200 ease-in-out',
                         section.collapsed && '-rotate-90'
                     )}
                 />
                 <span className="min-w-0 truncate">{section.title}</span>
                 <span className="text-xs font-normal opacity-70">({section.friends.length})</span>
-            </button>
+            </Button>
         );
     }
 
@@ -1602,76 +1602,82 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
 
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button type="button" size="icon-sm" variant="ghost" className="rounded-full">
-                                    <Settings2Icon className="size-4" />
+                                <Button type="button" size="icon-sm" variant="ghost" aria-label="Friends location settings">
+                                    <Settings2Icon data-icon="inline-start" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-72 space-y-3" align="end">
-                                <label className="flex items-center justify-between gap-3 text-sm">
-                                    <span>{t('view.friends_locations.separate_same_instance_friends')}</span>
-                                    <Switch
-                                        checked={showSameInstance}
-                                        onCheckedChange={(value) => {
-                                            setShowSameInstance(Boolean(value));
-                                            void configRepository.setBool('FriendLocationShowSameInstance', Boolean(value));
-                                        }}
-                                    />
-                                </label>
-                                <div className="space-y-1">
-                                    <div className="flex items-center justify-between gap-3 text-sm font-medium">
-                                        <span>{t('view.friends_locations.scale')}</span>
-                                        <span>{Math.round(cardScale * 100)}%</span>
-                                    </div>
-                                    <Input
-                                        type="range"
-                                        min="0.5"
-                                        max="1"
-                                        step="0.01"
-                                        value={cardScale}
-                                        onChange={(event) => {
-                                            const nextValue = clampScale(event.target.value, 0.5, 1, 1);
-                                            setCardScale(nextValue);
-                                            void configRepository.setString(
-                                                'FriendLocationCardScale',
-                                                formatOptionValue(nextValue)
-                                            );
-                                        }}
-                                    />
-                                </div>
+                            <PopoverContent className="w-72" align="end">
+                                <FieldGroup>
+                                    <Field orientation="horizontal">
+                                        <FieldContent>
+                                            <FieldLabel htmlFor="friends-locations-same-instance">
+                                                {t('view.friends_locations.separate_same_instance_friends')}
+                                            </FieldLabel>
+                                        </FieldContent>
+                                        <Switch
+                                            id="friends-locations-same-instance"
+                                            checked={showSameInstance}
+                                            onCheckedChange={(value) => {
+                                                setShowSameInstance(Boolean(value));
+                                                void configRepository.setBool('FriendLocationShowSameInstance', Boolean(value));
+                                            }}
+                                        />
+                                    </Field>
+                                    <Field>
+                                        <FieldContent>
+                                            <FieldLabel htmlFor="friends-locations-card-scale">
+                                                {t('view.friends_locations.scale')}
+                                            </FieldLabel>
+                                        </FieldContent>
+                                        <Slider
+                                            id="friends-locations-card-scale"
+                                            min={0.5}
+                                            max={1}
+                                            step={0.01}
+                                            value={[cardScale]}
+                                            onValueChange={([value]) => {
+                                                const nextValue = clampScale(value, 0.5, 1, 1);
+                                                setCardScale(nextValue);
+                                                void configRepository.setString(
+                                                    'FriendLocationCardScale',
+                                                    formatOptionValue(nextValue)
+                                                );
+                                            }}
+                                        />
+                                        <div className="text-sm text-muted-foreground">{Math.round(cardScale * 100)}%</div>
+                                    </Field>
 
-                                <div className="space-y-1">
-                                    <div className="flex items-center justify-between gap-3 text-sm font-medium">
-                                        <span>{t('view.friends_locations.spacing')}</span>
-                                        <span>{Math.round(spacingScale * 100)}%</span>
-                                    </div>
-                                    <Input
-                                        type="range"
-                                        min="0.25"
-                                        max="1"
-                                        step="0.05"
-                                        value={spacingScale}
-                                        onChange={(event) => {
-                                            const nextValue = clampScale(event.target.value, 0.25, 1, 1);
-                                            setSpacingScale(nextValue);
-                                            void configRepository.setString(
-                                                'FriendLocationCardSpacing',
-                                                formatOptionValue(nextValue)
-                                            );
-                                        }}
-                                    />
-                                </div>
+                                    <Field>
+                                        <FieldContent>
+                                            <FieldLabel htmlFor="friends-locations-card-spacing">
+                                                {t('view.friends_locations.spacing')}
+                                            </FieldLabel>
+                                        </FieldContent>
+                                        <Slider
+                                            id="friends-locations-card-spacing"
+                                            min={0.25}
+                                            max={1}
+                                            step={0.05}
+                                            value={[spacingScale]}
+                                            onValueChange={([value]) => {
+                                                const nextValue = clampScale(value, 0.25, 1, 1);
+                                                setSpacingScale(nextValue);
+                                                void configRepository.setString(
+                                                    'FriendLocationCardSpacing',
+                                                    formatOptionValue(nextValue)
+                                                );
+                                            }}
+                                        />
+                                        <div className="text-sm text-muted-foreground">{Math.round(spacingScale * 100)}%</div>
+                                    </Field>
+                                </FieldGroup>
                             </PopoverContent>
                         </Popover>
                     </div>
 
                     <div ref={scrollRef} className="friend-view__scroll min-h-0 flex-1 overflow-auto">
                     {isLoading ? (
-                        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20">
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <LoaderCircleIcon className="size-5 animate-spin" />
-                                {t('view.friends_locations.loading_more')}
-                            </div>
-                        </div>
+                        <LoadingState label={t('view.friends_locations.loading_more')} />
                     ) : isError ? (
                         <FriendsLocationsEmptyState
                             title="Friends locations failed to load"

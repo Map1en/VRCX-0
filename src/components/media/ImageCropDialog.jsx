@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { computeAspectCrop, cropImageFileToAspect, validateImageUploadFile } from '@/shared/utils/imageUpload.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -9,9 +9,10 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
+} from '@/ui/shadcn/dialog';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Slider } from '@/ui/shadcn/slider';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 export function ImageCropDialog({
     open,
@@ -124,7 +125,7 @@ export function ImageCropDialog({
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                     <div
                         className="relative max-h-[60vh] overflow-hidden rounded-lg border bg-muted"
                         style={frameStyle}>
@@ -137,47 +138,48 @@ export function ImageCropDialog({
                             />
                         ) : null}
                     </div>
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <div className="space-y-2">
-                            <Label>Zoom</Label>
-                            <Input
-                                type="range"
-                                min="1"
-                                max="3"
-                                step="0.05"
-                                value={zoom}
-                                onChange={(event) => setZoom(Number(event.target.value) || 1)}
+                    <FieldGroup className="grid gap-4 md:grid-cols-3">
+                        <Field>
+                            <FieldLabel htmlFor="image-crop-zoom">Zoom</FieldLabel>
+                            <Slider
+                                id="image-crop-zoom"
+                                min={1}
+                                max={3}
+                                step={0.05}
+                                value={[zoom]}
+                                onValueChange={([value]) => setZoom(Number(value) || 1)}
                             />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Horizontal</Label>
-                            <Input
-                                type="range"
-                                min="-100"
-                                max="100"
-                                step="1"
-                                value={offsetX}
-                                onChange={(event) => setOffsetX(Number(event.target.value) || 0)}
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="image-crop-offset-x">Horizontal</FieldLabel>
+                            <Slider
+                                id="image-crop-offset-x"
+                                min={-100}
+                                max={100}
+                                step={1}
+                                value={[offsetX]}
+                                onValueChange={([value]) => setOffsetX(Number(value) || 0)}
                             />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Vertical</Label>
-                            <Input
-                                type="range"
-                                min="-100"
-                                max="100"
-                                step="1"
-                                value={offsetY}
-                                onChange={(event) => setOffsetY(Number(event.target.value) || 0)}
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="image-crop-offset-y">Vertical</FieldLabel>
+                            <Slider
+                                id="image-crop-offset-y"
+                                min={-100}
+                                max={100}
+                                step={1}
+                                value={[offsetY]}
+                                onValueChange={([value]) => setOffsetY(Number(value) || 0)}
                             />
-                        </div>
-                    </div>
+                        </Field>
+                    </FieldGroup>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" disabled={isConfirming} onClick={() => onOpenChange?.(false)}>
                         Cancel
                     </Button>
                     <Button disabled={isConfirming || !file} onClick={() => void confirmCrop()}>
+                        {isConfirming ? <Spinner data-icon="inline-start" /> : null}
                         Upload
                     </Button>
                 </DialogFooter>

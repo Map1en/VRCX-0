@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
     HeartIcon,
-    LoaderCircleIcon,
     LogInIcon,
     LogOutIcon,
     MapPinIcon,
@@ -12,26 +11,29 @@ import {
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
+import { cn } from '@/lib/utils.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { GAME_LOG_FILTER_TYPES, gameLogRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
     TableCell,
     TableRow
-} from '@/ui/shadcn/table.jsx';
+} from '@/ui/shadcn/table';
 
 import {
     buildFavoriteIdSet,
@@ -66,12 +68,13 @@ function GameLogWidgetUserName({ row, className = '' }) {
     }
 
     return (
-        <button
+        <Button
             type="button"
-            className={`cursor-pointer text-left hover:underline ${className}`}
+            variant="link"
+            className={cn('h-auto min-w-0 cursor-pointer justify-start p-0 text-left font-normal', className)}
             onClick={() => openGameLogWidgetUser(row)}>
             {displayName}
-        </button>
+        </Button>
     );
 }
 
@@ -137,12 +140,13 @@ function GameLogEntryContent({ row, showDetail }) {
                     <PlayIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
                     {row?.videoId ? <span className="mr-1 shrink-0 text-muted-foreground">{row.videoId}:</span> : null}
                     {canOpenVideo ? (
-                        <button
+                        <Button
                             type="button"
-                            className="min-w-0 truncate text-left text-muted-foreground hover:underline"
+                            variant="link"
+                            className="h-auto min-w-0 justify-start p-0 text-left font-normal text-muted-foreground"
                             onClick={() => void openExternalLink(row.videoUrl)}>
-                            {videoLabel}
-                        </button>
+                            <span className="truncate">{videoLabel}</span>
+                        </Button>
                     ) : (
                         <span className="min-w-0 truncate text-muted-foreground">{videoLabel}</span>
                     )}
@@ -243,31 +247,35 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
     const settingsMenu = configUpdater ? (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon-sm">
-                    <SettingsIcon className="size-3.5" />
+                <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
+                    <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-                {GAME_LOG_FILTER_TYPES.map((filterType) => (
-                    <DropdownMenuCheckboxItem
-                        key={filterType}
-                        checked={isDashboardWidgetFilterActive(config, filterType)}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={() =>
-                            configUpdater(
-                                getNextDashboardWidgetFilterConfig(config, filterType, GAME_LOG_FILTER_TYPES)
-                            )
-                        }>
-                        {t(`view.game_log.filters.${filterType}`)}
-                    </DropdownMenuCheckboxItem>
-                ))}
+                <DropdownMenuGroup>
+                    {GAME_LOG_FILTER_TYPES.map((filterType) => (
+                        <DropdownMenuCheckboxItem
+                            key={filterType}
+                            checked={isDashboardWidgetFilterActive(config, filterType)}
+                            onSelect={(event) => event.preventDefault()}
+                            onCheckedChange={() =>
+                                configUpdater(
+                                    getNextDashboardWidgetFilterConfig(config, filterType, GAME_LOG_FILTER_TYPES)
+                                )
+                            }>
+                            {t(`view.game_log.filters.${filterType}`)}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                    checked={showDetail}
-                    onSelect={(event) => event.preventDefault()}
-                    onCheckedChange={(checked) => configUpdater({ ...config, showDetail: Boolean(checked) })}>
-                    {t('dashboard.widget.config.detail')}
-                </DropdownMenuCheckboxItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuCheckboxItem
+                        checked={showDetail}
+                        onSelect={(event) => event.preventDefault()}
+                        onCheckedChange={(checked) => configUpdater({ ...config, showDetail: Boolean(checked) })}>
+                        {t('dashboard.widget.config.detail')}
+                    </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     ) : null;
@@ -300,8 +308,8 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
 
     if (loadStatus === 'running' && annotatedRows.length === 0) {
         return renderShell(
-            <div className="flex min-h-[180px] flex-1 items-center justify-center text-sm text-muted-foreground">
-                <LoaderCircleIcon className="mr-2 size-4 animate-spin" />
+            <div className="flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Spinner />
                 Loading game log widget
             </div>
         );
@@ -330,19 +338,19 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto">
-                <Table className="vrcx-data-table table-fixed">
+                <Table className="app-data-table table-fixed">
                     <TableBody>
                         {annotatedRows.map((row, index) => {
                             return (
                                 <TableRow
                                     key={`${row.type || 'gamelog'}-${row.created_at || index}-${index}`}>
                                     <TableCell
-                                        className="w-24 align-top text-[11px] tabular-nums text-muted-foreground"
+                                        className="w-24 align-top text-xs tabular-nums text-muted-foreground"
                                         title={formatWidgetExactTime(row.created_at)}>
                                         {formatWidgetTime(row.created_at)}
                                     </TableCell>
                                     <TableCell className="w-24 align-top">
-                                        <Badge variant="outline" className="text-[11px]">
+                                        <Badge variant="outline" className="text-xs">
                                             {row.type || ''}
                                         </Badge>
                                     </TableCell>

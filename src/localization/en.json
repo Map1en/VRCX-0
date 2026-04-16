@@ -869,7 +869,6 @@
                     "theme_mode_system": "System",
                     "theme_mode_light": "Light",
                     "theme_mode_dark": "Dark",
-                    "theme_mode_midnight": "Midnight",
                     "theme_mode_blue": "Blue",
                     "theme_mode_darkblue": "Dark Blue",
                     "theme_mode_amoled": "Amoled",
@@ -905,7 +904,6 @@
                     "use_official_status_colors_description": "Match VRChat's official status colors.",
                     "table_density": "Table Density",
                     "table_density_standard": "Standard",
-                    "table_density_comfortable": "Comfortable",
                     "table_density_compact": "Compact",
                     "table_entries_settings": "Table Entries Settings",
                     "table_entries_settings_description": "Control how many items are loaded for lists and searches."

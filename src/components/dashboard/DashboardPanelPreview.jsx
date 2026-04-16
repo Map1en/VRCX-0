@@ -15,12 +15,12 @@ import { DashboardInstanceWidget } from './widgets/DashboardInstanceWidget.jsx';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
+import { Button } from '@/ui/shadcn/button';
 
 function PreviewMetric({ label, value }) {
     return (
         <div className="rounded-md border bg-muted/20 px-3 py-2">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
             <div className="text-sm font-medium">{value}</div>
         </div>
     );
@@ -73,7 +73,7 @@ function DashboardPagePreview({ definition }) {
                 <span>{definition.path}</span>
                 <Button type="button" variant="outline" size="sm" onClick={() => navigate(definition.path)}>
                     Open
-                    <ArrowRightIcon className="size-4" />
+                    <ArrowRightIcon data-icon="inline-end" />
                 </Button>
             </div>
         </div>

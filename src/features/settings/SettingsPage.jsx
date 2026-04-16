@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CheckIcon, ChevronDownIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { ChevronDownIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -12,9 +12,10 @@ import {
 import { getLanguageName, languageCodes } from '@/localization/index.js';
 import { backend } from '@/platform/index.js';
 import { avatarProfileRepository, avatarSearchProviderRepository, configRepository, mediaRepository, vrchatAuthRepository, webRepository } from '@/repositories/index.js';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card.jsx';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -22,19 +23,22 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
+} from '@/ui/shadcn/dialog';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs.jsx';
-import { Textarea } from '@/ui/shadcn/textarea.jsx';
+} from '@/ui/shadcn/dropdown-menu';
+import { Field as ShadcnField, FieldLabel as ShadcnFieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Textarea } from '@/ui/shadcn/textarea';
 import { feedFiltersOptions, sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters.js';
 import {
     DEFAULT_MAX_TABLE_SIZE,
@@ -104,7 +108,8 @@ import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 import { normalizePreferenceSnapshot, usePreferencesStore } from '@/state/preferencesStore.js';
-import { Field, JsonTreeView, SegmentedPreference, SettingsSectionHeading } from './components/SettingsField.jsx';
+import { PageHeader, PageTitle } from '@/components/layout/PageScaffold.jsx';
+import { Field, FieldGroup, JsonTreeView, SegmentedPreference, SettingsSectionHeading } from './components/SettingsField.jsx';
 import { OpenSourceNoticeDialog } from './components/OpenSourceNoticeDialog.jsx';
 
 const fontFamilyLabelKeys = {
@@ -1542,9 +1547,9 @@ export function SettingsPage() {
 
     return (
         <div className="x-container flex flex-1 flex-col overflow-hidden p-6">
-            <div className="shrink-0 p-1.5">
-                <span className="text-lg font-semibold text-foreground">{t('view.settings.header')}</span>
-            </div>
+            <PageHeader>
+                <PageTitle>{t('view.settings.header')}</PageTitle>
+            </PageHeader>
             <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="min-h-0 flex-1">
                 <TabsList variant="line" className="w-full justify-start overflow-x-auto">
                     {settingsTabs.map(([value, labelKey]) => (
@@ -1555,7 +1560,7 @@ export function SettingsPage() {
                 </TabsList>
                 <div className="min-h-0 flex-1 overflow-auto pt-4">
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                     <Card className={showSettingSection('system') ? undefined : 'hidden'}>
                         <CardHeader>
                             <CardTitle>{t('view.settings.general.general.header')}</CardTitle>
@@ -1625,13 +1630,15 @@ export function SettingsPage() {
                             <CardTitle>{t('view.settings.appearance.appearance.header')}</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col">
-                            <Field label={t('view.settings.appearance.appearance.language')}>
+                            <Field label={t('view.settings.appearance.appearance.language')} controlId="settings-language">
                                 <Select value={locale || 'en'} onValueChange={(value) => void commit(() => setAppLanguagePreference(value))}>
-                                    <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger id="settings-language" className="w-56"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {languageCodes.map((code) => (
-                                            <SelectItem key={code} value={code}>{getLanguageName(code)}</SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {languageCodes.map((code) => (
+                                                <SelectItem key={code} value={code}>{getLanguageName(code)}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </Field>
@@ -1639,42 +1646,51 @@ export function SettingsPage() {
                             <Field label={t('view.settings.appearance.appearance.font_family')}>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button type="button" variant="outline" size="sm" className="min-w-[180px] justify-between font-normal">
+                                        <Button type="button" variant="outline" size="sm" className="min-w-44 justify-between font-normal">
                                             <span className="truncate">{fontDropdownDisplayText}</span>
-                                            <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
+                                            <ChevronDownIcon data-icon="inline-end" className="opacity-50" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        {westernFontDropdownOptions.map(([value, labelKey]) => (
-                                            <DropdownMenuCheckboxItem
-                                                key={value}
-                                                checked={prefs.appFontFamily === value}
-                                                onSelect={() => void saveFontFamilyPreference(value)}>
-                                                {t(labelKey)}
-                                            </DropdownMenuCheckboxItem>
-                                        ))}
+                                        <DropdownMenuGroup>
+                                            {westernFontDropdownOptions.map(([value, labelKey]) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={value}
+                                                    checked={prefs.appFontFamily === value}
+                                                    onSelect={() => void saveFontFamilyPreference(value)}>
+                                                    {t(labelKey)}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
                                         <DropdownMenuSeparator />
-                                        {cjkFontPackOptions.map(([value, labelKey]) => (
-                                            <DropdownMenuCheckboxItem
-                                                key={value}
-                                                checked={prefs.appCjkFontPack === value && prefs.appFontFamily !== 'custom'}
-                                                onSelect={() => void selectCjkFontPack(value)}>
-                                                {t(labelKey)}
-                                            </DropdownMenuCheckboxItem>
-                                        ))}
+                                        <DropdownMenuGroup>
+                                            {cjkFontPackOptions.map(([value, labelKey]) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={value}
+                                                    checked={prefs.appCjkFontPack === value && prefs.appFontFamily !== 'custom'}
+                                                    onSelect={() => void selectCjkFontPack(value)}>
+                                                    {t(labelKey)}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuGroup>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuCheckboxItem
-                                            checked={prefs.appFontFamily === 'custom'}
-                                            onSelect={openCustomFontDialog}>
-                                            {t('view.settings.appearance.appearance.font_family_custom')}
-                                        </DropdownMenuCheckboxItem>
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuCheckboxItem
+                                                checked={prefs.appFontFamily === 'custom'}
+                                                onSelect={openCustomFontDialog}>
+                                                {t('view.settings.appearance.appearance.font_family_custom')}
+                                            </DropdownMenuCheckboxItem>
+                                        </DropdownMenuGroup>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </Field>
 
-                            <Field label={t('view.settings.appearance.appearance.zoom')}>
+                            <Field label={t('view.settings.appearance.appearance.zoom')} controlId="settings-zoom">
                                 <div className="flex items-center gap-2">
                                     <Input
+                                        id="settings-zoom"
+                                        name="zoom"
+                                        inputMode="numeric"
                                         type="number"
                                         min={30}
                                         max={300}
@@ -1823,14 +1839,16 @@ export function SettingsPage() {
                             </Field>
 
                             <SettingsSectionHeading title={t('view.settings.appearance.timedate.header')} />
-                            <Field label={t('view.settings.appearance.timedate.time_format')}>
+                            <Field label={t('view.settings.appearance.timedate.time_format')} controlId="settings-time-format">
                                 <Select
                                     value={prefs.dtHour12 ? '12' : '24'}
                                     onValueChange={(value) => void saveBoolPreference('dtHour12', 'dtHour12', value === '12')}>
-                                    <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger id="settings-time-format" className="w-56"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="12">{t('view.settings.appearance.timedate.time_format_12')}</SelectItem>
-                                        <SelectItem value="24">{t('view.settings.appearance.timedate.time_format_24')}</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="12">{t('view.settings.appearance.timedate.time_format_12')}</SelectItem>
+                                            <SelectItem value="24">{t('view.settings.appearance.timedate.time_format_24')}</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </Field>
@@ -1844,7 +1862,8 @@ export function SettingsPage() {
 
                             <Field
                                 label={t('view.settings.appearance.timedate.week_starts_on')}
-                                description={t('view.settings.appearance.timedate.week_starts_on_description')}>
+                                description={t('view.settings.appearance.timedate.week_starts_on_description')}
+                                controlId="settings-week-starts-on">
                                 <Select
                                     value={String(prefs.weekStartsOn)}
                                     onValueChange={(value) => void savePreferenceValue(
@@ -1852,11 +1871,13 @@ export function SettingsPage() {
                                         Number.parseInt(value, 10),
                                         () => setIntConfigPreference('weekStartsOn', value, { min: 0, max: 6, fallback: 1 })
                                     )}>
-                                    <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger id="settings-week-starts-on" className="w-56"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {weekStartOptions.map(([value, labelKey]) => (
-                                            <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {weekStartOptions.map(([value, labelKey]) => (
+                                                <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </Field>
@@ -1906,14 +1927,16 @@ export function SettingsPage() {
                                 </div>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     {TRUST_COLOR_ENTRIES.map((entry) => (
-                                        <div key={entry.key} className="space-y-2 rounded-md border p-3">
+                                        <div key={entry.key} className="flex flex-col gap-2 rounded-md border p-3">
                                             <div className={entry.className}>{t(entry.labelKey)}</div>
                                             <div className="flex flex-wrap gap-1">
                                                 {entry.presets.map((preset) => (
-                                                    <button
+                                                    <Button
                                                         key={preset}
                                                         type="button"
-                                                        className="size-6 rounded border"
+                                                        variant="outline"
+                                                        size="icon-sm"
+                                                        className="size-6 p-0"
                                                         style={{ backgroundColor: preset }}
                                                         aria-label={preset}
                                                         onClick={() => void saveTrustColor(entry.key, preset)}
@@ -2094,14 +2117,15 @@ export function SettingsPage() {
                     <Card className={showSettingSection('integrations') ? undefined : 'hidden'}>
                         <CardHeader>
                             <CardTitle>{t('view.settings.discord_presence.discord_presence.header')}</CardTitle>
-                            <CardDescription className="space-y-2">
+                            <CardDescription className="flex flex-col gap-2">
                                 <div>{t('view.settings.discord_presence.discord_presence.description')}</div>
-                                <button
+                                <Button
                                     type="button"
-                                    className="text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
+                                    variant="link"
+                                    className="h-auto justify-start p-0 text-left text-xs font-normal text-muted-foreground"
                                     onClick={() => setSystemHostOpen('vrchatConfigOpen', true)}>
                                     {t('view.settings.discord_presence.discord_presence.enable_tooltip')}
-                                </button>
+                                </Button>
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col">
@@ -2304,33 +2328,37 @@ export function SettingsPage() {
                                     <DropdownMenuTrigger asChild>
                                         <Button type="button" variant="outline" className="w-56 justify-between">
                                             <span className="truncate">{selectedFavoriteFriendGroupLabel}</span>
-                                            <ChevronDownIcon className="size-4 opacity-50" />
+                                            <ChevronDownIcon data-icon="inline-end" className="opacity-50" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-56">
                                         {favoriteFriendGroupOptions.length ? (
                                             <>
-                                                {remoteFavoriteFriendGroupOptions.map((group) => (
-                                                    <DropdownMenuCheckboxItem
-                                                        key={group.value}
-                                                        checked={localFavoriteFriendsGroups.includes(group.value)}
-                                                        onSelect={(event) => event.preventDefault()}
-                                                        onCheckedChange={(checked) => void toggleLocalFavoriteFriendsGroup(group.value, checked)}>
-                                                        {group.label}
-                                                    </DropdownMenuCheckboxItem>
-                                                ))}
+                                                <DropdownMenuGroup>
+                                                    {remoteFavoriteFriendGroupOptions.map((group) => (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={group.value}
+                                                            checked={localFavoriteFriendsGroups.includes(group.value)}
+                                                            onSelect={(event) => event.preventDefault()}
+                                                            onCheckedChange={(checked) => void toggleLocalFavoriteFriendsGroup(group.value, checked)}>
+                                                            {group.label}
+                                                        </DropdownMenuCheckboxItem>
+                                                    ))}
+                                                </DropdownMenuGroup>
                                                 {remoteFavoriteFriendGroupOptions.length && localFavoriteFriendGroupOptions.length ? (
                                                     <DropdownMenuSeparator />
                                                 ) : null}
-                                                {localFavoriteFriendGroupOptions.map((group) => (
-                                                    <DropdownMenuCheckboxItem
-                                                        key={group.value}
-                                                        checked={localFavoriteFriendsGroups.includes(group.value)}
-                                                        onSelect={(event) => event.preventDefault()}
-                                                        onCheckedChange={(checked) => void toggleLocalFavoriteFriendsGroup(group.value, checked)}>
-                                                        {group.label}
-                                                    </DropdownMenuCheckboxItem>
-                                                ))}
+                                                <DropdownMenuGroup>
+                                                    {localFavoriteFriendGroupOptions.map((group) => (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={group.value}
+                                                            checked={localFavoriteFriendsGroups.includes(group.value)}
+                                                            onSelect={(event) => event.preventDefault()}
+                                                            onCheckedChange={(checked) => void toggleLocalFavoriteFriendsGroup(group.value, checked)}>
+                                                            {group.label}
+                                                        </DropdownMenuCheckboxItem>
+                                                    ))}
+                                                </DropdownMenuGroup>
                                             </>
                                         ) : (
                                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
@@ -2348,7 +2376,7 @@ export function SettingsPage() {
                             <CardTitle>{t('view.settings.notifications.notifications.header')}</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col">
-                            <Field label={t('view.settings.notifications.notifications.layout')}>
+                            <Field label={t('view.settings.notifications.notifications.layout')} controlId="settings-notification-layout">
                                 <Select
                                     value={prefs.notificationLayout}
                                     onValueChange={(value) => void commit(
@@ -2362,11 +2390,13 @@ export function SettingsPage() {
                                             return () => setPrefs((current) => ({ ...current, notificationLayout: previous }));
                                         }
                                     )}>
-                                    <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger id="settings-notification-layout" className="w-56"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {notificationLayoutOptions.map(([value, labelKey]) => (
-                                            <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {notificationLayoutOptions.map(([value, labelKey]) => (
+                                                <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </Field>
@@ -2387,15 +2417,17 @@ export function SettingsPage() {
                             </Field>
 
                             <SettingsSectionHeading title={t('view.settings.notifications.notifications.desktop_notifications.header')} />
-                            <Field label={t('view.settings.notifications.notifications.desktop_notifications.when_to_display')}>
+                            <Field label={t('view.settings.notifications.notifications.desktop_notifications.when_to_display')} controlId="settings-desktop-toast">
                                 <Select
                                     value={prefs.desktopToast}
                                     onValueChange={(value) => void saveStringPreference('desktopToast', 'desktopToast', value)}>
-                                    <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger id="settings-desktop-toast" className="w-56"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {desktopToastOptions.map(([value, labelKey]) => (
-                                            <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {desktopToastOptions.map(([value, labelKey]) => (
+                                                <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </Field>
@@ -2408,29 +2440,33 @@ export function SettingsPage() {
                             </Field>
 
                             <SettingsSectionHeading title={t('view.settings.notifications.notifications.text_to_speech.header')} />
-                            <Field label={t('view.settings.notifications.notifications.text_to_speech.when_to_play')}>
+                            <Field label={t('view.settings.notifications.notifications.text_to_speech.when_to_play')} controlId="settings-notification-tts">
                                 <Select value={prefs.notificationTTS} onValueChange={(value) => void saveNotificationTtsMode(value)}>
-                                    <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger id="settings-notification-tts" className="w-56"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {notificationTtsOptions.map(([value, labelKey]) => (
-                                            <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {notificationTtsOptions.map(([value, labelKey]) => (
+                                                <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </Field>
 
-                            <Field label={t('view.settings.notifications.notifications.text_to_speech.tts_voice')}>
+                            <Field label={t('view.settings.notifications.notifications.text_to_speech.tts_voice')} controlId="settings-notification-tts-voice">
                                 <Select
                                     value={prefs.notificationTTSVoice}
                                     disabled={prefs.notificationTTS === 'Never' || !ttsVoices.length}
                                     onValueChange={(value) => void saveNotificationTtsVoice(value)}>
-                                    <SelectTrigger className="w-72"><SelectValue placeholder={ttsVoices.length ? undefined : 'No voices'} /></SelectTrigger>
+                                    <SelectTrigger id="settings-notification-tts-voice" className="w-72"><SelectValue placeholder={ttsVoices.length ? undefined : 'No voices'} /></SelectTrigger>
                                     <SelectContent>
-                                        {ttsVoices.map((voice, index) => (
-                                            <SelectItem key={`${voice.name}-${index}`} value={String(index)}>
-                                                {voice.name}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {ttsVoices.map((voice, index) => (
+                                                <SelectItem key={`${voice.name}-${index}`} value={String(index)}>
+                                                    {voice.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </Field>
@@ -2639,25 +2675,28 @@ export function SettingsPage() {
                             <SettingsSectionHeading title={t('view.settings.advanced.advanced.database_cleanup.header')} />
                             <Field
                                 label={t('view.settings.advanced.advanced.database_cleanup.auto_cleanup')}
-                                description={t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_description')}>
+                                description={t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_description')}
+                                controlId="settings-avatar-auto-cleanup">
                                 <Select
                                     value={prefs.avatarAutoCleanup}
                                     onValueChange={(value) => void saveStringPreference('avatarAutoCleanup', 'avatarAutoCleanup', value)}>
-                                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger id="settings-avatar-auto-cleanup" className="w-36"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {avatarAutoCleanupOptions.map((value) => (
-                                            <SelectItem key={value} value={value}>
-                                                {value === 'Off'
-                                                    ? t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_off')
-                                                    : t(`view.settings.advanced.advanced.database_cleanup.auto_cleanup_${value}`)}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {avatarAutoCleanupOptions.map((value) => (
+                                                <SelectItem key={value} value={value}>
+                                                    {value === 'Off'
+                                                        ? t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_off')
+                                                        : t(`view.settings.advanced.advanced.database_cleanup.auto_cleanup_${value}`)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </Field>
                             <Field label={t('view.settings.advanced.advanced.database_cleanup.purge_button')}>
                                 <Button type="button" variant="outline" onClick={() => setPurgeDialogOpen(true)}>
-                                    <Trash2Icon className="size-4" />
+                                    <Trash2Icon data-icon="inline-start" />
                                     {t('view.settings.advanced.advanced.database_cleanup.purge')}
                                 </Button>
                             </Field>
@@ -2740,7 +2779,12 @@ export function SettingsPage() {
                 </div>
             </div>
 
-            {loading ? <div className="text-sm text-muted-foreground">Loading settings snapshot...</div> : null}
+            {loading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Spinner />
+                    Loading settings snapshot…
+                </div>
+            ) : null}
                 </div>
             </Tabs>
             <Dialog open={customFontDialogOpen} onOpenChange={setCustomFontDialogOpen}>
@@ -2749,17 +2793,25 @@ export function SettingsPage() {
                         <DialogTitle>{t('view.settings.appearance.appearance.font_family_custom_dialog_title')}</DialogTitle>
                         <DialogDescription>{t('view.settings.appearance.appearance.font_family_custom_dialog_description')}</DialogDescription>
                     </DialogHeader>
-                    <Input
-                        value={customFontDraft}
-                        placeholder="'My Font', Arial, sans-serif"
-                        onChange={(event) => setCustomFontDraft(event.target.value)}
-                        onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                                event.preventDefault();
-                                void saveCustomFontFamily();
-                            }
-                        }}
-                    />
+                    <FieldGroup>
+                        <Field
+                            label={t('view.settings.appearance.appearance.font_family_custom')}
+                            controlId="settings-custom-font-family">
+                            <Input
+                                id="settings-custom-font-family"
+                                value={customFontDraft}
+                                name="customFontFamily"
+                                placeholder="'My Font', Arial, sans-serif"
+                                onChange={(event) => setCustomFontDraft(event.target.value)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        event.preventDefault();
+                                        void saveCustomFontFamily();
+                                    }
+                                }}
+                            />
+                        </Field>
+                    </FieldGroup>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setCustomFontDialogOpen(false)}>
                             {t('dialog.alertdialog.cancel')}
@@ -2776,13 +2828,19 @@ export function SettingsPage() {
                         <DialogTitle>{t('dialog.youtube_api.header')}</DialogTitle>
                         <DialogDescription>{t('dialog.youtube_api.description')}</DialogDescription>
                     </DialogHeader>
-                    <Textarea
-                        value={youtubeApiKeyDraft}
-                        placeholder={t('dialog.youtube_api.placeholder')}
-                        maxLength={39}
-                        rows={2}
-                        onChange={(event) => setYoutubeApiKeyDraft(event.target.value)}
-                    />
+                    <FieldGroup>
+                        <Field label={t('dialog.youtube_api.header')} controlId="settings-youtube-api-key">
+                            <Textarea
+                                id="settings-youtube-api-key"
+                                value={youtubeApiKeyDraft}
+                                name="youtubeApiKey"
+                                placeholder={t('dialog.youtube_api.placeholder')}
+                                maxLength={39}
+                                rows={2}
+                                onChange={(event) => setYoutubeApiKeyDraft(event.target.value)}
+                            />
+                        </Field>
+                    </FieldGroup>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => void openExternalLink('https://smashballoon.com/doc/youtube-api-key/')}>
                             {t('dialog.youtube_api.guide')}
@@ -2798,50 +2856,60 @@ export function SettingsPage() {
                     <DialogHeader>
                         <DialogTitle>{t('dialog.translation_api.header')}</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                        <Field label={t('view.settings.appearance.appearance.bio_language')}>
+                    <FieldGroup>
+                        <Field label={t('view.settings.appearance.appearance.bio_language')} controlId="settings-translation-bio-language">
                             <Select value={translationDraft.bioLanguage || 'en'} onValueChange={(value) => setTranslationDraftValue('bioLanguage', value)}>
-                                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                                <SelectTrigger id="settings-translation-bio-language" className="w-56"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {languageCodes.map((code) => (
-                                        <SelectItem key={code} value={code}>{getLanguageName(code)}</SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        {languageCodes.map((code) => (
+                                            <SelectItem key={code} value={code}>{getLanguageName(code)}</SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </Field>
-                        <Field label={t('dialog.translation_api.mode')}>
+                        <Field label={t('dialog.translation_api.mode')} controlId="settings-translation-mode">
                             <Select value={translationDraft.translationAPIType} onValueChange={(value) => setTranslationDraftValue('translationAPIType', value)}>
-                                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                                <SelectTrigger id="settings-translation-mode" className="w-56"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {translationProviderOptions.map(([value, labelKey]) => (
-                                        <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        {translationProviderOptions.map(([value, labelKey]) => (
+                                            <SelectItem key={value} value={value}>{t(labelKey)}</SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </Field>
                         {translationDraft.translationAPIType === 'openai' ? (
                             <>
-                                <Field label={t('dialog.translation_api.openai.endpoint')}>
+                                <Field label={t('dialog.translation_api.openai.endpoint')} controlId="settings-translation-endpoint">
                                     <Input
+                                        id="settings-translation-endpoint"
                                         value={translationDraft.translationAPIEndpoint}
+                                        name="translationApiEndpoint"
                                         placeholder={DEFAULT_TRANSLATION_ENDPOINT}
                                         onChange={(event) => setTranslationDraftValue('translationAPIEndpoint', event.target.value)}
                                         className="w-96 max-w-full"
                                     />
                                 </Field>
-                                <Field label={t('dialog.translation_api.openai.model')}>
+                                <Field label={t('dialog.translation_api.openai.model')} controlId="settings-translation-model">
                                     <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row">
                                         {availableTranslationModels.length ? (
                                             <Select value={translationDraft.translationAPIModel || availableTranslationModels[0]} onValueChange={(value) => setTranslationDraftValue('translationAPIModel', value)}>
-                                                <SelectTrigger className="min-w-56"><SelectValue /></SelectTrigger>
+                                                <SelectTrigger id="settings-translation-model" className="min-w-56"><SelectValue /></SelectTrigger>
                                                 <SelectContent>
-                                                    {availableTranslationModels.map((model) => (
-                                                        <SelectItem key={model} value={model}>{model}</SelectItem>
-                                                    ))}
+                                                    <SelectGroup>
+                                                        {availableTranslationModels.map((model) => (
+                                                            <SelectItem key={model} value={model}>{model}</SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
                                                 </SelectContent>
                                             </Select>
                                         ) : (
                                             <Input
+                                                id="settings-translation-model"
+                                                name="translationApiModel"
                                                 value={translationDraft.translationAPIModel}
                                                 placeholder={DEFAULT_TRANSLATION_MODEL}
                                                 onChange={(event) => setTranslationDraftValue('translationAPIModel', event.target.value)}
@@ -2852,9 +2920,14 @@ export function SettingsPage() {
                                         </Button>
                                     </div>
                                 </Field>
-                                <Field label={t('dialog.translation_api.openai.prompt_optional')} description={t('dialog.translation_api.openai.prompt_optional_description')}>
+                                <Field
+                                    label={t('dialog.translation_api.openai.prompt_optional')}
+                                    description={t('dialog.translation_api.openai.prompt_optional_description')}
+                                    controlId="settings-translation-prompt">
                                     <Textarea
+                                        id="settings-translation-prompt"
                                         rows={3}
+                                        name="translationApiPrompt"
                                         value={translationDraft.translationAPIPrompt}
                                         onChange={(event) => setTranslationDraftValue('translationAPIPrompt', event.target.value)}
                                         className="w-96 max-w-full resize-none"
@@ -2862,16 +2935,20 @@ export function SettingsPage() {
                                 </Field>
                             </>
                         ) : null}
-                        <Field label={translationDraft.translationAPIType === 'openai' ? t('dialog.translation_api.openai.api_key') : t('dialog.translation_api.description')}>
+                        <Field
+                            label={translationDraft.translationAPIType === 'openai' ? t('dialog.translation_api.openai.api_key') : t('dialog.translation_api.description')}
+                            controlId="settings-translation-api-key">
                             <Input
+                                id="settings-translation-api-key"
                                 type="password"
+                                name="translationApiKey"
                                 value={translationDraft.translationAPIKey}
                                 placeholder={translationDraft.translationAPIType === 'openai' ? 'sk-...' : 'AIzaSy...'}
                                 onChange={(event) => setTranslationDraftValue('translationAPIKey', event.target.value)}
                                 className="w-96 max-w-full"
                             />
                         </Field>
-                    </div>
+                    </FieldGroup>
                     <DialogFooter>
                         {translationDraft.translationAPIType === 'google' ? (
                             <Button type="button" variant="outline" onClick={() => void openExternalLink('https://translatepress.com/docs/automatic-translation/generate-google-api-key/')}>
@@ -2897,57 +2974,76 @@ export function SettingsPage() {
                             {t('view.settings.appearance.appearance.table_page_sizes')}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-3">
+                    <FieldGroup>
                         <div className="flex flex-wrap gap-2">
                             {tablePageSizesDraft.map((size) => (
                                 <Badge key={size} variant="secondary" className="gap-2">
                                     {size}
-                                    <button
+                                    <Button
                                         type="button"
-                                        className="text-muted-foreground hover:text-foreground"
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        aria-label={`${t('common.actions.remove')} ${size}`}
                                         onClick={() => removeTablePageSize(size)}>
-                                        x
-                                    </button>
+                                        <XIcon data-icon="inline-start" />
+                                    </Button>
                                 </Badge>
                             ))}
                         </div>
-                        <div className="flex gap-2">
-                            <Input
-                                type="number"
-                                min={1}
-                                max={1000}
-                                value={tablePageSizeDraftInput}
-                                placeholder={t('view.settings.appearance.appearance.table_page_sizes')}
-                                onChange={(event) => setTablePageSizeDraftInput(event.target.value)}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                        event.preventDefault();
-                                        addTablePageSize();
-                                    }
-                                }}
-                            />
-                            <Button type="button" variant="outline" onClick={() => addTablePageSize()}>
-                                <PlusIcon className="size-4" />
-                            </Button>
-                        </div>
-                        <div className="max-h-64 overflow-y-auto rounded-md border p-1">
-                            {filteredTablePageSizeOptions.map((size) => (
-                                <button
-                                    key={size}
+                        <Field
+                            label={t('view.settings.appearance.appearance.table_page_sizes')}
+                            description="1-1000"
+                            controlId="settings-table-page-size-input">
+                            <div className="flex gap-2">
+                                <Input
+                                    id="settings-table-page-size-input"
+                                    type="number"
+                                    name="tablePageSize"
+                                    inputMode="numeric"
+                                    min={1}
+                                    max={1000}
+                                    value={tablePageSizeDraftInput}
+                                    placeholder={t('view.settings.appearance.appearance.table_page_sizes')}
+                                    onChange={(event) => setTablePageSizeDraftInput(event.target.value)}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            addTablePageSize();
+                                        }
+                                    }}
+                                />
+                                <Button
                                     type="button"
-                                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-                                    onClick={() => toggleTablePageSize(size)}>
-                                    <span>{size}</span>
-                                    {tablePageSizesDraft.includes(size) ? (
-                                        <CheckIcon className="ml-auto size-4" />
-                                    ) : null}
-                                </button>
-                            ))}
+                                    variant="outline"
+                                    aria-label={t('view.settings.appearance.appearance.table_page_sizes')}
+                                    onClick={() => addTablePageSize()}>
+                                    <PlusIcon data-icon="inline-start" />
+                                </Button>
+                            </div>
+                        </Field>
+                        <div className="max-h-64 overflow-y-auto rounded-md border p-1">
+                            <FieldGroup>
+                                {filteredTablePageSizeOptions.map((size) => {
+                                    const optionId = `settings-table-page-size-option-${size}`;
+                                    return (
+                                        <ShadcnField
+                                            key={size}
+                                            orientation="horizontal"
+                                            className="rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground">
+                                            <Checkbox
+                                                id={optionId}
+                                                checked={tablePageSizesDraft.includes(size)}
+                                                onCheckedChange={() => toggleTablePageSize(size)}
+                                            />
+                                            <ShadcnFieldLabel htmlFor={optionId} className="w-full cursor-pointer">
+                                                {size}
+                                            </ShadcnFieldLabel>
+                                        </ShadcnField>
+                                    );
+                                })}
+                            </FieldGroup>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            1-1000
-                        </p>
-                    </div>
+                    </FieldGroup>
                     <DialogFooter>
                         <Button type="button" onClick={() => void saveTablePageSizesDialog()}>
                             {t('dialog.alertdialog.ok')}
@@ -2961,53 +3057,59 @@ export function SettingsPage() {
                         <DialogTitle>{t('prompt.table_entries_settings.header')}</DialogTitle>
                         <DialogDescription>{t('prompt.table_entries_settings.description')}</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
-                        <Field label={t('prompt.table_entries_settings.table_max_entries')}>
-                            <div className="space-y-1">
-                                <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    min={TABLE_MAX_SIZE_MIN}
-                                    max={TABLE_MAX_SIZE_MAX}
-                                    value={tableLimitsDraft.maxTableSize}
-                                    onChange={(event) => setTableLimitsDraft((current) => ({
-                                        ...current,
-                                        maxTableSize: event.target.value
-                                    }))}
-                                />
-                                <p className={`text-xs ${tableMaxSizeError ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                    {tableMaxSizeError || t('prompt.table_entries_settings.table_max_entries_hint', {
-                                        min: TABLE_MAX_SIZE_MIN,
-                                        max: TABLE_MAX_SIZE_MAX
-                                    })}
-                                </p>
-                            </div>
+                    <FieldGroup>
+                        <Field
+                            label={t('prompt.table_entries_settings.table_max_entries')}
+                            description={tableMaxSizeError ? undefined : t('prompt.table_entries_settings.table_max_entries_hint', {
+                                min: TABLE_MAX_SIZE_MIN,
+                                max: TABLE_MAX_SIZE_MAX
+                            })}
+                            controlId="settings-table-max-entries"
+                            error={tableMaxSizeError}
+                            invalid={Boolean(tableMaxSizeError)}>
+                            <Input
+                                id="settings-table-max-entries"
+                                type="number"
+                                name="maxTableSize"
+                                inputMode="numeric"
+                                min={TABLE_MAX_SIZE_MIN}
+                                max={TABLE_MAX_SIZE_MAX}
+                                value={tableLimitsDraft.maxTableSize}
+                                onChange={(event) => setTableLimitsDraft((current) => ({
+                                    ...current,
+                                    maxTableSize: event.target.value
+                                }))}
+                            />
                         </Field>
-                        <Field label={t('prompt.table_entries_settings.search_limit_returns')}>
-                            <div className="space-y-1">
-                                <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    min={SEARCH_LIMIT_MIN}
-                                    max={SEARCH_LIMIT_MAX}
-                                    value={tableLimitsDraft.searchLimit}
-                                    onChange={(event) => setTableLimitsDraft((current) => ({
-                                        ...current,
-                                        searchLimit: event.target.value
-                                    }))}
-                                />
-                                <p className={`text-xs ${searchLimitError ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                    {searchLimitError || t('prompt.table_entries_settings.search_limit_returns_hint', {
+                        <Field
+                            label={t('prompt.table_entries_settings.search_limit_returns')}
+                            description={searchLimitError ? t('prompt.table_entries_settings.search_limit_returns_warning') : (
+                                <span className="flex flex-col gap-1">
+                                    <span>{t('prompt.table_entries_settings.search_limit_returns_hint', {
                                         min: SEARCH_LIMIT_MIN,
                                         max: SEARCH_LIMIT_MAX
-                                    })}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {t('prompt.table_entries_settings.search_limit_returns_warning')}
-                                </p>
-                            </div>
+                                    })}</span>
+                                    <span>{t('prompt.table_entries_settings.search_limit_returns_warning')}</span>
+                                </span>
+                            )}
+                            controlId="settings-search-limit"
+                            error={searchLimitError}
+                            invalid={Boolean(searchLimitError)}>
+                            <Input
+                                id="settings-search-limit"
+                                type="number"
+                                name="searchLimit"
+                                inputMode="numeric"
+                                min={SEARCH_LIMIT_MIN}
+                                max={SEARCH_LIMIT_MAX}
+                                value={tableLimitsDraft.searchLimit}
+                                onChange={(event) => setTableLimitsDraft((current) => ({
+                                    ...current,
+                                    searchLimit: event.target.value
+                                }))}
+                            />
                         </Field>
-                    </div>
+                    </FieldGroup>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setTableLimitsDialogOpen(false)}>
                             {t('prompt.table_entries_settings.cancel')}
@@ -3023,34 +3125,44 @@ export function SettingsPage() {
                     <DialogHeader>
                         <DialogTitle>{t('dialog.avatar_database_provider.header')}</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-3">
+                    <FieldGroup>
                         {avatarProviderConfig.providerList.length > 0 ? (
                             avatarProviderConfig.providerList.map((provider, index) => (
-                                <div key={`avatar-provider-dialog-${index}`} className="flex gap-2">
-                                    <Input
-                                        value={provider}
-                                        onChange={(event) => updateAvatarProvider(index, event.target.value)}
-                                        onBlur={(event) => saveAvatarProviderField(index, event.target.value)}
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => removeAvatarProvider(index)}>
-                                        <Trash2Icon className="size-4" />
-                                    </Button>
-                                </div>
+                                <Field
+                                    key={`avatar-provider-dialog-${index}`}
+                                    label={`${t('view.settings.advanced.advanced.remote_database.avatar_database_provider')} ${index + 1}`}
+                                    controlId={`settings-avatar-provider-${index}`}>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id={`settings-avatar-provider-${index}`}
+                                            name={`avatarProvider${index}`}
+                                            value={provider}
+                                            onChange={(event) => updateAvatarProvider(index, event.target.value)}
+                                            onBlur={(event) => saveAvatarProviderField(index, event.target.value)}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            aria-label={t('common.actions.remove')}
+                                            onClick={() => removeAvatarProvider(index)}>
+                                            <Trash2Icon data-icon="inline-start" />
+                                        </Button>
+                                    </div>
+                                </Field>
                             ))
                         ) : (
                             <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
                                 {t('search.avatar.no_provider')}
                             </div>
                         )}
-                        <Button type="button" size="sm" variant="outline" onClick={addAvatarProvider}>
-                            <PlusIcon className="size-4" />
-                            {t('dialog.avatar_database_provider.add_provider')}
-                        </Button>
-                    </div>
+                        <Field label={t('dialog.avatar_database_provider.add_provider')}>
+                            <Button type="button" size="sm" variant="outline" onClick={addAvatarProvider}>
+                                <PlusIcon data-icon="inline-start" />
+                                {t('dialog.avatar_database_provider.add_provider')}
+                            </Button>
+                        </Field>
+                    </FieldGroup>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setAvatarProviderDialogOpen(false)}>
                             {t('dialog.alertdialog.ok')}
@@ -3066,18 +3178,22 @@ export function SettingsPage() {
                             {t('view.settings.advanced.advanced.database_cleanup.purge_confirm_alert')}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 text-sm text-muted-foreground">
+                    <div className="flex flex-col gap-4 text-sm text-muted-foreground">
                         <p>{t('view.settings.advanced.advanced.database_cleanup.purge_confirm_description_1')}</p>
                         <p>{t('view.settings.advanced.advanced.database_cleanup.purge_confirm_description_2')}</p>
                         <p>{t('view.settings.advanced.advanced.database_cleanup.purge_confirm_description_3')}</p>
-                        <Field label={t('view.settings.advanced.advanced.database_cleanup.purge_older_than')}>
+                        <Field
+                            label={t('view.settings.advanced.advanced.database_cleanup.purge_older_than')}
+                            controlId="settings-purge-period">
                             <Select value={purgePeriod} onValueChange={setPurgePeriod}>
-                                <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                                <SelectTrigger id="settings-purge-period" className="w-36"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="180">{t('view.settings.advanced.advanced.database_cleanup.purge_option_180')}</SelectItem>
-                                    <SelectItem value="365">{t('view.settings.advanced.advanced.database_cleanup.purge_option_365')}</SelectItem>
-                                    <SelectItem value="730">{t('view.settings.advanced.advanced.database_cleanup.purge_option_730')}</SelectItem>
-                                    <SelectItem value="all">{t('view.settings.advanced.advanced.database_cleanup.purge_option_all')}</SelectItem>
+                                    <SelectGroup>
+                                        <SelectItem value="180">{t('view.settings.advanced.advanced.database_cleanup.purge_option_180')}</SelectItem>
+                                        <SelectItem value="365">{t('view.settings.advanced.advanced.database_cleanup.purge_option_365')}</SelectItem>
+                                        <SelectItem value="730">{t('view.settings.advanced.advanced.database_cleanup.purge_option_730')}</SelectItem>
+                                        <SelectItem value="all">{t('view.settings.advanced.advanced.database_cleanup.purge_option_all')}</SelectItem>
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </Field>
@@ -3087,7 +3203,7 @@ export function SettingsPage() {
                             {t('confirm.cancel_button')}
                         </Button>
                         <Button type="button" variant="destructive" disabled={purgeInProgress} onClick={() => void purgeAvatarFeedData()}>
-                            <Trash2Icon className="size-4" />
+                            <Trash2Icon data-icon="inline-start" />
                             {t('view.settings.advanced.advanced.database_cleanup.purge_confirm_button')}
                         </Button>
                     </DialogFooter>
@@ -3099,32 +3215,35 @@ export function SettingsPage() {
                         <DialogTitle>{feedFilterMode === 'noty' ? t('dialog.shared_feed_filters.notification') : t('dialog.shared_feed_filters.wrist')}</DialogTitle>
                         <DialogDescription>{t('view.settings.notifications.notifications.notification_filter')}</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 overflow-hidden">
+                    <div className="flex flex-col gap-4 overflow-hidden">
                         <Tabs value={feedFilterMode} onValueChange={setFeedFilterMode}>
                             <TabsList variant="line" className="w-full justify-start">
                                 <TabsTrigger value="noty">{t('dialog.shared_feed_filters.notification')}</TabsTrigger>
                                 <TabsTrigger value="wrist">{t('dialog.shared_feed_filters.wrist')}</TabsTrigger>
                             </TabsList>
                         </Tabs>
-                        <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+                        <FieldGroup className="max-h-[60vh] overflow-y-auto pr-1">
                             {currentSharedFeedFilterOptions.map((setting) => (
                                 <Field
                                     key={`${feedFilterMode}:${setting.key}`}
                                     label={setting.name}
-                                    description={setting.tooltip}>
+                                    description={setting.tooltip}
+                                    controlId={`settings-feed-filter-${feedFilterMode}-${setting.key}`}>
                                     <Select
                                         value={sharedFeedFilters[feedFilterMode]?.[setting.key] || sharedFeedFiltersDefaults[feedFilterMode]?.[setting.key] || setting.options[0]?.label}
                                         onValueChange={(value) => updateSharedFeedFilter(feedFilterMode, setting.key, value)}>
-                                        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger id={`settings-feed-filter-${feedFilterMode}-${setting.key}`} className="w-40"><SelectValue /></SelectTrigger>
                                         <SelectContent>
-                                            {setting.options.map((option) => (
-                                                <SelectItem key={option.label} value={option.label}>{t(option.textKey)}</SelectItem>
-                                            ))}
+                                            <SelectGroup>
+                                                {setting.options.map((option) => (
+                                                    <SelectItem key={option.label} value={option.label}>{t(option.textKey)}</SelectItem>
+                                                ))}
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                 </Field>
                             ))}
-                        </div>
+                        </FieldGroup>
                         <div className="flex justify-end gap-2">
                             <Button type="button" variant="outline" onClick={() => resetSharedFeedFilters(feedFilterMode)}>
                                 {t('dialog.shared_feed_filters.reset')}

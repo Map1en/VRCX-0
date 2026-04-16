@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     LanguagesIcon,
-    LoaderCircleIcon,
     Trash2Icon,
     UserIcon
 } from 'lucide-react';
@@ -10,6 +9,7 @@ import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { openExternalLink, userImage } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import { DEFAULT_ENDPOINT_DOMAIN, DEFAULT_WEBSOCKET_DOMAIN } from '@/repositories/vrchatAuthRepository.js';
 import {
     deleteSavedAuthSnapshot,
@@ -33,25 +33,27 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle
-} from '@/ui/shadcn/alert-dialog.jsx';
-import { Badge } from '@/ui/shadcn/badge.jsx';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Checkbox } from '@/ui/shadcn/checkbox.jsx';
+} from '@/ui/shadcn/alert-dialog';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle
-} from '@/ui/shadcn/card.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
-import { Label } from '@/ui/shadcn/label.jsx';
+} from '@/ui/shadcn/card';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { getLanguageName, languageCodes } from '@/localization/index.js';
 
 function getErrorMessage(error, fallbackMessage) {
@@ -548,22 +550,24 @@ export function LoginPage() {
                     value={locale}
                     disabled={isAuthBusy}
                     onValueChange={(value) => void handleLanguageChange(value)}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-44">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        {languageCodes.map((code) => (
-                            <SelectItem key={code} value={code}>
-                                {getLanguageName(code)}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            {languageCodes.map((code) => (
+                                <SelectItem key={code} value={code}>
+                                    {getLanguageName(code)}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
             </div>
 
-            <div className="w-full max-w-4xl space-y-3">
-                <div className={`grid min-h-[380px] gap-2 ${hasSavedAccounts ? 'md:grid-cols-[1fr_auto_1fr]' : ''}`}>
-                    <div className="space-y-3">
+            <div className="flex w-full max-w-4xl flex-col gap-3">
+                <div className={cn('grid min-h-[380px] gap-2', hasSavedAccounts && 'md:grid-cols-[1fr_auto_1fr]')}>
+                    <div className="flex flex-col gap-3">
                         {shouldShowAutoLogin ? (
                             <Card>
                                 <CardContent className="flex flex-wrap items-center gap-3 p-3 text-sm">
@@ -603,13 +607,13 @@ export function LoginPage() {
                             <CardHeader>
                                 <CardTitle className="text-center">{t('view.login.login')}</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <form className="space-y-4" onSubmit={handleManualLoginSubmit}>
-                                    <div className="space-y-3">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="react-login-username">
+                            <CardContent className="flex flex-col gap-4">
+                                <form className="flex flex-col gap-4" onSubmit={handleManualLoginSubmit}>
+                                    <FieldGroup className="gap-3">
+                                        <Field>
+                                            <FieldLabel htmlFor="react-login-username">
                                                 {t('view.login.field.username')}
-                                            </Label>
+                                            </FieldLabel>
                                             <Input
                                                 id="react-login-username"
                                                 autoComplete="username"
@@ -626,11 +630,11 @@ export function LoginPage() {
                                                     }));
                                                 }}
                                             />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="react-login-password">
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="react-login-password">
                                                 {t('view.login.field.password')}
-                                            </Label>
+                                            </FieldLabel>
                                             <Input
                                                 id="react-login-password"
                                                 type="password"
@@ -648,12 +652,13 @@ export function LoginPage() {
                                                     }));
                                                 }}
                                             />
-                                        </div>
-                                    </div>
+                                        </Field>
+                                    </FieldGroup>
 
                                     <div className="flex flex-wrap items-center gap-6">
-                                        <label className="flex items-center gap-2 text-sm">
+                                        <Field orientation="horizontal" className="w-auto">
                                             <Checkbox
+                                                id="react-login-save-credentials"
                                                 checked={loginForm.saveCredentials}
                                                 disabled={isAuthBusy}
                                                 onCheckedChange={(checked) => {
@@ -666,26 +671,31 @@ export function LoginPage() {
                                                     }));
                                                 }}
                                             />
-                                            <span>{t('view.login.field.saveCredentials')}</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 text-sm">
+                                            <FieldLabel htmlFor="react-login-save-credentials">
+                                                {t('view.login.field.saveCredentials')}
+                                            </FieldLabel>
+                                        </Field>
+                                        <Field orientation="horizontal" className="w-auto">
                                             <Checkbox
+                                                id="react-login-dev-endpoint"
                                                 checked={loginForm.enableCustomEndpoint}
                                                 disabled={isUpdatingEndpointSetting || isAuthBusy}
                                                 onCheckedChange={(checked) =>
                                                     void handleCustomEndpointToggle(checked)
                                                 }
                                             />
-                                            <span>{t('view.login.field.devEndpoint')}</span>
-                                        </label>
+                                            <FieldLabel htmlFor="react-login-dev-endpoint">
+                                                {t('view.login.field.devEndpoint')}
+                                            </FieldLabel>
+                                        </Field>
                                     </div>
 
                                     {loginForm.enableCustomEndpoint ? (
-                                        <div className="grid gap-4 md:grid-cols-2">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="react-login-endpoint">
+                                        <FieldGroup className="grid gap-4 md:grid-cols-2">
+                                            <Field>
+                                                <FieldLabel htmlFor="react-login-endpoint">
                                                     {t('view.login.field.endpoint')}
-                                                </Label>
+                                                </FieldLabel>
                                                 <Input
                                                     id="react-login-endpoint"
                                                     disabled={isAuthBusy}
@@ -701,11 +711,11 @@ export function LoginPage() {
                                                         }));
                                                     }}
                                                 />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="react-login-websocket">
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel htmlFor="react-login-websocket">
                                                     {t('view.login.field.websocket')}
-                                                </Label>
+                                                </FieldLabel>
                                                 <Input
                                                     id="react-login-websocket"
                                                     disabled={isAuthBusy}
@@ -721,19 +731,19 @@ export function LoginPage() {
                                                         }));
                                                     }}
                                                 />
-                                            </div>
-                                        </div>
+                                            </Field>
+                                        </FieldGroup>
                                     ) : null}
 
                                     <Button type="submit" size="lg" className="w-full" disabled={isAuthBusy}>
-                                            {isSubmitting ? (
-                                                <>
-                                                    <LoaderCircleIcon className="size-4 animate-spin" />
-                                                    Authenticating...
-                                                </>
-                                            ) : (
-                                                t('view.login.login')
-                                            )}
+                                        {isSubmitting ? (
+                                            <>
+                                                <Spinner data-icon="inline-start" />
+                                                Authenticating...
+                                            </>
+                                        ) : (
+                                            t('view.login.login')
+                                        )}
                                     </Button>
                                 </form>
                                 <Button
@@ -747,14 +757,15 @@ export function LoginPage() {
                             </CardContent>
                         </Card>
 
-                        <div className="space-y-1 text-center text-xs text-muted-foreground">
+                        <div className="flex flex-col gap-1 text-center text-xs text-muted-foreground">
                             <p>
-                                <button
+                                <Button
                                     type="button"
-                                    className="cursor-pointer underline-offset-4 hover:underline"
+                                    variant="link"
+                                    className="h-auto p-0 text-xs text-muted-foreground"
                                     onClick={() => void openExternalLink('https://vrchat.com/home/password')}>
                                     {t('view.login.forgotPassword')}
-                                </button>
+                                </Button>
                             </p>
                             <p>{t('view.settings.general.legal_notice.info')}</p>
                             <p>{t('view.settings.general.legal_notice.disclaimer1')}</p>
@@ -771,7 +782,7 @@ export function LoginPage() {
                                     <CardTitle className="text-center">{t('view.login.savedAccounts')}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="min-h-0 flex-1 overflow-y-auto">
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         {savedAccounts.map((entry) => {
                                             const hasStoredCredentials = Boolean(
                                                 entry.loginParams?.username && entry.loginParams?.password
@@ -782,49 +793,42 @@ export function LoginPage() {
                                             return (
                                                 <div
                                                     key={entry.user.id}
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    className="flex cursor-pointer items-center gap-3 rounded-md p-2 hover:bg-muted"
-                                                    onClick={() => {
-                                                        if (hasStoredCredentials && !isAuthBusy) {
-                                                            void handleSavedCredentialLogin(entry);
-                                                        }
-                                                    }}
-                                                    onKeyDown={(event) => {
-                                                        if (event.key === 'Enter' || event.key === ' ') {
-                                                            event.preventDefault();
-                                                            if (hasStoredCredentials && !isAuthBusy) {
-                                                                void handleSavedCredentialLogin(entry);
-                                                            }
-                                                        }
-                                                    }}>
-                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-background">
-                                                        {avatarUrl ? (
-                                                            <img src={avatarUrl} alt="" className="size-full rounded-full object-cover" />
-                                                        ) : (
-                                                            <UserIcon className="size-5 text-muted-foreground" />
-                                                        )}
-                                                    </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="truncate text-sm font-medium">
-                                                            {getUserDisplayName(entry.user)}
+                                                    className="flex items-center gap-2 rounded-md p-1 hover:bg-muted">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        className="h-auto min-w-0 flex-1 justify-start gap-3 p-1 text-left font-normal hover:bg-transparent"
+                                                        disabled={!hasStoredCredentials || isAuthBusy}
+                                                        onClick={() => void handleSavedCredentialLogin(entry)}>
+                                                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-background">
+                                                            {avatarUrl ? (
+                                                                <img src={avatarUrl} alt="" className="size-full rounded-full object-cover" />
+                                                            ) : (
+                                                                <UserIcon className="size-5 text-muted-foreground" />
+                                                            )}
                                                         </div>
-                                                        <div className="truncate text-xs text-muted-foreground">
-                                                            {entry.user.username || entry.user.id}
-                                                        </div>
-                                                        {entry.loginParams.endpoint ? (
-                                                            <div className="truncate text-xs text-muted-foreground">
-                                                                {entry.loginParams.endpoint}
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="truncate text-sm font-medium">
+                                                                {getUserDisplayName(entry.user)}
                                                             </div>
+                                                            <div className="truncate text-xs text-muted-foreground">
+                                                                {entry.user.username || entry.user.id}
+                                                            </div>
+                                                            {entry.loginParams.endpoint ? (
+                                                                <div className="truncate text-xs text-muted-foreground">
+                                                                    {entry.loginParams.endpoint}
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                        {isRelogging ? (
+                                                            <Spinner data-icon="inline-end" className="shrink-0 text-muted-foreground" />
                                                         ) : null}
-                                                    </div>
-                                                    {isRelogging ? (
-                                                        <LoaderCircleIcon className="size-4 shrink-0 animate-spin text-muted-foreground" />
-                                                    ) : null}
+                                                    </Button>
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
                                                         size="icon"
+                                                        aria-label={`Remove saved account for ${getUserDisplayName(entry.user)}`}
                                                         disabled={isDeleting || isAuthBusy}
                                                         onClick={(event) => {
                                                             event.stopPropagation();
@@ -833,7 +837,7 @@ export function LoginPage() {
                                                             );
                                                             setDeleteTarget(entry);
                                                         }}>
-                                                        <Trash2Icon className="size-4" />
+                                                        <Trash2Icon data-icon="inline-start" />
                                                     </Button>
                                                 </div>
                                             );

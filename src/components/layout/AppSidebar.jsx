@@ -4,7 +4,7 @@ import {
     Sidebar,
     SidebarInset,
     SidebarProvider
-} from '@/ui/shadcn/sidebar.jsx';
+} from '@/ui/shadcn/sidebar';
 import { setNavWidthPreference, setSidebarCollapsedPreference } from '@/services/preferencesService.js';
 import { useShellStore } from '@/state/shellStore.js';
 

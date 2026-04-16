@@ -24,28 +24,29 @@ import { FEED_FILTER_TYPES, GAME_LOG_FILTER_TYPES } from '@/repositories/index.j
 import { generateDashboardRowId } from '@/repositories/dashboardRepository.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { useModalStore } from '@/state/modalStore.js';
-import { Button } from '@/ui/shadcn/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card.jsx';
+import { Button } from '@/ui/shadcn/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle
-} from '@/ui/shadcn/dialog.jsx';
-import { Input } from '@/ui/shadcn/input.jsx';
+} from '@/ui/shadcn/dialog';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/ui/shadcn/select.jsx';
+} from '@/ui/shadcn/select';
 import {
     ResizableHandle,
     ResizablePanel,
     ResizablePanelGroup
-} from '@/ui/shadcn/resizable.jsx';
-import { Switch } from '@/ui/shadcn/switch.jsx';
+} from '@/ui/shadcn/resizable';
+import { Switch } from '@/ui/shadcn/switch';
 
 function cloneRows(rows) {
     return JSON.parse(JSON.stringify(Array.isArray(rows) ? rows : []));
@@ -211,7 +212,7 @@ function DashboardFilterConfig({ title, filterTypes, config, onConfigChange }) {
     const filters = getFilterList(config);
 
     return (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
             <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {title}
             </div>
@@ -258,7 +259,7 @@ function DashboardInstanceColumnConfig({ config, onConfigChange }) {
     const activeColumns = getKnownInstanceWidgetColumns(config);
 
     return (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
             <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Visible columns
             </div>
@@ -284,7 +285,7 @@ function DashboardInstanceColumnConfig({ config, onConfigChange }) {
 function DashboardWidgetConfigEditor({ panelKey, config, onConfigChange }) {
     if (panelKey === 'widget:feed') {
         return (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
                 <DashboardFilterConfig
                     title="Feed filters"
                     filterTypes={FEED_FILTER_TYPES}
@@ -305,7 +306,7 @@ function DashboardWidgetConfigEditor({ panelKey, config, onConfigChange }) {
 
     if (panelKey === 'widget:game-log') {
         return (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
                 <DashboardFilterConfig
                     title="Game-log filters"
                     filterTypes={GAME_LOG_FILTER_TYPES}
@@ -347,22 +348,22 @@ function DashboardPanelSelectorDialog({ open, currentPanelKey, onOpenChange, onS
                 </DialogHeader>
                 <div className="min-h-0 overflow-y-auto">
                     <div className="grid gap-2 sm:grid-cols-2">
-                        <button
+                        <Button
                             type="button"
-                            className="rounded-md border border-dashed p-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/40"
+                            variant="outline"
+                            className="h-auto justify-start border-dashed p-3 text-left font-normal whitespace-normal text-muted-foreground"
                             onClick={() => onSelect('__none__')}>
                             Not configured
-                        </button>
+                        </Button>
                         {options.map((option) => {
                             const definition = getDashboardPanelDefinition(option.value);
+                            const selected = option.value === currentPanelKey;
                             return (
-                                <button
+                                <Button
                                     key={option.value}
                                     type="button"
-                                    className={cn(
-                                        'rounded-md border p-3 text-left transition-colors hover:bg-muted/40',
-                                        option.value === currentPanelKey && 'border-primary bg-primary/5'
-                                    )}
+                                    variant={selected ? 'secondary' : 'outline'}
+                                    className="h-auto flex-col items-start justify-start p-3 text-left font-normal whitespace-normal"
                                     onClick={() => onSelect(option.value)}>
                                     <div className="truncate text-sm font-medium">
                                         {definition?.label || option.label}
@@ -370,7 +371,7 @@ function DashboardPanelSelectorDialog({ open, currentPanelKey, onOpenChange, onS
                                     <div className="line-clamp-2 text-xs text-muted-foreground">
                                         {definition?.description || option.value}
                                     </div>
-                                </button>
+                                </Button>
                             );
                         })}
                     </div>
@@ -402,21 +403,23 @@ function DashboardEditorPanel({ panel, onChange, onRemove, showRemove = true }) 
                     variant="ghost"
                     size="icon-sm"
                     className="absolute right-1 top-1 z-20"
+                    aria-label="Remove panel"
                     onClick={onRemove}>
-                    <XIcon className="size-4" />
+                    <XIcon data-icon="inline-start" />
                 </Button>
             ) : null}
             <div className="flex w-full min-h-0 flex-col items-center justify-center gap-3 p-3">
                 {panelKey !== '__none__' ? (
-                    <div className="w-full space-y-3">
+                    <div className="flex w-full flex-col gap-3">
                         <div className="flex items-center justify-center gap-2 text-base text-muted-foreground">
                             <span>{panelDefinition?.label || panelKey}</span>
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
+                                aria-label="Clear panel"
                                 onClick={() => onChange(null)}>
-                                <Trash2Icon className="size-3.5" />
+                                <Trash2Icon data-icon="inline-start" />
                             </Button>
                         </div>
                         {canConfigure ? (
@@ -476,7 +479,7 @@ function DashboardEditorRow({
             : 'w-1/2';
 
     return (
-        <div className="relative h-full min-h-[180px] space-y-2 rounded-md border border-dashed p-2">
+        <div className="relative flex h-full min-h-[180px] flex-col gap-2 rounded-md border border-dashed p-2">
             <div className="flex items-center justify-between gap-2">
                 <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Row {rowIndex + 1}
@@ -488,13 +491,15 @@ function DashboardEditorRow({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="horizontal">Horizontal</SelectItem>
-                                <SelectItem value="vertical">Vertical</SelectItem>
+                                <SelectGroup>
+                                    <SelectItem value="horizontal">Horizontal</SelectItem>
+                                    <SelectItem value="vertical">Vertical</SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     ) : null}
-                    <Button type="button" variant="ghost" size="icon-sm" onClick={onRowRemove}>
-                        <Trash2Icon className="size-4" />
+                    <Button type="button" variant="ghost" size="icon-sm" aria-label="Remove row" onClick={onRowRemove}>
+                        <Trash2Icon data-icon="inline-start" />
                     </Button>
                 </div>
             </div>
@@ -771,7 +776,7 @@ export function DashboardPage() {
 
     if (!loaded && loadStatus !== 'error') {
         return (
-            <div className="space-y-6 p-4 md:p-6">
+            <div className="flex flex-col gap-6 p-4 md:p-6">
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -787,10 +792,10 @@ export function DashboardPage() {
 
     if (!dashboard) {
         return (
-            <div className="space-y-6 p-4 md:p-6">
+            <div className="flex flex-col gap-6 p-4 md:p-6">
                 <Card>
                     <CardHeader className="gap-4">
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <CardTitle className="flex items-center gap-2">
                                 <LayoutDashboardIcon className="size-5" />
                                 Dashboard
@@ -805,7 +810,7 @@ export function DashboardPage() {
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-2">
                         <Button type="button" onClick={handleCreateDashboard}>
-                            <PlusIcon className="size-4" />
+                            <PlusIcon data-icon="inline-start" />
                             New Dashboard
                         </Button>
                         {dashboards.length ? (
@@ -836,7 +841,7 @@ export function DashboardPage() {
                         value={editName}
                         onChange={(event) => setEditName(event.target.value)}
                         placeholder="Dashboard name"
-                        className="mx-2 h-7 max-w-[200px] text-sm"
+                        className="mx-2 h-7 max-w-52 text-sm"
                     />
                     <div className="flex gap-2">
                         <Button
@@ -849,16 +854,16 @@ export function DashboardPage() {
                                 setEditName(dashboard.name || '');
                                 setEditRows(cloneRows(dashboard.rows));
                             }}>
-                            <XIcon className="size-4" />
+                            <XIcon data-icon="inline-start" />
                             Cancel
                         </Button>
                         <Button type="button" variant="destructive" size="sm" onClick={handleDelete}>
-                            <Trash2Icon className="size-4" />
+                            <Trash2Icon data-icon="inline-start" />
                             Delete
                         </Button>
                     </div>
                     <Button type="button" className="ml-auto" size="sm" onClick={handleSave} disabled={isSaving}>
-                        <SaveIcon className="size-4" />
+                        <SaveIcon data-icon="inline-start" />
                         Save
                     </Button>
                 </div>
@@ -891,39 +896,44 @@ export function DashboardPage() {
                             </div>
                         )}
 
-                        <div
-                            className={`mt-auto flex min-h-[80px] flex-1 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/20 text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 ${
-                                showAddRowOptions ? 'items-start p-4' : 'cursor-pointer'
-                            }`}
-                            onClick={() => setShowAddRowOptions((value) => !value)}>
-                            {showAddRowOptions ? (
+                        {showAddRowOptions ? (
+                            <div className="mt-auto flex min-h-[80px] flex-1 items-start justify-center rounded-md border-2 border-dashed border-muted-foreground/20 p-4 text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5">
                                 <div className="flex flex-wrap items-center gap-3">
                                     <span className="text-xs text-muted-foreground">Add Row:</span>
-                                    <button
+                                    <Button
                                         type="button"
-                                        className="flex h-10 w-16 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/30 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-10 w-16 border-2 border-dashed"
                                         title="Add Full Row"
+                                        aria-label="Add full row"
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             handleAddRow(1);
                                         }}>
                                         <div className="h-6 w-12 rounded bg-muted-foreground/20" />
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         type="button"
-                                        className="flex h-10 w-16 items-center justify-center gap-1 rounded-md border-2 border-dashed border-muted-foreground/30 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-10 w-16 gap-1 border-2 border-dashed"
                                         title="Add Split Row"
+                                        aria-label="Add split row"
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             handleAddRow(2);
                                         }}>
                                         <div className="h-6 w-5 rounded bg-muted-foreground/20" />
                                         <div className="h-6 w-5 rounded bg-muted-foreground/20" />
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         type="button"
-                                        className="flex h-10 w-16 items-center justify-center gap-1 rounded-md border-2 border-dashed border-muted-foreground/30 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-10 w-16 gap-1 border-2 border-dashed"
                                         title="Add Vertical Row"
+                                        aria-label="Add vertical row"
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             handleAddRow(2, 'vertical');
@@ -932,12 +942,19 @@ export function DashboardPage() {
                                             <div className="h-2.5 w-10 rounded bg-muted-foreground/20" />
                                             <div className="h-2.5 w-10 rounded bg-muted-foreground/20" />
                                         </div>
-                                    </button>
+                                    </Button>
                                 </div>
-                            ) : (
+                            </div>
+                        ) : (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="mt-auto flex min-h-[80px] flex-1 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/20 text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5"
+                                aria-label="Show add row options"
+                                onClick={() => setShowAddRowOptions(true)}>
                                 <PlusIcon className="size-6 opacity-50" />
-                            )}
-                        </div>
+                            </Button>
+                        )}
                     </>
                 ) : rowCount ? (
                     <ResizablePanelGroup
