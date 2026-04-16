@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { convertFileUrlToImageUrl, copyTextToClipboard } from '@/lib/entityMedia.js';
+import {
+    convertFileUrlToImageUrl,
+    copyTextToClipboard
+} from '@/lib/entityMedia.js';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis.js';
 import {
     defaultWorldCacheInfo,
@@ -11,7 +14,10 @@ import {
 import { backend } from '@/platform/tauri/index.js';
 import { WorldDialogTabbedView } from './WorldDialogTabbedView.jsx';
 import { InstanceInviteDialog } from './InstanceInviteDialog.jsx';
-import { WorldAllowedDomainsDialog, WorldTagsDialog } from './WorldOwnerEditDialogs.jsx';
+import {
+    WorldAllowedDomainsDialog,
+    WorldTagsDialog
+} from './WorldOwnerEditDialogs.jsx';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import {
     configRepository,
@@ -36,7 +42,6 @@ import {
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useLaunchStore } from '@/state/launchStore.js';
-import { buildLegacyInstanceTag, getLaunchURL } from '@/shared/utils/instance.js';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -60,10 +65,13 @@ import {
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
-
-function normalizeEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
+import {
+    buildLegacyCreatedInstance,
+    normalizeEntityId,
+    parseRoleIds,
+    resolveInstanceLocation
+} from './world-dialog/worldInstances.js';
+import { resolveCreatedInstanceDetails } from './world-dialog/worldInstanceResolver.js';
 
 function WorldDialogEmptyState({ title, description, loading = false }) {
     return (
@@ -75,7 +83,9 @@ function WorldDialogEmptyState({ title, description, loading = false }) {
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
+                <div className="text-sm text-muted-foreground">
+                    {description}
+                </div>
             </div>
         </div>
     );
@@ -103,95 +113,6 @@ const groupAccessTypeOptions = [
     { value: 'plus', label: 'Group+' },
     { value: 'members', label: 'Group Members' }
 ];
-
-function parseRoleIds(value) {
-    return String(value || '')
-        .split(',')
-        .map((entry) => entry.trim())
-        .filter(Boolean);
-}
-
-function resolveInstanceLocation(worldId, instance) {
-    if (typeof instance?.location === 'string' && instance.location.trim()) {
-        return instance.location.trim();
-    }
-    const rawId = normalizeEntityId(instance?.id);
-    if (rawId.includes(':')) {
-        return rawId;
-    }
-    const instanceId = normalizeEntityId(instance?.instanceId || rawId);
-    return worldId && instanceId ? `${worldId}:${instanceId}` : '';
-}
-
-function buildLegacyCreatedInstance({ worldId, form, currentUserId, legacySeed }) {
-    const legacyUserId = normalizeEntityId(form.legacyUserId) || currentUserId;
-    const instanceName = normalizeEntityId(form.instanceName).replace(/[^A-Za-z0-9]/g, '') || legacySeed;
-    const accessType = form.accessType || 'public';
-    const instanceId = buildLegacyInstanceTag({
-        instanceName,
-        userId: legacyUserId,
-        accessType,
-        groupId: form.groupId || '',
-        groupAccessType: form.groupAccessType || 'plus',
-        region: form.region || 'US West',
-        ageGate: Boolean(form.ageGate),
-        strict: Boolean(form.strict && (accessType === 'invite' || accessType === 'friends'))
-    });
-    const location = `${worldId}:${instanceId}`;
-    const parsedLocation = parseLocation(location);
-    return {
-        location: parsedLocation.tag || location,
-        shortName: '',
-        secureOrShortName: '',
-        url: getLaunchURL(parsedLocation),
-        accessType,
-        ownerId: legacyUserId
-    };
-}
-
-function buildCreatedInstanceDetails(location, instance, fallback = {}) {
-    const parsedLocation = parseLocation(location);
-    const shortName = normalizeEntityId(instance?.shortName || parsedLocation.shortName);
-    const secureOrShortName = shortName || normalizeEntityId(instance?.secureName);
-    const launchLocation = parsedLocation.tag || location;
-    return {
-        location: launchLocation,
-        shortName,
-        secureOrShortName,
-        accessType: normalizeEntityId(instance?.accessType) || normalizeEntityId(fallback.accessType) || parsedLocation.accessType,
-        ownerId:
-            normalizeEntityId(instance?.ownerId) ||
-            normalizeEntityId(instance?.owner?.id) ||
-            normalizeEntityId(instance?.creatorId) ||
-            normalizeEntityId(fallback.ownerId) ||
-            normalizeEntityId(parsedLocation.userId),
-        url: getLaunchURL({
-            ...parsedLocation,
-            shortName
-        })
-    };
-}
-
-async function resolveCreatedInstanceDetails(location, instance, endpoint, fallback = {}) {
-    const parsedLocation = parseLocation(location);
-    if (!parsedLocation.worldId || !parsedLocation.instanceId || instance?.shortName) {
-        return buildCreatedInstanceDetails(location, instance, fallback);
-    }
-    try {
-        const response = await instanceRepository.getInstanceShortName({
-            worldId: parsedLocation.worldId,
-            instanceId: parsedLocation.instanceId,
-            endpoint
-        });
-        return buildCreatedInstanceDetails(location, {
-            ...instance,
-            shortName: response.json?.shortName,
-            secureName: response.json?.secureName
-        }, fallback);
-    } catch {
-        return buildCreatedInstanceDetails(location, instance, fallback);
-    }
-}
 
 function WorldNewInstanceDialog({
     open,
@@ -225,7 +146,9 @@ function WorldNewInstanceDialog({
 
     useEffect(() => {
         if (open && request?.defaults) {
-            setLegacySeed(String((99999 * Math.random() + 1).toFixed(0)).padStart(5, '0'));
+            setLegacySeed(
+                String((99999 * Math.random() + 1).toFixed(0)).padStart(5, '0')
+            );
             setForm({
                 selectedTab: 'Normal',
                 instanceName: '',
@@ -240,27 +163,42 @@ function WorldNewInstanceDialog({
         setForm((current) => ({ ...current, ...patch }));
     }
 
-    const legacyCreated = form.selectedTab === 'Legacy' && world?.id
-        ? buildLegacyCreatedInstance({ worldId: world.id, form, currentUserId, legacySeed })
-        : null;
+    const legacyCreated =
+        form.selectedTab === 'Legacy' && world?.id
+            ? buildLegacyCreatedInstance({
+                  worldId: world.id,
+                  form,
+                  currentUserId,
+                  legacySeed
+              })
+            : null;
     const activeCreated = request?.created || legacyCreated;
     const activeAccessType = activeCreated?.accessType || form.accessType;
     const activeOwnerId = activeCreated?.ownerId || currentUserId;
     const inviteDisabled = Boolean(
         (activeAccessType === 'friends' || activeAccessType === 'invite') &&
-            activeOwnerId &&
-            currentUserId &&
-            activeOwnerId !== currentUserId
+        activeOwnerId &&
+        currentUserId &&
+        activeOwnerId !== currentUserId
     );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-[min(92vw,34rem)]">
                 <DialogHeader>
-                    <DialogTitle>{request?.selfInvite ? 'New instance and self invite' : 'New instance'}</DialogTitle>
-                    <DialogDescription>{world?.name || world?.id || 'World'}</DialogDescription>
+                    <DialogTitle>
+                        {request?.selfInvite
+                            ? 'New instance and self invite'
+                            : 'New instance'}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {world?.name || world?.id || 'World'}
+                    </DialogDescription>
                 </DialogHeader>
-                <Tabs value={form.selectedTab} onValueChange={(value) => patchForm({ selectedTab: value })}>
+                <Tabs
+                    value={form.selectedTab}
+                    onValueChange={(value) => patchForm({ selectedTab: value })}
+                >
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="Normal">Normal</TabsTrigger>
                         <TabsTrigger value="Legacy">Legacy</TabsTrigger>
@@ -268,14 +206,23 @@ function WorldNewInstanceDialog({
                     <TabsContent value="Normal" className="grid gap-4">
                         <div className="grid gap-2">
                             <Label>Access</Label>
-                            <Select value={form.accessType} disabled={Boolean(request?.created)} onValueChange={(value) => patchForm({ accessType: value })}>
+                            <Select
+                                value={form.accessType}
+                                disabled={Boolean(request?.created)}
+                                onValueChange={(value) =>
+                                    patchForm({ accessType: value })
+                                }
+                            >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
                                         {accessTypeOptions.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
                                                 {option.label}
                                             </SelectItem>
                                         ))}
@@ -285,14 +232,23 @@ function WorldNewInstanceDialog({
                         </div>
                         <div className="grid gap-2">
                             <Label>Region</Label>
-                            <Select value={form.region} disabled={Boolean(request?.created)} onValueChange={(value) => patchForm({ region: value })}>
+                            <Select
+                                value={form.region}
+                                disabled={Boolean(request?.created)}
+                                onValueChange={(value) =>
+                                    patchForm({ region: value })
+                                }
+                            >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
                                         {regionOptions.map((region) => (
-                                            <SelectItem key={region} value={region}>
+                                            <SelectItem
+                                                key={region}
+                                                value={region}
+                                            >
                                                 {region}
                                             </SelectItem>
                                         ))}
@@ -304,21 +260,42 @@ function WorldNewInstanceDialog({
                             <>
                                 <div className="grid gap-2">
                                     <Label>Group ID</Label>
-                                    <Input value={form.groupId} disabled={Boolean(request?.created)} onChange={(event) => patchForm({ groupId: event.target.value })} />
+                                    <Input
+                                        value={form.groupId}
+                                        disabled={Boolean(request?.created)}
+                                        onChange={(event) =>
+                                            patchForm({
+                                                groupId: event.target.value
+                                            })
+                                        }
+                                    />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label>Group Access</Label>
-                                    <Select value={form.groupAccessType} disabled={Boolean(request?.created)} onValueChange={(value) => patchForm({ groupAccessType: value })}>
+                                    <Select
+                                        value={form.groupAccessType}
+                                        disabled={Boolean(request?.created)}
+                                        onValueChange={(value) =>
+                                            patchForm({
+                                                groupAccessType: value
+                                            })
+                                        }
+                                    >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectGroup>
-                                                {groupAccessTypeOptions.map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
+                                                {groupAccessTypeOptions.map(
+                                                    (option) => (
+                                                        <SelectItem
+                                                            key={option.value}
+                                                            value={option.value}
+                                                        >
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    )
+                                                )}
                                             </SelectGroup>
                                         </SelectContent>
                                     </Select>
@@ -326,47 +303,93 @@ function WorldNewInstanceDialog({
                                 {form.groupAccessType === 'members' ? (
                                     <div className="grid gap-2">
                                         <Label>Role IDs</Label>
-                                        <Input value={form.roleIds} disabled={Boolean(request?.created)} onChange={(event) => patchForm({ roleIds: event.target.value })} />
+                                        <Input
+                                            value={form.roleIds}
+                                            disabled={Boolean(request?.created)}
+                                            onChange={(event) =>
+                                                patchForm({
+                                                    roleIds: event.target.value
+                                                })
+                                            }
+                                        />
                                     </div>
                                 ) : null}
                                 <FieldGroup data-slot="checkbox-group">
-                                    <Field orientation="horizontal" data-disabled={Boolean(request?.created)}>
+                                    <Field
+                                        orientation="horizontal"
+                                        data-disabled={Boolean(
+                                            request?.created
+                                        )}
+                                    >
                                         <Checkbox
                                             id="world-instance-queue-enabled"
                                             checked={form.queueEnabled}
                                             disabled={Boolean(request?.created)}
-                                            onCheckedChange={(value) => patchForm({ queueEnabled: Boolean(value) })}
+                                            onCheckedChange={(value) =>
+                                                patchForm({
+                                                    queueEnabled: Boolean(value)
+                                                })
+                                            }
                                         />
-                                        <FieldLabel htmlFor="world-instance-queue-enabled">Queue enabled</FieldLabel>
+                                        <FieldLabel htmlFor="world-instance-queue-enabled">
+                                            Queue enabled
+                                        </FieldLabel>
                                     </Field>
-                                    <Field orientation="horizontal" data-disabled={Boolean(request?.created)}>
+                                    <Field
+                                        orientation="horizontal"
+                                        data-disabled={Boolean(
+                                            request?.created
+                                        )}
+                                    >
                                         <Checkbox
                                             id="world-instance-age-gate"
                                             checked={form.ageGate}
                                             disabled={Boolean(request?.created)}
-                                            onCheckedChange={(value) => patchForm({ ageGate: Boolean(value) })}
+                                            onCheckedChange={(value) =>
+                                                patchForm({
+                                                    ageGate: Boolean(value)
+                                                })
+                                            }
                                         />
-                                        <FieldLabel htmlFor="world-instance-age-gate">Age gate</FieldLabel>
+                                        <FieldLabel htmlFor="world-instance-age-gate">
+                                            Age gate
+                                        </FieldLabel>
                                     </Field>
                                 </FieldGroup>
                             </>
                         ) : null}
                         <div className="grid gap-2">
                             <Label>Display Name</Label>
-                            <Input value={form.displayName} disabled={Boolean(request?.created)} onChange={(event) => patchForm({ displayName: event.target.value })} />
+                            <Input
+                                value={form.displayName}
+                                disabled={Boolean(request?.created)}
+                                onChange={(event) =>
+                                    patchForm({
+                                        displayName: event.target.value
+                                    })
+                                }
+                            />
                         </div>
                     </TabsContent>
                     <TabsContent value="Legacy" className="grid gap-4">
                         <div className="grid gap-2">
                             <Label>Access</Label>
-                            <Select value={form.accessType} onValueChange={(value) => patchForm({ accessType: value })}>
+                            <Select
+                                value={form.accessType}
+                                onValueChange={(value) =>
+                                    patchForm({ accessType: value })
+                                }
+                            >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
                                         {accessTypeOptions.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
                                                 {option.label}
                                             </SelectItem>
                                         ))}
@@ -376,14 +399,22 @@ function WorldNewInstanceDialog({
                         </div>
                         <div className="grid gap-2">
                             <Label>Region</Label>
-                            <Select value={form.region} onValueChange={(value) => patchForm({ region: value })}>
+                            <Select
+                                value={form.region}
+                                onValueChange={(value) =>
+                                    patchForm({ region: value })
+                                }
+                            >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
                                         {regionOptions.map((region) => (
-                                            <SelectItem key={region} value={region}>
+                                            <SelectItem
+                                                key={region}
+                                                value={region}
+                                            >
                                                 {region}
                                             </SelectItem>
                                         ))}
@@ -393,33 +424,71 @@ function WorldNewInstanceDialog({
                         </div>
                         <div className="grid gap-2">
                             <Label>Instance Name</Label>
-                            <Input value={form.instanceName} onChange={(event) => patchForm({ instanceName: event.target.value.replace(/[^A-Za-z0-9]/g, '') })} />
+                            <Input
+                                value={form.instanceName}
+                                onChange={(event) =>
+                                    patchForm({
+                                        instanceName:
+                                            event.target.value.replace(
+                                                /[^A-Za-z0-9]/g,
+                                                ''
+                                            )
+                                    })
+                                }
+                            />
                         </div>
-                        {form.accessType !== 'public' && form.accessType !== 'group' ? (
+                        {form.accessType !== 'public' &&
+                        form.accessType !== 'group' ? (
                             <div className="grid gap-2">
                                 <Label>User ID</Label>
-                                <Input value={form.legacyUserId} onChange={(event) => patchForm({ legacyUserId: event.target.value })} />
+                                <Input
+                                    value={form.legacyUserId}
+                                    onChange={(event) =>
+                                        patchForm({
+                                            legacyUserId: event.target.value
+                                        })
+                                    }
+                                />
                             </div>
                         ) : null}
                         {form.accessType === 'group' ? (
                             <>
                                 <div className="grid gap-2">
                                     <Label>Group ID</Label>
-                                    <Input value={form.groupId} onChange={(event) => patchForm({ groupId: event.target.value })} />
+                                    <Input
+                                        value={form.groupId}
+                                        onChange={(event) =>
+                                            patchForm({
+                                                groupId: event.target.value
+                                            })
+                                        }
+                                    />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label>Group Access</Label>
-                                    <Select value={form.groupAccessType} onValueChange={(value) => patchForm({ groupAccessType: value })}>
+                                    <Select
+                                        value={form.groupAccessType}
+                                        onValueChange={(value) =>
+                                            patchForm({
+                                                groupAccessType: value
+                                            })
+                                        }
+                                    >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectGroup>
-                                                {groupAccessTypeOptions.map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
+                                                {groupAccessTypeOptions.map(
+                                                    (option) => (
+                                                        <SelectItem
+                                                            key={option.value}
+                                                            value={option.value}
+                                                        >
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    )
+                                                )}
                                             </SelectGroup>
                                         </SelectContent>
                                     </Select>
@@ -431,19 +500,28 @@ function WorldNewInstanceDialog({
                                 <Checkbox
                                     id="world-launch-age-gate"
                                     checked={form.ageGate}
-                                    onCheckedChange={(value) => patchForm({ ageGate: Boolean(value) })}
+                                    onCheckedChange={(value) =>
+                                        patchForm({ ageGate: Boolean(value) })
+                                    }
                                 />
-                                <FieldLabel htmlFor="world-launch-age-gate">Age gate</FieldLabel>
+                                <FieldLabel htmlFor="world-launch-age-gate">
+                                    Age gate
+                                </FieldLabel>
                             </Field>
                         ) : null}
-                        {(form.accessType === 'invite' || form.accessType === 'friends') ? (
+                        {form.accessType === 'invite' ||
+                        form.accessType === 'friends' ? (
                             <Field orientation="horizontal">
                                 <Checkbox
                                     id="world-launch-strict"
                                     checked={form.strict}
-                                    onCheckedChange={(value) => patchForm({ strict: Boolean(value) })}
+                                    onCheckedChange={(value) =>
+                                        patchForm({ strict: Boolean(value) })
+                                    }
                                 />
-                                <FieldLabel htmlFor="world-launch-strict">Strict</FieldLabel>
+                                <FieldLabel htmlFor="world-launch-strict">
+                                    Strict
+                                </FieldLabel>
                             </Field>
                         ) : null}
                     </TabsContent>
@@ -452,39 +530,88 @@ function WorldNewInstanceDialog({
                     <div className="grid gap-4">
                         <div className="grid gap-2">
                             <Label>Location</Label>
-                            <Input readOnly value={activeCreated.location || ''} onClick={(event) => event.currentTarget.select()} />
+                            <Input
+                                readOnly
+                                value={activeCreated.location || ''}
+                                onClick={(event) =>
+                                    event.currentTarget.select()
+                                }
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label>URL</Label>
-                            <Input readOnly value={activeCreated.url || ''} onClick={(event) => event.currentTarget.select()} />
+                            <Input
+                                readOnly
+                                value={activeCreated.url || ''}
+                                onClick={(event) =>
+                                    event.currentTarget.select()
+                                }
+                            />
                         </div>
                     </div>
                 ) : null}
                 {activeCreated ? (
                     <DialogFooter className="gap-2 sm:justify-end">
-                        <Button type="button" variant="outline" disabled={submitting} onClick={() => onCopy?.(activeCreated)}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={submitting}
+                            onClick={() => onCopy?.(activeCreated)}
+                        >
                             Copy URL
                         </Button>
-                        <Button type="button" variant="outline" disabled={submitting} onClick={() => onSelfInvite?.(activeCreated)}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={submitting}
+                            onClick={() => onSelfInvite?.(activeCreated)}
+                        >
                             Self Invite
                         </Button>
-                        <Button type="button" variant="outline" disabled={submitting || inviteDisabled} onClick={() => onInvite?.(activeCreated)}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={submitting || inviteDisabled}
+                            onClick={() => onInvite?.(activeCreated)}
+                        >
                             Invite
                         </Button>
-                        <Button type="button" variant="secondary" disabled={submitting} onClick={() => onLaunch?.(activeCreated)}>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            disabled={submitting}
+                            onClick={() => onLaunch?.(activeCreated)}
+                        >
                             Launch
                         </Button>
-                        <Button type="button" disabled={submitting} onClick={() => onOpenInGame?.(activeCreated)}>
+                        <Button
+                            type="button"
+                            disabled={submitting}
+                            onClick={() => onOpenInGame?.(activeCreated)}
+                        >
                             Open In-Game
                         </Button>
                     </DialogFooter>
                 ) : (
                     <DialogFooter>
-                        <Button type="button" variant="outline" disabled={submitting} onClick={() => onOpenChange(false)}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={submitting}
+                            onClick={() => onOpenChange(false)}
+                        >
                             Cancel
                         </Button>
-                        <Button type="button" disabled={submitting || form.selectedTab === 'Legacy'} onClick={() => onSubmit(form)}>
-                            {request?.selfInvite ? 'Create and Invite' : 'Create'}
+                        <Button
+                            type="button"
+                            disabled={
+                                submitting || form.selectedTab === 'Legacy'
+                            }
+                            onClick={() => onSubmit(form)}
+                        >
+                            {request?.selfInvite
+                                ? 'Create and Invite'
+                                : 'Create'}
                         </Button>
                     </DialogFooter>
                 )}
@@ -501,32 +628,45 @@ export function WorldDialogContent({
 }) {
     const normalizedWorldId = normalizeEntityId(worldId);
     const profileWorldId = normalizedWorldId.split(':')[0] || normalizedWorldId;
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentHomeLocation = useRuntimeStore((state) => state.auth.currentUserSnapshot?.homeLocation || '');
+    const currentHomeLocation = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot?.homeLocation || ''
+    );
     const setAuthBootstrap = useRuntimeStore((state) => state.setAuthBootstrap);
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
     const closeDialog = useDialogStore((state) => state.closeDialog);
-    const updateEntityDialogMetadata = useDialogStore((state) => state.updateEntityDialogMetadata);
+    const updateEntityDialogMetadata = useDialogStore(
+        (state) => state.updateEntityDialogMetadata
+    );
     const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);
     const [world, setWorld] = useState(() =>
         seedData ? worldProfileRepository.normalize(seedData) : null
     );
-    const [loadStatus, setLoadStatus] = useState(normalizedWorldId ? 'running' : 'idle');
+    const [loadStatus, setLoadStatus] = useState(
+        normalizedWorldId ? 'running' : 'idle'
+    );
     const [actionStatus, setActionStatus] = useState('idle');
     const [detail, setDetail] = useState('');
     const [memo, setMemo] = useState('');
     const [previousInstances, setPreviousInstances] = useState([]);
     const [hasPersistData, setHasPersistData] = useState(false);
-    const [worldSideData, setWorldSideData] = useState(() => defaultWorldSideData());
+    const [worldSideData, setWorldSideData] = useState(() =>
+        defaultWorldSideData()
+    );
     const [newInstanceRequest, setNewInstanceRequest] = useState(null);
     const [inviteRequest, setInviteRequest] = useState(null);
     const [imageCropRequest, setImageCropRequest] = useState(null);
     const [ownerEditor, setOwnerEditor] = useState('');
     const actionStatusRef = useRef('idle');
     const memoRevisionRef = useRef(0);
-    const activeWorldTargetRef = useRef({ worldId: profileWorldId, endpoint: currentEndpoint });
+    const activeWorldTargetRef = useRef({
+        worldId: profileWorldId,
+        endpoint: currentEndpoint
+    });
     const handledInitialActionRef = useRef('');
     const imageUploadInputRef = useRef(null);
     const imageUploadWorldRef = useRef(null);
@@ -536,7 +676,10 @@ export function WorldDialogContent({
     }, [seedData]);
 
     useEffect(() => {
-        activeWorldTargetRef.current = { worldId: profileWorldId, endpoint: currentEndpoint };
+        activeWorldTargetRef.current = {
+            worldId: profileWorldId,
+            endpoint: currentEndpoint
+        };
     }, [currentEndpoint, profileWorldId]);
 
     useEffect(() => {
@@ -571,26 +714,43 @@ export function WorldDialogContent({
 
         const targetWorldId = world.id;
         const targetEndpoint = currentEndpoint;
-        vrchatAuthRepository.getConfig({ endpoint: targetEndpoint })
+        vrchatAuthRepository
+            .getConfig({ endpoint: targetEndpoint })
             .catch(() => null)
-            .then((configResponse) => Promise.allSettled([
-                readWorldCacheInfo(world, targetEndpoint),
-                getFileAnalysisForUnityPackages({
-                    unityPackages: world.unityPackages,
-                    sdkUnityVersion: String(configResponse?.json?.sdkUnityVersion || ''),
-                    endpoint: targetEndpoint
-                })
-            ]))
+            .then((configResponse) =>
+                Promise.allSettled([
+                    readWorldCacheInfo(world, targetEndpoint),
+                    getFileAnalysisForUnityPackages({
+                        unityPackages: world.unityPackages,
+                        sdkUnityVersion: String(
+                            configResponse?.json?.sdkUnityVersion || ''
+                        ),
+                        endpoint: targetEndpoint
+                    })
+                ])
+            )
             .then(([cacheResult, fileAnalysisResult]) => {
-                if (active && isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
+                if (
+                    active &&
+                    isCurrentWorldTarget(targetWorldId, targetEndpoint)
+                ) {
                     setWorldSideData({
-                        cache: cacheResult.status === 'fulfilled' ? cacheResult.value : defaultWorldSideData().cache,
-                        fileAnalysis: fileAnalysisResult.status === 'fulfilled' ? fileAnalysisResult.value : {}
+                        cache:
+                            cacheResult.status === 'fulfilled'
+                                ? cacheResult.value
+                                : defaultWorldSideData().cache,
+                        fileAnalysis:
+                            fileAnalysisResult.status === 'fulfilled'
+                                ? fileAnalysisResult.value
+                                : {}
                     });
                 }
             })
             .catch(() => {
-                if (active && isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
+                if (
+                    active &&
+                    isCurrentWorldTarget(targetWorldId, targetEndpoint)
+                ) {
                     setWorldSideData(defaultWorldSideData());
                 }
             });
@@ -648,7 +808,9 @@ export function WorldDialogContent({
                 setWorld(null);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error ? error.message : 'Failed to load the world profile.'
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load the world profile.'
                 );
             });
 
@@ -704,11 +866,12 @@ export function WorldDialogContent({
             };
         }
 
-        worldProfileRepository.hasWorldPersistentData({
-            userId: currentUserId,
-            worldId: profileWorldId,
-            endpoint: currentEndpoint
-        })
+        worldProfileRepository
+            .hasWorldPersistentData({
+                userId: currentUserId,
+                worldId: profileWorldId,
+                endpoint: currentEndpoint
+            })
             .then((exists) => {
                 if (active) {
                     setHasPersistData(exists);
@@ -735,7 +898,8 @@ export function WorldDialogContent({
             };
         }
 
-        gameLogRepository.getPreviousInstancesByWorldId({ worldId: profileWorldId })
+        gameLogRepository
+            .getPreviousInstancesByWorldId({ worldId: profileWorldId })
             .then((rows) => {
                 if (!active) {
                     return;
@@ -757,7 +921,11 @@ export function WorldDialogContent({
     useEffect(() => {
         const normalizedInitialAction = normalizeEntityId(initialAction);
         const actionKey = `${profileWorldId}:${normalizedInitialAction}:${initialActionNonce}`;
-        if (!world?.id || !normalizedInitialAction || handledInitialActionRef.current === actionKey) {
+        if (
+            !world?.id ||
+            !normalizedInitialAction ||
+            handledInitialActionRef.current === actionKey
+        ) {
             return;
         }
 
@@ -783,7 +951,10 @@ export function WorldDialogContent({
         return (
             <WorldDialogEmptyState
                 title="World profile unavailable"
-                description={detail || 'VRCX could not resolve a world snapshot for this dialog.'}
+                description={
+                    detail ||
+                    'VRCX could not resolve a world snapshot for this dialog.'
+                }
             />
         );
     }
@@ -793,10 +964,14 @@ export function WorldDialogContent({
         512
     );
     const isInstanceLocation = normalizedWorldId.includes(':');
-    const worldDialogShortName = isInstanceLocation ? parseLocation(normalizedWorldId).shortName : '';
-    const isHomeWorld = normalizeEntityId(currentHomeLocation) === normalizeEntityId(world.id);
+    const worldDialogShortName = isInstanceLocation
+        ? parseLocation(normalizedWorldId).shortName
+        : '';
+    const isHomeWorld =
+        normalizeEntityId(currentHomeLocation) === normalizeEntityId(world.id);
     const canUpdateHome = Boolean(currentUserId && world.id);
-    const canManageWorld = normalizeEntityId(world.authorId) === normalizeEntityId(currentUserId);
+    const canManageWorld =
+        normalizeEntityId(world.authorId) === normalizeEntityId(currentUserId);
     const worldForView = {
         ...world,
         $isCached: worldSideData.cache.inCache,
@@ -808,7 +983,8 @@ export function WorldDialogContent({
 
     function isCurrentWorldTarget(targetWorldId, targetEndpoint) {
         return (
-            activeWorldTargetRef.current.worldId === normalizeEntityId(targetWorldId) &&
+            activeWorldTargetRef.current.worldId ===
+                normalizeEntityId(targetWorldId) &&
             activeWorldTargetRef.current.endpoint === targetEndpoint
         );
     }
@@ -837,7 +1013,11 @@ export function WorldDialogContent({
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to refresh world.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to refresh world.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -852,14 +1032,22 @@ export function WorldDialogContent({
         actionStatusRef.current = 'launching';
         setActionStatus('launching');
         try {
-            const opened = await tryOpenLaunchLocation(normalizedWorldId, worldDialogShortName, currentEndpoint);
+            const opened = await tryOpenLaunchLocation(
+                normalizedWorldId,
+                worldDialogShortName,
+                currentEndpoint
+            );
             if (opened) {
                 toast.success('VRChat launch request sent.');
                 return;
             }
             toast.error('Unable to open this instance in VRChat.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to launch VRChat instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to launch VRChat instance.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -900,13 +1088,22 @@ export function WorldDialogContent({
             if (nextUser?.id) {
                 setAuthBootstrap({
                     currentUserId: nextUser.id,
-                    currentUserDisplayName: nextUser.displayName || nextUser.username || nextUser.id,
+                    currentUserDisplayName:
+                        nextUser.displayName ||
+                        nextUser.username ||
+                        nextUser.id,
                     currentUserSnapshot: nextUser
                 });
             }
-            toast.success(isHomeWorld ? 'Home world reset.' : 'Home world updated.');
+            toast.success(
+                isHomeWorld ? 'Home world reset.' : 'Home world updated.'
+            );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update home world.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update home world.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -928,7 +1125,9 @@ export function WorldDialogContent({
             setMemo(nextMemo);
             toast.success(nextMemo ? 'Memo saved.' : 'Memo cleared.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to save memo.');
+            toast.error(
+                error instanceof Error ? error.message : 'Failed to save memo.'
+            );
         }
     }
 
@@ -940,7 +1139,11 @@ export function WorldDialogContent({
         try {
             await backend.app.OpenFolderAndSelectItem(cachePath, true);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to open world cache folder.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to open world cache folder.'
+            );
         }
     }
 
@@ -954,7 +1157,9 @@ export function WorldDialogContent({
         actionStatusRef.current = 'cache';
         setActionStatus('cache');
         try {
-            const configResponse = await vrchatAuthRepository.getConfig({ endpoint: targetEndpoint }).catch(() => null);
+            const configResponse = await vrchatAuthRepository
+                .getConfig({ endpoint: targetEndpoint })
+                .catch(() => null);
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
@@ -982,7 +1187,11 @@ export function WorldDialogContent({
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to delete world cache.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete world cache.'
+            );
         } finally {
             if (actionStatusRef.current === 'cache') {
                 actionStatusRef.current = 'idle';
@@ -1032,10 +1241,10 @@ export function WorldDialogContent({
             setWorld((currentWorld) =>
                 currentWorld
                     ? worldProfileRepository.normalize(
-                        response.json && typeof response.json === 'object'
-                            ? response.json
-                            : { ...currentWorld, ...patch }
-                    )
+                          response.json && typeof response.json === 'object'
+                              ? response.json
+                              : { ...currentWorld, ...patch }
+                      )
                     : currentWorld
             );
             toast.success(successMessage);
@@ -1061,10 +1270,13 @@ export function WorldDialogContent({
             cancelText: 'Cancel'
         });
         if (result.ok) {
-            await saveWorldPatch({ name: result.value }, {
-                successMessage: 'World renamed.',
-                errorMessage: 'Failed to rename world.'
-            });
+            await saveWorldPatch(
+                { name: result.value },
+                {
+                    successMessage: 'World renamed.',
+                    errorMessage: 'Failed to rename world.'
+                }
+            );
         }
     }
 
@@ -1078,10 +1290,13 @@ export function WorldDialogContent({
             cancelText: 'Cancel'
         });
         if (result.ok) {
-            await saveWorldPatch({ description: result.value }, {
-                successMessage: 'World description updated.',
-                errorMessage: 'Failed to update world description.'
-            });
+            await saveWorldPatch(
+                { description: result.value },
+                {
+                    successMessage: 'World description updated.',
+                    errorMessage: 'Failed to update world description.'
+                }
+            );
         }
     }
 
@@ -1101,10 +1316,13 @@ export function WorldDialogContent({
             toast.error(`${label} must be a positive number.`);
             return;
         }
-        await saveWorldPatch({ [field]: value }, {
-            successMessage: `${label} updated.`,
-            errorMessage: `Failed to update ${label}.`
-        });
+        await saveWorldPatch(
+            { [field]: value },
+            {
+                successMessage: `${label} updated.`,
+                errorMessage: `Failed to update ${label}.`
+            }
+        );
     }
 
     async function changeWorldYouTubePreview() {
@@ -1123,7 +1341,9 @@ export function WorldDialogContent({
         if (processedValue.length > 11) {
             try {
                 const url = new URL(processedValue);
-                const pathId = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
+                const pathId = url.pathname.startsWith('/')
+                    ? url.pathname.slice(1)
+                    : url.pathname;
                 const queryId = url.searchParams.get('v') || '';
                 if (queryId.length === 11) {
                     processedValue = queryId;
@@ -1136,10 +1356,13 @@ export function WorldDialogContent({
             }
         }
 
-        await saveWorldPatch({ previewYoutubeId: processedValue }, {
-            successMessage: 'YouTube preview updated.',
-            errorMessage: 'Failed to update YouTube preview.'
-        });
+        await saveWorldPatch(
+            { previewYoutubeId: processedValue },
+            {
+                successMessage: 'YouTube preview updated.',
+                errorMessage: 'Failed to update YouTube preview.'
+            }
+        );
     }
 
     function changeWorldTags() {
@@ -1147,10 +1370,13 @@ export function WorldDialogContent({
     }
 
     async function saveWorldTags(tags) {
-        const saved = await saveWorldPatch({ tags }, {
-            successMessage: 'World tags updated.',
-            errorMessage: 'Failed to update world tags.'
-        });
+        const saved = await saveWorldPatch(
+            { tags },
+            {
+                successMessage: 'World tags updated.',
+                errorMessage: 'Failed to update world tags.'
+            }
+        );
         if (saved) {
             setOwnerEditor('');
         }
@@ -1161,10 +1387,13 @@ export function WorldDialogContent({
     }
 
     async function saveWorldAllowedDomains(urlList) {
-        const saved = await saveWorldPatch({ urlList }, {
-            successMessage: 'Allowed domains updated.',
-            errorMessage: 'Failed to update allowed domains.'
-        });
+        const saved = await saveWorldPatch(
+            { urlList },
+            {
+                successMessage: 'Allowed domains updated.',
+                errorMessage: 'Failed to update allowed domains.'
+            }
+        );
         if (saved) {
             setOwnerEditor('');
         }
@@ -1193,31 +1422,37 @@ export function WorldDialogContent({
         try {
             const response = nextPublished
                 ? await worldProfileRepository.publishWorld({
-                    worldId: targetWorldId,
-                    endpoint: targetEndpoint
-                })
+                      worldId: targetWorldId,
+                      endpoint: targetEndpoint
+                  })
                 : await worldProfileRepository.unpublishWorld({
-                    worldId: targetWorldId,
-                    endpoint: targetEndpoint
-                });
+                      worldId: targetWorldId,
+                      endpoint: targetEndpoint
+                  });
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
             setWorld((currentWorld) =>
                 currentWorld
                     ? worldProfileRepository.normalize(
-                        response.json && typeof response.json === 'object'
-                            ? response.json
-                            : currentWorld
-                    )
+                          response.json && typeof response.json === 'object'
+                              ? response.json
+                              : currentWorld
+                      )
                     : currentWorld
             );
-            toast.success(nextPublished ? 'World published.' : 'World unpublished.');
+            toast.success(
+                nextPublished ? 'World published.' : 'World unpublished.'
+            );
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to update world publication.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update world publication.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -1253,14 +1488,22 @@ export function WorldDialogContent({
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            setWorld((currentWorld) => currentWorld ? { ...currentWorld, hasPersistData: false } : currentWorld);
+            setWorld((currentWorld) =>
+                currentWorld
+                    ? { ...currentWorld, hasPersistData: false }
+                    : currentWorld
+            );
             setHasPersistData(false);
             toast.success('World persistent data deleted.');
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to delete world persistent data.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete world persistent data.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -1293,7 +1536,11 @@ export function WorldDialogContent({
             toast.success('World deleted.');
             closeDialog();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete world.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete world.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -1336,12 +1583,20 @@ export function WorldDialogContent({
             const defaults = await loadNewInstanceDefaults();
             setNewInstanceRequest({ selfInvite, defaults });
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to load new instance settings.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load new instance settings.'
+            );
         }
     }
 
     async function createWorldInstance(form) {
-        if (!newInstanceRequest || !world.id || actionStatusRef.current !== 'idle') {
+        if (
+            !newInstanceRequest ||
+            !world.id ||
+            actionStatusRef.current !== 'idle'
+        ) {
             return;
         }
         const shouldSelfInvite = Boolean(newInstanceRequest.selfInvite);
@@ -1356,12 +1611,30 @@ export function WorldDialogContent({
         setActionStatus('new-instance');
         try {
             await Promise.all([
-                configRepository.setString('instanceDialogAccessType', form.accessType || 'public'),
-                configRepository.setString('instanceRegion', form.region || 'US West'),
-                configRepository.setString('instanceDialogGroupId', form.groupId || ''),
-                configRepository.setString('instanceDialogGroupAccessType', form.groupAccessType || 'plus'),
-                configRepository.setBool('instanceDialogAgeGate', Boolean(form.ageGate)),
-                configRepository.setBool('instanceDialogQueueEnabled', Boolean(form.queueEnabled))
+                configRepository.setString(
+                    'instanceDialogAccessType',
+                    form.accessType || 'public'
+                ),
+                configRepository.setString(
+                    'instanceRegion',
+                    form.region || 'US West'
+                ),
+                configRepository.setString(
+                    'instanceDialogGroupId',
+                    form.groupId || ''
+                ),
+                configRepository.setString(
+                    'instanceDialogGroupAccessType',
+                    form.groupAccessType || 'plus'
+                ),
+                configRepository.setBool(
+                    'instanceDialogAgeGate',
+                    Boolean(form.ageGate)
+                ),
+                configRepository.setBool(
+                    'instanceDialogQueueEnabled',
+                    Boolean(form.queueEnabled)
+                )
             ]);
             const response = await instanceRepository.createInstance({
                 worldId: world.id,
@@ -1378,12 +1651,19 @@ export function WorldDialogContent({
             });
             const location = resolveInstanceLocation(world.id, response.json);
             if (!location) {
-                throw new Error('The instance was created but VRChat did not return a launch location.');
+                throw new Error(
+                    'The instance was created but VRChat did not return a launch location.'
+                );
             }
-            const created = await resolveCreatedInstanceDetails(location, response.json, currentEndpoint, {
-                accessType: form.accessType || 'public',
-                ownerId: currentUserId
-            });
+            const created = await resolveCreatedInstanceDetails(
+                location,
+                response.json,
+                currentEndpoint,
+                {
+                    accessType: form.accessType || 'public',
+                    ownerId: currentUserId
+                }
+            );
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 toast.success('Instance created.');
                 return;
@@ -1398,20 +1678,36 @@ export function WorldDialogContent({
             if (shouldSelfInvite) {
                 const parsedLocation = parseLocation(location);
                 if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-                    toast.error('Instance created, but the new instance location is not inviteable.');
+                    toast.error(
+                        'Instance created, but the new instance location is not inviteable.'
+                    );
                 } else {
                     try {
-                        await selfInviteToInstance(location, created.shortName || created.secureOrShortName || '', currentEndpoint);
+                        await selfInviteToInstance(
+                            location,
+                            created.shortName ||
+                                created.secureOrShortName ||
+                                '',
+                            currentEndpoint
+                        );
                         toast.success('Instance created and self invite sent.');
                     } catch (error) {
-                        toast.error(error instanceof Error ? `Instance created, but self invite failed: ${error.message}` : 'Instance created, but self invite failed.');
+                        toast.error(
+                            error instanceof Error
+                                ? `Instance created, but self invite failed: ${error.message}`
+                                : 'Instance created, but self invite failed.'
+                        );
                     }
                 }
             } else {
                 toast.success('Instance created.');
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to create instance.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -1429,16 +1725,26 @@ export function WorldDialogContent({
     async function selfInviteCreatedInstance(created) {
         const parsedLocation = parseLocation(created?.location || '');
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error('Cannot self invite: location is not a concrete instance.');
+            toast.error(
+                'Cannot self invite: location is not a concrete instance.'
+            );
             return;
         }
         actionStatusRef.current = 'new-instance';
         setActionStatus('new-instance');
         try {
-            await selfInviteToInstance(created.location, created.shortName || created.secureOrShortName || '', currentEndpoint);
+            await selfInviteToInstance(
+                created.location,
+                created.shortName || created.secureOrShortName || '',
+                currentEndpoint
+            );
             toast.success('Self invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send self invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send self invite.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -1460,10 +1766,15 @@ export function WorldDialogContent({
         if (!created?.location) {
             return;
         }
-        showLaunchDialog(created.location, created.shortName || '', created.secureOrShortName || '', {
-            createdInstance: created,
-            worldName: world?.name || ''
-        });
+        showLaunchDialog(
+            created.location,
+            created.shortName || '',
+            created.secureOrShortName || '',
+            {
+                createdInstance: created,
+                worldName: world?.name || ''
+            }
+        );
     }
 
     async function openCreatedInstanceInGame(created) {
@@ -1472,22 +1783,38 @@ export function WorldDialogContent({
         }
         const parsedLocation = parseLocation(created.location);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error('Cannot open in VRChat: location is not a concrete instance.');
+            toast.error(
+                'Cannot open in VRChat: location is not a concrete instance.'
+            );
             return;
         }
         actionStatusRef.current = 'new-instance';
         setActionStatus('new-instance');
         try {
-            const opened = await tryOpenLaunchLocation(created.location, created.shortName || created.secureOrShortName || '', currentEndpoint);
+            const opened = await tryOpenLaunchLocation(
+                created.location,
+                created.shortName || created.secureOrShortName || '',
+                currentEndpoint
+            );
             if (!opened) {
-                await selfInviteToInstance(created.location, created.shortName || created.secureOrShortName || '', currentEndpoint);
-                toast.warning('Failed open instance in VRChat, falling back to self invite.');
+                await selfInviteToInstance(
+                    created.location,
+                    created.shortName || created.secureOrShortName || '',
+                    currentEndpoint
+                );
+                toast.warning(
+                    'Failed open instance in VRChat, falling back to self invite.'
+                );
                 toast.success('Self invite sent.');
                 return;
             }
             toast.success('VRChat launch request sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to open instance in VRChat.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to open instance in VRChat.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -1531,7 +1858,8 @@ export function WorldDialogContent({
 
     async function confirmWorldImageUpload(blob) {
         const request = imageCropRequest;
-        const selectedWorld = request?.world || imageUploadWorldRef.current || world;
+        const selectedWorld =
+            request?.world || imageUploadWorldRef.current || world;
         const selectedWorldId = normalizeEntityId(selectedWorld?.id);
         const requestEndpoint = currentEndpoint;
         if (!blob || !selectedWorldId) {
@@ -1542,25 +1870,37 @@ export function WorldDialogContent({
         setActionStatus('image-upload');
         try {
             const base64Body = await readFileAsBase64(blob);
-            const base64File = await mediaRepository.resizeImageToFitLimits(base64Body);
+            const base64File =
+                await mediaRepository.resizeImageToFitLimits(base64Body);
             const result = await withUploadTimeout(
                 mediaRepository.uploadWorldImageLegacy({
                     worldId: selectedWorldId,
-                    imageUrl: selectedWorld.imageUrl || selectedWorld.thumbnailImageUrl || '',
+                    imageUrl:
+                        selectedWorld.imageUrl ||
+                        selectedWorld.thumbnailImageUrl ||
+                        '',
                     base64File,
                     blob,
                     endpoint: requestEndpoint
                 })
             );
             const activeTarget = activeWorldTargetRef.current;
-            if (activeTarget.worldId !== selectedWorldId || activeTarget.endpoint !== requestEndpoint) {
+            if (
+                activeTarget.worldId !== selectedWorldId ||
+                activeTarget.endpoint !== requestEndpoint
+            ) {
                 return;
             }
             setWorld(worldProfileRepository.normalize(result.world));
-            setDetail(`World image updated for ${selectedWorld.name || selectedWorldId}.`);
+            setDetail(
+                `World image updated for ${selectedWorld.name || selectedWorldId}.`
+            );
             toast.success('World image updated.');
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to upload world image.';
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to upload world image.';
             setDetail(message);
             toast.error(message);
         } finally {
@@ -1594,15 +1934,24 @@ export function WorldDialogContent({
                 onDeleteCache={() => void deleteWorldCache()}
                 onRename={() => void renameWorld()}
                 onChangeDescription={() => void changeWorldDescription()}
-                onChangeCapacity={() => void changeWorldCapacity('capacity', 'Capacity')}
-                onChangeRecommendedCapacity={() => void changeWorldCapacity('recommendedCapacity', 'Recommended Capacity')}
+                onChangeCapacity={() =>
+                    void changeWorldCapacity('capacity', 'Capacity')
+                }
+                onChangeRecommendedCapacity={() =>
+                    void changeWorldCapacity(
+                        'recommendedCapacity',
+                        'Recommended Capacity'
+                    )
+                }
                 onChangePreview={() => void changeWorldYouTubePreview()}
                 onChangeTags={() => void changeWorldTags()}
                 onChangeAllowedDomains={() => void changeWorldAllowedDomains()}
                 onChangeImage={() => void beginWorldImageUpload()}
                 onNewInstance={() => void openNewInstanceDialog(false)}
                 onNewInstanceSelfInvite={() => void openNewInstanceDialog(true)}
-                onPublication={(nextPublished) => void updateWorldPublication(nextPublished)}
+                onPublication={(nextPublished) =>
+                    void updateWorldPublication(nextPublished)
+                }
                 onDeletePersistentData={() => void deleteWorldPersistentData()}
                 onDelete={() => void deleteWorld()}
                 previousInstances={previousInstances}
@@ -1622,10 +1971,14 @@ export function WorldDialogContent({
                 }}
                 onSubmit={(form) => void createWorldInstance(form)}
                 onCopy={(created) => void copyCreatedInstance(created)}
-                onSelfInvite={(created) => void selfInviteCreatedInstance(created)}
+                onSelfInvite={(created) =>
+                    void selfInviteCreatedInstance(created)
+                }
                 onInvite={inviteCreatedInstance}
                 onLaunch={launchCreatedInstance}
-                onOpenInGame={(created) => void openCreatedInstanceInGame(created)}
+                onOpenInGame={(created) =>
+                    void openCreatedInstanceInGame(created)
+                }
             />
             <InstanceInviteDialog
                 open={Boolean(inviteRequest)}
@@ -1683,5 +2036,4 @@ export function WorldDialogContent({
             />
         </>
     );
-
 }

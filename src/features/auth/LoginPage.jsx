@@ -56,55 +56,15 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { getLanguageName, languageCodes } from '@/localization/index.js';
 
-function getErrorMessage(error, fallbackMessage) {
-    if (error instanceof Error && error.message) {
-        return error.message;
-    }
-
-    return fallbackMessage;
-}
-
-function getUserDisplayName(user) {
-    return user?.displayName || user?.username || user?.id || 'account';
-}
-
-function getAutoLoginStateLabel(status) {
-    switch (status) {
-    case 'scheduled':
-        return 'Auto-login scheduled';
-    case 'running':
-        return 'Auto-login running';
-    case 'success':
-        return 'Auto-login succeeded';
-    case 'cancelled':
-        return 'Auto-login skipped';
-    case 'throttled':
-        return 'Auto-login throttled';
-    case 'expired':
-        return 'Session expired';
-    case 'failed':
-        return 'Auto-login failed';
-    default:
-        return 'Auto-login idle';
-    }
-}
-
-function sanitizeRedirectTarget(value) {
-    if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('/login')) {
-        return '/feed';
-    }
-
-    return value;
-}
-
-function getSnapshotLoginParams(nextSnapshot) {
-    const lastUserId = nextSnapshot?.lastUserLoggedIn || '';
-    const lastCredential = lastUserId ? nextSnapshot?.savedCredentials?.[lastUserId] : null;
-    const firstCredential = Array.isArray(nextSnapshot?.savedCredentialsList)
-        ? nextSnapshot.savedCredentialsList[0]
-        : null;
-    return lastCredential?.loginParams || firstCredential?.loginParams || {};
-}
+import {
+    getAutoLoginStateLabel,
+    getLoginErrorMessage as getErrorMessage,
+    getLoginUserDisplayName as getUserDisplayName
+} from './loginDisplay.js';
+import {
+    getSnapshotLoginParams,
+    sanitizeLoginRedirectTarget as sanitizeRedirectTarget
+} from './loginSession.js';
 
 export function LoginPage() {
     const navigate = useNavigate();

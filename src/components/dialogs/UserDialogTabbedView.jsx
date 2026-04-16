@@ -35,7 +35,7 @@ import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu.js
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar.jsx';
 import { Location } from '@/components/Location.jsx';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
-import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
+import { timeToText } from '@/lib/dateTime.js';
 import { convertFileUrlToImageUrl, copyTextToClipboard, openExternalLink, userImage } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
@@ -56,7 +56,6 @@ import { isActionRecent } from '@/services/recentActionService.js';
 import { getTranslationConfig, translateText } from '@/services/translationService.js';
 import { languageMappings } from '@/shared/constants/language.js';
 import { userDialogGroupSortingOptions, userDialogMutualFriendSortingOptions } from '@/shared/constants/user.js';
-import { compareByDisplayName, compareByFriendOrder, compareByLastActiveRef, compareByMemberCount, compareByName } from '@/shared/utils/compare.js';
 import { getFaviconUrl } from '@/shared/utils/urlUtils.js';
 import { parseLocation } from '@/shared/utils/location.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -101,183 +100,42 @@ import {
 } from './EntityDialogScaffold.jsx';
 import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
 import { UserActivityPanel } from './UserActivityPanel.jsx';
+import {
+    firstNonGroupIdText,
+    formatDate,
+    formatStatsDate,
+    formatStatsDuration,
+    groupIdForRow,
+    groupDisplayName,
+    groupMemberVisibility,
+    isGroupId,
+    isOfflineLikeValue,
+    normalizedText,
+    resolveTabValue,
+    summarizeEntityRow,
+    userIdForRow,
+    userRowSubtitle,
+    userTravelingTimestamp,
+    worldOccupantSubtitle
+} from './user-dialog/userDialogRows.js';
+import {
+    buildUserDialogListViewData,
+    buildUserDialogProfileSummary
+} from './user-dialog/userDialogViewData.js';
+import {
+    isUserDialogDataTab,
+    loadUserDialogTabData,
+    userDialogDataKeyForTab
+} from './user-dialog/userDialogTabService.js';
 
-function firstArray(...values) {
-    return values.find((value) => Array.isArray(value)) || [];
-}
-
-function normalizedText(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function isGroupId(value) {
-    return normalizedText(value).startsWith('grp_');
-}
-
-function firstNonGroupIdText(...values) {
-    const fallback = [];
-    for (const value of values) {
-        const text = normalizedText(value);
-        if (!text) {
-            continue;
-        }
-        if (!isGroupId(text)) {
-            return text;
-        }
-        fallback.push(text);
-    }
-    return fallback[0] || '';
-}
-
-function isOfflineLikeValue(value) {
-    const normalized = normalizedText(value).toLowerCase();
-    return !normalized || normalized === 'offline' || normalized === 'private' || normalized === 'traveling';
-}
-
-function summarizeEntityRow(row, fallback = '—') {
-    if (typeof row === 'string') {
-        return /^(usr|wrld|wld|avtr|grp)_/i.test(row.trim()) ? fallback : row;
-    }
-    if (!row || typeof row !== 'object') {
-        return fallback;
-    }
-    const label = row.displayName || row.name || row.worldName || row.groupName || row.avatarName || fallback;
-    return row.$favoriteGroup ? `${row.$favoriteGroup}: ${label}` : label;
-}
-
-function groupDisplayName(row, fallback = 'Group') {
-    if (!row || typeof row !== 'object') {
-        return fallback;
-    }
-    return firstNonGroupIdText(
-        row.displayName,
-        row.display_name,
-        row.name,
-        row.groupName,
-        row.group_name,
-        row.shortCode,
-        row.group?.displayName,
-        row.group?.display_name,
-        row.group?.name,
-        fallback
-    );
-}
-
-function filterRows(rows, query) {
-    const normalizedQuery = String(query || '').trim().toLowerCase();
-    if (!normalizedQuery) {
-        return rows;
-    }
-    return rows.filter((row) =>
-        [
-            row?.displayName,
-            row?.name,
-            row?.worldName,
-            row?.groupName,
-            row?.avatarName,
-            row?.authorName,
-            row?.description,
-            row?.id,
-            row?.$favoriteGroup
-        ].some((value) => String(value || '').toLowerCase().includes(normalizedQuery))
-    );
-}
-
-function sortAvatarRows(rows, sortBy) {
-    const nextRows = [...rows];
-    if (sortBy === 'update') {
-        return nextRows.sort((left, right) => String(right.updated_at || right.updatedAt || '').localeCompare(String(left.updated_at || left.updatedAt || '')));
-    }
-    if (sortBy === 'createdAt') {
-        return nextRows.sort((left, right) => String(right.created_at || right.createdAt || '').localeCompare(String(left.created_at || left.createdAt || '')));
-    }
-    return nextRows.sort((left, right) => String(left.name || '').localeCompare(String(right.name || '')));
-}
-
-function sortMutualFriendRows(rows, sortBy) {
-    const comparers = {
-        alphabetical: compareByDisplayName,
-        lastActive: compareByLastActiveRef,
-        friendOrder: compareByFriendOrder
-    };
-    const comparer = comparers[sortBy] || comparers.alphabetical;
-    return [...rows].sort((left, right) => {
-        const result = comparer(left, right);
-        return Number.isFinite(result) ? result : compareByDisplayName(left, right);
-    });
-}
-
-function compareGroupRowsByInGameOrder(groupOrder = []) {
-    const orderMap = new Map((groupOrder || []).map((groupId, index) => [groupId, index]));
-    return (left, right) => {
-        const leftOrder = orderMap.has(groupIdForRow(left)) ? orderMap.get(groupIdForRow(left)) : Number.MAX_SAFE_INTEGER;
-        const rightOrder = orderMap.has(groupIdForRow(right)) ? orderMap.get(groupIdForRow(right)) : Number.MAX_SAFE_INTEGER;
-        if (leftOrder !== rightOrder) {
-            return leftOrder - rightOrder;
-        }
-        return compareByName(left, right);
-    };
-}
-
-function sortUserGroupRows(rows, sortBy, groupOrder = []) {
-    const comparers = {
-        alphabetical: compareByName,
-        members: compareByMemberCount,
-        inGame: compareGroupRowsByInGameOrder(groupOrder)
-    };
-    const comparer = comparers[sortBy] || comparers.alphabetical;
-    return [...rows].sort((left, right) => {
-        const result = comparer(left, right);
-        return Number.isFinite(result) && result !== 0 ? result : compareByName(left, right);
-    });
-}
-
-function hydrateMutualFriendRows(rows, friendsById) {
-    return rows.map((row) => {
-        const userId = normalizedText(row?.id || row?.userId);
-        const cachedFriend = userId ? friendsById?.[userId] : null;
-        if (!cachedFriend) {
-            return row;
-        }
-        const friendNumber = row?.$friendNumber ?? row?.friendNumber ?? cachedFriend.$friendNumber ?? cachedFriend.friendNumber;
-        return {
-            ...cachedFriend,
-            ...row,
-            ...(friendNumber !== undefined ? { $friendNumber: friendNumber, friendNumber } : {})
-        };
-    });
-}
-
-function worldOccupantSubtitle(row) {
-    const occupants = Number(row?.occupants ?? row?.userCount ?? 0) || 0;
-    return occupants > 0 ? `(${occupants})` : '';
-}
-
-function normalizeLanguageRows(rows, tags = []) {
-    const normalizedRows = firstArray(rows).map((entry) => {
-        if (typeof entry === 'string') {
-            return { key: entry, value: entry };
-        }
-        return {
-            key: entry?.key || entry?.id || entry?.value || '',
-            value: entry?.value || entry?.label || entry?.name || entry?.key || ''
-        };
-    }).filter((entry) => entry.key || entry.value);
-    const seen = new Set(normalizedRows.map((entry) => String(entry.key || entry.value).toLowerCase()));
-    for (const tag of firstArray(tags)) {
-        const normalizedTag = String(tag || '').trim().toLowerCase();
-        if (!normalizedTag.startsWith('language_')) {
-            continue;
-        }
-        const key = normalizedTag.replace(/^language_/, '');
-        if (!key || seen.has(key)) {
-            continue;
-        }
-        normalizedRows.push({ key, value: key });
-        seen.add(key);
-    }
-    return normalizedRows;
-}
+const userDialogTabServiceRepositories = Object.freeze({
+    avatarProfileRepository,
+    avatarSearchProviderRepository,
+    groupProfileRepository,
+    userProfileRepository,
+    vrchatFavoriteRepository,
+    worldProfileRepository
+});
 
 function languageFlagClassName(languageKey) {
     const key = String(languageKey || '').trim().toLowerCase();
@@ -314,274 +172,6 @@ function UserTitleLanguageFlags({ languages }) {
     );
 }
 
-function formatDate(value) {
-    if (!value) {
-        return '—';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return String(value);
-    }
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
-}
-
-function formatStatsDate(value) {
-    return value ? formatDateFilter(value, 'long') : '—';
-}
-
-function formatStatsDuration(value) {
-    const duration = Number(value) || 0;
-    return duration > 0 ? timeToText(duration) : '—';
-}
-
-function normalizePreviousDisplayNames(value) {
-    const rows = value instanceof Map
-        ? Array.from(value, ([displayName, updated_at]) => ({ displayName, updated_at }))
-        : firstArray(value);
-
-    return rows
-        .map((entry) => {
-            if (typeof entry === 'string') {
-                return { displayName: entry, updated_at: '' };
-            }
-            return {
-                displayName: normalizedText(entry?.displayName || entry?.name),
-                updated_at: entry?.updated_at || entry?.updatedAt || entry?.date || ''
-            };
-        })
-        .filter((entry) => entry.displayName);
-}
-
-function groupMemberVisibility(group) {
-    return normalizedText(
-        group?.memberVisibility ||
-            group?.member_visibility ||
-            group?.myMember?.visibility ||
-            group?.my_member?.visibility ||
-            'visible'
-    ) || 'visible';
-}
-
-function isMutualGroup(group) {
-    const membership = group?.membership && typeof group.membership === 'object' ? group.membership : {};
-    const myMember = group?.myMember || group?.my_member || {};
-    return normalizedBoolean(
-        group?.mutualGroup ??
-            group?.mutual_group ??
-            group?.isMutualGroup ??
-            group?.is_mutual_group ??
-            group?.isMutual ??
-            group?.is_mutual ??
-            group?.mutualMembership ??
-            group?.mutual_membership ??
-            group?.sharedGroup ??
-            group?.shared_group ??
-            group?.isSharedGroup ??
-            group?.is_shared_group ??
-            membership.mutual ??
-            membership.isMutual ??
-            membership.is_mutual ??
-            myMember.mutual ??
-            myMember.isMutual ??
-            myMember.is_mutual ??
-            group?.mutual ??
-            group?.shared
-    );
-}
-
-function normalizedBoolean(value) {
-    if (typeof value === 'boolean') {
-        return value;
-    }
-    if (typeof value === 'number') {
-        return value !== 0;
-    }
-    const normalized = normalizedText(value).toLowerCase();
-    if (!normalized || normalized === 'false' || normalized === '0' || normalized === 'no') {
-        return false;
-    }
-    if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
-        return true;
-    }
-    return Boolean(value);
-}
-
-function firstText(...values) {
-    for (const value of values) {
-        const normalized = normalizedText(value);
-        if (normalized) {
-            return normalized;
-        }
-    }
-    return '';
-}
-
-function groupOwnerId(group) {
-    const owner = group?.owner;
-    const creator = group?.creator || group?.createdBy || group?.created_by;
-    return firstText(
-        group?.ownerId,
-        group?.owner_id,
-        group?.ownerUserId,
-        group?.owner_user_id,
-        group?.ownerUserID,
-        group?.owner_userID,
-        group?.creatorId,
-        group?.creator_id,
-        group?.creatorUserId,
-        group?.creator_user_id,
-        typeof owner === 'string' ? owner : '',
-        owner?.id,
-        owner?.userId,
-        owner?.user_id,
-        owner?.userID,
-        typeof creator === 'string' ? creator : '',
-        creator?.id,
-        creator?.userId,
-        creator?.user_id,
-        creator?.userID
-    );
-}
-
-function groupMemberUserId(group) {
-    const myMember = group?.myMember || group?.my_member || {};
-    return firstText(
-        group?.userId,
-        group?.user_id,
-        group?.memberUserId,
-        group?.member_user_id,
-        myMember.userId,
-        myMember.user_id,
-        myMember.userID
-    );
-}
-
-function topLevelMembershipStatus(group) {
-    return firstText(
-        group?.membershipStatus,
-        group?.membership_status,
-        group?.memberStatus,
-        group?.member_status,
-        group?.membership?.status,
-        group?.membership?.role,
-        group?.member?.role,
-        group?.myMember?.role,
-        group?.my_member?.role,
-        group?.roleName,
-        group?.role_name,
-        group?.role,
-        group?.relationship
-    ).toLowerCase();
-}
-
-function roleNameContainsOwner(value) {
-    if (!value) {
-        return false;
-    }
-    if (Array.isArray(value)) {
-        return value.some(roleNameContainsOwner);
-    }
-    if (typeof value === 'object') {
-        return roleNameContainsOwner(value.name || value.displayName || value.roleName || value.role_name || value.id);
-    }
-    return normalizedText(value).toLowerCase().includes('owner');
-}
-
-function groupIdForRow(group) {
-    const nestedGroup = group?.group && typeof group.group === 'object' ? group.group : {};
-    const explicitGroupId = firstText(
-        group?.groupId,
-        group?.group_id,
-        nestedGroup.id,
-        nestedGroup.groupId,
-        nestedGroup.group_id
-    );
-    if (explicitGroupId) {
-        return explicitGroupId;
-    }
-    const directId = firstText(group?.id);
-    return directId.startsWith('grp_') ? directId : '';
-}
-
-function isOwnedGroupForUser(group, userId) {
-    const normalizedUserId = normalizedText(userId);
-    if (!normalizedUserId) {
-        return false;
-    }
-
-    const ownerId = groupOwnerId(group);
-    if (ownerId && ownerId === normalizedUserId) {
-        return true;
-    }
-
-    const memberUserId = groupMemberUserId(group);
-    const status = topLevelMembershipStatus(group);
-    if ((memberUserId === normalizedUserId || !memberUserId) && (status === 'owner' || status === 'owned' || status.includes('owner'))) {
-        return true;
-    }
-
-    return (memberUserId === normalizedUserId || !memberUserId) && (
-        normalizedBoolean(group?.isOwner ?? group?.is_owner ?? group?.owned) ||
-        roleNameContainsOwner(group?.membership?.roles) ||
-        roleNameContainsOwner(group?.member?.roles) ||
-        roleNameContainsOwner(group?.userRoles) ||
-        roleNameContainsOwner(group?.user_roles) ||
-        roleNameContainsOwner(group?.userRoleNames) ||
-        roleNameContainsOwner(group?.user_role_names) ||
-        roleNameContainsOwner(group?.myMember?.roles) ||
-        roleNameContainsOwner(group?.my_member?.roles)
-    );
-}
-
-function isMutualGroupForUser(group, isCurrentUser) {
-    if (isCurrentUser) {
-        return false;
-    }
-    return isMutualGroup(group);
-}
-
-function normalizeUserGroupMembershipRow(group) {
-    if (!group || typeof group !== 'object') {
-        return group;
-    }
-
-    const nestedGroup = group.group && typeof group.group === 'object' ? group.group : {};
-    const groupId = groupIdForRow(group);
-    const currentId = normalizedText(group.id);
-    const memberId = normalizedText(group.$memberId || group.memberId || group.member_id || (currentId && currentId !== groupId ? currentId : ''));
-    const myMember = group.myMember || group.my_member || {};
-    const mergedGroup = { ...nestedGroup, ...group };
-    const ownerId = groupOwnerId(mergedGroup);
-
-    return {
-        ...nestedGroup,
-        ...group,
-        ...(memberId ? { $memberId: memberId } : {}),
-        id: groupId,
-        groupId,
-        ownerId,
-        memberVisibility: group.memberVisibility || group.member_visibility || myMember.visibility || group.visibility || 'visible',
-        isRepresenting: Boolean(group.isRepresenting || group.is_representing || myMember.isRepresenting || myMember.is_representing),
-        mutualGroup: isMutualGroup(mergedGroup),
-        myMember: {
-            ...myMember,
-            ...(memberId ? { id: memberId } : {}),
-            groupId,
-            visibility: myMember.visibility || group.memberVisibility || group.member_visibility || group.visibility || 'visible',
-            isRepresenting: Boolean(myMember.isRepresenting || myMember.is_representing || group.isRepresenting || group.is_representing)
-        }
-    };
-}
-
-function normalizeUserGroupMembershipRows(groups) {
-    return firstArray(groups).map(normalizeUserGroupMembershipRow);
-}
-
-function formatCountText(count, max) {
-    const normalizedMax = Number(max) || 0;
-    return normalizedMax ? `${count}/${normalizedMax}` : String(count);
-}
-
 function downloadJsonFile(filename, value) {
     const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -592,15 +182,6 @@ function downloadJsonFile(filename, value) {
     anchor.click();
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
-function resolveStatusStateText(profile) {
-    const state = normalizedText(profile?.state);
-    const status = normalizedText(profile?.status);
-    if (state && status && state.toLowerCase() !== status.toLowerCase()) {
-        return `${state} / ${status}`;
-    }
-    return state || status || '';
 }
 
 function rowImage(row, kind) {
@@ -614,42 +195,6 @@ function rowImage(row, kind) {
         row.thumbnailImageUrl || row.imageUrl || row.iconUrl || row.userIcon || row.currentAvatarImageUrl,
         128
     );
-}
-
-function userRowSubtitle(row) {
-    if (userTravelingTimestamp(row)) {
-        return '';
-    }
-    const explicit = row?.$subtitle || row?.subtitle;
-    if (explicit) {
-        return explicit;
-    }
-    const joinedAt = normalizedText(row?.$location_at || row?.locationAt || row?.joinedAt || row?.created_at || row?.createdAt);
-    const timestamp = joinedAt ? Date.parse(joinedAt) : Number.NaN;
-    if (!Number.isNaN(timestamp)) {
-        return timeToText(Date.now() - timestamp);
-    }
-    return row?.statusDescription || row?.status || row?.stateBucket || row?.state || '';
-}
-
-function rowUserId(row) {
-    if (typeof row === 'string') {
-        return normalizedText(row);
-    }
-    return normalizedText(row?.id || row?.userId || row?.user_id || row?.targetUserId || row?.target_user_id);
-}
-
-function userTravelingTimestamp(row) {
-    if (normalizedText(row?.location).toLowerCase() !== 'traveling') {
-        return 0;
-    }
-    const value = row?.$travelingToTime || row?.travelingToTime || row?.traveling_to_time;
-    const numeric = Number(value);
-    if (Number.isFinite(numeric) && numeric > 0) {
-        return numeric;
-    }
-    const parsed = Date.parse(value);
-    return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 function UserGroupCard({
@@ -826,6 +371,7 @@ function EntityList({
     if (!rows.length) {
         return <EntityBlank />;
     }
+    const nowMs = Date.now();
     return (
         <div className="flex flex-wrap items-start">
             {rows.map((row, index) => {
@@ -851,7 +397,7 @@ function EntityList({
                     ? row?.displayName || row?.username || ''
                     : summarizeEntityRow(row);
                 const subtitle = kind === 'user'
-                    ? userRowSubtitle(row)
+                    ? userRowSubtitle(row, nowMs)
                     : kind === 'world'
                         ? worldOccupantSubtitle(row)
                         : row?.authorName || row?.description || row?.shortCode || row?.username || '';
@@ -888,26 +434,6 @@ function EntityList({
             })}
         </div>
     );
-}
-
-function splitUserGroups(groups, userId, isCurrentUser) {
-    const ownGroups = [];
-    const mutualGroups = [];
-    const remainingGroups = [];
-
-    for (const group of groups || []) {
-        if (isOwnedGroupForUser(group, userId)) {
-            ownGroups.push(group);
-            continue;
-        }
-        if (isMutualGroupForUser(group, isCurrentUser)) {
-            mutualGroups.push(group);
-            continue;
-        }
-        remainingGroups.push(group);
-    }
-
-    return { ownGroups, mutualGroups, remainingGroups };
 }
 
 function UserGroupSection({
@@ -1003,10 +529,6 @@ function FavoriteWorldGroups({ groups, rows, search, filteredRows, loading, erro
 }
 
 let lastUserDialogTab = 'info';
-
-function resolveTabValue(tabs, preferred, fallback = 'info') {
-    return tabs.some((tab) => tab.value === preferred) ? preferred : fallback;
-}
 
 export function UserDialogTabbedView({
     profile,
@@ -1115,60 +637,43 @@ export function UserDialogTabbedView({
     const effectiveAvatarReleaseStatus = profile.id === currentUserId ? avatarReleaseStatus : 'all';
     const loadContextRef = useRef({ endpoint: currentEndpoint, userId: profile.id, reloadToken });
     const handledReloadTokenRef = useRef(reloadToken);
-    const profileGroups = normalizeUserGroupMembershipRows(
-        remoteStatus.groups === 'ready'
-            ? remoteData.groups
-            : firstArray(profile.groups, profile.groupMemberships, profile.$groups)
-    );
-    const mutualFriends = hydrateMutualFriendRows(
-        remoteStatus.mutual === 'ready'
-            ? remoteData.mutual
-            : firstArray(profile.mutualFriends, profile.$mutualFriends),
-        friendsById
-    );
-    const profileWorlds = remoteStatus.worlds === 'ready'
-        ? remoteData.worlds
-        : firstArray(profile.worlds, profile.$worlds, profile.recentWorlds);
-    const favoriteWorlds = remoteStatus['favorite-worlds'] === 'ready'
-        ? remoteData.favoriteWorlds
-        : firstArray(profile.favoriteWorlds, profile.$favoriteWorlds);
-    const profileAvatars = remoteStatus.avatars === 'ready'
-        ? remoteData.avatars
-        : firstArray(profile.avatars, profile.$avatars);
-    const bioLinks = firstArray(profile.bioLinks);
-    const filteredMutualFriends = filterRows(mutualFriends, search.mutual);
-    const visibleMutualFriends = sortMutualFriendRows(filteredMutualFriends, mutualSort);
-    const effectiveGroupSort = !isCurrentUser && groupSort === 'inGame' ? 'alphabetical' : groupSort;
-    const sortedProfileGroups = sortUserGroupRows(profileGroups, effectiveGroupSort, inGameGroupOrder);
-    const filteredProfileGroups = filterRows(sortedProfileGroups, search.groups);
-    const selectedUserGroups = sortedProfileGroups.filter((group) => selectedGroupIds.has(groupIdForRow(group)));
-    const filteredProfileWorlds = filterRows(profileWorlds, search.worlds);
-    const filteredFavoriteWorlds = filterRows(favoriteWorlds, search.favoriteWorlds);
-    const filteredProfileAvatars = filterRows(profileAvatars, search.avatars);
-    const visibleProfileAvatars = sortAvatarRows(
-        effectiveAvatarReleaseStatus === 'all'
-            ? filteredProfileAvatars
-            : filteredProfileAvatars.filter((avatar) => avatar.releaseStatus === effectiveAvatarReleaseStatus),
-        avatarSort
-    );
+    const {
+        profileGroups,
+        mutualFriends,
+        profileWorlds,
+        favoriteWorlds,
+        profileAvatars,
+        bioLinks,
+        filteredMutualFriends,
+        visibleMutualFriends,
+        effectiveGroupSort,
+        sortedProfileGroups,
+        filteredProfileGroups,
+        selectedUserGroups,
+        filteredProfileWorlds,
+        filteredFavoriteWorlds,
+        visibleProfileAvatars,
+        tabs,
+        groupSearchActive
+    } = buildUserDialogListViewData({
+        profile,
+        remoteData,
+        remoteStatus,
+        friendsById,
+        search,
+        mutualSort,
+        groupSort,
+        isCurrentUser,
+        inGameGroupOrder,
+        selectedGroupIds,
+        effectiveAvatarReleaseStatus,
+        avatarSort,
+        currentUserHasSharedConnectionsOptOut
+    });
     const isRecentDialogAction = (actionType) =>
         recentActionVersion >= 0 && isActionRecent(profile.id, actionType);
     const recentDialogShortcut = (actionType) =>
         isRecentDialogAction(actionType) ? <ClockIcon className="size-3.5 text-muted-foreground" /> : null;
-    const tabs = [
-        { value: 'info', label: 'Info' },
-        ...(!isCurrentUser && !currentUserHasSharedConnectionsOptOut ? [{ value: 'mutual', label: 'Mutual' }] : []),
-        { value: 'groups', label: 'Groups' },
-        { value: 'worlds', label: 'Worlds' },
-        ...(!isCurrentUser
-            ? [
-                { value: 'favorite-worlds', label: 'Favorite Worlds' },
-                { value: 'avatars', label: 'Avatars' }
-            ]
-            : []),
-        { value: 'activity', label: 'Activity' },
-        { value: 'json', label: 'JSON' }
-    ];
     useEffect(() => {
         loadContextRef.current = {
             endpoint: currentEndpoint,
@@ -1222,7 +727,7 @@ export function UserDialogTabbedView({
         if (!profile.id || (!force && (remoteStatus[tab] === 'running' || remoteStatus[tab] === 'ready'))) {
             return;
         }
-        if (!['mutual', 'groups', 'worlds', 'favorite-worlds', 'avatars'].includes(tab)) {
+        if (!isUserDialogDataTab(tab)) {
             return;
         }
 
@@ -1239,85 +744,26 @@ export function UserDialogTabbedView({
         setRemoteStatus((current) => ({ ...current, [tab]: 'running' }));
         setRemoteErrors((current) => ({ ...current, [tab]: '' }));
         try {
-            let rows = [];
-            let favoriteGroupsForTab = [];
-            if (tab === 'mutual') {
-                rows = await userProfileRepository.getAllMutualFriends({
-                    userId: profile.id,
-                    endpoint: currentEndpoint
-                });
-            } else if (tab === 'groups') {
-                rows = await groupProfileRepository.getUserGroups({
-                    userId: profile.id,
-                    endpoint: currentEndpoint
-                });
-            } else if (tab === 'worlds') {
-                rows = await worldProfileRepository.getAllWorldsByUser({
-                    userId: profile.id,
-                    endpoint: currentEndpoint,
-                    sort: worldSort,
-                    order: worldOrder,
-                    releaseStatus: profile.id === currentUserId ? 'all' : 'public'
-                });
-            } else if (tab === 'avatars') {
-                if (profile.id === currentUserId) {
-                    rows = await avatarProfileRepository.getAllAvatarsByUser({
-                        userId: profile.id,
-                        user: 'me',
-                        endpoint: currentEndpoint,
-                        sort: avatarSort === 'createdAt' ? 'createdAt' : avatarSort === 'update' ? 'updated' : 'name',
-                        order: avatarSort === 'name' ? 'ascending' : 'descending',
-                        releaseStatus: effectiveAvatarReleaseStatus
-                    });
-                } else {
-                    const providerConfig = await avatarSearchProviderRepository.getConfig();
-                    if (!providerConfig.enabled || !providerConfig.selectedProvider) {
-                        rows = [];
-                    } else {
-                        const response = await avatarSearchProviderRepository.search({
-                            provider: providerConfig.selectedProvider,
-                            query: profile.id
-                        });
-                        rows = response.avatars.filter((avatar) => avatar.authorId === profile.id);
-                    }
-                }
-            } else if (tab === 'favorite-worlds') {
-                const favoriteGroups = await vrchatFavoriteRepository.getAllFavoriteGroups({
-                    endpoint: currentEndpoint,
-                    ownerId: profile.id
-                });
-                const worldGroups = favoriteGroups
-                    .filter((group) => group?.type === 'world');
-                favoriteGroupsForTab = worldGroups;
-                const worldListResults = await Promise.allSettled(
-                    worldGroups.map(async (group) => {
-                        const worlds = await vrchatFavoriteRepository.getAllFavoriteWorlds({
-                            endpoint: currentEndpoint,
-                            ownerId: profile.id,
-                            userId: profile.id,
-                            tag: group.name
-                        });
-                        return worlds
-                            .map((world) => ({
-                                ...world,
-                                $favoriteGroup: group.displayName || group.name,
-                                $favoriteGroupKey: group.name
-                            }));
-                    })
-                );
-                rows = worldListResults
-                    .filter((result) => result.status === 'fulfilled')
-                    .flatMap((result) => result.value);
-            }
+            const { rows, favoriteWorldGroups } = await loadUserDialogTabData({
+                tab,
+                userId: profile.id,
+                endpoint: currentEndpoint,
+                currentUserId,
+                worldSort,
+                worldOrder,
+                avatarSort,
+                effectiveAvatarReleaseStatus,
+                repositories: userDialogTabServiceRepositories
+            });
 
             if (!isCurrentLoadContext(loadContext)) {
                 return;
             }
-            const dataKey = tab === 'favorite-worlds' ? 'favoriteWorlds' : tab;
+            const dataKey = userDialogDataKeyForTab(tab);
             setRemoteData((current) => ({
                 ...current,
                 [dataKey]: rows,
-                ...(tab === 'favorite-worlds' ? { favoriteWorldGroups: favoriteGroupsForTab } : {})
+                ...(tab === 'favorite-worlds' ? { favoriteWorldGroups } : {})
             }));
             setRemoteStatus((current) => ({ ...current, [tab]: 'ready' }));
         } catch (error) {
@@ -1432,43 +878,30 @@ export function UserDialogTabbedView({
     const username = profile.username && profile.username !== profile.id ? profile.username : '';
     const userSubtitle = username;
     const pronounsText = Array.isArray(profile.pronouns) ? profile.pronouns.join(', ') : profile.pronouns;
-    const previousDisplayNames = normalizePreviousDisplayNames(
-        userStats.previousDisplayNames?.length
-            ? userStats.previousDisplayNames
-            : profile.previousDisplayNames || profile.pastDisplayNames
-    );
-    const previousDisplayNamesTitle = previousDisplayNames
-        .map((entry) =>
-            entry.updated_at
-                ? `${entry.displayName} - ${formatStatsDate(entry.updated_at)}`
-                : entry.displayName
-        )
-        .join('\n');
-    const statusStateText = resolveStatusStateText(profile);
-    const groupSearchActive = normalizedText(search.groups).length > 0;
-    const userGroupSections = splitUserGroups(sortedProfileGroups, profile.id, isCurrentUser);
-    const selectedGroupCount = selectedUserGroups.length;
-    const groupLimits = vrchatConfigConstants?.GROUPS || {};
-    const isLocalUserVrcPlusSupporter = Boolean(
-        currentUserSnapshot?.$isVRCPlus ||
-            currentUserSnapshot?.tags?.includes?.('system_supporter') ||
-            globalThis?.$debug?.debugVrcPlus
-    );
-    const ownGroupCountText = formatCountText(userGroupSections.ownGroups.length, groupLimits.MAX_OWNED);
-    const remainingGroupCountText = formatCountText(
-        userGroupSections.remainingGroups.length,
-        isCurrentUser
-            ? isLocalUserVrcPlusSupporter
-                ? groupLimits.MAX_JOINED_PLUS
-                : groupLimits.MAX_JOINED
-            : 0
-    );
-    const userTimeSpent = Number(userStats.timeSpent ?? profile.timeSpent ?? profile.$timeSpent ?? 0) || 0;
-    const userJoinCount = Number(userStats.joinCount ?? profile.joinCount ?? profile.$joinCount ?? 0) || 0;
-    const lastSeen = userStats.lastSeen || profile.lastSeen || '';
-    const profileLanguages = normalizeLanguageRows(firstArray(profile.$languages, profile.languages), profile.tags);
-    const mutualFriendCount = Number(profile.mutualFriendCount ?? profile.$mutualFriendCount ?? mutualFriends.length ?? 0) || 0;
-    const friendNumber = Number(profile.$friendNumber ?? profile.friendNumber ?? 0) || 0;
+    const {
+        previousDisplayNames,
+        previousDisplayNamesTitle,
+        statusStateText,
+        userGroupSections,
+        selectedGroupCount,
+        ownGroupCountText,
+        remainingGroupCountText,
+        userTimeSpent,
+        userJoinCount,
+        lastSeen,
+        profileLanguages,
+        mutualFriendCount,
+        friendNumber
+    } = buildUserDialogProfileSummary({
+        profile,
+        userStats,
+        sortedProfileGroups,
+        selectedUserGroups,
+        mutualFriends,
+        isCurrentUser,
+        vrchatConfigConstants,
+        currentUserSnapshot
+    });
     const currentAvatarDisplayName = String(profile.currentAvatarName || profile.avatarName || '').trim();
     const currentAvatarDialogArgs = {
         avatarId: currentAvatarTarget,
@@ -1558,7 +991,7 @@ export function UserDialogTabbedView({
             locationInstance?.group?.id ||
             visiblePresenceParsedLocation?.groupId
     );
-    const locationOwnerUserId = rowUserId(locationOwnerUser);
+    const locationOwnerUserId = userIdForRow(locationOwnerUser);
     const locationOwnerGroupId = groupIdForRow(locationOwnerGroup);
     const locationOwnerIsGroup = Boolean(
         locationOwnerGroupId ||
@@ -1605,7 +1038,7 @@ export function UserDialogTabbedView({
             }
         : null;
     const locationPlayerUsers = locationOwnerId && !locationOwnerIsGroup
-        ? locationUsers.filter((user) => rowUserId(user) !== locationOwnerId)
+        ? locationUsers.filter((user) => userIdForRow(user) !== locationOwnerId)
         : locationUsers;
 
     async function copyUserText(text, label) {

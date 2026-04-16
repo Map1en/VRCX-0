@@ -13,9 +13,6 @@ import { DashboardPanelPreview } from '@/components/dashboard/DashboardPanelPrev
 import {
     createDashboardPanelValue,
     DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS,
-    DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS,
-    DASHBOARD_SELECTABLE_PAGE_DEFINITIONS,
-    DASHBOARD_WIDGET_DEFINITIONS,
     getDashboardPanelDefinition,
     resolveDashboardPanelKey
 } from '@/components/dashboard/dashboardRegistry.js';
@@ -47,169 +44,21 @@ import {
     ResizablePanelGroup
 } from '@/ui/shadcn/resizable';
 import { Switch } from '@/ui/shadcn/switch';
-
-function cloneRows(rows) {
-    return JSON.parse(JSON.stringify(Array.isArray(rows) ? rows : []));
-}
-
-function getDashboardRowKey(row) {
-    if (typeof row?.id === 'string' && row.id.trim()) {
-        return row.id.trim();
-    }
-
-    const source = JSON.stringify({
-        direction: row?.direction === 'vertical' ? 'vertical' : 'horizontal',
-        panels: Array.isArray(row?.panels)
-            ? row.panels.map((panel) => (typeof panel === 'string' ? panel : panel?.key || ''))
-            : []
-    });
-    let hash = 0;
-    for (let index = 0; index < source.length; index += 1) {
-        hash = (hash * 31 + source.charCodeAt(index)) >>> 0;
-    }
-    return `legacy-${hash.toString(36)}`;
-}
-
-function createPanelSelectOptions(currentPanelKey) {
-    const options = [
-        ...DASHBOARD_WIDGET_DEFINITIONS.map((definition) => ({
-            value: definition.key,
-            label: `Widget · ${definition.label}`
-        })),
-        ...DASHBOARD_SELECTABLE_PAGE_DEFINITIONS.map((definition) => ({
-            value: definition.key,
-            label: `Page · ${definition.label}`
-        }))
-    ];
-
-    if (
-        currentPanelKey &&
-        currentPanelKey !== '__none__' &&
-        !options.some((option) => option.value === currentPanelKey)
-    ) {
-        options.unshift({
-            value: currentPanelKey,
-            label: `Existing · ${getDashboardPanelDefinition(currentPanelKey)?.label || currentPanelKey}`
-        });
-    }
-
-    return options;
-}
-
-function getPanelConfig(panel) {
-    if (!panel || typeof panel !== 'object') {
-        return {};
-    }
-
-    return panel.config && typeof panel.config === 'object' ? panel.config : {};
-}
-
-function cloneConfig(value) {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
-
-    return JSON.parse(JSON.stringify(value));
-}
-
-function createWidgetPanelValue(panelKey, config) {
-    return {
-        key: panelKey,
-        config: cloneConfig(config)
-    };
-}
-
-function getFilterList(config) {
-    return Array.isArray(config?.filters) ? config.filters : [];
-}
-
-function isFilterActive(config, filterType) {
-    const filters = getFilterList(config);
-    return filters.length === 0 || filters.includes(filterType);
-}
-
-function getNextFilterConfig(config, filterType, filterTypes) {
-    const currentFilters = getFilterList(config);
-    let filters;
-
-    if (currentFilters.length === 0) {
-        filters = filterTypes.filter((entry) => entry !== filterType);
-    } else if (currentFilters.includes(filterType)) {
-        filters = currentFilters.filter((entry) => entry !== filterType);
-        if (filters.length === 0) {
-            filters = [];
-        }
-    } else {
-        filters = [...currentFilters, filterType];
-        if (filters.length === filterTypes.length) {
-            filters = [];
-        }
-    }
-
-    return {
-        ...config,
-        filters
-    };
-}
-
-const DASHBOARD_INSTANCE_WIDGET_COLUMN_KEYS = new Set(
-    DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column) => column.key)
-);
-
-function getInstanceWidgetColumns(config) {
-    const source = Array.isArray(config?.columns)
-        ? config.columns
-        : DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS;
-    const columns = source.filter(
-        (column, index, values) =>
-            typeof column === 'string' && column && values.indexOf(column) === index
-    );
-
-    if (!columns.includes('displayName')) {
-        columns.unshift('displayName');
-    }
-
-    return columns.length ? columns : [...DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS];
-}
-
-function getKnownInstanceWidgetColumns(config) {
-    const columns = getInstanceWidgetColumns(config).filter((column) =>
-        DASHBOARD_INSTANCE_WIDGET_COLUMN_KEYS.has(column)
-    );
-
-    if (!columns.includes('displayName')) {
-        columns.unshift('displayName');
-    }
-
-    return columns.length ? columns : [...DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS];
-}
-
-function getNextInstanceColumnConfig(config, columnKey) {
-    if (columnKey === 'displayName') {
-        return config;
-    }
-
-    const sourceColumns = getInstanceWidgetColumns(config);
-    const unknownColumns = sourceColumns.filter(
-        (column) => !DASHBOARD_INSTANCE_WIDGET_COLUMN_KEYS.has(column)
-    );
-    const knownColumns = getKnownInstanceWidgetColumns(config);
-    const nextKnownColumns = knownColumns.includes(columnKey)
-        ? knownColumns.filter((column) => column !== columnKey)
-        : [...knownColumns, columnKey];
-
-    if (!nextKnownColumns.includes('displayName')) {
-        nextKnownColumns.unshift('displayName');
-    }
-
-    return {
-        ...config,
-        columns: [...nextKnownColumns, ...unknownColumns]
-    };
-}
+import {
+    cloneDashboardRows,
+    createDashboardPanelSelectOptions,
+    createDashboardWidgetPanelValue,
+    getDashboardFilterList,
+    getDashboardPanelConfig,
+    getDashboardRowKey,
+    getKnownDashboardInstanceWidgetColumns,
+    getNextDashboardFilterConfig,
+    getNextDashboardInstanceColumnConfig,
+    isDashboardFilterActive
+} from './dashboardConfig.js';
 
 function DashboardFilterConfig({ title, filterTypes, config, onConfigChange }) {
-    const filters = getFilterList(config);
+    const filters = getDashboardFilterList(config);
 
     return (
         <div className="flex flex-col gap-2">
@@ -229,9 +78,9 @@ function DashboardFilterConfig({ title, filterTypes, config, onConfigChange }) {
                         key={filterType}
                         type="button"
                         size="sm"
-                        variant={isFilterActive(config, filterType) ? 'default' : 'outline'}
+                        variant={isDashboardFilterActive(config, filterType) ? 'default' : 'outline'}
                         onClick={() =>
-                            onConfigChange(getNextFilterConfig(config, filterType, filterTypes))
+                            onConfigChange(getNextDashboardFilterConfig(config, filterType, filterTypes))
                         }>
                         {filterType}
                     </Button>
@@ -256,7 +105,7 @@ function DashboardSwitchConfig({ label, description, checked, onCheckedChange })
 }
 
 function DashboardInstanceColumnConfig({ config, onConfigChange }) {
-    const activeColumns = getKnownInstanceWidgetColumns(config);
+    const activeColumns = getKnownDashboardInstanceWidgetColumns(config);
 
     return (
         <div className="flex flex-col gap-2">
@@ -272,7 +121,7 @@ function DashboardInstanceColumnConfig({ config, onConfigChange }) {
                         variant={activeColumns.includes(column.key) ? 'default' : 'outline'}
                         disabled={column.required}
                         onClick={() =>
-                            onConfigChange(getNextInstanceColumnConfig(config, column.key))
+                            onConfigChange(getNextDashboardInstanceColumnConfig(config, column.key))
                         }>
                         {column.label}
                     </Button>
@@ -338,7 +187,10 @@ function DashboardWidgetConfigEditor({ panelKey, config, onConfigChange }) {
 }
 
 function DashboardPanelSelectorDialog({ open, currentPanelKey, onOpenChange, onSelect }) {
-    const options = useMemo(() => createPanelSelectOptions(currentPanelKey), [currentPanelKey]);
+    const options = useMemo(
+        () => createDashboardPanelSelectOptions(currentPanelKey),
+        [currentPanelKey]
+    );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -385,14 +237,14 @@ function DashboardEditorPanel({ panel, onChange, onRemove, showRemove = true }) 
     const [selectorOpen, setSelectorOpen] = useState(false);
     const panelKey = resolveDashboardPanelKey(panel) ?? '__none__';
     const panelDefinition = getDashboardPanelDefinition(panelKey);
-    const panelConfig = getPanelConfig(panel);
+    const panelConfig = getDashboardPanelConfig(panel);
     const canConfigure = Boolean(panelDefinition?.category === 'widget');
 
     function updatePanelConfig(nextConfig) {
         if (!canConfigure || panelKey === '__none__') {
             return;
         }
-        onChange(createWidgetPanelValue(panelKey, nextConfig));
+        onChange(createDashboardWidgetPanelValue(panelKey, nextConfig));
     }
 
     return (
@@ -623,7 +475,7 @@ export function DashboardPage() {
         }
 
         setEditName(dashboard.name || '');
-        setEditRows(cloneRows(dashboard.rows));
+        setEditRows(cloneDashboardRows(dashboard.rows));
     }, [dashboard]);
 
     const handleAddRow = (panelCount, direction = 'horizontal') => {
@@ -683,7 +535,7 @@ export function DashboardPage() {
             return;
         }
 
-        const rows = cloneRows(dashboard.rows);
+        const rows = cloneDashboardRows(dashboard.rows);
         rows[rowIndex].panels[panelIndex] = nextPanel;
 
         try {
@@ -852,7 +704,7 @@ export function DashboardPage() {
                                 setIsEditing(false);
                                 setShowAddRowOptions(false);
                                 setEditName(dashboard.name || '');
-                                setEditRows(cloneRows(dashboard.rows));
+                                setEditRows(cloneDashboardRows(dashboard.rows));
                             }}>
                             <XIcon data-icon="inline-start" />
                             Cancel

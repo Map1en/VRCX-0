@@ -1,130 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { convertFileUrlToImageUrl, openExternalLink } from '@/lib/entityMedia.js';
+import {
+    convertFileUrlToImageUrl,
+    openExternalLink
+} from '@/lib/entityMedia.js';
 import { GroupDialogTabbedView } from './GroupDialogTabbedView.jsx';
 import { groupProfileRepository } from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
-import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useDialogStore } from '@/state/dialogStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Spinner } from '@/ui/shadcn/spinner';
-
-function normalizeEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function normalizeLocation(value) {
-    const normalized = typeof value === 'string' ? value.trim() : '';
-    return normalized && normalized !== 'offline' && normalized !== 'private' ? normalized : '';
-}
-
-function userGroupLocation(user) {
-    const location = normalizeLocation(user?.location);
-    if (location === 'traveling') {
-        return normalizeLocation(user?.travelingToLocation);
-    }
-    return location;
-}
-
-function instanceLocation(instance) {
-    const directLocation = normalizeLocation(instance?.location || instance?.tag || instance?.$location?.tag);
-    if (directLocation) {
-        return directLocation;
-    }
-    const worldId = instance?.worldId || instance?.world?.id || '';
-    const instanceId = instance?.instanceId || instance?.id || instance?.name || '';
-    return worldId && instanceId ? `${worldId}:${instanceId}` : '';
-}
-
-function mergeGroupInstances(baseInstances, { groupId, friendsById, currentUserSnapshot, currentLocation }) {
-    const normalizedGroupId = normalizeEntityId(groupId);
-    const currentLocationKey = normalizeLocation(currentLocation);
-    const byLocation = new Map();
-
-    function ensureInstance(location, seed = {}) {
-        const normalizedLocation = normalizeLocation(location);
-        if (!normalizedLocation) {
-            return null;
-        }
-        const parsed = parseLocation(normalizedLocation);
-        const existing = byLocation.get(normalizedLocation);
-        if (existing) {
-            existing.worldId = seed.worldId || seed.world?.id || parsed.worldId || existing.worldId || '';
-            existing.instanceId = seed.instanceId || seed.id || parsed.instanceId || existing.instanceId || '';
-            existing.ref = seed.ref || existing.ref || seed;
-            return Object.assign(existing, seed, {
-                location: normalizedLocation,
-                tag: normalizedLocation,
-                users: existing.users,
-                friendCount: existing.friendCount
-            });
-        }
-
-        const row = {
-            ...seed,
-            id: seed.instanceId || seed.id || parsed.instanceId || normalizedLocation,
-            location: normalizedLocation,
-            tag: normalizedLocation,
-            worldId: seed.worldId || seed.world?.id || parsed.worldId || '',
-            instanceId: seed.instanceId || seed.id || parsed.instanceId || '',
-            users: Array.isArray(seed.users) ? [...seed.users] : [],
-            friendCount: Number(seed.friendCount || seed.userCount || 0) || 0,
-            ref: seed.ref || seed
-        };
-        byLocation.set(normalizedLocation, row);
-        return row;
-    }
-
-    for (const instance of Array.isArray(baseInstances) ? baseInstances : []) {
-        ensureInstance(instanceLocation(instance), instance);
-    }
-
-    function addUser(user, isFriend = false) {
-        const location = userGroupLocation(user);
-        if (!location) {
-            return;
-        }
-        const parsed = parseLocation(location);
-        if (normalizedGroupId && parsed.groupId !== normalizedGroupId) {
-            return;
-        }
-        const row = ensureInstance(location);
-        const userId = normalizeEntityId(user?.id || user?.userId);
-        if (!row || !userId || row.users.some((existing) => normalizeEntityId(existing?.id || existing?.userId) === userId)) {
-            return;
-        }
-        row.users.push(user);
-        if (isFriend) {
-            row.friendCount = Math.max(row.friendCount || 0, row.users.length);
-        }
-    }
-
-    Object.values(friendsById || {}).forEach((friend) => addUser(friend, true));
-    if (currentUserSnapshot) {
-        addUser(currentUserSnapshot, false);
-    }
-
-    return Array.from(byLocation.values())
-        .map((row) => ({
-            ...row,
-            friendCount: row.friendCount || row.users.length,
-            users: [...row.users].sort((left, right) =>
-                String(left?.displayName || left?.id || '').localeCompare(String(right?.displayName || right?.id || ''))
-            )
-        }))
-        .sort((left, right) => {
-            if (currentLocationKey && left.location === currentLocationKey) {
-                return -1;
-            }
-            if (currentLocationKey && right.location === currentLocationKey) {
-                return 1;
-            }
-            return (right.users.length || right.ref?.userCount || 0) - (left.users.length || left.ref?.userCount || 0);
-        });
-}
+import {
+    mergeGroupInstances,
+    normalizeEntityId
+} from './group-dialog/groupInstances.js';
 
 function GroupDialogEmptyState({ title, description, loading = false }) {
     return (
@@ -136,7 +28,9 @@ function GroupDialogEmptyState({ title, description, loading = false }) {
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
+                <div className="text-sm text-muted-foreground">
+                    {description}
+                </div>
             </div>
         </div>
     );
@@ -144,31 +38,51 @@ function GroupDialogEmptyState({ title, description, loading = false }) {
 
 export function GroupDialogContent({ groupId, seedData = null }) {
     const normalizedGroupId = normalizeEntityId(groupId);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
-    const currentLocation = useRuntimeStore((state) => state.gameState.currentLocation);
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
+    const currentLocation = useRuntimeStore(
+        (state) => state.gameState.currentLocation
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const confirm = useModalStore((state) => state.confirm);
-    const updateEntityDialogMetadata = useDialogStore((state) => state.updateEntityDialogMetadata);
+    const updateEntityDialogMetadata = useDialogStore(
+        (state) => state.updateEntityDialogMetadata
+    );
     const [group, setGroup] = useState(() =>
         seedData ? groupProfileRepository.normalize(seedData) : null
     );
-    const [loadStatus, setLoadStatus] = useState(normalizedGroupId ? 'running' : 'idle');
+    const [loadStatus, setLoadStatus] = useState(
+        normalizedGroupId ? 'running' : 'idle'
+    );
     const [actionStatus, setActionStatus] = useState('idle');
     const [detail, setDetail] = useState('');
     const [previousInstances, setPreviousInstances] = useState([]);
     const [rawActiveInstances, setRawActiveInstances] = useState([]);
     const actionStatusRef = useRef('idle');
-    const activeGroupTargetRef = useRef({ groupId: normalizedGroupId, endpoint: currentEndpoint });
+    const activeGroupTargetRef = useRef({
+        groupId: normalizedGroupId,
+        endpoint: currentEndpoint
+    });
     const activeInstances = useMemo(
-        () => mergeGroupInstances(rawActiveInstances, {
-            groupId: normalizedGroupId,
-            friendsById,
+        () =>
+            mergeGroupInstances(rawActiveInstances, {
+                groupId: normalizedGroupId,
+                friendsById,
+                currentUserSnapshot,
+                currentLocation
+            }),
+        [
+            currentLocation,
             currentUserSnapshot,
-            currentLocation
-        }),
-        [currentLocation, currentUserSnapshot, friendsById, normalizedGroupId, rawActiveInstances]
+            friendsById,
+            normalizedGroupId,
+            rawActiveInstances
+        ]
     );
 
     useEffect(() => {
@@ -176,7 +90,10 @@ export function GroupDialogContent({ groupId, seedData = null }) {
     }, [seedData]);
 
     useEffect(() => {
-        activeGroupTargetRef.current = { groupId: normalizedGroupId, endpoint: currentEndpoint };
+        activeGroupTargetRef.current = {
+            groupId: normalizedGroupId,
+            endpoint: currentEndpoint
+        };
     }, [currentEndpoint, normalizedGroupId]);
 
     useEffect(() => {
@@ -240,7 +157,9 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 setGroup(null);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error ? error.message : 'Failed to load the group profile.'
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load the group profile.'
                 );
             });
 
@@ -259,12 +178,14 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             };
         }
 
-        database.getPreviousInstancesByGroupId(normalizedGroupId)
+        database
+            .getPreviousInstancesByGroupId(normalizedGroupId)
             .then((rows) => {
                 if (!active) {
                     return;
                 }
-                const values = rows instanceof Map ? Array.from(rows.values()) : [];
+                const values =
+                    rows instanceof Map ? Array.from(rows.values()) : [];
                 setPreviousInstances(values);
             })
             .catch(() => {
@@ -288,11 +209,12 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             };
         }
 
-        groupProfileRepository.getGroupInstances({
-            groupId: normalizedGroupId,
-            userId: currentUserId,
-            endpoint: currentEndpoint
-        })
+        groupProfileRepository
+            .getGroupInstances({
+                groupId: normalizedGroupId,
+                userId: currentUserId,
+                endpoint: currentEndpoint
+            })
             .then((response) => {
                 if (!active) {
                     return;
@@ -300,8 +222,8 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 const rows = Array.isArray(response.json)
                     ? response.json
                     : Array.isArray(response.json?.instances)
-                        ? response.json.instances
-                        : [];
+                      ? response.json.instances
+                      : [];
                 setRawActiveInstances(rows);
             })
             .catch(() => {
@@ -329,7 +251,10 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         return (
             <GroupDialogEmptyState
                 title="Group profile unavailable"
-                description={detail || 'VRCX could not resolve a group snapshot for this dialog.'}
+                description={
+                    detail ||
+                    'VRCX could not resolve a group snapshot for this dialog.'
+                }
             />
         );
     }
@@ -342,18 +267,27 @@ export function GroupDialogContent({ groupId, seedData = null }) {
     const isMember = memberStatus === 'member';
     const isBlocked = memberStatus === 'userblocked';
     const isRepresenting = Boolean(group.myMember?.isRepresenting);
-    const isSubscribedToAnnouncements = Boolean(group.myMember?.isSubscribedToAnnouncements);
-    const memberVisibility = normalizeEntityId(group.myMember?.visibility || 'visible') || 'visible';
+    const isSubscribedToAnnouncements = Boolean(
+        group.myMember?.isSubscribedToAnnouncements
+    );
+    const memberVisibility =
+        normalizeEntityId(group.myMember?.visibility || 'visible') || 'visible';
     const joinState = normalizeEntityId(group.joinState).toLowerCase();
     const ownerDisplayName =
-        normalizeEntityId(group.ownerDisplayName || group.ownerName || group.owner?.displayName) ||
+        normalizeEntityId(
+            group.ownerDisplayName ||
+                group.ownerName ||
+                group.owner?.displayName
+        ) ||
         normalizeEntityId(friendsById[group.ownerId]?.displayName) ||
         normalizeEntityId(group.ownerId);
     const canJoin =
         !isMember &&
         memberStatus !== 'requested' &&
         memberStatus !== 'userblocked' &&
-        (joinState === 'open' || joinState === 'request' || memberStatus === 'invited');
+        (joinState === 'open' ||
+            joinState === 'request' ||
+            memberStatus === 'invited');
 
     async function refreshGroupProfile() {
         const nextGroup = await groupProfileRepository.getGroupProfile({
@@ -391,15 +325,23 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 groupId: normalizedGroupId,
                 endpoint: currentEndpoint
             });
-            const nextStatus = normalizeEntityId(response.json?.membershipStatus).toLowerCase();
+            const nextStatus = normalizeEntityId(
+                response.json?.membershipStatus
+            ).toLowerCase();
             await refreshGroupProfile().catch(() => {
                 if (response.json && typeof response.json === 'object') {
                     commitGroupSnapshot(response.json);
                 }
             });
-            toast.success(nextStatus === 'requested' ? 'Group join request sent.' : 'Group joined.');
+            toast.success(
+                nextStatus === 'requested'
+                    ? 'Group join request sent.'
+                    : 'Group joined.'
+            );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to join group.');
+            toast.error(
+                error instanceof Error ? error.message : 'Failed to join group.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -439,7 +381,11 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             });
             toast.success('Group left.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to leave group.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to leave group.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -447,7 +393,10 @@ export function GroupDialogContent({ groupId, seedData = null }) {
     }
 
     async function cancelJoinRequest() {
-        if (memberStatus !== 'requested' || actionStatusRef.current !== 'idle') {
+        if (
+            memberStatus !== 'requested' ||
+            actionStatusRef.current !== 'idle'
+        ) {
             return;
         }
 
@@ -461,7 +410,11 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             await refreshGroupProfile();
             toast.success('Group join request cancelled.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to cancel group join request.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to cancel group join request.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -479,7 +432,11 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             await refreshGroupProfile();
             toast.success('Group refreshed.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to refresh group.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to refresh group.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -500,9 +457,15 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 endpoint: currentEndpoint
             });
             await refreshGroupProfile();
-            toast.success(enabled ? 'Group represented.' : 'Group unrepresented.');
+            toast.success(
+                enabled ? 'Group represented.' : 'Group unrepresented.'
+            );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update group representation.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update group representation.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -526,7 +489,11 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             await refreshGroupProfile();
             toast.success(label);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update group member settings.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update group member settings.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -567,7 +534,11 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             await refreshGroupProfile();
             toast.success(enabled ? 'Group blocked.' : 'Group unblocked.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update group block state.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update group block state.'
+            );
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -598,11 +569,22 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             onLeave={() => void leaveGroup()}
             onCancelRequest={() => void cancelJoinRequest()}
             onRepresent={(enabled) => void updateGroupRepresentation(enabled)}
-            onSubscribe={(enabled) => void updateGroupMemberProps({ isSubscribedToAnnouncements: enabled }, enabled ? 'Subscribed to announcements.' : 'Unsubscribed from announcements.')}
-            onVisibility={(visibility) => void updateGroupMemberProps({ visibility }, 'Group visibility updated.')}
+            onSubscribe={(enabled) =>
+                void updateGroupMemberProps(
+                    { isSubscribedToAnnouncements: enabled },
+                    enabled
+                        ? 'Subscribed to announcements.'
+                        : 'Unsubscribed from announcements.'
+                )
+            }
+            onVisibility={(visibility) =>
+                void updateGroupMemberProps(
+                    { visibility },
+                    'Group visibility updated.'
+                )
+            }
             onBlock={(enabled) => void updateGroupBlock(enabled)}
             onOpenPage={() => openExternalLink(group.url)}
         />
     );
-
 }

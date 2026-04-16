@@ -189,37 +189,36 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
                         variant="ghost"
                         className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal"
                         onClick={() => openGroupDialog({ groupId, title: name, seedData: instance?.group || instance })}>
-                            <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
-                                {iconUrl ? (
-                                    <img src={iconUrl} alt="" className="size-full object-cover" />
+                        <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+                            {iconUrl ? (
+                                <img src={iconUrl} alt="" className="size-full object-cover" />
+                            ) : (
+                                <UsersIcon data-icon="inline-start" className="text-muted-foreground" />
+                            )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium leading-5">
+                                {name}
+                                {userCount !== '' || capacity !== '' ? (
+                                    <span className="ml-1 font-normal">
+                                        ({userCount || '?'}/{capacity || '?'})
+                                    </span>
+                                ) : null}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                                {location ? (
+                                    <Location
+                                        location={location}
+                                        hint={worldHint}
+                                        link={false}
+                                        asButton={false}
+                                        showGroupLink={false}
+                                    />
                                 ) : (
-                                    <UsersIcon data-icon="inline-start" className="text-muted-foreground" />
+                                    groupId
                                 )}
                             </span>
-                            <span className="min-w-0 flex-1">
-                                <span className="block truncate font-medium leading-5">
-                                    {name}
-                                    {userCount !== '' || capacity !== '' ? (
-                                        <span className="ml-1 font-normal">
-                                            ({userCount || '?'}/{capacity || '?'})
-                                        </span>
-                                    ) : null}
-                                </span>
-                                <span className="block truncate text-xs text-muted-foreground">
-                                    {location ? (
-                                        <Location
-                                            location={location}
-                                            hint={worldHint}
-                                            grouphint={name}
-                                            link={false}
-                                            stopPropagation
-                                            asButton={false}
-                                        />
-                                    ) : (
-                                        groupId
-                                    )}
-                                </span>
-                            </span>
+                        </span>
                     </Button>
                 </div>
             </ContextMenuTrigger>

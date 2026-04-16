@@ -26,7 +26,6 @@ import { openUserDialog } from '@/services/dialogService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { withUploadTimeout } from '@/shared/utils/imageUpload.js';
-import { parseVrchatScreenshotDateFromFileName } from '@/shared/utils/screenshot.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -54,184 +53,17 @@ import {
     TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
-
-const searchTypes = [
-    {
-        value: 'Player Name',
-        index: 0,
-        labelKey: 'dialog.screenshot_metadata.search_types.player_name'
-    },
-    {
-        value: 'Player ID',
-        index: 1,
-        labelKey: 'dialog.screenshot_metadata.search_types.player_id'
-    },
-    {
-        value: 'World Name',
-        index: 2,
-        labelKey: 'dialog.screenshot_metadata.search_types.world_name'
-    },
-    {
-        value: 'World ID',
-        index: 3,
-        labelKey: 'dialog.screenshot_metadata.search_types.world_id'
-    }
-];
-
-const DEFAULT_SEARCH_SORT = {
-    key: 'dateTime',
-    asc: false
-};
-
-function normalizeDroppedFilePath(value) {
-    const text = String(value || '')
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .find(Boolean);
-
-    if (!text) {
-        return '';
-    }
-
-    if (text.startsWith('file://')) {
-        try {
-            const url = new URL(text);
-            const pathname = decodeURIComponent(url.pathname);
-            return /^[A-Za-z]:/.test(pathname.slice(1)) ? pathname.slice(1) : pathname;
-        } catch {
-            return text;
-        }
-    }
-
-    return text;
-}
-
-function getDroppedScreenshotPath(event) {
-    const file = event.dataTransfer?.files?.[0] || null;
-    const filePath = file?.path || file?.webkitRelativePath || '';
-    if (filePath) {
-        return filePath;
-    }
-
-    return normalizeDroppedFilePath(
-        event.dataTransfer?.getData('text/uri-list') ||
-            event.dataTransfer?.getData('text/plain') ||
-            ''
-    );
-}
-
-function getSearchSortValue(row, key) {
-    if (key === 'dateTime') {
-        return row?.dateTime?.getTime?.() ?? 0;
-    }
-    if (key === 'playerCount') {
-        return Number(row?.playerCount) || 0;
-    }
-    return String(row?.[key] || '').toLowerCase();
-}
-
-function sortScreenshotSearchRows(rows, sort) {
-    const sortKey = sort?.key || DEFAULT_SEARCH_SORT.key;
-    const direction = sort?.asc ? 1 : -1;
-    return [...rows].sort((left, right) => {
-        const leftValue = getSearchSortValue(left, sortKey);
-        const rightValue = getSearchSortValue(right, sortKey);
-        if (leftValue < rightValue) {
-            return -1 * direction;
-        }
-        if (leftValue > rightValue) {
-            return 1 * direction;
-        }
-        const leftTime = left?.dateTime?.getTime?.() ?? 0;
-        const rightTime = right?.dateTime?.getTime?.() ?? 0;
-        return rightTime - leftTime;
-    });
-}
-
-function formatBytes(bytes) {
-    if (!Number.isFinite(bytes) || bytes <= 0) {
-        return '';
-    }
-
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let size = bytes;
-    let unitIndex = 0;
-
-    while (size >= 1024 && unitIndex < units.length - 1) {
-        size /= 1024;
-        unitIndex += 1;
-    }
-
-    const precision = size >= 100 || unitIndex === 0 ? 0 : 1;
-    return `${size.toFixed(precision)} ${units[unitIndex]}`;
-}
-
-function formatDateTime(value) {
-    if (!value) {
-        return '—';
-    }
-
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return '—';
-    }
-
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-    }).format(date);
-}
-
-function getFileNameFromPath(path) {
-    return String(path || '')
-        .split(/[\\/]/)
-        .filter(Boolean)
-        .at(-1) || '';
-}
-
-function resolveMetadataDate(metadata, extra, fileName) {
-    if (metadata?.timestamp) {
-        const parsed = Date.parse(metadata.timestamp);
-        if (Number.isFinite(parsed)) {
-            return new Date(parsed);
-        }
-    }
-
-    const fileNameTimestamp = parseVrchatScreenshotDateFromFileName(fileName);
-    if (Number.isFinite(fileNameTimestamp)) {
-        return new Date(fileNameTimestamp);
-    }
-
-    if (extra?.creationDate) {
-        const parsed = Date.parse(extra.creationDate);
-        if (Number.isFinite(parsed)) {
-            return new Date(parsed);
-        }
-    }
-
-    return null;
-}
-
-function normalizeMetadata(metadata, extra) {
-    const fileName =
-        extra?.fileName || getFileNameFromPath(extra?.filePath || metadata?.sourceFile);
-    const dateTime = resolveMetadataDate(metadata, extra, fileName);
-
-    return {
-        filePath: extra?.filePath || metadata?.sourceFile || '',
-        fileName,
-        previousFilePath: extra?.previousFilePath || '',
-        nextFilePath: extra?.nextFilePath || '',
-        resolution: extra?.resolution || '',
-        fileSizeBytes: extra?.fileSizeBytes ?? 0,
-        dateTime,
-        world: metadata?.world ?? {},
-        author: metadata?.author ?? {},
-        players: Array.isArray(metadata?.players) ? metadata.players : [],
-        note: metadata?.note || '',
-        application: metadata?.application || ''
-    };
-}
+import {
+    buildScreenshotSearchRow,
+    DEFAULT_SCREENSHOT_SEARCH_SORT,
+    formatScreenshotBytes,
+    formatScreenshotDateTime,
+    getDroppedScreenshotPath,
+    normalizeScreenshotMetadata,
+    SCREENSHOT_METADATA_SEARCH_TYPES,
+    sortScreenshotRowsByNewest,
+    sortScreenshotSearchRows
+} from './screenshotMetadataValues.js';
 
 function EmptyState({ title, description, loading = false }) {
     return (
@@ -332,10 +164,10 @@ export function ScreenshotMetadataPage() {
     const metadataRequestRef = useRef(0);
     const searchRequestRef = useRef(0);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchType, setSearchType] = useState(searchTypes[0].value);
+    const [searchType, setSearchType] = useState(SCREENSHOT_METADATA_SEARCH_TYPES[0].value);
     const [searchRows, setSearchRows] = useState([]);
     const [searchViewMode, setSearchViewMode] = useState('detail');
-    const [searchSort, setSearchSort] = useState(DEFAULT_SEARCH_SORT);
+    const [searchSort, setSearchSort] = useState(DEFAULT_SCREENSHOT_SEARCH_SORT);
     const [selectedPath, setSelectedPath] = useState('');
     const [metadata, setMetadata] = useState(null);
     const [metadataError, setMetadataError] = useState('');
@@ -346,7 +178,7 @@ export function ScreenshotMetadataPage() {
     const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
 
     const currentSearchType = useMemo(
-        () => searchTypes.find((type) => type.value === searchType) ?? searchTypes[0],
+        () => SCREENSHOT_METADATA_SEARCH_TYPES.find((type) => type.value === searchType) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0],
         [searchType]
     );
 
@@ -412,7 +244,7 @@ export function ScreenshotMetadataPage() {
                 return;
             }
 
-            const nextMetadata = normalizeMetadata(rawMetadata, extra);
+            const nextMetadata = normalizeScreenshotMetadata(rawMetadata, extra);
             imageVersionRef.current += 1;
 
             setMetadata(nextMetadata);
@@ -599,7 +431,7 @@ export function ScreenshotMetadataPage() {
     async function runSearch(nextSearchType = searchType, nextSearchQuery = searchQuery) {
         const query = nextSearchQuery.trim();
         const selectedSearchType =
-            searchTypes.find((type) => type.value === nextSearchType) ?? searchTypes[0];
+            SCREENSHOT_METADATA_SEARCH_TYPES.find((type) => type.value === nextSearchType) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0];
 
         if (!query) {
             searchRequestRef.current += 1;
@@ -639,34 +471,8 @@ export function ScreenshotMetadataPage() {
                             mediaRepository.getScreenshotMetadata(path),
                             mediaRepository.getExtraScreenshotData(path, false)
                         ]);
-                        const normalized = normalizeMetadata(rawMetadata ?? {}, extra ?? {});
-
-                        let match = '';
-                        if (selectedSearchType.index === 0) {
-                            const hits = normalized.players
-                                .filter((player) =>
-                                    String(player.displayName || '')
-                                        .toLowerCase()
-                                        .includes(query.toLowerCase())
-                                )
-                                .map((player) => player.displayName);
-                            match = hits.join(', ');
-                        } else if (selectedSearchType.index === 1) {
-                            match =
-                                normalized.players.find((player) => player.id === query)
-                                    ?.displayName || '';
-                        }
-
-                        return {
-                            filePath: normalized.filePath,
-                            dateTime: normalized.dateTime,
-                            dateLabel: formatDateTime(normalized.dateTime),
-                            world: normalized.world?.name || '—',
-                            author: normalized.author?.displayName || '—',
-                            playerCount: normalized.players.length,
-                            resolution: normalized.resolution || '—',
-                            match: match || '—'
-                        };
+                        const normalized = normalizeScreenshotMetadata(rawMetadata ?? {}, extra ?? {});
+                        return buildScreenshotSearchRow(normalized, selectedSearchType, query);
                     } catch (error) {
                         console.error('Failed to enrich screenshot search result:', path, error);
                         return null;
@@ -678,11 +484,7 @@ export function ScreenshotMetadataPage() {
                 return;
             }
 
-            const nextRows = rows.filter(Boolean).sort((left, right) => {
-                const leftTime = left?.dateTime?.getTime?.() ?? 0;
-                const rightTime = right?.dateTime?.getTime?.() ?? 0;
-                return rightTime - leftTime;
-            });
+            const nextRows = sortScreenshotRowsByNewest(rows);
 
             setSearchRows(nextRows);
             setMetadataError('');
@@ -862,7 +664,7 @@ export function ScreenshotMetadataPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    {searchTypes.map((type) => (
+                                    {SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => (
                                         <SelectItem key={type.value} value={type.value}>
                                             {t(type.labelKey)}
                                         </SelectItem>
@@ -1140,9 +942,9 @@ export function ScreenshotMetadataPage() {
                                     <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
                                         {t('dialog.screenshot_metadata.section_file_info')}
                                     </div>
-                                    <div className="text-sm">{formatDateTime(metadata.dateTime)}</div>
+                                    <div className="text-sm">{formatScreenshotDateTime(metadata.dateTime)}</div>
                                     <div className="text-sm text-muted-foreground">
-                                        {[metadata.resolution, formatBytes(metadata.fileSizeBytes)]
+                                        {[metadata.resolution, formatScreenshotBytes(metadata.fileSizeBytes)]
                                             .filter(Boolean)
                                             .join(' · ') || '—'}
                                     </div>

@@ -41,22 +41,28 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Slider } from '@/ui/shadcn/slider';
 import { Spinner } from '@/ui/shadcn/spinner';
+import {
+    buildMutualFriendsBaseGraph,
+    filterMutualFriendsGraph
+} from './mutual-friends/mutualFriendsGraphData.js';
+import {
+    buildMutualFriendExcludePickerOptions,
+    buildMutualFriendNodePickerOptions,
+    filterMutualFriendPickerOptions,
+    truncateMutualFriendLabel
+} from './mutual-friends/mutualFriendsPicker.js';
+import {
+    clampMutualGraphNumber,
+    isValidMutualFriendId,
+    MUTUAL_GRAPH_LAYOUT_DEFAULTS,
+    MUTUAL_GRAPH_LAYOUT_LIMITS,
+    normalizeExcludedMutualFriendIds,
+    normalizeMutualFriendId,
+    readExcludedMutualFriendIds,
+    writeExcludedMutualFriendIds
+} from './mutual-friends/mutualFriendsSettings.js';
 import GraphLayoutWorker from './graphLayoutWorker.js?worker&inline';
 
-const LAYOUT_ITERATIONS_MIN = 300;
-const LAYOUT_ITERATIONS_MAX = 1500;
-const LAYOUT_SPACING_MIN = 8;
-const LAYOUT_SPACING_MAX = 240;
-const EDGE_CURVATURE_MIN = 0;
-const EDGE_CURVATURE_MAX = 0.2;
-const COMMUNITY_SEPARATION_MIN = 0;
-const COMMUNITY_SEPARATION_MAX = 3;
-const LAYOUT_DEFAULTS = {
-    layoutIterations: 800,
-    layoutSpacing: 60,
-    edgeCurvature: 0.1,
-    communitySeparation: 0
-};
 const COLORS_PALETTE = [
     '#5470c6',
     '#91cc75',
@@ -75,48 +81,12 @@ const NodeBorderProgram = createNodeBorderProgram({
         { size: { fill: true }, color: { attribute: 'color' } }
     ]
 });
-
-const EXCLUDED_FRIENDS_KEY = 'VRCX_MutualGraphExcludedFriends';
-const EMPTY_USER_ID = 'usr_00000000-0000-0000-0000-000000000000';
-const PICKER_RESULT_LIMIT = 120;
-
-function readExcludedFriendIds() {
-    try {
-        const value = localStorage.getItem(EXCLUDED_FRIENDS_KEY);
-        const parsed = value ? JSON.parse(value) : [];
-        return Array.isArray(parsed) ? parsed.map(normalizeId).filter(Boolean) : [];
-    } catch {
-        return [];
-    }
-}
-
-function writeExcludedFriendIds(value) {
-    try {
-        localStorage.setItem(
-            EXCLUDED_FRIENDS_KEY,
-            JSON.stringify(Array.isArray(value) ? value.map(normalizeId).filter(Boolean) : [])
-        );
-    } catch {
-        // localStorage may be unavailable; excluded friends are optional state.
-    }
-}
-
-function clampNumber(value, min, max, fallback) {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) {
-        return fallback;
-    }
-    return Math.min(max, Math.max(min, parsed));
-}
-
-function normalizeId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function isValidMutualIdentifier(value) {
-    const identifier = normalizeId(value);
-    return Boolean(identifier && identifier !== EMPTY_USER_ID);
-}
+const {
+    layoutIterations: LAYOUT_ITERATIONS_LIMITS,
+    layoutSpacing: LAYOUT_SPACING_LIMITS,
+    edgeCurvature: EDGE_CURVATURE_LIMITS,
+    communitySeparation: COMMUNITY_SEPARATION_LIMITS
+} = MUTUAL_GRAPH_LAYOUT_LIMITS;
 
 async function fetchMutualFriendIds(friendId, { rateLimiter = null, isCancelled = () => false } = {}) {
     const collected = [];
@@ -162,7 +132,7 @@ async function fetchMutualFriendIds(friendId, { rateLimiter = null, isCancelled 
         }
 
         const page = Array.isArray(response.json) ? response.json : [];
-        collected.push(...page.map((entry) => entry?.id).filter(isValidMutualIdentifier));
+        collected.push(...page.map((entry) => entry?.id).filter(isValidMutualFriendId));
 
         if (page.length < 100) {
             break;
@@ -171,56 +141,6 @@ async function fetchMutualFriendIds(friendId, { rateLimiter = null, isCancelled 
     }
 
     return collected;
-}
-
-function truncateLabel(value, maxLength = 18) {
-    const text = String(value || '');
-    return text.length <= maxLength ? text : `${text.slice(0, Math.max(0, maxLength - 1))}…`;
-}
-
-function pickerOptionMatches(option, query) {
-    const normalizedQuery = String(query || '').trim().toLowerCase();
-    if (!normalizedQuery) {
-        return true;
-    }
-    const text = [
-        option?.label,
-        option?.displayLabel,
-        option?.value,
-        option?.search,
-        option?.user?.displayName,
-        option?.user?.username
-    ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-    return normalizedQuery
-        .split(/\s+/)
-        .filter(Boolean)
-        .every((token) => text.includes(token));
-}
-
-function filterPickerOptions(options, query, limit = PICKER_RESULT_LIMIT) {
-    return (Array.isArray(options) ? options : [])
-        .filter((option) => pickerOptionMatches(option, query))
-        .slice(0, limit);
-}
-
-function buildPickerOption(userId, friendsById, fallbackName = '', degree = null) {
-    const normalizedId = normalizeId(userId);
-    if (!isValidMutualIdentifier(normalizedId)) {
-        return null;
-    }
-    const user = friendsById[normalizedId] || null;
-    const label = user?.displayName || user?.username || fallbackName || 'User';
-    return {
-        value: normalizedId,
-        label,
-        displayLabel: Number.isFinite(degree) ? `${label} (${degree})` : label,
-        search: `${label} ${normalizedId}`,
-        user,
-        degree
-    };
 }
 
 function UserPickerRow({ option, selected = false, multiple = false, showSelection = true }) {
@@ -288,95 +208,6 @@ function GraphEmptyState({ title, description }) {
     );
 }
 
-function createBaseGraph(snapshot, meta, friendsById, excludedFriendIds = []) {
-    const nodeMap = new Map();
-    const edgeMap = new Map();
-    const excluded = new Set((excludedFriendIds || []).map(normalizeId).filter(Boolean));
-
-    function ensureNode(id) {
-        const normalizedId = normalizeId(id);
-        if (!isValidMutualIdentifier(normalizedId) || excluded.has(normalizedId)) {
-            return null;
-        }
-        if (!nodeMap.has(normalizedId)) {
-            const friend = friendsById[normalizedId];
-            const metadata = meta.get(normalizedId) || { lastFetchedAt: null, optedOut: false };
-            nodeMap.set(normalizedId, {
-                id: normalizedId,
-                label: friend?.displayName || friend?.username || normalizedId,
-                lastFetchedAt: metadata.lastFetchedAt || null,
-                optedOut: Boolean(metadata.optedOut),
-                degree: 0
-            });
-        }
-        return nodeMap.get(normalizedId);
-    }
-
-    snapshot.forEach((mutualIds, friendId) => {
-        const source = ensureNode(friendId);
-        if (!source) {
-            return;
-        }
-        for (const mutualId of Array.isArray(mutualIds) ? mutualIds : []) {
-            const target = ensureNode(mutualId);
-            if (!target || target.id === source.id) {
-                continue;
-            }
-            edgeMap.set([source.id, target.id].sort().join('__'), {
-                source: source.id,
-                target: target.id
-            });
-        }
-    });
-
-    for (const edge of edgeMap.values()) {
-        const source = nodeMap.get(edge.source);
-        const target = nodeMap.get(edge.target);
-        if (source) source.degree += 1;
-        if (target) target.degree += 1;
-    }
-
-    return {
-        nodes: Array.from(nodeMap.values()).sort((left, right) => right.degree - left.degree),
-        links: Array.from(edgeMap.values())
-    };
-}
-
-function filterGraph(baseGraph, searchQuery) {
-    const query = String(searchQuery || '').trim().toLowerCase();
-    if (!query) {
-        return baseGraph;
-    }
-
-    const matchedIds = new Set(
-        baseGraph.nodes
-            .filter(
-                (node) =>
-                    node.label.toLowerCase().includes(query) ||
-                    node.id.toLowerCase().includes(query)
-            )
-            .map((node) => node.id)
-    );
-    if (!matchedIds.size) {
-        return { nodes: [], links: [] };
-    }
-
-    const includedIds = new Set(matchedIds);
-    const links = [];
-    for (const link of baseGraph.links) {
-        if (matchedIds.has(link.source) || matchedIds.has(link.target)) {
-            includedIds.add(link.source);
-            includedIds.add(link.target);
-            links.push(link);
-        }
-    }
-
-    return {
-        nodes: baseGraph.nodes.filter((node) => includedIds.has(node.id)),
-        links
-    };
-}
-
 function serializeGraph(graph) {
     return {
         nodes: graph.nodes().map((id) => ({
@@ -428,7 +259,12 @@ function applyLayoutPositions(graph, positions) {
 }
 
 function applyEdgeCurvature(graph, layoutSettings) {
-    const curvature = clampNumber(layoutSettings.edgeCurvature, EDGE_CURVATURE_MIN, EDGE_CURVATURE_MAX);
+    const curvature = clampMutualGraphNumber(
+        layoutSettings.edgeCurvature,
+        EDGE_CURVATURE_LIMITS.min,
+        EDGE_CURVATURE_LIMITS.max,
+        MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature
+    );
     const type = curvature > 0 ? 'curve' : 'line';
     graph.forEachEdge((edge) => {
         graph.mergeEdgeAttributes(edge, { curvature, type });
@@ -451,7 +287,12 @@ function assignCommunitiesAndColors(graph) {
 }
 
 function applyCommunitySeparation(graph, layoutSettings) {
-    const separation = clampNumber(layoutSettings.communitySeparation, COMMUNITY_SEPARATION_MIN, COMMUNITY_SEPARATION_MAX);
+    const separation = clampMutualGraphNumber(
+        layoutSettings.communitySeparation,
+        COMMUNITY_SEPARATION_LIMITS.min,
+        COMMUNITY_SEPARATION_LIMITS.max,
+        MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation
+    );
     if (separation <= 0) {
         return;
     }
@@ -728,7 +569,7 @@ async function buildSigmaGraph({ nodes, links, layoutSettings, selectedNodeId })
         const degree = Number(node.degree) || 0;
         const isSelected = node.id === selectedNodeId;
         graph.addNode(node.id, {
-            label: truncateLabel(node.label, 20),
+            label: truncateMutualFriendLabel(node.label, 20),
             fullLabel: node.label,
             size: (4 + (maxDegree ? (degree / maxDegree) * 18 : 0)) * (isSelected ? 1.35 : 1),
             degree,
@@ -785,13 +626,13 @@ export function MutualFriendsPage() {
     const [status, setStatus] = useState('idle');
     const [detail, setDetail] = useState('');
     const [snapshotData, setSnapshotData] = useState({ snapshot: new Map(), meta: new Map() });
-    const [layoutSettings, setLayoutSettings] = useState(LAYOUT_DEFAULTS);
+    const [layoutSettings, setLayoutSettings] = useState(MUTUAL_GRAPH_LAYOUT_DEFAULTS);
     const searchQuery = '';
     const [nodePickerOpen, setNodePickerOpen] = useState(false);
     const [nodeSearchQuery, setNodeSearchQuery] = useState('');
     const [excludeSearchQuery, setExcludeSearchQuery] = useState('');
     const [selectedNodeId, setSelectedNodeId] = useState('');
-    const [excludedFriendIds, setExcludedFriendIds] = useState(readExcludedFriendIds);
+    const [excludedFriendIds, setExcludedFriendIds] = useState(readExcludedMutualFriendIds);
     const [fetchProgress, setFetchProgress] = useState({
         isFetching: false,
         processedFriends: 0,
@@ -826,10 +667,10 @@ export function MutualFriendsPage() {
         let active = true;
 
         Promise.all([
-            configRepository.getInt('MutualGraphLayoutIterations', LAYOUT_DEFAULTS.layoutIterations),
-            configRepository.getInt('MutualGraphLayoutSpacing', LAYOUT_DEFAULTS.layoutSpacing),
-            configRepository.getFloat('MutualGraphEdgeCurvature', LAYOUT_DEFAULTS.edgeCurvature),
-            configRepository.getFloat('MutualGraphCommunitySeparation', LAYOUT_DEFAULTS.communitySeparation)
+            configRepository.getInt('MutualGraphLayoutIterations', MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutIterations),
+            configRepository.getInt('MutualGraphLayoutSpacing', MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutSpacing),
+            configRepository.getFloat('MutualGraphEdgeCurvature', MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature),
+            configRepository.getFloat('MutualGraphCommunitySeparation', MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation)
         ])
             .then(([iterations, spacing, curvature, separation]) => {
                 if (!active) {
@@ -837,10 +678,30 @@ export function MutualFriendsPage() {
                 }
 
                 setLayoutSettings({
-                    layoutIterations: clampNumber(iterations, LAYOUT_ITERATIONS_MIN, LAYOUT_ITERATIONS_MAX, LAYOUT_DEFAULTS.layoutIterations),
-                    layoutSpacing: clampNumber(spacing, LAYOUT_SPACING_MIN, LAYOUT_SPACING_MAX, LAYOUT_DEFAULTS.layoutSpacing),
-                    edgeCurvature: clampNumber(curvature, EDGE_CURVATURE_MIN, EDGE_CURVATURE_MAX, LAYOUT_DEFAULTS.edgeCurvature),
-                    communitySeparation: clampNumber(separation, COMMUNITY_SEPARATION_MIN, COMMUNITY_SEPARATION_MAX, LAYOUT_DEFAULTS.communitySeparation)
+                    layoutIterations: clampMutualGraphNumber(
+                        iterations,
+                        LAYOUT_ITERATIONS_LIMITS.min,
+                        LAYOUT_ITERATIONS_LIMITS.max,
+                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutIterations
+                    ),
+                    layoutSpacing: clampMutualGraphNumber(
+                        spacing,
+                        LAYOUT_SPACING_LIMITS.min,
+                        LAYOUT_SPACING_LIMITS.max,
+                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutSpacing
+                    ),
+                    edgeCurvature: clampMutualGraphNumber(
+                        curvature,
+                        EDGE_CURVATURE_LIMITS.min,
+                        EDGE_CURVATURE_LIMITS.max,
+                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature
+                    ),
+                    communitySeparation: clampMutualGraphNumber(
+                        separation,
+                        COMMUNITY_SEPARATION_LIMITS.min,
+                        COMMUNITY_SEPARATION_LIMITS.max,
+                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation
+                    )
                 });
             })
             .catch(() => {});
@@ -895,7 +756,7 @@ export function MutualFriendsPage() {
     }, [currentUserId, reloadToken]);
 
     useEffect(() => {
-        writeExcludedFriendIds(excludedFriendIds);
+        writeExcludedMutualFriendIds(excludedFriendIds);
     }, [excludedFriendIds]);
 
     useEffect(() => {
@@ -909,70 +770,37 @@ export function MutualFriendsPage() {
     }, []);
 
     const baseGraph = useMemo(
-        () => createBaseGraph(snapshotData.snapshot, snapshotData.meta, friendsById, excludedFriendIds),
+        () => buildMutualFriendsBaseGraph(snapshotData.snapshot, snapshotData.meta, friendsById, excludedFriendIds),
         [excludedFriendIds, friendsById, snapshotData.meta, snapshotData.snapshot]
     );
 
     const filteredGraph = useMemo(
-        () => filterGraph(baseGraph, searchQuery),
+        () => filterMutualFriendsGraph(baseGraph, searchQuery),
         [baseGraph, searchQuery]
     );
 
     const nodeOptions = useMemo(
-        () =>
-            baseGraph.nodes
-                .slice()
-                .sort((left, right) => left.label.localeCompare(right.label))
-                .map((node) =>
-                    buildPickerOption(node.id, friendsById, node.label, node.degree)
-                )
-                .filter(Boolean),
+        () => buildMutualFriendNodePickerOptions(baseGraph.nodes, friendsById),
         [baseGraph.nodes, friendsById]
     );
 
-    const excludePickerOptions = useMemo(() => {
-        const seen = new Set();
-        const items = [];
-
-        function pushOption(userId, fallbackName = '') {
-            const normalizedId = normalizeId(userId);
-            if (
-                !isValidMutualIdentifier(normalizedId) ||
-                normalizedId === currentUserId ||
-                seen.has(normalizedId)
-            ) {
-                return;
-            }
-            const option = buildPickerOption(normalizedId, friendsById, fallbackName);
-            if (option) {
-                seen.add(normalizedId);
-                items.push(option);
-            }
-        }
-
-        snapshotData.snapshot.forEach((mutualIds, friendId) => {
-            pushOption(friendId);
-            for (const mutualId of Array.isArray(mutualIds) ? mutualIds : []) {
-                pushOption(mutualId);
-            }
-        });
-
-        return items.sort((left, right) => left.label.localeCompare(right.label));
-    }, [currentUserId, friendsById, snapshotData.snapshot]
+    const excludePickerOptions = useMemo(
+        () => buildMutualFriendExcludePickerOptions(snapshotData.snapshot, friendsById, currentUserId),
+        [currentUserId, friendsById, snapshotData.snapshot]
     );
 
     const filteredNodeOptions = useMemo(
-        () => filterPickerOptions(nodeOptions, nodeSearchQuery),
+        () => filterMutualFriendPickerOptions(nodeOptions, nodeSearchQuery),
         [nodeOptions, nodeSearchQuery]
     );
 
     const excludedFriendIdSet = useMemo(
-        () => new Set(excludedFriendIds.map(normalizeId).filter(Boolean)),
+        () => new Set(normalizeExcludedMutualFriendIds(excludedFriendIds)),
         [excludedFriendIds]
     );
 
     const filteredExcludeOptions = useMemo(
-        () => filterPickerOptions(excludePickerOptions, excludeSearchQuery),
+        () => filterMutualFriendPickerOptions(excludePickerOptions, excludeSearchQuery),
         [excludePickerOptions, excludeSearchQuery]
     );
 
@@ -1236,7 +1064,7 @@ export function MutualFriendsPage() {
     }
 
     function selectNode(friendId) {
-        const nextValue = normalizeId(friendId);
+        const nextValue = normalizeMutualFriendId(friendId);
         selectedNodeIdRef.current = nextValue;
         setSelectedNodeId(nextValue);
         const sigma = chartInstanceRef.current;
@@ -1256,12 +1084,12 @@ export function MutualFriendsPage() {
     }
 
     function toggleExcludedFriendId(friendId) {
-        const normalizedId = normalizeId(friendId);
+        const normalizedId = normalizeMutualFriendId(friendId);
         if (!normalizedId) {
             return;
         }
         setExcludedFriendIds((current) => {
-            const normalizedCurrent = current.map(normalizeId).filter(Boolean);
+            const normalizedCurrent = normalizeExcludedMutualFriendIds(current);
             if (normalizedCurrent.includes(normalizedId)) {
                 return normalizedCurrent.filter((id) => id !== normalizedId);
             }
@@ -1321,12 +1149,12 @@ export function MutualFriendsPage() {
     }
 
     function handleResetLayoutAndHidden() {
-        setLayoutSettings(LAYOUT_DEFAULTS);
+        setLayoutSettings(MUTUAL_GRAPH_LAYOUT_DEFAULTS);
         setExcludedFriendIds([]);
-        void configRepository.setInt('MutualGraphLayoutIterations', LAYOUT_DEFAULTS.layoutIterations);
-        void configRepository.setInt('MutualGraphLayoutSpacing', LAYOUT_DEFAULTS.layoutSpacing);
-        void configRepository.setFloat('MutualGraphEdgeCurvature', LAYOUT_DEFAULTS.edgeCurvature);
-        void configRepository.setFloat('MutualGraphCommunitySeparation', LAYOUT_DEFAULTS.communitySeparation);
+        void configRepository.setInt('MutualGraphLayoutIterations', MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutIterations);
+        void configRepository.setInt('MutualGraphLayoutSpacing', MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutSpacing);
+        void configRepository.setFloat('MutualGraphEdgeCurvature', MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature);
+        void configRepository.setFloat('MutualGraphCommunitySeparation', MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation);
     }
 
     return (
@@ -1471,12 +1299,17 @@ export function MutualFriendsPage() {
                                             <span className="tabular-nums text-muted-foreground">{layoutSettings.layoutIterations}</span>
                                         </div>
                                         <Slider
-                                            min={LAYOUT_ITERATIONS_MIN}
-                                            max={LAYOUT_ITERATIONS_MAX}
+                                            min={LAYOUT_ITERATIONS_LIMITS.min}
+                                            max={LAYOUT_ITERATIONS_LIMITS.max}
                                             step={100}
                                             value={[layoutSettings.layoutIterations]}
                                             onValueChange={([value]) => {
-                                                const nextValue = clampNumber(value, LAYOUT_ITERATIONS_MIN, LAYOUT_ITERATIONS_MAX, LAYOUT_DEFAULTS.layoutIterations);
+                                                const nextValue = clampMutualGraphNumber(
+                                                    value,
+                                                    LAYOUT_ITERATIONS_LIMITS.min,
+                                                    LAYOUT_ITERATIONS_LIMITS.max,
+                                                    MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutIterations
+                                                );
                                                 setLayoutSettings((current) => ({ ...current, layoutIterations: nextValue }));
                                                 void configRepository.setInt('MutualGraphLayoutIterations', nextValue);
                                             }}
@@ -1488,12 +1321,17 @@ export function MutualFriendsPage() {
                                             <span className="tabular-nums text-muted-foreground">{layoutSettings.layoutSpacing}</span>
                                         </div>
                                         <Slider
-                                            min={LAYOUT_SPACING_MIN}
-                                            max={LAYOUT_SPACING_MAX}
+                                            min={LAYOUT_SPACING_LIMITS.min}
+                                            max={LAYOUT_SPACING_LIMITS.max}
                                             step={1}
                                             value={[layoutSettings.layoutSpacing]}
                                             onValueChange={([value]) => {
-                                                const nextValue = clampNumber(value, LAYOUT_SPACING_MIN, LAYOUT_SPACING_MAX, LAYOUT_DEFAULTS.layoutSpacing);
+                                                const nextValue = clampMutualGraphNumber(
+                                                    value,
+                                                    LAYOUT_SPACING_LIMITS.min,
+                                                    LAYOUT_SPACING_LIMITS.max,
+                                                    MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutSpacing
+                                                );
                                                 setLayoutSettings((current) => ({ ...current, layoutSpacing: nextValue }));
                                                 void configRepository.setInt('MutualGraphLayoutSpacing', nextValue);
                                             }}
@@ -1505,12 +1343,17 @@ export function MutualFriendsPage() {
                                             <span className="tabular-nums text-muted-foreground">{layoutSettings.edgeCurvature.toFixed(2)}</span>
                                         </div>
                                         <Slider
-                                            min={EDGE_CURVATURE_MIN}
-                                            max={EDGE_CURVATURE_MAX}
+                                            min={EDGE_CURVATURE_LIMITS.min}
+                                            max={EDGE_CURVATURE_LIMITS.max}
                                             step={0.01}
                                             value={[layoutSettings.edgeCurvature]}
                                             onValueChange={([value]) => {
-                                                const nextValue = clampNumber(value, EDGE_CURVATURE_MIN, EDGE_CURVATURE_MAX, LAYOUT_DEFAULTS.edgeCurvature);
+                                                const nextValue = clampMutualGraphNumber(
+                                                    value,
+                                                    EDGE_CURVATURE_LIMITS.min,
+                                                    EDGE_CURVATURE_LIMITS.max,
+                                                    MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature
+                                                );
                                                 const rounded = Number(nextValue.toFixed(2));
                                                 setLayoutSettings((current) => ({ ...current, edgeCurvature: rounded }));
                                                 void configRepository.setFloat('MutualGraphEdgeCurvature', rounded);
@@ -1523,12 +1366,17 @@ export function MutualFriendsPage() {
                                             <span className="tabular-nums text-muted-foreground">{layoutSettings.communitySeparation.toFixed(1)}</span>
                                         </div>
                                         <Slider
-                                            min={COMMUNITY_SEPARATION_MIN}
-                                            max={COMMUNITY_SEPARATION_MAX}
+                                            min={COMMUNITY_SEPARATION_LIMITS.min}
+                                            max={COMMUNITY_SEPARATION_LIMITS.max}
                                             step={0.1}
                                             value={[layoutSettings.communitySeparation]}
                                             onValueChange={([value]) => {
-                                                const nextValue = clampNumber(value, COMMUNITY_SEPARATION_MIN, COMMUNITY_SEPARATION_MAX, LAYOUT_DEFAULTS.communitySeparation);
+                                                const nextValue = clampMutualGraphNumber(
+                                                    value,
+                                                    COMMUNITY_SEPARATION_LIMITS.min,
+                                                    COMMUNITY_SEPARATION_LIMITS.max,
+                                                    MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation
+                                                );
                                                 const rounded = Number(nextValue.toFixed(1));
                                                 setLayoutSettings((current) => ({ ...current, communitySeparation: rounded }));
                                                 void configRepository.setFloat('MutualGraphCommunitySeparation', rounded);

@@ -12,7 +12,10 @@ import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import { timeToText } from '@/lib/dateTime.js';
-import { configRepository, instanceActivityRepository } from '@/repositories/index.js';
+import {
+    configRepository,
+    instanceActivityRepository
+} from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { getResolvedThemeMode } from '@/services/themeService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
@@ -28,9 +31,20 @@ import { Separator } from '@/ui/shadcn/separator';
 import { Slider } from '@/ui/shadcn/slider';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
+import {
+    buildChartOption,
+    buildDetailChartOption,
+    formatClock
+} from './instance-activity/instanceActivityChart.js';
+import {
+    buildChartRows,
+    buildDetailGroups,
+    filterDetailGroups,
+    getActivityDetailKey,
+    getDetailGroupKeys,
+    getLocalDayBounds
+} from './instance-activity/instanceActivityRows.js';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
 const DEFAULT_BAR_WIDTH = 25;
 
 function getTodayKey() {
@@ -52,18 +66,6 @@ function parseLocalDayKey(dayKey) {
     return new Date(year, Math.max(0, month - 1), day || 1, 0, 0, 0, 0);
 }
 
-function getLocalDayBounds(dayKey) {
-    const start = parseLocalDayKey(dayKey);
-    const end = new Date(start);
-    end.setHours(23, 59, 59, 999);
-    return {
-        start,
-        end,
-        startMs: start.getTime(),
-        endMs: end.getTime()
-    };
-}
-
 function formatDateLabel(dayKey) {
     try {
         return new Intl.DateTimeFormat(undefined, {
@@ -75,445 +77,6 @@ function formatDateLabel(dayKey) {
     } catch {
         return dayKey;
     }
-}
-
-function formatClock(value, hour12, includeSeconds = false) {
-    try {
-        return new Intl.DateTimeFormat(undefined, {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: includeSeconds ? '2-digit' : undefined,
-            hour12
-        }).format(new Date(value));
-    } catch {
-        return '';
-    }
-}
-
-function truncateLabel(value, maxLength = 26) {
-    const text = String(value || '');
-    if (text.length <= maxLength) {
-        return text;
-    }
-    return `${text.slice(0, Math.max(0, maxLength - 1))}…`;
-}
-
-function normalizeInstanceRow(row, selectedDate, currentUserId, worldDetailsById) {
-    const safeDuration = Math.max(0, Number(row.time) || 0);
-    const leaveMs = new Date(row.created_at).getTime();
-    const joinMs = Math.max(0, leaveMs - safeDuration);
-    const { startMs, endMs } = getLocalDayBounds(selectedDate);
-    const parsedLocation = parseLocation(row.location);
-    const worldId = parsedLocation.worldId || '';
-    const world = worldId ? worldDetailsById[worldId] : null;
-    const worldName = world?.name || worldId || row.location || '';
-    const visibleStartMs = Math.max(joinMs, startMs);
-    const visibleEndMs = Math.min(leaveMs, endMs);
-    const visibleDurationMs = Math.max(0, visibleEndMs - visibleStartMs);
-
-    return {
-        id: String(row.id || `${row.location}:${row.created_at}:${row.user_id}`),
-        currentUserId,
-        displayName: row.display_name || '',
-        location: row.location,
-        userId: row.user_id || '',
-        parsedLocation,
-        worldId,
-        worldName,
-        worldResolvedFromCache: Boolean(world?.name),
-        joinMs,
-        leaveMs,
-        visibleStartMs,
-        visibleDurationMs
-    };
-}
-
-function getActivityDetailKey(location, joinMs) {
-    return `${location || ''}:${Number.isFinite(joinMs) ? joinMs : 0}`;
-}
-
-function getDetailGroupKeys(group, currentUserId) {
-    const currentUserEntries = group.filter((entry) => entry.userId === currentUserId);
-    const entries = currentUserEntries.length ? currentUserEntries : [group[0]];
-    return entries.map((entry) => getActivityDetailKey(entry?.location, entry?.joinMs));
-}
-
-function buildChartRows(rawRows, selectedDate, currentUserId, worldDetailsById) {
-    return rawRows
-        .filter((row) => row.user_id === currentUserId)
-        .map((row) => normalizeInstanceRow(row, selectedDate, currentUserId, worldDetailsById))
-        .sort((left, right) => left.joinMs - right.joinMs);
-}
-
-function buildChartOption({ rows, selectedDate, barWidth, hour12, t }) {
-    const { startMs } = getLocalDayBounds(selectedDate);
-
-    return {
-        animationDuration: 250,
-        tooltip: {
-            trigger: 'axis',
-            axisPointer: {
-                type: 'shadow'
-            },
-            formatter(params) {
-                const target = Array.isArray(params)
-                    ? params.find((item) => item.seriesName === 'Time') || params[0]
-                    : params;
-                const row = rows[target?.dataIndex];
-                if (!row) {
-                    return '';
-                }
-
-                const locationBits = [];
-                if (row.parsedLocation.instanceName) {
-                    locationBits.push(`#${row.parsedLocation.instanceName}`);
-                }
-                if (row.parsedLocation.accessTypeName) {
-                    locationBits.push(row.parsedLocation.accessTypeName);
-                }
-
-                return [
-                    `<div class="min-w-44">`,
-                    `<div style="font-weight:600;margin-bottom:4px;">${row.worldName}</div>`,
-                    locationBits.length
-                        ? `<div style="margin-bottom:4px;">${locationBits.join(' ')}</div>`
-                        : '',
-                    `<div>${formatClock(row.joinMs, hour12, true)} - ${formatClock(row.leaveMs, hour12, true)}</div>`,
-                    `<div>${t('view.charts.instance_activity.online_time')}: ${timeToText(row.visibleDurationMs, true)}</div>`,
-                    `</div>`
-                ].join('');
-            }
-        },
-        grid: {
-            top: 24,
-            left: 170,
-            right: 84,
-            bottom: 24
-        },
-        yAxis: {
-            type: 'category',
-            inverse: true,
-            triggerEvent: true,
-            axisTick: { show: false },
-            axisLabel: {
-                interval: 0,
-                formatter(value) {
-                    return truncateLabel(value);
-                }
-            },
-            data: rows.map((row) => row.worldName)
-        },
-        xAxis: {
-            type: 'value',
-            min: 0,
-            max: DAY_MS,
-            interval: THREE_HOURS_MS,
-            axisLabel: {
-                formatter(value) {
-                    return formatClock(startMs + value, hour12, false);
-                }
-            },
-            splitLine: {
-                lineStyle: {
-                    type: 'dashed'
-                }
-            }
-        },
-        series: [
-            {
-                name: 'Placeholder',
-                type: 'bar',
-                stack: 'Total',
-                itemStyle: {
-                    borderColor: 'transparent',
-                    color: 'transparent'
-                },
-                emphasis: {
-                    itemStyle: {
-                        borderColor: 'transparent',
-                        color: 'transparent'
-                    }
-                },
-                data: rows.map((row) => Math.max(0, row.visibleStartMs - startMs))
-            },
-            {
-                name: 'Time',
-                type: 'bar',
-                stack: 'Total',
-                colorBy: 'data',
-                barWidth,
-                itemStyle: {
-                    borderRadius: 3,
-                    shadowBlur: 2,
-                    shadowOffsetX: 0.7,
-                    shadowOffsetY: 0.5
-                },
-                data: rows.map((row) => row.visibleDurationMs)
-            }
-        ],
-        backgroundColor: 'transparent'
-    };
-}
-
-function normalizeDetailRow(row, currentUserId, friendIdSet, favoriteIdSet) {
-    const durationMs = Math.max(0, Number(row.time) || 0);
-    const leaveMs = new Date(row.created_at).getTime();
-    const joinMs = Math.max(0, leaveMs - durationMs);
-    const userId = row.user_id || '';
-
-    return {
-        ...row,
-        id: String(row.id || `${row.location}:${row.created_at}:${userId}`),
-        displayName: row.display_name || '',
-        userId,
-        joinMs,
-        leaveMs,
-        durationMs,
-        isCurrentUser: userId === currentUserId,
-        isFriend: userId === currentUserId ? false : friendIdSet.has(userId) || favoriteIdSet.has(userId),
-        isFavorite: userId === currentUserId ? false : favoriteIdSet.has(userId)
-    };
-}
-
-function doIntervalsOverlap(left, right) {
-    return !(left.leaveMs < right.joinMs || right.leaveMs < left.joinMs);
-}
-
-function splitDetailGroupsByCurrentUserOverlap(groups, currentUserId) {
-    const result = [];
-
-    for (const group of groups) {
-        const currentUserCount = group.filter((entry) => entry.userId === currentUserId).length;
-        if (currentUserCount <= 1) {
-            result.push(group);
-            continue;
-        }
-
-        const adjacency = Array.from({ length: group.length }, () => []);
-        for (let leftIndex = 0; leftIndex < group.length; leftIndex += 1) {
-            for (let rightIndex = leftIndex + 1; rightIndex < group.length; rightIndex += 1) {
-                if (doIntervalsOverlap(group[leftIndex], group[rightIndex])) {
-                    adjacency[leftIndex].push(rightIndex);
-                    adjacency[rightIndex].push(leftIndex);
-                }
-            }
-        }
-
-        const visited = new Set();
-        for (let index = 0; index < group.length; index += 1) {
-            if (visited.has(index)) {
-                continue;
-            }
-
-            const stack = [index];
-            const component = [];
-            visited.add(index);
-            while (stack.length) {
-                const current = stack.pop();
-                component.push(group[current]);
-                for (const next of adjacency[current]) {
-                    if (!visited.has(next)) {
-                        visited.add(next);
-                        stack.push(next);
-                    }
-                }
-            }
-            result.push(component.sort((left, right) => left.joinMs - right.joinMs));
-        }
-    }
-
-    return result.sort((left, right) => (left[0]?.joinMs || 0) - (right[0]?.joinMs || 0));
-}
-
-function buildDetailGroups(rawRows, chartRows, currentUserId, friendIdSet, favoriteIdSet) {
-    const currentLocations = new Set(chartRows.map((row) => row.location).filter(Boolean));
-    if (!currentUserId || !currentLocations.size) {
-        return [];
-    }
-
-    const groupsByLocation = new Map();
-    for (const row of rawRows) {
-        if (!currentLocations.has(row.location)) {
-            continue;
-        }
-
-        const entry = normalizeDetailRow(row, currentUserId, friendIdSet, favoriteIdSet);
-        const existing = groupsByLocation.get(entry.location) || [];
-        existing.push(entry);
-        groupsByLocation.set(entry.location, existing);
-    }
-
-    const groups = Array.from(groupsByLocation.values())
-        .map((group) => group.sort((left, right) => {
-            const joinDiff = Math.abs(left.joinMs - right.joinMs);
-            return joinDiff < 3000 ? left.leaveMs - right.leaveMs : left.joinMs - right.joinMs;
-        }))
-        .filter((group) => group.some((entry) => entry.userId === currentUserId));
-
-    return splitDetailGroupsByCurrentUserOverlap(groups, currentUserId);
-}
-
-function filterDetailGroups(groups, { isDetailVisible, isSoloInstanceVisible, isNoFriendInstanceVisible }) {
-    if (!isDetailVisible) {
-        return [];
-    }
-
-    return groups.filter((group) => {
-        if (!isSoloInstanceVisible && group.length <= 1) {
-            return false;
-        }
-
-        if (!isNoFriendInstanceVisible && group.length > 1 && !group.some((entry) => entry.isFriend)) {
-            return false;
-        }
-
-        return true;
-    });
-}
-
-function buildDetailChartOption({ group, barWidth, hour12 }) {
-    const currentUserEntry = group.find((entry) => entry.isCurrentUser);
-    const startMs = currentUserEntry?.joinMs ?? Math.min(...group.map((entry) => entry.joinMs));
-    const endMs = currentUserEntry?.leaveMs ?? Math.max(...group.map((entry) => entry.leaveMs));
-    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
-        return null;
-    }
-
-    const groupedByUser = new Map();
-    const firstEntries = [];
-    for (const entry of group) {
-        if (!groupedByUser.has(entry.userId)) {
-            groupedByUser.set(entry.userId, []);
-            firstEntries.push(entry);
-        }
-        groupedByUser.get(entry.userId).push(entry);
-    }
-
-    for (const entries of groupedByUser.values()) {
-        entries.sort((left, right) => left.joinMs - right.joinMs);
-    }
-
-    const maxEntryCount = Math.max(...Array.from(groupedByUser.values()).map((entries) => entries.length));
-    const series = [];
-    for (let entryIndex = 0; entryIndex < maxEntryCount; entryIndex += 1) {
-        series.push({
-            name: 'Placeholder',
-            type: 'bar',
-            stack: 'Total',
-            itemStyle: {
-                borderColor: 'transparent',
-                color: 'transparent'
-            },
-            emphasis: {
-                itemStyle: {
-                    borderColor: 'transparent',
-                    color: 'transparent'
-                }
-            },
-            data: firstEntries.map((entry) => {
-                const rows = groupedByUser.get(entry.userId) || [];
-                const row = rows[entryIndex];
-                if (!row) {
-                    return 0;
-                }
-                const previous = rows[entryIndex - 1];
-                return Math.max(0, row.joinMs - (previous ? previous.leaveMs : startMs));
-            })
-        });
-        series.push({
-            name: 'Time',
-            type: 'bar',
-            stack: 'Total',
-            colorBy: 'data',
-            barWidth,
-            emphasis: {
-                focus: 'self'
-            },
-            itemStyle: {
-                borderRadius: 2,
-                shadowBlur: 2,
-                shadowOffsetX: 0.7,
-                shadowOffsetY: 0.5
-            },
-            data: firstEntries.map((entry) => {
-                const row = (groupedByUser.get(entry.userId) || [])[entryIndex];
-                return row ? row.durationMs : 0;
-            })
-        });
-    }
-
-    function friendMarker(entry) {
-        if (entry.isFavorite) {
-            return '⭐ ';
-        }
-        if (entry.isFriend) {
-            return '💚 ';
-        }
-        return '';
-    }
-
-    return {
-        animationDuration: 200,
-        tooltip: {
-            trigger: 'item',
-            formatter(params) {
-                if (params.seriesIndex % 2 === 0) {
-                    return '';
-                }
-
-                const userEntry = firstEntries[params.dataIndex];
-                const entry = (groupedByUser.get(userEntry?.userId) || [])[Math.floor(params.seriesIndex / 2)];
-                if (!entry) {
-                    return '';
-                }
-
-                return [
-                    `<div class="min-w-44">`,
-                    `<div style="font-weight:600;margin-bottom:4px;">${entry.displayName} ${friendMarker(entry).trim()}</div>`,
-                    `<div>${formatClock(entry.joinMs, hour12, true)} - ${formatClock(entry.leaveMs, hour12, true)}</div>`,
-                    `<div>${timeToText(entry.durationMs, true)}</div>`,
-                    `</div>`
-                ].join('');
-            }
-        },
-        grid: {
-            top: 24,
-            left: 170,
-            right: 84,
-            bottom: 24
-        },
-        yAxis: {
-            type: 'category',
-            inverse: true,
-            triggerEvent: true,
-            axisLabel: {
-                interval: 0,
-                formatter(value) {
-                    return truncateLabel(value, 24);
-                }
-            },
-            data: firstEntries.map((entry) => `${friendMarker(entry)}${entry.displayName}`)
-        },
-        xAxis: {
-            type: 'value',
-            min: 0,
-            max: endMs - startMs,
-            axisLine: { show: true },
-            axisLabel: {
-                formatter(value) {
-                    return formatClock(startMs + value, hour12, false);
-                }
-            },
-            splitLine: {
-                lineStyle: {
-                    type: 'dashed'
-                }
-            }
-        },
-        series,
-        backgroundColor: 'transparent',
-        firstEntries
-    };
 }
 
 function ChartLoadingState() {
@@ -532,7 +95,9 @@ function ChartEmptyState({ title, description }) {
         <div className="flex min-h-80 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
             <div className="flex max-w-md flex-col gap-2">
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
+                <div className="text-sm text-muted-foreground">
+                    {description}
+                </div>
             </div>
         </div>
     );
@@ -564,7 +129,9 @@ function InstanceActivityDetailChart({
 
     const location = group[0]?.location || '';
     const parsedLocation = parseLocation(location);
-    const world = parsedLocation.worldId ? worldDetailsById[parsedLocation.worldId] : null;
+    const world = parsedLocation.worldId
+        ? worldDetailsById[parsedLocation.worldId]
+        : null;
     const worldName = world?.name || parsedLocation.worldId || location || '';
     const currentUserEntry = group.find((entry) => entry.isCurrentUser);
 
@@ -575,16 +142,25 @@ function InstanceActivityDetailChart({
         const firstEntry = currentUserEntry || group[0] || {};
         const startMs = Number.isFinite(firstEntry.joinMs)
             ? firstEntry.joinMs
-            : Math.min(...group.map((entry) => entry.joinMs).filter(Number.isFinite));
+            : Math.min(
+                  ...group.map((entry) => entry.joinMs).filter(Number.isFinite)
+              );
         const endMs = Number.isFinite(firstEntry.leaveMs)
             ? firstEntry.leaveMs
-            : Math.max(...group.map((entry) => entry.leaveMs).filter(Number.isFinite));
+            : Math.max(
+                  ...group.map((entry) => entry.leaveMs).filter(Number.isFinite)
+              );
         onOpenPreviousInstanceInfo?.({
             location,
             worldName,
             groupName: parsedLocation.groupId || '',
-            created_at: Number.isFinite(endMs) ? new Date(endMs).toISOString() : '',
-            time: Number.isFinite(startMs) && Number.isFinite(endMs) ? Math.max(0, endMs - startMs) : 0
+            created_at: Number.isFinite(endMs)
+                ? new Date(endMs).toISOString()
+                : '',
+            time:
+                Number.isFinite(startMs) && Number.isFinite(endMs)
+                    ? Math.max(0, endMs - startMs)
+                    : 0
         });
     }
 
@@ -608,7 +184,10 @@ function InstanceActivityDetailChart({
             resizeObserverRef.current?.disconnect();
             chart?.dispose();
 
-            chart = echarts.init(chartElementRef.current, themeName || undefined);
+            chart = echarts.init(
+                chartElementRef.current,
+                themeName || undefined
+            );
             chartInstanceRef.current = chart;
             chartThemeRef.current = themeName;
             resizeObserverRef.current = new ResizeObserver(() => {
@@ -628,7 +207,10 @@ function InstanceActivityDetailChart({
         }
 
         const { firstEntries, ...option } = optionWithEntries;
-        const chartHeight = Math.max(180, firstEntries.length * (barWidth + 10) + 110);
+        const chartHeight = Math.max(
+            180,
+            firstEntries.length * (barWidth + 10) + 110
+        );
         chartElementRef.current.style.height = `${chartHeight}px`;
         chart.resize({ height: chartHeight });
         chart.off('click');
@@ -684,8 +266,12 @@ export function InstanceActivityPage() {
     const { t } = useI18n();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const favoriteFriendIds = useFavoriteStore((state) => state.favoriteFriendIds);
-    const localFriendFavoritesList = useFavoriteStore((state) => state.localFriendFavoritesList);
+    const favoriteFriendIds = useFavoriteStore(
+        (state) => state.favoriteFriendIds
+    );
+    const localFriendFavoritesList = useFavoriteStore(
+        (state) => state.localFriendFavoritesList
+    );
     const shellThemeMode = useShellStore((state) => state.themeMode);
     const resolvedTheme = getResolvedThemeMode(shellThemeMode);
     const hour12 = usePreferencesStore((state) => state.dtHour12);
@@ -699,11 +285,13 @@ export function InstanceActivityPage() {
     const [barWidth, setBarWidth] = useState(DEFAULT_BAR_WIDTH);
     const [isDetailVisible, setIsDetailVisible] = useState(true);
     const [isSoloInstanceVisible, setIsSoloInstanceVisible] = useState(true);
-    const [isNoFriendInstanceVisible, setIsNoFriendInstanceVisible] = useState(true);
+    const [isNoFriendInstanceVisible, setIsNoFriendInstanceVisible] =
+        useState(true);
     const [reloadToken, setReloadToken] = useState(0);
     const [previousInstanceOpen, setPreviousInstanceOpen] = useState(false);
     const [previousInstanceRows, setPreviousInstanceRows] = useState([]);
-    const [previousInstanceTitle, setPreviousInstanceTitle] = useState('Previous Instance');
+    const [previousInstanceTitle, setPreviousInstanceTitle] =
+        useState('Previous Instance');
     const [mainChartElement, setMainChartElement] = useState(null);
 
     const chartElementRef = useRef(null);
@@ -728,25 +316,44 @@ export function InstanceActivityPage() {
         let active = true;
 
         Promise.all([
-            configRepository.getInt('InstanceActivityBarWidth', DEFAULT_BAR_WIDTH),
-            configRepository.getBool('VRCX_InstanceActivityDetailVisible', true),
-            configRepository.getBool('VRCX_InstanceActivitySoloInstanceVisible', true),
-            configRepository.getBool('VRCX_InstanceActivityNoFriendInstanceVisible', true)
+            configRepository.getInt(
+                'InstanceActivityBarWidth',
+                DEFAULT_BAR_WIDTH
+            ),
+            configRepository.getBool(
+                'VRCX_InstanceActivityDetailVisible',
+                true
+            ),
+            configRepository.getBool(
+                'VRCX_InstanceActivitySoloInstanceVisible',
+                true
+            ),
+            configRepository.getBool(
+                'VRCX_InstanceActivityNoFriendInstanceVisible',
+                true
+            )
         ])
-            .then(([nextBarWidth, nextDetailVisible, nextSoloVisible, nextNoFriendVisible]) => {
-                if (!active) {
-                    return;
-                }
+            .then(
+                ([
+                    nextBarWidth,
+                    nextDetailVisible,
+                    nextSoloVisible,
+                    nextNoFriendVisible
+                ]) => {
+                    if (!active) {
+                        return;
+                    }
 
-                setBarWidth(
-                    Number.isFinite(nextBarWidth)
-                        ? Math.min(50, Math.max(1, nextBarWidth))
-                        : DEFAULT_BAR_WIDTH
-                );
-                setIsDetailVisible(Boolean(nextDetailVisible));
-                setIsSoloInstanceVisible(Boolean(nextSoloVisible));
-                setIsNoFriendInstanceVisible(Boolean(nextNoFriendVisible));
-            })
+                    setBarWidth(
+                        Number.isFinite(nextBarWidth)
+                            ? Math.min(50, Math.max(1, nextBarWidth))
+                            : DEFAULT_BAR_WIDTH
+                    );
+                    setIsDetailVisible(Boolean(nextDetailVisible));
+                    setIsSoloInstanceVisible(Boolean(nextSoloVisible));
+                    setIsNoFriendInstanceVisible(Boolean(nextNoFriendVisible));
+                }
+            )
             .catch(() => {});
 
         return () => {
@@ -772,7 +379,11 @@ export function InstanceActivityPage() {
                 }
 
                 const uniqueDates = Array.from(
-                    new Set(rows.map((value) => toLocalDayKey(value)).filter(Boolean))
+                    new Set(
+                        rows
+                            .map((value) => toLocalDayKey(value))
+                            .filter(Boolean)
+                    )
                 ).sort((left, right) => right.localeCompare(left));
                 setAvailableDates(uniqueDates);
             })
@@ -810,20 +421,23 @@ export function InstanceActivityPage() {
         setDataDetail('');
 
         instanceActivityRepository
-            .getInstanceActivityRows(
-                start.toISOString(),
-                end.toISOString()
-            )
+            .getInstanceActivityRows(start.toISOString(), end.toISOString())
             .then(async (rows) => {
                 if (!active) {
                     return;
                 }
 
                 const worldIds = Array.from(
-                    new Set(rows.map((row) => parseLocation(row.location).worldId).filter(Boolean))
+                    new Set(
+                        rows
+                            .map((row) => parseLocation(row.location).worldId)
+                            .filter(Boolean)
+                    )
                 );
                 const nextWorldDetailsById =
-                    await instanceActivityRepository.getWorldSummariesByIds(worldIds);
+                    await instanceActivityRepository.getWorldSummariesByIds(
+                        worldIds
+                    );
 
                 if (!active) {
                     return;
@@ -863,18 +477,38 @@ export function InstanceActivityPage() {
     }, []);
 
     const chartRows = useMemo(
-        () => buildChartRows(rawRows, selectedDate, currentUserId, worldDetailsById),
+        () =>
+            buildChartRows(
+                rawRows,
+                selectedDate,
+                currentUserId,
+                worldDetailsById
+            ),
         [currentUserId, rawRows, selectedDate, worldDetailsById]
     );
 
-    const friendIdSet = useMemo(() => new Set(Object.keys(friendsById)), [friendsById]);
+    const friendIdSet = useMemo(
+        () => new Set(Object.keys(friendsById)),
+        [friendsById]
+    );
     const favoriteIdSet = useMemo(
-        () => new Set([...(favoriteFriendIds || []), ...(localFriendFavoritesList || [])]),
+        () =>
+            new Set([
+                ...(favoriteFriendIds || []),
+                ...(localFriendFavoritesList || [])
+            ]),
         [favoriteFriendIds, localFriendFavoritesList]
     );
 
     const detailGroups = useMemo(
-        () => buildDetailGroups(rawRows, chartRows, currentUserId, friendIdSet, favoriteIdSet),
+        () =>
+            buildDetailGroups(
+                rawRows,
+                chartRows,
+                currentUserId,
+                friendIdSet,
+                favoriteIdSet
+            ),
         [chartRows, currentUserId, favoriteIdSet, friendIdSet, rawRows]
     );
 
@@ -885,22 +519,33 @@ export function InstanceActivityPage() {
                 isSoloInstanceVisible,
                 isNoFriendInstanceVisible
             }),
-        [detailGroups, isDetailVisible, isNoFriendInstanceVisible, isSoloInstanceVisible]
+        [
+            detailGroups,
+            isDetailVisible,
+            isNoFriendInstanceVisible,
+            isSoloInstanceVisible
+        ]
     );
 
     const totalOnlineTime = useMemo(
-        () => chartRows.reduce((total, row) => total + row.visibleDurationMs, 0),
+        () =>
+            chartRows.reduce((total, row) => total + row.visibleDurationMs, 0),
         [chartRows]
     );
 
     const sortedDatesDesc = useMemo(
-        () => [...availableDates].sort((left, right) => right.localeCompare(left)),
+        () =>
+            [...availableDates].sort((left, right) =>
+                right.localeCompare(left)
+            ),
         [availableDates]
     );
 
     const earliestDate = sortedDatesDesc[sortedDatesDesc.length - 1] || null;
     const latestDate = sortedDatesDesc[0] || null;
-    const selectedDateIndex = sortedDatesDesc.findIndex((value) => value === selectedDate);
+    const selectedDateIndex = sortedDatesDesc.findIndex(
+        (value) => value === selectedDate
+    );
     const dateOptions = useMemo(() => {
         const options = [...sortedDatesDesc];
         if (selectedDate && !options.includes(selectedDate)) {
@@ -934,7 +579,10 @@ export function InstanceActivityPage() {
             resizeObserverRef.current.observe(mainChartElement);
         }
 
-        const chartHeight = Math.max(220, chartRows.length * (barWidth + 10) + 200);
+        const chartHeight = Math.max(
+            220,
+            chartRows.length * (barWidth + 10) + 200
+        );
         mainChartElement.style.height = `${chartHeight}px`;
         chart.resize({ height: chartHeight });
         chart.off('click');
@@ -960,13 +608,23 @@ export function InstanceActivityPage() {
             }
 
             const row = chartRows[params.dataIndex];
-            const target = detailGroupRefs.current.get(getActivityDetailKey(row?.location, row?.joinMs));
+            const target = detailGroupRefs.current.get(
+                getActivityDetailKey(row?.location, row?.joinMs)
+            );
             target?.scrollIntoView?.({
                 behavior: 'smooth',
                 block: 'start'
             });
         });
-    }, [barWidth, chartRows, hour12, mainChartElement, resolvedTheme, selectedDate, t]);
+    }, [
+        barWidth,
+        chartRows,
+        hour12,
+        mainChartElement,
+        resolvedTheme,
+        selectedDate,
+        t
+    ]);
 
     function handleDateStep(isNext = false) {
         if (!sortedDatesDesc.length) {
@@ -974,7 +632,9 @@ export function InstanceActivityPage() {
         }
 
         if (selectedDateIndex === -1 && !isNext) {
-            const earlierDate = sortedDatesDesc.find((value) => value < selectedDate);
+            const earlierDate = sortedDatesDesc.find(
+                (value) => value < selectedDate
+            );
             if (earlierDate) {
                 setSelectedDate(earlierDate);
                 return;
@@ -982,7 +642,9 @@ export function InstanceActivityPage() {
         }
 
         if (selectedDateIndex !== -1) {
-            const nextIndex = isNext ? selectedDateIndex - 1 : selectedDateIndex + 1;
+            const nextIndex = isNext
+                ? selectedDateIndex - 1
+                : selectedDateIndex + 1;
             if (nextIndex >= 0 && nextIndex < sortedDatesDesc.length) {
                 setSelectedDate(sortedDatesDesc[nextIndex]);
                 return;
@@ -1010,69 +672,124 @@ export function InstanceActivityPage() {
             return;
         }
         setPreviousInstanceRows([row]);
-        setPreviousInstanceTitle(`Previous Instance: ${row.worldName || row.location}`);
+        setPreviousInstanceTitle(
+            `Previous Instance: ${row.worldName || row.location}`
+        );
         setPreviousInstanceOpen(true);
     }
 
     return (
-        <div id="chart" className="x-container flex h-full min-h-0 flex-col overflow-y-auto p-6">
+        <div
+            id="chart"
+            className="x-container flex h-full min-h-0 flex-col overflow-y-auto p-6"
+        >
             <div className="pt-12">
                 <div className="options-container mt-0 flex items-center justify-between gap-3">
                     <div className="flex items-center justify-between gap-2">
-                        <span className="shrink-0">{t('view.charts.instance_activity.header')}</span>
+                        <span className="shrink-0">
+                            {t('view.charts.instance_activity.header')}
+                        </span>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-end gap-2">
-                        <Button type="button" variant="ghost" size="icon" aria-label="Refresh instance activity" onClick={handleRefresh}>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Refresh instance activity"
+                            onClick={handleRefresh}
+                        >
                             <RefreshCcwIcon data-icon="inline-start" />
                         </Button>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button type="button" variant="ghost" size="icon" aria-label="Instance activity settings">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Instance activity settings"
+                                >
                                     <Settings2Icon data-icon="inline-start" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent side="bottom" align="end" className="flex w-72 flex-col gap-3">
+                            <PopoverContent
+                                side="bottom"
+                                align="end"
+                                className="flex w-72 flex-col gap-3"
+                            >
                                 <div className="flex h-8 items-center justify-between gap-4 text-sm">
-                                    <span className="shrink-0">{t('view.charts.instance_activity.settings.bar_width')}</span>
+                                    <span className="shrink-0">
+                                        {t(
+                                            'view.charts.instance_activity.settings.bar_width'
+                                        )}
+                                    </span>
                                     <Slider
                                         min={1}
                                         max={50}
                                         step={1}
                                         value={[barWidth]}
-                                        onValueChange={([value]) => handleBarWidthCommit(value)}
+                                        onValueChange={([value]) =>
+                                            handleBarWidthCommit(value)
+                                        }
                                         className="w-40"
                                     />
                                 </div>
                                 <div className="flex h-8 items-center justify-between gap-4 text-sm">
-                                    <span className="shrink-0">{t('view.charts.instance_activity.settings.show_detail')}</span>
+                                    <span className="shrink-0">
+                                        {t(
+                                            'view.charts.instance_activity.settings.show_detail'
+                                        )}
+                                    </span>
                                     <Switch
                                         checked={isDetailVisible}
                                         onCheckedChange={(value) => {
                                             setIsDetailVisible(value);
-                                            void configRepository.setBool('VRCX_InstanceActivityDetailVisible', value);
+                                            void configRepository.setBool(
+                                                'VRCX_InstanceActivityDetailVisible',
+                                                value
+                                            );
                                         }}
                                     />
                                 </div>
                                 {isDetailVisible ? (
                                     <>
                                         <div className="flex h-8 items-center justify-between gap-4 text-sm">
-                                            <span className="shrink-0">{t('view.charts.instance_activity.settings.show_solo_instance')}</span>
+                                            <span className="shrink-0">
+                                                {t(
+                                                    'view.charts.instance_activity.settings.show_solo_instance'
+                                                )}
+                                            </span>
                                             <Switch
                                                 checked={isSoloInstanceVisible}
                                                 onCheckedChange={(value) => {
-                                                    setIsSoloInstanceVisible(value);
-                                                    void configRepository.setBool('VRCX_InstanceActivitySoloInstanceVisible', value);
+                                                    setIsSoloInstanceVisible(
+                                                        value
+                                                    );
+                                                    void configRepository.setBool(
+                                                        'VRCX_InstanceActivitySoloInstanceVisible',
+                                                        value
+                                                    );
                                                 }}
                                             />
                                         </div>
                                         <div className="flex h-8 items-center justify-between gap-4 text-sm">
-                                            <span className="shrink-0">{t('view.charts.instance_activity.settings.show_no_friend_instance')}</span>
+                                            <span className="shrink-0">
+                                                {t(
+                                                    'view.charts.instance_activity.settings.show_no_friend_instance'
+                                                )}
+                                            </span>
                                             <Switch
-                                                checked={isNoFriendInstanceVisible}
+                                                checked={
+                                                    isNoFriendInstanceVisible
+                                                }
                                                 onCheckedChange={(value) => {
-                                                    setIsNoFriendInstanceVisible(value);
-                                                    void configRepository.setBool('VRCX_InstanceActivityNoFriendInstanceVisible', value);
+                                                    setIsNoFriendInstanceVisible(
+                                                        value
+                                                    );
+                                                    void configRepository.setBool(
+                                                        'VRCX_InstanceActivityNoFriendInstanceVisible',
+                                                        value
+                                                    );
                                                 }}
                                             />
                                         </div>
@@ -1087,7 +804,8 @@ export function InstanceActivityPage() {
                                 size="icon-sm"
                                 aria-label="Previous day"
                                 disabled={isPrevDayDisabled}
-                                onClick={() => handleDateStep(false)}>
+                                onClick={() => handleDateStep(false)}
+                            >
                                 <ChevronLeftIcon data-icon="inline-start" />
                             </Button>
                             <Button
@@ -1096,7 +814,8 @@ export function InstanceActivityPage() {
                                 size="icon-sm"
                                 aria-label="Next day"
                                 disabled={isNextDayDisabled}
-                                onClick={() => handleDateStep(true)}>
+                                onClick={() => handleDateStep(true)}
+                            >
                                 <ChevronRightIcon data-icon="inline-start" />
                             </Button>
                         </div>
@@ -1106,7 +825,8 @@ export function InstanceActivityPage() {
                                     type="button"
                                     variant="outline"
                                     className="w-52 justify-start text-left font-normal"
-                                    disabled={dataStatus === 'running'}>
+                                    disabled={dataStatus === 'running'}
+                                >
                                     <CalendarDaysIcon data-icon="inline-start" />
                                     {selectedDate}
                                 </Button>
@@ -1116,7 +836,12 @@ export function InstanceActivityPage() {
                                     <Input
                                         type="date"
                                         value={selectedDate}
-                                        onChange={(event) => setSelectedDate(event.target.value || getTodayKey())}
+                                        onChange={(event) =>
+                                            setSelectedDate(
+                                                event.target.value ||
+                                                    getTodayKey()
+                                            )
+                                        }
                                     />
                                     {dateOptions.length ? (
                                         <div className="grid max-h-56 gap-1 overflow-y-auto">
@@ -1124,12 +849,23 @@ export function InstanceActivityPage() {
                                                 <Button
                                                     key={dayKey}
                                                     type="button"
-                                                    variant={dayKey === selectedDate ? 'default' : 'ghost'}
+                                                    variant={
+                                                        dayKey === selectedDate
+                                                            ? 'default'
+                                                            : 'ghost'
+                                                    }
                                                     size="sm"
                                                     className="justify-start"
-                                                    onClick={() => setSelectedDate(dayKey)}>
+                                                    onClick={() =>
+                                                        setSelectedDate(dayKey)
+                                                    }
+                                                >
                                                     {formatDateLabel(dayKey)}
-                                                    {availableDates.includes(dayKey) ? '' : ' (no activity)'}
+                                                    {availableDates.includes(
+                                                        dayKey
+                                                    )
+                                                        ? ''
+                                                        : ' (no activity)'}
                                                 </Button>
                                             ))}
                                         </div>
@@ -1145,21 +881,23 @@ export function InstanceActivityPage() {
                         <div className="text-sm text-muted-foreground">
                             {t('view.charts.instance_activity.online_time')}
                         </div>
-                        <div className="text-2xl font-semibold">{timeToText(totalOnlineTime, true)}</div>
+                        <div className="text-2xl font-semibold">
+                            {timeToText(totalOnlineTime, true)}
+                        </div>
                     </div>
                 </div>
 
                 <div className="mt-4 min-w-0">
                     {dataStatus === 'running' ? (
-                            <ChartLoadingState />
-                        ) : dataStatus === 'error' ? (
-                            <ChartEmptyState
-                                title="Instance activity failed to load"
-                                description={
-                                    dataDetail ||
-                                    'The chart adapter could not read game-log instance activity for the selected day.'
-                                }
-                            />
+                        <ChartLoadingState />
+                    ) : dataStatus === 'error' ? (
+                        <ChartEmptyState
+                            title="Instance activity failed to load"
+                            description={
+                                dataDetail ||
+                                'The chart adapter could not read game-log instance activity for the selected day.'
+                            }
+                        />
                     ) : (
                         <>
                             <div
@@ -1184,35 +922,54 @@ export function InstanceActivityPage() {
                             <div className="px-[min(25vw,400px)] py-4">
                                 <div className="flex items-center">
                                     <Separator className="flex-1" />
-                                    <span className="px-2 text-muted-foreground">·</span>
+                                    <span className="px-2 text-muted-foreground">
+                                        ·
+                                    </span>
                                     <Separator className="flex-1" />
                                 </div>
                             </div>
                             {filteredDetailGroups.length ? (
                                 filteredDetailGroups.map((group) => {
-                                    const detailKeys = getDetailGroupKeys(group, currentUserId);
+                                    const detailKeys = getDetailGroupKeys(
+                                        group,
+                                        currentUserId
+                                    );
                                     const key = detailKeys[0];
                                     return (
                                         <div
                                             key={key}
                                             ref={(node) => {
                                                 if (node) {
-                                                    detailKeys.forEach((detailKey) => {
-                                                        detailGroupRefs.current.set(detailKey, node);
-                                                    });
+                                                    detailKeys.forEach(
+                                                        (detailKey) => {
+                                                            detailGroupRefs.current.set(
+                                                                detailKey,
+                                                                node
+                                                            );
+                                                        }
+                                                    );
                                                 } else {
-                                                    detailKeys.forEach((detailKey) => {
-                                                        detailGroupRefs.current.delete(detailKey);
-                                                    });
+                                                    detailKeys.forEach(
+                                                        (detailKey) => {
+                                                            detailGroupRefs.current.delete(
+                                                                detailKey
+                                                            );
+                                                        }
+                                                    );
                                                 }
-                                            }}>
+                                            }}
+                                        >
                                             <InstanceActivityDetailChart
                                                 group={group}
                                                 barWidth={barWidth}
                                                 hour12={hour12}
                                                 resolvedTheme={resolvedTheme}
-                                                worldDetailsById={worldDetailsById}
-                                                onOpenPreviousInstanceInfo={openPreviousInstanceInfo}
+                                                worldDetailsById={
+                                                    worldDetailsById
+                                                }
+                                                onOpenPreviousInstanceInfo={
+                                                    openPreviousInstanceInfo
+                                                }
                                             />
                                         </div>
                                     );

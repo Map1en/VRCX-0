@@ -111,6 +111,20 @@ import { normalizePreferenceSnapshot, usePreferencesStore } from '@/state/prefer
 import { PageHeader, PageTitle } from '@/components/layout/PageScaffold.jsx';
 import { Field, FieldGroup, JsonTreeView, SegmentedPreference, SettingsSectionHeading } from './components/SettingsField.jsx';
 import { OpenSourceNoticeDialog } from './components/OpenSourceNoticeDialog.jsx';
+import {
+    buildOpenAiModelsEndpoint,
+    buildTablePageSizeOptions,
+    DEFAULT_TRANSLATION_ENDPOINT,
+    DEFAULT_TRANSLATION_MODEL,
+    filterTablePageSizeOptions,
+    formatByteSize,
+    isValidFontFamilyList,
+    normalizeSharedFeedFilters,
+    normalizeTablePageSizes,
+    parseIntegerInput,
+    parseWebJson,
+    TABLE_PAGE_SIZE_DEFAULTS
+} from './settingsValues.js';
 
 const fontFamilyLabelKeys = {
     inter: 'view.settings.appearance.appearance.font_family_inter',
@@ -154,8 +168,6 @@ const notificationTtsOptions = [
     ['Always', 'view.settings.notifications.notifications.conditions.always']
 ];
 const avatarAutoCleanupOptions = ['Off', '30', '90', '180', '365'];
-const tablePageSizeSuggestions = [5, 10, 15, 20, 25, 30, 50, 75, 100, 150, 200, 250, 500, 1000];
-const tablePageSizeDefaults = [10, 15, 20, 25, 50, 100];
 const sqliteTableSizeRows = [
     ['gps', 'view.settings.advanced.advanced.sqlite_table_size.gps'],
     ['status', 'view.settings.advanced.advanced.sqlite_table_size.status'],
@@ -175,14 +187,10 @@ const weekStartOptions = [
     ['0', 'common.days.sunday'],
     ['6', 'common.days.saturday']
 ];
-const DEFAULT_TRANSLATION_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
-const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
 const translationProviderOptions = [
     ['google', 'dialog.translation_api.mode_google'],
     ['openai', 'dialog.translation_api.mode_openai']
 ];
-const MAX_CUSTOM_FONT_FAMILY_LENGTH = 200;
-const FONT_FAMILY_TOKEN_PATTERN = /^([-_\p{L}][\p{L}\p{N}_\s-]*|'[^']+'|"[^"]+")$/u;
 
 const settingsTabs = [
     ['system', 'view.settings.category.system'],
@@ -194,90 +202,6 @@ const settingsTabs = [
     ['integrations', 'view.settings.category.integrations'],
     ['advanced', 'view.settings.category.advanced']
 ];
-
-function parseWebJson(response) {
-    if (response?.data && typeof response.data === 'object') {
-        return response.data;
-    }
-    if (typeof response?.data === 'string' && response.data.trim()) {
-        return JSON.parse(response.data);
-    }
-    return {};
-}
-
-function buildOpenAiModelsEndpoint(endpoint) {
-    const baseEndpoint = endpoint || DEFAULT_TRANSLATION_ENDPOINT;
-    try {
-        const url = new URL(baseEndpoint);
-        const basePath = url.pathname.replace(/\/+$/, '');
-        if (basePath.endsWith('/chat/completions')) {
-            url.pathname = basePath.replace(/\/chat\/completions$/, '/models');
-        } else if (!basePath.endsWith('/models')) {
-            url.pathname = `${basePath}/models`;
-        }
-        url.search = '';
-        url.hash = '';
-        return url.toString();
-    } catch {
-        const normalized = baseEndpoint.endsWith('/') ? baseEndpoint.slice(0, -1) : baseEndpoint;
-        if (normalized.endsWith('/models')) {
-            return normalized;
-        }
-        if (normalized.includes('/chat/completions')) {
-            return normalized.replace(/\/chat\/completions$/, '/models');
-        }
-        return `${normalized}/models`;
-    }
-}
-
-function normalizeSharedFeedFilters(value) {
-    return {
-        noty: {
-            ...sharedFeedFiltersDefaults.noty,
-            ...(value?.noty && typeof value.noty === 'object' ? value.noty : {})
-        },
-        wrist: {
-            ...sharedFeedFiltersDefaults.wrist,
-            ...(value?.wrist && typeof value.wrist === 'object' ? value.wrist : {})
-        }
-    };
-}
-
-function normalizeTablePageSizes(input) {
-    const source = Array.isArray(input) ? input : tablePageSizeDefaults;
-    const values = source
-        .map((value) => Number.parseInt(value, 10))
-        .filter((value) => Number.isFinite(value) && value > 0 && value <= 1000);
-    const uniqueSorted = Array.from(new Set(values)).sort((left, right) => left - right);
-    return uniqueSorted.length ? uniqueSorted : [...tablePageSizeDefaults];
-}
-
-function parseIntegerInput(value, fallback) {
-    const parsed = Number.parseInt(value, 10);
-    return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function isValidFontFamilyList(value) {
-    const normalized = String(value ?? '').trim();
-    if (!normalized || normalized.length > MAX_CUSTOM_FONT_FAMILY_LENGTH) {
-        return false;
-    }
-
-    return normalized
-        .split(',')
-        .every((entry) => FONT_FAMILY_TOKEN_PATTERN.test(entry.trim()));
-}
-
-function formatByteSize(value) {
-    const bytes = Number(value);
-    if (!Number.isFinite(bytes) || bytes <= 0) {
-        return '0 B';
-    }
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-    const amount = bytes / (1024 ** exponent);
-    return `${amount.toFixed(exponent === 0 ? 0 : 2)} ${units[exponent]}`;
-}
 
 export function SettingsPage() {
     const { t } = useI18n();
@@ -347,7 +271,7 @@ export function SettingsPage() {
         isCloseToTray: false,
         navIsCollapsed: false,
         proxyServer: '',
-        tablePageSizes: [...tablePageSizeDefaults],
+        tablePageSizes: [...TABLE_PAGE_SIZE_DEFAULTS],
         tableLimits: {
             maxTableSize: DEFAULT_MAX_TABLE_SIZE,
             searchLimit: DEFAULT_SEARCH_LIMIT
@@ -452,7 +376,7 @@ export function SettingsPage() {
     const [notificationTtsTestVisible, setNotificationTtsTestVisible] = useState(false);
     const [openSourceNoticeOpen, setOpenSourceNoticeOpen] = useState(false);
     const [tablePageSizesDialogOpen, setTablePageSizesDialogOpen] = useState(false);
-    const [tablePageSizesDraft, setTablePageSizesDraft] = useState(() => [...tablePageSizeDefaults]);
+    const [tablePageSizesDraft, setTablePageSizesDraft] = useState(() => [...TABLE_PAGE_SIZE_DEFAULTS]);
     const [tablePageSizeDraftInput, setTablePageSizeDraftInput] = useState('');
     const [tableLimitsDialogOpen, setTableLimitsDialogOpen] = useState(false);
     const [tableLimitsDraft, setTableLimitsDraft] = useState({
@@ -461,16 +385,13 @@ export function SettingsPage() {
     });
     const [avatarProviderDialogOpen, setAvatarProviderDialogOpen] = useState(false);
     const tablePageSizeOptions = useMemo(
-        () => normalizeTablePageSizes([...tablePageSizeSuggestions, ...tablePageSizesDraft]),
+        () => buildTablePageSizeOptions(tablePageSizesDraft),
         [tablePageSizesDraft]
     );
-    const filteredTablePageSizeOptions = useMemo(() => {
-        const searchTerm = tablePageSizeDraftInput.trim();
-        if (!searchTerm) {
-            return tablePageSizeOptions;
-        }
-        return tablePageSizeOptions.filter((size) => String(size).includes(searchTerm));
-    }, [tablePageSizeDraftInput, tablePageSizeOptions]);
+    const filteredTablePageSizeOptions = useMemo(
+        () => filterTablePageSizeOptions(tablePageSizeOptions, tablePageSizeDraftInput),
+        [tablePageSizeDraftInput, tablePageSizeOptions]
+    );
 
     function applyPreferenceSnapshotToLocalState(snapshot) {
         const normalizedSnapshot = normalizePreferenceSnapshot(snapshot);
@@ -933,7 +854,7 @@ export function SettingsPage() {
 
     function removeTablePageSize(value) {
         const next = tablePageSizesDraft.filter((entry) => entry !== value);
-        void persistTablePageSizes(next.length ? next : [...tablePageSizeDefaults]);
+        void persistTablePageSizes(next.length ? next : [...TABLE_PAGE_SIZE_DEFAULTS]);
     }
 
     function toggleTablePageSize(value) {

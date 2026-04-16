@@ -20,7 +20,6 @@ import { toast } from 'sonner';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import { cn } from '@/lib/utils.js';
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { normalizeUserStatus, userStatusIndicatorClassName, userStatusSortRank } from '@/lib/userStatus.js';
 import {
     ResizableTableCell,
     ResizableTableHead
@@ -47,14 +46,12 @@ import {
     mutualGraphRepository,
     vrchatFriendRepository
 } from '@/repositories/index.js';
-import removeConfusables, { removeWhitespace } from '@/services/confusables.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import friendRelationshipService from '@/services/friendRelationshipService.js';
 import { getTablePageSizesPreference } from '@/services/preferencesService.js';
 import { getNameColour, openExternalLink, userImage } from '@/lib/entityMedia.js';
 import { executeWithBackoff } from '@/shared/utils/retry.js';
 import { createRateLimiter } from '@/shared/utils/throttle.js';
-import { languageMappings } from '@/shared/constants/language.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -100,354 +97,30 @@ import {
     TooltipContent,
     TooltipTrigger
 } from '@/ui/shadcn/tooltip';
-
-const DEFAULT_PAGE_SIZES = [10, 25, 50];
-const DEFAULT_SORTING = [{ id: 'friendNumber', desc: true }];
-const SEARCH_FILTERS = [
-    { id: 'displayName', label: 'Display Name' },
-    { id: 'username', label: 'User Name' },
-    { id: 'rank', label: 'Rank' },
-    { id: 'status', label: 'Status' },
-    { id: 'bio', label: 'Bio' },
-    { id: 'note', label: 'Note' },
-    { id: 'memo', label: 'Memo' }
-];
-const DEFAULT_SEARCH_FILTER_IDS = ['displayName', 'rank', 'status', 'bio', 'note', 'memo'];
-const VISIBLE_COLUMN_IDS = ['leftSpacer', 'bulkSelect', 'friendNumber', 'avatar', 'displayName', 'rank', 'status'];
-const LEGACY_SORT_COLUMN_IDS = [
-    'language',
-    'bioLink',
-    'joinCount',
-    'timeTogether',
-    'lastSeen',
-    'mutualFriends',
-    'lastActivity',
-    'lastLogin',
-    'dateJoined',
-    'unfriend'
-];
-const COLUMN_IDS = [...VISIBLE_COLUMN_IDS, ...LEGACY_SORT_COLUMN_IDS];
-const STORAGE_KEY = 'vrcx:table:friendList';
-
-function normalizeId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-}
-
-function languageFlagLabel(languageKey) {
-    const countryCode = languageMappings[String(languageKey || '').toLowerCase()];
-    if (!countryCode || !/^[a-z]{2}$/i.test(countryCode)) {
-        return String(languageKey || '?').slice(0, 3).toUpperCase() || '?';
-    }
-
-    return String.fromCodePoint(
-        ...countryCode
-            .toUpperCase()
-            .split('')
-            .map((letter) => 0x1f1e6 + letter.charCodeAt(0) - 65)
-    );
-}
-
-function languageTooltipLabel(entry) {
-    const value = entry?.value || entry?.key || '';
-    const key = entry?.key || '';
-    if (value && key) {
-        return `${value} (${key})`;
-    }
-    return value || key;
-}
-
-function safeJsonParse(value) {
-    if (!value) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
-
-function readPersistedState() {
-    if (typeof window === 'undefined') {
-        return {};
-    }
-
-    return safeJsonParse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
-}
-
-function writePersistedState(patch) {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
-    const current = readPersistedState();
-    window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            ...current,
-            ...patch,
-            updatedAt: Date.now()
-        })
-    );
-}
-
-function sanitizeSorting(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_SORTING;
-    }
-
-    const filtered = value.filter(
-        (entry) =>
-            entry &&
-            typeof entry.id === 'string' &&
-            COLUMN_IDS.includes(entry.id)
-    );
-    return filtered.length ? filtered : DEFAULT_SORTING;
-}
-
-function sanitizePageSizes(value) {
-    if (!Array.isArray(value)) {
-        return DEFAULT_PAGE_SIZES;
-    }
-
-    const normalized = Array.from(
-        new Set(
-            value
-                .map((entry) => Number.parseInt(entry, 10))
-                .filter((entry) => Number.isFinite(entry) && entry > 0)
-        )
-    ).sort((left, right) => left - right);
-
-    return normalized.length ? normalized : DEFAULT_PAGE_SIZES;
-}
-
-function sanitizeColumnVisibility(value) {
-    const visibility = {};
-    if (value && typeof value === 'object') {
-        for (const columnId of COLUMN_IDS) {
-            if (columnId === 'friendNumber') {
-                continue;
-            }
-            if (typeof value[columnId] === 'boolean') {
-                visibility[columnId] = value[columnId];
-            }
-        }
-    }
-    return visibility;
-}
-
-function sanitizeColumnOrder(value) {
-    if (!Array.isArray(value)) {
-        return [...COLUMN_IDS];
-    }
-
-    const orderedColumns = value.filter(
-        (columnId, index, source) => COLUMN_IDS.includes(columnId) && source.indexOf(columnId) === index
-    );
-    const missingColumns = COLUMN_IDS.filter((columnId) => !orderedColumns.includes(columnId));
-
-    return [...orderedColumns, ...missingColumns];
-}
-
-function sanitizeColumnSizing(value) {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
-
-    const sizing = {};
-    for (const columnId of COLUMN_IDS) {
-        const width = Number.parseInt(value[columnId], 10);
-        if (Number.isFinite(width) && width > 0) {
-            sizing[columnId] = width;
-        }
-    }
-    return sizing;
-}
-
-function resolvePageSize(candidate, allowed, fallback = DEFAULT_PAGE_SIZES[1]) {
-    const parsed = Number.parseInt(candidate, 10);
-    if (Number.isFinite(parsed) && parsed > 0) {
-        if (allowed.includes(parsed)) {
-            return parsed;
-        }
-
-        if (allowed.includes(fallback)) {
-            return fallback;
-        }
-
-        return allowed[0] ?? DEFAULT_PAGE_SIZES[0];
-    }
-
-    if (allowed.includes(fallback)) {
-        return fallback;
-    }
-
-    return allowed[0] ?? DEFAULT_PAGE_SIZES[0];
-}
-
-function buildFavoriteIdSet(remoteFavoriteIds, localFriendFavorites) {
-    const set = new Set();
-    for (const id of remoteFavoriteIds ?? []) {
-        const normalized = normalizeId(id);
-        if (normalized) {
-            set.add(normalized);
-        }
-    }
-    for (const values of Object.values(localFriendFavorites ?? {})) {
-        if (!Array.isArray(values)) {
-            continue;
-        }
-        for (const id of values) {
-            const normalized = normalizeId(id);
-            if (normalized) {
-                set.add(normalized);
-            }
-        }
-    }
-    return set;
-}
-
-function buildUserStatsById(statsRows, rosterRows) {
-    const dataByDisplayName = new Map();
-    const friendsByDisplayName = new Map();
-    const statsById = new Map();
-
-    for (const row of Array.isArray(statsRows) ? statsRows : []) {
-        const displayName = String(row?.displayName || '').trim();
-        const userId = normalizeId(row?.userId);
-        if (displayName && userId) {
-            dataByDisplayName.set(displayName, userId);
-        }
-    }
-
-    for (const friend of Array.isArray(rosterRows) ? rosterRows : []) {
-        const displayName = String(friend?.displayName || '').trim();
-        const userId = normalizeId(friend?.id);
-        if (displayName && userId) {
-            friendsByDisplayName.set(displayName, userId);
-        }
-    }
-
-    for (const row of Array.isArray(statsRows) ? statsRows : []) {
-        const displayName = String(row?.displayName || '').trim();
-        const userId = normalizeId(row?.userId) ||
-            normalizeId(dataByDisplayName.get(displayName)) ||
-            normalizeId(friendsByDisplayName.get(displayName));
-        if (!userId) {
-            continue;
-        }
-
-        const current = statsById.get(userId);
-        const next = {
-            lastSeen: row?.lastSeen || '',
-            timeSpent: Number(row?.timeSpent) || 0,
-            joinCount: Number(row?.joinCount) || 0,
-            displayName
-        };
-        if (!current) {
-            statsById.set(userId, next);
-            continue;
-        }
-
-        if (Date.parse(next.lastSeen) > Date.parse(current.lastSeen)) {
-            current.lastSeen = next.lastSeen;
-        }
-        current.timeSpent += next.timeSpent;
-        current.joinCount += next.joinCount;
-        current.displayName = next.displayName || current.displayName;
-    }
-
-    return statsById;
-}
-
-function resolveStatusMeta(friend) {
-    const statusForIndicator = friend || {};
-    const normalizedStatus = normalizeUserStatus(statusForIndicator);
-    const indicatorClassName = userStatusIndicatorClassName(statusForIndicator, { showOffline: true, className: 'mr-1' });
-    return {
-        badgeVariant: 'outline',
-        indicatorClassName,
-        label: friend?.statusDescription || (normalizedStatus === 'state-active' ? 'Active' : normalizedStatus),
-        showIndicator: Boolean(indicatorClassName),
-        sortRank: userStatusSortRank(statusForIndicator || 'offline')
-    };
-}
-
-function friendNumberForSort(friend) {
-    return Number.parseInt(friend?.$friendNumber ?? friend?.friendNumber ?? 0, 10) || 0;
-}
-
-function matchesSearch(friend, searchQuery, activeSearchFilters, userMemoById, userNoteById) {
-    if (!searchQuery) {
-        return true;
-    }
-
-    const filters = activeSearchFilters.size
-        ? activeSearchFilters
-        : new Set(DEFAULT_SEARCH_FILTER_IDS);
-    const query = searchQuery.trim();
-    if (!query) {
-        return true;
-    }
-
-    const loweredQuery = query.toLowerCase();
-    const cleanedQuery = removeWhitespace(loweredQuery);
-    const uppercaseQuery = query.toUpperCase();
-
-    if (filters.has('displayName')) {
-        const displayName = String(friend?.displayName || '');
-        const condensedDisplayName = removeWhitespace(displayName).toLowerCase();
-        const normalizedDisplayName = removeConfusables(displayName).toLowerCase();
-        if (
-            condensedDisplayName.includes(cleanedQuery) ||
-            normalizedDisplayName.includes(cleanedQuery)
-        ) {
-            return true;
-        }
-    }
-
-    if (filters.has('username') && String(friend?.username || '').toLowerCase().includes(loweredQuery)) {
-        return true;
-    }
-
-    if (filters.has('rank') && String(friend?.$trustLevel || '').toUpperCase().includes(uppercaseQuery)) {
-        return true;
-    }
-
-    if (
-        filters.has('status') &&
-        `${friend?.statusDescription || ''} ${friend?.status || ''} ${friend?.stateBucket || ''}`
-            .toLowerCase()
-            .includes(loweredQuery)
-    ) {
-        return true;
-    }
-
-    if (filters.has('bio') && String(friend?.bio || '').toLowerCase().includes(loweredQuery)) {
-        return true;
-    }
-
-    if (
-        filters.has('note') &&
-        String(userNoteById.get(normalizeId(friend?.id)) || friend?.note || '')
-            .toLowerCase()
-            .includes(loweredQuery)
-    ) {
-        return true;
-    }
-
-    if (
-        filters.has('memo') &&
-        String(userMemoById.get(normalizeId(friend?.id)) || friend?.memo || friend?.$memo || '')
-            .toLowerCase()
-            .includes(loweredQuery)
-    ) {
-        return true;
-    }
-
-    return false;
-}
+import {
+    languageFlagLabel,
+    languageTooltipLabel,
+    resolveFriendStatusMeta as resolveStatusMeta
+} from './friendListDisplay.js';
+import {
+    buildFriendListFavoriteIdSet as buildFavoriteIdSet,
+    buildFriendListUserStatsById as buildUserStatsById,
+    friendNumberForSort,
+    filterFriendListRows,
+    normalizeFriendListId as normalizeId
+} from './friendListRows.js';
+import {
+    FRIEND_LIST_DEFAULT_PAGE_SIZES as DEFAULT_PAGE_SIZES,
+    FRIEND_LIST_SEARCH_FILTERS as SEARCH_FILTERS,
+    readPersistedFriendListState as readPersistedState,
+    resolveFriendListPageSize as resolvePageSize,
+    sanitizeFriendListColumnOrder as sanitizeColumnOrder,
+    sanitizeFriendListColumnSizing as sanitizeColumnSizing,
+    sanitizeFriendListColumnVisibility as sanitizeColumnVisibility,
+    sanitizeFriendListPageSizes as sanitizePageSizes,
+    sanitizeFriendListSorting as sanitizeSorting,
+    writePersistedFriendListState as writePersistedState
+} from './friendListState.js';
 
 function SortButton({ column, label, descFirst = false }) {
     const direction = column.getIsSorted();
@@ -825,11 +498,14 @@ export function FriendListPage({ embedded = false } = {}) {
     }, [applyFriendPatches, rosterStatsKey]);
 
     const filteredRows = useMemo(() => {
-        return rosterRows.filter((friend) => {
-            if (favoritesOnly && !favoriteFriendIds.has(normalizeId(friend?.id))) {
-                return false;
-            }
-            return matchesSearch(friend, searchQuery, activeSearchFilterIds, userMemoById, userNoteById);
+        return filterFriendListRows({
+            rosterRows,
+            favoritesOnly,
+            favoriteFriendIds,
+            searchQuery,
+            activeSearchFilterIds,
+            userMemoById,
+            userNoteById
         });
     }, [activeSearchFilterIds, favoriteFriendIds, favoritesOnly, rosterRows, searchQuery, userMemoById, userNoteById]);
 
