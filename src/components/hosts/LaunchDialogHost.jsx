@@ -125,9 +125,10 @@ function LaunchField({ label, value, notice = '', onCopy }) {
                     size="icon-sm"
                     variant="ghost"
                     className="shrink-0 rounded-full"
+                    aria-label={`Copy ${label}`}
                     disabled={!value}
                     onClick={onCopy}>
-                    <CopyIcon />
+                    <CopyIcon data-icon="inline-start" />
                 </Button>
             </div>
         </Field>
@@ -346,7 +347,7 @@ export function LaunchDialogHost() {
                                         disabled={!canUseResolvedInstance || Boolean(busy)}
                                         className="rounded-l-none border-l border-primary-foreground/25"
                                         aria-label="More launch options">
-                                        <MoreHorizontalIcon />
+                                        <MoreHorizontalIcon data-icon="inline-start" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-48">

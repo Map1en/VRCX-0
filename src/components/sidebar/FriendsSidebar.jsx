@@ -22,6 +22,7 @@ import {
     ContextMenuSubTrigger,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { Button } from '@/ui/shadcn/button';
 import { configRepository, notificationRepository, userProfileRepository, vrchatSearchRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
@@ -553,16 +554,17 @@ function FriendRow({
         <ContextMenu>
             <ContextMenuTrigger asChild>
                 <div className="flex w-full items-center rounded-lg hover:bg-muted/50">
-                    <button
+                    <Button
                         type="button"
-                        className="flex min-w-0 flex-1 items-center gap-2 p-1.5 text-left text-sm"
+                        variant="ghost"
+                        className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal"
                         onClick={actions.open}>
                         <span className="relative flex size-9 shrink-0 items-center justify-center overflow-visible">
                             <span className="relative z-0 flex size-full items-center justify-center overflow-hidden rounded-full border bg-muted">
                                 {imageUrl ? (
                                     <img src={imageUrl} alt="" className="size-full object-cover" />
                                 ) : (
-                                    <UserIcon className="size-4 text-muted-foreground" />
+                                    <UserIcon data-icon="inline-start" className="text-muted-foreground" />
                                 )}
                             </span>
                             {statusDotClassName ? (
@@ -575,7 +577,7 @@ function FriendRow({
                             ) : null}
                         </span>
                         <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium leading-[18px]" style={nameStyle}>{displayName}</span>
+                            <span className="block truncate font-medium leading-5" style={nameStyle}>{displayName}</span>
                             <span className="block truncate text-xs text-muted-foreground">
                                 {showLocationSubline ? (
                                     <Location
@@ -591,7 +593,7 @@ function FriendRow({
                                 )}
                             </span>
                         </span>
-                    </button>
+                    </Button>
                 </div>
             </ContextMenuTrigger>
             <ContextMenuContent className="w-56">
@@ -649,16 +651,18 @@ function estimateFriendSidebarRowSize(row) {
 
 function FriendSectionHeader({ id, title, count, open, onToggle }) {
     return (
-        <button
+        <Button
             type="button"
-            className="flex w-full items-center py-1.5 pt-4 text-left text-xs"
+            variant="ghost"
+            size="sm"
+            className="h-auto w-full justify-start px-0 py-1.5 pt-4 text-left text-xs font-normal hover:bg-transparent"
             onClick={() => onToggle(id)}>
-            <ChevronDownIcon className={cn('size-4 transition-transform', !open && '-rotate-90')} />
+            <ChevronDownIcon data-icon="inline-start" className={cn('transition-transform', !open && '-rotate-90')} />
             <span className="ml-1.5">
                 {title}
                 {count !== null && count !== undefined ? ` \u2014 ${count}` : ''}
             </span>
-        </button>
+        </Button>
     );
 }
 

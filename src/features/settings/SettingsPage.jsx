@@ -32,6 +32,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Field as ShadcnField, FieldLabel as ShadcnFieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -1645,7 +1646,7 @@ export function SettingsPage() {
                             <Field label={t('view.settings.appearance.appearance.font_family')}>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button type="button" variant="outline" size="sm" className="min-w-[180px] justify-between font-normal">
+                                        <Button type="button" variant="outline" size="sm" className="min-w-44 justify-between font-normal">
                                             <span className="truncate">{fontDropdownDisplayText}</span>
                                             <ChevronDownIcon data-icon="inline-end" className="opacity-50" />
                                         </Button>
@@ -1930,10 +1931,12 @@ export function SettingsPage() {
                                             <div className={entry.className}>{t(entry.labelKey)}</div>
                                             <div className="flex flex-wrap gap-1">
                                                 {entry.presets.map((preset) => (
-                                                    <button
+                                                    <Button
                                                         key={preset}
                                                         type="button"
-                                                        className="size-6 rounded border"
+                                                        variant="outline"
+                                                        size="icon-sm"
+                                                        className="size-6 p-0"
                                                         style={{ backgroundColor: preset }}
                                                         aria-label={preset}
                                                         onClick={() => void saveTrustColor(entry.key, preset)}
@@ -2116,12 +2119,13 @@ export function SettingsPage() {
                             <CardTitle>{t('view.settings.discord_presence.discord_presence.header')}</CardTitle>
                             <CardDescription className="flex flex-col gap-2">
                                 <div>{t('view.settings.discord_presence.discord_presence.description')}</div>
-                                <button
+                                <Button
                                     type="button"
-                                    className="text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
+                                    variant="link"
+                                    className="h-auto justify-start p-0 text-left text-xs font-normal text-muted-foreground"
                                     onClick={() => setSystemHostOpen('vrchatConfigOpen', true)}>
                                     {t('view.settings.discord_presence.discord_presence.enable_tooltip')}
-                                </button>
+                                </Button>
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col">
@@ -2981,7 +2985,7 @@ export function SettingsPage() {
                                         size="icon-xs"
                                         aria-label={`${t('common.actions.remove')} ${size}`}
                                         onClick={() => removeTablePageSize(size)}>
-                                        <XIcon />
+                                        <XIcon data-icon="inline-start" />
                                     </Button>
                                 </Badge>
                             ))}
@@ -3022,17 +3026,19 @@ export function SettingsPage() {
                                 {filteredTablePageSizeOptions.map((size) => {
                                     const optionId = `settings-table-page-size-option-${size}`;
                                     return (
-                                        <label
+                                        <ShadcnField
                                             key={size}
-                                            htmlFor={optionId}
-                                            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                                            orientation="horizontal"
+                                            className="rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground">
                                             <Checkbox
                                                 id={optionId}
                                                 checked={tablePageSizesDraft.includes(size)}
                                                 onCheckedChange={() => toggleTablePageSize(size)}
                                             />
-                                            <span>{size}</span>
-                                        </label>
+                                            <ShadcnFieldLabel htmlFor={optionId} className="w-full cursor-pointer">
+                                                {size}
+                                            </ShadcnFieldLabel>
+                                        </ShadcnField>
                                     );
                                 })}
                             </FieldGroup>

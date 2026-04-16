@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BellIcon, ClockIcon, MonitorIcon, RadioIcon, ZoomInIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { cn } from '@/lib/utils.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -153,8 +154,8 @@ function formatStatusDate(value) {
 }
 
 function StatusDot({ active, warn = false }) {
-    const color = active ? 'bg-green-500' : warn ? 'bg-yellow-500' : 'bg-muted-foreground/40';
-    return <span className={`inline-block size-2 shrink-0 rounded-full ${color}`} />;
+    const color = warn ? 'bg-destructive' : active ? 'bg-primary' : 'bg-muted-foreground/40';
+    return <span className={cn('inline-block size-2 shrink-0 rounded-full', color)} />;
 }
 
 function StatusSegment({ visible = true, active = false, warn = false, label, value, children, onClick, tooltip }) {
@@ -173,12 +174,14 @@ function StatusSegment({ visible = true, active = false, warn = false, label, va
 
     if (typeof onClick === 'function') {
         const segment = (
-            <button
+            <Button
                 type="button"
-                className="flex h-6 min-w-0 items-center gap-1.5 border-r px-2 text-left hover:bg-muted"
+                variant="ghost"
+                size="sm"
+                className="h-6 min-w-0 justify-start gap-1.5 rounded-none border-r px-2 text-left font-normal"
                 onClick={onClick}>
                 {content}
-            </button>
+            </Button>
         );
         if (!tooltip) {
             return segment;
@@ -546,7 +549,7 @@ export function AppStatusBar() {
                                 size="sm"
                                 className="relative h-6 gap-1.5 rounded-none px-2"
                                 onClick={() => openNotifications(true)}>
-                                <BellIcon className="size-3.5" />
+                                <BellIcon data-icon="inline-start" />
                                 Notifications
                                 {unreadCount > 0 ? (
                                     <Badge className="ml-1 min-w-5 justify-center px-1.5 py-0 text-xs leading-5">

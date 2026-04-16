@@ -41,7 +41,6 @@ import {
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import {
-    configRepository,
     playerListRepository,
     vrchatAuthRepository,
     vrchatSearchRepository,
@@ -239,7 +238,7 @@ function resolvePlatformMeta(platform) {
         return {
             label: 'PC',
             icon: MonitorIcon,
-            className: 'text-sky-600'
+            className: 'text-muted-foreground'
         };
     }
 
@@ -247,7 +246,7 @@ function resolvePlatformMeta(platform) {
         return {
             label: 'Android',
             icon: SmartphoneIcon,
-            className: 'text-emerald-600'
+            className: 'text-muted-foreground'
         };
     }
 
@@ -255,7 +254,7 @@ function resolvePlatformMeta(platform) {
         return {
             label: 'iOS',
             icon: AppleIcon,
-            className: 'text-orange-600'
+            className: 'text-muted-foreground'
         };
     }
 
@@ -424,11 +423,13 @@ function CurrentWorldHeader({
     }
 
     return (
-        <div className="flex min-h-[120px] flex-col gap-3 md:flex-row">
-            <button
+        <div className="flex min-h-28 flex-col gap-3 md:flex-row">
+            <Button
                 type="button"
-                className="flex h-[120px] w-[160px] shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted"
+                variant="ghost"
+                className="h-28 w-40 shrink-0 overflow-hidden rounded-md border bg-muted p-0"
                 disabled={!imageUrl}
+                aria-label={worldName}
                 onClick={() =>
                     imageUrl && onPreviewImage?.({
                         url: convertFileUrlToImageUrl(world?.imageUrl || imageUrl, 1024),
@@ -438,20 +439,18 @@ function CurrentWorldHeader({
                 {imageUrl ? (
                     <img src={imageUrl} alt="" loading="lazy" className="size-full object-cover" />
                 ) : (
-                    <UsersIcon className="size-8 text-muted-foreground" />
+                    <UsersIcon data-icon="inline-start" className="text-muted-foreground" />
                 )}
-            </button>
-            <div className="min-w-0 flex-1 space-y-1.5">
+            </Button>
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <div>
                     <Button
                         type="button"
                         variant="link"
                         className="h-auto max-w-full justify-start p-0 text-left text-base font-semibold"
                         onClick={() => openWorldDialog({ worldId: worldDialogTarget, title: worldName })}>
-                        <span className="truncate">
-                            {isHome ? <HomeIcon className="mr-1 inline-block size-4" /> : null}
-                            {worldName}
-                        </span>
+                        {isHome ? <HomeIcon data-icon="inline-start" /> : null}
+                        <span className="truncate">{worldName}</span>
                     </Button>
                 </div>
                 {world?.authorName ? (
@@ -552,19 +551,20 @@ function SortButton({ column, label }) {
     const direction = column.getIsSorted();
 
     return (
-        <button
+        <Button
             type="button"
-            className="inline-flex items-center gap-1 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+            variant="ghost"
+            className="h-auto justify-start gap-1 p-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
             onClick={() => column.toggleSorting(direction === 'asc')}>
             <span>{label}</span>
             {direction === 'asc' ? (
-                <ArrowUpIcon className="size-3.5" />
+                <ArrowUpIcon data-icon="inline-end" />
             ) : direction === 'desc' ? (
-                <ArrowDownIcon className="size-3.5" />
+                <ArrowDownIcon data-icon="inline-end" />
             ) : (
-                <ArrowUpDownIcon className="size-3.5" />
+                <ArrowUpDownIcon data-icon="inline-end" />
             )}
-        </button>
+        </Button>
     );
 }
 
@@ -1411,7 +1411,7 @@ export function PlayerListPage({ embedded = false } = {}) {
                                     {getFaviconUrl(link) ? (
                                         <img src={getFaviconUrl(link)} alt="" className="size-4" />
                                     ) : (
-                                        <ExternalLinkIcon />
+                                        <ExternalLinkIcon data-icon="inline-start" />
                                     )}
                                 </Button>
                             ))
@@ -1505,6 +1505,15 @@ export function PlayerListPage({ embedded = false } = {}) {
                                 <TableRow
                                     key={row.id}
                                     className="cursor-pointer"
+                                    tabIndex={0}
+                                    aria-label={`Open ${row.original?.displayName || row.original?.userId || 'player'}`}
+                                    onKeyDown={(event) => {
+                                        if (event.key !== 'Enter' && event.key !== ' ') {
+                                            return;
+                                        }
+                                        event.preventDefault();
+                                        void openPlayerRow(row.original);
+                                    }}
                                     onClick={() => void openPlayerRow(row.original)}>
                                     {row.getVisibleCells().map((cell) => (
                                         <ResizableTableCell key={cell.id} cell={cell} />

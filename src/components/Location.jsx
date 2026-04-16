@@ -40,6 +40,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Tooltip,
@@ -368,20 +369,14 @@ export function Location({
                         </LocationTrigger>
                     </LocationTooltip>
                     {groupName ? (
-                        <span
-                            className="ml-0.5 cursor-pointer truncate hover:underline"
-                            role="button"
-                            tabIndex={0}
+                        <Button
+                            type="button"
+                            variant="link"
+                            className="ml-0.5 h-auto min-w-0 p-0 text-left font-normal text-inherit"
                             onClick={openGroup}
-                            onKeyDown={(event) => {
-                                event.stopPropagation();
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                    event.preventDefault();
-                                    openGroup(event);
-                                }
-                            }}>
+                            onKeyDown={(event) => event.stopPropagation()}>
                             ({groupName})
-                        </span>
+                        </Button>
                     ) : null}
                     {isClosed ? (
                         <LocationTooltip

@@ -13,7 +13,7 @@ export function SearchPagination({ show = false, prevDisabled = true, nextDisabl
     }
 
     return (
-        <Pagination className="h-[60px] shrink-0">
+        <Pagination className="h-16 shrink-0">
             <PaginationContent>
                 <PaginationItem>
                     <Button

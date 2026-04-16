@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -171,26 +172,26 @@ function NavItemRow({
     onDeleteDashboard
 }) {
     return (
-        <div className={`flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm ${indent ? 'ml-6' : ''}`}>
+        <div className={cn('flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm', indent && 'ml-6')}>
             <span className="min-w-0 flex-1 truncate">{label}</span>
-            <Button type="button" variant="ghost" size="icon-sm" disabled={!canMoveUp} onClick={onMoveUp}>
-                <ArrowUpIcon className="size-3.5" />
+            <Button type="button" variant="ghost" size="icon-sm" aria-label={`Move ${label} up`} disabled={!canMoveUp} onClick={onMoveUp}>
+                <ArrowUpIcon data-icon="inline-start" />
             </Button>
-            <Button type="button" variant="ghost" size="icon-sm" disabled={!canMoveDown} onClick={onMoveDown}>
-                <ArrowDownIcon className="size-3.5" />
+            <Button type="button" variant="ghost" size="icon-sm" aria-label={`Move ${label} down`} disabled={!canMoveDown} onClick={onMoveDown}>
+                <ArrowDownIcon data-icon="inline-start" />
             </Button>
             {isDashboard ? (
                 <>
-                    <Button type="button" variant="ghost" size="icon-sm" onClick={onEditDashboard}>
-                        <PencilIcon className="size-3.5" />
+                    <Button type="button" variant="ghost" size="icon-sm" aria-label={`Edit ${label}`} onClick={onEditDashboard}>
+                        <PencilIcon data-icon="inline-start" />
                     </Button>
-                    <Button type="button" variant="ghost" size="icon-sm" onClick={onDeleteDashboard}>
-                        <Trash2Icon className="size-3.5" />
+                    <Button type="button" variant="ghost" size="icon-sm" aria-label={`Delete ${label}`} onClick={onDeleteDashboard}>
+                        <Trash2Icon data-icon="inline-start" />
                     </Button>
                 </>
             ) : null}
-            <Button type="button" variant="ghost" size="icon-sm" onClick={onHide}>
-                {isTool ? <Trash2Icon className="size-3.5" /> : <EyeOffIcon className="size-3.5" />}
+            <Button type="button" variant="ghost" size="icon-sm" aria-label={`${isTool ? 'Remove' : 'Hide'} ${label}`} onClick={onHide}>
+                {isTool ? <Trash2Icon data-icon="inline-start" /> : <EyeOffIcon data-icon="inline-start" />}
             </Button>
         </div>
     );
@@ -440,17 +441,39 @@ export function CustomNavDialog({
                                     <div key={entry.id} className="flex flex-col gap-1 rounded-lg border p-2">
                                         <div className="flex items-center gap-2 text-sm font-medium">
                                             <span className="min-w-0 flex-1 truncate">{entry.name}</span>
-                                            <Button type="button" variant="ghost" size="icon-sm" disabled={index === 0} onClick={() => moveTopLevel(index, -1)}>
-                                                <ArrowUpIcon />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label={`Move ${entry.name} up`}
+                                                disabled={index === 0}
+                                                onClick={() => moveTopLevel(index, -1)}>
+                                                <ArrowUpIcon data-icon="inline-start" />
                                             </Button>
-                                            <Button type="button" variant="ghost" size="icon-sm" disabled={index === localLayout.length - 1} onClick={() => moveTopLevel(index, 1)}>
-                                                <ArrowDownIcon />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label={`Move ${entry.name} down`}
+                                                disabled={index === localLayout.length - 1}
+                                                onClick={() => moveTopLevel(index, 1)}>
+                                                <ArrowDownIcon data-icon="inline-start" />
                                             </Button>
-                                            <Button type="button" variant="ghost" size="icon-sm" onClick={() => void editFolder(index)}>
-                                                <PencilIcon />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label={`Edit ${entry.name}`}
+                                                onClick={() => void editFolder(index)}>
+                                                <PencilIcon data-icon="inline-start" />
                                             </Button>
-                                            <Button type="button" variant="ghost" size="icon-sm" onClick={() => deleteFolder(index)}>
-                                                <FolderXIcon />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label={`Delete ${entry.name}`}
+                                                onClick={() => deleteFolder(index)}>
+                                                <FolderXIcon data-icon="inline-start" />
                                             </Button>
                                         </div>
                                         {entry.items?.length ? (
@@ -517,14 +540,15 @@ export function CustomNavDialog({
                             </div>
                             <div className="flex flex-col gap-1">
                                 {hiddenItems.map((item) => (
-                                    <button
+                                    <Button
                                         key={item.key}
                                         type="button"
-                                        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground hover:bg-muted/50"
+                                        variant="ghost"
+                                        className="h-auto w-full justify-start px-2 py-1.5 text-left font-normal text-muted-foreground"
                                         onClick={() => showItem(item.key)}>
-                                        <EyeIcon />
+                                        <EyeIcon data-icon="inline-start" />
                                         <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         </>
@@ -533,15 +557,15 @@ export function CustomNavDialog({
                 <DialogFooter className="items-center justify-between sm:justify-between">
                     <div className="flex flex-wrap gap-2">
                         <Button type="button" variant="outline" onClick={() => void addFolder()}>
-                            <FolderPlusIcon className="size-4" />
+                            <FolderPlusIcon data-icon="inline-start" />
                             {t('nav_menu.custom_nav.new_folder')}
                         </Button>
                         <Button type="button" variant="outline" onClick={() => void addDashboard()}>
-                            <PlusIcon className="size-4" />
+                            <PlusIcon data-icon="inline-start" />
                             {t('dashboard.new_dashboard')}
                         </Button>
                         <Button type="button" variant="ghost" className="text-destructive" onClick={resetLayout}>
-                            <RotateCcwIcon className="size-4" />
+                            <RotateCcwIcon data-icon="inline-start" />
                             {t('nav_menu.custom_nav.restore_default')}
                         </Button>
                     </div>

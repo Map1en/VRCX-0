@@ -11,6 +11,7 @@ import {
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
+import { cn } from '@/lib/utils.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { GAME_LOG_FILTER_TYPES, gameLogRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
@@ -67,12 +68,13 @@ function GameLogWidgetUserName({ row, className = '' }) {
     }
 
     return (
-        <button
+        <Button
             type="button"
-            className={`cursor-pointer text-left hover:underline ${className}`}
+            variant="link"
+            className={cn('h-auto min-w-0 cursor-pointer justify-start p-0 text-left font-normal', className)}
             onClick={() => openGameLogWidgetUser(row)}>
             {displayName}
-        </button>
+        </Button>
     );
 }
 
@@ -138,12 +140,13 @@ function GameLogEntryContent({ row, showDetail }) {
                     <PlayIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
                     {row?.videoId ? <span className="mr-1 shrink-0 text-muted-foreground">{row.videoId}:</span> : null}
                     {canOpenVideo ? (
-                        <button
+                        <Button
                             type="button"
-                            className="min-w-0 truncate text-left text-muted-foreground hover:underline"
+                            variant="link"
+                            className="h-auto min-w-0 justify-start p-0 text-left font-normal text-muted-foreground"
                             onClick={() => void openExternalLink(row.videoUrl)}>
-                            {videoLabel}
-                        </button>
+                            <span className="truncate">{videoLabel}</span>
+                        </Button>
                     ) : (
                         <span className="min-w-0 truncate text-muted-foreground">{videoLabel}</span>
                     )}
@@ -245,7 +248,7 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
-                    <SettingsIcon />
+                    <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">

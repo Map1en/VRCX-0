@@ -61,11 +61,12 @@ export function NotificationHost() {
                                         </div>
                                     </div>
                                     <Button
-                                        size="icon"
+                                        type="button"
+                                        size="icon-sm"
                                         variant="ghost"
-                                        className="size-7"
+                                        aria-label="Dismiss notification"
                                         onClick={() => dismissNotification(item.id)}>
-                                        <XIcon />
+                                        <XIcon data-icon="inline-start" />
                                     </Button>
                                 </div>
                             </div>

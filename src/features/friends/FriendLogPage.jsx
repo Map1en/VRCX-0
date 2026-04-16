@@ -4,7 +4,6 @@ import {
     ArrowRightIcon,
     ArrowUpDownIcon,
     ArrowUpIcon,
-    LoaderCircleIcon,
     RefreshCwIcon,
     SearchIcon,
     Trash2Icon,
@@ -48,6 +47,7 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
@@ -61,6 +61,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
@@ -261,19 +262,21 @@ function SortButton({ column, label }) {
     const direction = column.getIsSorted();
 
     return (
-        <button
+        <Button
             type="button"
-            className="inline-flex items-center gap-1 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+            variant="ghost"
+            size="sm"
+            className="h-auto justify-start px-0 py-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
             onClick={() => column.toggleSorting(direction === 'asc')}>
             <span>{label}</span>
             {direction === 'asc' ? (
-                <ArrowUpIcon className="size-3.5" />
+                <ArrowUpIcon data-icon="inline-end" />
             ) : direction === 'desc' ? (
-                <ArrowDownIcon className="size-3.5" />
+                <ArrowDownIcon data-icon="inline-end" />
             ) : (
-                <ArrowUpDownIcon className="size-3.5" />
+                <ArrowUpDownIcon data-icon="inline-end" />
             )}
-        </button>
+        </Button>
     );
 }
 
@@ -300,25 +303,29 @@ function FriendLogTypeFilterDropdown({ value, onChange }) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuItem onSelect={() => onChange([])}>
-                    {t('view.friend_log.filter_placeholder')}
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuItem onSelect={() => onChange([])}>
+                        {t('view.friend_log.filter_placeholder')}
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                {FRIEND_LOG_TYPES.map((type) => (
-                    <DropdownMenuCheckboxItem
-                        key={type}
-                        checked={valueSet.has(type)}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={(checked) => {
-                            onChange(
-                                checked
-                                    ? [...value, type]
-                                    : value.filter((entry) => entry !== type)
-                            );
-                        }}>
-                        {friendLogTypeLabel(type, t)}
-                    </DropdownMenuCheckboxItem>
-                ))}
+                <DropdownMenuGroup>
+                    {FRIEND_LOG_TYPES.map((type) => (
+                        <DropdownMenuCheckboxItem
+                            key={type}
+                            checked={valueSet.has(type)}
+                            onSelect={(event) => event.preventDefault()}
+                            onCheckedChange={(checked) => {
+                                onChange(
+                                    checked
+                                        ? [...value, type]
+                                        : value.filter((entry) => entry !== type)
+                                );
+                            }}>
+                            {friendLogTypeLabel(type, t)}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -327,9 +334,10 @@ function FriendLogTypeFilterDropdown({ value, onChange }) {
 function renderUserCell(row) {
     const displayName = row?.displayName || row?.userId || '';
     const userLabel = row?.userId ? (
-        <button
+        <Button
             type="button"
-            className="text-left text-sm font-medium hover:underline"
+            variant="link"
+            className="h-auto justify-start p-0 text-left text-sm font-medium"
             onClick={() =>
                 openUserDialog({
                     userId: row.userId,
@@ -337,7 +345,7 @@ function renderUserCell(row) {
                 })
             }>
             {displayName}
-        </button>
+        </Button>
     ) : (
         <div className="text-sm font-medium">{displayName}</div>
     );
@@ -792,11 +800,11 @@ export function FriendLogPage({ embedded = false } = {}) {
                                     })
                                 }>
                                 {deletingRowKey === rowKey ? (
-                                    <LoaderCircleIcon className="animate-spin" />
+                                    <Spinner data-icon="inline-start" />
                                 ) : shiftHeld ? (
-                                    <XIcon className="text-destructive" />
+                                    <XIcon data-icon="inline-start" className="text-destructive" />
                                 ) : (
-                                    <Trash2Icon />
+                                    <Trash2Icon data-icon="inline-start" />
                                 )}
                             </Button>
                         </div>
@@ -865,9 +873,9 @@ export function FriendLogPage({ embedded = false } = {}) {
                                 disabled={!currentUserId || loadStatus === 'running'}
                                 onClick={() => setRefreshToken((value) => value + 1)}>
                                 {loadStatus === 'running' ? (
-                                    <LoaderCircleIcon className="animate-spin" />
+                                    <Spinner data-icon="inline-start" />
                                 ) : (
-                                    <RefreshCwIcon />
+                                    <RefreshCwIcon data-icon="inline-start" />
                                 )}
                             </Button>
                         </div>

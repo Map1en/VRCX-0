@@ -45,6 +45,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -76,6 +77,7 @@ import { backend } from '@/platform/index.js';
 import { logoutFromReactShell } from '@/services/authExecutionService.js';
 import { directAccessParse } from '@/services/directAccessService.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import {
     setSidebarCollapsedPreference,
     setTableDensityPreference,
@@ -150,7 +152,7 @@ function themeModeLabel(themeMode, t) {
     return t(`view.settings.appearance.appearance.theme_mode_${themeMode}`);
 }
 
-function NavIcon({ entry, className = 'size-4' }) {
+function NavIcon({ entry, className = undefined }) {
     const toolKey = String(entry?.index || entry?.key || '').replace(/^tool-/, '');
     const Icon =
         iconByKey[entry?.index] ||
@@ -160,12 +162,12 @@ function NavIcon({ entry, className = 'size-4' }) {
     return <Icon className={className} />;
 }
 
-function NotifiedNavIcon({ entry, isNotified, className = 'size-4' }) {
+function NotifiedNavIcon({ entry, isNotified, className = undefined }) {
     return (
         <span className="relative inline-flex size-4 shrink-0 items-center justify-center">
             <NavIcon entry={entry} className={className} />
             {isNotified ? (
-                <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" aria-hidden="true" />
+                <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-destructive" aria-hidden="true" />
             ) : null}
         </span>
     );
@@ -239,15 +241,17 @@ function DashboardEntryAction({ entry, onEditDashboard, onDeleteDashboard, onUnp
     }
 
     const trigger = compact ? (
-        <button
+        <Button
             type="button"
+            variant="ghost"
+            size="icon"
             className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-md text-sidebar-foreground opacity-0 hover:bg-sidebar-accent group-hover/menu-sub-item:opacity-100 focus:opacity-100"
             onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
             }}>
-            <MoreHorizontalIcon className="size-3.5" />
-        </button>
+            <MoreHorizontalIcon data-icon="inline-start" />
+        </Button>
     ) : (
         <SidebarMenuAction
             type="button"
@@ -256,7 +260,7 @@ function DashboardEntryAction({ entry, onEditDashboard, onDeleteDashboard, onUnp
                 event.preventDefault();
                 event.stopPropagation();
             }}>
-            <MoreHorizontalIcon className="size-4" />
+            <MoreHorizontalIcon />
         </SidebarMenuAction>
     );
 
@@ -533,7 +537,7 @@ function NavMenuFolderItem({
                     onClick={() => setOpen((current) => !current)}>
                     <NotifiedNavIcon entry={item} isNotified={isNotified} />
                     <span>{label}</span>
-                    <ChevronRightIcon className={`ml-auto size-4 transition-transform ${open ? 'rotate-90' : ''}`} />
+                    <ChevronRightIcon className={cn('ml-auto transition-transform', open && 'rotate-90')} />
                 </SidebarMenuButton>
                 {open ? (
                     <SidebarMenuSub>
@@ -556,7 +560,7 @@ function NavMenuFolderItem({
                                         onClick={() => {
                                             void onSelect(entry);
                                         }}>
-                                        <NotifiedNavIcon entry={entry} isNotified={isEntryNotified(entry, notifiedKeys)} />
+                                        <NotifiedNavIcon entry={entry} isNotified={isEntryNotified(entry, notifiedKeys)} className="size-4" />
                                         <span>{labelForEntry(entry, t)}</span>
                                     </SidebarMenuSubButton>
                                     <DashboardEntryAction
@@ -933,7 +937,7 @@ export function AppNavMenu({ isCollapsed }) {
                                 onClick={() => {
                                     void handleCreateDashboard();
                                 }}>
-                                <PlusIcon className="size-4" />
+                                <PlusIcon />
                                 <span>{t('dashboard.new_dashboard')}</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -1050,7 +1054,7 @@ export function AppNavMenu({ isCollapsed }) {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton tooltip={t('nav_tooltip.help_support')}>
-                                    <HelpCircleIcon className="size-4" />
+                                    <HelpCircleIcon />
                                     <span>{t('nav_tooltip.help_support')}</span>
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
@@ -1083,7 +1087,7 @@ export function AppNavMenu({ isCollapsed }) {
                             onClick={() => {
                                 void setThemeModePreference(themeMode === 'light' ? 'dark' : 'light');
                             }}>
-                            {themeMode === 'light' ? <MoonIcon className="size-4" /> : <SunIcon className="size-4" />}
+                            {themeMode === 'light' ? <MoonIcon /> : <SunIcon />}
                             <span>{t('nav_tooltip.toggle_theme')}</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -1093,9 +1097,9 @@ export function AppNavMenu({ isCollapsed }) {
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton tooltip={t('nav_tooltip.manage')}>
                                     <span className="relative inline-flex size-4 items-center justify-center">
-                                        <SettingsIcon className="size-4" />
+                                        <SettingsIcon />
                                         {hasPendingUpdate ? (
-                                            <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" />
+                                            <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-destructive" />
                                         ) : null}
                                     </span>
                                     <span>{t('nav_tooltip.manage')}</span>
@@ -1109,16 +1113,17 @@ export function AppNavMenu({ isCollapsed }) {
                                         alt="VRCX-0"
                                         onClick={() => void openExternalLink(links.github)}
                                     />
-                                    <button
+                                    <Button
                                         type="button"
-                                        className="flex min-w-0 flex-col text-left"
+                                        variant="ghost"
+                                        className="h-auto min-w-0 flex-col items-start gap-0 p-0 text-left font-normal hover:bg-transparent"
                                         onClick={() => void openExternalLink(links.github)}>
                                         <span className="flex items-center gap-1 truncate text-sm font-medium">
                                             VRCX-0
-                                            <HeartIcon className="size-3 fill-current stroke-none text-primary" />
+                                            <HeartIcon data-icon="inline-end" className="fill-current stroke-none text-primary" />
                                         </span>
                                         <span className="text-xs text-muted-foreground">{appVersion}</span>
-                                    </button>
+                                    </Button>
                                 </div>
                                 <DropdownMenuSeparator />
                                 {hasPendingUpdate ? (
@@ -1211,7 +1216,7 @@ export function AppNavMenu({ isCollapsed }) {
                             onClick={() => {
                                 void setSidebarCollapsedPreference(sidebarOpen);
                             }}>
-                            {sidebarOpen ? <PanelLeftCloseIcon className="size-4" /> : <PanelLeftOpenIcon className="size-4" />}
+                            {sidebarOpen ? <PanelLeftCloseIcon /> : <PanelLeftOpenIcon />}
                             <span>{sidebarOpen ? t('nav_tooltip.collapse_menu') : t('nav_tooltip.expand_menu')}</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

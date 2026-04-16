@@ -3,7 +3,6 @@ import {
     CalendarDaysIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
-    LoaderCircleIcon,
     RefreshCcwIcon,
     Settings2Icon
 } from 'lucide-react';
@@ -23,8 +22,11 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 import { Button } from '@/ui/shadcn/button';
+import { Input } from '@/ui/shadcn/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Separator } from '@/ui/shadcn/separator';
+import { Slider } from '@/ui/shadcn/slider';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -171,7 +173,7 @@ function buildChartOption({ rows, selectedDate, barWidth, hour12, t }) {
                 }
 
                 return [
-                    `<div class="min-w-[180px]">`,
+                    `<div class="min-w-44">`,
                     `<div style="font-weight:600;margin-bottom:4px;">${row.worldName}</div>`,
                     locationBits.length
                         ? `<div style="margin-bottom:4px;">${locationBits.join(' ')}</div>`
@@ -466,7 +468,7 @@ function buildDetailChartOption({ group, barWidth, hour12 }) {
                 }
 
                 return [
-                    `<div class="min-w-[180px]">`,
+                    `<div class="min-w-44">`,
                     `<div style="font-weight:600;margin-bottom:4px;">${entry.displayName} ${friendMarker(entry).trim()}</div>`,
                     `<div>${formatClock(entry.joinMs, hour12, true)} - ${formatClock(entry.leaveMs, hour12, true)}</div>`,
                     `<div>${timeToText(entry.durationMs, true)}</div>`,
@@ -518,7 +520,7 @@ function ChartLoadingState() {
     return (
         <div className="flex min-h-80 items-center justify-center rounded-xl border border-dashed bg-muted/20">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <LoaderCircleIcon className="size-5 animate-spin" />
+                <Spinner className="size-5" />
                 <span>Loading instance activity.</span>
             </div>
         </div>
@@ -528,7 +530,7 @@ function ChartLoadingState() {
 function ChartEmptyState({ title, description }) {
     return (
         <div className="flex min-h-80 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-            <div className="max-w-md space-y-2">
+            <div className="flex max-w-md flex-col gap-2">
                 <div className="text-sm font-medium">{title}</div>
                 <div className="text-sm text-muted-foreground">{description}</div>
             </div>
@@ -994,10 +996,10 @@ export function InstanceActivityPage() {
         setReloadToken((value) => value + 1);
     }
 
-    function handleBarWidthCommit(event) {
+    function handleBarWidthCommit(value) {
         const nextValue = Math.min(
             50,
-            Math.max(1, Number.parseInt(event.target.value, 10) || DEFAULT_BAR_WIDTH)
+            Math.max(1, Number.parseInt(value, 10) || DEFAULT_BAR_WIDTH)
         );
         setBarWidth(nextValue);
         void configRepository.setInt('InstanceActivityBarWidth', nextValue);
@@ -1021,26 +1023,25 @@ export function InstanceActivityPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center justify-end gap-2">
-                        <Button type="button" variant="ghost" size="icon" onClick={handleRefresh}>
-                            <RefreshCcwIcon className="size-4" />
+                        <Button type="button" variant="ghost" size="icon" aria-label="Refresh instance activity" onClick={handleRefresh}>
+                            <RefreshCcwIcon data-icon="inline-start" />
                         </Button>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button type="button" variant="ghost" size="icon">
-                                    <Settings2Icon className="size-4" />
+                                <Button type="button" variant="ghost" size="icon" aria-label="Instance activity settings">
+                                    <Settings2Icon data-icon="inline-start" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent side="bottom" align="end" className="w-72 space-y-3">
+                            <PopoverContent side="bottom" align="end" className="flex w-72 flex-col gap-3">
                                 <div className="flex h-8 items-center justify-between gap-4 text-sm">
                                     <span className="shrink-0">{t('view.charts.instance_activity.settings.bar_width')}</span>
-                                    <input
-                                        type="range"
-                                        min="1"
-                                        max="50"
-                                        step="1"
-                                        value={barWidth}
-                                        onChange={handleBarWidthCommit}
-                                        className="w-40 accent-primary"
+                                    <Slider
+                                        min={1}
+                                        max={50}
+                                        step={1}
+                                        value={[barWidth]}
+                                        onValueChange={([value]) => handleBarWidthCommit(value)}
+                                        className="w-40"
                                     />
                                 </div>
                                 <div className="flex h-8 items-center justify-between gap-4 text-sm">
@@ -1084,17 +1085,19 @@ export function InstanceActivityPage() {
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
+                                aria-label="Previous day"
                                 disabled={isPrevDayDisabled}
                                 onClick={() => handleDateStep(false)}>
-                                <ChevronLeftIcon className="size-4" />
+                                <ChevronLeftIcon data-icon="inline-start" />
                             </Button>
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
+                                aria-label="Next day"
                                 disabled={isNextDayDisabled}
                                 onClick={() => handleDateStep(true)}>
-                                <ChevronRightIcon className="size-4" />
+                                <ChevronRightIcon data-icon="inline-start" />
                             </Button>
                         </div>
                         <Popover>
@@ -1104,17 +1107,16 @@ export function InstanceActivityPage() {
                                     variant="outline"
                                     className="w-52 justify-start text-left font-normal"
                                     disabled={dataStatus === 'running'}>
-                                    <CalendarDaysIcon className="mr-2 size-4" />
+                                    <CalendarDaysIcon data-icon="inline-start" />
                                     {selectedDate}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent align="end" className="w-72 p-3">
                                 <div className="grid gap-3">
-                                    <input
+                                    <Input
                                         type="date"
                                         value={selectedDate}
                                         onChange={(event) => setSelectedDate(event.target.value || getTodayKey())}
-                                        className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none"
                                     />
                                     {dateOptions.length ? (
                                         <div className="grid max-h-56 gap-1 overflow-y-auto">

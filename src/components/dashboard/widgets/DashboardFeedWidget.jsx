@@ -9,6 +9,7 @@ import {
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
+import { cn } from '@/lib/utils.js';
 import { FEED_FILTER_TYPES, feedRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
@@ -139,12 +140,13 @@ function FeedUserName({ row, friend, className = '' }) {
     }
 
     return (
-        <button
+        <Button
             type="button"
-            className={`shrink-0 cursor-pointer text-left hover:underline ${className}`}
+            variant="link"
+            className={cn('h-auto shrink-0 cursor-pointer justify-start p-0 text-left font-normal', className)}
             onClick={() => openFeedUser(row, friend)}>
             {displayName}
-        </button>
+        </Button>
     );
 }
 
@@ -179,7 +181,7 @@ function FeedStatusDot({ status = '' }) {
                     ? 'bg-[var(--status-busy)]'
                     : '';
 
-    return className ? <span className={`mr-1 mt-1 size-2.5 shrink-0 rounded-full ${className}`} /> : null;
+    return className ? <span className={cn('mr-1 mt-1 size-2.5 shrink-0 rounded-full', className)} /> : null;
 }
 
 function FeedEntryContent({ row, friend, t }) {
@@ -383,7 +385,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
-                    <SettingsIcon />
+                    <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">

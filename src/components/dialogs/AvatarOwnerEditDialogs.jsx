@@ -90,29 +90,37 @@ function AvatarOwnerRow({ avatar, selected, onToggle }) {
     const imageUrl = convertFileUrlToImageUrl(avatar.thumbnailImageUrl || avatar.imageUrl, 128);
     const tagText = contentTagsCsv(Array.isArray(avatar.tags) ? avatar.tags : []);
     return (
-        <button
-            type="button"
+        <div
             className={cn(
-                'box-border flex w-[335px] cursor-pointer items-center p-1.5 text-left text-[13px] hover:rounded-[25px_5px_5px_25px] hover:bg-muted/50',
-                selected ? 'bg-muted/40' : ''
-            )}
-            onClick={onToggle}>
+                'flex w-80 items-center rounded-md text-sm',
+                selected && 'bg-muted/40'
+            )}>
+            <Button
+                type="button"
+                variant="ghost"
+                className="h-auto min-w-0 flex-1 justify-start p-1.5 text-left"
+                aria-pressed={selected}
+                onClick={onToggle}>
             {imageUrl ? (
                 <img src={imageUrl} alt="" className="mr-2.5 size-9 shrink-0 rounded-full object-cover" />
             ) : (
                 <div className="mr-2.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <UserIcon className="size-4 text-muted-foreground" />
+                    <UserIcon data-icon="inline-start" className="text-muted-foreground" />
                 </div>
             )}
             <span className="min-w-0 flex-1 overflow-hidden">
-                <span className="block truncate font-medium leading-[18px]">{avatar.name || avatar.id}</span>
+                <span className="block truncate font-medium leading-5">{avatar.name || avatar.id}</span>
                 <span className="block truncate text-xs text-muted-foreground">{avatar.releaseStatus || 'unknown'}</span>
                 <span className="block truncate text-xs text-muted-foreground">{tagText || '—'}</span>
             </span>
-            <span className="ml-2" onClick={(event) => event.stopPropagation()}>
-                <Checkbox checked={selected} onCheckedChange={onToggle} />
-            </span>
-        </button>
+            </Button>
+            <Checkbox
+                checked={selected}
+                className="mx-2 shrink-0"
+                aria-label={`Select ${avatar.name || avatar.id || 'avatar'}`}
+                onCheckedChange={onToggle}
+            />
+        </div>
     );
 }
 
@@ -301,7 +309,7 @@ export function AvatarContentTagsDialog({
                         <span className="text-sm text-muted-foreground">{selectedAvatarIds.length} / {ownAvatars.length}</span>
                         {loading ? <Spinner className="text-muted-foreground" /> : null}
                     </div>
-                    <div className="flex max-h-[300px] min-h-[60px] flex-wrap items-start overflow-auto">
+                    <div className="flex max-h-72 min-h-16 flex-wrap items-start overflow-auto">
                         {ownAvatars.map((entry) => (
                             <AvatarOwnerRow
                                 key={entry.id}

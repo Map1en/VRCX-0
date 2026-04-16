@@ -61,7 +61,7 @@ function ActionButton({ label, disabled = false, loading = false, icon: Icon, on
                         aria-label={label}
                         disabled={disabled || loading}
                         onClick={onClick}>
-                        {loading ? <Spinner className="size-3" /> : <Icon />}
+                        {loading ? <Spinner data-icon="inline-start" /> : <Icon data-icon="inline-start" />}
                     </Button>
                 </span>
             </TooltipTrigger>
@@ -390,7 +390,7 @@ export function InstanceActionBar({
                             </span>
                         ) : null}
                         {canCloseCurrentInstance ? (
-                            <XCircleIcon className={cn('size-3.5', busy === 'close' ? 'animate-pulse' : '')} />
+                            busy === 'close' ? <Spinner className="size-3.5" /> : <XCircleIcon className="size-3.5" />
                         ) : null}
                         {queueSize ? <span>Queue {queueSize}</span> : null}
                         {hasAgeGate ? <Badge variant="destructive">Age Gate</Badge> : null}

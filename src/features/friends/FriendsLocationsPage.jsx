@@ -38,6 +38,7 @@ import {
 } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
@@ -1424,7 +1425,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
     function renderSectionHeader(section) {
         return (
             <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-xl border bg-muted/20 px-3 py-2 md:flex-row md:items-center md:justify-between">
-                <div className="min-w-0 space-y-1 overflow-hidden">
+                <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
                     <div className="flex flex-wrap items-center gap-2">
                         <LayersIcon className="size-4 text-muted-foreground" />
                         <div className="min-w-0 truncate font-medium">
@@ -1488,19 +1489,21 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
 
     function renderFavoriteGroupHeader(section) {
         return (
-            <button
+            <Button
                 type="button"
-                className="flex w-full cursor-pointer select-none items-center gap-1.5 px-1 py-1.5 text-left text-[13px] font-semibold hover:opacity-80"
+                variant="ghost"
+                className="h-auto w-full cursor-pointer select-none justify-start gap-1.5 px-1 py-1.5 text-left text-sm font-semibold"
                 onClick={() => toggleFavoriteGroup(section.groupKey)}>
                 <ChevronDownIcon
+                    data-icon="inline-start"
                     className={cn(
-                        'size-4 shrink-0 transition-transform duration-200 ease-in-out',
+                        'shrink-0 transition-transform duration-200 ease-in-out',
                         section.collapsed && '-rotate-90'
                     )}
                 />
                 <span className="min-w-0 truncate">{section.title}</span>
                 <span className="text-xs font-normal opacity-70">({section.friends.length})</span>
-            </button>
+            </Button>
         );
     }
 
@@ -1600,7 +1603,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button type="button" size="icon-sm" variant="ghost" aria-label="Friends location settings">
-                                    <Settings2Icon />
+                                    <Settings2Icon data-icon="inline-start" />
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-72" align="end">
@@ -1626,15 +1629,14 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                                 {t('view.friends_locations.scale')}
                                             </FieldLabel>
                                         </FieldContent>
-                                        <Input
+                                        <Slider
                                             id="friends-locations-card-scale"
-                                            type="range"
-                                            min="0.5"
-                                            max="1"
-                                            step="0.01"
-                                            value={cardScale}
-                                            onChange={(event) => {
-                                                const nextValue = clampScale(event.target.value, 0.5, 1, 1);
+                                            min={0.5}
+                                            max={1}
+                                            step={0.01}
+                                            value={[cardScale]}
+                                            onValueChange={([value]) => {
+                                                const nextValue = clampScale(value, 0.5, 1, 1);
                                                 setCardScale(nextValue);
                                                 void configRepository.setString(
                                                     'FriendLocationCardScale',
@@ -1651,15 +1653,14 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                                 {t('view.friends_locations.spacing')}
                                             </FieldLabel>
                                         </FieldContent>
-                                        <Input
+                                        <Slider
                                             id="friends-locations-card-spacing"
-                                            type="range"
-                                            min="0.25"
-                                            max="1"
-                                            step="0.05"
-                                            value={spacingScale}
-                                            onChange={(event) => {
-                                                const nextValue = clampScale(event.target.value, 0.25, 1, 1);
+                                            min={0.25}
+                                            max={1}
+                                            step={0.05}
+                                            value={[spacingScale]}
+                                            onValueChange={([value]) => {
+                                                const nextValue = clampScale(value, 0.25, 1, 1);
                                                 setSpacingScale(nextValue);
                                                 void configRepository.setString(
                                                     'FriendLocationCardSpacing',

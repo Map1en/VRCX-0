@@ -194,9 +194,13 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                                             <tr key={`${location}:${instance?.created_at || instance?.createdAt || index}`} className="border-b last:border-b-0">
                                                 <td className="px-3 py-2 align-top text-xs text-muted-foreground">{formatDate(instance?.created_at || instance?.createdAt)}</td>
                                                 <td className="px-3 py-2 align-top text-xs">
-                                                    <button type="button" className="max-w-full text-left hover:underline" onClick={() => openInfo(instance)}>
+                                                    <Button
+                                                        type="button"
+                                                        variant="link"
+                                                        className="h-auto max-w-full justify-start p-0 text-left font-normal"
+                                                        onClick={() => openInfo(instance)}>
                                                         <span className="block truncate font-mono">{rowTitle(instance)}</span>
-                                                    </button>
+                                                    </Button>
                                                 </td>
                                                 <td className="px-3 py-2 align-top text-xs text-muted-foreground">
                                                     {[instance?.worldName, instance?.groupName].filter(Boolean).join(' / ') || '—'}
@@ -244,12 +248,16 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                                         return (
                                             <div key={`${location}:${instance?.created_at || instance?.createdAt || index}`} className="rounded-md border bg-muted/10 p-3">
                                                 <div className="flex items-start justify-between gap-3">
-                                                    <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openInfo(instance)}>
-                                                        <div className="truncate text-sm font-medium">{rowTitle(instance)}</div>
-                                                        <div className="truncate text-xs text-muted-foreground">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        className="h-auto min-w-0 flex-1 flex-col items-start justify-start p-0 text-left font-normal hover:bg-transparent"
+                                                        onClick={() => openInfo(instance)}>
+                                                        <span className="truncate text-sm font-medium">{rowTitle(instance)}</span>
+                                                        <span className="truncate text-xs text-muted-foreground">
                                                             {[formatDate(instance?.created_at || instance?.createdAt), instance?.groupName].filter(Boolean).join(' · ') || '—'}
-                                                        </div>
-                                                    </button>
+                                                        </span>
+                                                    </Button>
                                                     <Badge variant="outline" className="shrink-0 tabular-nums">
                                                         {rowDuration(instance)}
                                                     </Badge>

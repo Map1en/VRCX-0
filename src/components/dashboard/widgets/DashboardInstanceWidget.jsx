@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { cn } from '@/lib/utils.js';
 import { timeToText } from '@/lib/dateTime.js';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { playerListRepository } from '@/repositories/index.js';
@@ -57,7 +58,7 @@ function resolvePlatformMeta(platform) {
         return {
             label: 'PC',
             icon: MonitorIcon,
-            className: 'text-sky-600'
+            className: 'text-muted-foreground'
         };
     }
 
@@ -65,7 +66,7 @@ function resolvePlatformMeta(platform) {
         return {
             label: 'Android',
             icon: SmartphoneIcon,
-            className: 'text-emerald-600'
+            className: 'text-muted-foreground'
         };
     }
 
@@ -73,7 +74,7 @@ function resolvePlatformMeta(platform) {
         return {
             label: 'iOS',
             icon: AppleIcon,
-            className: 'text-orange-600'
+            className: 'text-muted-foreground'
         };
     }
 
@@ -304,7 +305,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
-                    <SettingsIcon />
+                    <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -461,7 +462,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                                             const PlatformIcon = row.platformIcon;
                                             return (
                                                 <div
-                                                    className={`flex items-center gap-1.5 text-xs ${row.platformClassName}`}>
+                                                    className={cn('flex items-center gap-1.5 text-xs', row.platformClassName)}>
                                                     {PlatformIcon ? <PlatformIcon className="size-3.5" /> : null}
                                                     <span>{row.platformLabel}</span>
                                                 </div>

@@ -28,6 +28,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
 import { Separator } from '@/ui/shadcn/separator';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { configRepository } from '@/repositories/index.js';
@@ -392,28 +393,29 @@ export function SidePanel({ className = '', style = undefined }) {
     return (
         <aside className={cn('flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l bg-background', className)} style={style}>
             <div className="flex shrink-0 items-center gap-1 px-2 py-2">
-                <button
+                <Button
                     type="button"
-                    className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border bg-transparent px-3 text-left text-sm shadow-xs hover:border-ring"
+                    variant="outline"
+                    className="h-9 min-w-0 flex-1 justify-start gap-2 px-3 text-left font-normal"
                     onClick={() => setQuickSearchOpen(true)}>
-                    <SearchIcon className="shrink-0 opacity-50" />
+                    <SearchIcon data-icon="inline-start" className="opacity-50" />
                     <span className="min-w-0 flex-1 truncate text-muted-foreground">
                         {t('side_panel.search_placeholder')}
                     </span>
                     <span className="rounded border px-1 text-xs text-muted-foreground">Ctrl</span>
                     <span className="rounded border px-1 text-xs text-muted-foreground">K</span>
-                </button>
+                </Button>
                 <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-8 rounded-full"
+                    aria-label={t('side_panel.refresh_tooltip')}
                     disabled={isRefreshing}
                     onClick={() => {
                         void refreshFriends();
                     }}
                     title={t('side_panel.refresh_tooltip')}>
-                    <RefreshCwIcon className={cn(isRefreshing && 'animate-spin')} />
+                    {isRefreshing ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
                 </Button>
                 {notificationLayout !== 'table' ? (
                     vrcUnseenNotificationCount ? (
@@ -423,11 +425,12 @@ export function SidePanel({ className = '', style = undefined }) {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="relative size-8 rounded-full"
+                                    className="relative"
+                                    aria-label={t('side_panel.notification_center.title')}
                                     onClick={() => openVrcNotificationCenter()}
                                     title={t('side_panel.notification_center.title')}>
-                                    <BellIcon />
-                                    <span className="absolute right-2 top-2 size-1.5 rounded-full bg-red-500" />
+                                    <BellIcon data-icon="inline-start" />
+                                    <span className="absolute right-2 top-2 size-1.5 rounded-full bg-destructive" />
                                 </Button>
                             </ContextMenuTrigger>
                             <ContextMenuContent className="w-48">
@@ -453,20 +456,21 @@ export function SidePanel({ className = '', style = undefined }) {
                             variant="ghost"
                             size="icon"
                             className="relative size-8 rounded-full"
+                            aria-label={t('side_panel.notification_center.title')}
                             onClick={() => openVrcNotificationCenter()}
                             onContextMenu={(event) => {
                                 event.preventDefault();
                                 toast.info(t('side_panel.notification_center.no_unseen_notifications'));
                             }}
                             title={t('side_panel.notification_center.title')}>
-                            <BellIcon />
+                            <BellIcon data-icon="inline-start" />
                         </Button>
                     )
                 ) : null}
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon" className="size-8 rounded-full">
-                            <SettingsIcon />
+                        <Button type="button" variant="ghost" size="icon" className="size-8 rounded-full" aria-label="Side panel settings">
+                            <SettingsIcon data-icon="inline-start" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent side="bottom" align="end" className="w-72 p-3">
@@ -503,13 +507,18 @@ export function SidePanel({ className = '', style = undefined }) {
                                 />
                             </SettingRow>
                             <Separator />
-                            <button
+                            <Button
                                 type="button"
-                                className="flex w-full items-center justify-between py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto w-full justify-between px-0 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
                                 onClick={() => setIsAdvancedOpen((current) => !current)}>
                                 {t('side_panel.settings.advanced')}
-                                <ChevronDownIcon className={cn('transition-transform', isAdvancedOpen && 'rotate-180')} />
-                            </button>
+                                <ChevronDownIcon
+                                    data-icon="inline-end"
+                                    className={cn('transition-transform', isAdvancedOpen && 'rotate-180')}
+                                />
+                            </Button>
                             {isAdvancedOpen ? (
                                 <div className="flex flex-col gap-2.5">
                                     <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
@@ -611,17 +620,19 @@ export function SidePanel({ className = '', style = undefined }) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
+                                    aria-label={`Move ${group.label} up`}
                                     disabled={index === 0}
                                     onClick={() => setFavoriteGroupOrderDraft((current) => moveArrayItem(current, index, -1))}>
-                                    <ArrowUpIcon />
+                                    <ArrowUpIcon data-icon="inline-start" />
                                 </Button>
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
+                                    aria-label={`Move ${group.label} down`}
                                     disabled={index === favoriteGroupOrderDraft.length - 1}
                                     onClick={() => setFavoriteGroupOrderDraft((current) => moveArrayItem(current, index, 1))}>
-                                    <ArrowDownIcon />
+                                    <ArrowDownIcon data-icon="inline-start" />
                                 </Button>
                             </div>
                         ))}

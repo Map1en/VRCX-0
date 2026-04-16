@@ -13,6 +13,7 @@ import { openAvatarDialog, openGroupDialog, openUserDialog, openWorldDialog } fr
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { Button } from '@/ui/shadcn/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/ui/shadcn/dialog';
 import { Input } from '@/ui/shadcn/input';
 
@@ -216,9 +217,10 @@ function ResultRow({ item, onSelect }) {
                     : UsersIcon;
 
     return (
-        <button
+        <Button
             type="button"
-            className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-muted/50"
+            variant="ghost"
+            className="h-auto w-full justify-start gap-3 px-2 py-2 text-left font-normal"
             onClick={() => onSelect(item)}>
             <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                 {item.imageUrl ? (
@@ -233,7 +235,7 @@ function ResultRow({ item, onSelect }) {
                     <span className="block truncate text-xs text-muted-foreground">{item.subtitle}</span>
                 ) : null}
             </span>
-        </button>
+        </Button>
     );
 }
 

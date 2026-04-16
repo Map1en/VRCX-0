@@ -9,7 +9,6 @@ import {
     LayoutGridIcon,
     ListFilterIcon,
     ListIcon,
-    LoaderCircleIcon,
     MonitorIcon,
     MoreHorizontalIcon,
     PencilIcon,
@@ -42,6 +41,7 @@ import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { getAvailablePlatforms, getPlatformInfo } from '@/lib/avatarPlatform.js';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
+import { cn } from '@/lib/utils.js';
 import { avatarProfileRepository, configRepository, mediaRepository, myAvatarRepository } from '@/repositories/index.js';
 import { getTagColor } from '@/shared/constants/tags.js';
 import {
@@ -59,6 +59,7 @@ import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
     ContextMenuContent,
+    ContextMenuGroup,
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger
@@ -66,10 +67,12 @@ import {
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import {
     Popover,
@@ -84,12 +87,14 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Slider } from '@/ui/shadcn/slider';
 import {
     Table,
     TableBody,
     TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { openAvatarDialog } from '@/services/dialogService.js';
 import { AvatarStylesDialog } from './AvatarStylesDialog.jsx';
 import { ManageAvatarTagsDialog } from './ManageAvatarTagsDialog.jsx';
@@ -321,9 +326,10 @@ function SortButton({ column, label, descFirst = false }) {
     const direction = column.getIsSorted();
 
     return (
-        <button
+        <Button
             type="button"
-            className="inline-flex items-center gap-1 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+            variant="link"
+            className="h-auto gap-1 p-0 text-left text-xs uppercase tracking-wide text-muted-foreground"
             onClick={() => {
                 if (!direction && descFirst) {
                     column.toggleSorting(true);
@@ -333,13 +339,13 @@ function SortButton({ column, label, descFirst = false }) {
             }}>
             <span>{label}</span>
             {direction === 'asc' ? (
-                <ArrowUpIcon className="size-3.5" />
+                <ArrowUpIcon data-icon="inline-end" />
             ) : direction === 'desc' ? (
-                <ArrowDownIcon className="size-3.5" />
+                <ArrowDownIcon data-icon="inline-end" />
             ) : (
-                <ArrowUpDownIcon className="size-3.5" />
+                <ArrowUpDownIcon data-icon="inline-end" />
             )}
-        </button>
+        </Button>
     );
 }
 
@@ -402,62 +408,68 @@ function AvatarActionMenuItems({
     isActive,
     disabled,
     Item,
+    Group,
     Separator,
     onAction
 }) {
     const releaseAction = avatar?.releaseStatus === 'public' ? 'makePrivate' : 'makePublic';
 
-    const handleAction = (event, action) => {
-        event?.preventDefault?.();
+    const handleAction = (action) => {
         onAction(action, avatar);
     };
 
     return (
         <>
-            <Item onSelect={(event) => handleAction(event, 'details')}>
-                <EyeIcon />
-                View details
-            </Item>
-            <Item
-                disabled={disabled || isActive}
-                onSelect={(event) => handleAction(event, 'wear')}>
-                <CheckIcon />
-                Select avatar
-            </Item>
+            <Group>
+                <Item onSelect={() => handleAction('details')}>
+                    <EyeIcon />
+                    View details
+                </Item>
+                <Item
+                    disabled={disabled || isActive}
+                    onSelect={() => handleAction('wear')}>
+                    <CheckIcon />
+                    Select avatar
+                </Item>
+            </Group>
             <Separator />
-            <Item disabled={disabled} onSelect={(event) => handleAction(event, 'manageTags')}>
-                <TagIcon />
-                Manage tags
-            </Item>
+            <Group>
+                <Item disabled={disabled} onSelect={() => handleAction('manageTags')}>
+                    <TagIcon />
+                    Manage tags
+                </Item>
+            </Group>
             <Separator />
-            <Item disabled={disabled} onSelect={(event) => handleAction(event, releaseAction)}>
-                <UserIcon />
-                {avatar?.releaseStatus === 'public' ? 'Make private' : 'Make public'}
-            </Item>
-            <Item disabled={disabled} onSelect={(event) => handleAction(event, 'rename')}>
-                <PencilIcon />
-                Rename
-            </Item>
-            <Item disabled={disabled} onSelect={(event) => handleAction(event, 'changeDescription')}>
-                <PencilIcon />
-                Change description
-            </Item>
-            <Item disabled={disabled} onSelect={(event) => handleAction(event, 'changeTags')}>
-                <PencilIcon />
-                Change content tags
-            </Item>
-            <Item disabled={disabled} onSelect={(event) => handleAction(event, 'changeStyles')}>
-                <PencilIcon />
-                Change styles/author tags
-            </Item>
-            <Item disabled={disabled} onSelect={(event) => handleAction(event, 'changeImage')}>
-                <ImageIcon />
-                Change image
-            </Item>
-            <Item disabled={disabled} onSelect={(event) => handleAction(event, 'createImpostor')}>
-                <RefreshCwIcon />
-                Create impostor
-            </Item>
+            <Group>
+                <Item disabled={disabled} onSelect={() => handleAction(releaseAction)}>
+                    <UserIcon />
+                    {avatar?.releaseStatus === 'public' ? 'Make private' : 'Make public'}
+                </Item>
+                <Item disabled={disabled} onSelect={() => handleAction('rename')}>
+                    <PencilIcon />
+                    Rename
+                </Item>
+                <Item disabled={disabled} onSelect={() => handleAction('changeDescription')}>
+                    <PencilIcon />
+                    Change description
+                </Item>
+                <Item disabled={disabled} onSelect={() => handleAction('changeTags')}>
+                    <PencilIcon />
+                    Change content tags
+                </Item>
+                <Item disabled={disabled} onSelect={() => handleAction('changeStyles')}>
+                    <PencilIcon />
+                    Change styles/author tags
+                </Item>
+                <Item disabled={disabled} onSelect={() => handleAction('changeImage')}>
+                    <ImageIcon />
+                    Change image
+                </Item>
+                <Item disabled={disabled} onSelect={() => handleAction('createImpostor')}>
+                    <RefreshCwIcon />
+                    Create impostor
+                </Item>
+            </Group>
         </>
     );
 }
@@ -481,9 +493,9 @@ function AvatarActionsDropdown({
                     disabled={isUpdating}
                     onClick={(event) => event.stopPropagation()}>
                     {isUpdating ? (
-                        <LoaderCircleIcon className="animate-spin" />
+                        <Spinner data-icon="inline-start" />
                     ) : (
-                        <MoreHorizontalIcon />
+                        <MoreHorizontalIcon data-icon="inline-start" />
                     )}
                 </Button>
             </DropdownMenuTrigger>
@@ -493,6 +505,7 @@ function AvatarActionsDropdown({
                     isActive={isActive}
                     disabled={disabled}
                     Item={DropdownMenuItem}
+                    Group={DropdownMenuGroup}
                     Separator={DropdownMenuSeparator}
                     onAction={onAction}
                 />
@@ -614,12 +627,22 @@ function GridSettingsMenu({
     const updateCardScale = (value) => {
         const nextValue = sanitizeCardScale(value);
         onCardScaleChange(nextValue);
+        return nextValue;
+    };
+
+    const commitCardScale = (value) => {
+        const nextValue = updateCardScale(value);
         void configRepository.setString('VRCX_MyAvatarsCardScale', String(nextValue));
     };
 
     const updateCardSpacing = (value) => {
         const nextValue = sanitizeCardSpacing(value);
         onCardSpacingChange(nextValue);
+        return nextValue;
+    };
+
+    const commitCardSpacing = (value) => {
+        const nextValue = updateCardSpacing(value);
         void configRepository.setString('VRCX_MyAvatarsCardSpacing', String(nextValue));
     };
 
@@ -627,40 +650,42 @@ function GridSettingsMenu({
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button type="button" size="icon-sm" variant="ghost" aria-label="Grid settings">
-                    <SettingsIcon />
+                    <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-60 p-3" align="end">
-                <div className="grid gap-3">
-                    <label className="grid gap-1.5">
-                        <div className="flex items-center justify-between text-[13px] font-medium">
-                            <span>Scale</span>
+                <FieldGroup>
+                    <Field>
+                        <div className="flex items-center justify-between text-sm font-medium">
+                            <FieldLabel>Scale</FieldLabel>
                             <span className="text-xs">{cardScalePercent}%</span>
                         </div>
-                        <input
-                            type="range"
-                            min="0.4"
-                            max="1.4"
-                            step="0.05"
-                            value={cardScale}
-                            onChange={(event) => updateCardScale(event.target.value)}
+                        <Slider
+                            value={[cardScale]}
+                            min={0.4}
+                            max={1.4}
+                            step={0.05}
+                            aria-label="Avatar card scale"
+                            onValueChange={(value) => updateCardScale(value[0])}
+                            onValueCommit={(value) => commitCardScale(value[0])}
                         />
-                    </label>
-                    <label className="grid gap-1.5">
-                        <div className="flex items-center justify-between text-[13px] font-medium">
-                            <span>Spacing</span>
+                    </Field>
+                    <Field>
+                        <div className="flex items-center justify-between text-sm font-medium">
+                            <FieldLabel>Spacing</FieldLabel>
                             <span className="text-xs">{cardSpacingPercent}%</span>
                         </div>
-                        <input
-                            type="range"
-                            min="0.6"
-                            max="2"
-                            step="0.05"
-                            value={cardSpacing}
-                            onChange={(event) => updateCardSpacing(event.target.value)}
+                        <Slider
+                            value={[cardSpacing]}
+                            min={0.6}
+                            max={2}
+                            step={0.05}
+                            aria-label="Avatar card spacing"
+                            onValueChange={(value) => updateCardSpacing(value[0])}
+                            onValueCommit={(value) => commitCardSpacing(value[0])}
                         />
-                    </label>
-                </div>
+                    </Field>
+                </FieldGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -680,12 +705,22 @@ function MyAvatarGridCard({
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild>
-                <button
+                <Button
                     type="button"
-                    className={`flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-lg border text-left hover:bg-accent ${
-                        isActive ? 'ring-2 ring-primary' : 'border-border/50'
-                    }`}
-                    onClick={() => onAction('wear', avatar)}>
+                    variant="outline"
+                    className={cn(
+                        'h-auto min-w-0 flex-col items-stretch overflow-hidden p-0 text-left font-normal whitespace-normal',
+                        disabled && 'cursor-not-allowed opacity-60',
+                        isActive && 'ring-2 ring-primary'
+                    )}
+                    aria-disabled={disabled}
+                    tabIndex={disabled ? -1 : undefined}
+                    onClick={() => {
+                        if (disabled) {
+                            return;
+                        }
+                        onAction('wear', avatar);
+                    }}>
                     <div className="relative aspect-[5/2] w-full overflow-hidden bg-muted">
                         {avatar?.thumbnailImageUrl ? (
                             <img
@@ -696,11 +731,11 @@ function MyAvatarGridCard({
                             />
                         ) : (
                             <div className="grid h-full w-full place-items-center text-muted-foreground">
-                                <ImageIcon className="size-6" />
+                                <ImageIcon data-icon="inline-start" className="size-6" />
                             </div>
                         )}
                         {platforms?.isQuest || platforms?.isIos ? (
-                            <div className="absolute top-1 right-1 flex -space-x-1">
+                            <div className="absolute top-1 right-1 flex gap-0.5">
                                 {platforms?.isPC ? <span className="size-2.5 rounded-full border bg-muted-foreground/70" /> : null}
                                 {platforms?.isQuest ? <span className="size-2.5 rounded-full border bg-muted-foreground/50" /> : null}
                                 {platforms?.isIos ? <span className="size-2.5 rounded-full border bg-muted-foreground/30" /> : null}
@@ -744,7 +779,7 @@ function MyAvatarGridCard({
                             </div>
                         ) : null}
                     </div>
-                </button>
+                </Button>
             </ContextMenuTrigger>
             <ContextMenuContent>
                 <AvatarActionMenuItems
@@ -752,6 +787,7 @@ function MyAvatarGridCard({
                     isActive={isActive}
                     disabled={disabled}
                     Item={ContextMenuItem}
+                    Group={ContextMenuGroup}
                     Separator={ContextMenuSeparator}
                     onAction={onAction}
                 />
@@ -1576,9 +1612,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 enableSorting: false,
                 cell: ({ row }) =>
                     row.original?.thumbnailImageUrl ? (
-                        <button
+                        <Button
                             type="button"
-                            className="block"
+                            variant="ghost"
+                            className="h-auto p-0"
                             onClick={() => openAvatarDetails(row.original)}>
                             <img
                                 src={row.original.thumbnailImageUrl}
@@ -1586,14 +1623,15 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                 className="h-10 w-16 rounded-sm object-cover"
                                 loading="lazy"
                             />
-                        </button>
+                        </Button>
                     ) : (
-                        <button
+                        <Button
                             type="button"
-                            className="flex h-10 w-16 items-center justify-center rounded-sm border bg-muted text-muted-foreground"
+                            variant="outline"
+                            className="h-10 w-16 p-0 text-muted-foreground"
                             onClick={() => openAvatarDetails(row.original)}>
-                            <ImageIcon className="size-4" />
-                        </button>
+                            <ImageIcon data-icon="inline-start" />
+                        </Button>
                     )
             },
             {
@@ -1602,12 +1640,13 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 meta: { label: t('dialog.avatar.info.name') },
                 header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.name')} />,
                 cell: ({ row }) => (
-                    <button
+                    <Button
                         type="button"
-                        className="font-medium hover:underline"
+                        variant="link"
+                        className="h-auto p-0 text-left font-medium"
                         onClick={() => openAvatarDetails(row.original)}>
                         {row.original?.name || ''}
-                    </button>
+                    </Button>
                 )
             },
             {
@@ -1819,12 +1858,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
 
     return (
         <div
-            className={
-                embedded
-                    ? 'flex h-full min-h-0 flex-col p-3'
-                    : 'x-container flex h-full min-h-0 flex-col overflow-hidden p-3'
-            }>
-            <input
+            className={cn(
+                'flex h-full min-h-0 flex-col p-3',
+                !embedded && 'x-container overflow-hidden'
+            )}>
+            <Input
                 ref={imageUploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}
@@ -1843,7 +1881,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                 setViewMode('grid');
                                 void configRepository.setString('MyAvatarsViewMode', 'grid');
                             }}>
-                            <LayoutGridIcon />
+                            <LayoutGridIcon data-icon="inline-start" />
                         </Button>
                         <Button
                             type="button"
@@ -1854,7 +1892,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                 setViewMode('table');
                                 void configRepository.setString('MyAvatarsViewMode', 'table');
                             }}>
-                            <ListIcon />
+                            <ListIcon data-icon="inline-start" />
                         </Button>
                     </div>
 
@@ -1925,7 +1963,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                         aria-label="Refresh avatar inventory"
                         disabled={!currentUserId || loadStatus === 'running'}
                         onClick={() => setRefreshToken((value) => value + 1)}>
-                        <RefreshCwIcon className={loadStatus === 'running' ? 'animate-spin' : ''} />
+                        {loadStatus === 'running' ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <RefreshCwIcon data-icon="inline-start" />
+                        )}
                     </Button>
                 </div>
 
@@ -1958,11 +2000,19 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                                 <ContextMenu key={row.original?.id || row.id}>
                                                     <ContextMenuTrigger asChild>
                                                         <TableRow
-                                                            className={
-                                                                row.original?.id === currentAvatarId
-                                                                    ? 'cursor-pointer bg-primary/10'
-                                                                    : 'cursor-pointer'
-                                                            }
+                                                            className={cn(
+                                                                'cursor-pointer',
+                                                                row.original?.id === currentAvatarId && 'bg-primary/10'
+                                                            )}
+                                                            tabIndex={0}
+                                                            aria-label={`Open ${row.original?.name || row.original?.id || 'avatar'}`}
+                                                            onKeyDown={(event) => {
+                                                                if (event.key !== 'Enter' && event.key !== ' ') {
+                                                                    return;
+                                                                }
+                                                                event.preventDefault();
+                                                                openAvatarDetails(row.original);
+                                                            }}
                                                             onClick={() => openAvatarDetails(row.original)}>
                                                             {row.getVisibleCells().map((cell) => (
                                                                 <ResizableTableCell key={cell.id} cell={cell} />
@@ -1979,6 +2029,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                                                 uploadingImageAvatarId === row.original?.id
                                                             }
                                                             Item={ContextMenuItem}
+                                                            Group={ContextMenuGroup}
                                                             Separator={ContextMenuSeparator}
                                                             onAction={(action, avatar) => void handleAvatarAction(action, avatar)}
                                                         />

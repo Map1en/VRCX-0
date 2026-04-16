@@ -24,6 +24,7 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -328,8 +329,18 @@ export function InstanceInviteDialog({
                                 const checked = selectedUserIds.includes(userId);
                                 const imageUrl = friend ? userImage(friend, true) : userImage(currentUser, true);
                                 return (
-                                    <label key={userId} className="flex cursor-pointer items-center gap-3 border-b px-3 py-2 last:border-b-0">
-                                        <Checkbox checked={checked} disabled={sending} onCheckedChange={() => toggleUserId(userId)} />
+                                    <Field
+                                        key={userId}
+                                        orientation="horizontal"
+                                        data-disabled={sending}
+                                        className="cursor-pointer gap-3 border-b px-3 py-2 last:border-b-0">
+                                        <Checkbox
+                                            id={`invite-user-${userId}`}
+                                            checked={checked}
+                                            disabled={sending}
+                                            onCheckedChange={() => toggleUserId(userId)}
+                                        />
+                                        <FieldLabel htmlFor={`invite-user-${userId}`} className="min-w-0 flex-1 cursor-pointer items-center gap-3 font-normal">
                                         {imageUrl ? (
                                             <img src={imageUrl} alt="" loading="lazy" className="size-8 rounded-full object-cover" />
                                         ) : (
@@ -340,7 +351,8 @@ export function InstanceInviteDialog({
                                         <span className="min-w-0 flex-1">
                                             <span className="block truncate text-sm font-medium">{displayName}</span>
                                         </span>
-                                    </label>
+                                        </FieldLabel>
+                                    </Field>
                                 );
                             })
                         ) : (

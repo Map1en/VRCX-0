@@ -209,7 +209,7 @@ function WorldAllowedDomainsDialog({ open, onOpenChange, world, saving = false, 
                         <div key={index} className="flex items-center gap-2">
                             <Input value={domain} disabled={saving} onChange={(event) => updateDomain(index, event.target.value)} />
                             <Button type="button" variant="ghost" size="icon-sm" disabled={saving} onClick={() => setUrlList((current) => current.filter((_, currentIndex) => currentIndex !== index))}>
-                                <Trash2Icon />
+                                <Trash2Icon data-icon="inline-start" />
                             </Button>
                         </div>
                     ))}

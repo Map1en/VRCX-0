@@ -6,6 +6,7 @@ import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
 import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuTrigger } from '@/ui/shadcn/context-menu';
+import { Button } from '@/ui/shadcn/button';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { openGroupDialog } from '@/services/dialogService.js';
@@ -183,19 +184,20 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
         <ContextMenu>
             <ContextMenuTrigger asChild>
                 <div className="flex w-full items-center rounded-lg hover:bg-muted/50">
-                    <button
+                    <Button
                         type="button"
-                        className="flex min-w-0 flex-1 items-center gap-2 p-1.5 text-left text-sm"
+                        variant="ghost"
+                        className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal"
                         onClick={() => openGroupDialog({ groupId, title: name, seedData: instance?.group || instance })}>
                             <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
                                 {iconUrl ? (
                                     <img src={iconUrl} alt="" className="size-full object-cover" />
                                 ) : (
-                                    <UsersIcon className="size-4 text-muted-foreground" />
+                                    <UsersIcon data-icon="inline-start" className="text-muted-foreground" />
                                 )}
                             </span>
                             <span className="min-w-0 flex-1">
-                                <span className="block truncate font-medium leading-[18px]">
+                                <span className="block truncate font-medium leading-5">
                                     {name}
                                     {userCount !== '' || capacity !== '' ? (
                                         <span className="ml-1 font-normal">
@@ -218,7 +220,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
                                     )}
                                 </span>
                             </span>
-                    </button>
+                    </Button>
                 </div>
             </ContextMenuTrigger>
             <ContextMenuContent className="w-52">
@@ -326,15 +328,17 @@ export function GroupsSidebar() {
         switch (row?.type) {
             case 'group-header':
                 return (
-                    <button
+                    <Button
                         type="button"
-                        className={cn('flex w-full items-center py-1.5 text-left text-xs', row.first ? 'pt-0' : 'pt-4')}
+                        variant="ghost"
+                        size="sm"
+                        className={cn('h-auto w-full justify-start px-0 py-1.5 text-left text-xs font-normal hover:bg-transparent', row.first ? 'pt-0' : 'pt-4')}
                         onClick={() => toggleGroup(row.groupId)}>
-                        <ChevronDownIcon className={cn('size-4 transition-transform', row.isCollapsed && '-rotate-90')} />
+                        <ChevronDownIcon data-icon="inline-start" className={cn('transition-transform', row.isCollapsed && '-rotate-90')} />
                         <span className="ml-1.5">
                             {row.name} - {row.count}
                         </span>
-                    </button>
+                    </Button>
                 );
             case 'message':
                 return (

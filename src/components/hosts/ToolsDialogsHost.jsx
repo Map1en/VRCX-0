@@ -4,6 +4,7 @@ import { CalendarIcon, ChevronDownIcon, DownloadIcon, ImageIcon, RefreshCwIcon, 
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { cn } from '@/lib/utils.js';
 import { convertFileUrlToImageUrl, userImage } from '@/lib/entityMedia.js';
 import { timeToText } from '@/lib/dateTime.js';
 import { backend } from '@/platform/index.js';
@@ -775,7 +776,7 @@ function NoteExportDialog({ open, onOpenChange }) {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[70px]">{t('table.import.image')}</TableHead>
+                                <TableHead className="w-16">{t('table.import.image')}</TableHead>
                                 <TableHead>{t('table.import.name')}</TableHead>
                                 <TableHead>{t('table.import.note')}</TableHead>
                                 <TableHead className="w-20 text-right">{t('table.import.skip_export')}</TableHead>
@@ -786,9 +787,12 @@ function NoteExportDialog({ open, onOpenChange }) {
                                 <TableRow key={row.id}>
                                     <TableCell>
                                         {userImage(row.ref, true, '64') ? (
-                                            <button
+                                            <Button
                                                 type="button"
-                                                className="block size-10 overflow-hidden rounded-full border bg-muted"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-10 overflow-hidden rounded-full border bg-muted p-0"
+                                                aria-label={row.name}
                                                 onClick={() => {
                                                     const fullImageUrl = userImage(row.ref, false, '512');
                                                     if (fullImageUrl) {
@@ -796,7 +800,7 @@ function NoteExportDialog({ open, onOpenChange }) {
                                                     }
                                                 }}>
                                                 <img src={userImage(row.ref, true, '64')} alt="" className="size-full object-cover" loading="lazy" />
-                                            </button>
+                                            </Button>
                                         ) : (
                                             <span className="block size-10 rounded-full border bg-muted" />
                                         )}
@@ -828,7 +832,7 @@ function NoteExportDialog({ open, onOpenChange }) {
                                             variant="ghost"
                                             disabled={loading}
                                             onClick={() => setRows((current) => current.filter((item) => item.id !== row.id))}>
-                                            <Trash2Icon className="size-4" />
+                                            <Trash2Icon data-icon="inline-start" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -1058,7 +1062,7 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                                             type="button"
                                             variant={dateKey === selectedDate ? 'default' : 'outline'}
                                             size="sm"
-                                            className={`relative h-12 flex-col gap-0 ${hasFollowing ? 'ring-1 ring-primary' : ''}`}
+                                            className={cn('relative h-12 flex-col gap-0', hasFollowing && 'ring-1 ring-primary')}
                                             onClick={() => setSelectedDate(dateKey)}>
                                             <span>{index + 1}</span>
                                             {count ? <span className="text-xs">{count}</span> : null}
@@ -1089,7 +1093,10 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                                                 [group.groupId]: !current[group.groupId]
                                             }))
                                         }>
-                                        <ChevronDownIcon className={`size-4 transition-transform ${collapsedGroups[group.groupId] ? '-rotate-90' : ''}`} />
+                                        <ChevronDownIcon
+                                            data-icon="inline-start"
+                                            className={cn('transition-transform', collapsedGroups[group.groupId] && '-rotate-90')}
+                                        />
                                         {group.groupName}
                                     </Button>
                                     {!collapsedGroups[group.groupId] ? (
@@ -1250,9 +1257,11 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
                     onMouseEnter={openPopover}
                     onMouseLeave={scheduleClosePopover}>
                     {bannerUrl ? (
-                        <button
+                        <Button
                             type="button"
-                            className="block h-28 w-full overflow-hidden bg-muted text-left"
+                            variant="ghost"
+                            className="h-28 w-full overflow-hidden rounded-none bg-muted p-0"
+                            aria-label={title}
                             onClick={stopAndRun(() => openImagePreview({ url: convertFileUrlToImageUrl(event.imageUrl || bannerUrl, 1024), title }))}>
                             <img
                                 src={bannerUrl}
@@ -1261,7 +1270,7 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
                                 className="size-full object-cover"
                                 onError={() => setBannerError(true)}
                             />
-                        </button>
+                        </Button>
                     ) : (
                         <div className="flex h-28 items-center justify-center bg-muted text-muted-foreground">
                             <ImageIcon className="size-6" />
@@ -1271,30 +1280,32 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex min-w-0 flex-col gap-1">
                                 {showGroupName ? (
-                                    <button
+                                    <Button
                                         type="button"
-                                        className="block truncate text-left text-xs text-muted-foreground hover:underline"
+                                        variant="link"
+                                        className="h-auto max-w-full justify-start p-0 text-left text-xs font-normal text-muted-foreground"
                                         onClick={stopAndRun(() => openGroupDialog({ groupId }))}>
-                                        {groupName || groupId}
-                                    </button>
+                                        <span className="truncate">{groupName || groupId}</span>
+                                    </Button>
                                 ) : null}
-                                <button
+                                <Button
                                     type="button"
-                                    className="block min-w-0 text-left text-sm font-medium hover:underline"
+                                    variant="link"
+                                    className="h-auto max-w-full justify-start p-0 text-left text-sm font-medium"
                                     onClick={stopAndRun(() => openGroupDialog({ groupId }))}>
-                                    {title}
-                                </button>
+                                    <span className="truncate">{title}</span>
+                                </Button>
                                 <div className="text-xs text-muted-foreground">
                                     {formatEventTimeRange(event, mode)} · {capitalizeFirst(event.accessType)}
                                 </div>
                                 {event.description ? <p className="line-clamp-2 text-sm text-muted-foreground">{event.description}</p> : null}
                             </div>
                             <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                                <Button type="button" size="icon-sm" variant="outline" onClick={stopAndRun(() => void copyEventLink(event, t))}>
-                                    <Share2Icon />
+                                <Button type="button" size="icon-sm" variant="outline" aria-label="Copy event link" onClick={stopAndRun(() => void copyEventLink(event, t))}>
+                                    <Share2Icon data-icon="inline-start" />
                                 </Button>
-                                <Button type="button" size="icon-sm" variant={isFollowing ? 'default' : 'outline'} onClick={stopAndRun(onToggleFollow)}>
-                                    <StarIcon />
+                                <Button type="button" size="icon-sm" variant={isFollowing ? 'default' : 'outline'} aria-label={isFollowing ? 'Unfollow event' : 'Follow event'} onClick={stopAndRun(onToggleFollow)}>
+                                    <StarIcon data-icon="inline-start" />
                                 </Button>
                             </div>
                         </div>
@@ -1512,9 +1523,17 @@ function InviteMessageTable({ rows, loading, onEdit }) {
                 </TableHeader>
                 <TableBody>
                     {rows.length ? rows.map((row) => (
-                        <TableRow key={row.slot} className="cursor-pointer" onClick={() => onEdit(row)}>
+                        <TableRow key={row.slot}>
                             <TableCell>{row.slot}</TableCell>
-                            <TableCell>{row.message}</TableCell>
+                            <TableCell>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-auto w-full justify-start p-0 text-left font-normal whitespace-normal hover:bg-transparent"
+                                    onClick={() => onEdit(row)}>
+                                    {row.message}
+                                </Button>
+                            </TableCell>
                             <TableCell className="text-right text-muted-foreground">
                                 <InviteCooldownText updatedAt={row.updatedAt} />
                             </TableCell>
