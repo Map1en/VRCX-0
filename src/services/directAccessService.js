@@ -28,14 +28,13 @@ function openWorldLocation(location, title = '') {
 }
 
 export function buildVrcLaunchUrl(location, shortName = '') {
-    const params = new URLSearchParams({
-        ref: 'vrcx.app',
-        id: location
-    });
-    if (shortName) {
-        params.set('shortName', shortName);
+    const normalizedLocation = normalizeString(location);
+    const normalizedShortName = normalizeString(shortName);
+    let launchUrl = `vrchat://launch?ref=vrcx.app&id=${normalizedLocation}`;
+    if (normalizedShortName) {
+        launchUrl += `&shortName=${normalizedShortName}`;
     }
-    return `vrchat://launch?${params.toString()}`;
+    return launchUrl;
 }
 
 function normalizeLaunchLocation(location) {

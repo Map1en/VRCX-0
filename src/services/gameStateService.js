@@ -5,6 +5,7 @@ import {
     finalizeCurrentGameLogSession,
     resetNowPlayingState
 } from '@/services/gameLogIngestService.js';
+import { refreshDiscordPresence } from '@/services/discordPresenceService.js';
 import { isRealInstance } from '@/shared/utils/instance.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
@@ -176,8 +177,21 @@ async function handleGameStopped(previousGameState, currentUserSnapshot) {
         ipcAnnounced: false
     });
 
+    const finalizeResult = await Promise.allSettled([
+        finalizeCurrentGameLogSession(stoppedAt)
+    ]);
+    for (const result of finalizeResult) {
+        if (result.status === 'rejected') {
+            console.warn('Game stop session finalization failed:', result.reason);
+        }
+    }
+
+    clearStoppedGameLocationSnapshot(previousGameState, currentUserSnapshot);
+    await refreshDiscordPresence({ force: true }).catch((error) => {
+        console.warn('Discord presence refresh after game stop failed:', error);
+    });
+
     const results = await Promise.allSettled([
-        finalizeCurrentGameLogSession(stoppedAt),
         persistGameStopSession(previousGameState, currentUserSnapshot),
         sweepVrchatCacheIfEnabled(),
         scheduleCrashRelaunchIfNeeded(previousGameState)
@@ -186,6 +200,40 @@ async function handleGameStopped(previousGameState, currentUserSnapshot) {
         if (result.status === 'rejected') {
             console.warn('Game stop side effect failed:', result.reason);
         }
+    }
+}
+
+function clearStoppedGameLocationSnapshot(previousGameState, currentUserSnapshot) {
+    if (!currentUserSnapshot || typeof currentUserSnapshot !== 'object') {
+        return;
+    }
+
+    const stoppedLocation = normalizeString(previousGameState.currentLocation);
+    const stoppedDestination = normalizeString(previousGameState.currentDestination);
+    const stoppedWorldId = normalizeString(previousGameState.currentWorldId);
+    if (!stoppedLocation && !stoppedDestination && !stoppedWorldId) {
+        return;
+    }
+
+    let changed = false;
+    const clearIfMatches = (field, ...values) => {
+        const currentValue = normalizeString(currentUserSnapshot[field]);
+        if (currentValue && values.some((value) => value && currentValue === value)) {
+            currentUserSnapshot[field] = '';
+            changed = true;
+        }
+    };
+
+    clearIfMatches('location', stoppedLocation);
+    clearIfMatches('$locationTag', stoppedLocation);
+    clearIfMatches('travelingToLocation', stoppedDestination);
+    clearIfMatches('$travelingToLocation', stoppedDestination);
+    clearIfMatches('worldId', stoppedWorldId);
+
+    if (changed) {
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserSnapshot
+        });
     }
 }
 
@@ -274,6 +322,13 @@ export async function handleGameRunningUpdate(payload = {}) {
 
     if (gameRunningChanged && previousGameRunning === true && !nextGameRunning) {
         await handleGameStopped(previousGameState, currentUserSnapshot);
+        return;
+    }
+
+    if (gameRunningChanged) {
+        await refreshDiscordPresence({ force: true }).catch((error) => {
+            console.warn('Discord presence refresh after game state update failed:', error);
+        });
     }
 }
 
