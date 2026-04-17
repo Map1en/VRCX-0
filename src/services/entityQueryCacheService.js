@@ -28,6 +28,12 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
+    worldBasic: Object.freeze({
+        staleTime: 5 * MINUTE,
+        gcTime: 10 * MINUTE,
+        retry: 1,
+        refetchOnWindowFocus: false
+    }),
     group: Object.freeze({
         staleTime: 5 * MINUTE,
         gcTime: 30 * MINUTE,

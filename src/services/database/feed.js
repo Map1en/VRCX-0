@@ -11,7 +11,9 @@ function getUserPrefix(userId) {
     return userPrefix;
 }
 
-async function ensureFeedTablesForPrefix(userPrefix) {
+const ensuredFeedTablePrefixes = new Map();
+
+async function createFeedTablesForPrefix(userPrefix) {
     if (!userPrefix) {
         throw new Error('Feed table prefix is required.');
     }
@@ -33,6 +35,33 @@ async function ensureFeedTablesForPrefix(userPrefix) {
     await sqliteService.executeNonQuery(
         `CREATE INDEX IF NOT EXISTS ${userPrefix}_feed_online_offline_user_created_idx ON ${userPrefix}_feed_online_offline (user_id, created_at)`
     );
+}
+
+function ensureFeedTablesForPrefix(userPrefix) {
+    if (!userPrefix) {
+        throw new Error('Feed table prefix is required.');
+    }
+
+    const existing = ensuredFeedTablePrefixes.get(userPrefix);
+    if (existing) {
+        return existing;
+    }
+
+    const promise = createFeedTablesForPrefix(userPrefix).catch((error) => {
+        if (ensuredFeedTablePrefixes.get(userPrefix) === promise) {
+            ensuredFeedTablePrefixes.delete(userPrefix);
+        }
+        throw error;
+    });
+    ensuredFeedTablePrefixes.set(userPrefix, promise);
+    return promise;
+}
+
+function markFeedTablesEnsured(userPrefix) {
+    if (!userPrefix) {
+        return;
+    }
+    ensuredFeedTablePrefixes.set(userPrefix, Promise.resolve());
 }
 
 async function userFeedPrefix(userId) {
@@ -122,6 +151,8 @@ function addOnlineOfflineToDatabaseWithPrefix(userPrefix, entry) {
 }
 
 const feed = {
+    markFeedTablesEnsured,
+
     addGPSToDatabase(entry) {
         return addGPSToDatabaseWithPrefix(dbVars.userPrefix, entry);
     },

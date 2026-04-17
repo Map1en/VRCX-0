@@ -12,6 +12,53 @@ function bulkValue(value) {
     return typeof value === 'string' || typeof value === 'number' ? value : '';
 }
 
+const GAME_LOG_WORLD_NAME_CACHE_LIMIT = 1000;
+const EMPTY_WORLD_NAME_CACHE_TTL = 60 * 1000;
+const gameLogWorldNameCache = new Map();
+const gameLogWorldNameRequests = new Map();
+
+function setCachedGameLogWorldName(worldId, worldName) {
+    const normalizedWorldId = normalizeGameLogIdentifier(worldId);
+    if (!normalizedWorldId) {
+        return;
+    }
+
+    if (gameLogWorldNameCache.has(normalizedWorldId)) {
+        gameLogWorldNameCache.delete(normalizedWorldId);
+    }
+
+    gameLogWorldNameCache.set(normalizedWorldId, {
+        worldName: normalizeGameLogIdentifier(worldName),
+        expiresAt: worldName ? 0 : Date.now() + EMPTY_WORLD_NAME_CACHE_TTL
+    });
+
+    while (gameLogWorldNameCache.size > GAME_LOG_WORLD_NAME_CACHE_LIMIT) {
+        gameLogWorldNameCache.delete(gameLogWorldNameCache.keys().next().value);
+    }
+}
+
+function getCachedGameLogWorldName(worldId) {
+    const normalizedWorldId = normalizeGameLogIdentifier(worldId);
+    if (!normalizedWorldId || !gameLogWorldNameCache.has(normalizedWorldId)) {
+        return undefined;
+    }
+
+    const cached = gameLogWorldNameCache.get(normalizedWorldId);
+    if (cached.expiresAt && cached.expiresAt <= Date.now()) {
+        gameLogWorldNameCache.delete(normalizedWorldId);
+        return undefined;
+    }
+
+    return cached.worldName;
+}
+
+function rememberGameLogWorldName(worldId, worldName) {
+    const normalizedWorldName = normalizeGameLogIdentifier(worldName);
+    if (normalizedWorldName) {
+        setCachedGameLogWorldName(worldId, normalizedWorldName);
+    }
+}
+
 const gameLog = {
     async getGamelogDatabase() {
         var gamelogDatabase = [];
@@ -134,6 +181,7 @@ const gameLog = {
                 '@group_name': entry.groupName
             }
         );
+        rememberGameLogWorldName(entry.worldId, entry.worldName);
     },
 
     async updateGamelogLocationTimeToDatabase(entry) {
@@ -1209,17 +1257,49 @@ const gameLog = {
     },
 
     async getGameLogWorldNameByWorldId(worldId) {
-        var worldName = '';
-        await sqliteService.execute(
-            (dbRow) => {
-                worldName = dbRow[0];
-            },
-            'SELECT world_name FROM gamelog_location WHERE world_id = @worldId ORDER BY id DESC LIMIT 1',
-            {
-                '@worldId': worldId
+        const normalizedWorldId = normalizeGameLogIdentifier(worldId);
+        if (!normalizedWorldId) {
+            return '';
+        }
+
+        const cachedWorldName = getCachedGameLogWorldName(normalizedWorldId);
+        if (typeof cachedWorldName !== 'undefined') {
+            return cachedWorldName;
+        }
+
+        const existingRequest =
+            gameLogWorldNameRequests.get(normalizedWorldId);
+        if (existingRequest) {
+            return existingRequest;
+        }
+
+        const request = (async () => {
+            var worldName = '';
+            await sqliteService.execute(
+                (dbRow) => {
+                    worldName = dbRow[0];
+                },
+                'SELECT world_name FROM gamelog_location WHERE world_id = @worldId ORDER BY id DESC LIMIT 1',
+                {
+                    '@worldId': normalizedWorldId
+                }
+            );
+            const normalizedWorldName = normalizeGameLogIdentifier(worldName);
+            setCachedGameLogWorldName(
+                normalizedWorldId,
+                normalizedWorldName
+            );
+            return normalizedWorldName;
+        })();
+
+        gameLogWorldNameRequests.set(normalizedWorldId, request);
+        try {
+            return await request;
+        } finally {
+            if (gameLogWorldNameRequests.get(normalizedWorldId) === request) {
+                gameLogWorldNameRequests.delete(normalizedWorldId);
             }
-        );
-        return worldName;
+        }
     },
 
     async getPreviousInstancesByUserId(input) {

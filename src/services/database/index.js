@@ -62,6 +62,7 @@ const database = {
         for (const sql of buildInitUserTableStatements(dbVars.userPrefix)) {
             await sqliteService.executeNonQuery(sql);
         }
+        feed.markFeedTablesEnsured(dbVars.userPrefix);
     },
 
     async initTables() {
