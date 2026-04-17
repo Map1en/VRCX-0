@@ -22,10 +22,10 @@ import { defaultWorldCacheInfo, readWorldCacheInfo } from '@/lib/worldAssetBundl
 import { cn } from '@/lib/utils.js';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import {
-    ResizableTableCell,
-    ResizableTableHead
+    ResizableTableCell
 } from '@/components/data-table/ResizableTableParts.jsx';
 import {
+    DataTableHeader,
     DataTableEmptyRow,
     DataTableScrollArea,
     DataTableSurface
@@ -84,7 +84,6 @@ import { Button } from '@/ui/shadcn/button';
 import {
     Table,
     TableBody,
-    TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
 import {
@@ -274,20 +273,12 @@ function SortButton({ column, label }) {
     );
 }
 
-function PlayerListTableShell({ table, children }) {
+function PlayerListTableShell({ table, onResetLayout, children }) {
     return (
         <DataTableSurface>
             <DataTableScrollArea>
                 <Table className="app-data-table table-fixed">
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <ResizableTableHead key={header.id} header={header} />
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
+                    <DataTableHeader table={table} onResetLayout={onResetLayout} />
                     <TableBody>{children}</TableBody>
                 </Table>
             </DataTableScrollArea>
@@ -370,6 +361,9 @@ export function PlayerListPage({ embedded = false } = {}) {
     const [columnSizing, setColumnSizing] = useState(() =>
         sanitizePlayerListColumnSizing(persistedState.columnSizing)
     );
+    const [columnOrderLocked, setColumnOrderLocked] = useState(
+        () => persistedState.columnOrderLocked === true
+    );
 
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -401,9 +395,10 @@ export function PlayerListPage({ embedded = false } = {}) {
         writePersistedPlayerListState({
             columnVisibility: sanitizePlayerListColumnVisibility(columnVisibility),
             columnOrder: sanitizePlayerListColumnOrder(columnOrder),
-            columnSizing: sanitizePlayerListColumnSizing(columnSizing)
+            columnSizing: sanitizePlayerListColumnSizing(columnSizing),
+            columnOrderLocked
         });
-    }, [columnOrder, columnSizing, columnVisibility]);
+    }, [columnOrder, columnOrderLocked, columnSizing, columnVisibility]);
 
     useEffect(() => {
         let active = true;
@@ -1125,7 +1120,11 @@ export function PlayerListPage({ embedded = false } = {}) {
         getSortedRowModel: getSortedRowModel(),
         getRowId: (row) => `${row?.userId || row?.id || ''}:${row?.displayName || ''}`,
         enableColumnResizing: true,
-        columnResizeMode: 'onChange'
+        columnResizeMode: 'onChange',
+        meta: {
+            columnOrderLocked,
+            setColumnOrderLocked
+        }
     });
 
     function resetPlayerListTableLayout() {
@@ -1171,7 +1170,9 @@ export function PlayerListPage({ embedded = false } = {}) {
                             description={detail || 'The player-list adapter could not rebuild the current instance.'}
                         />
                     ) : (
-                        <PlayerListTableShell table={table}>
+                        <PlayerListTableShell
+                            table={table}
+                            onResetLayout={resetPlayerListTableLayout}>
                             {hasRows ? table.getRowModel().rows.map((row) => (
                                 <TableRow
                                     key={row.id}

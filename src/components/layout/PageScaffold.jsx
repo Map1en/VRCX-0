@@ -32,7 +32,7 @@ export function PageScaffold({
 
 export function PageToolbar({ className = '', children }) {
     return (
-        <div className={cn('flex shrink-0 flex-col gap-2 border-b border-border pb-3', className)}>
+        <div className={cn('flex shrink-0 flex-col gap-2 border-border pb-3', className)}>
             {children}
         </div>
     );

@@ -30,10 +30,12 @@ import { formatDateFilter } from '@/lib/dateTime.js';
 import { cn } from '@/lib/utils.js';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import {
-    ResizableTableCell,
-    ResizableTableHead
+    ResizableTableCell
 } from '@/components/data-table/ResizableTableParts.jsx';
-import { DataTablePagination } from '@/components/data-table/DataTableView.jsx';
+import {
+    DataTableHeader,
+    DataTablePagination
+} from '@/components/data-table/DataTableView.jsx';
 import { Location } from '@/components/Location.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import {
@@ -734,6 +736,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     const [columnSizing, setColumnSizing] = useState(() =>
         sanitizeColumnSizing(persistedState.columnSizing)
     );
+    const [columnOrderLocked, setColumnOrderLocked] = useState(
+        () => persistedState.columnOrderLocked === true
+    );
     const [pagination, setPagination] = useState({
         pageIndex: 0,
         pageSize: resolvePageSize(persistedState.pageSize)
@@ -847,9 +852,10 @@ export function VrcNotificationPage({ embedded = false } = {}) {
 
         writePersistedState({
             columnOrder: sanitizeColumnOrder(columnOrder),
-            columnSizing: sanitizeColumnSizing(columnSizing)
+            columnSizing: sanitizeColumnSizing(columnSizing),
+            columnOrderLocked
         });
-    }, [columnOrder, columnSizing]);
+    }, [columnOrder, columnOrderLocked, columnSizing]);
 
     useEffect(() => {
         let active = true;
@@ -1524,7 +1530,11 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         columnResizeMode: 'onChange',
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
-        getPaginationRowModel: getPaginationRowModel()
+        getPaginationRowModel: getPaginationRowModel(),
+        meta: {
+            columnOrderLocked,
+            setColumnOrderLocked
+        }
     });
 
     return (
@@ -1569,15 +1579,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
                 <div className="h-full overflow-auto">
                     <Table className="app-data-table table-fixed">
-                        <TableHeader>
-                            {table.getHeaderGroups().map((headerGroup) => (
-                                <TableRow key={headerGroup.id}>
-                                    {headerGroup.headers.map((header) => (
-                                        <ResizableTableHead key={header.id} header={header} />
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableHeader>
+                        <DataTableHeader table={table} />
                         <TableBody>
                             {table.getRowModel().rows.length > 0 ? (
                                 table.getRowModel().rows.map((row) => (

@@ -18,11 +18,11 @@ import {
 
 import { formatDateFilter } from '@/lib/dateTime.js';
 import {
-    ResizableTableCell,
-    ResizableTableHead
+    ResizableTableCell
 } from '@/components/data-table/ResizableTableParts.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import {
+    DataTableHeader,
     DataTablePagination,
     DataTableScrollArea,
     DataTableSurface
@@ -58,7 +58,6 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
     TableBody,
-    TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -407,6 +406,9 @@ export function FriendLogPage({ embedded = false } = {}) {
     );
     const [columnOrder, setColumnOrder] = useState(() => sanitizeColumnOrder(persistedState.columnOrder));
     const [columnSizing, setColumnSizing] = useState(() => sanitizeColumnSizing(persistedState.columnSizing));
+    const [columnOrderLocked, setColumnOrderLocked] = useState(
+        () => persistedState.columnOrderLocked === true
+    );
     const [pagination, setPagination] = useState(() => ({
         pageIndex: 0,
         pageSize: resolvePageSize(
@@ -531,9 +533,10 @@ export function FriendLogPage({ embedded = false } = {}) {
         writePersistedState({
             columnVisibility: sanitizeColumnVisibility(columnVisibility),
             columnOrder: sanitizeColumnOrder(columnOrder),
-            columnSizing: sanitizeColumnSizing(columnSizing)
+            columnSizing: sanitizeColumnSizing(columnSizing),
+            columnOrderLocked
         });
-    }, [columnOrder, columnSizing, columnVisibility]);
+    }, [columnOrder, columnOrderLocked, columnSizing, columnVisibility]);
 
     useEffect(() => {
         setPagination((current) => ({
@@ -843,7 +846,11 @@ export function FriendLogPage({ embedded = false } = {}) {
         getSortedRowModel: getSortedRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         enableColumnResizing: true,
-        columnResizeMode: 'onChange'
+        columnResizeMode: 'onChange',
+        meta: {
+            columnOrderLocked,
+            setColumnOrderLocked
+        }
     });
 
     const hasRows = orderedRows.length > 0;
@@ -898,15 +905,7 @@ export function FriendLogPage({ embedded = false } = {}) {
                             <DataTableSurface>
                                 <DataTableScrollArea>
                                     <Table className="app-data-table table-fixed">
-                                        <TableHeader>
-                                            {table.getHeaderGroups().map((headerGroup) => (
-                                                <TableRow key={headerGroup.id}>
-                                                    {headerGroup.headers.map((header) => (
-                                                        <ResizableTableHead key={header.id} header={header} />
-                                                    ))}
-                                                </TableRow>
-                                            ))}
-                                        </TableHeader>
+                                        <DataTableHeader table={table} />
                                         <TableBody>
                                             {table.getRowModel().rows.map((row) => (
                                                 <TableRow key={row.original?.rowId || row.id}>

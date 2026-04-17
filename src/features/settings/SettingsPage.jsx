@@ -797,9 +797,9 @@ export function SettingsPage() {
         try {
             result = await prompt({
                 title: t('view.settings.general.application.proxy'),
-                description: 'Set the proxy server used by VRCX. Restart is required to apply a changed proxy.',
+                description: t('view.settings.general.application.proxy_description'),
                 inputValue: usePreferencesStore.getState().proxyServer || '',
-                confirmText: 'Restart',
+                confirmText: t('prompt.proxy_settings.restart'),
                 cancelText: t('dialog.alertdialog.cancel')
             });
             if (!result.ok) {

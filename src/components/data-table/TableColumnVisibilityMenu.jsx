@@ -2,11 +2,22 @@ import { Fragment } from 'react';
 import {
     ArrowDownIcon,
     ArrowUpIcon,
+    LockIcon,
     RotateCcwIcon,
-    Settings2Icon
+    Settings2Icon,
+    UnlockIcon
 } from 'lucide-react';
 
 import { Button } from '@/ui/shadcn/button';
+import {
+    ContextMenu,
+    ContextMenuCheckboxItem,
+    ContextMenuContent,
+    ContextMenuGroup,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuTrigger
+} from '@/ui/shadcn/context-menu';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -17,34 +28,15 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-
-function resolveColumnLabel(column) {
-    const metaLabel = column.columnDef?.meta?.label;
-    if (typeof metaLabel === 'string' && metaLabel.trim()) {
-        return metaLabel;
-    }
-    if (typeof column.columnDef?.header === 'string' && column.columnDef.header.trim()) {
-        return column.columnDef.header;
-    }
-    return column.id;
-}
-
-function getColumnOrder(table, leafColumns = table.getAllLeafColumns()) {
-    const leafColumnIds = leafColumns.map((column) => column.id);
-    const leafColumnIdSet = new Set(leafColumnIds);
-    const currentOrder = table.getState().columnOrder || [];
-    const ordered = currentOrder.filter((columnId) => leafColumnIdSet.has(columnId));
-    const orderedIds = new Set(ordered);
-
-    for (const columnId of leafColumnIds) {
-        if (!orderedIds.has(columnId)) {
-            ordered.push(columnId);
-            orderedIds.add(columnId);
-        }
-    }
-
-    return ordered;
-}
+import {
+    getColumnOrder,
+    getColumnOrderLocked,
+    getToggleableColumns,
+    hasColumnOrderLock,
+    resetTableLayout,
+    resolveColumnLabel,
+    setColumnOrderLocked
+} from './tableColumnLayout.js';
 
 function moveColumn(table, columnId, delta, order = getColumnOrder(table)) {
     const currentIndex = order.indexOf(columnId);
@@ -60,26 +52,21 @@ function moveColumn(table, columnId, delta, order = getColumnOrder(table)) {
     table.setColumnOrder(nextOrder);
 }
 
-function resetTableLayout(table, onResetLayout) {
-    if (typeof onResetLayout === 'function') {
-        onResetLayout(table);
-        return;
-    }
-
-    table.resetColumnVisibility();
-    table.setColumnOrder([]);
-    table.setColumnSizing({});
+function renderColumnLockLabel(locked) {
+    return locked ? 'Unlock column order' : 'Lock column order';
 }
 
 export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLayout }) {
     const allLeafColumns = table.getAllLeafColumns();
-    const columns = allLeafColumns.filter((column) => column.getCanHide());
+    const columns = getToggleableColumns(allLeafColumns);
 
     if (!columns.length && !allLeafColumns.length) {
         return null;
     }
 
     const columnOrder = getColumnOrder(table, allLeafColumns);
+    const columnOrderLocked = getColumnOrderLocked(table);
+    const showColumnOrderLock = hasColumnOrderLock(table);
     const columnOrderIndexById = new Map(
         columnOrder.map((columnId, index) => [columnId, index])
     );
@@ -103,6 +90,20 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                         <RotateCcwIcon data-icon="inline-start" />
                         Reset columns
                     </DropdownMenuItem>
+                    {showColumnOrderLock ? (
+                        <DropdownMenuItem
+                            onSelect={(event) => {
+                                event.preventDefault();
+                                setColumnOrderLocked(table, !columnOrderLocked);
+                            }}>
+                            {columnOrderLocked ? (
+                                <UnlockIcon data-icon="inline-start" />
+                            ) : (
+                                <LockIcon data-icon="inline-start" />
+                            )}
+                            {renderColumnLockLabel(columnOrderLocked)}
+                        </DropdownMenuItem>
+                    ) : null}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
@@ -122,7 +123,7 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                                 </DropdownMenuCheckboxItem>
                                 <DropdownMenuItem
                                     inset
-                                    disabled={!canMoveUp}
+                                    disabled={columnOrderLocked || !canMoveUp}
                                     onSelect={(event) => {
                                         event.preventDefault();
                                         moveColumn(table, column.id, -1, columnOrder);
@@ -132,7 +133,7 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     inset
-                                    disabled={!canMoveDown}
+                                    disabled={columnOrderLocked || !canMoveDown}
                                     onSelect={(event) => {
                                         event.preventDefault();
                                         moveColumn(table, column.id, 1, columnOrder);
@@ -146,5 +147,68 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                 </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
+    );
+}
+
+export function TableColumnHeaderContextMenu({
+    table,
+    onResetLayout,
+    children,
+    className = 'w-56'
+}) {
+    const allLeafColumns = table?.getAllLeafColumns?.() ?? [];
+    const columns = getToggleableColumns(allLeafColumns);
+    const columnOrderLocked = getColumnOrderLocked(table);
+    const showColumnOrderLock = hasColumnOrderLock(table);
+    const showReset = Boolean(onResetLayout || table?.resetColumnVisibility || table?.setColumnOrder || table?.setColumnSizing);
+    const showMenu = Boolean(columns.length || showColumnOrderLock || showReset);
+
+    if (!showMenu) {
+        return children;
+    }
+
+    return (
+        <ContextMenu>
+            <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+            <ContextMenuContent className={className}>
+                {columns.length ? (
+                    <ContextMenuGroup>
+                        {columns.map((column) => (
+                            <ContextMenuCheckboxItem
+                                key={column.id}
+                                checked={column.getIsVisible()}
+                                onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
+                                onSelect={(event) => event.preventDefault()}>
+                                <span className="min-w-0 flex-1 truncate">
+                                    {resolveColumnLabel(column)}
+                                </span>
+                            </ContextMenuCheckboxItem>
+                        ))}
+                    </ContextMenuGroup>
+                ) : null}
+                {columns.length && (showColumnOrderLock || showReset) ? (
+                    <ContextMenuSeparator />
+                ) : null}
+                {showColumnOrderLock || showReset ? (
+                    <ContextMenuGroup>
+                        {showColumnOrderLock ? (
+                            <ContextMenuCheckboxItem
+                                checked={columnOrderLocked}
+                                onCheckedChange={(checked) => setColumnOrderLocked(table, checked === true)}
+                                onSelect={(event) => event.preventDefault()}>
+                                {renderColumnLockLabel(columnOrderLocked)}
+                            </ContextMenuCheckboxItem>
+                        ) : null}
+                        {showReset ? (
+                            <ContextMenuItem
+                                inset={showColumnOrderLock}
+                                onSelect={() => resetTableLayout(table, onResetLayout)}>
+                                Reset columns
+                            </ContextMenuItem>
+                        ) : null}
+                    </ContextMenuGroup>
+                ) : null}
+            </ContextMenuContent>
+        </ContextMenu>
     );
 }

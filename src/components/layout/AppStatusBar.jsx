@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BellIcon, ClockIcon, MonitorIcon, RadioIcon, ZoomInIcon } from 'lucide-react';
+import { ClockIcon, NetworkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useI18n } from '@/app/hooks/use-i18n.js';
 import { cn } from '@/lib/utils.js';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -15,7 +15,19 @@ import {
     ContextMenuSubTrigger,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { Input } from '@/ui/shadcn/input';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger
+} from '@/ui/shadcn/popover';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
 import {
     Tooltip,
     TooltipContent,
@@ -24,13 +36,9 @@ import {
 
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
-import { loadPreferenceSnapshot, setProxyServerPreference, setZoomLevelPreference } from '@/services/preferencesService.js';
-import { formatZoomPercentage, normalizeZoomLevel } from '@/services/themeService.js';
+import { loadPreferenceSnapshot, setProxyServerPreference } from '@/services/preferencesService.js';
 import { useModalStore } from '@/state/modalStore.js';
-import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { useSessionStore } from '@/state/sessionStore.js';
-import { useShellStore } from '@/state/shellStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 
 const VISIBILITY_KEY = 'VRCX_statusBarVisibility';
@@ -44,20 +52,16 @@ const DEFAULT_VISIBILITY = {
     proxy: true,
     ws: true,
     nowPlaying: true,
-    uptime: true,
     clocks: true,
-    zoom: true,
     servers: true
 };
 
 const VISIBILITY_MENU_ITEMS = [
-    ['vrchat', 'Game'],
+    ['vrchat', 'VRChat'],
     ['steamvr', 'SteamVR'],
     ['proxy', 'Proxy'],
-    ['ws', 'WebSocket'],
+    ['ws', 'Realtime'],
     ['nowPlaying', 'Now Playing'],
-    ['uptime', 'App Uptime'],
-    ['zoom', 'Zoom'],
     ['servers', 'Servers']
 ];
 
@@ -125,6 +129,19 @@ function formatClock(nowMs, offset) {
     return `${hours}:${minutes} ${formatUtcHour(offset)}`;
 }
 
+function getDefaultClockOffset(localOffset) {
+    return localOffset >= 0 ? -5 : 9;
+}
+
+function createDefaultClocks() {
+    const localOffset = normalizeUtcHour(-new Date().getTimezoneOffset() / 60);
+    return [
+        { offset: getDefaultClockOffset(localOffset) },
+        { offset: localOffset },
+        { offset: 0 }
+    ];
+}
+
 function formatDuration(ms) {
     const safeSeconds = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
     const hours = Math.floor(safeSeconds / 3600);
@@ -134,10 +151,6 @@ function formatDuration(ms) {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
-
-function formatAppUptime(nowMs, startedAtMs) {
-    return formatDuration(nowMs - startedAtMs);
 }
 
 function formatStatusDate(value) {
@@ -154,7 +167,7 @@ function formatStatusDate(value) {
 }
 
 function StatusDot({ active, warn = false }) {
-    const color = warn ? 'bg-destructive' : active ? 'bg-primary' : 'bg-muted-foreground/40';
+    const color = warn ? 'bg-amber-500' : active ? 'bg-green-500' : 'bg-muted-foreground/40';
     return <span className={cn('inline-block size-2 shrink-0 rounded-full', color)} />;
 }
 
@@ -211,41 +224,28 @@ function StatusSegment({ visible = true, active = false, warn = false, label, va
 }
 
 export function AppStatusBar() {
-    const appStartedAtRef = useRef(Date.now());
+    const { t } = useI18n();
     const transportMessageCountRef = useRef(0);
     const messageHistoryRef = useRef(new Array(60).fill(0));
     const [nowMs, setNowMs] = useState(Date.now());
     const [messagesPerMinute, setMessagesPerMinute] = useState(0);
     const [visibility, setVisibility] = useState(DEFAULT_VISIBILITY);
-    const [clocks, setClocks] = useState(() => {
-        const localOffset = normalizeUtcHour(-new Date().getTimezoneOffset() / 60);
-        return [{ offset: localOffset }, { offset: 0 }, { offset: localOffset < 0 ? 9 : -5 }];
-    });
-    const [clockCount, setClockCount] = useState(2);
-    const [zoomInput, setZoomInput] = useState('100');
-    const bootStatus = useSessionStore((state) => state.bootStatus);
-    const transportStatus = useSessionStore((state) => state.transportStatus);
-    const isLoggedIn = useSessionStore((state) => state.isLoggedIn);
+    const [clocks, setClocks] = useState(() => createDefaultClocks());
+    const [clockCount, setClockCount] = useState(1);
+    const [clockPopoverOpen, setClockPopoverOpen] = useState([false, false, false]);
     const runtimeTransport = useRuntimeStore((state) => state.transport);
     const runtimeGameState = useRuntimeStore((state) => state.gameState);
     const nowPlaying = useRuntimeStore((state) => state.nowPlaying);
     const isGameRunning = useRuntimeStore((state) => state.gameState.isGameRunning);
     const isSteamVRRunning = useRuntimeStore((state) => state.gameState.isSteamVRRunning);
     const vrcStatus = useRuntimeStore((state) => state.vrcStatus);
-    const locale = useShellStore((state) => state.locale);
-    const zoomLevel = useShellStore((state) => state.zoomLevel);
     const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
     const proxyServer = usePreferencesStore((state) => state.proxyServer);
     const prompt = useModalStore((state) => state.prompt);
-    const unreadCount = useNotificationStore(
-        (state) => state.items.filter((item) => !item.read).length
-    );
-    const openNotifications = useNotificationStore((state) => state.setPanelOpen);
     const visibleClocks = useMemo(
         () => clocks.slice(0, Math.max(0, Math.min(3, Number(clockCount) || 0))),
         [clocks, clockCount]
     );
-    const apiLabel = proxyServer || 'Proxy';
     const gameStartedAt = Date.parse(runtimeGameState.lastGameStartedAt || '');
     const currentLocationStartedAt = Date.parse(runtimeGameState.currentLocationStartedAt || '');
     const gameDuration = isGameRunning && gameStartedAt ? formatDuration(nowMs - gameStartedAt) : '';
@@ -257,6 +257,13 @@ export function AppStatusBar() {
     const nowPlayingProgress = nowPlaying.length
         ? `${formatDuration(nowPlayingElapsed * 1000)} / ${formatDuration(Number(nowPlaying.length) * 1000)}`
         : '';
+    const timezoneOptions = useMemo(
+        () => Array.from({ length: 27 }, (_, index) => {
+            const value = index - 12;
+            return { value, label: formatUtcHour(value) };
+        }),
+        []
+    );
 
     useEffect(() => {
         let active = true;
@@ -282,8 +289,13 @@ export function AppStatusBar() {
                 if (savedClocks) {
                     try {
                         const parsed = JSON.parse(savedClocks);
-                        if (Array.isArray(parsed) && parsed.length === 3) {
-                            setClocks(parsed.map((entry) => ({ offset: parseClockOffset(entry) })));
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            const defaults = createDefaultClocks();
+                            const nextClocks = defaults.map((defaultClock, index) => {
+                                const entry = parsed[index];
+                                return entry ? { offset: parseClockOffset(entry) } : defaultClock;
+                            });
+                            setClocks(nextClocks);
                         }
                     } catch {
                         // ignore invalid saved clocks
@@ -325,19 +337,6 @@ export function AppStatusBar() {
         return () => window.clearInterval(timer);
     }, []);
 
-    useEffect(() => {
-        setZoomInput(String(normalizeZoomLevel(zoomLevel)));
-    }, [zoomLevel]);
-
-    async function applyZoomInput() {
-        try {
-            const nextZoom = await setZoomLevelPreference(zoomInput);
-            setZoomInput(String(nextZoom));
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to apply zoom.');
-        }
-    }
-
     function persistVisibility(nextVisibility) {
         setVisibility(nextVisibility);
         void configRepository
@@ -369,6 +368,27 @@ export function AppStatusBar() {
         });
     }
 
+    function setClockPopoverValue(index, open) {
+        setClockPopoverOpen((current) => {
+            const next = [...current];
+            next[index] = open;
+            return next;
+        });
+    }
+
+    function updateClockTimezone(index, offsetValue) {
+        setClocks((current) => {
+            const defaults = createDefaultClocks();
+            const nextClocks = defaults.map((defaultClock, clockIndex) => current[clockIndex] ?? defaultClock);
+            nextClocks[index] = { offset: parseClockOffset(offsetValue) };
+            void configRepository.setString(CLOCKS_KEY, JSON.stringify(nextClocks)).catch((error) => {
+                toast.error(error instanceof Error ? error.message : 'Failed to save status bar clocks.');
+            });
+            return nextClocks;
+        });
+        setClockPopoverValue(index, false);
+    }
+
     async function openStatusPage() {
         try {
             await backend.app.OpenLink(STATUS_PAGE_URL);
@@ -384,7 +404,7 @@ export function AppStatusBar() {
         const currentProxyServer = usePreferencesStore.getState().proxyServer;
         const result = await prompt({
             title: 'Proxy Settings',
-            description: 'Set the proxy server used by VRCX. Restart is required to apply a changed proxy.',
+            description: 'Set the proxy server used by VRCX-0. Restart is required to apply a changed proxy.',
             inputValue: currentProxyServer,
             confirmText: 'Restart',
             cancelText: 'Close'
@@ -404,32 +424,14 @@ export function AppStatusBar() {
                     <div className="flex min-h-7 flex-col gap-1 overflow-hidden lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                             <StatusSegment
-                                active={isLoggedIn}
-                                label="Session"
-                                value={isLoggedIn ? 'Signed in' : 'Signed out'}
-                            />
-                            <StatusSegment
-                                visible={visibility.proxy}
-                                active={Boolean(proxyServer)}
-                                label="Proxy"
-                                value={apiLabel}
-                                onClick={() => {
-                                    void promptProxySettings().catch((error) => {
-                                        toast.error(error instanceof Error ? error.message : 'Failed to update proxy settings.');
-                                    });
-                                }}
-                            />
-                            <StatusSegment
                                 visible={visibility.steamvr}
                                 active={Boolean(isSteamVRRunning)}
                                 label="SteamVR"
-                                value={isSteamVRRunning ? 'running' : 'stopped'}
                             />
                             <StatusSegment
                                 visible={visibility.vrchat}
                                 active={Boolean(isGameRunning)}
                                 label="VRChat"
-                                value={isGameRunning ? gameDuration || 'running' : 'stopped'}
                                 tooltip={
                                     <div className="flex flex-col gap-1 text-xs">
                                         {isGameRunning ? (
@@ -463,26 +465,38 @@ export function AppStatusBar() {
                                             </>
                                         )}
                                     </div>
-                                }>
-                                {currentWorld ? <span className="max-w-56 truncate text-xs text-muted-foreground">{currentWorld}</span> : null}
-                            </StatusSegment>
-                            <StatusSegment
-                                visible={visibility.servers}
-                                active={vrcStatus.indicator !== 'major'}
-                                warn={vrcStatus.indicator && vrcStatus.indicator !== 'none'}
-                                label="Servers"
-                                value={vrcStatus.summary || vrcStatus.status || 'OK'}
-                                onClick={() => void openStatusPage()}
+                                }
                             />
                             <StatusSegment
-                                visible={visibility.ws}
-                                active={Boolean(runtimeTransport.websocketConnected)}
-                                label="WebSocket"
-                                value={`${messagesPerMinute}/min`}>
-                                <span className="text-xs text-muted-foreground">
-                                    {runtimeTransport.messageCount} total
-                                </span>
-                            </StatusSegment>
+                                visible={visibility.servers}
+                                active={!vrcStatus.indicator || vrcStatus.indicator === 'none'}
+                                warn={vrcStatus.indicator && vrcStatus.indicator !== 'none'}
+                                label="Servers"
+                                onClick={() => void openStatusPage()}
+                                tooltip={vrcStatus.summary || vrcStatus.status || 'VRChat status'}
+                            />
+                            {visibility.ws ? (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="-ml-px flex h-6 items-center gap-1.5 border-x px-2">
+                                            <StatusDot active={Boolean(runtimeTransport.websocketConnected)} />
+                                            <span className="text-xs text-muted-foreground">
+                                                {t('status_bar.realtime_connection')}
+                                            </span>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="flex max-w-xs flex-col gap-1 text-xs">
+                                        <span>
+                                            WebSocket {runtimeTransport.websocketConnected
+                                                ? t('status_bar.ws_connected')
+                                                : t('status_bar.ws_disconnected')}
+                                        </span>
+                                        <span className="text-muted-foreground">
+                                            {t('status_bar.ws_avg_per_minute', { count: messagesPerMinute })}
+                                        </span>
+                                    </TooltipContent>
+                                </Tooltip>
+                            ) : null}
                             <StatusSegment
                                 visible={visibility.nowPlaying && Boolean(nowPlaying.url)}
                                 active
@@ -502,61 +516,73 @@ export function AppStatusBar() {
                         </div>
 
                         <div className="flex shrink-0 items-center justify-end overflow-hidden">
-                            <div className="hidden items-center border-r px-2 text-xs text-muted-foreground md:flex">
-                                <MonitorIcon className="mr-1 size-3.5" />
-                                Boot {bootStatus} · {transportStatus} · {locale}
-                            </div>
                             {visibility.clocks
                                 ? visibleClocks.map((clock, index) => (
-                                      <div
+                                      <Popover
                                           key={`${clock.offset}-${index}`}
-                                          className="flex h-6 items-center gap-1.5 border-r px-2 text-xs tabular-nums">
-                                          <ClockIcon className="size-3.5 text-muted-foreground" />
-                                          {formatClock(nowMs, clock.offset)}
-                                      </div>
+                                          open={Boolean(clockPopoverOpen[index])}
+                                          onOpenChange={(open) => setClockPopoverValue(index, open)}>
+                                          <PopoverTrigger asChild>
+                                              <Button
+                                                  type="button"
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-6 gap-1.5 rounded-none border-r px-2 text-xs font-normal tabular-nums">
+                                                  <ClockIcon className="size-3.5 text-muted-foreground" />
+                                                  {formatClock(nowMs, clock.offset)}
+                                              </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent side="top" align="center" className="w-72">
+                                              <div className="flex flex-col gap-2 p-1">
+                                                  <label className="text-xs font-medium">{t('status_bar.timezone')}</label>
+                                                  <Select
+                                                      value={String(normalizeUtcHour(clock.offset))}
+                                                      onValueChange={(offset) => updateClockTimezone(index, offset)}>
+                                                      <SelectTrigger size="sm" className="w-full">
+                                                          <SelectValue placeholder={t('status_bar.timezone')} />
+                                                      </SelectTrigger>
+                                                      <SelectContent className="max-h-60">
+                                                          <SelectGroup>
+                                                              {timezoneOptions.map((option) => (
+                                                                  <SelectItem key={option.value} value={String(option.value)}>
+                                                                      <span className="w-full text-right font-mono">{option.label}</span>
+                                                                  </SelectItem>
+                                                              ))}
+                                                          </SelectGroup>
+                                                      </SelectContent>
+                                                  </Select>
+                                              </div>
+                                          </PopoverContent>
+                                      </Popover>
                                   ))
                                 : null}
-                            {visibility.zoom ? (
-                                <div className="flex h-6 items-center gap-1.5 border-r px-2">
-                                    <ZoomInIcon className="size-3.5 text-muted-foreground" />
-                                    <Input
-                                        value={zoomInput}
-                                        onChange={(event) => setZoomInput(event.target.value)}
-                                        onBlur={() => {
-                                            void applyZoomInput();
-                                        }}
-                                        onKeyDown={(event) => {
-                                            if (event.key === 'Enter') {
-                                                event.currentTarget.blur();
-                                            }
-                                        }}
-                                        className="h-5 w-14 px-1 py-0 text-center text-xs"
-                                    />
-                                    <span className="text-xs text-muted-foreground">
-                                        {formatZoomPercentage(zoomLevel)}
-                                    </span>
-                                </div>
+                            {visibility.proxy ? (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            aria-label="Proxy settings"
+                                            className={cn(
+                                                '-ml-px h-6 w-7 rounded-none border-l',
+                                                proxyServer
+                                                    ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
+                                                    : 'text-muted-foreground hover:text-muted-foreground'
+                                            )}
+                                            onClick={() => {
+                                                void promptProxySettings().catch((error) => {
+                                                    toast.error(error instanceof Error ? error.message : 'Failed to update proxy settings.');
+                                                });
+                                            }}>
+                                            <NetworkIcon className="size-3.5" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs">
+                                        {proxyServer ? `Proxy: ${proxyServer}` : 'Proxy disabled'}
+                                    </TooltipContent>
+                                </Tooltip>
                             ) : null}
-                            {visibility.uptime ? (
-                                <div className="flex h-6 items-center gap-1.5 border-r px-2 text-xs tabular-nums">
-                                    <RadioIcon className="size-3.5 text-muted-foreground" />
-                                    {formatAppUptime(nowMs, appStartedAtRef.current)}
-                                </div>
-                            ) : null}
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="relative h-6 gap-1.5 rounded-none px-2"
-                                onClick={() => openNotifications(true)}>
-                                <BellIcon data-icon="inline-start" />
-                                Notifications
-                                {unreadCount > 0 ? (
-                                    <Badge className="ml-1 min-w-5 justify-center px-1.5 py-0 text-xs leading-5">
-                                        {unreadCount}
-                                    </Badge>
-                                ) : null}
-                            </Button>
                         </div>
                     </div>
                 </footer>

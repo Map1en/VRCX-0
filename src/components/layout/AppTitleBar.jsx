@@ -172,7 +172,7 @@ export function AppTitleBar() {
             onClick={() => openVrcNotificationCenter()}>
             <BellIcon data-icon="inline-start" />
             {vrcUnseenNotificationCount > 0 ? (
-                <Badge className="absolute right-0.5 top-0.5 h-4 min-w-4 rounded-full px-1 text-[10px] leading-4">
+                <Badge className="absolute right-1 top-0.5 h-3 min-w-3 rounded-full px-0.5 py-0 text-[7px] leading-none">
                     {vrcUnseenNotificationCount > 99 ? '99+' : vrcUnseenNotificationCount}
                 </Badge>
             ) : null}

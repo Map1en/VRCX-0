@@ -34,11 +34,9 @@ import {
     gameLogRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import {
-    ResizableTableCell,
-    ResizableTableHead
-} from '@/components/data-table/ResizableTableParts.jsx';
-import {
+    DataTableHeader,
     DataTablePagination,
     DataTableSurface
 } from '@/components/data-table/DataTableView.jsx';
@@ -88,7 +86,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Spinner } from '@/ui/shadcn/spinner';
 import {
     TableBody,
-    TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
 import { timeToText } from '@/lib/dateTime.js';
@@ -873,6 +870,9 @@ export function GameLogPage({ embedded = false } = {}) {
     );
     const [columnOrder, setColumnOrder] = useState(() => sanitizeGameLogColumnOrder(persistedState.columnOrder));
     const [columnSizing, setColumnSizing] = useState(() => sanitizeGameLogColumnSizing(persistedState.columnSizing));
+    const [columnOrderLocked, setColumnOrderLocked] = useState(
+        () => persistedState.columnOrderLocked === true
+    );
     const [pagination, setPagination] = useState(() => ({
         pageIndex: 0,
         pageSize: resolveGameLogPageSize(
@@ -1140,9 +1140,10 @@ export function GameLogPage({ embedded = false } = {}) {
         writePersistedGameLogState({
             columnVisibility: sanitizeGameLogColumnVisibility(columnVisibility),
             columnOrder: sanitizeGameLogColumnOrder(columnOrder),
-            columnSizing: sanitizeGameLogColumnSizing(columnSizing)
+            columnSizing: sanitizeGameLogColumnSizing(columnSizing),
+            columnOrderLocked
         });
-    }, [columnOrder, columnSizing, columnVisibility]);
+    }, [columnOrder, columnOrderLocked, columnSizing, columnVisibility]);
 
     useEffect(() => {
         setPagination((current) => ({
@@ -1658,7 +1659,11 @@ export function GameLogPage({ embedded = false } = {}) {
         getSortedRowModel: getSortedRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         enableColumnResizing: true,
-        columnResizeMode: 'onChange'
+        columnResizeMode: 'onChange',
+        meta: {
+            columnOrderLocked,
+            setColumnOrderLocked
+        }
     });
 
     const pageCount = Math.max(1, table.getPageCount());
@@ -1974,19 +1979,10 @@ export function GameLogPage({ embedded = false } = {}) {
                         <div className="flex min-h-0 flex-1 flex-col gap-3">
                             <DataTableSurface className="overflow-y-auto overflow-x-hidden">
                                 <table className="w-full table-fixed caption-bottom text-sm">
-                                    <TableHeader>
-                                        {table.getHeaderGroups().map((headerGroup) => (
-                                            <TableRow key={headerGroup.id}>
-                                                {headerGroup.headers.map((header) => (
-                                                    <ResizableTableHead
-                                                        key={header.id}
-                                                        header={header}
-                                                        style={getGameLogColumnStyle(header.column)}
-                                                    />
-                                                ))}
-                                            </TableRow>
-                                        ))}
-                                    </TableHeader>
+                                    <DataTableHeader
+                                        table={table}
+                                        getHeaderStyle={getGameLogColumnStyle}
+                                    />
                                     <TableBody>
                                         {table.getRowModel().rows.map((row) => (
                                             <TableRow

@@ -836,6 +836,7 @@
                     "tray": "Minimize to Tray When Closing",
                     "disable_vr_overlay_gpu_acceleration": "Disable VR Overlay GPU Acceleration",
                     "proxy": "Proxy Settings",
+                    "proxy_description": "Set the proxy server used by VRCX-0. Restart is required to apply a changed proxy.",
                     "startup_linux": "Add \"--startup\" arg to startup VRCX-0.desktop file to start VRCX-0 minimized at system startup"
                 },
                 "favorites": {
@@ -3135,6 +3136,7 @@
         "steamvr_running": "SteamVR is running",
         "steamvr_stopped": "SteamVR is not running",
         "proxy": "Proxy",
+        "realtime_connection": "Realtime",
         "ws_connected": "Connected",
         "ws_disconnected": "Disconnected",
         "ws_avg_per_minute": "{count} avg/min",
