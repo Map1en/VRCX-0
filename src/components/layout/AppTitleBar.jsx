@@ -182,7 +182,7 @@ export function AppTitleBar() {
     return (
         <>
             <header
-                className="relative z-60 flex h-8 shrink-0 select-none items-center border-b bg-background text-foreground">
+                className="relative z-[60] flex h-8 shrink-0 select-none items-center border-b bg-background text-foreground">
                 <div
                     className="flex h-full min-w-0 flex-1 items-center gap-2 px-3"
                     onMouseDown={handleTitleBarMouseDown}

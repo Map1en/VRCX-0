@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Outlet, Route, Routes, matchPath, useLocation } from 'react-router-dom';
+import { HashRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 
 import { GlobalHosts } from '@/components/hosts/GlobalHosts.jsx';
 import { AppShellLayout } from '@/components/layout/AppShellLayout.jsx';
@@ -48,23 +48,10 @@ function RedirectIfAuthenticated() {
     return <Outlet />;
 }
 
-function getWindowTitle(pathname) {
-    if (pathname === '/login') {
-        return 'Login';
-    }
-
-    const matchedRoute = protectedRoutes.find((route) =>
-        matchPath({ path: route.path, end: true }, pathname)
-    );
-    return matchedRoute?.title || 'VRCX';
-}
-
 function AppRouterContent() {
-    const location = useLocation();
-
     return (
         <div className="flex h-screen min-h-0 w-full flex-col overflow-hidden bg-background">
-            <AppTitleBar title={getWindowTitle(location.pathname)} />
+            <AppTitleBar />
             <div className="min-h-0 flex-1 overflow-hidden">
                 <Routes>
                     <Route element={<RedirectIfAuthenticated />}>
