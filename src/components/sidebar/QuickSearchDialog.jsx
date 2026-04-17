@@ -1,5 +1,11 @@
+import {
+    GlobeIcon,
+    ImageIcon,
+    SearchIcon,
+    UserIcon,
+    UsersIcon
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { GlobeIcon, ImageIcon, SearchIcon, UserIcon, UsersIcon } from 'lucide-react';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { convertFileUrlToImageUrl, userImage } from '@/lib/entityMedia.js';
@@ -9,12 +15,22 @@ import {
     vrchatFavoriteRepository,
     worldProfileRepository
 } from '@/repositories/index.js';
-import { openAvatarDialog, openGroupDialog, openUserDialog, openWorldDialog } from '@/services/dialogService.js';
+import {
+    openAvatarDialog,
+    openGroupDialog,
+    openUserDialog,
+    openWorldDialog
+} from '@/services/dialogService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Button } from '@/ui/shadcn/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/ui/shadcn/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle
+} from '@/ui/shadcn/dialog';
 import { Input } from '@/ui/shadcn/input';
 
 const RESULT_LIMIT = 8;
@@ -32,7 +48,9 @@ function createEmptyCatalog(status = 'idle', detail = '') {
 }
 
 function normalize(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeQuery(value) {
@@ -40,13 +58,10 @@ function normalizeQuery(value) {
 }
 
 function matchesQuery(row, query) {
-    const haystack = [
-        row.name,
-        row.subtitle,
-        row.id,
-        row.memo,
-        row.note
-    ].filter(Boolean).join(' ').toLowerCase();
+    const haystack = [row.name, row.subtitle, row.id, row.memo, row.note]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
     return haystack.includes(query);
 }
 
@@ -54,14 +69,22 @@ function filterResults(rows, query, limit = RESULT_LIMIT) {
     return rows
         .filter((row) => matchesQuery(row, query))
         .sort((left, right) => {
-            const leftPrefix = normalizeQuery(left.name).startsWith(query) ? 0 : 1;
-            const rightPrefix = normalizeQuery(right.name).startsWith(query) ? 0 : 1;
+            const leftPrefix = normalizeQuery(left.name).startsWith(query)
+                ? 0
+                : 1;
+            const rightPrefix = normalizeQuery(right.name).startsWith(query)
+                ? 0
+                : 1;
             if (leftPrefix !== rightPrefix) {
                 return leftPrefix - rightPrefix;
             }
-            return normalize(left.name || left.id).localeCompare(normalize(right.name || right.id), undefined, {
-                sensitivity: 'base'
-            });
+            return normalize(left.name || left.id).localeCompare(
+                normalize(right.name || right.id),
+                undefined,
+                {
+                    sensitivity: 'base'
+                }
+            );
         })
         .slice(0, limit);
 }
@@ -100,11 +123,11 @@ function entityTypeLabel(type) {
 function resolveImageUrl(row) {
     return convertFileUrlToImageUrl(
         row?.thumbnailImageUrl ||
-        row?.thumbnail_image_url ||
-        row?.imageUrl ||
-        row?.image_url ||
-        row?.iconUrl ||
-        row?.bannerUrl
+            row?.thumbnail_image_url ||
+            row?.imageUrl ||
+            row?.image_url ||
+            row?.iconUrl ||
+            row?.bannerUrl
     );
 }
 
@@ -163,9 +186,12 @@ function buildGroupInstanceResults(groupInstances) {
             id: groupId,
             type: 'group',
             source: 'instances',
-            name: group?.group?.name || group.groupName || group.name || 'Group',
+            name:
+                group?.group?.name || group.groupName || group.name || 'Group',
             subtitle: group.worldName || 'instances',
-            imageUrl: convertFileUrlToImageUrl(group?.group?.iconUrl || group.iconUrl),
+            imageUrl: convertFileUrlToImageUrl(
+                group?.group?.iconUrl || group.iconUrl
+            ),
             seedData: group?.group || group
         };
         groupsById.set(groupId, row);
@@ -174,30 +200,42 @@ function buildGroupInstanceResults(groupInstances) {
 }
 
 function settledRows(result) {
-    return result.status === 'fulfilled' && Array.isArray(result.value) ? result.value : [];
+    return result.status === 'fulfilled' && Array.isArray(result.value)
+        ? result.value
+        : [];
 }
 
 async function loadCatalog({ currentUserId, endpoint }) {
-    const [
+    const [ownAvatars, ownWorlds, favoriteAvatars, favoriteWorlds, groups] =
+        await Promise.allSettled([
+            myAvatarRepository.getMyAvatars({ endpoint }),
+            worldProfileRepository.getAllWorldsByUser({
+                userId: currentUserId,
+                endpoint
+            }),
+            vrchatFavoriteRepository.getAllFavoriteAvatars({ endpoint }),
+            vrchatFavoriteRepository.getAllFavoriteWorlds({ endpoint }),
+            groupProfileRepository.getUserGroups({
+                userId: currentUserId,
+                endpoint
+            })
+        ]);
+
+    const rejectedCount = [
         ownAvatars,
         ownWorlds,
         favoriteAvatars,
         favoriteWorlds,
         groups
-    ] = await Promise.allSettled([
-        myAvatarRepository.getMyAvatars({ endpoint }),
-        worldProfileRepository.getAllWorldsByUser({ userId: currentUserId, endpoint }),
-        vrchatFavoriteRepository.getAllFavoriteAvatars({ endpoint }),
-        vrchatFavoriteRepository.getAllFavoriteWorlds({ endpoint }),
-        groupProfileRepository.getUserGroups({ userId: currentUserId, endpoint })
-    ]);
-
-    const rejectedCount = [ownAvatars, ownWorlds, favoriteAvatars, favoriteWorlds, groups]
-        .filter((result) => result.status === 'rejected')
-        .length;
+    ].filter((result) => result.status === 'rejected').length;
 
     return {
-        ...createEmptyCatalog('ready', rejectedCount ? `${rejectedCount} search source(s) failed to load.` : ''),
+        ...createEmptyCatalog(
+            'ready',
+            rejectedCount
+                ? `${rejectedCount} search source(s) failed to load.`
+                : ''
+        ),
         ownAvatars: settledRows(ownAvatars),
         ownWorlds: settledRows(ownWorlds),
         favoriteAvatars: settledRows(favoriteAvatars),
@@ -211,28 +249,38 @@ function ResultRow({ item, onSelect }) {
         item.type === 'friend'
             ? UserIcon
             : item.type === 'avatar'
-                ? ImageIcon
-                : item.type === 'world'
-                    ? GlobeIcon
-                    : UsersIcon;
+              ? ImageIcon
+              : item.type === 'world'
+                ? GlobeIcon
+                : UsersIcon;
 
     return (
         <Button
             type="button"
             variant="ghost"
             className="h-auto w-full justify-start gap-3 px-2 py-2 text-left font-normal"
-            onClick={() => onSelect(item)}>
-            <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+            onClick={() => onSelect(item)}
+        >
+            <span className="bg-muted flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md">
                 {item.imageUrl ? (
-                    <img src={item.imageUrl} alt="" className="size-full object-cover" loading="lazy" />
+                    <img
+                        src={item.imageUrl}
+                        alt=""
+                        className="size-full object-cover"
+                        loading="lazy"
+                    />
                 ) : (
-                    <Icon className="size-4 text-muted-foreground" />
+                    <Icon className="text-muted-foreground size-4" />
                 )}
             </span>
             <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{item.name || entityTypeLabel(item.type)}</span>
+                <span className="block truncate text-sm font-medium">
+                    {item.name || entityTypeLabel(item.type)}
+                </span>
                 {item.subtitle ? (
-                    <span className="block truncate text-xs text-muted-foreground">{item.subtitle}</span>
+                    <span className="text-muted-foreground block truncate text-xs">
+                        {item.subtitle}
+                    </span>
                 ) : null}
             </span>
         </Button>
@@ -245,9 +293,15 @@ function ResultGroup({ title, items, onSelect }) {
     }
     return (
         <div className="py-1">
-            <div className="px-2 py-1 text-xs font-medium text-muted-foreground">{title}</div>
+            <div className="text-muted-foreground px-2 py-1 text-xs font-medium">
+                {title}
+            </div>
             {items.map((item) => (
-                <ResultRow key={`${item.type}:${item.source}:${item.id}`} item={item} onSelect={onSelect} />
+                <ResultRow
+                    key={`${item.type}:${item.source}:${item.id}`}
+                    item={item}
+                    onSelect={onSelect}
+                />
             ))}
         </div>
     );
@@ -256,13 +310,26 @@ function ResultGroup({ title, items, onSelect }) {
 export function QuickSearchDialog({ open, onOpenChange }) {
     const { t } = useI18n();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const remoteFavoritesByObjectId = useFavoriteStore((state) => state.remoteFavoritesByObjectId);
-    const localWorldDetailsById = useFavoriteStore((state) => state.localWorldDetailsById);
-    const localAvatarDetailsById = useFavoriteStore((state) => state.localAvatarDetailsById);
+    const remoteFavoritesByObjectId = useFavoriteStore(
+        (state) => state.remoteFavoritesByObjectId
+    );
+    const localWorldDetailsById = useFavoriteStore(
+        (state) => state.localWorldDetailsById
+    );
+    const localAvatarDetailsById = useFavoriteStore(
+        (state) => state.localAvatarDetailsById
+    );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
-    const groupInstances = groupInstancesState.endpoint === currentEndpoint ? groupInstancesState.instances : [];
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const groupInstancesState = useRuntimeStore(
+        (state) => state.groupInstances
+    );
+    const groupInstances =
+        groupInstancesState.endpoint === currentEndpoint
+            ? groupInstancesState.instances
+            : [];
     const [query, setQuery] = useState('');
     const [catalog, setCatalog] = useState(() => createEmptyCatalog());
     const normalizedQuery = query.trim().toLowerCase();
@@ -282,7 +349,14 @@ export function QuickSearchDialog({ open, onOpenChange }) {
             })
             .catch((error) => {
                 if (active) {
-                    setCatalog(createEmptyCatalog('error', error instanceof Error ? error.message : 'Search index failed to load.'));
+                    setCatalog(
+                        createEmptyCatalog(
+                            'error',
+                            error instanceof Error
+                                ? error.message
+                                : 'Search index failed to load.'
+                        )
+                    );
                 }
             });
 
@@ -304,57 +378,98 @@ export function QuickSearchDialog({ open, onOpenChange }) {
             };
         }
 
-        const friends = Object.values(friendsById || {})
-            .map((friend) => ({
-                id: friend.id,
-                type: 'friend',
-                source: 'friends',
-                name: friend.displayName || friend.username || 'User',
-                subtitle: friend.statusDescription || '',
-                memo: friend.memo || friend.$nickName,
-                note: friend.note,
-                imageUrl: userImage(friend, true, '64')
-            }));
+        const friends = Object.values(friendsById || {}).map((friend) => ({
+            id: friend.id,
+            type: 'friend',
+            source: 'friends',
+            name: friend.displayName || friend.username || 'User',
+            subtitle: friend.statusDescription || '',
+            memo: friend.memo || friend.$nickName,
+            note: friend.note,
+            imageUrl: userImage(friend, true, '64')
+        }));
 
         const remoteFavorites = Object.values(remoteFavoritesByObjectId || []);
         const localAvatars = Object.values(localAvatarDetailsById || []);
         const localWorlds = Object.values(localWorldDetailsById || []);
-        const ownAvatars = buildEntityResults(catalog.ownAvatars, 'avatar', 'own');
+        const ownAvatars = buildEntityResults(
+            catalog.ownAvatars,
+            'avatar',
+            'own'
+        );
         const ownWorlds = buildEntityResults(catalog.ownWorlds, 'world', 'own');
         const ownAvatarIds = new Set(ownAvatars.map((row) => row.id));
         const ownWorldIds = new Set(ownWorlds.map((row) => row.id));
 
-        const favoriteAvatars = dedupeResults([
-            ...buildEntityResults(catalog.favoriteAvatars, 'avatar', 'favorite'),
-            ...remoteFavorites
-                .filter((row) => row?.type === 'avatar')
-                .map((row) => buildEntityResult(row, 'avatar', 'favorite')),
-            ...localAvatars.map((row) => buildEntityResult(row, 'avatar', 'local'))
-        ].filter(Boolean), ownAvatarIds);
+        const favoriteAvatars = dedupeResults(
+            [
+                ...buildEntityResults(
+                    catalog.favoriteAvatars,
+                    'avatar',
+                    'favorite'
+                ),
+                ...remoteFavorites
+                    .filter((row) => row?.type === 'avatar')
+                    .map((row) => buildEntityResult(row, 'avatar', 'favorite')),
+                ...localAvatars.map((row) =>
+                    buildEntityResult(row, 'avatar', 'local')
+                )
+            ].filter(Boolean),
+            ownAvatarIds
+        );
 
-        const favoriteWorlds = dedupeResults([
-            ...buildEntityResults(catalog.favoriteWorlds, 'world', 'favorite'),
-            ...remoteFavorites
-                .filter((row) => row?.type === 'world' || row?.type === 'vrcPlusWorld')
-                .map((row) => buildEntityResult(row, 'world', 'favorite')),
-            ...localWorlds.map((row) => buildEntityResult(row, 'world', 'local'))
-        ].filter(Boolean), ownWorldIds);
+        const favoriteWorlds = dedupeResults(
+            [
+                ...buildEntityResults(
+                    catalog.favoriteWorlds,
+                    'world',
+                    'favorite'
+                ),
+                ...remoteFavorites
+                    .filter(
+                        (row) =>
+                            row?.type === 'world' ||
+                            row?.type === 'vrcPlusWorld'
+                    )
+                    .map((row) => buildEntityResult(row, 'world', 'favorite')),
+                ...localWorlds.map((row) =>
+                    buildEntityResult(row, 'world', 'local')
+                )
+            ].filter(Boolean),
+            ownWorldIds
+        );
 
-        const groupResults = buildEntityResults(catalog.groups, 'group', 'joined');
-        const ownGroupRows = groupResults.filter((row) => normalize(row.seedData?.ownerId) === normalize(currentUserId));
+        const groupResults = buildEntityResults(
+            catalog.groups,
+            'group',
+            'joined'
+        );
+        const ownGroupRows = groupResults.filter(
+            (row) =>
+                normalize(row.seedData?.ownerId) === normalize(currentUserId)
+        );
         const ownGroupIds = new Set(ownGroupRows.map((row) => row.id));
-        const joinedGroupRows = dedupeResults([
-            ...groupResults.filter((row) => !ownGroupIds.has(row.id)),
-            ...buildGroupInstanceResults(groupInstances)
-        ], ownGroupIds);
+        const joinedGroupRows = dedupeResults(
+            [
+                ...groupResults.filter((row) => !ownGroupIds.has(row.id)),
+                ...buildGroupInstanceResults(groupInstances)
+            ],
+            ownGroupIds
+        );
 
         return {
             friends: filterResults(friends, normalizedQuery),
-            ownAvatars: filterResults(dedupeResults(ownAvatars), normalizedQuery),
+            ownAvatars: filterResults(
+                dedupeResults(ownAvatars),
+                normalizedQuery
+            ),
             favoriteAvatars: filterResults(favoriteAvatars, normalizedQuery),
             ownWorlds: filterResults(dedupeResults(ownWorlds), normalizedQuery),
             favoriteWorlds: filterResults(favoriteWorlds, normalizedQuery),
-            ownGroups: filterResults(dedupeResults(ownGroupRows), normalizedQuery),
+            ownGroups: filterResults(
+                dedupeResults(ownGroupRows),
+                normalizedQuery
+            ),
             joinedGroups: filterResults(joinedGroupRows, normalizedQuery)
         };
     }, [
@@ -387,11 +502,23 @@ export function QuickSearchDialog({ open, onOpenChange }) {
         if (item.type === 'friend') {
             openUserDialog({ userId: item.id, title: item.name });
         } else if (item.type === 'avatar') {
-            openAvatarDialog({ avatarId: item.id, title: item.name, seedData: item.seedData || null });
+            openAvatarDialog({
+                avatarId: item.id,
+                title: item.name,
+                seedData: item.seedData || null
+            });
         } else if (item.type === 'world') {
-            openWorldDialog({ worldId: item.id, title: item.name, seedData: item.seedData || null });
+            openWorldDialog({
+                worldId: item.id,
+                title: item.name,
+                seedData: item.seedData || null
+            });
         } else if (item.type === 'group') {
-            openGroupDialog({ groupId: item.id, title: item.name, seedData: item.seedData || null });
+            openGroupDialog({
+                groupId: item.id,
+                title: item.name,
+                seedData: item.seedData || null
+            });
         }
     }
 
@@ -403,14 +530,17 @@ export function QuickSearchDialog({ open, onOpenChange }) {
                 if (!nextOpen) {
                     setQuery('');
                 }
-            }}>
+            }}
+        >
             <DialogContent className="overflow-hidden p-0 sm:max-w-2xl">
                 <DialogHeader className="sr-only">
-                    <DialogTitle>{t('side_panel.search_placeholder')}</DialogTitle>
+                    <DialogTitle>
+                        {t('side_panel.search_placeholder')}
+                    </DialogTitle>
                 </DialogHeader>
                 <div className="border-b p-3">
                     <div className="relative">
-                        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                         <Input
                             autoFocus
                             value={query}
@@ -420,32 +550,76 @@ export function QuickSearchDialog({ open, onOpenChange }) {
                         />
                     </div>
                 </div>
-                <div className="max-h-[min(420px,55vh)] overflow-y-auto overflow-x-hidden p-2">
+                <div className="max-h-[min(420px,55vh)] overflow-x-hidden overflow-y-auto p-2">
                     {normalizedQuery.length < 2 ? (
-                        <div className="flex flex-col gap-2 p-2 text-sm text-muted-foreground">
-                            <div className="font-medium text-foreground">{t('side_panel.search_categories')}</div>
-                            <div>{t('side_panel.search_friends')} - {t('side_panel.search_scope_all')}</div>
-                            <div>{t('side_panel.search_avatars')} - {t('side_panel.search_scope_avatars')}</div>
-                            <div>{t('side_panel.search_worlds')} - {t('side_panel.search_scope_worlds')}</div>
-                            <div>{t('side_panel.search_groups')} - {t('side_panel.search_scope_joined')}</div>
+                        <div className="text-muted-foreground flex flex-col gap-2 p-2 text-sm">
+                            <div className="text-foreground font-medium">
+                                {t('side_panel.search_categories')}
+                            </div>
+                            <div>
+                                {t('side_panel.search_friends')} -{' '}
+                                {t('side_panel.search_scope_all')}
+                            </div>
+                            <div>
+                                {t('side_panel.search_avatars')} -{' '}
+                                {t('side_panel.search_scope_avatars')}
+                            </div>
+                            <div>
+                                {t('side_panel.search_worlds')} -{' '}
+                                {t('side_panel.search_scope_worlds')}
+                            </div>
+                            <div>
+                                {t('side_panel.search_groups')} -{' '}
+                                {t('side_panel.search_scope_joined')}
+                            </div>
                         </div>
                     ) : hasResults ? (
                         <>
-                            <ResultGroup title={t('side_panel.friends')} items={results.friends} onSelect={selectResult} />
-                            <ResultGroup title={t('side_panel.search_own_avatars')} items={results.ownAvatars} onSelect={selectResult} />
-                            <ResultGroup title={t('side_panel.search_fav_avatars')} items={results.favoriteAvatars} onSelect={selectResult} />
-                            <ResultGroup title={t('side_panel.search_own_worlds')} items={results.ownWorlds} onSelect={selectResult} />
-                            <ResultGroup title={t('side_panel.search_fav_worlds')} items={results.favoriteWorlds} onSelect={selectResult} />
-                            <ResultGroup title={t('side_panel.search_own_groups')} items={results.ownGroups} onSelect={selectResult} />
-                            <ResultGroup title={t('side_panel.search_joined_groups')} items={results.joinedGroups} onSelect={selectResult} />
+                            <ResultGroup
+                                title={t('side_panel.friends')}
+                                items={results.friends}
+                                onSelect={selectResult}
+                            />
+                            <ResultGroup
+                                title={t('side_panel.search_own_avatars')}
+                                items={results.ownAvatars}
+                                onSelect={selectResult}
+                            />
+                            <ResultGroup
+                                title={t('side_panel.search_fav_avatars')}
+                                items={results.favoriteAvatars}
+                                onSelect={selectResult}
+                            />
+                            <ResultGroup
+                                title={t('side_panel.search_own_worlds')}
+                                items={results.ownWorlds}
+                                onSelect={selectResult}
+                            />
+                            <ResultGroup
+                                title={t('side_panel.search_fav_worlds')}
+                                items={results.favoriteWorlds}
+                                onSelect={selectResult}
+                            />
+                            <ResultGroup
+                                title={t('side_panel.search_own_groups')}
+                                items={results.ownGroups}
+                                onSelect={selectResult}
+                            />
+                            <ResultGroup
+                                title={t('side_panel.search_joined_groups')}
+                                items={results.joinedGroups}
+                                onSelect={selectResult}
+                            />
                         </>
                     ) : (
-                        <div className="py-8 text-center text-sm text-muted-foreground">
+                        <div className="text-muted-foreground py-8 text-center text-sm">
                             {t('side_panel.search_no_results')}
                         </div>
                     )}
                     {catalog.status === 'error' && catalog.detail ? (
-                        <div className="px-2 pb-2 text-xs text-destructive">{catalog.detail}</div>
+                        <div className="text-destructive px-2 pb-2 text-xs">
+                            {catalog.detail}
+                        </div>
                     ) : null}
                 </div>
             </DialogContent>

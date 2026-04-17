@@ -166,15 +166,15 @@ export const DASHBOARD_PAGE_DEFINITIONS = [
     }
 ];
 
-export const DASHBOARD_SELECTABLE_PAGE_DEFINITIONS = DASHBOARD_PAGE_DEFINITIONS.filter(
-    (definition) => !DASHBOARD_BLOCKED_PANEL_KEYS.has(definition.key)
-);
+export const DASHBOARD_SELECTABLE_PAGE_DEFINITIONS =
+    DASHBOARD_PAGE_DEFINITIONS.filter(
+        (definition) => !DASHBOARD_BLOCKED_PANEL_KEYS.has(definition.key)
+    );
 
 const DASHBOARD_DEFINITION_MAP = new Map(
-    [...DASHBOARD_WIDGET_DEFINITIONS, ...DASHBOARD_PAGE_DEFINITIONS].map((definition) => [
-        definition.key,
-        definition
-    ])
+    [...DASHBOARD_WIDGET_DEFINITIONS, ...DASHBOARD_PAGE_DEFINITIONS].map(
+        (definition) => [definition.key, definition]
+    )
 );
 
 const DASHBOARD_PANEL_KEY_ALIASES = {
@@ -214,7 +214,9 @@ export function resolveDashboardPanelConfig(panel) {
 
 export function getDashboardPanelDefinition(key) {
     const normalizedKey = normalizeDashboardPanelKey(key);
-    return normalizedKey ? DASHBOARD_DEFINITION_MAP.get(normalizedKey) ?? null : null;
+    return normalizedKey
+        ? (DASHBOARD_DEFINITION_MAP.get(normalizedKey) ?? null)
+        : null;
 }
 
 export function createDashboardPanelValue(key) {

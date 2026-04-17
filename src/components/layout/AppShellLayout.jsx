@@ -23,7 +23,9 @@ function loadSidePanelWidth() {
         return 320;
     }
     try {
-        return clampSidePanelWidth(window.localStorage.getItem(sidePanelStorageKey));
+        return clampSidePanelWidth(
+            window.localStorage.getItem(sidePanelStorageKey)
+        );
     } catch {
         return 320;
     }
@@ -39,7 +41,10 @@ export function AppShellLayout() {
 
     useEffect(() => {
         try {
-            window.localStorage.setItem(sidePanelStorageKey, String(sidePanelWidth));
+            window.localStorage.setItem(
+                sidePanelStorageKey,
+                String(sidePanelWidth)
+            );
         } catch {
             // Persisted layout state is optional.
         }
@@ -73,7 +78,9 @@ export function AppShellLayout() {
         let cleanedUp = false;
 
         const handleMove = (moveEvent) => {
-            setSidePanelWidth(clampSidePanelWidth(window.innerWidth - moveEvent.clientX));
+            setSidePanelWidth(
+                clampSidePanelWidth(window.innerWidth - moveEvent.clientX)
+            );
         };
 
         const cleanup = () => {
@@ -106,7 +113,7 @@ export function AppShellLayout() {
 
     return (
         <AppSidebar>
-            <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background">
+            <div className="bg-background flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
                 <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
                     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                         <Outlet />
@@ -114,10 +121,13 @@ export function AppShellLayout() {
                     {sidePanelVisible ? (
                         <>
                             <div
-                                className="z-20 w-1 shrink-0 cursor-ew-resize select-none bg-transparent hover:bg-border"
+                                className="hover:bg-border z-20 w-1 shrink-0 cursor-ew-resize bg-transparent select-none"
                                 onPointerDown={startSidePanelResize}
                             />
-                            <SidePanel className="w-full shrink-0" style={{ width: sidePanelWidth }} />
+                            <SidePanel
+                                className="w-full shrink-0"
+                                style={{ width: sidePanelWidth }}
+                            />
                         </>
                     ) : null}
                 </div>

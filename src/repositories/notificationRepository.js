@@ -4,8 +4,8 @@ import sqliteRepository from './sqliteRepository.js';
 import userSessionRepository, {
     normalizeUserTablePrefix
 } from './userSessionRepository.js';
-import webRepository from './webRepository.js';
 import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import webRepository from './webRepository.js';
 
 export const NOTIFICATION_TYPES = Object.freeze([
     'requestInvite',

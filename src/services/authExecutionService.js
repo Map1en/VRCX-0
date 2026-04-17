@@ -1,3 +1,5 @@
+import { toast } from 'sonner';
+
 import {
     authRepository,
     avatarProfileRepository,
@@ -6,17 +8,19 @@ import {
 } from '@/repositories/index.js';
 import { useDialogStore } from '@/state/dialogStore.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
-import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
-import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { toast } from 'sonner';
+import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
 
-import { applySavedAuthSnapshot, refreshSavedAuthSnapshot } from './authSnapshotService.js';
-import { resetReactAutoLoginThrottle } from './authAutoLoginState.js';
 import { resetActivityCacheState } from './activityCacheService.js';
+import { resetReactAutoLoginThrottle } from './authAutoLoginState.js';
+import {
+    applySavedAuthSnapshot,
+    refreshSavedAuthSnapshot
+} from './authSnapshotService.js';
 import { clearEntityQueryCache } from './entityQueryCacheService.js';
 import { translateCurrentLocale } from './i18nService.js';
 import { stopRealtimeTransport } from './realtimeTransportService.js';
@@ -24,10 +28,22 @@ import { bootstrapAuthenticatedSession } from './sessionBootstrapService.js';
 
 function normalizeLoginParams(loginParams = {}) {
     return {
-        username: typeof loginParams.username === 'string' ? loginParams.username.trim() : '',
-        password: typeof loginParams.password === 'string' ? loginParams.password : '',
-        endpoint: typeof loginParams.endpoint === 'string' ? loginParams.endpoint.trim() : '',
-        websocket: typeof loginParams.websocket === 'string' ? loginParams.websocket.trim() : ''
+        username:
+            typeof loginParams.username === 'string'
+                ? loginParams.username.trim()
+                : '',
+        password:
+            typeof loginParams.password === 'string'
+                ? loginParams.password
+                : '',
+        endpoint:
+            typeof loginParams.endpoint === 'string'
+                ? loginParams.endpoint.trim()
+                : '',
+        websocket:
+            typeof loginParams.websocket === 'string'
+                ? loginParams.websocket.trim()
+                : ''
     };
 }
 
@@ -39,10 +55,16 @@ function createAuthExecutionError(message, code) {
 
 function parseAuthResponse(json) {
     if (!json || typeof json !== 'object') {
-        throw createAuthExecutionError('The auth request returned an invalid response.', 'AUTH_INVALID_RESPONSE');
+        throw createAuthExecutionError(
+            'The auth request returned an invalid response.',
+            'AUTH_INVALID_RESPONSE'
+        );
     }
 
-    if (Array.isArray(json.requiresTwoFactorAuth) && json.requiresTwoFactorAuth.length > 0) {
+    if (
+        Array.isArray(json.requiresTwoFactorAuth) &&
+        json.requiresTwoFactorAuth.length > 0
+    ) {
         return {
             type: 'twoFactor',
             methods: json.requiresTwoFactorAuth
@@ -50,7 +72,10 @@ function parseAuthResponse(json) {
     }
 
     if (!json.id) {
-        throw createAuthExecutionError('The auth request did not return a current user payload.', 'AUTH_INVALID_RESPONSE');
+        throw createAuthExecutionError(
+            'The auth request did not return a current user payload.',
+            'AUTH_INVALID_RESPONSE'
+        );
     }
 
     return {
@@ -105,7 +130,10 @@ function resetCurrentUserRuntimeAuth() {
     });
 }
 
-function setCurrentUserRuntimeAuth(user, { endpoint = '', websocket = '' } = {}) {
+function setCurrentUserRuntimeAuth(
+    user,
+    { endpoint = '', websocket = '' } = {}
+) {
     stopRealtimeTransport({ updateStatus: false });
     void clearEntityQueryCache();
     avatarProfileRepository.clearAvatarNameCache();
@@ -122,54 +150,57 @@ function setCurrentUserRuntimeAuth(user, { endpoint = '', websocket = '' } = {})
 
 async function getLocalizedAuthPrompt(mode) {
     switch (mode) {
-    case 'emailOtp': {
-        const [title, description, confirmText, cancelText] = await Promise.all([
-            translateCurrentLocale('prompt.email_otp.header'),
-            translateCurrentLocale('prompt.email_otp.description'),
-            translateCurrentLocale('prompt.email_otp.verify'),
-            translateCurrentLocale('prompt.email_otp.resend')
-        ]);
+        case 'emailOtp': {
+            const [title, description, confirmText, cancelText] =
+                await Promise.all([
+                    translateCurrentLocale('prompt.email_otp.header'),
+                    translateCurrentLocale('prompt.email_otp.description'),
+                    translateCurrentLocale('prompt.email_otp.verify'),
+                    translateCurrentLocale('prompt.email_otp.resend')
+                ]);
 
-        return {
-            mode,
-            title,
-            description,
-            confirmText,
-            cancelText
-        };
-    }
-    case 'otp': {
-        const [title, description, confirmText, cancelText] = await Promise.all([
-            translateCurrentLocale('prompt.otp.header'),
-            translateCurrentLocale('prompt.otp.description'),
-            translateCurrentLocale('prompt.otp.verify'),
-            translateCurrentLocale('prompt.otp.use_totp')
-        ]);
+            return {
+                mode,
+                title,
+                description,
+                confirmText,
+                cancelText
+            };
+        }
+        case 'otp': {
+            const [title, description, confirmText, cancelText] =
+                await Promise.all([
+                    translateCurrentLocale('prompt.otp.header'),
+                    translateCurrentLocale('prompt.otp.description'),
+                    translateCurrentLocale('prompt.otp.verify'),
+                    translateCurrentLocale('prompt.otp.use_totp')
+                ]);
 
-        return {
-            mode,
-            title,
-            description,
-            confirmText,
-            cancelText
-        };
-    }
-    default: {
-        const [title, description, confirmText, cancelText] = await Promise.all([
-            translateCurrentLocale('prompt.totp.header'),
-            translateCurrentLocale('prompt.totp.description'),
-            translateCurrentLocale('prompt.totp.verify'),
-            translateCurrentLocale('prompt.totp.use_otp')
-        ]);
+            return {
+                mode,
+                title,
+                description,
+                confirmText,
+                cancelText
+            };
+        }
+        default: {
+            const [title, description, confirmText, cancelText] =
+                await Promise.all([
+                    translateCurrentLocale('prompt.totp.header'),
+                    translateCurrentLocale('prompt.totp.description'),
+                    translateCurrentLocale('prompt.totp.verify'),
+                    translateCurrentLocale('prompt.totp.use_otp')
+                ]);
 
-        return {
-            mode: 'totp',
-            title,
-            description,
-            confirmText,
-            cancelText
-        };
-    }
+            return {
+                mode: 'totp',
+                title,
+                description,
+                confirmText,
+                cancelText
+            };
+        }
     }
 }
 
@@ -180,12 +211,12 @@ async function promptForTwoFactorCode(mode) {
 
 async function getTwoFactorInputErrorMessage(mode) {
     switch (mode) {
-    case 'emailOtp':
-        return translateCurrentLocale('prompt.email_otp.input_error');
-    case 'otp':
-        return translateCurrentLocale('prompt.otp.input_error');
-    default:
-        return translateCurrentLocale('prompt.totp.input_error');
+        case 'emailOtp':
+            return translateCurrentLocale('prompt.email_otp.input_error');
+        case 'otp':
+            return translateCurrentLocale('prompt.otp.input_error');
+        default:
+            return translateCurrentLocale('prompt.totp.input_error');
     }
 }
 
@@ -200,7 +231,11 @@ async function completeTwoFactorChallenge({
     while (methods.length > 0) {
         const result = await promptForTwoFactorCode(mode);
         if (!result.ok) {
-            if (mode === 'emailOtp' && result.reason === 'cancel' && typeof restartChallenge === 'function') {
+            if (
+                mode === 'emailOtp' &&
+                result.reason === 'cancel' &&
+                typeof restartChallenge === 'function'
+            ) {
                 const restartedResponse = await restartChallenge();
                 const restartedAuth = parseAuthResponse(restartedResponse.json);
                 if (restartedAuth.type === 'authenticated') {
@@ -242,11 +277,17 @@ async function completeTwoFactorChallenge({
             }
         } catch (error) {
             const fallbackMessage = await getTwoFactorInputErrorMessage(mode);
-            toast.error(error instanceof Error && error.message ? error.message : fallbackMessage);
+            toast.error(
+                error instanceof Error && error.message
+                    ? error.message
+                    : fallbackMessage
+            );
             continue;
         }
 
-        const currentUserResponse = await vrchatAuthRepository.getCurrentUser({ endpoint });
+        const currentUserResponse = await vrchatAuthRepository.getCurrentUser({
+            endpoint
+        });
         const currentAuth = parseAuthResponse(currentUserResponse.json);
         if (currentAuth.type === 'authenticated') {
             return currentAuth.user;
@@ -262,7 +303,12 @@ async function completeTwoFactorChallenge({
     );
 }
 
-async function finalizeSuccessfulLogin(snapshot, detail, user, authContext = {}) {
+async function finalizeSuccessfulLogin(
+    snapshot,
+    detail,
+    user,
+    authContext = {}
+) {
     applySavedAuthSnapshot(snapshot);
     setCurrentUserRuntimeAuth(user, authContext);
     useSessionStore.getState().setSessionState({
@@ -275,7 +321,8 @@ async function finalizeSuccessfulLogin(snapshot, detail, user, authContext = {})
     try {
         await bootstrapAuthenticatedSession(user);
     } catch (error) {
-        const normalizedError = error instanceof Error ? error : new Error(String(error));
+        const normalizedError =
+            error instanceof Error ? error : new Error(String(error));
         normalizedError.authSnapshot = snapshot;
         throw normalizedError;
     }
@@ -395,7 +442,9 @@ export async function executeCookieSessionRestore({ endpoint = '' } = {}) {
 
     try {
         await vrchatAuthRepository.getConfig({ endpoint });
-        const response = await vrchatAuthRepository.getCurrentUser({ endpoint });
+        const response = await vrchatAuthRepository.getCurrentUser({
+            endpoint
+        });
         const authResponse = parseAuthResponse(response.json);
 
         if (authResponse.type !== 'authenticated') {
@@ -408,7 +457,8 @@ export async function executeCookieSessionRestore({ endpoint = '' } = {}) {
         currentUser = authResponse.user;
         snapshot = await refreshSavedAuthSnapshot();
     } catch (error) {
-        const normalizedError = error instanceof Error ? error : new Error(String(error));
+        const normalizedError =
+            error instanceof Error ? error : new Error(String(error));
         if (isMissingCredentialsError(normalizedError)) {
             throw normalizedError;
         }
@@ -442,10 +492,17 @@ export async function executeManualLogin({
     });
 
     if (!loginParams.username || !loginParams.password) {
-        throw createAuthExecutionError('Username and password are required.', 'AUTH_FORM_INVALID');
+        throw createAuthExecutionError(
+            'Username and password are required.',
+            'AUTH_FORM_INVALID'
+        );
     }
 
-    runtimeStore.setStartupTask('auth', 'running', `Authenticating ${loginParams.username}.`);
+    runtimeStore.setStartupTask(
+        'auth',
+        'running',
+        `Authenticating ${loginParams.username}.`
+    );
     setAuthenticatingSessionState();
 
     let currentUser = null;
@@ -453,27 +510,34 @@ export async function executeManualLogin({
 
     try {
         await webRepository.clearCookies();
-        await vrchatAuthRepository.getConfig({ endpoint: loginParams.endpoint });
-        const response = await vrchatAuthRepository.loginWithBasicAuth(loginParams);
+        await vrchatAuthRepository.getConfig({
+            endpoint: loginParams.endpoint
+        });
+        const response =
+            await vrchatAuthRepository.loginWithBasicAuth(loginParams);
         const authResponse = parseAuthResponse(response.json);
         currentUser =
             authResponse.type === 'authenticated'
                 ? authResponse.user
                 : await completeTwoFactorChallenge({
-                    endpoint: loginParams.endpoint,
-                    initialMethods: authResponse.methods,
-                    async restartChallenge() {
-                        await webRepository.clearCookies();
-                        return vrchatAuthRepository.loginWithBasicAuth(loginParams);
-                    }
-                });
+                      endpoint: loginParams.endpoint,
+                      initialMethods: authResponse.methods,
+                      async restartChallenge() {
+                          await webRepository.clearCookies();
+                          return vrchatAuthRepository.loginWithBasicAuth(
+                              loginParams
+                          );
+                      }
+                  });
         snapshot = await authRepository.recordLoginSuccess({
             user: currentUser,
             loginParams,
             saveCredentials
         });
     } catch (error) {
-        return restoreAuthSnapshotOnFailure(error instanceof Error ? error : new Error(String(error)));
+        return restoreAuthSnapshotOnFailure(
+            error instanceof Error ? error : new Error(String(error))
+        );
     }
 
     return finalizeSuccessfulLogin(
@@ -493,7 +557,10 @@ export async function executeSavedCredentialLogin(savedCredential) {
     const runtimeStore = useRuntimeStore.getState();
     const userId = savedCredential?.user?.id ?? '';
     const displayName =
-        savedCredential?.user?.displayName || savedCredential?.user?.username || userId || 'saved account';
+        savedCredential?.user?.displayName ||
+        savedCredential?.user?.username ||
+        userId ||
+        'saved account';
 
     let loginParams = normalizeLoginParams(savedCredential?.loginParams);
     if (!loginParams.username || !loginParams.password) {
@@ -503,7 +570,11 @@ export async function executeSavedCredentialLogin(savedCredential) {
         );
     }
 
-    runtimeStore.setStartupTask('auth', 'running', `Authenticating ${displayName}.`);
+    runtimeStore.setStartupTask(
+        'auth',
+        'running',
+        `Authenticating ${displayName}.`
+    );
     setAuthenticatingSessionState();
 
     let currentUser = null;
@@ -515,31 +586,39 @@ export async function executeSavedCredentialLogin(savedCredential) {
             await webRepository.setCookies(savedCredential.cookies);
         }
 
-        await vrchatAuthRepository.getConfig({ endpoint: loginParams.endpoint });
-        const response = await vrchatAuthRepository.loginWithBasicAuth(loginParams);
+        await vrchatAuthRepository.getConfig({
+            endpoint: loginParams.endpoint
+        });
+        const response =
+            await vrchatAuthRepository.loginWithBasicAuth(loginParams);
         const authResponse = parseAuthResponse(response.json);
         currentUser =
             authResponse.type === 'authenticated'
                 ? authResponse.user
                 : await completeTwoFactorChallenge({
-                    endpoint: loginParams.endpoint,
-                    initialMethods: authResponse.methods,
-                    async restartChallenge() {
-                        await webRepository.clearCookies();
-                        return vrchatAuthRepository.loginWithBasicAuth(loginParams);
-                    }
-                });
+                      endpoint: loginParams.endpoint,
+                      initialMethods: authResponse.methods,
+                      async restartChallenge() {
+                          await webRepository.clearCookies();
+                          return vrchatAuthRepository.loginWithBasicAuth(
+                              loginParams
+                          );
+                      }
+                  });
         snapshot = await authRepository.recordLoginSuccess({
             user: currentUser,
             loginParams,
             saveCredentials: false
         });
     } catch (error) {
-        const normalizedError = error instanceof Error ? error : new Error(String(error));
+        const normalizedError =
+            error instanceof Error ? error : new Error(String(error));
         if (
             userId &&
             typeof normalizedError.message === 'string' &&
-            normalizedError.message.includes('Invalid Username/Email or Password')
+            normalizedError.message.includes(
+                'Invalid Username/Email or Password'
+            )
         ) {
             await webRepository.clearCookies();
             setSignedOutSessionState();

@@ -1,11 +1,12 @@
-import { flexRender } from '@tanstack/react-table';
-import { CSS } from '@dnd-kit/utilities';
 import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { flexRender } from '@tanstack/react-table';
 import { GripVerticalIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
 import { TableCell, TableHead } from '@/ui/shadcn/table';
+
 import { isColumnReorderable } from './tableColumnLayout.js';
 
 function resolveSize(value) {
@@ -23,10 +24,14 @@ function resizeHeaderFromKeyboard(event, header) {
     const table = header.getContext().table;
     const direction = table.options.columnResizeDirection === 'rtl' ? -1 : 1;
     const step = event.shiftKey ? 32 : 16;
-    const delta = event.key === 'ArrowRight' ? step * direction : -step * direction;
+    const delta =
+        event.key === 'ArrowRight' ? step * direction : -step * direction;
     const minSize = header.column.columnDef.minSize ?? 20;
     const maxSize = header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER;
-    const nextSize = Math.min(maxSize, Math.max(minSize, header.column.getSize() + delta));
+    const nextSize = Math.min(
+        maxSize,
+        Math.max(minSize, header.column.getSize() + delta)
+    );
 
     table.setColumnSizing((current) => ({
         ...current,
@@ -47,8 +52,9 @@ function ResizableTableHeadContent({ header, dragHandleProps }) {
                     variant="ghost"
                     size="icon-xs"
                     aria-label={`Reorder ${header.column.id} column`}
-                    className="shrink-0 cursor-grab opacity-0 active:cursor-grabbing group-hover:opacity-100"
-                    {...dragHandleProps}>
+                    className="shrink-0 cursor-grab opacity-0 group-hover:opacity-100 active:cursor-grabbing"
+                    {...dragHandleProps}
+                >
                     <GripVerticalIcon data-icon="inline-start" />
                 </Button>
             ) : null}
@@ -72,11 +78,13 @@ function ResizableTableHeadContent({ header, dragHandleProps }) {
                     aria-valuenow={header.column.getSize()}
                     aria-valuetext={`${header.column.getSize()} pixels`}
                     className={cn(
-                        'absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none rounded-none border-0 bg-transparent p-0 hover:bg-border',
+                        'hover:bg-border absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none rounded-none border-0 bg-transparent p-0',
                         header.column.getIsResizing() ? 'bg-primary' : ''
                     )}
                     onMouseDown={header.getResizeHandler()}
-                    onKeyDown={(event) => resizeHeaderFromKeyboard(event, header)}
+                    onKeyDown={(event) =>
+                        resizeHeaderFromKeyboard(event, header)
+                    }
                     onTouchStart={header.getResizeHandler()}
                 />
             ) : null}
@@ -91,7 +99,8 @@ function ResizableTableHeadBase({ header, className = '', style }) {
             style={{
                 width: resolveSize(header.getSize()),
                 ...style
-            }}>
+            }}
+        >
             <ResizableTableHeadContent header={header} />
         </TableHead>
     );
@@ -128,8 +137,12 @@ function SortableResizableTableHead({ header, className = '', style }) {
                 transform: CSS.Transform.toString(transform),
                 transition,
                 ...style
-            }}>
-            <ResizableTableHeadContent header={header} dragHandleProps={dragHandleProps} />
+            }}
+        >
+            <ResizableTableHeadContent
+                header={header}
+                dragHandleProps={dragHandleProps}
+            />
         </TableHead>
     );
 }
@@ -150,7 +163,13 @@ export function ResizableTableHead({
         );
     }
 
-    return <ResizableTableHeadBase header={header} className={className} style={style} />;
+    return (
+        <ResizableTableHeadBase
+            header={header}
+            className={className}
+            style={style}
+        />
+    );
 }
 
 export function ResizableTableCell({ cell, className = '', style }) {
@@ -160,7 +179,8 @@ export function ResizableTableCell({ cell, className = '', style }) {
             style={{
                 width: resolveSize(cell.column.getSize()),
                 ...style
-            }}>
+            }}
+        >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
     );

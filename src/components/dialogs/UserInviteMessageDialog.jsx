@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
 import { RefreshCwIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import { toolsRepository } from '@/repositories/index.js';
 import { Button } from '@/ui/shadcn/button';
@@ -21,7 +21,9 @@ function normalizeRows(value) {
         return value.messages;
     }
     if (value && typeof value === 'object') {
-        return Object.values(value).filter((row) => row && typeof row === 'object');
+        return Object.values(value).filter(
+            (row) => row && typeof row === 'object'
+        );
     }
     return [];
 }
@@ -58,10 +60,13 @@ function UserInviteMessageDialog({
         setLoading(true);
         setError('');
         try {
-            const response = await toolsRepository.getInviteMessages({
-                currentUserId,
-                messageType
-            }, { endpoint });
+            const response = await toolsRepository.getInviteMessages(
+                {
+                    currentUserId,
+                    messageType
+                },
+                { endpoint }
+            );
             if (requestIdRef.current !== requestId) {
                 return;
             }
@@ -70,7 +75,11 @@ function UserInviteMessageDialog({
             if (requestIdRef.current !== requestId) {
                 return;
             }
-            setError(nextError instanceof Error ? nextError.message : 'Failed to load invite messages.');
+            setError(
+                nextError instanceof Error
+                    ? nextError.message
+                    : 'Failed to load invite messages.'
+            );
             setRows([]);
         } finally {
             if (requestIdRef.current === requestId) {
@@ -99,7 +108,7 @@ function UserInviteMessageDialog({
                 </DialogHeader>
                 <div className="max-h-[60vh] overflow-auto rounded-md border">
                     <table className="w-full text-left text-sm">
-                        <thead className="sticky top-0 bg-background">
+                        <thead className="bg-background sticky top-0">
                             <tr className="border-b">
                                 <th className="w-24 px-3 py-2">Slot</th>
                                 <th className="px-3 py-2">Message</th>
@@ -109,41 +118,80 @@ function UserInviteMessageDialog({
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={3} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                                    <td
+                                        colSpan={3}
+                                        className="text-muted-foreground px-3 py-8 text-center text-sm"
+                                    >
                                         <Spinner className="mr-2 inline" />
                                         Loading...
                                     </td>
                                 </tr>
                             ) : error ? (
-                                <tr><td colSpan={3} className="px-3 py-8 text-center text-sm text-destructive">{error}</td></tr>
-                            ) : rows.length ? rows.map((row, index) => (
-                                <tr
-                                    key={`${row?.slot ?? index}`}
-                                    className="border-b last:border-b-0 hover:bg-muted/50">
-                                    <td className="px-3 py-2 font-mono text-xs">{row?.slot ?? index}</td>
-                                    <td className="px-3 py-2">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            className="h-auto w-full justify-start p-0 text-left font-normal whitespace-normal hover:bg-transparent"
-                                            onClick={() => onSelect?.(row)}>
-                                            {row?.message || row?.text || '—'}
-                                        </Button>
+                                <tr>
+                                    <td
+                                        colSpan={3}
+                                        className="text-destructive px-3 py-8 text-center text-sm"
+                                    >
+                                        {error}
                                     </td>
-                                    <td className="px-3 py-2 text-xs text-muted-foreground">{row?.updatedAt || row?.updated_at || '—'}</td>
                                 </tr>
-                            )) : (
-                                <tr><td colSpan={3} className="px-3 py-8 text-center text-sm text-muted-foreground">No invite messages.</td></tr>
+                            ) : rows.length ? (
+                                rows.map((row, index) => (
+                                    <tr
+                                        key={`${row?.slot ?? index}`}
+                                        className="hover:bg-muted/50 border-b last:border-b-0"
+                                    >
+                                        <td className="px-3 py-2 font-mono text-xs">
+                                            {row?.slot ?? index}
+                                        </td>
+                                        <td className="px-3 py-2">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                className="h-auto w-full justify-start p-0 text-left font-normal whitespace-normal hover:bg-transparent"
+                                                onClick={() => onSelect?.(row)}
+                                            >
+                                                {row?.message ||
+                                                    row?.text ||
+                                                    '—'}
+                                            </Button>
+                                        </td>
+                                        <td className="text-muted-foreground px-3 py-2 text-xs">
+                                            {row?.updatedAt ||
+                                                row?.updated_at ||
+                                                '—'}
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td
+                                        colSpan={3}
+                                        className="text-muted-foreground px-3 py-8 text-center text-sm"
+                                    >
+                                        No invite messages.
+                                    </td>
+                                </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
                 <DialogFooter>
-                    <Button type="button" variant="outline" disabled={loading || sending} onClick={() => void loadRows()}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading || sending}
+                        onClick={() => void loadRows()}
+                    >
                         <RefreshCwIcon data-icon="inline-start" />
                         Refresh
                     </Button>
-                    <Button type="button" variant="secondary" disabled={sending} onClick={() => onOpenChange?.(false)}>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={sending}
+                        onClick={() => onOpenChange?.(false)}
+                    >
                         Cancel
                     </Button>
                 </DialogFooter>

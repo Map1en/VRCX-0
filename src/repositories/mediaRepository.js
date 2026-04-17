@@ -1,14 +1,15 @@
-import { backend } from '../platform/tauri/index.js';
-import { normalizePlatformError } from '../platform/tauri/errors.js';
-import { getBase64ByteLength, md5Base64 } from '@/shared/utils/binary.js';
-import { extractFileId } from '@/shared/utils/fileUtils.js';
-import { safeJsonParse } from './baseRepository.js';
-import webRepository from './webRepository.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/services/entityQueryCacheService.js';
+import { getBase64ByteLength, md5Base64 } from '@/shared/utils/binary.js';
+import { extractFileId } from '@/shared/utils/fileUtils.js';
+
+import { normalizePlatformError } from '../platform/tauri/errors.js';
+import { backend } from '../platform/tauri/index.js';
+import { safeJsonParse } from './baseRepository.js';
+import webRepository from './webRepository.js';
 
 const DEFAULT_ENDPOINT_DOMAIN = 'https://api.vrchat.cloud/api/1';
 

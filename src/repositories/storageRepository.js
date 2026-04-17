@@ -1,5 +1,9 @@
 import { backend } from '../platform/tauri/index.js';
-import { asString, safeJsonParse, safeJsonStringify } from './baseRepository.js';
+import {
+    asString,
+    safeJsonParse,
+    safeJsonStringify
+} from './baseRepository.js';
 
 class StorageRepository {
     #prefix = '';

@@ -29,22 +29,32 @@ export function getFavoriteExportFieldOptions(kind) {
 
 export function buildFavoriteExportCsv(items, kind, selectedFields = null) {
     const options = getFavoriteExportFieldOptions(kind);
-    const optionByValue = Object.fromEntries(options.map((option) => [option.value, option]));
-    const fields = (Array.isArray(selectedFields) && selectedFields.length ? selectedFields : options.map((option) => option.value))
-        .filter((field) => optionByValue[field]);
+    const optionByValue = Object.fromEntries(
+        options.map((option) => [option.value, option])
+    );
+    const fields = (
+        Array.isArray(selectedFields) && selectedFields.length
+            ? selectedFields
+            : options.map((option) => option.value)
+    ).filter((field) => optionByValue[field]);
     const labels = fields.map((field) => optionByValue[field].label);
     const lines = [labels.join(',')];
 
     for (const item of items) {
-        lines.push(formatCsvRow({
-            id: item.id,
-            name: item.title,
-            status: item.statusLabel || item.subtitle || '',
-            author: item.subtitle || '',
-            thumbnail: item.imageUrl || '',
-            group: item.groupLabel || item.groupKey || '',
-            source: item.source || ''
-        }, fields));
+        lines.push(
+            formatCsvRow(
+                {
+                    id: item.id,
+                    name: item.title,
+                    status: item.statusLabel || item.subtitle || '',
+                    author: item.subtitle || '',
+                    thumbnail: item.imageUrl || '',
+                    group: item.groupLabel || item.groupKey || '',
+                    source: item.source || ''
+                },
+                fields
+            )
+        );
     }
 
     return lines.join('\n');

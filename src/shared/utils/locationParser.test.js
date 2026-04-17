@@ -26,7 +26,9 @@ describe('locationParser', () => {
     });
 
     it('parses invite-plus instance tags', () => {
-        const parsed = parseLocation('wrld_123:12345~private(usr_abc)~canRequestInvite~region(eu)');
+        const parsed = parseLocation(
+            'wrld_123:12345~private(usr_abc)~canRequestInvite~region(eu)'
+        );
 
         expect(parsed).toMatchObject({
             isRealInstance: true,
@@ -43,7 +45,9 @@ describe('locationParser', () => {
     });
 
     it('parses group instance tags with group access metadata', () => {
-        const parsed = parseLocation('wrld_123:group1~group(grp_abc)~groupAccessType(plus)~ageGate~region(jp)');
+        const parsed = parseLocation(
+            'wrld_123:group1~group(grp_abc)~groupAccessType(plus)~ageGate~region(jp)'
+        );
 
         expect(parsed).toMatchObject({
             worldId: 'wrld_123',
@@ -58,7 +62,9 @@ describe('locationParser', () => {
     });
 
     it('keeps short name query data outside the instance id', () => {
-        const parsed = parseLocation('wrld_123:instance1~region(us)&shortName=abc123');
+        const parsed = parseLocation(
+            'wrld_123:instance1~region(us)&shortName=abc123'
+        );
 
         expect(parsed.instanceId).toBe('instance1~region(us)');
         expect(parsed.shortName).toBe('abc123');
@@ -67,7 +73,9 @@ describe('locationParser', () => {
 
     it('resolves default regions for real instances only', () => {
         expect(resolveRegion(parseLocation('wrld_123:instance1'))).toBe('us');
-        expect(resolveRegion(parseLocation('wrld_123:instance1~region(jp)'))).toBe('jp');
+        expect(
+            resolveRegion(parseLocation('wrld_123:instance1~region(jp)'))
+        ).toBe('jp');
         expect(resolveRegion(parseLocation('wrld_123'))).toBe('');
         expect(resolveRegion(parseLocation('private'))).toBe('');
     });
@@ -76,8 +84,16 @@ describe('locationParser', () => {
         expect(displayLocation('offline', 'World')).toBe('Offline');
         expect(displayLocation('private', 'World')).toBe('Private');
         expect(displayLocation('traveling', 'World')).toBe('Traveling');
-        expect(displayLocation('wrld_123:instance1~friends(usr_abc)', 'World')).toBe('World friends');
-        expect(displayLocation('wrld_123:instance1~group(grp_abc)', 'World', 'Group Name')).toBe('World group(Group Name)');
+        expect(
+            displayLocation('wrld_123:instance1~friends(usr_abc)', 'World')
+        ).toBe('World friends');
+        expect(
+            displayLocation(
+                'wrld_123:instance1~group(grp_abc)',
+                'World',
+                'Group Name'
+            )
+        ).toBe('World group(Group Name)');
     });
 
     it('translates group access labels with the group prefix', () => {
@@ -88,8 +104,12 @@ describe('locationParser', () => {
             public: 'access.public'
         };
 
-        expect(translateAccessType('groupPlus', t, keyMap)).toBe('t:access.group t:access.group_plus');
-        expect(translateAccessType('public', t, keyMap)).toBe('t:access.public');
+        expect(translateAccessType('groupPlus', t, keyMap)).toBe(
+            't:access.group t:access.group_plus'
+        );
+        expect(translateAccessType('public', t, keyMap)).toBe(
+            't:access.public'
+        );
         expect(translateAccessType('invite+', t, keyMap)).toBe('invite+');
     });
 });

@@ -26,7 +26,9 @@ const GAME_LOG_UNACTIONABLE_TYPES = new Set([
 ]);
 
 function normalizeGameLogId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 export function buildGameLogFavoriteIdSet(localFriendFavorites) {
@@ -101,7 +103,8 @@ export function describeGameLogDetail(row) {
 export function resolveGameLogWorldTarget(row) {
     if (row?.type === 'PortalSpawn') {
         const portalLocation =
-            normalizeGameLogId(row?.instanceId) || normalizeGameLogId(row?.location);
+            normalizeGameLogId(row?.instanceId) ||
+            normalizeGameLogId(row?.location);
         if (parseLocation(portalLocation).worldId) {
             return portalLocation;
         }
@@ -132,9 +135,14 @@ export function shouldLinkGameLogPrimaryDetailToWorld(row) {
 
 export function getGameLogLocationTarget(row) {
     if (row?.type === 'PortalSpawn') {
-        return normalizeGameLogId(row?.instanceId) || normalizeGameLogId(row?.location);
+        return (
+            normalizeGameLogId(row?.instanceId) ||
+            normalizeGameLogId(row?.location)
+        );
     }
-    return normalizeGameLogId(row?.location) || normalizeGameLogId(row?.instanceId);
+    return (
+        normalizeGameLogId(row?.location) || normalizeGameLogId(row?.instanceId)
+    );
 }
 
 export function getGameLogExternalTarget(row) {
@@ -193,7 +201,11 @@ export function getGameLogRowKey(row) {
         .join(':');
 }
 
-export function annotateGameLogSessionMember(member, favoriteIdSet, friendIdSet) {
+export function annotateGameLogSessionMember(
+    member,
+    favoriteIdSet,
+    friendIdSet
+) {
     const userId = normalizeGameLogId(member?.userId);
     return {
         ...member,
@@ -206,12 +218,18 @@ export function annotateGameLogSessionEvent(event, favoriteIdSet, friendIdSet) {
     const userId = normalizeGameLogId(event?.userId);
     return {
         ...event,
-        isFavorite: userId ? favoriteIdSet.has(userId) : Boolean(event?.isFavorite),
+        isFavorite: userId
+            ? favoriteIdSet.has(userId)
+            : Boolean(event?.isFavorite),
         isFriend: userId ? friendIdSet.has(userId) : Boolean(event?.isFriend),
         members: Array.isArray(event?.members)
             ? event.members.map((member) =>
-                annotateGameLogSessionMember(member, favoriteIdSet, friendIdSet)
-            )
+                  annotateGameLogSessionMember(
+                      member,
+                      favoriteIdSet,
+                      friendIdSet
+                  )
+              )
             : []
     };
 }
@@ -234,11 +252,7 @@ export function resolveGameLogSessionDuration(session) {
 }
 
 export function getGameLogSessionKey(session) {
-    return [
-        session?.id,
-        session?.created_at,
-        session?.location
-    ]
+    return [session?.id, session?.created_at, session?.location]
         .map((value) => normalizeGameLogId(value))
         .filter(Boolean)
         .join(':');

@@ -13,7 +13,9 @@ let cachedActions = null;
 const listeners = new Set();
 
 function normalizeUserId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeMinutes(value) {
@@ -30,8 +32,13 @@ function readActions() {
         return cachedActions;
     }
     try {
-        const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || '{}');
-        cachedActions = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+        const parsed = JSON.parse(
+            window.localStorage.getItem(STORAGE_KEY) || '{}'
+        );
+        cachedActions =
+            parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+                ? parsed
+                : {};
     } catch {
         cachedActions = {};
     }

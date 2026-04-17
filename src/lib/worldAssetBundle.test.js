@@ -14,7 +14,10 @@ vi.mock('@/repositories/index.js', () => ({
     }
 }));
 
-import { defaultWorldCacheInfo, resolveWorldAssetBundleArgs } from './worldAssetBundle.js';
+import {
+    defaultWorldCacheInfo,
+    resolveWorldAssetBundleArgs
+} from './worldAssetBundle.js';
 
 function assetUrl(fileId, version, variantVersion = 0) {
     return `https://api.vrchat.cloud/api/1/file/${fileId}/${version}/file?v=${variantVersion}`;
@@ -89,37 +92,43 @@ describe('worldAssetBundle', () => {
     });
 
     it('ignores unsupported variants and invalid asset URLs', () => {
-        expect(resolveWorldAssetBundleArgs({
-            unityPackages: [
-                {
-                    platform: 'standalonewindows',
-                    assetUrl: assetUrl('file_impostor', 1),
-                    variant: 'impostor'
-                }
-            ]
-        })).toBeNull();
+        expect(
+            resolveWorldAssetBundleArgs({
+                unityPackages: [
+                    {
+                        platform: 'standalonewindows',
+                        assetUrl: assetUrl('file_impostor', 1),
+                        variant: 'impostor'
+                    }
+                ]
+            })
+        ).toBeNull();
 
-        expect(resolveWorldAssetBundleArgs({
-            unityPackages: [
-                {
-                    platform: 'standalonewindows',
-                    assetUrl: 'https://example.com/no-version',
-                    variant: 'standard'
-                }
-            ]
-        })).toBeNull();
+        expect(
+            resolveWorldAssetBundleArgs({
+                unityPackages: [
+                    {
+                        platform: 'standalonewindows',
+                        assetUrl: 'https://example.com/no-version',
+                        variant: 'standard'
+                    }
+                ]
+            })
+        ).toBeNull();
     });
 
     it('uses the world assetUrl when the selected unity package lacks one', () => {
-        expect(resolveWorldAssetBundleArgs({
-            assetUrl: assetUrl('file_world', 8, 9),
-            unityPackages: [
-                {
-                    platform: 'standalonewindows',
-                    variant: 'standard'
-                }
-            ]
-        })).toEqual({
+        expect(
+            resolveWorldAssetBundleArgs({
+                assetUrl: assetUrl('file_world', 8, 9),
+                unityPackages: [
+                    {
+                        platform: 'standalonewindows',
+                        variant: 'standard'
+                    }
+                ]
+            })
+        ).toEqual({
             fileId: 'file_world',
             fileVersion: 8,
             variant: 'security',

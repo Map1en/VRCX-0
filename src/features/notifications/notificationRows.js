@@ -9,7 +9,10 @@ export function getNotificationMessage(notification) {
     const generatedInviteMessage = notification.details?.worldName
         ? `This is a generated invite to ${notification.details.worldName}`
         : '';
-    const message = notification.message === generatedInviteMessage ? '' : notification.message;
+    const message =
+        notification.message === generatedInviteMessage
+            ? ''
+            : notification.message;
     return [
         notification.title,
         message,
@@ -22,7 +25,10 @@ export function getNotificationMessage(notification) {
         .join(notification.title && notification.message ? ', ' : ' ');
 }
 
-export function getNotificationGroupLabel(notification, includeLinkText = false) {
+export function getNotificationGroupLabel(
+    notification,
+    includeLinkText = false
+) {
     return (
         notification.data?.groupName ||
         notification.details?.groupName ||
@@ -33,16 +39,26 @@ export function getNotificationGroupLabel(notification, includeLinkText = false)
 }
 
 export function getNotificationGroupColumnLabel(notification) {
-    const isGroupLink = notification?.link?.startsWith('group:') || notification?.link?.startsWith('event:');
-    const explicitGroupLabel = getNotificationGroupLabel(notification, isGroupLink);
-    if (notification?.senderUserId?.startsWith('grp_') || notification?.type === 'groupChange') {
+    const isGroupLink =
+        notification?.link?.startsWith('group:') ||
+        notification?.link?.startsWith('event:');
+    const explicitGroupLabel = getNotificationGroupLabel(
+        notification,
+        isGroupLink
+    );
+    if (
+        notification?.senderUserId?.startsWith('grp_') ||
+        notification?.type === 'groupChange'
+    ) {
         return notification?.senderUsername || explicitGroupLabel || '';
     }
     return explicitGroupLabel;
 }
 
 export function matchesNotificationSearch(notification, search) {
-    const query = String(search || '').trim().toLowerCase();
+    const query = String(search || '')
+        .trim()
+        .toLowerCase();
     if (!query) {
         return true;
     }
@@ -61,13 +77,20 @@ export function matchesNotificationSearch(notification, search) {
         notification.details?.requestMessage,
         notification.details?.responseMessage,
         notification.data?.groupName
-    ].some((value) => String(value || '').toLowerCase().includes(query));
+    ].some((value) =>
+        String(value || '')
+            .toLowerCase()
+            .includes(query)
+    );
 }
 
 export function filterNotificationRows(rows, filters, search) {
     const activeFilters = Array.isArray(filters) ? filters : [];
     return (Array.isArray(rows) ? rows : []).filter((notification) => {
-        if (activeFilters.length && !activeFilters.includes(notification.type)) {
+        if (
+            activeFilters.length &&
+            !activeFilters.includes(notification.type)
+        ) {
             return false;
         }
         return matchesNotificationSearch(notification, search);
@@ -75,7 +98,8 @@ export function filterNotificationRows(rows, filters, search) {
 }
 
 export function normalizeWorldTarget(value) {
-    const text = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    const text =
+        typeof value === 'string' ? value.trim() : String(value ?? '').trim();
     return parseLocation(text).worldId || text.split(':')[0] || text;
 }
 
@@ -87,7 +111,11 @@ export function resolveCurrentInviteLocation(gameState, currentUserSnapshot) {
     return (
         currentLocation ||
         String(gameState?.currentDestination || '').trim() ||
-        String(currentUserSnapshot?.$locationTag || currentUserSnapshot?.location || '').trim()
+        String(
+            currentUserSnapshot?.$locationTag ||
+                currentUserSnapshot?.location ||
+                ''
+        ).trim()
     );
 }
 
@@ -119,7 +147,12 @@ export function getFileImageUrl(file) {
 }
 
 export function getCachedInstanceLocation(instance) {
-    return String(instance?.location || instance?.instance?.location || instance?.instanceId || '').trim();
+    return String(
+        instance?.location ||
+            instance?.instance?.location ||
+            instance?.instanceId ||
+            ''
+    ).trim();
 }
 
 export function buildCachedInstanceMap(instances) {
@@ -137,10 +170,12 @@ export function normalizeInviteMessageRows(value, messageType) {
     const rows = Array.isArray(value)
         ? value
         : Array.isArray(value?.messages)
-            ? value.messages
-            : value && typeof value === 'object'
-                ? Object.values(value).filter((row) => row && typeof row === 'object')
-                : [];
+          ? value.messages
+          : value && typeof value === 'object'
+            ? Object.values(value).filter(
+                  (row) => row && typeof row === 'object'
+              )
+            : [];
 
     return rows
         .map((row, index) => ({
@@ -166,5 +201,7 @@ export function getInviteCooldownLabel(updatedAt, nowMs) {
         return '';
     }
     const minutes = Math.ceil(remainingMs / 60000);
-    return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`;
+    return minutes >= 60
+        ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+        : `${minutes}m`;
 }

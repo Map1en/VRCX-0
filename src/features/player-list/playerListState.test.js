@@ -45,7 +45,9 @@ describe('playerListState', () => {
             }
         };
         expect(readPersistedPlayerListState()).toEqual({});
-        expect(() => writePersistedPlayerListState({ columnOrder: ['avatar'] })).not.toThrow();
+        expect(() =>
+            writePersistedPlayerListState({ columnOrder: ['avatar'] })
+        ).not.toThrow();
         expect(sanitizePlayerListSorting(null)).toEqual(
             DEFAULT_PLAYER_LIST_SORTING
         );

@@ -1,9 +1,10 @@
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { syncGameLogTail } from './gameLogIngestService.js';
+
 import {
     resetBackgroundMaintenance,
     runBackgroundMaintenanceTick
 } from './backgroundMaintenanceService.js';
+import { syncGameLogTail } from './gameLogIngestService.js';
 
 let updateLoopTimer = null;
 let stopped = true;
@@ -76,6 +77,10 @@ export function stopRuntimeUpdateLoop() {
     });
     useRuntimeStore
         .getState()
-        .setStartupTask('updateLoop', 'pending', 'Game log tail sync is stopped.');
+        .setStartupTask(
+            'updateLoop',
+            'pending',
+            'Game log tail sync is stopped.'
+        );
     resetBackgroundMaintenance();
 }

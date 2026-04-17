@@ -8,22 +8,27 @@ import {
     isPopcornPalaceWorld
 } from './discordPresence.js';
 
-const t = (key) => ({
-    'view.settings.discord_presence.rpc.desktop': 'Desktop',
-    'view.settings.discord_presence.rpc.vr': 'VR',
-    'dialog.user.status.active': 'Active',
-    'dialog.user.status.join_me': 'Join Me',
-    'dialog.user.status.ask_me': 'Ask Me',
-    'dialog.user.status.busy': 'Busy',
-    'dialog.user.status.offline': 'Offline'
-}[key] ?? key);
+const t = (key) =>
+    ({
+        'view.settings.discord_presence.rpc.desktop': 'Desktop',
+        'view.settings.discord_presence.rpc.vr': 'VR',
+        'dialog.user.status.active': 'Active',
+        'dialog.user.status.join_me': 'Join Me',
+        'dialog.user.status.ask_me': 'Ask Me',
+        'dialog.user.status.busy': 'Busy',
+        'dialog.user.status.offline': 'Offline'
+    })[key] ?? key;
 
 describe('discordPresence utilities', () => {
     it('derives platform labels from game state before profile platform', () => {
-        expect(getPlatformLabel('standalonewindows', false, false, t)).toBe(' (PC)');
+        expect(getPlatformLabel('standalonewindows', false, false, t)).toBe(
+            ' (PC)'
+        );
         expect(getPlatformLabel('android', false, false, t)).toBe(' (Android)');
         expect(getPlatformLabel('web', false, false, t)).toBe('');
-        expect(getPlatformLabel('standalonewindows', true, true, t)).toBe(' (Desktop)');
+        expect(getPlatformLabel('standalonewindows', true, true, t)).toBe(
+            ' (Desktop)'
+        );
         expect(getPlatformLabel('android', true, false, t)).toBe(' (VR)');
     });
 

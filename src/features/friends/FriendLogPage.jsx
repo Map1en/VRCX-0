@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    getCoreRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable
+} from '@tanstack/react-table';
 import {
     ArrowDownIcon,
     ArrowRightIcon,
@@ -9,24 +14,17 @@ import {
     Trash2Icon,
     XIcon
 } from 'lucide-react';
-import {
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable
-} from '@tanstack/react-table';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { formatDateFilter } from '@/lib/dateTime.js';
-import {
-    ResizableTableCell
-} from '@/components/data-table/ResizableTableParts.jsx';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
+import { useI18n } from '@/app/hooks/use-i18n.js';
 import {
     DataTableHeader,
     DataTablePagination,
     DataTableScrollArea,
     DataTableSurface
 } from '@/components/data-table/DataTableView.jsx';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
+import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import {
     EmptyState,
     LoadingState,
@@ -36,7 +34,11 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold.jsx';
-import { configRepository, friendLogHistoryRepository } from '@/repositories/index.js';
+import { formatDateFilter } from '@/lib/dateTime.js';
+import {
+    configRepository,
+    friendLogHistoryRepository
+} from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { getTablePageSizesPreference } from '@/services/preferencesService.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -55,12 +57,7 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Table,
-    TableBody,
-    TableRow
-} from '@/ui/shadcn/table';
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
 const DEFAULT_SORTING = [];
@@ -72,7 +69,14 @@ const FRIEND_LOG_TYPES = [
     'DisplayName',
     'TrustLevel'
 ];
-const COLUMN_IDS = ['spacer', 'created_at', 'type', 'displayName', 'action', 'trailing'];
+const COLUMN_IDS = [
+    'spacer',
+    'created_at',
+    'type',
+    'displayName',
+    'action',
+    'trailing'
+];
 const STORAGE_KEY = 'vrcx:table:friendLog';
 
 function safeJsonParse(value) {
@@ -125,7 +129,10 @@ function sanitizeSorting(value) {
     }
 
     return value.filter(
-        (entry) => entry && typeof entry.id === 'string' && COLUMN_IDS.includes(entry.id)
+        (entry) =>
+            entry &&
+            typeof entry.id === 'string' &&
+            COLUMN_IDS.includes(entry.id)
     );
 }
 
@@ -165,8 +172,12 @@ function sanitizeColumnOrder(value) {
         return COLUMN_IDS;
     }
 
-    const orderedColumns = value.filter((columnId) => COLUMN_IDS.includes(columnId));
-    const missingColumns = COLUMN_IDS.filter((columnId) => !orderedColumns.includes(columnId));
+    const orderedColumns = value.filter((columnId) =>
+        COLUMN_IDS.includes(columnId)
+    );
+    const missingColumns = COLUMN_IDS.filter(
+        (columnId) => !orderedColumns.includes(columnId)
+    );
     return [...orderedColumns, ...missingColumns];
 }
 
@@ -221,7 +232,11 @@ function sortRows(rows) {
     return rows.slice().sort((left, right) => {
         const leftTs = Date.parse(left?.created_at ?? '');
         const rightTs = Date.parse(right?.created_at ?? '');
-        if (Number.isFinite(leftTs) && Number.isFinite(rightTs) && leftTs !== rightTs) {
+        if (
+            Number.isFinite(leftTs) &&
+            Number.isFinite(rightTs) &&
+            leftTs !== rightTs
+        ) {
             return rightTs - leftTs;
         }
 
@@ -232,7 +247,9 @@ function sortRows(rows) {
 }
 
 function normalizeUserId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function getFriendLogRowKey(row, ownerUserId = '') {
@@ -255,7 +272,9 @@ function matchesSearch(row, searchQuery) {
         return true;
     }
 
-    return String(row?.displayName ?? '').toLowerCase().includes(query);
+    return String(row?.displayName ?? '')
+        .toLowerCase()
+        .includes(query);
 }
 
 function SortButton({ column, label }) {
@@ -266,8 +285,9 @@ function SortButton({ column, label }) {
             type="button"
             variant="ghost"
             size="sm"
-            className="h-auto justify-start px-0 py-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
-            onClick={() => column.toggleSorting(direction === 'asc')}>
+            className="text-muted-foreground hover:text-foreground h-auto justify-start px-0 py-0 text-left text-xs font-medium tracking-wide uppercase hover:bg-transparent"
+            onClick={() => column.toggleSorting(direction === 'asc')}
+        >
             <span>{label}</span>
             {direction === 'asc' ? (
                 <ArrowUpIcon data-icon="inline-end" />
@@ -292,13 +312,20 @@ function FriendLogTypeFilterDropdown({ value, onChange }) {
     const { t } = useI18n();
     const valueSet = useMemo(() => new Set(value), [value]);
     const label = value.length
-        ? value.map((type) => friendLogTypeLabel(type, t)).filter(Boolean).join(', ')
+        ? value
+              .map((type) => friendLogTypeLabel(type, t))
+              .filter(Boolean)
+              .join(', ')
         : t('view.friend_log.filter_placeholder');
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="min-w-56 justify-between">
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="min-w-56 justify-between"
+                >
                     <span className="max-w-52 truncate">{label}</span>
                 </Button>
             </DropdownMenuTrigger>
@@ -319,9 +346,12 @@ function FriendLogTypeFilterDropdown({ value, onChange }) {
                                 onChange(
                                     checked
                                         ? [...value, type]
-                                        : value.filter((entry) => entry !== type)
+                                        : value.filter(
+                                              (entry) => entry !== type
+                                          )
                                 );
-                            }}>
+                            }}
+                        >
                             {friendLogTypeLabel(type, t)}
                         </DropdownMenuCheckboxItem>
                     ))}
@@ -343,7 +373,8 @@ function renderUserCell(row) {
                     userId: row.userId,
                     title: displayName
                 })
-            }>
+            }
+        >
             {displayName}
         </Button>
     ) : (
@@ -353,8 +384,10 @@ function renderUserCell(row) {
     if (row?.type === 'DisplayName') {
         return (
             <div className="flex flex-wrap items-center gap-1 text-sm">
-                <span className="text-muted-foreground">{row.previousDisplayName || ''}</span>
-                <ArrowRightIcon className="size-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">
+                    {row.previousDisplayName || ''}
+                </span>
+                <ArrowRightIcon className="text-muted-foreground size-3.5" />
                 {userLabel}
             </div>
         );
@@ -386,9 +419,13 @@ export function FriendLogPage({ embedded = false } = {}) {
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);
     const hydratedTypeFiltersRef = useRef(false);
-    const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
+    const preferencesHydrated = usePreferencesStore(
+        (state) => state.preferencesHydrated
+    );
     const hideUnfriends = usePreferencesStore((state) => state.hideUnfriends);
-    const tablePageSizesPreference = usePreferencesStore((state) => state.tablePageSizes);
+    const tablePageSizesPreference = usePreferencesStore(
+        (state) => state.tablePageSizes
+    );
 
     const [rows, setRows] = useState([]);
     const [rowsOwnerUserId, setRowsOwnerUserId] = useState('');
@@ -400,12 +437,18 @@ export function FriendLogPage({ embedded = false } = {}) {
     const [deletingRowKey, setDeletingRowKey] = useState('');
     const [shiftHeld, setShiftHeld] = useState(false);
     const [pageSizes, setPageSizes] = useState(DEFAULT_PAGE_SIZES);
-    const [sorting, setSorting] = useState(() => sanitizeSorting(persistedState.sorting));
+    const [sorting, setSorting] = useState(() =>
+        sanitizeSorting(persistedState.sorting)
+    );
     const [columnVisibility, setColumnVisibility] = useState(() =>
         sanitizeColumnVisibility(persistedState.columnVisibility)
     );
-    const [columnOrder, setColumnOrder] = useState(() => sanitizeColumnOrder(persistedState.columnOrder));
-    const [columnSizing, setColumnSizing] = useState(() => sanitizeColumnSizing(persistedState.columnSizing));
+    const [columnOrder, setColumnOrder] = useState(() =>
+        sanitizeColumnOrder(persistedState.columnOrder)
+    );
+    const [columnSizing, setColumnSizing] = useState(() =>
+        sanitizeColumnSizing(persistedState.columnSizing)
+    );
     const [columnOrderLocked, setColumnOrderLocked] = useState(
         () => persistedState.columnOrderLocked === true
     );
@@ -439,9 +482,13 @@ export function FriendLogPage({ embedded = false } = {}) {
                 }
 
                 const resolvedPageSizes = sanitizePageSizes(nextPageSizes);
-                const parsedPersistedPageSize = Number.parseInt(persistedState.pageSize, 10);
+                const parsedPersistedPageSize = Number.parseInt(
+                    persistedState.pageSize,
+                    10
+                );
                 const hasPersistedPageSize =
-                    Number.isFinite(parsedPersistedPageSize) && parsedPersistedPageSize > 0;
+                    Number.isFinite(parsedPersistedPageSize) &&
+                    parsedPersistedPageSize > 0;
                 const resolvedConfiguredPageSize = resolvePageSize(
                     nextPageSize,
                     resolvedPageSizes,
@@ -449,10 +496,10 @@ export function FriendLogPage({ embedded = false } = {}) {
                 );
                 const resolvedActivePageSize = hasPersistedPageSize
                     ? resolvePageSize(
-                        parsedPersistedPageSize,
-                        resolvedPageSizes,
-                        resolvedConfiguredPageSize
-                    )
+                          parsedPersistedPageSize,
+                          resolvedPageSizes,
+                          resolvedConfiguredPageSize
+                      )
                     : resolvedConfiguredPageSize;
 
                 setPageSizes((current) =>
@@ -499,7 +546,10 @@ export function FriendLogPage({ embedded = false } = {}) {
             return;
         }
 
-        void configRepository.setString('friendLogTableFilters', JSON.stringify(selectedTypes));
+        void configRepository.setString(
+            'friendLogTableFilters',
+            JSON.stringify(selectedTypes)
+        );
     }, [selectedTypes]);
 
     useEffect(() => {
@@ -580,7 +630,9 @@ export function FriendLogPage({ embedded = false } = {}) {
             setRows([]);
             updateRowsOwnerUserId('');
             setLoadStatus('idle');
-            setDetail('No authenticated user is available for friend log history.');
+            setDetail(
+                'No authenticated user is available for friend log history.'
+            );
             return () => {
                 active = false;
             };
@@ -624,7 +676,9 @@ export function FriendLogPage({ embedded = false } = {}) {
     }, [currentUserId, refreshToken]);
 
     const filteredRows = useMemo(() => {
-        const activeTypeSet = selectedTypes.length ? new Set(selectedTypes) : null;
+        const activeTypeSet = selectedTypes.length
+            ? new Set(selectedTypes)
+            : null;
 
         return rows.filter((row) => {
             if (hideUnfriends && row?.type === 'Unfriend') {
@@ -641,7 +695,12 @@ export function FriendLogPage({ embedded = false } = {}) {
 
     async function handleDeleteRow(row, { skipConfirm = false } = {}) {
         const ownerUserId = normalizeUserId(currentUserId);
-        if (!ownerUserId || !row || rowsOwnerUserId !== ownerUserId || loadStatus === 'running') {
+        if (
+            !ownerUserId ||
+            !row ||
+            rowsOwnerUserId !== ownerUserId ||
+            loadStatus === 'running'
+        ) {
             return;
         }
         const rowKey = getFriendLogRowKey(row, ownerUserId);
@@ -649,43 +708,54 @@ export function FriendLogPage({ embedded = false } = {}) {
         const result = skipConfirm
             ? { ok: true }
             : await confirm({
-                title: 'Confirm',
-                description: t('confirm.delete_log'),
-                confirmText: 'Delete',
-                cancelText: 'Cancel',
-                destructive: true
-            });
+                  title: 'Confirm',
+                  description: t('confirm.delete_log'),
+                  confirmText: 'Delete',
+                  cancelText: 'Cancel',
+                  destructive: true
+              });
 
         if (!result.ok) {
             return;
         }
 
         if (
-            normalizeUserId(useRuntimeStore.getState().auth.currentUserId) !== ownerUserId ||
+            normalizeUserId(useRuntimeStore.getState().auth.currentUserId) !==
+                ownerUserId ||
             rowsOwnerUserIdRef.current !== ownerUserId
         ) {
-            setDetail('Friend log owner changed before delete; refresh and try again.');
+            setDetail(
+                'Friend log owner changed before delete; refresh and try again.'
+            );
             return;
         }
 
         setDeletingRowKey(rowKey);
         try {
             const affectedRows = Number(
-                await friendLogHistoryRepository.deleteFriendLogHistory(ownerUserId, row)
+                await friendLogHistoryRepository.deleteFriendLogHistory(
+                    ownerUserId,
+                    row
+                )
             );
             if (
-                normalizeUserId(useRuntimeStore.getState().auth.currentUserId) !== ownerUserId ||
+                normalizeUserId(
+                    useRuntimeStore.getState().auth.currentUserId
+                ) !== ownerUserId ||
                 rowsOwnerUserIdRef.current !== ownerUserId
             ) {
                 return;
             }
             if (!Number.isFinite(affectedRows) || affectedRows <= 0) {
-                setDetail('No matching friend log history row was deleted; refresh and try again.');
+                setDetail(
+                    'No matching friend log history row was deleted; refresh and try again.'
+                );
                 return;
             }
             setRows((currentRows) =>
                 currentRows.filter(
-                    (currentRow) => getFriendLogRowKey(currentRow, ownerUserId) !== rowKey
+                    (currentRow) =>
+                        getFriendLogRowKey(currentRow, ownerUserId) !== rowKey
                 )
             );
             setDetail('Deleted one friend log history row.');
@@ -701,7 +771,10 @@ export function FriendLogPage({ embedded = false } = {}) {
     }
 
     useEffect(() => {
-        const maxPageIndex = Math.max(0, Math.ceil(orderedRows.length / pagination.pageSize) - 1);
+        const maxPageIndex = Math.max(
+            0,
+            Math.ceil(orderedRows.length / pagination.pageSize) - 1
+        );
         if (pagination.pageIndex > maxPageIndex) {
             setPagination((current) => ({
                 ...current,
@@ -726,11 +799,20 @@ export function FriendLogPage({ embedded = false } = {}) {
                 id: 'created_at',
                 size: 120,
                 accessorFn: (row) => row?.created_at || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.friendLog.date')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.friendLog.date')}
+                    />
+                ),
                 sortingFn: (rowA, rowB) => {
                     const leftTs = Date.parse(rowA.original?.created_at ?? '');
                     const rightTs = Date.parse(rowB.original?.created_at ?? '');
-                    if (Number.isFinite(leftTs) && Number.isFinite(rightTs) && leftTs !== rightTs) {
+                    if (
+                        Number.isFinite(leftTs) &&
+                        Number.isFinite(rightTs) &&
+                        leftTs !== rightTs
+                    ) {
                         return leftTs - rightTs;
                     }
 
@@ -744,7 +826,8 @@ export function FriendLogPage({ embedded = false } = {}) {
                     return (
                         <span
                             className="text-sm"
-                            title={formatDateFilter(createdAt, 'long')}>
+                            title={formatDateFilter(createdAt, 'long')}
+                        >
                             {formatDateFilter(createdAt, 'short')}
                         </span>
                     );
@@ -754,10 +837,17 @@ export function FriendLogPage({ embedded = false } = {}) {
                 id: 'type',
                 size: 160,
                 accessorFn: (row) => row?.type || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.friendLog.type')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.friendLog.type')}
+                    />
+                ),
                 cell: ({ row }) => (
                     <Badge variant="outline" className="text-muted-foreground">
-                        {friendLogTypeLabel(row.original?.type, t) || row.original?.type || ''}
+                        {friendLogTypeLabel(row.original?.type, t) ||
+                            row.original?.type ||
+                            ''}
                     </Badge>
                 )
             },
@@ -766,10 +856,23 @@ export function FriendLogPage({ embedded = false } = {}) {
                 size: 260,
                 minSize: 80,
                 accessorFn: (row) => row?.displayName || row?.userId || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.friendLog.user')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.friendLog.user')}
+                    />
+                ),
                 sortingFn: (rowA, rowB) =>
-                    String(rowA.original?.displayName || rowA.original?.userId || '').localeCompare(
-                        String(rowB.original?.displayName || rowB.original?.userId || ''),
+                    String(
+                        rowA.original?.displayName ||
+                            rowA.original?.userId ||
+                            ''
+                    ).localeCompare(
+                        String(
+                            rowB.original?.displayName ||
+                                rowB.original?.userId ||
+                                ''
+                        ),
                         undefined,
                         { sensitivity: 'base' }
                     ),
@@ -783,7 +886,10 @@ export function FriendLogPage({ embedded = false } = {}) {
                 accessorFn: (row) => getFriendLogRowKey(row, rowsOwnerUserId),
                 header: () => t('table.friendLog.action'),
                 cell: ({ row }) => {
-                    const rowKey = getFriendLogRowKey(row.original, rowsOwnerUserId);
+                    const rowKey = getFriendLogRowKey(
+                        row.original,
+                        rowsOwnerUserId
+                    );
                     return (
                         <div className="flex justify-end">
                             <Button
@@ -794,7 +900,8 @@ export function FriendLogPage({ embedded = false } = {}) {
                                 aria-label={t('common.actions.delete')}
                                 disabled={
                                     !currentUserId ||
-                                    rowsOwnerUserId !== normalizeUserId(currentUserId) ||
+                                    rowsOwnerUserId !==
+                                        normalizeUserId(currentUserId) ||
                                     loadStatus === 'running' ||
                                     deletingRowKey === rowKey
                                 }
@@ -802,11 +909,15 @@ export function FriendLogPage({ embedded = false } = {}) {
                                     handleDeleteRow(row.original, {
                                         skipConfirm: shiftHeld || event.shiftKey
                                     })
-                                }>
+                                }
+                            >
                                 {deletingRowKey === rowKey ? (
                                     <Spinner data-icon="inline-start" />
                                 ) : shiftHeld ? (
-                                    <XIcon data-icon="inline-start" className="text-destructive" />
+                                    <XIcon
+                                        data-icon="inline-start"
+                                        className="text-destructive"
+                                    />
                                 ) : (
                                     <Trash2Icon data-icon="inline-start" />
                                 )}
@@ -824,7 +935,14 @@ export function FriendLogPage({ embedded = false } = {}) {
                 cell: () => null
             }
         ],
-        [currentUserId, deletingRowKey, loadStatus, rowsOwnerUserId, shiftHeld, t]
+        [
+            currentUserId,
+            deletingRowKey,
+            loadStatus,
+            rowsOwnerUserId,
+            shiftHeld,
+            t
+        ]
     );
 
     const table = useReactTable({
@@ -860,100 +978,134 @@ export function FriendLogPage({ embedded = false } = {}) {
     return (
         <PageScaffold embedded={embedded}>
             <PageToolbar>
-                    <PageToolbarRow className="xl:justify-between">
-                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                            <FriendLogTypeFilterDropdown value={selectedTypes} onChange={setSelectedTypes} />
-                            <div className="relative min-w-56 flex-1">
-                                <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    value={searchQuery}
-                                    onChange={(event) => setSearchQuery(event.target.value)}
-                                    placeholder={t('view.friend_log.search_placeholder')}
-                                    className="pl-9"
-                                />
-                            </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                title="Refresh"
-                                aria-label="Refresh friend log"
-                                disabled={!currentUserId || loadStatus === 'running'}
-                                onClick={() => setRefreshToken((value) => value + 1)}>
-                                {loadStatus === 'running' ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : (
-                                    <RefreshCwIcon data-icon="inline-start" />
+                <PageToolbarRow className="xl:justify-between">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                        <FriendLogTypeFilterDropdown
+                            value={selectedTypes}
+                            onChange={setSelectedTypes}
+                        />
+                        <div className="relative min-w-56 flex-1">
+                            <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                            <Input
+                                value={searchQuery}
+                                onChange={(event) =>
+                                    setSearchQuery(event.target.value)
+                                }
+                                placeholder={t(
+                                    'view.friend_log.search_placeholder'
                                 )}
-                            </Button>
+                                className="pl-9"
+                            />
                         </div>
-                        <TableColumnVisibilityMenu table={table} />
-                    </PageToolbarRow>
-                    {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            title="Refresh"
+                            aria-label="Refresh friend log"
+                            disabled={
+                                !currentUserId || loadStatus === 'running'
+                            }
+                            onClick={() =>
+                                setRefreshToken((value) => value + 1)
+                            }
+                        >
+                            {loadStatus === 'running' ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <RefreshCwIcon data-icon="inline-start" />
+                            )}
+                        </Button>
+                    </div>
+                    <TableColumnVisibilityMenu table={table} />
+                </PageToolbarRow>
+                {detail ? (
+                    <div className="text-muted-foreground text-sm">
+                        {detail}
+                    </div>
+                ) : null}
             </PageToolbar>
 
-                <PageBody>
-                    {isLoading ? (
-                        <LoadingState label="Loading the friend log history snapshot" />
-                    ) : isError ? (
-                        <FriendLogEmptyState
-                            title="Friend log failed to load"
-                            description={detail || 'The history query did not complete.'}
-                        />
-                    ) : hasRows ? (
-                        <>
-                            <DataTableSurface>
-                                <DataTableScrollArea>
-                                    <Table className="app-data-table table-fixed">
-                                        <DataTableHeader table={table} />
-                                        <TableBody>
-                                            {table.getRowModel().rows.map((row) => (
-                                                <TableRow key={row.original?.rowId || row.id}>
-                                                    {row.getVisibleCells().map((cell) => (
-                                                        <ResizableTableCell key={cell.id} cell={cell} />
+            <PageBody>
+                {isLoading ? (
+                    <LoadingState label="Loading the friend log history snapshot" />
+                ) : isError ? (
+                    <FriendLogEmptyState
+                        title="Friend log failed to load"
+                        description={
+                            detail || 'The history query did not complete.'
+                        }
+                    />
+                ) : hasRows ? (
+                    <>
+                        <DataTableSurface>
+                            <DataTableScrollArea>
+                                <Table className="app-data-table table-fixed">
+                                    <DataTableHeader table={table} />
+                                    <TableBody>
+                                        {table.getRowModel().rows.map((row) => (
+                                            <TableRow
+                                                key={
+                                                    row.original?.rowId ||
+                                                    row.id
+                                                }
+                                            >
+                                                {row
+                                                    .getVisibleCells()
+                                                    .map((cell) => (
+                                                        <ResizableTableCell
+                                                            key={cell.id}
+                                                            cell={cell}
+                                                        />
                                                     ))}
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </DataTableScrollArea>
-                            </DataTableSurface>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </DataTableScrollArea>
+                        </DataTableSurface>
 
-                            <PageFooter>
-                                <div className="text-sm text-muted-foreground">
-                                    Showing{' '}
-                                    <span className="font-medium text-foreground">
-                                        {table.getRowModel().rows.length}
-                                    </span>{' '}
-                                    of{' '}
-                                    <span className="font-medium text-foreground">
-                                        {orderedRows.length}
-                                    </span>{' '}
-                                    log row{orderedRows.length === 1 ? '' : 's'}
-                                </div>
-                                <DataTablePagination
-                                    table={table}
-                                    pageIndex={pagination.pageIndex}
-                                    pageSize={pagination.pageSize}
-                                    pageSizes={pageSizes}
-                                    pageSizeLabel={t('table.pagination.rows_per_page')}
-                                    onPageSizeChange={(value) => {
-                                        const nextPageSize = resolvePageSize(value, pageSizes, pagination.pageSize);
-                                        setPagination({
-                                            pageIndex: 0,
-                                            pageSize: nextPageSize
-                                        });
-                                    }}
-                                />
-                            </PageFooter>
-                        </>
-                    ) : (
-                        <FriendLogEmptyState
-                            title="No friend log rows match the current filters"
-                            description="Broaden the type filters or search query to see more history."
-                        />
-                    )}
-                </PageBody>
+                        <PageFooter>
+                            <div className="text-muted-foreground text-sm">
+                                Showing{' '}
+                                <span className="text-foreground font-medium">
+                                    {table.getRowModel().rows.length}
+                                </span>{' '}
+                                of{' '}
+                                <span className="text-foreground font-medium">
+                                    {orderedRows.length}
+                                </span>{' '}
+                                log row{orderedRows.length === 1 ? '' : 's'}
+                            </div>
+                            <DataTablePagination
+                                table={table}
+                                pageIndex={pagination.pageIndex}
+                                pageSize={pagination.pageSize}
+                                pageSizes={pageSizes}
+                                pageSizeLabel={t(
+                                    'table.pagination.rows_per_page'
+                                )}
+                                onPageSizeChange={(value) => {
+                                    const nextPageSize = resolvePageSize(
+                                        value,
+                                        pageSizes,
+                                        pagination.pageSize
+                                    );
+                                    setPagination({
+                                        pageIndex: 0,
+                                        pageSize: nextPageSize
+                                    });
+                                }}
+                            />
+                        </PageFooter>
+                    </>
+                ) : (
+                    <FriendLogEmptyState
+                        title="No friend log rows match the current filters"
+                        description="Broaden the type filters or search query to see more history."
+                    />
+                )}
+            </PageBody>
         </PageScaffold>
     );
 }

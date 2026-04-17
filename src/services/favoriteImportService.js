@@ -4,11 +4,11 @@ import {
     vrchatFavoriteRepository,
     worldProfileRepository
 } from '@/repositories/index.js';
+import { database } from '@/services/database/index.js';
 import { useFavoriteImportStore } from '@/state/favoriteImportStore.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { database } from '@/services/database/index.js';
 
 import { bootstrapFavorites } from './favoriteBootstrapService.js';
 
@@ -20,7 +20,10 @@ const TYPE_CONFIG = {
         localGroupsKey: 'localAvatarFavoriteGroups',
         localFavoritesKey: 'localAvatarFavorites',
         async getProfile(id, endpoint) {
-            const profile = await avatarProfileRepository.getAvatarProfile({ avatarId: id, endpoint });
+            const profile = await avatarProfileRepository.getAvatarProfile({
+                avatarId: id,
+                endpoint
+            });
             await database.addAvatarToCache(profile);
             return profile;
         },
@@ -35,7 +38,10 @@ const TYPE_CONFIG = {
         localGroupsKey: 'localWorldFavoriteGroups',
         localFavoritesKey: 'localWorldFavorites',
         async getProfile(id, endpoint) {
-            const profile = await worldProfileRepository.getWorldProfile({ worldId: id, endpoint });
+            const profile = await worldProfileRepository.getWorldProfile({
+                worldId: id,
+                endpoint
+            });
             await database.addWorldToCache({
                 ...profile,
                 created_at: profile.created_at || profile.createdAt || '',
@@ -54,7 +60,10 @@ const TYPE_CONFIG = {
         localGroupsKey: 'localFriendFavoriteGroups',
         localFavoritesKey: 'localFriendFavorites',
         async getProfile(id, endpoint) {
-            return userProfileRepository.getUserProfile({ userId: id, endpoint });
+            return userProfileRepository.getUserProfile({
+                userId: id,
+                endpoint
+            });
         },
         async addLocal(id, groupName) {
             await database.addFriendToLocalFavorites(id, groupName);
@@ -67,7 +76,9 @@ function normalizeType(type) {
 }
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function getRuntimeAuth() {
@@ -85,7 +96,9 @@ function extractIds(type, input) {
         return [];
     }
 
-    return Array.from(new Set(normalizeString(input).match(config.regex) || []));
+    return Array.from(
+        new Set(normalizeString(input).match(config.regex) || [])
+    );
 }
 
 function getFavoriteGroups(type) {
@@ -218,7 +231,10 @@ export async function processFavoriteImportList() {
         }
     } finally {
         const currentState = useFavoriteImportStore.getState();
-        if (currentState.type === type && currentState.sessionId === sessionId) {
+        if (
+            currentState.type === type &&
+            currentState.sessionId === sessionId
+        ) {
             currentState.setLoading(false);
             currentState.setProgress(0, 0);
         }
@@ -236,7 +252,8 @@ export async function importFavoriteImportRows() {
 
     const { remoteGroups } = getFavoriteGroups(type);
     const remoteGroup = state.remoteGroupName
-        ? remoteGroups.find((group) => group.name === state.remoteGroupName) || null
+        ? remoteGroups.find((group) => group.name === state.remoteGroupName) ||
+          null
         : null;
     const localGroupName = state.localGroupName || '';
 
@@ -245,7 +262,8 @@ export async function importFavoriteImportRows() {
     }
 
     const endpoint = getRuntimeAuth().endpoint;
-    const remoteFavoritesByObjectId = useFavoriteStore.getState().remoteFavoritesByObjectId || {};
+    const remoteFavoritesByObjectId =
+        useFavoriteStore.getState().remoteFavoritesByObjectId || {};
     const locallyAdded = new Set();
     const remotelyAdded = new Set();
     const rows = [...state.rows];
@@ -272,8 +290,13 @@ export async function importFavoriteImportRows() {
             const row = rows[index];
             try {
                 if (remoteGroup) {
-                    if (remoteFavoritesByObjectId[row.id] || remotelyAdded.has(row.id)) {
-                        throw new Error(`${config.label} is already in favorites.`);
+                    if (
+                        remoteFavoritesByObjectId[row.id] ||
+                        remotelyAdded.has(row.id)
+                    ) {
+                        throw new Error(
+                            `${config.label} is already in favorites.`
+                        );
                     }
                     await vrchatFavoriteRepository.addFavorite({
                         endpoint,
@@ -283,9 +306,14 @@ export async function importFavoriteImportRows() {
                     });
                     remotelyAdded.add(row.id);
                 } else {
-                    const groupIds = getLocalFavoriteGroup(type, localGroupName);
+                    const groupIds = getLocalFavoriteGroup(
+                        type,
+                        localGroupName
+                    );
                     if (groupIds.includes(row.id) || locallyAdded.has(row.id)) {
-                        throw new Error(`${config.label} is already in local favorites.`);
+                        throw new Error(
+                            `${config.label} is already in local favorites.`
+                        );
                     }
                     await config.addLocal(row.id, localGroupName);
                     locallyAdded.add(row.id);
@@ -298,16 +326,23 @@ export async function importFavoriteImportRows() {
                 if (!isActiveSession()) {
                     break;
                 }
-                useFavoriteImportStore.getState().appendError(buildError(type, row.id, error));
+                useFavoriteImportStore
+                    .getState()
+                    .appendError(buildError(type, row.id, error));
             }
             if (!isActiveSession()) {
                 break;
             }
-            useFavoriteImportStore.getState().setImportProgress(index + 1, rows.length);
+            useFavoriteImportStore
+                .getState()
+                .setImportProgress(index + 1, rows.length);
         }
     } finally {
         const currentState = useFavoriteImportStore.getState();
-        if (currentState.type === type && currentState.sessionId === sessionId) {
+        if (
+            currentState.type === type &&
+            currentState.sessionId === sessionId
+        ) {
             currentState.setLoading(false);
             currentState.setImportProgress(0, 0);
         }
@@ -317,7 +352,10 @@ export async function importFavoriteImportRows() {
     }
 
     const imported = locallyAdded.size + remotelyAdded.size;
-    if (imported > 0 && useFavoriteImportStore.getState().sessionId === sessionId) {
+    if (
+        imported > 0 &&
+        useFavoriteImportStore.getState().sessionId === sessionId
+    ) {
         useNotificationStore.getState().pushNotification({
             level: 'success',
             title: `${TYPE_CONFIG[type].label} import complete`,

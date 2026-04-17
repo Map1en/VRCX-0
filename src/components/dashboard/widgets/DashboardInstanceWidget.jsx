@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from 'react';
 import {
     AppleIcon,
     HeartIcon,
@@ -8,14 +7,15 @@ import {
     SmartphoneIcon,
     UserIcon
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { cn } from '@/lib/utils.js';
-import { timeToText } from '@/lib/dateTime.js';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
+import { timeToText } from '@/lib/dateTime.js';
+import { cn } from '@/lib/utils.js';
 import { playerListRepository } from '@/repositories/index.js';
-import { parseLocation } from '@/shared/utils/locationParser.js';
 import { languageMappings } from '@/shared/constants/language.js';
+import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -29,32 +29,33 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
 
+import {
+    DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS,
+    DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS
+} from '../dashboardRegistry.js';
+import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
+import { DashboardWidgetHeader } from './DashboardWidgetHeader.jsx';
 import {
     buildFavoriteIdSet,
     joinCompactParts,
     normalizeString
 } from './shared.js';
-import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
-import {
-    DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS,
-    DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS
-} from '../dashboardRegistry.js';
-import { DashboardWidgetHeader } from './DashboardWidgetHeader.jsx';
 
-const ALL_COLUMNS = DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column) => column.key);
+const ALL_COLUMNS = DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
+    (column) => column.key
+);
 const DEFAULT_COLUMNS = DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS;
 
 function resolvePlatformMeta(platform) {
     const normalized = normalizeString(platform).toLowerCase();
 
-    if (normalized === 'standalonewindows' || normalized === 'pc' || normalized === 'windows') {
+    if (
+        normalized === 'standalonewindows' ||
+        normalized === 'pc' ||
+        normalized === 'windows'
+    ) {
         return {
             label: 'PC',
             icon: MonitorIcon,
@@ -86,9 +87,14 @@ function resolvePlatformMeta(platform) {
 }
 
 function languageFlagLabel(languageKey) {
-    const countryCode = languageMappings[String(languageKey || '').toLowerCase()];
+    const countryCode =
+        languageMappings[String(languageKey || '').toLowerCase()];
     if (!countryCode || !/^[a-z]{2}$/i.test(countryCode)) {
-        return String(languageKey || '?').slice(0, 3).toUpperCase() || '?';
+        return (
+            String(languageKey || '?')
+                .slice(0, 3)
+                .toUpperCase() || '?'
+        );
     }
 
     return String.fromCodePoint(
@@ -119,7 +125,8 @@ function getActiveColumns(config) {
 }
 
 function resolveLanguageEntries(friend) {
-    const source = friend?.$languages || friend?.languages || friend?.language || [];
+    const source =
+        friend?.$languages || friend?.languages || friend?.language || [];
     const values = Array.isArray(source) ? source : [source];
 
     return values
@@ -134,7 +141,12 @@ function resolveLanguageEntries(friend) {
             const key = entry?.key || entry?.name || entry?.label || '';
             return {
                 key,
-                value: entry?.value || entry?.name || entry?.label || languageMappings[key] || key
+                value:
+                    entry?.value ||
+                    entry?.name ||
+                    entry?.label ||
+                    languageMappings[key] ||
+                    key
             };
         })
         .map((entry) => ({
@@ -167,13 +179,19 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
     const currentUserLocation = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot?.location || ''
     );
-    const isGameRunning = useRuntimeStore((state) => Boolean(state.gameState.isGameRunning));
+    const isGameRunning = useRuntimeStore((state) =>
+        Boolean(state.gameState.isGameRunning)
+    );
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.backendEvents.addGameLogEvent.count
     );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const remoteFavoriteFriendIds = useFavoriteStore((state) => state.favoriteFriendIds);
-    const localFriendFavorites = useFavoriteStore((state) => state.localFriendFavorites);
+    const remoteFavoriteFriendIds = useFavoriteStore(
+        (state) => state.favoriteFriendIds
+    );
+    const localFriendFavorites = useFavoriteStore(
+        (state) => state.localFriendFavorites
+    );
 
     const [context, setContext] = useState({
         createdAt: '',
@@ -267,7 +285,12 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
         return () => {
             active = false;
         };
-    }, [addGameLogEventCount, currentUserId, currentUserLocation, isGameRunning]);
+    }, [
+        addGameLogEventCount,
+        currentUserId,
+        currentUserLocation,
+        isGameRunning
+    ]);
 
     const parsedLocation = useMemo(
         () => parseLocation(context.location || currentUserLocation || ''),
@@ -278,9 +301,17 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
         () =>
             rows.map((row) => {
                 const normalizedUserId = normalizeString(row.userId);
-                const friend = normalizedUserId ? friendsById[normalizedUserId] : null;
-                const isFavorite = normalizedUserId ? favoriteIdSet.has(normalizedUserId) : false;
-                const platform = friend?.$platform || friend?.platform || friend?.last_platform || '';
+                const friend = normalizedUserId
+                    ? friendsById[normalizedUserId]
+                    : null;
+                const isFavorite = normalizedUserId
+                    ? favoriteIdSet.has(normalizedUserId)
+                    : false;
+                const platform =
+                    friend?.$platform ||
+                    friend?.platform ||
+                    friend?.last_platform ||
+                    '';
                 const platformMeta = resolvePlatformMeta(platform);
                 const languageEntries = resolveLanguageEntries(friend);
 
@@ -295,7 +326,10 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                     platformClassName: platformMeta.className,
                     languageEntries,
                     statusValue: friend?.status || '',
-                    timerMs: row.joinedAtMs > 0 ? Math.max(clockNow - row.joinedAtMs, 0) : 0
+                    timerMs:
+                        row.joinedAtMs > 0
+                            ? Math.max(clockNow - row.joinedAtMs, 0)
+                            : 0
                 };
             }),
         [clockNow, favoriteIdSet, friendsById, rows]
@@ -304,31 +338,49 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
     const settingsMenu = configUpdater ? (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Widget settings"
+                >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuGroup>
-                    {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column) => (
-                        <DropdownMenuCheckboxItem
-                            key={column.key}
-                            checked={activeColumns.includes(column.key)}
-                            disabled={column.required}
-                            onSelect={(event) => event.preventDefault()}
-                            onCheckedChange={() =>
-                                configUpdater(getNextColumnConfig(config, activeColumns, column.key))
-                            }>
-                            {column.label}
-                        </DropdownMenuCheckboxItem>
-                    ))}
+                    {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
+                        (column) => (
+                            <DropdownMenuCheckboxItem
+                                key={column.key}
+                                checked={activeColumns.includes(column.key)}
+                                disabled={column.required}
+                                onSelect={(event) => event.preventDefault()}
+                                onCheckedChange={() =>
+                                    configUpdater(
+                                        getNextColumnConfig(
+                                            config,
+                                            activeColumns,
+                                            column.key
+                                        )
+                                    )
+                                }
+                            >
+                                {column.label}
+                            </DropdownMenuCheckboxItem>
+                        )
+                    )}
                 </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     ) : null;
     const renderShell = (children) => (
         <div className="flex h-full min-h-0 flex-col">
-            <DashboardWidgetHeader title={t('dashboard.widget.instance')} icon="ri-group-3-line" path="/player-list">
+            <DashboardWidgetHeader
+                title={t('dashboard.widget.instance')}
+                icon="ri-group-3-line"
+                path="/player-list"
+            >
                 {settingsMenu}
             </DashboardWidgetHeader>
             {children}
@@ -348,14 +400,16 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <DashboardWidgetEmptyState
                 title="Instance widget failed"
-                description={detail || 'The player-list snapshot did not complete.'}
+                description={
+                    detail || 'The player-list snapshot did not complete.'
+                }
             />
         );
     }
 
     if (loadStatus === 'running' && enrichedRows.length === 0) {
         return renderShell(
-            <div className="flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm">
                 <Spinner />
                 Loading instance widget
             </div>
@@ -373,14 +427,15 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
 
     return renderShell(
         <>
-
-            <div className="mx-3 mt-3 rounded-md border bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
-                <div className="truncate font-medium text-foreground">
+            <div className="bg-muted/10 text-muted-foreground mx-3 mt-3 rounded-md border px-3 py-2 text-xs">
+                <div className="text-foreground truncate font-medium">
                     {context.location ? (
                         <LocationWorld
                             locationObject={context.location}
                             currentUserId={currentUserId}
-                            worldDialogShortName={parsedLocation.shortName || ''}
+                            worldDialogShortName={
+                                parsedLocation.shortName || ''
+                            }
                             grouphint={context.groupName || ''}
                             hint={context.worldName || ''}
                         />
@@ -389,17 +444,29 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                     )}
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1">
-                    <span>{context.playerCount || enrichedRows.length} players</span>
-                    {parsedLocation.instanceName ? <span>#{parsedLocation.instanceName}</span> : null}
-                    {parsedLocation.accessTypeName ? <span>{parsedLocation.accessTypeName}</span> : null}
-                    {context.groupName ? <span>{context.groupName}</span> : null}
+                    <span>
+                        {context.playerCount || enrichedRows.length} players
+                    </span>
+                    {parsedLocation.instanceName ? (
+                        <span>#{parsedLocation.instanceName}</span>
+                    ) : null}
+                    {parsedLocation.accessTypeName ? (
+                        <span>{parsedLocation.accessTypeName}</span>
+                    ) : null}
+                    {context.groupName ? (
+                        <span>{context.groupName}</span>
+                    ) : null}
                     {joinCompactParts([
-                        context.source === 'database' ? 'Local game log' : 'Runtime fallback',
+                        context.source === 'database'
+                            ? 'Local game log'
+                            : 'Runtime fallback',
                         context.createdAt || ''
                     ]) ? (
                         <span>
                             {joinCompactParts([
-                                context.source === 'database' ? 'Local game log' : 'Runtime fallback',
+                                context.source === 'database'
+                                    ? 'Local game log'
+                                    : 'Runtime fallback',
                                 context.createdAt || ''
                             ])}
                         </span>
@@ -416,17 +483,27 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                                     <TableCell className="w-20 align-top">
                                         <div className="flex items-center gap-1">
                                             {row.isFavorite ? (
-                                                <Badge variant="default" className="px-1.5">
+                                                <Badge
+                                                    variant="default"
+                                                    className="px-1.5"
+                                                >
                                                     <HeartIcon className="size-3 fill-current" />
                                                 </Badge>
                                             ) : null}
                                             {row.isFriend ? (
-                                                <Badge variant="secondary" className="px-1.5">
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="px-1.5"
+                                                >
                                                     <ShieldIcon className="size-3" />
                                                 </Badge>
                                             ) : null}
-                                            {!row.isFavorite && !row.isFriend ? (
-                                                <Badge variant="outline" className="px-1.5">
+                                            {!row.isFavorite &&
+                                            !row.isFriend ? (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="px-1.5"
+                                                >
                                                     <UserIcon className="size-3" />
                                                 </Badge>
                                             ) : null}
@@ -435,16 +512,22 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                                 ) : null}
                                 <TableCell className="align-top">
                                     <div className="flex flex-col gap-1">
-                                        <div className="text-sm font-medium">{row.displayName}</div>
-                                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                        <div className="text-sm font-medium">
+                                            {row.displayName}
+                                        </div>
+                                        <div className="text-muted-foreground flex flex-wrap gap-2 text-xs">
                                             {activeColumns.includes('rank') ? (
-                                                <span>{row.trustLevel || ''}</span>
+                                                <span>
+                                                    {row.trustLevel || ''}
+                                                </span>
                                             ) : null}
-                                            {activeColumns.includes('status') ? (
+                                            {activeColumns.includes(
+                                                'status'
+                                            ) ? (
                                                 row.statusValue ? (
                                                     <span
                                                         title={row.statusValue}
-                                                        className="inline-block size-2.5 rounded-full border bg-muted-foreground/70"
+                                                        className="bg-muted-foreground/70 inline-block size-2.5 rounded-full border"
                                                     />
                                                 ) : null
                                             ) : null}
@@ -452,32 +535,51 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                                     </div>
                                 </TableCell>
                                 {activeColumns.includes('timer') ? (
-                                    <TableCell className="w-24 align-top text-right text-xs tabular-nums text-muted-foreground">
-                                        {row.joinedAtMs > 0 ? timeToText(row.timerMs, true) : ''}
+                                    <TableCell className="text-muted-foreground w-24 text-right align-top text-xs tabular-nums">
+                                        {row.joinedAtMs > 0
+                                            ? timeToText(row.timerMs, true)
+                                            : ''}
                                     </TableCell>
                                 ) : null}
                                 {activeColumns.includes('platform') ? (
                                     <TableCell className="w-24 align-top">
                                         {(() => {
-                                            const PlatformIcon = row.platformIcon;
+                                            const PlatformIcon =
+                                                row.platformIcon;
                                             return (
                                                 <div
-                                                    className={cn('flex items-center gap-1.5 text-xs', row.platformClassName)}>
-                                                    {PlatformIcon ? <PlatformIcon className="size-3.5" /> : null}
-                                                    <span>{row.platformLabel}</span>
+                                                    className={cn(
+                                                        'flex items-center gap-1.5 text-xs',
+                                                        row.platformClassName
+                                                    )}
+                                                >
+                                                    {PlatformIcon ? (
+                                                        <PlatformIcon className="size-3.5" />
+                                                    ) : null}
+                                                    <span>
+                                                        {row.platformLabel}
+                                                    </span>
                                                 </div>
                                             );
                                         })()}
                                     </TableCell>
                                 ) : null}
                                 {activeColumns.includes('language') ? (
-                                    <TableCell className="w-28 align-top text-xs text-muted-foreground">
+                                    <TableCell className="text-muted-foreground w-28 align-top text-xs">
                                         <span className="inline-flex items-center gap-1">
-                                            {row.languageEntries.slice(0, 2).map((entry) => (
-                                                <span key={`${row.id}:${entry.key}`} title={entry.value || entry.key}>
-                                                    {entry.flag}
-                                                </span>
-                                            ))}
+                                            {row.languageEntries
+                                                .slice(0, 2)
+                                                .map((entry) => (
+                                                    <span
+                                                        key={`${row.id}:${entry.key}`}
+                                                        title={
+                                                            entry.value ||
+                                                            entry.key
+                                                        }
+                                                    >
+                                                        {entry.flag}
+                                                    </span>
+                                                ))}
                                         </span>
                                     </TableCell>
                                 ) : null}

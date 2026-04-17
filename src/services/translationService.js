@@ -1,6 +1,7 @@
 import { configRepository, webRepository } from '@/repositories/index.js';
 
-const DEFAULT_TRANSLATION_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const DEFAULT_TRANSLATION_ENDPOINT =
+    'https://api.openai.com/v1/chat/completions';
 const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
 
 function parseWebJson(response) {
@@ -14,23 +15,22 @@ function parseWebJson(response) {
 }
 
 export async function getTranslationConfig() {
-    const [
-        enabled,
-        bioLanguage,
-        type,
-        key,
-        endpoint,
-        model,
-        prompt
-    ] = await Promise.all([
-        configRepository.getBool('translationAPI', false),
-        configRepository.getString('bioLanguage', 'en'),
-        configRepository.getString('translationAPIType', 'google'),
-        configRepository.getString('translationAPIKey', ''),
-        configRepository.getString('translationAPIEndpoint', DEFAULT_TRANSLATION_ENDPOINT),
-        configRepository.getString('translationAPIModel', DEFAULT_TRANSLATION_MODEL),
-        configRepository.getString('translationAPIPrompt', '')
-    ]);
+    const [enabled, bioLanguage, type, key, endpoint, model, prompt] =
+        await Promise.all([
+            configRepository.getBool('translationAPI', false),
+            configRepository.getString('bioLanguage', 'en'),
+            configRepository.getString('translationAPIType', 'google'),
+            configRepository.getString('translationAPIKey', ''),
+            configRepository.getString(
+                'translationAPIEndpoint',
+                DEFAULT_TRANSLATION_ENDPOINT
+            ),
+            configRepository.getString(
+                'translationAPIModel',
+                DEFAULT_TRANSLATION_MODEL
+            ),
+            configRepository.getString('translationAPIPrompt', '')
+        ]);
 
     return {
         enabled: Boolean(enabled),
@@ -74,7 +74,10 @@ export async function translateText(text, targetLanguage = '', overrides = {}) {
             throw new Error(`Translation API error: ${response.status}`);
         }
 
-        return parseWebJson(response)?.data?.translations?.[0]?.translatedText || '';
+        return (
+            parseWebJson(response)?.data?.translations?.[0]?.translatedText ||
+            ''
+        );
     }
 
     const endpoint = config.endpoint || DEFAULT_TRANSLATION_ENDPOINT;
@@ -97,7 +100,9 @@ export async function translateText(text, targetLanguage = '', overrides = {}) {
             messages: [
                 {
                     role: 'system',
-                    content: config.prompt || `You are a translation assistant. Translate the user message into ${target}. Only return the translated text.`
+                    content:
+                        config.prompt ||
+                        `You are a translation assistant. Translate the user message into ${target}. Only return the translated text.`
                 },
                 {
                     role: 'user',

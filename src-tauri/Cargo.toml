@@ -4,7 +4,7 @@ version = "2026.4.10"
 edition = "2021"
 
 [dependencies]
-tauri = { version = "2", features = [ "tray-icon", "image-ico" ] }
+tauri = { version = "2", features = ["tray-icon", "image-ico"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
@@ -14,7 +14,13 @@ dirs = "6"
 rusqlite = { version = "0.39", features = ["bundled", "backup"] }
 sysinfo = "0.38"
 chrono = "0.4"
-reqwest = { version = "0.13", features = ["cookies", "gzip", "brotli", "deflate", "multipart"] }
+reqwest = { version = "0.13", features = [
+    "cookies",
+    "gzip",
+    "brotli",
+    "deflate",
+    "multipart"
+] }
 reqwest_cookie_store = "0.10"
 tokio = { version = "1", features = ["sync"] }
 base64 = "0.22"
@@ -41,7 +47,7 @@ windows-sys = { version = "0.61", features = [
     "Win32_System_IO",
     "Win32_System_Pipes",
     "Win32_Security",
-    "Win32_System_Threading",
+    "Win32_System_Threading"
 ] }
 winreg = "0.56"
 tauri-plugin-autostart = "2"

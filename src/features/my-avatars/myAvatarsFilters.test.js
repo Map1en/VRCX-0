@@ -33,17 +33,10 @@ describe('myAvatarsFilters', () => {
         expect(
             collectMyAvatarTags([
                 {
-                    $tags: [
-                        { tag: 'quest' },
-                        { tag: 'favorite' }
-                    ]
+                    $tags: [{ tag: 'quest' }, { tag: 'favorite' }]
                 },
                 {
-                    $tags: [
-                        { tag: 'favorite' },
-                        { tag: 'public' },
-                        { tag: '' }
-                    ]
+                    $tags: [{ tag: 'favorite' }, { tag: 'public' }, { tag: '' }]
                 },
                 {}
             ])

@@ -453,9 +453,9 @@
                 },
                 "legal_notice": {
                     "header": "Informacje prawne",
-    "info": "VRCX-0 to aplikacja pomocnicza dla VRChat, która dostarcza informacje i pomaga w zarządzaniu znajomościami. Ta aplikacja korzysta z nieoficjalnego VRChat API SDK.",
-    "disclaimer1": "VRCX-0 nie jest w żaden sposób wspierane przez VRChat, ani nie odzwierciedla poglądów lub opinii VRChat, ani nikogo oficjalnie zaangażowanego w produkcję lub zarządzanie własnościami VRChat. VRChat oraz wszystkie powiązane własności są znakami towarowymi lub zastrzeżonymi znakami towarowymi VRChat Inc. VRChat © VRChat Inc.",
-    "disclaimer2": "Wszyscy współtwórcy nie są odpowiedzialni za żadne problemy spowodowane przez VRCX-0. Używaj na własne ryzyko!",
+                    "info": "VRCX-0 to aplikacja pomocnicza dla VRChat, która dostarcza informacje i pomaga w zarządzaniu znajomościami. Ta aplikacja korzysta z nieoficjalnego VRChat API SDK.",
+                    "disclaimer1": "VRCX-0 nie jest w żaden sposób wspierane przez VRChat, ani nie odzwierciedla poglądów lub opinii VRChat, ani nikogo oficjalnie zaangażowanego w produkcję lub zarządzanie własnościami VRChat. VRChat oraz wszystkie powiązane własności są znakami towarowymi lub zastrzeżonymi znakami towarowymi VRChat Inc. VRChat © VRChat Inc.",
+                    "disclaimer2": "Wszyscy współtwórcy nie są odpowiedzialni za żadne problemy spowodowane przez VRCX-0. Używaj na własne ryzyko!",
                     "open_source_software_notice": "Informacja o otwartym oprogramowaniu"
                 },
                 "contributors": {

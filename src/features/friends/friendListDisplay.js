@@ -6,9 +6,14 @@ import {
 import { languageMappings } from '@/shared/constants/language.js';
 
 export function languageFlagLabel(languageKey) {
-    const countryCode = languageMappings[String(languageKey || '').toLowerCase()];
+    const countryCode =
+        languageMappings[String(languageKey || '').toLowerCase()];
     if (!countryCode || !/^[a-z]{2}$/i.test(countryCode)) {
-        return String(languageKey || '?').slice(0, 3).toUpperCase() || '?';
+        return (
+            String(languageKey || '?')
+                .slice(0, 3)
+                .toUpperCase() || '?'
+        );
     }
 
     return String.fromCodePoint(
@@ -31,10 +36,13 @@ export function languageTooltipLabel(entry) {
 export function resolveFriendStatusMeta(friend) {
     const statusForIndicator = friend || {};
     const normalizedStatus = normalizeUserStatus(statusForIndicator);
-    const indicatorClassName = userStatusIndicatorClassName(statusForIndicator, {
-        showOffline: true,
-        className: 'mr-1'
-    });
+    const indicatorClassName = userStatusIndicatorClassName(
+        statusForIndicator,
+        {
+            showOffline: true,
+            className: 'mr-1'
+        }
+    );
     return {
         badgeVariant: 'outline',
         indicatorClassName,

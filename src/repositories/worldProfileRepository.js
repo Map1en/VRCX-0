@@ -1,12 +1,13 @@
-import webRepository from './webRepository.js';
-import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys,
     setCachedQueryData
 } from '@/services/entityQueryCacheService.js';
+
+import { safeJsonParse } from './baseRepository.js';
+import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import webRepository from './webRepository.js';
 
 function normalizeEndpointDomain(endpointDomain) {
     if (typeof endpointDomain === 'string' && endpointDomain.trim()) {
@@ -109,7 +110,11 @@ function normalizeArray(values) {
     }
 
     return values
-        .map((value) => (typeof value === 'string' ? value.trim() : String(value ?? '').trim()))
+        .map((value) =>
+            typeof value === 'string'
+                ? value.trim()
+                : String(value ?? '').trim()
+        )
         .filter(Boolean);
 }
 
@@ -128,7 +133,11 @@ function resolveWorldPlatforms(world) {
 
     if (Array.isArray(world?.unityPackages)) {
         for (const pkg of world.unityPackages) {
-            candidates.push(pkg?.platform, pkg?.platformName, pkg?.assetVersion?.platform);
+            candidates.push(
+                pkg?.platform,
+                pkg?.platformName,
+                pkg?.assetVersion?.platform
+            );
         }
     }
 
@@ -138,7 +147,11 @@ function resolveWorldPlatforms(world) {
             continue;
         }
 
-        if (normalized === 'standalonewindows' || normalized === 'pc' || normalized === 'windows') {
+        if (
+            normalized === 'standalonewindows' ||
+            normalized === 'pc' ||
+            normalized === 'windows'
+        ) {
             names.add('PC');
             continue;
         }
@@ -163,7 +176,10 @@ function normalizeWorldProfile(world) {
         ...world,
         id: normalizeEntityId(world?.id),
         name: normalizeEntityId(world?.name),
-        description: typeof world?.description === 'string' ? world.description.trim() : '',
+        description:
+            typeof world?.description === 'string'
+                ? world.description.trim()
+                : '',
         authorId: normalizeEntityId(world?.authorId),
         authorName:
             normalizeEntityId(world?.authorName) ||
@@ -171,8 +187,11 @@ function normalizeWorldProfile(world) {
             'Unknown author',
         releaseStatus: normalizeEntityId(world?.releaseStatus) || 'unknown',
         thumbnailImageUrl:
-            typeof world?.thumbnailImageUrl === 'string' ? world.thumbnailImageUrl.trim() : '',
-        imageUrl: typeof world?.imageUrl === 'string' ? world.imageUrl.trim() : '',
+            typeof world?.thumbnailImageUrl === 'string'
+                ? world.thumbnailImageUrl.trim()
+                : '',
+        imageUrl:
+            typeof world?.imageUrl === 'string' ? world.imageUrl.trim() : '',
         occupants: parseNumber(world?.occupants),
         capacity: parseNumber(world?.capacity),
         recommendedCapacity: parseNumber(world?.recommendedCapacity),
@@ -214,7 +233,9 @@ function normalize(world) {
 async function fetchWorldProfile({ worldId, endpoint = '' }) {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
-        throw new Error('WorldProfileRepository.fetchWorldProfile requires a world id.');
+        throw new Error(
+            'WorldProfileRepository.fetchWorldProfile requires a world id.'
+        );
     }
 
     const response = await executeGet(
@@ -328,14 +349,17 @@ async function executeDelete(path, params = {}, { endpoint = '' } = {}) {
 async function getWorldProfile({ worldId, endpoint = '', force = false }) {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
-        throw new Error('WorldProfileRepository.getWorldProfile requires a world id.');
+        throw new Error(
+            'WorldProfileRepository.getWorldProfile requires a world id.'
+        );
     }
 
     const json = await fetchCachedData({
         queryKey: queryKeys.world(normalizedWorldId, endpoint),
         policy: entityQueryPolicies.world,
         force,
-        queryFn: () => fetchWorldProfile({ worldId: normalizedWorldId, endpoint })
+        queryFn: () =>
+            fetchWorldProfile({ worldId: normalizedWorldId, endpoint })
     });
 
     return normalize(json);
@@ -353,7 +377,9 @@ async function getWorldsByUser({
 } = {}) {
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedUserId) {
-        throw new Error('WorldProfileRepository.getWorldsByUser requires a user id.');
+        throw new Error(
+            'WorldProfileRepository.getWorldsByUser requires a user id.'
+        );
     }
 
     const params = {
@@ -369,11 +395,7 @@ async function getWorldsByUser({
         policy: entityQueryPolicies.worldCollection,
         force,
         queryFn: async () => {
-            const response = await executeGet(
-                'worlds',
-                params,
-                { endpoint }
-            );
+            const response = await executeGet('worlds', params, { endpoint });
             return Array.isArray(response.json) ? response.json : [];
         }
     });
@@ -384,7 +406,9 @@ async function getWorldsByUser({
 async function saveWorld({ worldId, params = {}, endpoint = '' }) {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
-        throw new Error('WorldProfileRepository.saveWorld requires a world id.');
+        throw new Error(
+            'WorldProfileRepository.saveWorld requires a world id.'
+        );
     }
 
     const response = await executePut(
@@ -393,7 +417,10 @@ async function saveWorld({ worldId, params = {}, endpoint = '' }) {
         { endpoint }
     );
     if (response.json && typeof response.json === 'object') {
-        setCachedQueryData(queryKeys.world(normalizedWorldId, endpoint), response.json);
+        setCachedQueryData(
+            queryKeys.world(normalizedWorldId, endpoint),
+            response.json
+        );
     }
     return response;
 }
@@ -401,7 +428,9 @@ async function saveWorld({ worldId, params = {}, endpoint = '' }) {
 async function deleteWorld({ worldId, endpoint = '' }) {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
-        throw new Error('WorldProfileRepository.deleteWorld requires a world id.');
+        throw new Error(
+            'WorldProfileRepository.deleteWorld requires a world id.'
+        );
     }
 
     return executeDelete(
@@ -414,7 +443,9 @@ async function deleteWorld({ worldId, endpoint = '' }) {
 async function publishWorld({ worldId, endpoint = '' }) {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
-        throw new Error('WorldProfileRepository.publishWorld requires a world id.');
+        throw new Error(
+            'WorldProfileRepository.publishWorld requires a world id.'
+        );
     }
 
     const response = await executePut(
@@ -423,7 +454,10 @@ async function publishWorld({ worldId, endpoint = '' }) {
         { endpoint }
     );
     if (response.json && typeof response.json === 'object') {
-        setCachedQueryData(queryKeys.world(normalizedWorldId, endpoint), response.json);
+        setCachedQueryData(
+            queryKeys.world(normalizedWorldId, endpoint),
+            response.json
+        );
     }
     return response;
 }
@@ -431,7 +465,9 @@ async function publishWorld({ worldId, endpoint = '' }) {
 async function unpublishWorld({ worldId, endpoint = '' }) {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
-        throw new Error('WorldProfileRepository.unpublishWorld requires a world id.');
+        throw new Error(
+            'WorldProfileRepository.unpublishWorld requires a world id.'
+        );
     }
 
     const response = await executeDelete(
@@ -440,7 +476,10 @@ async function unpublishWorld({ worldId, endpoint = '' }) {
         { endpoint }
     );
     if (response.json && typeof response.json === 'object') {
-        setCachedQueryData(queryKeys.world(normalizedWorldId, endpoint), response.json);
+        setCachedQueryData(
+            queryKeys.world(normalizedWorldId, endpoint),
+            response.json
+        );
     }
     return response;
 }
@@ -449,7 +488,9 @@ async function deleteWorldPersistentData({ userId, worldId, endpoint = '' }) {
     const normalizedUserId = normalizeEntityId(userId);
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedUserId || !normalizedWorldId) {
-        throw new Error('WorldProfileRepository.deleteWorldPersistentData requires user and world ids.');
+        throw new Error(
+            'WorldProfileRepository.deleteWorldPersistentData requires user and world ids.'
+        );
     }
 
     const response = await executeDelete(
@@ -458,13 +499,21 @@ async function deleteWorldPersistentData({ userId, worldId, endpoint = '' }) {
         { endpoint }
     );
     setCachedQueryData(
-        queryKeys.worldPersistData({ userId: normalizedUserId, worldId: normalizedWorldId }, endpoint),
+        queryKeys.worldPersistData(
+            { userId: normalizedUserId, worldId: normalizedWorldId },
+            endpoint
+        ),
         false
     );
     return response;
 }
 
-async function hasWorldPersistentData({ userId, worldId, endpoint = '', force = false }) {
+async function hasWorldPersistentData({
+    userId,
+    worldId,
+    endpoint = '',
+    force = false
+}) {
     const normalizedUserId = normalizeEntityId(userId);
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedUserId || !normalizedWorldId) {

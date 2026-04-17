@@ -40,10 +40,12 @@ describe('dashboardConfig', () => {
             panels: ['feed', { key: 'game-log' }]
         };
 
-        expect(getDashboardRowKey(legacyRow)).toBe(getDashboardRowKey(legacyRow));
-        expect(getDashboardRowKey({ ...legacyRow, direction: 'horizontal' })).not.toBe(
+        expect(getDashboardRowKey(legacyRow)).toBe(
             getDashboardRowKey(legacyRow)
         );
+        expect(
+            getDashboardRowKey({ ...legacyRow, direction: 'horizontal' })
+        ).not.toBe(getDashboardRowKey(legacyRow));
     });
 
     it('lets users pick widgets, pages, and existing unknown panels', () => {
@@ -53,10 +55,12 @@ describe('dashboardConfig', () => {
             value: 'legacy-panel',
             label: 'Existing · legacy-panel'
         });
-        expect(options.some((option) => option.label === 'Widget · Feed Widget')).toBe(
+        expect(
+            options.some((option) => option.label === 'Widget · Feed Widget')
+        ).toBe(true);
+        expect(options.some((option) => option.label === 'Page · Feed')).toBe(
             true
         );
-        expect(options.some((option) => option.label === 'Page · Feed')).toBe(true);
         expect(
             createDashboardPanelSelectOptions('__none__').some(
                 (option) => option.value === '__none__'
@@ -77,7 +81,10 @@ describe('dashboardConfig', () => {
         clonedConfig.nested.enabled = false;
         expect(config.nested.enabled).toBe(true);
 
-        const panelValue = createDashboardWidgetPanelValue('widget:feed', config);
+        const panelValue = createDashboardWidgetPanelValue(
+            'widget:feed',
+            config
+        );
         panelValue.config.filters.push('gps');
         expect(config.filters).toEqual(['friend']);
     });
@@ -85,14 +92,17 @@ describe('dashboardConfig', () => {
     it('treats empty dashboard filter config as All and toggles individual filters predictably', () => {
         const filterTypes = ['friend', 'gps', 'avatar'];
 
-        expect(getDashboardFilterList({ filters: ['friend'] })).toEqual(['friend']);
-        expect(isDashboardFilterActive({}, 'friend')).toBe(true);
-        expect(isDashboardFilterActive({ filters: ['gps'] }, 'friend')).toBe(false);
-
-        expect(getNextDashboardFilterConfig({}, 'friend', filterTypes).filters).toEqual([
-            'gps',
-            'avatar'
+        expect(getDashboardFilterList({ filters: ['friend'] })).toEqual([
+            'friend'
         ]);
+        expect(isDashboardFilterActive({}, 'friend')).toBe(true);
+        expect(isDashboardFilterActive({ filters: ['gps'] }, 'friend')).toBe(
+            false
+        );
+
+        expect(
+            getNextDashboardFilterConfig({}, 'friend', filterTypes).filters
+        ).toEqual(['gps', 'avatar']);
         expect(
             getNextDashboardFilterConfig(
                 { filters: ['gps', 'avatar'] },
@@ -110,10 +120,9 @@ describe('dashboardConfig', () => {
     });
 
     it('keeps display name visible while users customize instance widget columns', () => {
-        expect(getDashboardInstanceWidgetColumns({ columns: ['timer', 'timer'] })).toEqual([
-            'displayName',
-            'timer'
-        ]);
+        expect(
+            getDashboardInstanceWidgetColumns({ columns: ['timer', 'timer'] })
+        ).toEqual(['displayName', 'timer']);
         expect(
             getDashboardInstanceWidgetColumns({
                 columns: ['timer', 'legacyColumn']
@@ -139,6 +148,8 @@ describe('dashboardConfig', () => {
         ).toEqual(['displayName', 'platform', 'legacyColumn']);
 
         const config = { columns: ['displayName', 'timer'] };
-        expect(getNextDashboardInstanceColumnConfig(config, 'displayName')).toBe(config);
+        expect(
+            getNextDashboardInstanceColumnConfig(config, 'displayName')
+        ).toBe(config);
     });
 });

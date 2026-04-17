@@ -46,7 +46,9 @@ describe('recentActionService', () => {
         service.recordRecentAction('usr_abc', 'Untracked Action');
 
         expect(service.isActionRecent('usr_abc', 'Invite')).toBe(true);
-        expect(service.isActionRecent('usr_abc', 'Untracked Action')).toBe(false);
+        expect(service.isActionRecent('usr_abc', 'Untracked Action')).toBe(
+            false
+        );
 
         vi.setSystemTime(new Date('2026-01-01T00:29:59Z'));
         expect(service.isActionRecent('usr_abc', 'Invite')).toBe(true);
@@ -64,21 +66,35 @@ describe('recentActionService', () => {
         service.configureRecentActionCooldown({ enabled: false, minutes: 5 });
         service.recordRecentAction('usr_abc', 'Send Friend Request');
 
-        expect(service.isActionRecent('usr_abc', 'Send Friend Request')).toBe(false);
+        expect(service.isActionRecent('usr_abc', 'Send Friend Request')).toBe(
+            false
+        );
     });
 
     it('normalizes invalid cooldown minutes to the default', async () => {
         const { service } = await loadRecentActionService();
 
-        expect(service.configureRecentActionCooldown({ enabled: true, minutes: 'bad' })).toEqual({
+        expect(
+            service.configureRecentActionCooldown({
+                enabled: true,
+                minutes: 'bad'
+            })
+        ).toEqual({
             enabled: true,
             minutes: 60
         });
-        expect(service.configureRecentActionCooldown({ enabled: true, minutes: 0 })).toEqual({
+        expect(
+            service.configureRecentActionCooldown({ enabled: true, minutes: 0 })
+        ).toEqual({
             enabled: true,
             minutes: 1
         });
-        expect(service.configureRecentActionCooldown({ enabled: true, minutes: 9999 })).toEqual({
+        expect(
+            service.configureRecentActionCooldown({
+                enabled: true,
+                minutes: 9999
+            })
+        ).toEqual({
             enabled: true,
             minutes: 1440
         });

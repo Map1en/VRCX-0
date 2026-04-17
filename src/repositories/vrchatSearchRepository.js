@@ -1,5 +1,5 @@
-import webRepository from './webRepository.js';
 import { safeJsonParse } from './baseRepository.js';
+import webRepository from './webRepository.js';
 
 const DEFAULT_ENDPOINT_DOMAIN = 'https://api.vrchat.cloud/api/1';
 
@@ -130,7 +130,12 @@ async function getGroupsStrictSearch(params = {}, options = {}) {
 }
 
 async function getInstanceFromShortName(shortName, options = {}) {
-    return executeGet(`instances/s/${encodeURIComponent(String(shortName || '').trim())}`, {}, {}, options);
+    return executeGet(
+        `instances/s/${encodeURIComponent(String(shortName || '').trim())}`,
+        {},
+        {},
+        options
+    );
 }
 
 const vrchatSearchRepository = Object.freeze({

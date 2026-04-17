@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { useModalStore } from '@/state/modalStore.js';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -8,6 +9,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle
 } from '@/ui/shadcn/alert-dialog';
+import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -16,11 +18,8 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Textarea } from '@/ui/shadcn/textarea';
-
-import { useModalStore } from '@/state/modalStore.js';
 
 function matchesPromptPattern(pattern, value) {
     if (!(pattern instanceof RegExp)) {
@@ -40,8 +39,12 @@ export function ModalHost() {
     const handleCancel = useModalStore((state) => state.handleCancel);
     const handleDismiss = useModalStore((state) => state.handleDismiss);
     const handlePromptOk = useModalStore((state) => state.handlePromptOk);
-    const handlePromptCancel = useModalStore((state) => state.handlePromptCancel);
-    const handlePromptDismiss = useModalStore((state) => state.handlePromptDismiss);
+    const handlePromptCancel = useModalStore(
+        (state) => state.handlePromptCancel
+    );
+    const handlePromptDismiss = useModalStore(
+        (state) => state.handlePromptDismiss
+    );
     const handleOtpOk = useModalStore((state) => state.handleOtpOk);
     const handleOtpCancel = useModalStore((state) => state.handleOtpCancel);
     const handleOtpDismiss = useModalStore((state) => state.handleOtpDismiss);
@@ -59,13 +62,15 @@ export function ModalHost() {
                 <Button
                     type="button"
                     variant="outline"
-                    onClick={() => handlePromptCancel(promptDialog.value)}>
+                    onClick={() => handlePromptCancel(promptDialog.value)}
+                >
                     {promptDialog.cancelText}
                 </Button>
                 <Button
                     type="button"
                     disabled={!promptValueIsValid}
-                    onClick={() => handlePromptOk(promptDialog.value)}>
+                    onClick={() => handlePromptOk(promptDialog.value)}
+                >
                     {promptDialog.confirmText}
                 </Button>
             </DialogFooter>
@@ -88,22 +93,34 @@ export function ModalHost() {
                     if (!open) {
                         handleDismiss();
                     }
-                }}>
+                }}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
-                        <AlertDialogDescription>{alertDialog.description}</AlertDialogDescription>
+                        <AlertDialogDescription>
+                            {alertDialog.description}
+                        </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         {alertDialog.mode === 'confirm' ? (
-                            <Button type="button" variant="outline" onClick={handleCancel}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleCancel}
+                            >
                                 {alertDialog.cancelText}
                             </Button>
                         ) : null}
                         <Button
                             type="button"
-                            variant={alertDialog.destructive ? 'destructive' : 'default'}
-                            onClick={handleOk}>
+                            variant={
+                                alertDialog.destructive
+                                    ? 'destructive'
+                                    : 'default'
+                            }
+                            onClick={handleOk}
+                        >
                             {alertDialog.confirmText}
                         </Button>
                     </AlertDialogFooter>
@@ -116,16 +133,21 @@ export function ModalHost() {
                     if (!open) {
                         handlePromptDismiss(promptDialog.value);
                     }
-                }}>
+                }}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{promptDialog.title}</DialogTitle>
-                        <DialogDescription>{promptDialog.description}</DialogDescription>
+                        <DialogDescription>
+                            {promptDialog.description}
+                        </DialogDescription>
                     </DialogHeader>
                     {promptDialog.multiline ? (
                         <Textarea
                             value={promptDialog.value}
-                            onChange={(event) => updatePromptValue(event.target.value)}
+                            onChange={(event) =>
+                                updatePromptValue(event.target.value)
+                            }
                             placeholder="Prompt value"
                             className="min-h-32"
                         />
@@ -133,7 +155,9 @@ export function ModalHost() {
                         <Input
                             type={promptDialog.inputType}
                             value={promptDialog.value}
-                            onChange={(event) => updatePromptValue(event.target.value)}
+                            onChange={(event) =>
+                                updatePromptValue(event.target.value)
+                            }
                             placeholder="Prompt value"
                         />
                     )}
@@ -147,25 +171,34 @@ export function ModalHost() {
                     if (!open) {
                         handleOtpDismiss(otpDialog.value);
                     }
-                }}>
+                }}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{otpDialog.title}</DialogTitle>
-                        <DialogDescription>{otpDialog.description}</DialogDescription>
+                        <DialogDescription>
+                            {otpDialog.description}
+                        </DialogDescription>
                     </DialogHeader>
                     <Input
                         value={otpDialog.value}
                         onChange={(event) => updateOtpValue(event.target.value)}
-                        placeholder={otpDialog.mode === 'emailOtp' ? 'Email OTP' : 'OTP'}
+                        placeholder={
+                            otpDialog.mode === 'emailOtp' ? 'Email OTP' : 'OTP'
+                        }
                     />
                     <DialogFooter>
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => handleOtpCancel(otpDialog.value)}>
+                            onClick={() => handleOtpCancel(otpDialog.value)}
+                        >
                             {otpDialog.cancelText}
                         </Button>
-                        <Button type="button" onClick={() => handleOtpOk(otpDialog.value)}>
+                        <Button
+                            type="button"
+                            onClick={() => handleOtpOk(otpDialog.value)}
+                        >
                             {otpDialog.confirmText}
                         </Button>
                     </DialogFooter>
@@ -178,10 +211,13 @@ export function ModalHost() {
                     if (!open) {
                         closeImagePreview();
                     }
-                }}>
+                }}
+            >
                 <DialogContent className="gpu-sensitive-blur max-w-[90vw]">
                     <DialogHeader>
-                        <DialogTitle>{imageDialog.title || 'Image Preview'}</DialogTitle>
+                        <DialogTitle>
+                            {imageDialog.title || 'Image Preview'}
+                        </DialogTitle>
                     </DialogHeader>
                     {imageDialog.url ? (
                         <img

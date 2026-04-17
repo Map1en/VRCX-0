@@ -103,9 +103,9 @@ export function sanitizeMyAvatarsSorting(value) {
         .map((entry) =>
             entry && typeof entry.id === 'string'
                 ? {
-                    ...entry,
-                    id: normalizeMyAvatarsColumnId(entry.id)
-                }
+                      ...entry,
+                      id: normalizeMyAvatarsColumnId(entry.id)
+                  }
                 : null
         )
         .filter((entry) => entry && allowedIds.has(entry.id));

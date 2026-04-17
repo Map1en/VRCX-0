@@ -1,5 +1,5 @@
-import sqliteRepository from './sqliteRepository.js';
 import configRepository from './configRepository.js';
+import sqliteRepository from './sqliteRepository.js';
 
 const LOCAL_FAVORITE_GROUP_CONFIG_KEYS = Object.freeze({
     friend: 'localFavoriteFriendGroups',
@@ -33,7 +33,8 @@ function normalizeWorldCacheRow(row) {
         imageUrl: row?.image_url ?? row?.imageUrl ?? '',
         name: row?.name ?? '',
         releaseStatus: row?.release_status ?? row?.releaseStatus ?? '',
-        thumbnailImageUrl: row?.thumbnail_image_url ?? row?.thumbnailImageUrl ?? '',
+        thumbnailImageUrl:
+            row?.thumbnail_image_url ?? row?.thumbnailImageUrl ?? '',
         updated_at: row?.updated_at ?? '',
         version: row?.version ?? 0
     };
@@ -65,7 +66,8 @@ function normalizeAvatarCacheRow(row) {
         imageUrl: row?.image_url ?? row?.imageUrl ?? '',
         name: row?.name ?? '',
         releaseStatus: row?.release_status ?? row?.releaseStatus ?? '',
-        thumbnailImageUrl: row?.thumbnail_image_url ?? row?.thumbnailImageUrl ?? '',
+        thumbnailImageUrl:
+            row?.thumbnail_image_url ?? row?.thumbnailImageUrl ?? '',
         updated_at: row?.updated_at ?? '',
         version: row?.version ?? 0
     };
@@ -120,7 +122,9 @@ function normalizeFriendFavoriteRow(row) {
 }
 
 function normalizeEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function resolveLocalFavoriteDeleteTarget(kind) {
@@ -152,7 +156,9 @@ function resolveLocalFavoriteDeleteTarget(kind) {
 }
 
 function normalizeGroupName(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeGroupList(values) {
@@ -178,12 +184,17 @@ async function createLocalFavoriteGroup({ kind, groupName }) {
     const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
     const normalizedGroupName = normalizeGroupName(groupName);
     if (!key || !normalizedGroupName) {
-        throw new Error('LocalFavoritesRepository.createLocalFavoriteGroup requires kind and groupName.');
+        throw new Error(
+            'LocalFavoritesRepository.createLocalFavoriteGroup requires kind and groupName.'
+        );
     }
 
     const groups = normalizeGroupList(await configRepository.getArray(key, []));
     if (!groups.includes(normalizedGroupName)) {
-        await configRepository.setArray(key, [...groups, normalizedGroupName].sort());
+        await configRepository.setArray(
+            key,
+            [...groups, normalizedGroupName].sort()
+        );
     }
 }
 
@@ -218,7 +229,9 @@ async function addLocalFavorite({ kind, entityId, groupName }) {
     const normalizedGroupName = normalizeGroupName(groupName);
 
     if (!target || !normalizedEntityId || !normalizedGroupName) {
-        throw new Error('LocalFavoritesRepository.addLocalFavorite requires kind, entityId, and groupName.');
+        throw new Error(
+            'LocalFavoritesRepository.addLocalFavorite requires kind, entityId, and groupName.'
+        );
     }
 
     return sqliteRepository.executeNonQuery(
@@ -237,7 +250,9 @@ async function removeLocalFavorite({ kind, entityId, groupName }) {
     const normalizedGroupName = normalizeEntityId(groupName);
 
     if (!target || !normalizedEntityId || !normalizedGroupName) {
-        throw new Error('LocalFavoritesRepository.removeLocalFavorite requires kind, entityId, and groupName.');
+        throw new Error(
+            'LocalFavoritesRepository.removeLocalFavorite requires kind, entityId, and groupName.'
+        );
     }
 
     return sqliteRepository.executeNonQuery(
@@ -255,7 +270,9 @@ async function renameLocalFavoriteGroup({ kind, groupName, newGroupName }) {
     const normalizedNewGroupName = normalizeGroupName(newGroupName);
 
     if (!target || !normalizedGroupName || !normalizedNewGroupName) {
-        throw new Error('LocalFavoritesRepository.renameLocalFavoriteGroup requires kind, groupName, and newGroupName.');
+        throw new Error(
+            'LocalFavoritesRepository.renameLocalFavoriteGroup requires kind, groupName, and newGroupName.'
+        );
     }
 
     const result = await sqliteRepository.executeNonQuery(
@@ -268,9 +285,13 @@ async function renameLocalFavoriteGroup({ kind, groupName, newGroupName }) {
 
     const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
     if (key) {
-        const groups = normalizeGroupList(await configRepository.getArray(key, []))
-            .filter((value) => value !== normalizedGroupName);
-        await configRepository.setArray(key, [...groups, normalizedNewGroupName].sort());
+        const groups = normalizeGroupList(
+            await configRepository.getArray(key, [])
+        ).filter((value) => value !== normalizedGroupName);
+        await configRepository.setArray(
+            key,
+            [...groups, normalizedNewGroupName].sort()
+        );
     }
 
     return result;
@@ -281,7 +302,9 @@ async function deleteLocalFavoriteGroup({ kind, groupName }) {
     const normalizedGroupName = normalizeGroupName(groupName);
 
     if (!target || !normalizedGroupName) {
-        throw new Error('LocalFavoritesRepository.deleteLocalFavoriteGroup requires kind and groupName.');
+        throw new Error(
+            'LocalFavoritesRepository.deleteLocalFavoriteGroup requires kind and groupName.'
+        );
     }
 
     const result = await sqliteRepository.executeNonQuery(
@@ -293,8 +316,9 @@ async function deleteLocalFavoriteGroup({ kind, groupName }) {
 
     const key = LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
     if (key) {
-        const groups = normalizeGroupList(await configRepository.getArray(key, []))
-            .filter((value) => value !== normalizedGroupName);
+        const groups = normalizeGroupList(
+            await configRepository.getArray(key, [])
+        ).filter((value) => value !== normalizedGroupName);
         await configRepository.setArray(key, groups);
     }
 

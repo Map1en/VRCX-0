@@ -1,8 +1,9 @@
-import { safeJsonParse } from './baseRepository.js';
 import { publishPreferenceChanged } from '@/lib/preferenceEvents.js';
+
+import avatarProfileRepository from './avatarProfileRepository.js';
+import { safeJsonParse } from './baseRepository.js';
 import configRepository from './configRepository.js';
 import webRepository from './webRepository.js';
-import avatarProfileRepository from './avatarProfileRepository.js';
 
 const DEFAULT_PROVIDER = 'https://api.avtrdb.com/v3/avatar/search/vrcx';
 const AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS = [
@@ -88,10 +89,17 @@ function normalizeAvatarProviderItem(avatar) {
         authorId: pick(avatar, 'authorId', 'AuthorId', 'author_id'),
         authorName: pick(avatar, 'authorName', 'AuthorName', 'author_name'),
         imageUrl: pick(avatar, 'imageUrl', 'ImageUrl', 'image_url'),
-        thumbnailImageUrl: pick(avatar, 'thumbnailImageUrl', 'ThumbnailImageUrl', 'thumbnail_image_url'),
+        thumbnailImageUrl: pick(
+            avatar,
+            'thumbnailImageUrl',
+            'ThumbnailImageUrl',
+            'thumbnail_image_url'
+        ),
         created_at: pick(avatar, 'created_at', 'createdAt', 'CreatedAt'),
         updated_at: pick(avatar, 'updated_at', 'updatedAt', 'UpdatedAt'),
-        releaseStatus: pick(avatar, 'releaseStatus', 'ReleaseStatus', 'release_status') || 'public'
+        releaseStatus:
+            pick(avatar, 'releaseStatus', 'ReleaseStatus', 'release_status') ||
+            'public'
     });
 
     return {
@@ -103,21 +111,25 @@ function normalizeAvatarProviderItem(avatar) {
 }
 
 async function getConfig() {
-    const [enabled, providerListValue, selectedProviderValue] = await Promise.all([
-        configRepository.getBool('avatarRemoteDatabase', true),
-        configRepository.getString(
-            'VRCX_avatarRemoteDatabaseProviderList',
-            `["${DEFAULT_PROVIDER}"]`
-        ),
-        configRepository.getString('VRCX_avatarRemoteDatabaseProvider', '')
-    ]);
+    const [enabled, providerListValue, selectedProviderValue] =
+        await Promise.all([
+            configRepository.getBool('avatarRemoteDatabase', true),
+            configRepository.getString(
+                'VRCX_avatarRemoteDatabaseProviderList',
+                `["${DEFAULT_PROVIDER}"]`
+            ),
+            configRepository.getString('VRCX_avatarRemoteDatabaseProvider', '')
+        ]);
 
     let parsedProviderList = safeJsonParse(providerListValue, null);
     if (!Array.isArray(parsedProviderList)) {
         parsedProviderList = [DEFAULT_PROVIDER];
     }
 
-    if (selectedProviderValue && !parsedProviderList.includes(selectedProviderValue)) {
+    if (
+        selectedProviderValue &&
+        !parsedProviderList.includes(selectedProviderValue)
+    ) {
         parsedProviderList = [...parsedProviderList, selectedProviderValue];
     }
 
@@ -147,8 +159,13 @@ async function saveConfig({ enabled, providerList, selectedProvider = '' }) {
     const normalizedProviderList = normalizeProviderList(providerList);
     const persistedSelectedProvider =
         normalizeString(selectedProvider) ||
-        await configRepository.getString('VRCX_avatarRemoteDatabaseProvider', '');
-    const resolvedSelectedProvider = normalizedProviderList.includes(persistedSelectedProvider)
+        (await configRepository.getString(
+            'VRCX_avatarRemoteDatabaseProvider',
+            ''
+        ));
+    const resolvedSelectedProvider = normalizedProviderList.includes(
+        persistedSelectedProvider
+    )
         ? persistedSelectedProvider
         : normalizedProviderList[0] || '';
     await Promise.all([
@@ -161,7 +178,10 @@ async function saveConfig({ enabled, providerList, selectedProvider = '' }) {
             Boolean(enabled) && normalizedProviderList.length > 0
         ),
         resolvedSelectedProvider
-            ? configRepository.setString('VRCX_avatarRemoteDatabaseProvider', resolvedSelectedProvider)
+            ? configRepository.setString(
+                  'VRCX_avatarRemoteDatabaseProvider',
+                  resolvedSelectedProvider
+              )
             : configRepository.remove('VRCX_avatarRemoteDatabaseProvider')
     ]);
 
@@ -179,8 +199,14 @@ async function saveSelectedProvider(provider) {
     if (!normalizedProvider) {
         return '';
     }
-    await configRepository.setString('VRCX_avatarRemoteDatabaseProvider', normalizedProvider);
-    publishPreferenceChanged('VRCX_avatarRemoteDatabaseProvider', normalizedProvider);
+    await configRepository.setString(
+        'VRCX_avatarRemoteDatabaseProvider',
+        normalizedProvider
+    );
+    publishPreferenceChanged(
+        'VRCX_avatarRemoteDatabaseProvider',
+        normalizedProvider
+    );
     return normalizedProvider;
 }
 
@@ -206,7 +232,9 @@ async function search({ provider, query }) {
     }
 
     const [url, vrcxId] = await Promise.all([
-        Promise.resolve(buildProviderSearchUrl(normalizedProvider, normalizedQuery)),
+        Promise.resolve(
+            buildProviderSearchUrl(normalizedProvider, normalizedQuery)
+        ),
         getVrcxId()
     ]);
 

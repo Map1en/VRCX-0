@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
 import {
     BadgeCheckIcon,
     BellIcon,
@@ -25,21 +24,31 @@ import {
     UsersIcon,
     XIcon
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { formatDateFilter } from '@/lib/dateTime.js';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
-import { convertFileUrlToImageUrl, copyTextToClipboard, openExternalLink, userImage } from '@/lib/entityMedia.js';
+import { formatDateFilter } from '@/lib/dateTime.js';
+import {
+    convertFileUrlToImageUrl,
+    copyTextToClipboard,
+    openExternalLink,
+    userImage
+} from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
-import { groupProfileRepository, mediaRepository } from '@/repositories/index.js';
+import {
+    groupProfileRepository,
+    mediaRepository
+} from '@/repositories/index.js';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { languageMappings } from '@/shared/constants/language.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useModalStore } from '@/state/modalStore.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -48,11 +57,9 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Input } from '@/ui/shadcn/input';
-import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
 import { Label } from '@/ui/shadcn/label';
-import { Textarea } from '@/ui/shadcn/textarea';
 import {
     Select,
     SelectContent,
@@ -61,6 +68,9 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Textarea } from '@/ui/shadcn/textarea';
+
 import {
     EntityActionDropdown,
     EntityActionItem,
@@ -74,7 +84,6 @@ import {
     EntityInfoGrid,
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
 
 function firstArray(...values) {
@@ -101,12 +110,17 @@ function normalizeGroupLanguages(group) {
         }
         return {
             key: entry?.key || entry?.id || entry?.value || '',
-            value: entry?.value || entry?.label || entry?.name || entry?.key || ''
+            value:
+                entry?.value || entry?.label || entry?.name || entry?.key || ''
         };
     });
-    const seen = new Set(rows.map((entry) => String(entry.key || entry.value).toLowerCase()));
+    const seen = new Set(
+        rows.map((entry) => String(entry.key || entry.value).toLowerCase())
+    );
     for (const language of firstArray(group?.languages)) {
-        const key = String(language || '').trim().toLowerCase();
+        const key = String(language || '')
+            .trim()
+            .toLowerCase();
         if (!key || seen.has(key)) {
             continue;
         }
@@ -123,7 +137,13 @@ function rowLabel(row) {
     if (!row || typeof row !== 'object') {
         return '—';
     }
-    const label = row.title || row.user?.displayName || row.displayName || row.name || row.imageUrl || '—';
+    const label =
+        row.title ||
+        row.user?.displayName ||
+        row.displayName ||
+        row.name ||
+        row.imageUrl ||
+        '—';
     return row.$galleryName ? `${row.$galleryName}: ${label}` : label;
 }
 
@@ -140,7 +160,9 @@ function rowImage(row, kind) {
 function announcementRoleNames(announcement, group) {
     const rolesById = roleNameMap(group);
     return Array.isArray(announcement?.roleIds)
-        ? announcement.roleIds.map((roleId) => rolesById.get(roleId) || roleId).filter(Boolean)
+        ? announcement.roleIds
+              .map((roleId) => rolesById.get(roleId) || roleId)
+              .filter(Boolean)
         : [];
 }
 
@@ -171,7 +193,15 @@ function rowRawImage(row) {
     }
     const versions = Array.isArray(row.versions) ? row.versions : [];
     const latestVersion = versions[versions.length - 1];
-    return latestVersion?.file?.url || row.imageUrl || row.thumbnailImageUrl || row.iconUrl || row.fileUrl || row.url || '';
+    return (
+        latestVersion?.file?.url ||
+        row.imageUrl ||
+        row.thumbnailImageUrl ||
+        row.iconUrl ||
+        row.fileUrl ||
+        row.url ||
+        ''
+    );
 }
 
 function roleNameMap(group) {
@@ -185,7 +215,9 @@ function roleNameMap(group) {
 }
 
 function downloadJsonFile(fileName, value) {
-    const blob = new Blob([JSON.stringify(value ?? null, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(value ?? null, null, 2)], {
+        type: 'application/json'
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -195,14 +227,23 @@ function downloadJsonFile(fileName, value) {
 }
 
 function hasGroupPermission(group, permission) {
-    const direct = Array.isArray(group?.myMember?.permissions) ? group.myMember.permissions : [];
+    const direct = Array.isArray(group?.myMember?.permissions)
+        ? group.myMember.permissions
+        : [];
     if (direct.includes('*') || direct.includes(permission)) {
         return true;
     }
-    const roleIds = Array.isArray(group?.myMember?.roleIds) ? group.myMember.roleIds : [];
+    const roleIds = Array.isArray(group?.myMember?.roleIds)
+        ? group.myMember.roleIds
+        : [];
     return (Array.isArray(group?.roles) ? group.roles : [])
         .filter((role) => roleIds.includes(role?.id))
-        .some((role) => Array.isArray(role.permissions) && (role.permissions.includes('*') || role.permissions.includes(permission)));
+        .some(
+            (role) =>
+                Array.isArray(role.permissions) &&
+                (role.permissions.includes('*') ||
+                    role.permissions.includes(permission))
+        );
 }
 
 function hasGroupModerationPermission(group) {
@@ -220,43 +261,102 @@ function hasGroupModerationPermission(group) {
     ].some((permission) => hasGroupPermission(group, permission));
 }
 
-function PostList({ rows, group, onPreviewImage, canManagePosts, onEditPost, onDeletePost }) {
+function PostList({
+    rows,
+    group,
+    onPreviewImage,
+    canManagePosts,
+    onEditPost,
+    onDeletePost
+}) {
     const rolesById = roleNameMap(group);
     return (
         <div className="flex flex-wrap items-start">
             {rows.map((post, index) => {
                 const image = rowRawImage(post);
                 return (
-                    <div key={post?.id || `${post?.title || 'post'}:${index}`} className="box-border flex w-full items-center p-1.5 text-sm">
+                    <div
+                        key={post?.id || `${post?.title || 'post'}:${index}`}
+                        className="box-border flex w-full items-center p-1.5 text-sm"
+                    >
                         <div className="min-w-0 flex-1 overflow-hidden">
-                            <span className="block truncate font-medium leading-5">{post?.title || 'Post'}</span>
+                            <span className="block truncate leading-5 font-medium">
+                                {post?.title || 'Post'}
+                            </span>
                             {image ? (
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     className="mr-1.5 h-auto p-0 align-top"
                                     aria-label={`Preview ${post?.title || 'post'} image`}
-                                    onClick={() => onPreviewImage?.(image, post?.title || 'Post')}>
-                                    <img src={convertFileUrlToImageUrl(image, 128)} alt="" className="size-16 rounded-md object-cover" />
+                                    onClick={() =>
+                                        onPreviewImage?.(
+                                            image,
+                                            post?.title || 'Post'
+                                        )
+                                    }
+                                >
+                                    <img
+                                        src={convertFileUrlToImageUrl(
+                                            image,
+                                            128
+                                        )}
+                                        alt=""
+                                        className="size-16 rounded-md object-cover"
+                                    />
                                 </Button>
                             ) : null}
-                            <pre className="inline-block whitespace-pre-wrap align-top text-xs font-sans text-muted-foreground">{post?.text || '—'}</pre>
-                            <div className="mt-1 flex flex-wrap items-center justify-end gap-1.5 text-xs text-muted-foreground">
-                                {Array.isArray(post?.roleIds) && post.roleIds.length ? (
+                            <pre className="text-muted-foreground inline-block align-top font-sans text-xs whitespace-pre-wrap">
+                                {post?.text || '—'}
+                            </pre>
+                            <div className="text-muted-foreground mt-1 flex flex-wrap items-center justify-end gap-1.5 text-xs">
+                                {Array.isArray(post?.roleIds) &&
+                                post.roleIds.length ? (
                                     <span className="inline-flex items-center gap-1">
                                         <EyeIcon className="size-3.5" />
-                                        {post.roleIds.map((roleId) => rolesById.get(roleId) || 'Role').join(', ')}
+                                        {post.roleIds
+                                            .map(
+                                                (roleId) =>
+                                                    rolesById.get(roleId) ||
+                                                    'Role'
+                                            )
+                                            .join(', ')}
                                     </span>
                                 ) : null}
-                                {post?.authorDisplayName ? <span>{post.authorDisplayName}</span> : null}
-                                {post?.editorDisplayName ? <span>edited by {post.editorDisplayName}</span> : null}
-                                {post?.updatedAt ? <span>{formatDateFilter(post.updatedAt, 'long')}</span> : null}
+                                {post?.authorDisplayName ? (
+                                    <span>{post.authorDisplayName}</span>
+                                ) : null}
+                                {post?.editorDisplayName ? (
+                                    <span>
+                                        edited by {post.editorDisplayName}
+                                    </span>
+                                ) : null}
+                                {post?.updatedAt ? (
+                                    <span>
+                                        {formatDateFilter(
+                                            post.updatedAt,
+                                            'long'
+                                        )}
+                                    </span>
+                                ) : null}
                                 {canManagePosts ? (
                                     <>
-                                        <Button type="button" size="icon-sm" variant="ghost" aria-label="Edit post" onClick={() => onEditPost?.(post)}>
+                                        <Button
+                                            type="button"
+                                            size="icon-sm"
+                                            variant="ghost"
+                                            aria-label="Edit post"
+                                            onClick={() => onEditPost?.(post)}
+                                        >
                                             <PencilIcon data-icon="inline-start" />
                                         </Button>
-                                        <Button type="button" size="icon-sm" variant="ghost" aria-label="Delete post" onClick={() => onDeletePost?.(post)}>
+                                        <Button
+                                            type="button"
+                                            size="icon-sm"
+                                            variant="ghost"
+                                            aria-label="Delete post"
+                                            onClick={() => onDeletePost?.(post)}
+                                        >
                                             <Trash2Icon data-icon="inline-start" />
                                         </Button>
                                     </>
@@ -279,17 +379,33 @@ function PhotoGalleryRows({ rows, group, loading, error, onPreviewImage }) {
         }
     }
     for (const row of rows) {
-        const galleryId = row?.$galleryId || row?.galleryId || row?.gallery_id || row?.$galleryName || 'Gallery';
+        const galleryId =
+            row?.$galleryId ||
+            row?.galleryId ||
+            row?.gallery_id ||
+            row?.$galleryName ||
+            'Gallery';
         if (!groups.has(galleryId)) {
-            groups.set(galleryId, { gallery: { id: galleryId, name: row?.$galleryName || 'Gallery' }, rows: [] });
+            groups.set(galleryId, {
+                gallery: {
+                    id: galleryId,
+                    name: row?.$galleryName || 'Gallery'
+                },
+                rows: []
+            });
         }
         groups.get(galleryId).rows.push(row);
     }
     const galleryEntries = Array.from(groups.values());
-    const [activeGallery, setActiveGallery] = useState(galleryEntries[0]?.gallery?.id || '');
+    const [activeGallery, setActiveGallery] = useState(
+        galleryEntries[0]?.gallery?.id || ''
+    );
 
     useEffect(() => {
-        if (galleryEntries.length && !galleryEntries.some((entry) => entry.gallery.id === activeGallery)) {
+        if (
+            galleryEntries.length &&
+            !galleryEntries.some((entry) => entry.gallery.id === activeGallery)
+        ) {
             setActiveGallery(galleryEntries[0].gallery.id);
         }
     }, [activeGallery, galleryEntries]);
@@ -305,18 +421,41 @@ function PhotoGalleryRows({ rows, group, loading, error, onPreviewImage }) {
     }
 
     return (
-        <Tabs value={activeGallery} onValueChange={setActiveGallery} className="gap-2">
-            <TabsList variant="line" className="h-auto w-full justify-start overflow-x-auto rounded-none border-b px-0 pb-1">
+        <Tabs
+            value={activeGallery}
+            onValueChange={setActiveGallery}
+            className="gap-2"
+        >
+            <TabsList
+                variant="line"
+                className="h-auto w-full justify-start overflow-x-auto rounded-none border-b px-0 pb-1"
+            >
                 {galleryEntries.map(({ gallery, rows: galleryRows }) => (
-                    <TabsTrigger key={gallery.id} value={gallery.id} className="flex-none rounded-none px-3">
-                        <span className="font-bold">{gallery.name || 'Gallery'}</span>
-                        <span className="ml-1.5 text-xs text-muted-foreground">{galleryRows.length}</span>
+                    <TabsTrigger
+                        key={gallery.id}
+                        value={gallery.id}
+                        className="flex-none rounded-none px-3"
+                    >
+                        <span className="font-bold">
+                            {gallery.name || 'Gallery'}
+                        </span>
+                        <span className="text-muted-foreground ml-1.5 text-xs">
+                            {galleryRows.length}
+                        </span>
                     </TabsTrigger>
                 ))}
             </TabsList>
             {galleryEntries.map(({ gallery, rows: galleryRows }) => (
-                <TabsContent key={gallery.id} value={gallery.id} className="m-0">
-                    {gallery.description ? <div className="px-2 py-1 text-sm text-muted-foreground">{gallery.description}</div> : null}
+                <TabsContent
+                    key={gallery.id}
+                    value={gallery.id}
+                    className="m-0"
+                >
+                    {gallery.description ? (
+                        <div className="text-muted-foreground px-2 py-1 text-sm">
+                            {gallery.description}
+                        </div>
+                    ) : null}
                     <div className="grid max-h-[60vh] gap-4 overflow-y-auto pt-2 sm:grid-cols-2 lg:grid-cols-3">
                         {galleryRows.map((row, index) => {
                             const image = rowImage(row, 'photos');
@@ -326,12 +465,25 @@ function PhotoGalleryRows({ rows, group, loading, error, onPreviewImage }) {
                                     type="button"
                                     variant="ghost"
                                     className="h-auto w-full flex-col items-stretch overflow-hidden rounded-md border p-0 text-left text-sm"
-                                    onClick={() => onPreviewImage?.(rowRawImage(row), rowLabel(row))}>
+                                    onClick={() =>
+                                        onPreviewImage?.(
+                                            rowRawImage(row),
+                                            rowLabel(row)
+                                        )
+                                    }
+                                >
                                     {image ? (
-                                        <img src={image} alt={rowLabel(row)} className="max-h-52 w-full object-contain" />
+                                        <img
+                                            src={image}
+                                            alt={rowLabel(row)}
+                                            className="max-h-52 w-full object-contain"
+                                        />
                                     ) : (
-                                        <div className="flex h-52 w-full items-center justify-center bg-muted">
-                                            <ImageIcon data-icon="inline-start" className="size-6 text-muted-foreground" />
+                                        <div className="bg-muted flex h-52 w-full items-center justify-center">
+                                            <ImageIcon
+                                                data-icon="inline-start"
+                                                className="text-muted-foreground size-6"
+                                            />
                                         </div>
                                     )}
                                 </Button>
@@ -344,7 +496,17 @@ function PhotoGalleryRows({ rows, group, loading, error, onPreviewImage }) {
     );
 }
 
-function RowList({ rows, group = null, kind = '', loading = false, error = '', onPreviewImage, canManagePosts = false, onEditPost, onDeletePost }) {
+function RowList({
+    rows,
+    group = null,
+    kind = '',
+    loading = false,
+    error = '',
+    onPreviewImage,
+    canManagePosts = false,
+    onEditPost,
+    onDeletePost
+}) {
     if (loading) {
         return <EntityBlank>Loading...</EntityBlank>;
     }
@@ -352,13 +514,30 @@ function RowList({ rows, group = null, kind = '', loading = false, error = '', o
         return <EntityBlank>{error}</EntityBlank>;
     }
     if (kind === 'photos') {
-        return <PhotoGalleryRows rows={rows} group={group} loading={loading} error={error} onPreviewImage={onPreviewImage} />;
+        return (
+            <PhotoGalleryRows
+                rows={rows}
+                group={group}
+                loading={loading}
+                error={error}
+                onPreviewImage={onPreviewImage}
+            />
+        );
     }
     if (!rows.length) {
         return <EntityBlank />;
     }
     if (kind === 'posts') {
-        return <PostList rows={rows} group={group} onPreviewImage={onPreviewImage} canManagePosts={canManagePosts} onEditPost={onEditPost} onDeletePost={onDeletePost} />;
+        return (
+            <PostList
+                rows={rows}
+                group={group}
+                onPreviewImage={onPreviewImage}
+                canManagePosts={canManagePosts}
+                onEditPost={onEditPost}
+                onDeletePost={onDeletePost}
+            />
+        );
     }
 
     return (
@@ -369,10 +548,15 @@ function RowList({ rows, group = null, kind = '', loading = false, error = '', o
                 const memberUserId = row?.userId || row?.user?.id;
                 const rolesById = roleNameMap(group);
                 const memberRoles = Array.isArray(row?.roleIds)
-                    ? row.roleIds.map((roleId) => rolesById.get(roleId) || 'Role').filter(Boolean)
+                    ? row.roleIds
+                          .map((roleId) => rolesById.get(roleId) || 'Role')
+                          .filter(Boolean)
                     : [];
-                const subtitle = memberRoles.join(', ') ||
-                    row?.user?.displayName || row?.displayName || '';
+                const subtitle =
+                    memberRoles.join(', ') ||
+                    row?.user?.displayName ||
+                    row?.displayName ||
+                    '';
                 return (
                     <Button
                         key={`${label}:${index}`}
@@ -381,25 +565,53 @@ function RowList({ rows, group = null, kind = '', loading = false, error = '', o
                         className="box-border h-auto w-44 justify-start p-1.5 text-left text-sm"
                         onClick={() => {
                             if (kind === 'members' && memberUserId) {
-                                openUserDialog({ userId: memberUserId, title: row?.user?.displayName || undefined, seedData: row?.user || null });
+                                openUserDialog({
+                                    userId: memberUserId,
+                                    title: row?.user?.displayName || undefined,
+                                    seedData: row?.user || null
+                                });
                             }
-                        }}>
+                        }}
+                    >
                         {image ? (
-                            <img src={image} alt="" className="mr-2.5 size-9 shrink-0 rounded-full object-cover" />
+                            <img
+                                src={image}
+                                alt=""
+                                className="mr-2.5 size-9 shrink-0 rounded-full object-cover"
+                            />
                         ) : (
-                            <div className="mr-2.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                                <UserIcon data-icon="inline-start" className="size-4 text-muted-foreground" />
+                            <div className="bg-muted mr-2.5 flex size-9 shrink-0 items-center justify-center rounded-full">
+                                <UserIcon
+                                    data-icon="inline-start"
+                                    className="text-muted-foreground size-4"
+                                />
                             </div>
                         )}
                         <span className="min-w-0 flex-1 overflow-hidden">
-                            <span className="block truncate font-medium leading-5">{label}</span>
-                            {subtitle ? <span className="block truncate text-xs text-muted-foreground">{subtitle}</span> : null}
+                            <span className="block truncate leading-5 font-medium">
+                                {label}
+                            </span>
+                            {subtitle ? (
+                                <span className="text-muted-foreground block truncate text-xs">
+                                    {subtitle}
+                                </span>
+                            ) : null}
                             {kind === 'members' ? (
-                                <span className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                                    {row?.isRepresenting ? <TagIcon data-icon="inline-start" /> : null}
-                                    {row?.visibility && row.visibility !== 'visible' ? <EyeIcon data-icon="inline-start" /> : null}
-                                    {row?.isSubscribedToAnnouncements === false ? <MessageSquareIcon data-icon="inline-start" /> : null}
-                                    {row?.managerNotes ? <PencilIcon data-icon="inline-start" /> : null}
+                                <span className="text-muted-foreground flex items-center gap-1 truncate text-xs">
+                                    {row?.isRepresenting ? (
+                                        <TagIcon data-icon="inline-start" />
+                                    ) : null}
+                                    {row?.visibility &&
+                                    row.visibility !== 'visible' ? (
+                                        <EyeIcon data-icon="inline-start" />
+                                    ) : null}
+                                    {row?.isSubscribedToAnnouncements ===
+                                    false ? (
+                                        <MessageSquareIcon data-icon="inline-start" />
+                                    ) : null}
+                                    {row?.managerNotes ? (
+                                        <PencilIcon data-icon="inline-start" />
+                                    ) : null}
                                 </span>
                             ) : null}
                         </span>
@@ -411,7 +623,8 @@ function RowList({ rows, group = null, kind = '', loading = false, error = '', o
 }
 
 function getInstanceLocation(instance) {
-    const directLocation = instance?.location || instance?.tag || instance?.$location?.tag;
+    const directLocation =
+        instance?.location || instance?.tag || instance?.$location?.tag;
     if (directLocation) {
         return directLocation;
     }
@@ -500,14 +713,24 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
             return;
         }
         try {
-            const opened = await tryOpenLaunchLocation(location, parseLocation(location).shortName || '', endpoint);
+            const opened = await tryOpenLaunchLocation(
+                location,
+                parseLocation(location).shortName || '',
+                endpoint
+            );
             if (opened) {
                 toast.success('VRChat launch request sent.');
                 return;
             }
-            openWorldDialog({ worldId: parseLocation(location).worldId || location });
+            openWorldDialog({
+                worldId: parseLocation(location).worldId || location
+            });
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to launch instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to launch instance.'
+            );
         }
     }
 
@@ -520,17 +743,28 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                     const users = getInstanceUsers(instance);
                     const worldId = getInstanceWorldId(instance);
                     return (
-                        <div key={`${location || getInstanceTitle(instance)}:${index}`} className="w-full">
+                        <div
+                            key={`${location || getInstanceTitle(instance)}:${index}`}
+                            className="w-full"
+                        >
                             <div className="flex flex-wrap items-center gap-2 text-sm">
                                 <Button
                                     type="button"
                                     variant="link"
                                     className="h-auto min-w-0 justify-start truncate p-0 text-left"
-                                    onClick={() => openWorldDialog({ worldId: worldId || location, title: getInstanceTitle(instance) || undefined })}>
+                                    onClick={() =>
+                                        openWorldDialog({
+                                            worldId: worldId || location,
+                                            title:
+                                                getInstanceTitle(instance) ||
+                                                undefined
+                                        })
+                                    }
+                                >
                                     {getInstanceTitle(instance) || 'World'}
                                 </Button>
                                 {location ? (
-                                    <span className="min-w-0 truncate text-xs text-muted-foreground">
+                                    <span className="text-muted-foreground min-w-0 truncate text-xs">
                                         <LocationWorld
                                             locationObject={{
                                                 ...instance,
@@ -539,18 +773,43 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                                                 location
                                             }}
                                             currentUserId={currentUserId}
-                                            worldDialogShortName={parsedLocation.shortName || ''}
-                                            grouphint={instance.groupName || instance.group?.name || ''}
-                                            instanceOwner={getInstanceOwnerId(instance)}
-                                            instanceOwnerName={getInstanceOwnerName(instance)}
-                                            playerCount={instance.playerCount ?? instance.userCount ?? instance.occupants ?? users.length}
-                                            capacity={instance.capacity ?? instance.ref?.capacity ?? undefined}
+                                            worldDialogShortName={
+                                                parsedLocation.shortName || ''
+                                            }
+                                            grouphint={
+                                                instance.groupName ||
+                                                instance.group?.name ||
+                                                ''
+                                            }
+                                            instanceOwner={getInstanceOwnerId(
+                                                instance
+                                            )}
+                                            instanceOwnerName={getInstanceOwnerName(
+                                                instance
+                                            )}
+                                            playerCount={
+                                                instance.playerCount ??
+                                                instance.userCount ??
+                                                instance.occupants ??
+                                                users.length
+                                            }
+                                            capacity={
+                                                instance.capacity ??
+                                                instance.ref?.capacity ??
+                                                undefined
+                                            }
                                             hint={getInstanceTitle(instance)}
                                         />
                                     </span>
                                 ) : null}
                                 {location ? (
-                                    <Button type="button" size="icon-sm" variant="ghost" aria-label="Launch instance" onClick={() => void launch(location)}>
+                                    <Button
+                                        type="button"
+                                        size="icon-sm"
+                                        variant="ghost"
+                                        aria-label="Launch instance"
+                                        onClick={() => void launch(location)}
+                                    >
                                         <PlayIcon data-icon="inline-start" />
                                     </Button>
                                 ) : null}
@@ -564,17 +823,53 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                                             variant="ghost"
                                             className="box-border h-auto w-44 justify-start p-1.5 text-left text-sm"
                                             onClick={() => {
-                                                const userId = user?.id || user?.userId || user?.user_id || user?.user?.id || user?.user?.userId;
+                                                const userId =
+                                                    user?.id ||
+                                                    user?.userId ||
+                                                    user?.user_id ||
+                                                    user?.user?.id ||
+                                                    user?.user?.userId;
                                                 if (userId) {
-                                                    openUserDialog({ userId, title: user?.displayName || user?.user?.displayName || undefined, seedData: user?.user || user });
+                                                    openUserDialog({
+                                                        userId,
+                                                        title:
+                                                            user?.displayName ||
+                                                            user?.user
+                                                                ?.displayName ||
+                                                            undefined,
+                                                        seedData:
+                                                            user?.user || user
+                                                    });
                                                 }
-                                            }}>
-                                            <img src={userImage(user, true, '64')} alt="" className="mr-2.5 size-9 shrink-0 rounded-full object-cover" />
+                                            }}
+                                        >
+                                            <img
+                                                src={userImage(
+                                                    user,
+                                                    true,
+                                                    '64'
+                                                )}
+                                                alt=""
+                                                className="mr-2.5 size-9 shrink-0 rounded-full object-cover"
+                                            />
                                             <span className="min-w-0 flex-1 overflow-hidden">
-                                                <span className="block truncate font-medium leading-5">
-                                                    {user?.displayName || user?.display_name || user?.username || user?.user?.displayName || user?.user?.username || 'User'}
+                                                <span className="block truncate leading-5 font-medium">
+                                                    {user?.displayName ||
+                                                        user?.display_name ||
+                                                        user?.username ||
+                                                        user?.user
+                                                            ?.displayName ||
+                                                        user?.user?.username ||
+                                                        'User'}
                                                 </span>
-                                                <span className="block truncate text-xs text-muted-foreground">{user?.location === 'traveling' ? 'traveling' : user?.status || user?.user?.status || ''}</span>
+                                                <span className="text-muted-foreground block truncate text-xs">
+                                                    {user?.location ===
+                                                    'traveling'
+                                                        ? 'traveling'
+                                                        : user?.status ||
+                                                          user?.user?.status ||
+                                                          ''}
+                                                </span>
                                             </span>
                                         </Button>
                                     ))}
@@ -598,14 +893,17 @@ const moderationTabs = [
 ];
 
 function moderationRowUserId(row) {
-    return row?.userId || row?.targetUserId || row?.user?.id || row?.actorId || '';
+    return (
+        row?.userId || row?.targetUserId || row?.user?.id || row?.actorId || ''
+    );
 }
 
 function moderationRowLabel(row) {
     if (!row || typeof row !== 'object') {
         return String(row ?? '—');
     }
-    return row?.user?.displayName ||
+    return (
+        row?.user?.displayName ||
         row?.displayName ||
         row?.targetDisplayName ||
         row?.actorDisplayName ||
@@ -613,29 +911,58 @@ function moderationRowLabel(row) {
         row?.targetUserId ||
         row?.actorId ||
         row?.id ||
-        '—';
+        '—'
+    );
 }
 
 function moderationRowSubtitle(row) {
     return [
         row?.roleIds?.length ? row.roleIds.join(', ') : '',
-        row?.action || row?.eventType || row?.type || row?.membershipStatus || '',
+        row?.action ||
+            row?.eventType ||
+            row?.type ||
+            row?.membershipStatus ||
+            '',
         row?.createdAt || row?.updatedAt || row?.joinedAt || ''
-    ].filter(Boolean).join(' | ');
+    ]
+        .filter(Boolean)
+        .join(' | ');
 }
 
 function moderationRowRoles(row, group) {
     const roles = roleNameMap(group);
-    const roleIds = Array.isArray(row?.roleIds) ? row.roleIds : Array.isArray(row?.user?.roleIds) ? row.user.roleIds : [];
-    return roleIds.map((roleId) => roles.get(roleId) || 'Role').filter(Boolean).join(', ');
+    const roleIds = Array.isArray(row?.roleIds)
+        ? row.roleIds
+        : Array.isArray(row?.user?.roleIds)
+          ? row.user.roleIds
+          : [];
+    return roleIds
+        .map((roleId) => roles.get(roleId) || 'Role')
+        .filter(Boolean)
+        .join(', ');
 }
 
 function moderationRowStatus(row) {
-    return row?.action || row?.eventType || row?.type || row?.membershipStatus || row?.visibility || '—';
+    return (
+        row?.action ||
+        row?.eventType ||
+        row?.type ||
+        row?.membershipStatus ||
+        row?.visibility ||
+        '—'
+    );
 }
 
 function moderationRowDate(row) {
-    return row?.createdAt || row?.created_at || row?.updatedAt || row?.updated_at || row?.joinedAt || row?.joined_at || '';
+    return (
+        row?.createdAt ||
+        row?.created_at ||
+        row?.updatedAt ||
+        row?.updated_at ||
+        row?.joinedAt ||
+        row?.joined_at ||
+        ''
+    );
 }
 
 function moderationRowSearchText(row, group) {
@@ -648,7 +975,10 @@ function moderationRowSearchText(row, group) {
         row?.description,
         row?.note,
         row?.managerNotes
-    ].filter(Boolean).join(' ').toLowerCase();
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
 }
 
 function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
@@ -692,33 +1022,65 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
 
         const request =
             activeTab === 'members'
-                ? groupProfileRepository.getAllGroupMembers({ groupId: group.id, endpoint })
+                ? groupProfileRepository.getAllGroupMembers({
+                      groupId: group.id,
+                      endpoint
+                  })
                 : activeTab === 'bans'
-                    ? groupProfileRepository.getAllGroupBans({ groupId: group.id, endpoint })
-                    : activeTab === 'invites'
-                        ? groupProfileRepository.getAllGroupInvites({ groupId: group.id, endpoint })
-                        : activeTab === 'requests'
-                            ? groupProfileRepository.getAllGroupJoinRequests({ groupId: group.id, endpoint, blocked: false })
-                            : activeTab === 'blocked'
-                                ? groupProfileRepository.getAllGroupJoinRequests({ groupId: group.id, endpoint, blocked: true })
-                                : groupProfileRepository.getAllGroupLogs({ groupId: group.id, endpoint });
+                  ? groupProfileRepository.getAllGroupBans({
+                        groupId: group.id,
+                        endpoint
+                    })
+                  : activeTab === 'invites'
+                    ? groupProfileRepository.getAllGroupInvites({
+                          groupId: group.id,
+                          endpoint
+                      })
+                    : activeTab === 'requests'
+                      ? groupProfileRepository.getAllGroupJoinRequests({
+                            groupId: group.id,
+                            endpoint,
+                            blocked: false
+                        })
+                      : activeTab === 'blocked'
+                        ? groupProfileRepository.getAllGroupJoinRequests({
+                              groupId: group.id,
+                              endpoint,
+                              blocked: true
+                          })
+                        : groupProfileRepository.getAllGroupLogs({
+                              groupId: group.id,
+                              endpoint
+                          });
 
         request
             .then((rows) => {
                 if (!active) {
                     return;
                 }
-                setRowsByTab((current) => ({ ...current, [activeTab]: Array.isArray(rows) ? rows : [] }));
-                setStatusByTab((current) => ({ ...current, [activeTab]: 'ready' }));
+                setRowsByTab((current) => ({
+                    ...current,
+                    [activeTab]: Array.isArray(rows) ? rows : []
+                }));
+                setStatusByTab((current) => ({
+                    ...current,
+                    [activeTab]: 'ready'
+                }));
             })
             .catch((error) => {
                 if (!active) {
                     return;
                 }
-                setStatusByTab((current) => ({ ...current, [activeTab]: 'error' }));
+                setStatusByTab((current) => ({
+                    ...current,
+                    [activeTab]: 'error'
+                }));
                 setErrorsByTab((current) => ({
                     ...current,
-                    [activeTab]: error instanceof Error ? error.message : 'Failed to load moderation data.'
+                    [activeTab]:
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to load moderation data.'
                 }));
             });
 
@@ -736,7 +1098,10 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
     });
     const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
     const currentPageIndex = Math.min(pageIndex, totalPages - 1);
-    const visibleRows = filteredRows.slice(currentPageIndex * pageSize, currentPageIndex * pageSize + pageSize);
+    const visibleRows = filteredRows.slice(
+        currentPageIndex * pageSize,
+        currentPageIndex * pageSize + pageSize
+    );
 
     function moderationActions(row) {
         const userId = moderationRowUserId(row);
@@ -753,7 +1118,9 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
             return [{ key: 'unban', label: 'Unban' }];
         }
         if (activeTab === 'invites') {
-            return [{ key: 'delete-invite', label: 'Delete', destructive: true }];
+            return [
+                { key: 'delete-invite', label: 'Delete', destructive: true }
+            ];
         }
         if (activeTab === 'requests') {
             return [
@@ -763,7 +1130,9 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
             ];
         }
         if (activeTab === 'blocked') {
-            return [{ key: 'delete-blocked', label: 'Delete', destructive: true }];
+            return [
+                { key: 'delete-blocked', label: 'Delete', destructive: true }
+            ];
         }
         return [];
     }
@@ -789,24 +1158,62 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
         setActionKey(nextActionKey);
         try {
             if (action.key === 'kick') {
-                await groupProfileRepository.kickGroupMember({ groupId: group.id, userId, endpoint });
+                await groupProfileRepository.kickGroupMember({
+                    groupId: group.id,
+                    userId,
+                    endpoint
+                });
             } else if (action.key === 'ban') {
-                await groupProfileRepository.banGroupMember({ groupId: group.id, userId, endpoint });
+                await groupProfileRepository.banGroupMember({
+                    groupId: group.id,
+                    userId,
+                    endpoint
+                });
             } else if (action.key === 'unban') {
-                await groupProfileRepository.unbanGroupMember({ groupId: group.id, userId, endpoint });
+                await groupProfileRepository.unbanGroupMember({
+                    groupId: group.id,
+                    userId,
+                    endpoint
+                });
             } else if (action.key === 'delete-invite') {
-                await groupProfileRepository.deleteSentGroupInvite({ groupId: group.id, userId, endpoint });
+                await groupProfileRepository.deleteSentGroupInvite({
+                    groupId: group.id,
+                    userId,
+                    endpoint
+                });
             } else if (action.key === 'accept-request') {
-                await groupProfileRepository.respondGroupJoinRequest({ groupId: group.id, userId, action: 'accept', endpoint });
+                await groupProfileRepository.respondGroupJoinRequest({
+                    groupId: group.id,
+                    userId,
+                    action: 'accept',
+                    endpoint
+                });
             } else if (action.key === 'reject-request') {
-                await groupProfileRepository.respondGroupJoinRequest({ groupId: group.id, userId, action: 'reject', endpoint });
+                await groupProfileRepository.respondGroupJoinRequest({
+                    groupId: group.id,
+                    userId,
+                    action: 'reject',
+                    endpoint
+                });
             } else if (action.key === 'block-request') {
-                await groupProfileRepository.respondGroupJoinRequest({ groupId: group.id, userId, action: 'reject', block: true, endpoint });
+                await groupProfileRepository.respondGroupJoinRequest({
+                    groupId: group.id,
+                    userId,
+                    action: 'reject',
+                    block: true,
+                    endpoint
+                });
             } else if (action.key === 'delete-blocked') {
-                await groupProfileRepository.deleteBlockedGroupRequest({ groupId: group.id, userId, endpoint });
+                await groupProfileRepository.deleteBlockedGroupRequest({
+                    groupId: group.id,
+                    userId,
+                    endpoint
+                });
             }
             setRowsByTab((current) => ({
-                [activeTab]: (current[activeTab] || []).filter((item) => moderationRowUserId(item) !== userId)
+                [activeTab]: (current[activeTab] || []).filter(
+                    (item) => moderationRowUserId(item) !== userId
+                )
             }));
             setStatusByTab({
                 [activeTab]: 'ready'
@@ -814,7 +1221,11 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
             setErrorsByTab({});
             toast.success(`${action.label} completed.`);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : `${action.label} failed.`);
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : `${action.label} failed.`
+            );
         } finally {
             setActionKey('');
         }
@@ -825,29 +1236,67 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
             <DialogContent className="max-w-[min(92vw,64rem)]">
                 <DialogHeader>
                     <DialogTitle>Moderation Tools</DialogTitle>
-                    <DialogDescription>{group.name || 'Group'}</DialogDescription>
+                    <DialogDescription>
+                        {group.name || 'Group'}
+                    </DialogDescription>
                 </DialogHeader>
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-0 gap-0">
-                    <TabsList variant="line" className="h-auto w-full justify-start overflow-x-auto rounded-none border-b px-0 pb-1">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={setActiveTab}
+                    className="min-h-0 gap-0"
+                >
+                    <TabsList
+                        variant="line"
+                        className="h-auto w-full justify-start overflow-x-auto rounded-none border-b px-0 pb-1"
+                    >
                         {moderationTabs.map((tab) => (
-                            <TabsTrigger key={tab.value} value={tab.value} className="flex-none rounded-none px-3">
+                            <TabsTrigger
+                                key={tab.value}
+                                value={tab.value}
+                                className="flex-none rounded-none px-3"
+                            >
                                 {tab.label}
                             </TabsTrigger>
                         ))}
                     </TabsList>
                     {moderationTabs.map((tab) => (
-                        <TabsContent key={tab.value} value={tab.value} className="m-0 max-h-[65vh] overflow-auto pt-4">
+                        <TabsContent
+                            key={tab.value}
+                            value={tab.value}
+                            className="m-0 max-h-[65vh] overflow-auto pt-4"
+                        >
                             <div className="mb-3 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2">
-                                    <Button type="button" size="sm" variant="outline" disabled={loading} onClick={() => setReloadToken((value) => value + 1)}>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={loading}
+                                        onClick={() =>
+                                            setReloadToken((value) => value + 1)
+                                        }
+                                    >
                                         <RefreshCwIcon data-icon="inline-start" />
                                         Refresh
                                     </Button>
-                                    <Button type="button" size="sm" variant="outline" disabled={!rows.length} onClick={() => downloadJsonFile(`${group.id}_${activeTab}.json`, rows)}>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={!rows.length}
+                                        onClick={() =>
+                                            downloadJsonFile(
+                                                `${group.id}_${activeTab}.json`,
+                                                rows
+                                            )
+                                        }
+                                    >
                                         <DownloadIcon data-icon="inline-start" />
                                         JSON
                                     </Button>
-                                    <span className="text-sm text-muted-foreground">{filteredRows.length}/{rows.length}</span>
+                                    <span className="text-muted-foreground text-sm">
+                                        {filteredRows.length}/{rows.length}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Input
@@ -859,83 +1308,201 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                         placeholder={`Search ${tab.label.toLowerCase()}`}
                                         className="h-8 w-64"
                                     />
-                                    <Select value={String(pageSize)} onValueChange={(value) => {
-                                        setPageSize(Number.parseInt(value, 10) || 25);
-                                        setPageIndex(0);
-                                    }}>
-                                        <SelectTrigger size="sm" className="w-24"><SelectValue /></SelectTrigger>
+                                    <Select
+                                        value={String(pageSize)}
+                                        onValueChange={(value) => {
+                                            setPageSize(
+                                                Number.parseInt(value, 10) || 25
+                                            );
+                                            setPageIndex(0);
+                                        }}
+                                    >
+                                        <SelectTrigger
+                                            size="sm"
+                                            className="w-24"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
                                         <SelectContent>
                                             <SelectGroup>
-                                                {[10, 25, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                                {[10, 25, 50, 100].map(
+                                                    (size) => (
+                                                        <SelectItem
+                                                            key={size}
+                                                            value={String(size)}
+                                                        >
+                                                            {size}
+                                                        </SelectItem>
+                                                    )
+                                                )}
                                             </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </div>
-                            {loading ? <EntityBlank>Loading...</EntityBlank> : null}
+                            {loading ? (
+                                <EntityBlank>Loading...</EntityBlank>
+                            ) : null}
                             {error ? <EntityBlank>{error}</EntityBlank> : null}
                             {!loading && !error ? (
                                 <div className="overflow-auto rounded-md border">
                                     <table className="w-full text-left text-sm">
-                                        <thead className="sticky top-0 bg-background">
+                                        <thead className="bg-background sticky top-0">
                                             <tr className="border-b">
-                                                <th className="w-56 px-3 py-2">User</th>
-                                                <th className="px-3 py-2">Roles / Description</th>
-                                                <th className="w-44 px-3 py-2">Status</th>
-                                                <th className="w-44 px-3 py-2">Date</th>
-                                                <th className="w-48 px-3 py-2 text-right">Actions</th>
+                                                <th className="w-56 px-3 py-2">
+                                                    User
+                                                </th>
+                                                <th className="px-3 py-2">
+                                                    Roles / Description
+                                                </th>
+                                                <th className="w-44 px-3 py-2">
+                                                    Status
+                                                </th>
+                                                <th className="w-44 px-3 py-2">
+                                                    Date
+                                                </th>
+                                                <th className="w-48 px-3 py-2 text-right">
+                                                    Actions
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {visibleRows.length ? visibleRows.map((row, index) => {
-                                                const userId = moderationRowUserId(row);
-                                                const label = moderationRowLabel(row);
-                                                const date = moderationRowDate(row);
-                                                const actions = moderationActions(row);
-                                                return (
-                                                    <tr key={`${label}:${date}:${index}`} className="border-b last:border-b-0">
-                                                        <td className="px-3 py-2 align-top">
-                                                            {userId ? (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="link"
-                                                                    className="h-auto max-w-52 justify-start truncate p-0 text-left font-medium"
-                                                                    onClick={() => openUserDialog({ userId, title: label, seedData: row?.user || null })}>
-                                                                    {label}
-                                                                </Button>
-                                                            ) : (
-                                                                <span className="font-medium">{label}</span>
-                                                            )}
-                                                            <div className="truncate font-mono text-xs text-muted-foreground">{userId || row?.id || '—'}</div>
-                                                        </td>
-                                                        <td className="px-3 py-2 align-top text-xs text-muted-foreground">
-                                                            {moderationRowRoles(row, group) || row?.description || row?.note || row?.managerNotes || moderationRowSubtitle(row) || '—'}
-                                                        </td>
-                                                        <td className="px-3 py-2 align-top text-xs">{moderationRowStatus(row)}</td>
-                                                        <td className="px-3 py-2 align-top text-xs text-muted-foreground">{date ? formatDateFilter(date, 'long') : '—'}</td>
-                                                        <td className="px-3 py-2 align-top">
-                                                            <div className="flex justify-end gap-2">
-                                                                {actions.map((action) => {
-                                                                    const nextActionKey = `${activeTab}:${action.key}:${userId}`;
-                                                                    return (
+                                            {visibleRows.length ? (
+                                                visibleRows.map(
+                                                    (row, index) => {
+                                                        const userId =
+                                                            moderationRowUserId(
+                                                                row
+                                                            );
+                                                        const label =
+                                                            moderationRowLabel(
+                                                                row
+                                                            );
+                                                        const date =
+                                                            moderationRowDate(
+                                                                row
+                                                            );
+                                                        const actions =
+                                                            moderationActions(
+                                                                row
+                                                            );
+                                                        return (
+                                                            <tr
+                                                                key={`${label}:${date}:${index}`}
+                                                                className="border-b last:border-b-0"
+                                                            >
+                                                                <td className="px-3 py-2 align-top">
+                                                                    {userId ? (
                                                                         <Button
-                                                                            key={action.key}
                                                                             type="button"
-                                                                            size="sm"
-                                                                            variant={action.destructive ? 'outline' : 'secondary'}
-                                                                            disabled={Boolean(actionKey)}
-                                                                            onClick={() => void runModerationAction(action, row)}>
-                                                                            {actionKey === nextActionKey ? '...' : action.label}
+                                                                            variant="link"
+                                                                            className="h-auto max-w-52 justify-start truncate p-0 text-left font-medium"
+                                                                            onClick={() =>
+                                                                                openUserDialog(
+                                                                                    {
+                                                                                        userId,
+                                                                                        title: label,
+                                                                                        seedData:
+                                                                                            row?.user ||
+                                                                                            null
+                                                                                    }
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                label
+                                                                            }
                                                                         </Button>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            }) : (
+                                                                    ) : (
+                                                                        <span className="font-medium">
+                                                                            {
+                                                                                label
+                                                                            }
+                                                                        </span>
+                                                                    )}
+                                                                    <div className="text-muted-foreground truncate font-mono text-xs">
+                                                                        {userId ||
+                                                                            row?.id ||
+                                                                            '—'}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="text-muted-foreground px-3 py-2 align-top text-xs">
+                                                                    {moderationRowRoles(
+                                                                        row,
+                                                                        group
+                                                                    ) ||
+                                                                        row?.description ||
+                                                                        row?.note ||
+                                                                        row?.managerNotes ||
+                                                                        moderationRowSubtitle(
+                                                                            row
+                                                                        ) ||
+                                                                        '—'}
+                                                                </td>
+                                                                <td className="px-3 py-2 align-top text-xs">
+                                                                    {moderationRowStatus(
+                                                                        row
+                                                                    )}
+                                                                </td>
+                                                                <td className="text-muted-foreground px-3 py-2 align-top text-xs">
+                                                                    {date
+                                                                        ? formatDateFilter(
+                                                                              date,
+                                                                              'long'
+                                                                          )
+                                                                        : '—'}
+                                                                </td>
+                                                                <td className="px-3 py-2 align-top">
+                                                                    <div className="flex justify-end gap-2">
+                                                                        {actions.map(
+                                                                            (
+                                                                                action
+                                                                            ) => {
+                                                                                const nextActionKey = `${activeTab}:${action.key}:${userId}`;
+                                                                                return (
+                                                                                    <Button
+                                                                                        key={
+                                                                                            action.key
+                                                                                        }
+                                                                                        type="button"
+                                                                                        size="sm"
+                                                                                        variant={
+                                                                                            action.destructive
+                                                                                                ? 'outline'
+                                                                                                : 'secondary'
+                                                                                        }
+                                                                                        disabled={Boolean(
+                                                                                            actionKey
+                                                                                        )}
+                                                                                        onClick={() =>
+                                                                                            void runModerationAction(
+                                                                                                action,
+                                                                                                row
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        {actionKey ===
+                                                                                        nextActionKey
+                                                                                            ? '...'
+                                                                                            : action.label}
+                                                                                    </Button>
+                                                                                );
+                                                                            }
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    }
+                                                )
+                                            ) : (
                                                 <tr>
-                                                    <td colSpan={5} className="px-3 py-8 text-center text-sm text-muted-foreground">No rows.</td>
+                                                    <td
+                                                        colSpan={5}
+                                                        className="text-muted-foreground px-3 py-8 text-center text-sm"
+                                                    >
+                                                        No rows.
+                                                    </td>
                                                 </tr>
                                             )}
                                         </tbody>
@@ -944,10 +1511,43 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                             ) : null}
                             {!loading && !error ? (
                                 <div className="mt-3 flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Page {currentPageIndex + 1} / {totalPages}</span>
+                                    <span className="text-muted-foreground text-sm">
+                                        Page {currentPageIndex + 1} /{' '}
+                                        {totalPages}
+                                    </span>
                                     <div className="flex gap-2">
-                                        <Button type="button" size="sm" variant="outline" disabled={currentPageIndex <= 0} onClick={() => setPageIndex((value) => Math.max(0, value - 1))}>Previous</Button>
-                                        <Button type="button" size="sm" variant="outline" disabled={currentPageIndex >= totalPages - 1} onClick={() => setPageIndex((value) => Math.min(totalPages - 1, value + 1))}>Next</Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={currentPageIndex <= 0}
+                                            onClick={() =>
+                                                setPageIndex((value) =>
+                                                    Math.max(0, value - 1)
+                                                )
+                                            }
+                                        >
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={
+                                                currentPageIndex >=
+                                                totalPages - 1
+                                            }
+                                            onClick={() =>
+                                                setPageIndex((value) =>
+                                                    Math.min(
+                                                        totalPages - 1,
+                                                        value + 1
+                                                    )
+                                                )
+                                            }
+                                        >
+                                            Next
+                                        </Button>
                                     </div>
                                 </div>
                             ) : null}
@@ -959,7 +1559,16 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
     );
 }
 
-function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, endpoint = '', submitting = false, onSubmit }) {
+function GroupPostEditorDialog({
+    open,
+    onOpenChange,
+    form,
+    onFormChange,
+    group,
+    endpoint = '',
+    submitting = false,
+    onSubmit
+}) {
     const [galleryRows, setGalleryRows] = useState([]);
     const [galleryStatus, setGalleryStatus] = useState('idle');
     const [galleryError, setGalleryError] = useState('');
@@ -974,11 +1583,16 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
         setGalleryStatus('running');
         setGalleryError('');
         try {
-            const response = await mediaRepository.getFileList({ n: 100, tag: 'gallery' }, { endpoint });
+            const response = await mediaRepository.getFileList(
+                { n: 100, tag: 'gallery' },
+                { endpoint }
+            );
             if (galleryRequestIdRef.current !== requestId) {
                 return;
             }
-            setGalleryRows(Array.isArray(response.json) ? [...response.json].reverse() : []);
+            setGalleryRows(
+                Array.isArray(response.json) ? [...response.json].reverse() : []
+            );
             setGalleryStatus('ready');
         } catch (error) {
             if (galleryRequestIdRef.current !== requestId) {
@@ -986,7 +1600,11 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
             }
             setGalleryRows([]);
             setGalleryStatus('error');
-            setGalleryError(error instanceof Error ? error.message : 'Failed to load gallery images.');
+            setGalleryError(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load gallery images.'
+            );
         }
     }
 
@@ -1030,8 +1648,12 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{isEdit ? 'Edit group post' : 'Create group post'}</DialogTitle>
-                    <DialogDescription>{group?.name || 'Group'}</DialogDescription>
+                    <DialogTitle>
+                        {isEdit ? 'Edit group post' : 'Create group post'}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {group?.name || 'Group'}
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1.5">
@@ -1039,7 +1661,9 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                         <Input
                             id="group-post-title"
                             value={form.title}
-                            onChange={(event) => updateForm({ title: event.target.value })}
+                            onChange={(event) =>
+                                updateForm({ title: event.target.value })
+                            }
                             disabled={submitting}
                         />
                     </div>
@@ -1049,20 +1673,31 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                             id="group-post-text"
                             rows={4}
                             value={form.text}
-                            onChange={(event) => updateForm({ text: event.target.value })}
+                            onChange={(event) =>
+                                updateForm({ text: event.target.value })
+                            }
                             disabled={submitting}
                             className="resize-none"
                         />
                     </div>
                     {!isEdit ? (
-                        <Field orientation="horizontal" data-disabled={submitting}>
+                        <Field
+                            orientation="horizontal"
+                            data-disabled={submitting}
+                        >
                             <Checkbox
                                 id="group-post-send-notification"
                                 checked={Boolean(form.sendNotification)}
                                 disabled={submitting}
-                                onCheckedChange={(checked) => updateForm({ sendNotification: checked === true })}
+                                onCheckedChange={(checked) =>
+                                    updateForm({
+                                        sendNotification: checked === true
+                                    })
+                                }
                             />
-                            <FieldLabel htmlFor="group-post-send-notification">Send notification</FieldLabel>
+                            <FieldLabel htmlFor="group-post-send-notification">
+                                Send notification
+                            </FieldLabel>
                         </Field>
                     ) : null}
                     <div className="flex flex-col gap-1.5">
@@ -1073,10 +1708,17 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                                     key={visibility}
                                     type="button"
                                     size="sm"
-                                    variant={form.visibility === visibility ? 'default' : 'outline'}
+                                    variant={
+                                        form.visibility === visibility
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     disabled={submitting}
-                                    onClick={() => updateForm({ visibility })}>
-                                    {visibility === 'public' ? 'Public' : 'Group'}
+                                    onClick={() => updateForm({ visibility })}
+                                >
+                                    {visibility === 'public'
+                                        ? 'Public'
+                                        : 'Group'}
                                 </Button>
                             ))}
                         </div>
@@ -1085,23 +1727,44 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                         <div className="flex flex-col gap-1.5">
                             <Label>Roles</Label>
                             {roles.length ? (
-                                <FieldGroup data-slot="checkbox-group" className="grid max-h-48 gap-2 overflow-auto rounded-md border p-2 sm:grid-cols-2">
+                                <FieldGroup
+                                    data-slot="checkbox-group"
+                                    className="grid max-h-48 gap-2 overflow-auto rounded-md border p-2 sm:grid-cols-2"
+                                >
                                     {roles.map((role) => (
-                                        <Field key={role.id || role.name} orientation="horizontal" data-disabled={submitting || !role.id}>
+                                        <Field
+                                            key={role.id || role.name}
+                                            orientation="horizontal"
+                                            data-disabled={
+                                                submitting || !role.id
+                                            }
+                                        >
                                             <Checkbox
                                                 id={`group-post-role-${role.id || role.name}`}
-                                                checked={roleIds.includes(role.id)}
-                                                disabled={submitting || !role.id}
-                                                onCheckedChange={(checked) => toggleRole(role.id, checked === true)}
+                                                checked={roleIds.includes(
+                                                    role.id
+                                                )}
+                                                disabled={
+                                                    submitting || !role.id
+                                                }
+                                                onCheckedChange={(checked) =>
+                                                    toggleRole(
+                                                        role.id,
+                                                        checked === true
+                                                    )
+                                                }
                                             />
-                                            <FieldLabel htmlFor={`group-post-role-${role.id || role.name}`} className="min-w-0 truncate">
+                                            <FieldLabel
+                                                htmlFor={`group-post-role-${role.id || role.name}`}
+                                                className="min-w-0 truncate"
+                                            >
                                                 {role.name || role.id}
                                             </FieldLabel>
                                         </Field>
                                     ))}
                                 </FieldGroup>
                             ) : (
-                                <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                                <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
                                     No roles.
                                 </div>
                             )}
@@ -1113,14 +1776,28 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                             <Input
                                 id="group-post-image-id"
                                 value={form.imageId || ''}
-                                onChange={(event) => updateForm({ imageId: event.target.value })}
+                                onChange={(event) =>
+                                    updateForm({ imageId: event.target.value })
+                                }
                                 disabled={submitting}
                                 placeholder="Gallery image id"
                             />
-                            <Button type="button" variant="outline" disabled={submitting || !form.imageId} onClick={() => updateForm({ imageId: '' })}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={submitting || !form.imageId}
+                                onClick={() => updateForm({ imageId: '' })}
+                            >
                                 Clear
                             </Button>
-                            <Button type="button" variant="outline" disabled={submitting || galleryStatus === 'running'} onClick={() => void loadGalleryRows()}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={
+                                    submitting || galleryStatus === 'running'
+                                }
+                                onClick={() => void loadGalleryRows()}
+                            >
                                 Refresh
                             </Button>
                         </div>
@@ -1134,27 +1811,60 @@ function GroupPostEditorDialog({ open, onOpenChange, form, onFormChange, group, 
                                         disabled={submitting}
                                         className={cn(
                                             'h-auto w-full min-w-0 justify-start gap-2 p-2 text-left text-sm',
-                                            form.imageId === option.id && 'border-primary'
+                                            form.imageId === option.id &&
+                                                'border-primary'
                                         )}
-                                        onClick={() => updateForm({ imageId: option.id })}>
-                                        {option.image ? <img src={option.image} alt="" className="size-12 shrink-0 rounded object-cover" /> : <ImageIcon data-icon="inline-start" className="size-12 shrink-0 rounded border p-3 text-muted-foreground" />}
+                                        onClick={() =>
+                                            updateForm({ imageId: option.id })
+                                        }
+                                    >
+                                        {option.image ? (
+                                            <img
+                                                src={option.image}
+                                                alt=""
+                                                className="size-12 shrink-0 rounded object-cover"
+                                            />
+                                        ) : (
+                                            <ImageIcon
+                                                data-icon="inline-start"
+                                                className="text-muted-foreground size-12 shrink-0 rounded border p-3"
+                                            />
+                                        )}
                                         <span className="min-w-0">
-                                            <span className="block truncate font-medium">{option.label}</span>
-                                            <span className="block truncate font-mono text-xs text-muted-foreground">{option.id}</span>
+                                            <span className="block truncate font-medium">
+                                                {option.label}
+                                            </span>
+                                            <span className="text-muted-foreground block truncate font-mono text-xs">
+                                                {option.id}
+                                            </span>
                                         </span>
                                     </Button>
                                 ))}
                             </div>
                         ) : (
-                            <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-                                {galleryStatus === 'running' ? 'Loading gallery images...' : galleryError || 'No gallery images loaded.'}
+                            <div className="text-muted-foreground rounded-md border border-dashed p-3 text-xs">
+                                {galleryStatus === 'running'
+                                    ? 'Loading gallery images...'
+                                    : galleryError ||
+                                      'No gallery images loaded.'}
                             </div>
                         )}
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button type="button" variant="secondary" disabled={submitting} onClick={() => onOpenChange?.(false)}>Cancel</Button>
-                    <Button type="button" disabled={submitting} onClick={() => onSubmit?.(form)}>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={submitting}
+                        onClick={() => onOpenChange?.(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => onSubmit?.(form)}
+                    >
                         {isEdit ? 'Edit Post' : 'Create Post'}
                     </Button>
                 </DialogFooter>
@@ -1196,7 +1906,9 @@ export function GroupDialogTabbedView({
     onVisibility,
     onBlock
 }) {
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const prompt = useModalStore((state) => state.prompt);
@@ -1217,7 +1929,10 @@ export function GroupDialogTabbedView({
     const [postEditor, setPostEditor] = useState(null);
     const [postEditorSubmitting, setPostEditorSubmitting] = useState(false);
     const gallerySignature = Array.isArray(group.galleries)
-        ? group.galleries.map((gallery) => gallery?.id || '').filter(Boolean).join('|')
+        ? group.galleries
+              .map((gallery) => gallery?.id || '')
+              .filter(Boolean)
+              .join('|')
         : '';
     const loadContextRef = useRef({
         endpoint: currentEndpoint,
@@ -1231,37 +1946,56 @@ export function GroupDialogTabbedView({
         { value: 'photos', label: 'Photos' },
         { value: 'json', label: 'JSON' }
     ];
-    const posts = remoteStatus.posts === 'ready'
-        ? remoteData.posts
-        : firstArray(group.posts, group.announcement?.id ? [group.announcement] : []);
-    const members = remoteStatus.members === 'ready'
-        ? remoteData.members
-        : firstArray(group.members);
-    const photos = remoteStatus.photos === 'ready'
-        ? remoteData.photos
-        : firstArray(group.gallery, group.photos);
+    const posts =
+        remoteStatus.posts === 'ready'
+            ? remoteData.posts
+            : firstArray(
+                  group.posts,
+                  group.announcement?.id ? [group.announcement] : []
+              );
+    const members =
+        remoteStatus.members === 'ready'
+            ? remoteData.members
+            : firstArray(group.members);
+    const photos =
+        remoteStatus.photos === 'ready'
+            ? remoteData.photos
+            : firstArray(group.gallery, group.photos);
     const isPrivateGroup = group.privacy === 'private';
     const languageRows = normalizeGroupLanguages(group);
     const canSetVisibility = group.privacy === 'default';
     const isGroupOwner = group.ownerId === currentUserId;
-    const canManagePosts = isGroupOwner || hasGroupPermission(group, 'group-announcement-manage');
-    const canInviteToGroup = isGroupOwner || hasGroupPermission(group, 'group-invites-manage');
+    const canManagePosts =
+        isGroupOwner || hasGroupPermission(group, 'group-announcement-manage');
+    const canInviteToGroup =
+        isGroupOwner || hasGroupPermission(group, 'group-invites-manage');
     const canModerateGroup = hasGroupModerationPermission(group);
     const filteredPosts = posts.filter((post) => {
         const query = search.posts.trim().toLowerCase();
         if (!query) {
             return true;
         }
-        return [post?.title, post?.text, post?.authorId]
-            .some((value) => String(value || '').toLowerCase().includes(query));
+        return [post?.title, post?.text, post?.authorId].some((value) =>
+            String(value || '')
+                .toLowerCase()
+                .includes(query)
+        );
     });
     const filteredMembers = members.filter((member) => {
         const query = search.members.trim().toLowerCase();
         if (!query) {
             return true;
         }
-        return [member?.user?.displayName, member?.displayName, member?.userId, member?.user?.id]
-            .some((value) => String(value || '').toLowerCase().includes(query));
+        return [
+            member?.user?.displayName,
+            member?.displayName,
+            member?.userId,
+            member?.user?.id
+        ].some((value) =>
+            String(value || '')
+                .toLowerCase()
+                .includes(query)
+        );
     });
 
     useEffect(() => {
@@ -1308,15 +2042,23 @@ export function GroupDialogTabbedView({
         return (
             loadContextRef.current.endpoint === context.endpoint &&
             loadContextRef.current.groupId === context.groupId &&
-            (context.tab !== 'photos' || loadContextRef.current.gallerySignature === context.gallerySignature) &&
+            (context.tab !== 'photos' ||
+                loadContextRef.current.gallerySignature ===
+                    context.gallerySignature) &&
             (context.tab !== 'members' ||
                 (loadContextRef.current.memberSort === context.memberSort &&
-                    loadContextRef.current.memberRoleId === context.memberRoleId))
+                    loadContextRef.current.memberRoleId ===
+                        context.memberRoleId))
         );
     }
 
     async function loadTab(tab, { force = false } = {}) {
-        if (!group.id || (!force && (remoteStatus[tab] === 'running' || remoteStatus[tab] === 'ready'))) {
+        if (
+            !group.id ||
+            (!force &&
+                (remoteStatus[tab] === 'running' ||
+                    remoteStatus[tab] === 'ready'))
+        ) {
             return;
         }
         if (!['posts', 'members', 'photos'].includes(tab)) {
@@ -1357,18 +2099,21 @@ export function GroupDialogTabbedView({
                     force
                 });
             } else if (tab === 'photos') {
-                const galleries = Array.isArray(group.galleries) ? group.galleries : [];
+                const galleries = Array.isArray(group.galleries)
+                    ? group.galleries
+                    : [];
                 const galleryResults = await Promise.allSettled(
                     galleries.map(async (gallery) => {
                         if (!gallery?.id) {
                             return [];
                         }
-                        const entries = await groupProfileRepository.getAllGroupGallery({
-                            groupId: group.id,
-                            galleryId: gallery.id,
-                            endpoint: currentEndpoint,
-                            force
-                        });
+                        const entries =
+                            await groupProfileRepository.getAllGroupGallery({
+                                groupId: group.id,
+                                galleryId: gallery.id,
+                                endpoint: currentEndpoint,
+                                force
+                            });
                         return entries.map((entry) => ({
                             ...entry,
                             $galleryId: gallery.id,
@@ -1392,7 +2137,10 @@ export function GroupDialogTabbedView({
             setRemoteStatus((current) => ({ ...current, [tab]: 'error' }));
             setRemoteErrors((current) => ({
                 ...current,
-                [tab]: error instanceof Error ? error.message : 'Failed to load tab data.'
+                [tab]:
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load tab data.'
             }));
         }
     }
@@ -1404,7 +2152,14 @@ export function GroupDialogTabbedView({
 
     useEffect(() => {
         void loadTab(activeTab);
-    }, [activeTab, currentEndpoint, gallerySignature, group.id, memberRoleId, memberSort]);
+    }, [
+        activeTab,
+        currentEndpoint,
+        gallerySignature,
+        group.id,
+        memberRoleId,
+        memberSort
+    ]);
 
     useEffect(() => {
         if (activeTab === 'members') {
@@ -1451,14 +2206,22 @@ export function GroupDialogTabbedView({
             setRemoteStatus((current) => ({ ...current, members: 'error' }));
             setRemoteErrors((current) => ({
                 ...current,
-                members: error instanceof Error ? error.message : 'Failed to load members.'
+                members:
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load members.'
             }));
         }
     }
 
-    const groupUrl = group.url || (group.id ? `https://vrchat.com/home/group/${group.id}` : '');
+    const groupUrl =
+        group.url ||
+        (group.id ? `https://vrchat.com/home/group/${group.id}` : '');
     const groupTitle = group.name || 'Group';
-    const ownerLabel = ownerDisplayName && ownerDisplayName !== group.ownerId ? ownerDisplayName : '';
+    const ownerLabel =
+        ownerDisplayName && ownerDisplayName !== group.ownerId
+            ? ownerDisplayName
+            : '';
 
     async function copyGroupText(text, label) {
         await copyTextToClipboard(text);
@@ -1491,7 +2254,10 @@ export function GroupDialogTabbedView({
 
         setPostEditorSubmitting(true);
         try {
-            const roleIds = form.visibility === 'group' && Array.isArray(form.roleIds) ? form.roleIds : [];
+            const roleIds =
+                form.visibility === 'group' && Array.isArray(form.roleIds)
+                    ? form.roleIds
+                    : [];
             if (form.mode === 'edit') {
                 await groupProfileRepository.editGroupPost({
                     groupId: group.id,
@@ -1525,9 +2291,17 @@ export function GroupDialogTabbedView({
             lastGroupDialogTab = 'posts';
             setActiveTab('posts');
             setPostEditor(null);
-            toast.success(form.mode === 'edit' ? 'Group post updated.' : 'Group post created.');
+            toast.success(
+                form.mode === 'edit'
+                    ? 'Group post updated.'
+                    : 'Group post created.'
+            );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to save group post.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to save group post.'
+            );
         } finally {
             setPostEditorSubmitting(false);
         }
@@ -1552,7 +2326,11 @@ export function GroupDialogTabbedView({
             });
             toast.success('Group invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send group invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send group invite.'
+            );
         }
     }
 
@@ -1592,7 +2370,11 @@ export function GroupDialogTabbedView({
             }));
             toast.success('Group post deleted.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete group post.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete group post.'
+            );
         }
     }
 
@@ -1602,12 +2384,32 @@ export function GroupDialogTabbedView({
                 imageUrl={iconUrl}
                 imageAlt={group.name || 'Group'}
                 imageClassName="size-32"
-                imagePlaceholder={<UsersIcon className="size-8 text-muted-foreground" />}
-                onImageClick={iconUrl ? () => openImagePreview({ url: iconUrl, title: groupTitle }) : null}
-                titlePrefix={isGroupOwner ? <span className="shrink-0">👑</span> : null}
+                imagePlaceholder={
+                    <UsersIcon className="text-muted-foreground size-8" />
+                }
+                onImageClick={
+                    iconUrl
+                        ? () =>
+                              openImagePreview({
+                                  url: iconUrl,
+                                  title: groupTitle
+                              })
+                        : null
+                }
+                titlePrefix={
+                    isGroupOwner ? <span className="shrink-0">👑</span> : null
+                }
                 title={groupTitle}
-                onTitleClick={group.name ? () => void copyGroupText(group.name, 'Group name') : undefined}
-                subtitle={group.shortCode && group.discriminator ? `${group.shortCode}.${group.discriminator}` : group.url || ''}
+                onTitleClick={
+                    group.name
+                        ? () => void copyGroupText(group.name, 'Group name')
+                        : undefined
+                }
+                subtitle={
+                    group.shortCode && group.discriminator
+                        ? `${group.shortCode}.${group.discriminator}`
+                        : group.url || ''
+                }
                 description={group.description}
                 detail={detail}
                 badges={
@@ -1617,95 +2419,282 @@ export function GroupDialogTabbedView({
                                 type="button"
                                 variant="outline"
                                 size="xs"
-                                onClick={() => openUserDialog({
-                                    userId: group.ownerId,
-                                    title: ownerLabel || undefined,
-                                    seedData: ownerLabel
-                                        ? { id: group.ownerId, displayName: ownerLabel }
-                                        : null
-                                })}>
+                                onClick={() =>
+                                    openUserDialog({
+                                        userId: group.ownerId,
+                                        title: ownerLabel || undefined,
+                                        seedData: ownerLabel
+                                            ? {
+                                                  id: group.ownerId,
+                                                  displayName: ownerLabel
+                                              }
+                                            : null
+                                    })
+                                }
+                            >
                                 <UserIcon data-icon="inline-start" />
                                 {ownerLabel || 'Owner'}
                             </Button>
                         ) : null}
                         {languageRows.map((language) => (
-                            <Badge key={`${language.key}:${language.value}`} variant="outline" title={`${language.value || language.key} (${language.key})`}>
-                                {languageMappings[String(language.key).toLowerCase()] ? String(language.key).toUpperCase() : (language.value || language.key)}
+                            <Badge
+                                key={`${language.key}:${language.value}`}
+                                variant="outline"
+                                title={`${language.value || language.key} (${language.key})`}
+                            >
+                                {languageMappings[
+                                    String(language.key).toLowerCase()
+                                ]
+                                    ? String(language.key).toUpperCase()
+                                    : language.value || language.key}
                             </Badge>
                         ))}
-                        {group.privacy ? <Badge variant="outline"><ShieldIcon data-icon="inline-start" />{group.privacy}</Badge> : null}
-                        {group.membershipStatus ? <Badge variant="secondary">{group.membershipStatus}</Badge> : null}
-                        {group.isVerified ? <Badge><BadgeCheckIcon data-icon="inline-start" />Verified</Badge> : null}
-                        <Badge variant="outline"><UsersIcon data-icon="inline-start" />{group.memberCount} members</Badge>
-                        {group.onlineMemberCount > 0 ? <Badge variant="outline"><UsersIcon data-icon="inline-start" />{group.onlineMemberCount} online</Badge> : null}
+                        {group.privacy ? (
+                            <Badge variant="outline">
+                                <ShieldIcon data-icon="inline-start" />
+                                {group.privacy}
+                            </Badge>
+                        ) : null}
+                        {group.membershipStatus ? (
+                            <Badge variant="secondary">
+                                {group.membershipStatus}
+                            </Badge>
+                        ) : null}
+                        {group.isVerified ? (
+                            <Badge>
+                                <BadgeCheckIcon data-icon="inline-start" />
+                                Verified
+                            </Badge>
+                        ) : null}
+                        <Badge variant="outline">
+                            <UsersIcon data-icon="inline-start" />
+                            {group.memberCount} members
+                        </Badge>
+                        {group.onlineMemberCount > 0 ? (
+                            <Badge variant="outline">
+                                <UsersIcon data-icon="inline-start" />
+                                {group.onlineMemberCount} online
+                            </Badge>
+                        ) : null}
                     </>
                 }
                 actions={
                     <>
                         {memberStatus === 'requested' ? (
-                            <Button type="button" size="icon-lg" variant="outline" className="rounded-full" aria-label="Cancel join request" disabled={actionStatus === 'cancel-request'} onClick={onCancelRequest}>
+                            <Button
+                                type="button"
+                                size="icon-lg"
+                                variant="outline"
+                                className="rounded-full"
+                                aria-label="Cancel join request"
+                                disabled={actionStatus === 'cancel-request'}
+                                onClick={onCancelRequest}
+                            >
                                 <XIcon data-icon="inline-start" />
                             </Button>
                         ) : !isMember ? (
-                            <Button type="button" size="icon-lg" className="rounded-full" aria-label="Join group" disabled={!canJoin || actionStatus === 'join'} onClick={onJoin}>
+                            <Button
+                                type="button"
+                                size="icon-lg"
+                                className="rounded-full"
+                                aria-label="Join group"
+                                disabled={!canJoin || actionStatus === 'join'}
+                                onClick={onJoin}
+                            >
                                 <LogInIcon data-icon="inline-start" />
                             </Button>
                         ) : null}
                         <EntityActionDropdown busy={actionStatus !== 'idle'}>
-                            <EntityActionItem icon={RefreshCwIcon} disabled={actionStatus === 'refresh'} onSelect={onRefresh}>Refresh</EntityActionItem>
+                            <EntityActionItem
+                                icon={RefreshCwIcon}
+                                disabled={actionStatus === 'refresh'}
+                                onSelect={onRefresh}
+                            >
+                                Refresh
+                            </EntityActionItem>
                             {groupUrl ? (
                                 <>
-                                    <EntityActionItem icon={Share2Icon} onSelect={() => void copyGroupText(groupUrl, 'Group URL')}>Share / Copy URL</EntityActionItem>
-                                    <EntityActionItem icon={ExternalLinkIcon} onSelect={() => openExternalLink(groupUrl)}>Open Group Page</EntityActionItem>
-                                    <EntityActionItem icon={CopyIcon} onSelect={() => void copyGroupText(group.id, 'Group ID')}>Copy Group ID</EntityActionItem>
+                                    <EntityActionItem
+                                        icon={Share2Icon}
+                                        onSelect={() =>
+                                            void copyGroupText(
+                                                groupUrl,
+                                                'Group URL'
+                                            )
+                                        }
+                                    >
+                                        Share / Copy URL
+                                    </EntityActionItem>
+                                    <EntityActionItem
+                                        icon={ExternalLinkIcon}
+                                        onSelect={() =>
+                                            openExternalLink(groupUrl)
+                                        }
+                                    >
+                                        Open Group Page
+                                    </EntityActionItem>
+                                    <EntityActionItem
+                                        icon={CopyIcon}
+                                        onSelect={() =>
+                                            void copyGroupText(
+                                                group.id,
+                                                'Group ID'
+                                            )
+                                        }
+                                    >
+                                        Copy Group ID
+                                    </EntityActionItem>
                                 </>
                             ) : null}
                             {isMember ? (
                                 <>
                                     <EntityActionSeparator />
-                                    <EntityActionItem icon={ShieldIcon} disabled={actionStatus === 'represent' || isPrivateGroup} onSelect={() => onRepresent(!isRepresenting)}>
-                                        {isRepresenting ? 'Unrepresent Group' : 'Represent Group'}
+                                    <EntityActionItem
+                                        icon={ShieldIcon}
+                                        disabled={
+                                            actionStatus === 'represent' ||
+                                            isPrivateGroup
+                                        }
+                                        onSelect={() =>
+                                            onRepresent(!isRepresenting)
+                                        }
+                                    >
+                                        {isRepresenting
+                                            ? 'Unrepresent Group'
+                                            : 'Represent Group'}
                                     </EntityActionItem>
-                                    <EntityActionItem icon={isSubscribedToAnnouncements ? BellOffIcon : BellIcon} disabled={actionStatus === 'member-props'} onSelect={() => onSubscribe(!isSubscribedToAnnouncements)}>
-                                        {isSubscribedToAnnouncements ? 'Unsubscribe Announcements' : 'Subscribe Announcements'}
+                                    <EntityActionItem
+                                        icon={
+                                            isSubscribedToAnnouncements
+                                                ? BellOffIcon
+                                                : BellIcon
+                                        }
+                                        disabled={
+                                            actionStatus === 'member-props'
+                                        }
+                                        onSelect={() =>
+                                            onSubscribe(
+                                                !isSubscribedToAnnouncements
+                                            )
+                                        }
+                                    >
+                                        {isSubscribedToAnnouncements
+                                            ? 'Unsubscribe Announcements'
+                                            : 'Subscribe Announcements'}
                                     </EntityActionItem>
                                     {canInviteToGroup ? (
-                                        <EntityActionItem icon={MessageSquareIcon} disabled={remoteStatus.members === 'running'} onSelect={() => void inviteUserToGroup()}>
+                                        <EntityActionItem
+                                            icon={MessageSquareIcon}
+                                            disabled={
+                                                remoteStatus.members ===
+                                                'running'
+                                            }
+                                            onSelect={() =>
+                                                void inviteUserToGroup()
+                                            }
+                                        >
                                             Invite To Group
                                         </EntityActionItem>
                                     ) : null}
                                     {canManagePosts ? (
-                                        <EntityActionItem icon={TicketIcon} disabled={remoteStatus.posts === 'running'} onSelect={() => void createGroupPost()}>
+                                        <EntityActionItem
+                                            icon={TicketIcon}
+                                            disabled={
+                                                remoteStatus.posts === 'running'
+                                            }
+                                            onSelect={() =>
+                                                void createGroupPost()
+                                            }
+                                        >
                                             Create Post
                                         </EntityActionItem>
                                     ) : null}
                                     {canModerateGroup ? (
-                                        <EntityActionItem icon={SettingsIcon} onSelect={() => setModerationOpen(true)}>
+                                        <EntityActionItem
+                                            icon={SettingsIcon}
+                                            onSelect={() =>
+                                                setModerationOpen(true)
+                                            }
+                                        >
                                             Moderation Tools
                                         </EntityActionItem>
                                     ) : null}
                                     {canSetVisibility ? (
                                         <>
                                             <EntityActionSeparator />
-                                            <EntityActionItem icon={UserIcon} disabled={actionStatus === 'member-props'} onSelect={() => onVisibility('visible')}>
-                                                {memberVisibility === 'visible' ? 'Selected: ' : ''}Visibility Everyone
+                                            <EntityActionItem
+                                                icon={UserIcon}
+                                                disabled={
+                                                    actionStatus ===
+                                                    'member-props'
+                                                }
+                                                onSelect={() =>
+                                                    onVisibility('visible')
+                                                }
+                                            >
+                                                {memberVisibility === 'visible'
+                                                    ? 'Selected: '
+                                                    : ''}
+                                                Visibility Everyone
                                             </EntityActionItem>
-                                            <EntityActionItem icon={UserIcon} disabled={actionStatus === 'member-props'} onSelect={() => onVisibility('friends')}>
-                                                {memberVisibility === 'friends' ? 'Selected: ' : ''}Visibility Friends
+                                            <EntityActionItem
+                                                icon={UserIcon}
+                                                disabled={
+                                                    actionStatus ===
+                                                    'member-props'
+                                                }
+                                                onSelect={() =>
+                                                    onVisibility('friends')
+                                                }
+                                            >
+                                                {memberVisibility === 'friends'
+                                                    ? 'Selected: '
+                                                    : ''}
+                                                Visibility Friends
                                             </EntityActionItem>
-                                            <EntityActionItem icon={UserIcon} disabled={actionStatus === 'member-props'} onSelect={() => onVisibility('hidden')}>
-                                                {memberVisibility === 'hidden' ? 'Selected: ' : ''}Visibility Hidden
+                                            <EntityActionItem
+                                                icon={UserIcon}
+                                                disabled={
+                                                    actionStatus ===
+                                                    'member-props'
+                                                }
+                                                onSelect={() =>
+                                                    onVisibility('hidden')
+                                                }
+                                            >
+                                                {memberVisibility === 'hidden'
+                                                    ? 'Selected: '
+                                                    : ''}
+                                                Visibility Hidden
                                             </EntityActionItem>
                                         </>
                                     ) : null}
                                     <EntityActionSeparator />
-                                    <EntityActionItem icon={LogOutIcon} destructive disabled={actionStatus === 'leave'} onSelect={onLeave}>Leave Group</EntityActionItem>
+                                    <EntityActionItem
+                                        icon={LogOutIcon}
+                                        destructive
+                                        disabled={actionStatus === 'leave'}
+                                        onSelect={onLeave}
+                                    >
+                                        Leave Group
+                                    </EntityActionItem>
                                 </>
                             ) : (
                                 <>
                                     <EntityActionSeparator />
-                                    <EntityActionItem icon={isBlocked ? ShieldIcon : ShieldOffIcon} destructive={isBlocked} disabled={actionStatus === 'block'} onSelect={() => onBlock(!isBlocked)}>
-                                        {isBlocked ? 'Unblock Group' : 'Block Group'}
+                                    <EntityActionItem
+                                        icon={
+                                            isBlocked
+                                                ? ShieldIcon
+                                                : ShieldOffIcon
+                                        }
+                                        destructive={isBlocked}
+                                        disabled={actionStatus === 'block'}
+                                        onSelect={() => onBlock(!isBlocked)}
+                                    >
+                                        {isBlocked
+                                            ? 'Unblock Group'
+                                            : 'Block Group'}
                                     </EntityActionItem>
                                 </>
                             )}
@@ -1713,91 +2702,221 @@ export function GroupDialogTabbedView({
                     </>
                 }
             />
-            <EntityDialogTabs value={activeTab} onValueChange={changeTab} tabs={tabs}>
+            <EntityDialogTabs
+                value={activeTab}
+                onValueChange={changeTab}
+                tabs={tabs}
+            >
                 <EntityDialogTabContent value="info">
                     {bannerUrl ? (
                         <Button
                             type="button"
                             variant="ghost"
-                            className="mb-3 h-auto w-full overflow-hidden rounded-md bg-muted p-0"
+                            className="bg-muted mb-3 h-auto w-full overflow-hidden rounded-md p-0"
                             aria-label={`Preview ${groupTitle} banner`}
-                            onClick={() => openImagePreview({ url: bannerUrl, title: groupTitle })}>
-                            <img src={bannerUrl} alt={group.name || 'Group banner'} className="aspect-[6/1] w-full object-cover" />
+                            onClick={() =>
+                                openImagePreview({
+                                    url: bannerUrl,
+                                    title: groupTitle
+                                })
+                            }
+                        >
+                            <img
+                                src={bannerUrl}
+                                alt={group.name || 'Group banner'}
+                                className="aspect-[6/1] w-full object-cover"
+                            />
                         </Button>
                     ) : null}
                     <EntityInfoGrid>
-                        <GroupInstanceRows instances={activeInstances} currentUserId={currentUserId} endpoint={currentEndpoint} />
+                        <GroupInstanceRows
+                            instances={activeInstances}
+                            currentUserId={currentUserId}
+                            endpoint={currentEndpoint}
+                        />
                         {group.announcement?.id || group.announcement?.title ? (
                             <EntityInfoBlock label="Announcement" full>
-                                <span className="block truncate text-sm">{group.announcement.title || 'Announcement'}</span>
+                                <span className="block truncate text-sm">
+                                    {group.announcement.title || 'Announcement'}
+                                </span>
                                 {group.announcement.imageUrl ? (
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        className="mr-1.5 mt-1.5 h-auto p-0 align-top"
+                                        className="mt-1.5 mr-1.5 h-auto p-0 align-top"
                                         aria-label={`Preview ${group.announcement.title || 'announcement'} image`}
-                                        onClick={() => openImagePreview({ url: convertFileUrlToImageUrl(group.announcement.imageUrl, 1024), title: group.announcement.title || 'Announcement' })}>
-                                        <img src={convertFileUrlToImageUrl(group.announcement.imageUrl, 128)} alt="" className="size-16 rounded-md object-cover" />
+                                        onClick={() =>
+                                            openImagePreview({
+                                                url: convertFileUrlToImageUrl(
+                                                    group.announcement.imageUrl,
+                                                    1024
+                                                ),
+                                                title:
+                                                    group.announcement.title ||
+                                                    'Announcement'
+                                            })
+                                        }
+                                    >
+                                        <img
+                                            src={convertFileUrlToImageUrl(
+                                                group.announcement.imageUrl,
+                                                128
+                                            )}
+                                            alt=""
+                                            className="size-16 rounded-md object-cover"
+                                        />
                                     </Button>
                                 ) : null}
-                                <pre className="inline-block whitespace-pre-wrap align-top text-xs font-sans text-muted-foreground">{group.announcement.text || '—'}</pre>
-                                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                                    {announcementRoleNames(group.announcement, group).length ? (
-                                        <span className="inline-flex items-center gap-1" title={announcementRoleNames(group.announcement, group).join(', ')}>
+                                <pre className="text-muted-foreground inline-block align-top font-sans text-xs whitespace-pre-wrap">
+                                    {group.announcement.text || '—'}
+                                </pre>
+                                <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                                    {announcementRoleNames(
+                                        group.announcement,
+                                        group
+                                    ).length ? (
+                                        <span
+                                            className="inline-flex items-center gap-1"
+                                            title={announcementRoleNames(
+                                                group.announcement,
+                                                group
+                                            ).join(', ')}
+                                        >
                                             <EyeIcon className="size-3.5" />
-                                            <span className="max-w-full truncate">{announcementRoleNames(group.announcement, group).join(', ')}</span>
+                                            <span className="max-w-full truncate">
+                                                {announcementRoleNames(
+                                                    group.announcement,
+                                                    group
+                                                ).join(', ')}
+                                            </span>
                                         </span>
                                     ) : null}
-                                    {announcementUserId(group.announcement, 'author') || announcementUserLabel(group.announcement, 'author') ? (
-                                        announcementUserId(group.announcement, 'author') ? (
+                                    {announcementUserId(
+                                        group.announcement,
+                                        'author'
+                                    ) ||
+                                    announcementUserLabel(
+                                        group.announcement,
+                                        'author'
+                                    ) ? (
+                                        announcementUserId(
+                                            group.announcement,
+                                            'author'
+                                        ) ? (
                                             <Button
                                                 type="button"
                                                 variant="link"
                                                 className="h-auto gap-1 p-0 text-xs font-normal"
-                                                onClick={() => openUserDialog({
-                                                    userId: announcementUserId(group.announcement, 'author'),
-                                                    title: announcementUserLabel(group.announcement, 'author') || undefined
-                                                })}>
+                                                onClick={() =>
+                                                    openUserDialog({
+                                                        userId: announcementUserId(
+                                                            group.announcement,
+                                                            'author'
+                                                        ),
+                                                        title:
+                                                            announcementUserLabel(
+                                                                group.announcement,
+                                                                'author'
+                                                            ) || undefined
+                                                    })
+                                                }
+                                            >
                                                 <span>Author:</span>
-                                                <span className="font-medium text-foreground">{announcementUserLabel(group.announcement, 'author') || announcementUserId(group.announcement, 'author')}</span>
+                                                <span className="text-foreground font-medium">
+                                                    {announcementUserLabel(
+                                                        group.announcement,
+                                                        'author'
+                                                    ) ||
+                                                        announcementUserId(
+                                                            group.announcement,
+                                                            'author'
+                                                        )}
+                                                </span>
                                             </Button>
                                         ) : (
                                             <span className="inline-flex items-center gap-1">
                                                 <span>Author:</span>
-                                                <span className="font-medium text-foreground">{announcementUserLabel(group.announcement, 'author')}</span>
+                                                <span className="text-foreground font-medium">
+                                                    {announcementUserLabel(
+                                                        group.announcement,
+                                                        'author'
+                                                    )}
+                                                </span>
                                             </span>
                                         )
                                     ) : null}
-                                    {announcementUserId(group.announcement, 'editor') || announcementUserLabel(group.announcement, 'editor') ? (
-                                        announcementUserId(group.announcement, 'editor') ? (
+                                    {announcementUserId(
+                                        group.announcement,
+                                        'editor'
+                                    ) ||
+                                    announcementUserLabel(
+                                        group.announcement,
+                                        'editor'
+                                    ) ? (
+                                        announcementUserId(
+                                            group.announcement,
+                                            'editor'
+                                        ) ? (
                                             <Button
                                                 type="button"
                                                 variant="link"
                                                 className="h-auto gap-1 p-0 text-xs font-normal"
-                                                onClick={() => openUserDialog({
-                                                    userId: announcementUserId(group.announcement, 'editor'),
-                                                    title: announcementUserLabel(group.announcement, 'editor') || undefined
-                                                })}>
+                                                onClick={() =>
+                                                    openUserDialog({
+                                                        userId: announcementUserId(
+                                                            group.announcement,
+                                                            'editor'
+                                                        ),
+                                                        title:
+                                                            announcementUserLabel(
+                                                                group.announcement,
+                                                                'editor'
+                                                            ) || undefined
+                                                    })
+                                                }
+                                            >
                                                 <span>Edited by:</span>
-                                                <span className="font-medium text-foreground">{announcementUserLabel(group.announcement, 'editor') || announcementUserId(group.announcement, 'editor')}</span>
+                                                <span className="text-foreground font-medium">
+                                                    {announcementUserLabel(
+                                                        group.announcement,
+                                                        'editor'
+                                                    ) ||
+                                                        announcementUserId(
+                                                            group.announcement,
+                                                            'editor'
+                                                        )}
+                                                </span>
                                             </Button>
                                         ) : (
                                             <span className="inline-flex items-center gap-1">
                                                 <span>Edited by:</span>
-                                                <span className="font-medium text-foreground">{announcementUserLabel(group.announcement, 'editor')}</span>
+                                                <span className="text-foreground font-medium">
+                                                    {announcementUserLabel(
+                                                        group.announcement,
+                                                        'editor'
+                                                    )}
+                                                </span>
                                             </span>
                                         )
                                     ) : null}
                                     {group.announcement.createdAt ? (
                                         <span className="inline-flex items-center gap-1">
                                             <span>Created:</span>
-                                            <span className="font-medium text-foreground">{announcementTimestamp(group.announcement.createdAt)}</span>
+                                            <span className="text-foreground font-medium">
+                                                {announcementTimestamp(
+                                                    group.announcement.createdAt
+                                                )}
+                                            </span>
                                         </span>
                                     ) : null}
                                     {group.announcement.updatedAt ? (
                                         <span className="inline-flex items-center gap-1">
                                             <span>Updated:</span>
-                                            <span className="font-medium text-foreground">{announcementTimestamp(group.announcement.updatedAt)}</span>
+                                            <span className="text-foreground font-medium">
+                                                {announcementTimestamp(
+                                                    group.announcement.updatedAt
+                                                )}
+                                            </span>
                                         </span>
                                     ) : null}
                                 </div>
@@ -1805,55 +2924,166 @@ export function GroupDialogTabbedView({
                         ) : null}
                         {group.rules ? (
                             <EntityInfoBlock label="Rules" full>
-                                <pre className="whitespace-pre-wrap text-xs font-sans text-muted-foreground">{group.rules}</pre>
+                                <pre className="text-muted-foreground font-sans text-xs whitespace-pre-wrap">
+                                    {group.rules}
+                                </pre>
                             </EntityInfoBlock>
                         ) : null}
-                        <EntityInfoBlock label="Members" value={`${group.memberCount || 0} (${group.onlineMemberCount || 0})`} />
-                        <EntityInfoBlock label="Created At" value={(group.createdAt || group.created_at) ? formatDateFilter(group.createdAt || group.created_at, 'long') : '—'} />
-                        <EntityInfoBlock label="Last Visited" value={(previousInstances[0]?.created_at || previousInstances[0]?.createdAt) ? formatDateFilter(previousInstances[0]?.created_at || previousInstances[0]?.createdAt, 'long') : '—'} onClick={previousInstances.length ? () => setPreviousInstancesOpen(true) : undefined} />
-                        <EntityInfoBlock label="Join State" value={joinState || '—'} />
-                        <EntityInfoBlock label="Membership" value={memberStatus || group.membershipStatus || '—'} />
-                        <EntityInfoBlock label="Languages" value={group.languages.join(', ') || '—'} />
-                        <EntityInfoBlock label="Privacy" value={group.privacy || '—'} />
+                        <EntityInfoBlock
+                            label="Members"
+                            value={`${group.memberCount || 0} (${group.onlineMemberCount || 0})`}
+                        />
+                        <EntityInfoBlock
+                            label="Created At"
+                            value={
+                                group.createdAt || group.created_at
+                                    ? formatDateFilter(
+                                          group.createdAt || group.created_at,
+                                          'long'
+                                      )
+                                    : '—'
+                            }
+                        />
+                        <EntityInfoBlock
+                            label="Last Visited"
+                            value={
+                                previousInstances[0]?.created_at ||
+                                previousInstances[0]?.createdAt
+                                    ? formatDateFilter(
+                                          previousInstances[0]?.created_at ||
+                                              previousInstances[0]?.createdAt,
+                                          'long'
+                                      )
+                                    : '—'
+                            }
+                            onClick={
+                                previousInstances.length
+                                    ? () => setPreviousInstancesOpen(true)
+                                    : undefined
+                            }
+                        />
+                        <EntityInfoBlock
+                            label="Join State"
+                            value={joinState || '—'}
+                        />
+                        <EntityInfoBlock
+                            label="Membership"
+                            value={
+                                memberStatus || group.membershipStatus || '—'
+                            }
+                        />
+                        <EntityInfoBlock
+                            label="Languages"
+                            value={group.languages.join(', ') || '—'}
+                        />
+                        <EntityInfoBlock
+                            label="Privacy"
+                            value={group.privacy || '—'}
+                        />
                         {group.links.length ? (
                             <EntityInfoBlock label="Links" full>
                                 <div className="flex flex-wrap gap-1.5">
-                                    {group.links.map((link) => <Button key={link} type="button" variant="ghost" size="xs" onClick={() => openExternalLink(link)}><ExternalLinkIcon data-icon="inline-start" />{link}</Button>)}
+                                    {group.links.map((link) => (
+                                        <Button
+                                            key={link}
+                                            type="button"
+                                            variant="ghost"
+                                            size="xs"
+                                            onClick={() =>
+                                                openExternalLink(link)
+                                            }
+                                        >
+                                            <ExternalLinkIcon data-icon="inline-start" />
+                                            {link}
+                                        </Button>
+                                    ))}
                                 </div>
                             </EntityInfoBlock>
                         ) : null}
-                        <EntityInfoBlock label="URL" value={groupUrl || '—'} mono wide onClick={groupUrl ? () => void copyGroupText(groupUrl, 'Group URL') : undefined} />
-                        <EntityInfoBlock label="Group ID" value={group.id} mono wide />
+                        <EntityInfoBlock
+                            label="URL"
+                            value={groupUrl || '—'}
+                            mono
+                            wide
+                            onClick={
+                                groupUrl
+                                    ? () =>
+                                          void copyGroupText(
+                                              groupUrl,
+                                              'Group URL'
+                                          )
+                                    : undefined
+                            }
+                        />
+                        <EntityInfoBlock
+                            label="Group ID"
+                            value={group.id}
+                            mono
+                            wide
+                        />
                         <EntityInfoBlock
                             label="Owner"
                             value={ownerLabel || '—'}
                             wide
-                            onClick={group.ownerId ? () => openUserDialog({
-                                userId: group.ownerId,
-                                title: ownerLabel || undefined,
-                                seedData: ownerLabel
-                                    ? { id: group.ownerId, displayName: ownerLabel }
-                                    : null
-                            }) : undefined}
+                            onClick={
+                                group.ownerId
+                                    ? () =>
+                                          openUserDialog({
+                                              userId: group.ownerId,
+                                              title: ownerLabel || undefined,
+                                              seedData: ownerLabel
+                                                  ? {
+                                                        id: group.ownerId,
+                                                        displayName: ownerLabel
+                                                    }
+                                                  : null
+                                          })
+                                    : undefined
+                            }
                         />
                         {group.tags.length ? (
                             <EntityInfoBlock label="Tags" full>
-                                <div className="flex flex-wrap gap-1.5">{group.tags.map((tag) => <Badge key={tag} variant="outline">{tag}</Badge>)}</div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {group.tags.map((tag) => (
+                                        <Badge key={tag} variant="outline">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                                </div>
                             </EntityInfoBlock>
                         ) : null}
                         {group.roles.length ? (
                             <EntityInfoBlock label="Roles" full>
-                                <div className="flex flex-wrap gap-1.5">{group.roles.map((role) => <Badge key={role.id || role.name} variant="outline">{role.name || 'Role'}</Badge>)}</div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {group.roles.map((role) => (
+                                        <Badge
+                                            key={role.id || role.name}
+                                            variant="outline"
+                                        >
+                                            {role.name || 'Role'}
+                                        </Badge>
+                                    ))}
+                                </div>
                             </EntityInfoBlock>
                         ) : null}
                     </EntityInfoGrid>
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="posts" className="flex flex-col gap-2">
+                <EntityDialogTabContent
+                    value="posts"
+                    className="flex flex-col gap-2"
+                >
                     <div className="flex items-center gap-2">
-                        <div className="text-sm text-muted-foreground">{filteredPosts.length}/{posts.length} posts</div>
+                        <div className="text-muted-foreground text-sm">
+                            {filteredPosts.length}/{posts.length} posts
+                        </div>
                         <Input
                             value={search.posts}
-                            onChange={(event) => setSearch((current) => ({ ...current, posts: event.target.value }))}
+                            onChange={(event) =>
+                                setSearch((current) => ({
+                                    ...current,
+                                    posts: event.target.value
+                                }))
+                            }
                             placeholder="Search posts"
                             className="ml-auto h-8 max-w-64"
                         />
@@ -1865,49 +3095,105 @@ export function GroupDialogTabbedView({
                         loading={remoteStatus.posts === 'running'}
                         error={remoteErrors.posts}
                         canManagePosts={canManagePosts}
-                        onPreviewImage={(url, title) => openImagePreview({ url: convertFileUrlToImageUrl(url, 1024), title })}
+                        onPreviewImage={(url, title) =>
+                            openImagePreview({
+                                url: convertFileUrlToImageUrl(url, 1024),
+                                title
+                            })
+                        }
                         onEditPost={(post) => void editGroupPost(post)}
                         onDeletePost={(post) => void deleteGroupPost(post)}
                     />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="members" className="flex flex-col gap-2">
+                <EntityDialogTabContent
+                    value="members"
+                    className="flex flex-col gap-2"
+                >
                     <div className="flex flex-wrap items-center gap-2">
-                        <div className="text-sm text-muted-foreground">{filteredMembers.length}/{group.memberCount || members.length} members</div>
-                        <Button type="button" size="sm" variant="outline" disabled={remoteStatus.members === 'running'} onClick={() => void loadTab('members', { force: true })}>
+                        <div className="text-muted-foreground text-sm">
+                            {filteredMembers.length}/
+                            {group.memberCount || members.length} members
+                        </div>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={remoteStatus.members === 'running'}
+                            onClick={() =>
+                                void loadTab('members', { force: true })
+                            }
+                        >
                             Refresh
                         </Button>
-                        <Button type="button" size="sm" variant="outline" disabled={remoteStatus.members === 'running'} onClick={() => void loadAllMembers()}>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={remoteStatus.members === 'running'}
+                            onClick={() => void loadAllMembers()}
+                        >
                             Load All
                         </Button>
-                        <Button type="button" size="sm" variant="outline" disabled={!members.length} onClick={() => downloadJsonFile(`${group.id}_members.json`, members)}>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={!members.length}
+                            onClick={() =>
+                                downloadJsonFile(
+                                    `${group.id}_members.json`,
+                                    members
+                                )
+                            }
+                        >
                             <DownloadIcon data-icon="inline-start" />
                             JSON
                         </Button>
-                        <Select value={memberSort} onValueChange={setMemberSort} disabled={remoteStatus.members === 'running'}>
+                        <Select
+                            value={memberSort}
+                            onValueChange={setMemberSort}
+                            disabled={remoteStatus.members === 'running'}
+                        >
                             <SelectTrigger size="sm" className="w-44">
                                 <SelectValue placeholder="Sort" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="joinedAt:desc">Joined newest</SelectItem>
-                                    <SelectItem value="joinedAt:asc">Joined oldest</SelectItem>
-                                    <SelectItem value="user.displayName:asc">Name A-Z</SelectItem>
-                                    <SelectItem value="user.displayName:desc">Name Z-A</SelectItem>
+                                    <SelectItem value="joinedAt:desc">
+                                        Joined newest
+                                    </SelectItem>
+                                    <SelectItem value="joinedAt:asc">
+                                        Joined oldest
+                                    </SelectItem>
+                                    <SelectItem value="user.displayName:asc">
+                                        Name A-Z
+                                    </SelectItem>
+                                    <SelectItem value="user.displayName:desc">
+                                        Name Z-A
+                                    </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
                         <Select
                             value={memberRoleId || 'all'}
-                            onValueChange={(value) => setMemberRoleId(value === 'all' ? '' : value)}
-                            disabled={remoteStatus.members === 'running'}>
+                            onValueChange={(value) =>
+                                setMemberRoleId(value === 'all' ? '' : value)
+                            }
+                            disabled={remoteStatus.members === 'running'}
+                        >
                             <SelectTrigger size="sm" className="w-48">
                                 <SelectValue placeholder="Role" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="all">All roles</SelectItem>
+                                    <SelectItem value="all">
+                                        All roles
+                                    </SelectItem>
                                     {group.roles.map((role) => (
-                                        <SelectItem key={role.id || role.name} value={role.id || role.name}>
+                                        <SelectItem
+                                            key={role.id || role.name}
+                                            value={role.id || role.name}
+                                        >
                                             {role.name || 'Role'}
                                         </SelectItem>
                                     ))}
@@ -1916,24 +3202,55 @@ export function GroupDialogTabbedView({
                         </Select>
                         <Input
                             value={search.members}
-                            onChange={(event) => setSearch((current) => ({ ...current, members: event.target.value }))}
+                            onChange={(event) =>
+                                setSearch((current) => ({
+                                    ...current,
+                                    members: event.target.value
+                                }))
+                            }
                             placeholder="Search members"
                             className="ml-auto h-8 max-w-64"
                         />
                     </div>
-                    <RowList rows={filteredMembers} group={group} kind="members" loading={remoteStatus.members === 'running'} error={remoteErrors.members} />
+                    <RowList
+                        rows={filteredMembers}
+                        group={group}
+                        kind="members"
+                        loading={remoteStatus.members === 'running'}
+                        error={remoteErrors.members}
+                    />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="photos" className="flex flex-col gap-2">
+                <EntityDialogTabContent
+                    value="photos"
+                    className="flex flex-col gap-2"
+                >
                     <RowList
                         rows={photos}
                         group={group}
                         kind="photos"
                         loading={remoteStatus.photos === 'running'}
                         error={remoteErrors.photos}
-                        onPreviewImage={(url, title) => openImagePreview({ url: convertFileUrlToImageUrl(url, 1024), title })}
+                        onPreviewImage={(url, title) =>
+                            openImagePreview({
+                                url: convertFileUrlToImageUrl(url, 1024),
+                                title
+                            })
+                        }
                     />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="json"><EntityRawJson value={{ group, posts, instances: activeInstances, members, galleries: firstArray(group.galleries), photos, activeInstances }} /></EntityDialogTabContent>
+                <EntityDialogTabContent value="json">
+                    <EntityRawJson
+                        value={{
+                            group,
+                            posts,
+                            instances: activeInstances,
+                            members,
+                            galleries: firstArray(group.galleries),
+                            photos,
+                            activeInstances
+                        }}
+                    />
+                </EntityDialogTabContent>
             </EntityDialogTabs>
             <PreviousInstancesTableDialog
                 open={previousInstancesOpen}

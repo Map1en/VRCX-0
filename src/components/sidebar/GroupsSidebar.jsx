@@ -1,12 +1,10 @@
-import { useMemo, useState } from 'react';
 import { ChevronDownIcon, UsersIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
-import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuTrigger } from '@/ui/shadcn/context-menu';
-import { Button } from '@/ui/shadcn/button';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { openGroupDialog } from '@/services/dialogService.js';
@@ -17,6 +15,14 @@ import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { Button } from '@/ui/shadcn/button';
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuGroup,
+    ContextMenuItem,
+    ContextMenuTrigger
+} from '@/ui/shadcn/context-menu';
 
 const GROUP_HEADER_ROW_SIZE = 38;
 const GROUP_INSTANCE_ROW_SIZE = 49;
@@ -49,11 +55,23 @@ function normalizeGroupId(instance) {
 }
 
 function resolveGroupName(instance, groupId) {
-    return instance?.group?.name || instance?.instance?.group?.name || instance?.groupName || instance?.name || groupId || 'Group';
+    return (
+        instance?.group?.name ||
+        instance?.instance?.group?.name ||
+        instance?.groupName ||
+        instance?.name ||
+        groupId ||
+        'Group'
+    );
 }
 
 function resolveLocation(instance) {
-    return instance?.location || instance?.instance?.location || instance?.instanceId || '';
+    return (
+        instance?.location ||
+        instance?.instance?.location ||
+        instance?.instanceId ||
+        ''
+    );
 }
 
 function resolveGroupIconUrl(instance) {
@@ -85,7 +103,10 @@ function resolveGroupIconUrl(instance) {
         instance?.instance?.thumbnailImageUrl,
         instance?.instance?.imageUrl
     ];
-    return candidates.find((value) => typeof value === 'string' && value.trim()) || '';
+    return (
+        candidates.find((value) => typeof value === 'string' && value.trim()) ||
+        ''
+    );
 }
 
 function isAgeGatedInstance(instance) {
@@ -124,7 +145,9 @@ function groupInstances(instances, groupOrder = []) {
         }
         const leftName = resolveGroupName(left[1]?.[0], left[0]);
         const rightName = resolveGroupName(right[1]?.[0], right[0]);
-        return leftName.localeCompare(rightName) || left[0].localeCompare(right[0]);
+        return (
+            leftName.localeCompare(rightName) || left[0].localeCompare(right[0])
+        );
     });
 }
 
@@ -132,10 +155,17 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
     const { t } = useI18n();
     const groupId = normalizeGroupId(instance);
     const name = resolveGroupName(instance, groupId);
-    const iconUrl = convertFileUrlToImageUrl(resolveGroupIconUrl(instance), 128);
+    const iconUrl = convertFileUrlToImageUrl(
+        resolveGroupIconUrl(instance),
+        128
+    );
     const location = resolveLocation(instance);
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const userCount = instance?.userCount ?? instance?.n_users ?? instance?.instance?.userCount ?? '';
+    const userCount =
+        instance?.userCount ??
+        instance?.n_users ??
+        instance?.instance?.userCount ??
+        '';
     const capacity = instance?.capacity ?? instance?.instance?.capacity ?? '';
     const worldHint = instance?.world?.name || instance?.worldName || '';
     const parsedLocation = parseLocation(location);
@@ -157,14 +187,22 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
             return;
         }
         try {
-            const opened = await tryOpenLaunchLocation(location, parsedLocation.shortName, endpoint);
+            const opened = await tryOpenLaunchLocation(
+                location,
+                parsedLocation.shortName,
+                endpoint
+            );
             if (opened) {
                 toast.success('VRChat launch request sent.');
                 return;
             }
             toast.error('Unable to open this instance in VRChat.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to launch instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to launch instance.'
+            );
         }
     }
 
@@ -173,31 +211,53 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
             return;
         }
         try {
-            await selfInviteToInstance(location, parsedLocation.shortName, endpoint);
+            await selfInviteToInstance(
+                location,
+                parsedLocation.shortName,
+                endpoint
+            );
             toast.success(t('message.invite.self_sent'));
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send self invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send self invite.'
+            );
         }
     }
 
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild>
-                <div className="flex w-full items-center rounded-lg hover:bg-muted/50">
+                <div className="hover:bg-muted/50 flex w-full items-center rounded-lg">
                     <Button
                         type="button"
                         variant="ghost"
                         className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal"
-                        onClick={() => openGroupDialog({ groupId, title: name, seedData: instance?.group || instance })}>
-                        <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+                        onClick={() =>
+                            openGroupDialog({
+                                groupId,
+                                title: name,
+                                seedData: instance?.group || instance
+                            })
+                        }
+                    >
+                        <span className="bg-muted flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border">
                             {iconUrl ? (
-                                <img src={iconUrl} alt="" className="size-full object-cover" />
+                                <img
+                                    src={iconUrl}
+                                    alt=""
+                                    className="size-full object-cover"
+                                />
                             ) : (
-                                <UsersIcon data-icon="inline-start" className="text-muted-foreground" />
+                                <UsersIcon
+                                    data-icon="inline-start"
+                                    className="text-muted-foreground"
+                                />
                             )}
                         </span>
                         <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium leading-5">
+                            <span className="block truncate leading-5 font-medium">
                                 {name}
                                 {userCount !== '' || capacity !== '' ? (
                                     <span className="ml-1 font-normal">
@@ -205,7 +265,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
                                     </span>
                                 ) : null}
                             </span>
-                            <span className="block truncate text-xs text-muted-foreground">
+                            <span className="text-muted-foreground block truncate text-xs">
                                 {location ? (
                                     <Location
                                         location={location}
@@ -228,14 +288,16 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
                         disabled={!canUseInstanceAction}
                         onSelect={() => {
                             void launchInstance();
-                        }}>
+                        }}
+                    >
                         {t('dialog.user.info.launch_invite_tooltip')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseInstanceAction}
                         onSelect={() => {
                             void sendSelfInvite();
-                        }}>
+                        }}
+                    >
                         {t('dialog.user.info.self_invite_tooltip')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
@@ -245,27 +307,49 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
 }
 
 export function GroupsSidebar() {
-    const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
-    const groupOrder = useRuntimeStore((state) => state.groupInstances.groupOrder);
+    const groupInstancesState = useRuntimeStore(
+        (state) => state.groupInstances
+    );
+    const groupOrder = useRuntimeStore(
+        (state) => state.groupInstances.groupOrder
+    );
     const status = useRuntimeStore((state) => state.groupInstances.status);
     const error = useRuntimeStore((state) => state.groupInstances.error);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const instances = groupInstancesState.endpoint === currentEndpoint ? groupInstancesState.instances : [];
+    const instances =
+        groupInstancesState.endpoint === currentEndpoint
+            ? groupInstancesState.instances
+            : [];
     const [collapsedGroups, setCollapsedGroups] = useState(() => new Set());
-    const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
-    const showAgeGatedInstancesPreference = usePreferencesStore((state) => state.isAgeGatedInstancesVisible);
-    const showAgeGatedInstances = preferencesHydrated && showAgeGatedInstancesPreference;
+    const preferencesHydrated = usePreferencesStore(
+        (state) => state.preferencesHydrated
+    );
+    const showAgeGatedInstancesPreference = usePreferencesStore(
+        (state) => state.isAgeGatedInstancesVisible
+    );
+    const showAgeGatedInstances =
+        preferencesHydrated && showAgeGatedInstancesPreference;
     const friendsMap = useMemo(
         () => new Map(Object.entries(friendsById || {})),
         [friendsById]
     );
     const visibleInstances = useMemo(
-        () => (showAgeGatedInstances ? instances : (instances || []).filter((instance) => !isAgeGatedInstance(instance))),
+        () =>
+            showAgeGatedInstances
+                ? instances
+                : (instances || []).filter(
+                      (instance) => !isAgeGatedInstance(instance)
+                  ),
         [instances, showAgeGatedInstances]
     );
-    const groups = useMemo(() => groupInstances(visibleInstances, groupOrder || []), [groupOrder, visibleInstances]);
+    const groups = useMemo(
+        () => groupInstances(visibleInstances, groupOrder || []),
+        [groupOrder, visibleInstances]
+    );
 
     function toggleGroup(groupId) {
         setCollapsedGroups((current) => {
@@ -309,7 +393,10 @@ export function GroupsSidebar() {
             nextRows.push({
                 type: 'message',
                 key: 'message:empty',
-                text: status === 'error' ? error || 'Failed to load group instances.' : 'No group instances snapshot.'
+                text:
+                    status === 'error'
+                        ? error || 'Failed to load group instances.'
+                        : 'No group instances snapshot.'
             });
         }
 
@@ -317,11 +404,10 @@ export function GroupsSidebar() {
         return nextRows;
     }, [collapsedGroups, error, groups, status]);
 
-    const {
-        viewportRef,
-        virtualItems,
-        totalSize
-    } = useVirtualSidebarRows(virtualRows, estimateGroupSidebarRowSize);
+    const { viewportRef, virtualItems, totalSize } = useVirtualSidebarRows(
+        virtualRows,
+        estimateGroupSidebarRowSize
+    );
 
     function renderVirtualRow(row) {
         switch (row?.type) {
@@ -331,9 +417,19 @@ export function GroupsSidebar() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className={cn('h-auto w-full justify-start px-0 py-1.5 text-left text-xs font-normal hover:bg-transparent', row.first ? 'pt-0' : 'pt-4')}
-                        onClick={() => toggleGroup(row.groupId)}>
-                        <ChevronDownIcon data-icon="inline-start" className={cn('transition-transform', row.isCollapsed && '-rotate-90')} />
+                        className={cn(
+                            'h-auto w-full justify-start px-0 py-1.5 text-left text-xs font-normal hover:bg-transparent',
+                            row.first ? 'pt-0' : 'pt-4'
+                        )}
+                        onClick={() => toggleGroup(row.groupId)}
+                    >
+                        <ChevronDownIcon
+                            data-icon="inline-start"
+                            className={cn(
+                                'transition-transform',
+                                row.isCollapsed && '-rotate-90'
+                            )}
+                        />
                         <span className="ml-1.5">
                             {row.name} - {row.count}
                         </span>
@@ -341,7 +437,7 @@ export function GroupsSidebar() {
                 );
             case 'message':
                 return (
-                    <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                    <div className="text-muted-foreground rounded-md border border-dashed p-3 text-xs">
                         {row.text}
                     </div>
                 );
@@ -360,14 +456,21 @@ export function GroupsSidebar() {
     }
 
     return (
-        <div ref={viewportRef} className="relative h-full overflow-auto overflow-x-hidden">
+        <div
+            ref={viewportRef}
+            className="relative h-full overflow-auto overflow-x-hidden"
+        >
             <div className="px-1.5 py-2.5">
-                <div className="relative w-full" style={{ height: `${totalSize}px` }}>
+                <div
+                    className="relative w-full"
+                    style={{ height: `${totalSize}px` }}
+                >
                     {virtualItems.map((item) => (
                         <div
                             key={item.key}
-                            className="absolute left-0 top-0 w-full"
-                            style={{ transform: `translateY(${item.start}px)` }}>
+                            className="absolute top-0 left-0 w-full"
+                            style={{ transform: `translateY(${item.start}px)` }}
+                        >
                             {renderVirtualRow(item.row)}
                         </div>
                     ))}

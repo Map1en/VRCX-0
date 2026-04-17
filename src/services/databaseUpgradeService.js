@@ -1,10 +1,10 @@
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
 import sqliteRepository from '@/repositories/sqliteRepository.js';
+import { database } from '@/services/database/index.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { database } from '@/services/database/index.js';
 
 const DATABASE_VERSION = 16;
 
@@ -18,7 +18,9 @@ function errorMessage(error) {
 
 function failedUpgradeDescription(failedUpgrade) {
     const path = failedUpgrade?.workDbPath || 'Unknown path';
-    const reason = failedUpgrade?.reason ? `\n\nReason: ${failedUpgrade.reason}` : '';
+    const reason = failedUpgrade?.reason
+        ? `\n\nReason: ${failedUpgrade.reason}`
+        : '';
     return `The previous database upgrade failed. This database cannot be used until it is repaired manually.\n\nWork database: ${path}${reason}`;
 }
 
@@ -122,7 +124,10 @@ async function runFullDatabaseUpgrade() {
                 await backend.sqlite.FailUpgrade(reason);
                 failedUpgrade = await backend.sqlite.GetFailedUpgrade();
             } catch (failError) {
-                console.error('Failed to preserve database upgrade work copy:', failError);
+                console.error(
+                    'Failed to preserve database upgrade work copy:',
+                    failError
+                );
             }
         }
 
@@ -168,8 +173,7 @@ export async function initializeDatabaseUpgradeFlow() {
             phase: 'confirm-legacy-migration',
             fromVersion: 0,
             toVersion: DATABASE_VERSION,
-            detail:
-                'A legacy VRCX installation was detected. Confirm migration to let the host copy legacy data and restart, or skip to continue with the current database.',
+            detail: 'A legacy VRCX installation was detected. Confirm migration to let the host copy legacy data and restart, or skip to continue with the current database.',
             legacyMigrationAvailable: true
         });
         useSessionStore.getState().setSessionState({ databaseReady: false });
@@ -198,8 +202,7 @@ export async function confirmLegacyDatabaseMigration() {
     setUpgradeState({
         open: true,
         phase: 'confirm-legacy-migration',
-        detail:
-            'The host did not restart for legacy migration. You can try again or skip and continue with the current database.'
+        detail: 'The host did not restart for legacy migration. You can try again or skip and continue with the current database.'
     });
 }
 

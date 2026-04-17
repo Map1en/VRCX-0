@@ -1,9 +1,9 @@
-import configRepository from './configRepository.js';
-
 import {
     DASHBOARD_STORAGE_KEY,
     DEFAULT_DASHBOARD_ICON
 } from '@/shared/constants/dashboard.js';
+
+import configRepository from './configRepository.js';
 
 function generateDashboardRowId() {
     if (
@@ -58,12 +58,13 @@ function cloneRows(rows, { generateMissingRowIds = true } = {}) {
                 typeof row?.id === 'string' && row.id.trim()
                     ? row.id.trim()
                     : generateMissingRowIds
-                        ? generateDashboardRowId()
-                        : '';
+                      ? generateDashboardRowId()
+                      : '';
             return {
                 ...(rowId ? { id: rowId } : {}),
                 panels: sourcePanels.map(clonePanel),
-                direction: row?.direction === 'vertical' ? 'vertical' : 'horizontal'
+                direction:
+                    row?.direction === 'vertical' ? 'vertical' : 'horizontal'
             };
         })
         .filter(Boolean);
@@ -100,16 +101,23 @@ function sanitizeDashboard(dashboard, { generateMissingRowIds = true } = {}) {
 }
 
 async function getDashboards() {
-    const stored = await configRepository.getString(DASHBOARD_STORAGE_KEY, null);
+    const stored = await configRepository.getString(
+        DASHBOARD_STORAGE_KEY,
+        null
+    );
     if (!stored) {
         return [];
     }
 
     try {
         const parsed = JSON.parse(stored);
-        const source = Array.isArray(parsed?.dashboards) ? parsed.dashboards : [];
+        const source = Array.isArray(parsed?.dashboards)
+            ? parsed.dashboards
+            : [];
         return source
-            .map((dashboard) => sanitizeDashboard(dashboard, { generateMissingRowIds: false }))
+            .map((dashboard) =>
+                sanitizeDashboard(dashboard, { generateMissingRowIds: false })
+            )
             .filter(Boolean);
     } catch {
         return [];
@@ -143,7 +151,9 @@ function generateDashboardId() {
 
 function generateNextDashboardName(dashboards = [], baseName = 'Dashboard') {
     const normalizedBaseName =
-        typeof baseName === 'string' && baseName.trim() ? baseName.trim() : 'Dashboard';
+        typeof baseName === 'string' && baseName.trim()
+            ? baseName.trim()
+            : 'Dashboard';
     const existingNames = new Set(
         (Array.isArray(dashboards) ? dashboards : [])
             .map((dashboard) => dashboard?.name)

@@ -23,8 +23,8 @@ export function getDashboardRowKey(row) {
         direction: row?.direction === 'vertical' ? 'vertical' : 'horizontal',
         panels: Array.isArray(row?.panels)
             ? row.panels.map((panel) =>
-                typeof panel === 'string' ? panel : panel?.key || ''
-            )
+                  typeof panel === 'string' ? panel : panel?.key || ''
+              )
             : []
     });
     let hash = 0;
@@ -122,14 +122,18 @@ export function getDashboardInstanceWidgetColumns(config) {
         : DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS;
     const columns = source.filter(
         (column, index, values) =>
-            typeof column === 'string' && column && values.indexOf(column) === index
+            typeof column === 'string' &&
+            column &&
+            values.indexOf(column) === index
     );
 
     if (!columns.includes('displayName')) {
         columns.unshift('displayName');
     }
 
-    return columns.length ? columns : [...DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS];
+    return columns.length
+        ? columns
+        : [...DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS];
 }
 
 export function getKnownDashboardInstanceWidgetColumns(config) {
@@ -141,7 +145,9 @@ export function getKnownDashboardInstanceWidgetColumns(config) {
         columns.unshift('displayName');
     }
 
-    return columns.length ? columns : [...DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS];
+    return columns.length
+        ? columns
+        : [...DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS];
 }
 
 export function getNextDashboardInstanceColumnConfig(config, columnKey) {

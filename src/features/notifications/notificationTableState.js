@@ -1,6 +1,17 @@
 export const NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES = [10, 25, 50, 100];
-export const NOTIFICATION_TABLE_DEFAULT_SORTING = [{ id: 'created_at', desc: true }];
-export const NOTIFICATION_TABLE_COLUMN_IDS = ['created_at', 'type', 'senderUsername', 'groupName', 'photo', 'message', 'action', 'trailing'];
+export const NOTIFICATION_TABLE_DEFAULT_SORTING = [
+    { id: 'created_at', desc: true }
+];
+export const NOTIFICATION_TABLE_COLUMN_IDS = [
+    'created_at',
+    'type',
+    'senderUsername',
+    'groupName',
+    'photo',
+    'message',
+    'action',
+    'trailing'
+];
 
 const STORAGE_KEY = 'vrcx:table:notifications';
 const LEGACY_COLUMN_ID_MAP = {
@@ -63,18 +74,30 @@ export function sanitizeNotificationSorting(value) {
         return NOTIFICATION_TABLE_DEFAULT_SORTING;
     }
 
-    const allowedIds = new Set(['created_at', 'type', 'senderUsername', 'groupName']);
+    const allowedIds = new Set([
+        'created_at',
+        'type',
+        'senderUsername',
+        'groupName'
+    ]);
     const filtered = value
         .map((entry) => ({
             ...entry,
             id: normalizeNotificationColumnId(entry?.id)
         }))
-        .filter((entry) => entry && typeof entry.id === 'string' && allowedIds.has(entry.id));
+        .filter(
+            (entry) =>
+                entry &&
+                typeof entry.id === 'string' &&
+                allowedIds.has(entry.id)
+        );
     return filtered.length ? filtered : NOTIFICATION_TABLE_DEFAULT_SORTING;
 }
 
 export function sanitizeNotificationFilters(value, allowedTypes) {
-    const allowedTypeSet = new Set(Array.isArray(allowedTypes) ? allowedTypes : []);
+    const allowedTypeSet = new Set(
+        Array.isArray(allowedTypes) ? allowedTypes : []
+    );
     if (!Array.isArray(value)) {
         return [];
     }
@@ -90,7 +113,10 @@ export function sanitizeNotificationColumnVisibility(value) {
 
     for (const [columnId, visible] of Object.entries(value)) {
         const normalizedColumnId = normalizeNotificationColumnId(columnId);
-        if (NOTIFICATION_TABLE_COLUMN_IDS.includes(normalizedColumnId) && typeof visible === 'boolean') {
+        if (
+            NOTIFICATION_TABLE_COLUMN_IDS.includes(normalizedColumnId) &&
+            typeof visible === 'boolean'
+        ) {
             visibility[normalizedColumnId] = visible;
         }
     }
@@ -105,7 +131,10 @@ export function sanitizeNotificationColumnOrder(value) {
     const order = [];
     for (const columnId of value) {
         const normalizedColumnId = normalizeNotificationColumnId(columnId);
-        if (NOTIFICATION_TABLE_COLUMN_IDS.includes(normalizedColumnId) && !order.includes(normalizedColumnId)) {
+        if (
+            NOTIFICATION_TABLE_COLUMN_IDS.includes(normalizedColumnId) &&
+            !order.includes(normalizedColumnId)
+        ) {
             order.push(normalizedColumnId);
         }
     }
@@ -121,7 +150,11 @@ export function sanitizeNotificationColumnSizing(value) {
     for (const [columnId, rawSize] of Object.entries(value)) {
         const normalizedColumnId = normalizeNotificationColumnId(columnId);
         const size = Number(rawSize);
-        if (NOTIFICATION_TABLE_COLUMN_IDS.includes(normalizedColumnId) && Number.isFinite(size) && size > 0) {
+        if (
+            NOTIFICATION_TABLE_COLUMN_IDS.includes(normalizedColumnId) &&
+            Number.isFinite(size) &&
+            size > 0
+        ) {
             sizing[normalizedColumnId] = size;
         }
     }
@@ -131,7 +164,8 @@ export function sanitizeNotificationColumnSizing(value) {
 
 export function resolveNotificationPageSize(candidate) {
     const parsed = Number.parseInt(candidate, 10);
-    return Number.isFinite(parsed) && NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES.includes(parsed)
+    return Number.isFinite(parsed) &&
+        NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES.includes(parsed)
         ? parsed
         : NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES[1];
 }

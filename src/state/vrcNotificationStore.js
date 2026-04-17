@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 
 import { notificationRepository } from '@/repositories/index.js';
-import { getNotificationCategory, getNotificationTs } from '@/shared/utils/notificationCategory.js';
+import {
+    getNotificationCategory,
+    getNotificationTs
+} from '@/shared/utils/notificationCategory.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 
@@ -23,7 +26,11 @@ function isNotificationExpired(notification) {
 }
 
 function isUnseenNotification(notification) {
-    return notification?.version === 2 && notification.seen === false && !isNotificationExpired(notification);
+    return (
+        notification?.version === 2 &&
+        notification.seen === false &&
+        !isNotificationExpired(notification)
+    );
 }
 
 function createEmptyCategories() {
@@ -45,14 +52,21 @@ function buildCategories(rows) {
             bucket.unseen.push(notification);
             continue;
         }
-        if (!isNotificationExpired(notification) && getNotificationTs(notification) > recentCutoff) {
+        if (
+            !isNotificationExpired(notification) &&
+            getNotificationTs(notification) > recentCutoff
+        ) {
             bucket.recent.push(notification);
         }
     }
 
     for (const bucket of Object.values(categories)) {
-        bucket.unseen.sort((left, right) => getNotificationTs(right) - getNotificationTs(left));
-        bucket.recent.sort((left, right) => getNotificationTs(right) - getNotificationTs(left));
+        bucket.unseen.sort(
+            (left, right) => getNotificationTs(right) - getNotificationTs(left)
+        );
+        bucket.recent.sort(
+            (left, right) => getNotificationTs(right) - getNotificationTs(left)
+        );
     }
 
     return categories;
@@ -94,9 +108,9 @@ function applyPendingSeenRows(rows) {
     return rows.map((row) =>
         pendingSeenIds.has(row.id)
             ? {
-                ...row,
-                seen: true
-            }
+                  ...row,
+                  seen: true
+              }
             : row
     );
 }
@@ -134,17 +148,25 @@ export const useVrcNotificationStore = create((set, get) => ({
 
         set({ loadStatus: 'running', detail: '' });
         try {
-            const rows = applyPendingSeenRows(await notificationRepository.queryNotifications({
-                userId: auth.currentUserId
-            }));
+            const rows = applyPendingSeenRows(
+                await notificationRepository.queryNotifications({
+                    userId: auth.currentUserId
+                })
+            );
             set({
-                ...createNotificationState(rows, `${rows.length} VRChat notifications loaded.`),
-                loadStatus: 'ready',
+                ...createNotificationState(
+                    rows,
+                    `${rows.length} VRChat notifications loaded.`
+                ),
+                loadStatus: 'ready'
             });
             syncShellUnseenCount(get().unseenCount);
             return rows;
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to load VRChat notifications.';
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load VRChat notifications.';
             set({
                 rows: [],
                 categories: createEmptyCategories(),
@@ -160,7 +182,9 @@ export const useVrcNotificationStore = create((set, get) => ({
         const nextOpen = Boolean(isCenterOpen);
         set({ isCenterOpen: nextOpen });
         if (nextOpen) {
-            void get().loadForCurrentUser().catch(() => {});
+            void get()
+                .loadForCurrentUser()
+                .catch(() => {});
         }
     },
     openCenter() {
@@ -171,7 +195,8 @@ export const useVrcNotificationStore = create((set, get) => ({
             return;
         }
         set((state) => {
-            const existing = state.rows.find((row) => row.id === notification.id) || {};
+            const existing =
+                state.rows.find((row) => row.id === notification.id) || {};
             const rows = [
                 { ...existing, ...notification },
                 ...state.rows.filter((row) => row.id !== notification.id)
@@ -181,7 +206,9 @@ export const useVrcNotificationStore = create((set, get) => ({
         syncShellUnseenCount(get().unseenCount);
     },
     expireNotifications(ids) {
-        const idSet = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+        const idSet = new Set(
+            (Array.isArray(ids) ? ids : [ids]).filter(Boolean)
+        );
         if (!idSet.size) {
             return;
         }
@@ -191,11 +218,11 @@ export const useVrcNotificationStore = create((set, get) => ({
                 state.rows.map((row) =>
                     idSet.has(row.id)
                         ? {
-                            ...row,
-                            expiresAt,
-                            expired: true,
-                            seen: true
-                        }
+                              ...row,
+                              expiresAt,
+                              expired: true,
+                              seen: true
+                          }
                         : row
                 ),
                 state.detail
@@ -204,7 +231,9 @@ export const useVrcNotificationStore = create((set, get) => ({
         syncShellUnseenCount(get().unseenCount);
     },
     markNotificationsSeen(ids) {
-        const idSet = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+        const idSet = new Set(
+            (Array.isArray(ids) ? ids : [ids]).filter(Boolean)
+        );
         if (!idSet.size) {
             return;
         }
@@ -213,9 +242,9 @@ export const useVrcNotificationStore = create((set, get) => ({
                 state.rows.map((row) =>
                     idSet.has(row.id)
                         ? {
-                            ...row,
-                            seen: true
-                        }
+                              ...row,
+                              seen: true
+                          }
                         : row
                 ),
                 state.detail
@@ -225,7 +254,11 @@ export const useVrcNotificationStore = create((set, get) => ({
     },
     async markNotificationSeen(notification) {
         const auth = getCurrentAuth();
-        if (!auth.currentUserId || !notification?.id || !isUnseenNotification(notification)) {
+        if (
+            !auth.currentUserId ||
+            !notification?.id ||
+            !isUnseenNotification(notification)
+        ) {
             return;
         }
         await notificationRepository.markSeen({
@@ -244,7 +277,9 @@ export const useVrcNotificationStore = create((set, get) => ({
             return;
         }
 
-        const ids = unseenRows.map((notification) => notification.id).filter(Boolean);
+        const ids = unseenRows
+            .map((notification) => notification.id)
+            .filter(Boolean);
         const localV2Ids = unseenRows
             .filter((notification) => Number(notification.version) === 2)
             .map((notification) => notification.id)
@@ -259,14 +294,18 @@ export const useVrcNotificationStore = create((set, get) => ({
                 ids: localV2Ids
             });
             for (const notification of unseenRows) {
-                await notificationRepository.markSeen({
-                    userId: auth.currentUserId,
-                    id: notification.id,
-                    version: notification.version,
-                    endpoint: auth.currentUserEndpoint
-                })
+                await notificationRepository
+                    .markSeen({
+                        userId: auth.currentUserId,
+                        id: notification.id,
+                        version: notification.version,
+                        endpoint: auth.currentUserEndpoint
+                    })
                     .catch((error) => {
-                        console.warn('Failed to mark VRChat notification as seen:', error);
+                        console.warn(
+                            'Failed to mark VRChat notification as seen:',
+                            error
+                        );
                     });
                 await delay(250);
             }

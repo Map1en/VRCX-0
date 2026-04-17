@@ -29,7 +29,11 @@ function normalizeValues(values) {
     return Array.from(
         new Set(
             (Array.isArray(values) ? values : [])
-                .map((value) => (typeof value === 'string' ? value.trim() : String(value ?? '').trim()))
+                .map((value) =>
+                    typeof value === 'string'
+                        ? value.trim()
+                        : String(value ?? '').trim()
+                )
                 .filter(Boolean)
         )
     );
@@ -52,7 +56,9 @@ function mapEntitiesById(items) {
     const byId = {};
     for (const item of Array.isArray(items) ? items : []) {
         const itemId =
-            typeof item?.id === 'string' ? item.id.trim() : String(item?.id ?? '').trim();
+            typeof item?.id === 'string'
+                ? item.id.trim()
+                : String(item?.id ?? '').trim();
         if (!itemId) {
             continue;
         }
@@ -72,7 +78,9 @@ async function loadRemoteDetails(type, endpoint, tags) {
         );
     }
 
-    const worlds = await vrchatFavoriteRepository.getAllFavoriteWorlds({ endpoint });
+    const worlds = await vrchatFavoriteRepository.getAllFavoriteWorlds({
+        endpoint
+    });
     return mapEntitiesById(worlds);
 }
 
@@ -84,12 +92,20 @@ export function useFavoriteRemoteDetails({
     refreshToken = 0
 }) {
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const normalizedIds = useMemo(() => normalizeValues(favoriteIds), [favoriteIds]);
-    const normalizedTags = useMemo(() => normalizeValues(avatarTags), [avatarTags]);
+    const normalizedIds = useMemo(
+        () => normalizeValues(favoriteIds),
+        [favoriteIds]
+    );
+    const normalizedTags = useMemo(
+        () => normalizeValues(avatarTags),
+        [avatarTags]
+    );
     const idsKey = normalizedIds.join('|');
     const tagsKey = normalizedTags.join('|');
     const cacheKey = buildCacheKey(type, endpoint, idsKey, tagsKey);
-    const [state, setState] = useState(() => detailCache.get(cacheKey) ?? buildInitialState());
+    const [state, setState] = useState(
+        () => detailCache.get(cacheKey) ?? buildInitialState()
+    );
 
     useEffect(() => {
         const cachedState = detailCache.get(cacheKey);
@@ -195,7 +211,15 @@ export function useFavoriteRemoteDetails({
         return () => {
             active = false;
         };
-    }, [cacheKey, enabled, endpoint, normalizedIds, normalizedTags, refreshToken, type]);
+    }, [
+        cacheKey,
+        enabled,
+        endpoint,
+        normalizedIds,
+        normalizedTags,
+        refreshToken,
+        type
+    ]);
 
     return state;
 }

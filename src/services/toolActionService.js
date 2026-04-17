@@ -35,24 +35,39 @@ export async function triggerToolByKey(toolKey, { navigate, t }) {
     if (action.type === 'app-api') {
         try {
             const result = await backend.app[action.method]();
-            toast[result ? 'success' : 'error'](t(result ? action.successMessageKey : action.errorMessageKey));
+            toast[result ? 'success' : 'error'](
+                t(result ? action.successMessageKey : action.errorMessageKey)
+            );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : t(action.errorMessageKey));
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t(action.errorMessageKey)
+            );
         }
         return;
     }
 
     if (action.type === 'store-action') {
         const setSystemHostOpen = useRuntimeStore.getState().setSystemHostOpen;
-        if (action.target === 'vrcx' && action.method === 'showRegistryBackupDialog') {
+        if (
+            action.target === 'vrcx' &&
+            action.method === 'showRegistryBackupDialog'
+        ) {
             setSystemHostOpen('registryBackupOpen', true);
             return;
         }
-        if (action.target === 'launch' && action.method === 'showLaunchOptions') {
+        if (
+            action.target === 'launch' &&
+            action.method === 'showLaunchOptions'
+        ) {
             setSystemHostOpen('launchOptionsOpen', true);
             return;
         }
-        if (action.target === 'advancedSettings' && action.method === 'showVRChatConfig') {
+        if (
+            action.target === 'advancedSettings' &&
+            action.method === 'showVRChatConfig'
+        ) {
             setSystemHostOpen('vrchatConfigOpen', true);
             return;
         }

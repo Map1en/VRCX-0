@@ -1,13 +1,14 @@
-import webRepository from './webRepository.js';
-import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
-import sqliteRepository from './sqliteRepository.js';
 import { database } from '@/services/database/index.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/services/entityQueryCacheService.js';
+
+import { safeJsonParse } from './baseRepository.js';
+import sqliteRepository from './sqliteRepository.js';
+import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import webRepository from './webRepository.js';
 
 const PAGE_SIZE = 50;
 const MAX_OFFSET = 5000;
@@ -59,7 +60,10 @@ function unwrapErrorMessage(json, status) {
     return `VRChat avatar request failed (${status})`;
 }
 
-async function execute(path, { endpoint = '', method = 'GET', params = null } = {}) {
+async function execute(
+    path,
+    { endpoint = '', method = 'GET', params = null } = {}
+) {
     const requestOptions = {
         url: buildUrl(path, method === 'GET' ? params : {}, endpoint),
         method
@@ -98,7 +102,11 @@ async function executePut(path, params = {}, { endpoint = '' } = {}) {
     return execute(path, { endpoint, method: 'PUT', params });
 }
 
-async function getAvatarsPage({ endpoint = '', offset = 0, n = PAGE_SIZE } = {}) {
+async function getAvatarsPage({
+    endpoint = '',
+    offset = 0,
+    n = PAGE_SIZE
+} = {}) {
     return executeGet(
         'avatars',
         {
@@ -159,21 +167,38 @@ async function getMyAvatars({
     });
 }
 
-async function updateAvatarTags({ avatarId, previousTags = [], nextTags = [] }) {
-    const normalizedAvatarId = typeof avatarId === 'string' ? avatarId.trim() : '';
+async function updateAvatarTags({
+    avatarId,
+    previousTags = [],
+    nextTags = []
+}) {
+    const normalizedAvatarId =
+        typeof avatarId === 'string' ? avatarId.trim() : '';
     if (!normalizedAvatarId) {
-        throw new Error('MyAvatarRepository.updateAvatarTags requires an avatar id.');
+        throw new Error(
+            'MyAvatarRepository.updateAvatarTags requires an avatar id.'
+        );
     }
 
     const previousMap = new Map(
         (Array.isArray(previousTags) ? previousTags : [])
-            .filter((entry) => typeof entry?.tag === 'string' && entry.tag.trim())
-            .map((entry) => [entry.tag.trim(), { tag: entry.tag.trim(), color: entry.color || null }])
+            .filter(
+                (entry) => typeof entry?.tag === 'string' && entry.tag.trim()
+            )
+            .map((entry) => [
+                entry.tag.trim(),
+                { tag: entry.tag.trim(), color: entry.color || null }
+            ])
     );
     const nextMap = new Map(
         (Array.isArray(nextTags) ? nextTags : [])
-            .filter((entry) => typeof entry?.tag === 'string' && entry.tag.trim())
-            .map((entry) => [entry.tag.trim(), { tag: entry.tag.trim(), color: entry.color || null }])
+            .filter(
+                (entry) => typeof entry?.tag === 'string' && entry.tag.trim()
+            )
+            .map((entry) => [
+                entry.tag.trim(),
+                { tag: entry.tag.trim(), color: entry.color || null }
+            ])
     );
 
     await sqliteRepository.transaction(async () => {
@@ -186,9 +211,17 @@ async function updateAvatarTags({ avatarId, previousTags = [], nextTags = [] }) 
         for (const [tag, entry] of nextMap) {
             const previous = previousMap.get(tag);
             if (!previous) {
-                await database.addAvatarTag(normalizedAvatarId, tag, entry.color);
+                await database.addAvatarTag(
+                    normalizedAvatarId,
+                    tag,
+                    entry.color
+                );
             } else if ((previous.color || null) !== (entry.color || null)) {
-                await database.updateAvatarTagColor(normalizedAvatarId, tag, entry.color);
+                await database.updateAvatarTagColor(
+                    normalizedAvatarId,
+                    tag,
+                    entry.color
+                );
             }
         }
     });
@@ -197,7 +230,8 @@ async function updateAvatarTags({ avatarId, previousTags = [], nextTags = [] }) 
 }
 
 async function saveAvatar({ avatarId, endpoint = '', params = {} }) {
-    const normalizedAvatarId = typeof avatarId === 'string' ? avatarId.trim() : '';
+    const normalizedAvatarId =
+        typeof avatarId === 'string' ? avatarId.trim() : '';
     if (!normalizedAvatarId) {
         throw new Error('MyAvatarRepository.saveAvatar requires an avatar id.');
     }
@@ -215,9 +249,12 @@ async function saveAvatar({ avatarId, endpoint = '', params = {} }) {
 }
 
 async function createImpostor({ avatarId, endpoint = '' } = {}) {
-    const normalizedAvatarId = typeof avatarId === 'string' ? avatarId.trim() : '';
+    const normalizedAvatarId =
+        typeof avatarId === 'string' ? avatarId.trim() : '';
     if (!normalizedAvatarId) {
-        throw new Error('MyAvatarRepository.createImpostor requires an avatar id.');
+        throw new Error(
+            'MyAvatarRepository.createImpostor requires an avatar id.'
+        );
     }
 
     const response = await execute(

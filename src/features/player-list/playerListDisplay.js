@@ -4,6 +4,7 @@ import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
 import { languageMappings } from '@/shared/constants/language.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
+
 import { normalizeString } from './playerListRows.js';
 
 export function resolvePlatformMeta(platform) {

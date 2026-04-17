@@ -6,12 +6,7 @@ import {
     translateAccessType
 } from './locationParser.js';
 
-export {
-    parseLocation,
-    displayLocation,
-    resolveRegion,
-    translateAccessType
-};
+export { parseLocation, displayLocation, resolveRegion, translateAccessType };
 
 function normalizeLocationValue(value) {
     if (typeof value === 'string') {
@@ -21,12 +16,21 @@ function normalizeLocationValue(value) {
         return String(value ?? '').trim();
     }
 
-    const tag = normalizeLocationValue(value.tag || value.location || value.$location?.tag);
+    const tag = normalizeLocationValue(
+        value.tag || value.location || value.$location?.tag
+    );
     if (tag) {
         return tag;
     }
-    const worldId = normalizeLocationValue(value.worldId || value.world_id || value.$location?.worldId);
-    const instanceId = normalizeLocationValue(value.instanceId || value.instance_id || value.id || value.$location?.instanceId);
+    const worldId = normalizeLocationValue(
+        value.worldId || value.world_id || value.$location?.worldId
+    );
+    const instanceId = normalizeLocationValue(
+        value.instanceId ||
+            value.instance_id ||
+            value.id ||
+            value.$location?.instanceId
+    );
     if (worldId && instanceId) {
         return `${worldId}:${instanceId}`;
     }
@@ -53,45 +57,31 @@ function getFriendLocationValues(friend, field) {
     const ref = getObject(friend?.ref);
     if (field === 'traveling') {
         if (ref) {
-            return [
-                ref.travelingToLocation,
-                ref.$travelingToLocation
-            ];
+            return [ref.travelingToLocation, ref.$travelingToLocation];
         }
-        return [
-            direct?.travelingToLocation,
-            direct?.$travelingToLocation
-        ];
+        return [direct?.travelingToLocation, direct?.$travelingToLocation];
     }
     if (ref) {
-        return [
-            ref.location,
-            ref.$location?.tag,
-            ref.$locationTag
-        ];
+        return [ref.location, ref.$location?.tag, ref.$locationTag];
     }
-    return [
-        direct?.location,
-        direct?.$location?.tag,
-        direct?.$locationTag
-    ];
+    return [direct?.location, direct?.$location?.tag, direct?.$locationTag];
 }
 
 function isSentinelLocationValue(value) {
     const normalized = normalizeLocationValue(value).toLowerCase();
-    return normalized === 'offline' ||
+    return (
+        normalized === 'offline' ||
         normalized === 'offline:offline' ||
         normalized === 'private' ||
         normalized === 'private:private' ||
         normalized === 'traveling' ||
-        normalized === 'traveling:traveling';
+        normalized === 'traveling:traveling'
+    );
 }
 
 function normalizeSentinelLocationValue(value) {
     const normalized = normalizeLocationValue(value).toLowerCase();
-    return isSentinelLocationValue(normalized)
-        ? normalized.split(':')[0]
-        : '';
+    return isSentinelLocationValue(normalized) ? normalized.split(':')[0] : '';
 }
 
 function resolveCurrentFriendLocationValue(friend) {
@@ -108,11 +98,15 @@ function resolveCurrentFriendLocationValue(friend) {
 }
 
 function resolveCurrentFriendLocationSentinel(friend) {
-    return normalizeSentinelLocationValue(resolveCurrentFriendLocationValue(friend));
+    return normalizeSentinelLocationValue(
+        resolveCurrentFriendLocationValue(friend)
+    );
 }
 
 function getFriendId(friend) {
-    return normalizeLocationValue(friend?.id || friend?.userId || friend?.ref?.id || friend?.ref?.userId);
+    return normalizeLocationValue(
+        friend?.id || friend?.userId || friend?.ref?.id || friend?.ref?.userId
+    );
 }
 
 function isConcreteInstanceLocation(location) {
@@ -145,27 +139,35 @@ function isLastLocationFriend(lastLocation, friend) {
     return false;
 }
 
-function resolveFriendPresenceLocation(friend, {
-    preferTraveling = true,
-    requireInstance = false,
-    lastLocation = null
-} = {}) {
+function resolveFriendPresenceLocation(
+    friend,
+    {
+        preferTraveling = true,
+        requireInstance = false,
+        lastLocation = null
+    } = {}
+) {
     const currentLocation = resolveCurrentFriendLocationValue(friend);
     const currentSentinel = resolveCurrentFriendLocationSentinel(friend);
     if (currentSentinel === 'offline' || currentSentinel === 'private') {
         return requireInstance ? '' : currentSentinel;
     }
 
-    const currentLocationIsConcrete = isConcreteInstanceLocation(currentLocation);
-    const canUseLegacyLocationFields = currentLocationIsConcrete || currentSentinel === 'traveling';
-    const orderedFields = preferTraveling ? ['traveling', 'location'] : ['location', 'traveling'];
+    const currentLocationIsConcrete =
+        isConcreteInstanceLocation(currentLocation);
+    const canUseLegacyLocationFields =
+        currentLocationIsConcrete || currentSentinel === 'traveling';
+    const orderedFields = preferTraveling
+        ? ['traveling', 'location']
+        : ['location', 'traveling'];
     for (const field of orderedFields) {
         if (field === 'location' && currentSentinel === 'traveling') {
             continue;
         }
-        const values = field === 'location' && !canUseLegacyLocationFields
-            ? [currentLocation]
-            : getFriendLocationValues(friend, field);
+        const values =
+            field === 'location' && !canUseLegacyLocationFields
+                ? [currentLocation]
+                : getFriendLocationValues(friend, field);
         for (const value of values) {
             const normalized = normalizeLocationValue(value);
             if (!normalized || !isRealInstance(normalized)) {
@@ -180,7 +182,9 @@ function resolveFriendPresenceLocation(friend, {
     if (currentSentinel === 'traveling') {
         return requireInstance ? '' : 'traveling';
     }
-    const lastLocationValue = currentLocationIsConcrete ? normalizeLocationValue(lastLocation?.location) : '';
+    const lastLocationValue = currentLocationIsConcrete
+        ? normalizeLocationValue(lastLocation?.location)
+        : '';
     if (lastLocationValue && isLastLocationFriend(lastLocation, friend)) {
         if (!requireInstance || isConcreteInstanceLocation(lastLocationValue)) {
             return lastLocationValue;

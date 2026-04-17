@@ -62,7 +62,9 @@ describe('friendListState', () => {
             pageSize: 50,
             columnVisibility: { avatar: false }
         });
-        expect(readPersistedFriendListState().updatedAt).toEqual(expect.any(Number));
+        expect(readPersistedFriendListState().updatedAt).toEqual(
+            expect.any(Number)
+        );
     });
 
     it('falls back to defaults when saved sorting or page sizes cannot be used', () => {
@@ -84,7 +86,9 @@ describe('friendListState', () => {
             }
         };
         expect(readPersistedFriendListState()).toEqual({});
-        expect(() => writePersistedFriendListState({ pageSize: 10 })).not.toThrow();
+        expect(() =>
+            writePersistedFriendListState({ pageSize: 10 })
+        ).not.toThrow();
 
         expect(sanitizeFriendListSorting([{ id: 'unknown', desc: true }])).toBe(
             FRIEND_LIST_DEFAULT_SORTING
@@ -107,9 +111,7 @@ describe('friendListState', () => {
         ]);
 
         expect(sanitizeFriendListPageSizes(['50', 10, 25, 10])).toEqual([
-            10,
-            25,
-            50
+            10, 25, 50
         ]);
         expect(resolveFriendListPageSize('50', [10, 25, 50], 25)).toBe(50);
         expect(resolveFriendListPageSize('999', [10, 25, 50], 25)).toBe(25);
@@ -129,7 +131,9 @@ describe('friendListState', () => {
             status: true
         });
 
-        expect(sanitizeFriendListColumnOrder(['status', 'avatar', 'status'])).toEqual([
+        expect(
+            sanitizeFriendListColumnOrder(['status', 'avatar', 'status'])
+        ).toEqual([
             'status',
             'avatar',
             ...FRIEND_LIST_COLUMN_IDS.filter(

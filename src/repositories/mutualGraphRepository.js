@@ -81,14 +81,18 @@ async function getSnapshot(userId) {
     return {
         snapshot,
         meta
-    }
+    };
 }
 
 async function getMutualFriends({ friendId, offset = 0, n = 100 } = {}) {
     const normalizedFriendId =
-        typeof friendId === 'string' ? friendId.trim() : String(friendId ?? '').trim();
+        typeof friendId === 'string'
+            ? friendId.trim()
+            : String(friendId ?? '').trim();
     if (!normalizedFriendId) {
-        throw new Error('MutualGraphRepository.getMutualFriends requires a friend id.');
+        throw new Error(
+            'MutualGraphRepository.getMutualFriends requires a friend id.'
+        );
     }
 
     return vrchatFriendRepository.executeGet(
@@ -137,8 +141,11 @@ async function saveSnapshot(userId, entries) {
             if (!friendId) {
                 return;
             }
-            const collection = mutualIds instanceof Set ? Array.from(mutualIds) : mutualIds;
-            for (const mutualId of Array.isArray(collection) ? collection : []) {
+            const collection =
+                mutualIds instanceof Set ? Array.from(mutualIds) : mutualIds;
+            for (const mutualId of Array.isArray(collection)
+                ? collection
+                : []) {
                 if (mutualId) {
                     edgeRows.push([String(friendId), String(mutualId)]);
                 }
@@ -150,7 +157,9 @@ async function saveSnapshot(userId, entries) {
 
 async function updateMutualsForFriend(userId, friendId, mutualIds) {
     const normalizedFriendId =
-        typeof friendId === 'string' ? friendId.trim() : String(friendId ?? '').trim();
+        typeof friendId === 'string'
+            ? friendId.trim()
+            : String(friendId ?? '').trim();
     if (!normalizedFriendId) {
         return;
     }
@@ -158,13 +167,18 @@ async function updateMutualsForFriend(userId, friendId, mutualIds) {
     const userPrefix = await ensureTables(userId);
     const friendTable = `${userPrefix}_mutual_graph_friends`;
     const linkTable = `${userPrefix}_mutual_graph_links`;
-    const collection = Array.isArray(mutualIds) ? mutualIds.filter(Boolean) : [];
+    const collection = Array.isArray(mutualIds)
+        ? mutualIds.filter(Boolean)
+        : [];
 
     await sqliteRepository.transaction(async (tx) => {
         await insertFriendRows(tx, friendTable, [normalizedFriendId]);
-        await tx.executeNonQuery(`DELETE FROM ${linkTable} WHERE friend_id = @friendId`, {
-            '@friendId': normalizedFriendId
-        });
+        await tx.executeNonQuery(
+            `DELETE FROM ${linkTable} WHERE friend_id = @friendId`,
+            {
+                '@friendId': normalizedFriendId
+            }
+        );
         await insertEdgeRows(
             tx,
             linkTable,
@@ -175,7 +189,9 @@ async function updateMutualsForFriend(userId, friendId, mutualIds) {
 
 async function upsertMeta(userId, friendId, { lastFetchedAt, optedOut } = {}) {
     const normalizedFriendId =
-        typeof friendId === 'string' ? friendId.trim() : String(friendId ?? '').trim();
+        typeof friendId === 'string'
+            ? friendId.trim()
+            : String(friendId ?? '').trim();
     if (!normalizedFriendId) {
         return;
     }
@@ -203,7 +219,11 @@ async function bulkUpsertMeta(userId, entries) {
     const now = new Date().toISOString();
     entries.forEach((entry, friendId) => {
         if (friendId) {
-            rows.push([String(friendId), entry?.lastFetchedAt || now, entry?.optedOut ? 1 : 0]);
+            rows.push([
+                String(friendId),
+                entry?.lastFetchedAt || now,
+                entry?.optedOut ? 1 : 0
+            ]);
         }
     });
     await insertMetaRows(sqliteRepository, metaTable, rows);
@@ -231,8 +251,14 @@ export {
 export default mutualGraphRepository;
 
 async function insertFriendRows(tx, friendTable, friendIds) {
-    const normalizedFriendIds = Array.from(new Set((friendIds || []).map(String).filter(Boolean)));
-    for (let chunkStart = 0; chunkStart < normalizedFriendIds.length; chunkStart += 250) {
+    const normalizedFriendIds = Array.from(
+        new Set((friendIds || []).map(String).filter(Boolean))
+    );
+    for (
+        let chunkStart = 0;
+        chunkStart < normalizedFriendIds.length;
+        chunkStart += 250
+    ) {
         const chunk = normalizedFriendIds.slice(chunkStart, chunkStart + 250);
         if (!chunk.length) {
             continue;
@@ -262,7 +288,11 @@ async function insertEdgeRows(tx, linkTable, edgeRows) {
         uniqueRows.push([friendId, mutualId]);
     }
 
-    for (let chunkStart = 0; chunkStart < uniqueRows.length; chunkStart += 200) {
+    for (
+        let chunkStart = 0;
+        chunkStart < uniqueRows.length;
+        chunkStart += 200
+    ) {
         const chunk = uniqueRows.slice(chunkStart, chunkStart + 200);
         if (!chunk.length) {
             continue;
@@ -289,15 +319,17 @@ async function insertMetaRows(tx, metaTable, rows) {
             continue;
         }
         const args = {};
-        const values = chunk.map(([friendId, lastFetchedAt, optedOut], index) => {
-            const friendKey = `@friendId${chunkStart + index}`;
-            const fetchedKey = `@lastFetchedAt${chunkStart + index}`;
-            const optedOutKey = `@optedOut${chunkStart + index}`;
-            args[friendKey] = friendId;
-            args[fetchedKey] = lastFetchedAt;
-            args[optedOutKey] = optedOut;
-            return `(${friendKey}, ${fetchedKey}, ${optedOutKey})`;
-        });
+        const values = chunk.map(
+            ([friendId, lastFetchedAt, optedOut], index) => {
+                const friendKey = `@friendId${chunkStart + index}`;
+                const fetchedKey = `@lastFetchedAt${chunkStart + index}`;
+                const optedOutKey = `@optedOut${chunkStart + index}`;
+                args[friendKey] = friendId;
+                args[fetchedKey] = lastFetchedAt;
+                args[optedOutKey] = optedOut;
+                return `(${friendKey}, ${fetchedKey}, ${optedOutKey})`;
+            }
+        );
         await tx.executeNonQuery(
             `INSERT OR REPLACE INTO ${metaTable} (friend_id, last_fetched_at, opted_out) VALUES ${values.join(', ')}`,
             args

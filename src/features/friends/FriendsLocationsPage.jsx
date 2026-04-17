@@ -1,4 +1,3 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ChevronDownIcon,
     GlobeIcon,
@@ -7,22 +6,32 @@ import {
     Settings2Icon,
     UsersIcon
 } from 'lucide-react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { FriendLocationCard } from '@/components/friends/FriendLocationCard.jsx';
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
-import { cn } from '@/lib/utils.js';
+import { Location } from '@/components/Location.jsx';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
+import { cn } from '@/lib/utils.js';
 import {
     configRepository,
     notificationRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
-import { parseLocation, resolveFriendPresenceLocation } from '@/shared/utils/location.js';
-import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
-import { openGroupDialog, openUserDialog, openWorldDialog } from '@/services/dialogService.js';
+import {
+    openGroupDialog,
+    openUserDialog,
+    openWorldDialog
+} from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
+import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
+import {
+    parseLocation,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -30,20 +39,13 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import {
-    Field,
-    FieldContent,
-    FieldGroup,
-    FieldLabel
-} from '@/ui/shadcn/field';
+import { Field, FieldContent, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
-import { Location } from '@/components/Location.jsx';
-import { FriendLocationCard } from '@/components/friends/FriendLocationCard.jsx';
 import {
     FRIENDS_LOCATIONS_SEGMENTS as SEGMENTS,
     parseConfigArray
@@ -65,11 +67,15 @@ import {
 } from './friendsLocationsRows.js';
 
 function formatOptionValue(value) {
-    return Number(value).toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+    return Number(value)
+        .toFixed(2)
+        .replace(/\.00$/, '')
+        .replace(/(\.\d)0$/, '$1');
 }
 
 function resolveLocationSummary(friend) {
-    const source = friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
+    const source =
+        friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
     const travelingToLocation = [
         source?.travelingToLocation,
         source?.$travelingToLocation
@@ -84,7 +90,9 @@ function resolveLocationSummary(friend) {
         };
     }
 
-    const location = resolveFriendPresenceLocation(friend, { preferTraveling: false });
+    const location = resolveFriendPresenceLocation(friend, {
+        preferTraveling: false
+    });
     const parsedLocation = parseLocation(location);
 
     if (!location || parsedLocation.isOffline) {
@@ -110,7 +118,13 @@ function resolveLocationSummary(friend) {
 
     return {
         label: resolveFriendWorldName(friend),
-        meta: [resolveFriendGroupName(friend), parsedLocation.accessTypeName, parsedLocation.instanceName].filter(Boolean).join(' · ')
+        meta: [
+            resolveFriendGroupName(friend),
+            parsedLocation.accessTypeName,
+            parsedLocation.instanceName
+        ]
+            .filter(Boolean)
+            .join(' · ')
     };
 }
 
@@ -127,7 +141,8 @@ function resolveWorldDialogTarget(target) {
 
 function appendLabel(labelsByFriendId, friendId, label) {
     const normalizedFriendId = normalizeId(friendId);
-    const normalizedLabel = typeof label === 'string' ? label.trim() : String(label ?? '').trim();
+    const normalizedLabel =
+        typeof label === 'string' ? label.trim() : String(label ?? '').trim();
     if (!normalizedFriendId || !normalizedLabel) {
         return;
     }
@@ -153,12 +168,15 @@ function buildFavoriteGroupLabelsByFriendId({
         }
 
         const label = group?.displayName || group?.name || groupKey;
-        for (const friendId of groupedFavoriteFriendIdsByGroupKey?.[groupKey] ?? []) {
+        for (const friendId of groupedFavoriteFriendIdsByGroupKey?.[groupKey] ??
+            []) {
             appendLabel(labelsByFriendId, friendId, label);
         }
     }
 
-    for (const [groupName, friendIds] of Object.entries(localFriendFavorites ?? {})) {
+    for (const [groupName, friendIds] of Object.entries(
+        localFriendFavorites ?? {}
+    )) {
         if (!Array.isArray(friendIds)) {
             continue;
         }
@@ -191,7 +209,11 @@ function compareFavoriteGroups(left, right, order = []) {
     );
 }
 
-function resolveFavoriteGroupLabels(friend, favoriteGroupLabelsByFriendId, favoriteIds) {
+function resolveFavoriteGroupLabels(
+    friend,
+    favoriteGroupLabelsByFriendId,
+    favoriteIds
+) {
     const friendId = normalizeId(friend?.id);
     if (!friendId) {
         return [];
@@ -253,9 +275,7 @@ function resolveInstanceSectionDescriptor(friend) {
             ...descriptor,
             key: `instance:${target.rawLocation || target.worldId}`,
             title: summary.label || target.worldId || 'World',
-            description: [summary.meta]
-                .filter(Boolean)
-                .join(' · '),
+            description: [summary.meta].filter(Boolean).join(' · '),
             worldId: target.worldId,
             groupId: target.groupId,
             rawLocation: target.rawLocation
@@ -271,22 +291,27 @@ function resolveInstanceSectionDescriptor(friend) {
     };
 }
 
-function buildSameInstanceSections({ sameInstanceGroups, displayInstanceInfo = true }) {
-    return sameInstanceGroups.map(({ location, friends }) => {
-        const descriptor = resolveInstanceSectionDescriptor({
-            ...friends[0],
-            location,
-            travelingToLocation: ''
-        });
+function buildSameInstanceSections({
+    sameInstanceGroups,
+    displayInstanceInfo = true
+}) {
+    return sameInstanceGroups
+        .map(({ location, friends }) => {
+            const descriptor = resolveInstanceSectionDescriptor({
+                ...friends[0],
+                location,
+                travelingToLocation: ''
+            });
 
-        return {
-            ...descriptor,
-            key: `instance:${location}`,
-            rawLocation: location,
-            displayInstanceInfo,
-            friends
-        };
-    }).filter((section) => section.friends.length > 0);
+            return {
+                ...descriptor,
+                key: `instance:${location}`,
+                rawLocation: location,
+                displayInstanceInfo,
+                friends
+            };
+        })
+        .filter((section) => section.friends.length > 0);
 }
 
 function upsertSection(sectionMap, descriptor, friend) {
@@ -325,14 +350,22 @@ function buildFriendSections({
 
     for (const friend of friends) {
         if (groupingMode === 'favoriteGroup') {
-            const labels = resolveFavoriteGroupLabels(friend, favoriteGroupLabelsByFriendId, favoriteIds);
-            const label = labels.length > 0 ? labels.join(' / ') : 'No favorite group';
+            const labels = resolveFavoriteGroupLabels(
+                friend,
+                favoriteGroupLabelsByFriendId,
+                favoriteIds
+            );
+            const label =
+                labels.length > 0 ? labels.join(' / ') : 'No favorite group';
             upsertSection(
                 sectionsByKey,
                 {
                     key: `favorite:${label}`,
                     title: label,
-                    description: labels.length > 0 ? 'Favorite group segment' : 'Friend is not in a hydrated favorite group.',
+                    description:
+                        labels.length > 0
+                            ? 'Favorite group segment'
+                            : 'Friend is not in a hydrated favorite group.',
                     worldId: '',
                     groupId: ''
                 },
@@ -341,7 +374,11 @@ function buildFriendSections({
             continue;
         }
 
-        upsertSection(sectionsByKey, resolveInstanceSectionDescriptor(friend), friend);
+        upsertSection(
+            sectionsByKey,
+            resolveInstanceSectionDescriptor(friend),
+            friend
+        );
     }
 
     return Array.from(sectionsByKey.values()).sort((left, right) => {
@@ -351,7 +388,9 @@ function buildFriendSections({
         if (right.title === 'Offline' && left.title !== 'Offline') {
             return -1;
         }
-        return left.title.localeCompare(right.title, undefined, { sensitivity: 'base' });
+        return left.title.localeCompare(right.title, undefined, {
+            sensitivity: 'base'
+        });
     });
 }
 
@@ -372,23 +411,37 @@ function FriendsLocationsEmptyState({ title, description }) {
 export function FriendsLocationsPage({ embedded = false } = {}) {
     const { t } = useI18n();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const gameState = useRuntimeStore((state) => state.gameState);
-    const isFavoritesLoaded = useSessionStore((state) => state.isFavoritesLoaded);
+    const isFavoritesLoaded = useSessionStore(
+        (state) => state.isFavoritesLoaded
+    );
     const rosterStatus = useFriendRosterStore((state) => state.loadStatus);
     const rosterDetail = useFriendRosterStore((state) => state.detail);
     const onlineIds = useFriendRosterStore((state) => state.onlineIds);
     const activeIds = useFriendRosterStore((state) => state.activeIds);
     const offlineIds = useFriendRosterStore((state) => state.offlineIds);
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const remoteFavoriteFriendIds = useFavoriteStore((state) => state.favoriteFriendIds);
-    const favoriteFriendGroups = useFavoriteStore((state) => state.favoriteFriendGroups);
+    const remoteFavoriteFriendIds = useFavoriteStore(
+        (state) => state.favoriteFriendIds
+    );
+    const favoriteFriendGroups = useFavoriteStore(
+        (state) => state.favoriteFriendGroups
+    );
     const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore(
         (state) => state.groupedFavoriteFriendIdsByGroupKey
     );
-    const localFriendFavorites = useFavoriteStore((state) => state.localFriendFavorites);
-    const localFriendFavoriteGroups = useFavoriteStore((state) => state.localFriendFavoriteGroups);
+    const localFriendFavorites = useFavoriteStore(
+        (state) => state.localFriendFavorites
+    );
+    const localFriendFavoriteGroups = useFavoriteStore(
+        (state) => state.localFriendFavoriteGroups
+    );
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
     const [activeSegment, setActiveSegment] = useState('online');
@@ -396,7 +449,9 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
     const [showSameInstance, setShowSameInstance] = useState(false);
     const [cardScale, setCardScale] = useState(1);
     const [spacingScale, setSpacingScale] = useState(1);
-    const [collapsedFavoriteGroups, setCollapsedFavoriteGroups] = useState(() => new Set());
+    const [collapsedFavoriteGroups, setCollapsedFavoriteGroups] = useState(
+        () => new Set()
+    );
     const [sidebarFavoritePrefs, setSidebarFavoritePrefs] = useState({
         isDivideByGroup: false,
         selectedGroups: [],
@@ -421,27 +476,29 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             configRepository.getString('sidebarFavoriteGroups', '[]'),
             configRepository.getString('sidebarFavoriteGroupOrder', '[]')
         ])
-            .then(([
-                nextScale,
-                nextSpacing,
-                nextShowSameInstance,
-                nextDivideByGroup,
-                nextSelectedGroups,
-                nextGroupOrder
-            ]) => {
-                if (!active) {
-                    return;
-                }
+            .then(
+                ([
+                    nextScale,
+                    nextSpacing,
+                    nextShowSameInstance,
+                    nextDivideByGroup,
+                    nextSelectedGroups,
+                    nextGroupOrder
+                ]) => {
+                    if (!active) {
+                        return;
+                    }
 
-                setCardScale(clampScale(nextScale, 0.5, 1, 1));
-                setSpacingScale(clampScale(nextSpacing, 0.25, 1, 1));
-                setShowSameInstance(Boolean(nextShowSameInstance));
-                setSidebarFavoritePrefs({
-                    isDivideByGroup: Boolean(nextDivideByGroup),
-                    selectedGroups: parseConfigArray(nextSelectedGroups),
-                    groupOrder: parseConfigArray(nextGroupOrder)
-                });
-            })
+                    setCardScale(clampScale(nextScale, 0.5, 1, 1));
+                    setSpacingScale(clampScale(nextSpacing, 0.25, 1, 1));
+                    setShowSameInstance(Boolean(nextShowSameInstance));
+                    setSidebarFavoritePrefs({
+                        isDivideByGroup: Boolean(nextDivideByGroup),
+                        selectedGroups: parseConfigArray(nextSelectedGroups),
+                        groupOrder: parseConfigArray(nextGroupOrder)
+                    });
+                }
+            )
             .catch(() => {});
 
         return () => {
@@ -452,18 +509,36 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
     useEffect(() => {
         let active = true;
         const unsubscribe = onPreferenceChanged(
-            ['isSidebarDivideByFriendGroup', 'sidebarFavoriteGroups', 'sidebarFavoriteGroupOrder'],
+            [
+                'isSidebarDivideByFriendGroup',
+                'sidebarFavoriteGroups',
+                'sidebarFavoriteGroupOrder'
+            ],
             async () => {
                 try {
-                    const [nextDivideByGroup, nextSelectedGroups, nextGroupOrder] = await Promise.all([
-                        configRepository.getBool('isSidebarDivideByFriendGroup', false),
-                        configRepository.getString('sidebarFavoriteGroups', '[]'),
-                        configRepository.getString('sidebarFavoriteGroupOrder', '[]')
+                    const [
+                        nextDivideByGroup,
+                        nextSelectedGroups,
+                        nextGroupOrder
+                    ] = await Promise.all([
+                        configRepository.getBool(
+                            'isSidebarDivideByFriendGroup',
+                            false
+                        ),
+                        configRepository.getString(
+                            'sidebarFavoriteGroups',
+                            '[]'
+                        ),
+                        configRepository.getString(
+                            'sidebarFavoriteGroupOrder',
+                            '[]'
+                        )
                     ]);
                     if (active) {
                         setSidebarFavoritePrefs({
                             isDivideByGroup: Boolean(nextDivideByGroup),
-                            selectedGroups: parseConfigArray(nextSelectedGroups),
+                            selectedGroups:
+                                parseConfigArray(nextSelectedGroups),
                             groupOrder: parseConfigArray(nextGroupOrder)
                         });
                     }
@@ -558,7 +633,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         () => buildFavoriteIdSet(remoteFavoriteFriendIds, localFriendFavorites),
         [localFriendFavorites, remoteFavoriteFriendIds]
     );
-    const friendsMap = useMemo(() => new Map(Object.entries(friendsById || {})), [friendsById]);
+    const friendsMap = useMemo(
+        () => new Map(Object.entries(friendsById || {})),
+        [friendsById]
+    );
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUserSnapshot),
         [gameState, currentUserSnapshot]
@@ -567,7 +645,11 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
     const currentLocationSnapshot = useMemo(
         () => ({
             location: currentInviteLocation,
-            friendList: new Set(Array.isArray(currentLocationPlayerIds) ? currentLocationPlayerIds : [])
+            friendList: new Set(
+                Array.isArray(currentLocationPlayerIds)
+                    ? currentLocationPlayerIds
+                    : []
+            )
         }),
         [currentInviteLocation, currentLocationPlayerIds]
     );
@@ -580,7 +662,11 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             }),
         [currentInviteLocation, currentUserId]
     );
-    const canSendInvite = Boolean(gameState?.isGameRunning && currentInviteLocation && canInviteFromCurrentLocation);
+    const canSendInvite = Boolean(
+        gameState?.isGameRunning &&
+        currentInviteLocation &&
+        canInviteFromCurrentLocation
+    );
     const canBoop = Boolean(currentUserSnapshot?.isBoopingEnabled);
 
     const favoriteGroupLabelsByFriendId = useMemo(
@@ -590,15 +676,22 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 groupedFavoriteFriendIdsByGroupKey,
                 localFriendFavorites
             }),
-        [favoriteFriendGroups, groupedFavoriteFriendIdsByGroupKey, localFriendFavorites]
+        [
+            favoriteFriendGroups,
+            groupedFavoriteFriendIdsByGroupKey,
+            localFriendFavorites
+        ]
     );
 
     const allFavoriteGroupKeys = useMemo(
         () => [
-            ...favoriteFriendGroups.map((group) => normalizeId(group?.key)).filter(Boolean),
+            ...favoriteFriendGroups
+                .map((group) => normalizeId(group?.key))
+                .filter(Boolean),
             ...(localFriendFavoriteGroups.length
                 ? localFriendFavoriteGroups
-                : Object.keys(localFriendFavorites || {}))
+                : Object.keys(localFriendFavorites || {})
+            )
                 .map((groupName) => `local:${groupName}`)
                 .filter(Boolean)
         ],
@@ -606,8 +699,8 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
     );
 
     const selectedFavoriteGroupKeys = useMemo(() => {
-        const configured = sidebarFavoritePrefs.selectedGroups.filter((groupKey) =>
-            allFavoriteGroupKeys.includes(groupKey)
+        const configured = sidebarFavoritePrefs.selectedGroups.filter(
+            (groupKey) => allFavoriteGroupKeys.includes(groupKey)
         );
         return new Set(configured.length ? configured : allFavoriteGroupKeys);
     }, [allFavoriteGroupKeys, sidebarFavoritePrefs.selectedGroups]);
@@ -620,7 +713,8 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         const ids = new Set();
         for (const groupKey of selectedFavoriteGroupKeys) {
             if (groupKey.startsWith('local:')) {
-                for (const id of localFriendFavorites?.[groupKey.slice(6)] || []) {
+                for (const id of localFriendFavorites?.[groupKey.slice(6)] ||
+                    []) {
                     const normalized = normalizeId(id);
                     if (normalized) {
                         ids.add(normalized);
@@ -629,7 +723,8 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 continue;
             }
 
-            for (const id of groupedFavoriteFriendIdsByGroupKey?.[groupKey] || []) {
+            for (const id of groupedFavoriteFriendIdsByGroupKey?.[groupKey] ||
+                []) {
                 const normalized = normalizeId(id);
                 if (normalized) {
                     ids.add(normalized);
@@ -664,11 +759,16 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             ),
         [onlineFriends, selectedFavoriteIds]
     );
-    const onlineFavoriteExclusionIds = sidebarFavoritePrefs.selectedGroups.length
+    const onlineFavoriteExclusionIds = sidebarFavoritePrefs.selectedGroups
+        .length
         ? selectedFavoriteIds
         : favoriteIds;
     const onlineNonFavoriteFriends = useMemo(
-        () => onlineFriends.filter((friend) => !onlineFavoriteExclusionIds.has(normalizeId(friend?.id))),
+        () =>
+            onlineFriends.filter(
+                (friend) =>
+                    !onlineFavoriteExclusionIds.has(normalizeId(friend?.id))
+            ),
         [onlineFavoriteExclusionIds, onlineFriends]
     );
     const sameInstanceGroups = useMemo(
@@ -680,15 +780,27 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         [sameInstanceGroups]
     );
     const sameInstanceFriendIds = useMemo(
-        () => new Set(sameInstanceFriends.map((friend) => normalizeId(friend?.id)).filter(Boolean)),
+        () =>
+            new Set(
+                sameInstanceFriends
+                    .map((friend) => normalizeId(friend?.id))
+                    .filter(Boolean)
+            ),
         [sameInstanceFriends]
     );
     const onlineWithoutSameInstanceFriends = useMemo(
-        () => onlineNonFavoriteFriends.filter((friend) => !sameInstanceFriendIds.has(normalizeId(friend?.id))),
+        () =>
+            onlineNonFavoriteFriends.filter(
+                (friend) => !sameInstanceFriendIds.has(normalizeId(friend?.id))
+            ),
         [onlineNonFavoriteFriends, sameInstanceFriendIds]
     );
     const segmentOptions = useMemo(
-        () => SEGMENTS.filter((segment) => showSameInstance || segment.value !== 'same-instance'),
+        () =>
+            SEGMENTS.filter(
+                (segment) =>
+                    showSameInstance || segment.value !== 'same-instance'
+            ),
         [showSameInstance]
     );
 
@@ -701,7 +813,14 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             active: activeFriends,
             offline: offlineFriends
         }),
-        [activeFriends, favoriteFriends, offlineFriends, onlineFriends, onlineNonFavoriteFriends, sameInstanceFriends]
+        [
+            activeFriends,
+            favoriteFriends,
+            offlineFriends,
+            onlineFriends,
+            onlineNonFavoriteFriends,
+            sameInstanceFriends
+        ]
     );
 
     const visibleFriends = useMemo(() => {
@@ -711,30 +830,59 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 ...onlineFriends,
                 ...activeFriends,
                 ...offlineFriends
-            ]).filter((friend) => matchesSearch(friend, deferredSearchQuery, favoriteIds));
+            ]).filter((friend) =>
+                matchesSearch(friend, deferredSearchQuery, favoriteIds)
+            );
         }
         const source =
             activeSegment === 'online'
                 ? onlineNonFavoriteFriends
-                : segmentMap[activeSegment] ?? [];
-        return source.filter((friend) => matchesSearch(friend, deferredSearchQuery, favoriteIds));
-    }, [activeFriends, activeSegment, deferredSearchQuery, favoriteFriends, favoriteIds, offlineFriends, onlineFriends, onlineNonFavoriteFriends, segmentMap]);
+                : (segmentMap[activeSegment] ?? []);
+        return source.filter((friend) =>
+            matchesSearch(friend, deferredSearchQuery, favoriteIds)
+        );
+    }, [
+        activeFriends,
+        activeSegment,
+        deferredSearchQuery,
+        favoriteFriends,
+        favoriteIds,
+        offlineFriends,
+        onlineFriends,
+        onlineNonFavoriteFriends,
+        segmentMap
+    ]);
 
     const favoriteGroupSections = useMemo(() => {
-        if (!sidebarFavoritePrefs.isDivideByGroup || activeSegment !== 'favorite' || deferredSearchQuery.trim()) {
+        if (
+            !sidebarFavoritePrefs.isDivideByGroup ||
+            activeSegment !== 'favorite' ||
+            deferredSearchQuery.trim()
+        ) {
             return [];
         }
 
-        const friendById = new Map(favoriteFriends.map((friend) => [normalizeId(friend?.id), friend]));
+        const friendById = new Map(
+            favoriteFriends.map((friend) => [normalizeId(friend?.id), friend])
+        );
         const seen = new Set();
         const sections = [];
         const orderedRemoteGroups = favoriteFriendGroups
             .map((group) => ({
                 key: normalizeId(group?.key),
-                label: group?.displayName || group?.name || normalizeId(group?.key)
+                label:
+                    group?.displayName || group?.name || normalizeId(group?.key)
             }))
-            .filter((group) => group.key && selectedFavoriteGroupKeys.has(group.key))
-            .sort((left, right) => compareFavoriteGroups(left, right, sidebarFavoritePrefs.groupOrder));
+            .filter(
+                (group) => group.key && selectedFavoriteGroupKeys.has(group.key)
+            )
+            .sort((left, right) =>
+                compareFavoriteGroups(
+                    left,
+                    right,
+                    sidebarFavoritePrefs.groupOrder
+                )
+            );
         const localGroupNames = localFriendFavoriteGroups.length
             ? localFriendFavoriteGroups
             : Object.keys(localFriendFavorites || {});
@@ -744,10 +892,18 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 label: groupName
             }))
             .filter((group) => selectedFavoriteGroupKeys.has(group.key))
-            .sort((left, right) => compareFavoriteGroups(left, right, sidebarFavoritePrefs.groupOrder));
+            .sort((left, right) =>
+                compareFavoriteGroups(
+                    left,
+                    right,
+                    sidebarFavoritePrefs.groupOrder
+                )
+            );
 
         for (const group of orderedRemoteGroups) {
-            const friendsInGroup = (groupedFavoriteFriendIdsByGroupKey?.[group.key] || [])
+            const friendsInGroup = (
+                groupedFavoriteFriendIdsByGroupKey?.[group.key] || []
+            )
                 .map((id) => friendById.get(normalizeId(id)))
                 .filter(Boolean);
             if (!friendsInGroup.length) {
@@ -793,7 +949,9 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             });
         }
 
-        const ungrouped = favoriteFriends.filter((friend) => !seen.has(normalizeId(friend?.id)));
+        const ungrouped = favoriteFriends.filter(
+            (friend) => !seen.has(normalizeId(friend?.id))
+        );
         if (ungrouped.length) {
             sections.push({
                 key: 'favorite:ungrouped',
@@ -823,94 +981,118 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         sidebarFavoritePrefs.isDivideByGroup
     ]);
 
-    const visibleSections = useMemo(
-        () => {
-            if (favoriteGroupSections.length) {
-                return favoriteGroupSections;
-            }
+    const visibleSections = useMemo(() => {
+        if (favoriteGroupSections.length) {
+            return favoriteGroupSections;
+        }
 
-            if (!deferredSearchQuery.trim() && activeSegment === 'same-instance') {
-                const filteredSameGroups = sameInstanceGroups
-                    .map((group) => ({
-                        ...group,
-                        friends: group.friends.filter((friend) =>
-                            visibleFriends.some((visibleFriend) => normalizeId(visibleFriend?.id) === normalizeId(friend?.id))
+        if (!deferredSearchQuery.trim() && activeSegment === 'same-instance') {
+            const filteredSameGroups = sameInstanceGroups
+                .map((group) => ({
+                    ...group,
+                    friends: group.friends.filter((friend) =>
+                        visibleFriends.some(
+                            (visibleFriend) =>
+                                normalizeId(visibleFriend?.id) ===
+                                normalizeId(friend?.id)
                         )
-                    }))
-                    .filter((group) => group.friends.length > 0);
-                return buildSameInstanceSections({
-                    sameInstanceGroups: filteredSameGroups,
-                    favoriteIds,
-                    favoriteGroupLabelsByFriendId
-                });
-            }
-
-            if (!deferredSearchQuery.trim() && activeSegment === 'online' && !showSameInstance && sameInstanceFriends.length) {
-                const sameInstanceSections = buildSameInstanceSections({
-                    sameInstanceGroups,
-                    displayInstanceInfo: false,
-                    favoriteIds,
-                    favoriteGroupLabelsByFriendId
-                });
-                const otherFriends = onlineWithoutSameInstanceFriends.filter((friend) =>
-                    matchesSearch(friend, deferredSearchQuery, favoriteIds)
-                );
-                return [
-                    ...sameInstanceSections,
-                    ...(otherFriends.length
-                        ? [{
-                            key: 'online:remaining',
-                            title: 'Online',
-                            description: '',
-                            friends: otherFriends,
-                            worldId: '',
-                            groupId: ''
-                        }]
-                        : [])
-                ];
-            }
-
-            return buildFriendSections({
-                friends: visibleFriends,
-                groupingMode: 'flat',
+                    )
+                }))
+                .filter((group) => group.friends.length > 0);
+            return buildSameInstanceSections({
+                sameInstanceGroups: filteredSameGroups,
                 favoriteIds,
                 favoriteGroupLabelsByFriendId
             });
-        },
-        [
-            activeSegment,
-            deferredSearchQuery,
-            favoriteGroupLabelsByFriendId,
-            favoriteGroupSections,
+        }
+
+        if (
+            !deferredSearchQuery.trim() &&
+            activeSegment === 'online' &&
+            !showSameInstance &&
+            sameInstanceFriends.length
+        ) {
+            const sameInstanceSections = buildSameInstanceSections({
+                sameInstanceGroups,
+                displayInstanceInfo: false,
+                favoriteIds,
+                favoriteGroupLabelsByFriendId
+            });
+            const otherFriends = onlineWithoutSameInstanceFriends.filter(
+                (friend) =>
+                    matchesSearch(friend, deferredSearchQuery, favoriteIds)
+            );
+            return [
+                ...sameInstanceSections,
+                ...(otherFriends.length
+                    ? [
+                          {
+                              key: 'online:remaining',
+                              title: 'Online',
+                              description: '',
+                              friends: otherFriends,
+                              worldId: '',
+                              groupId: ''
+                          }
+                      ]
+                    : [])
+            ];
+        }
+
+        return buildFriendSections({
+            friends: visibleFriends,
+            groupingMode: 'flat',
             favoriteIds,
-            onlineWithoutSameInstanceFriends,
-            sameInstanceGroups,
-            sameInstanceFriends,
-            showSameInstance,
-            visibleFriends
-        ]
-    );
+            favoriteGroupLabelsByFriendId
+        });
+    }, [
+        activeSegment,
+        deferredSearchQuery,
+        favoriteGroupLabelsByFriendId,
+        favoriteGroupSections,
+        favoriteIds,
+        onlineWithoutSameInstanceFriends,
+        sameInstanceGroups,
+        sameInstanceFriends,
+        showSameInstance,
+        visibleFriends
+    ]);
 
     const hasVisibleSections = useMemo(
-        () => visibleSections.some((section) => Array.isArray(section.friends) && section.friends.length > 0),
+        () =>
+            visibleSections.some(
+                (section) =>
+                    Array.isArray(section.friends) && section.friends.length > 0
+            ),
         [visibleSections]
     );
 
-    const isLoading = rosterStatus === 'running' && onlineFriends.length + activeFriends.length + offlineFriends.length === 0;
+    const isLoading =
+        rosterStatus === 'running' &&
+        onlineFriends.length + activeFriends.length + offlineFriends.length ===
+            0;
     const isError = rosterStatus === 'error';
     const cardGridGap = Math.max(6, (14 + (cardScale - 1) * 10) * spacingScale);
     const cardGridMinWidth = Math.max(120, 220 * cardScale);
     const cardGridColumns = Math.max(
         1,
-        Math.floor((scrollMetrics.width + cardGridGap) / (cardGridMinWidth + cardGridGap)) || 1
+        Math.floor(
+            (scrollMetrics.width + cardGridGap) /
+                (cardGridMinWidth + cardGridGap)
+        ) || 1
     );
-    const cardRowHeight = Math.max(160, 150 * cardScale + 48 * spacingScale + cardGridGap);
+    const cardRowHeight = Math.max(
+        160,
+        150 * cardScale + 48 * spacingScale + cardGridGap
+    );
 
     const virtualRows = useMemo(() => {
         const rows = [];
 
         for (const section of visibleSections) {
-            const friends = Array.isArray(section.friends) ? section.friends : [];
+            const friends = Array.isArray(section.friends)
+                ? section.friends
+                : [];
             if (!friends.length) {
                 continue;
             }
@@ -927,7 +1109,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 }
             }
 
-            const showHeader = section.type !== 'favoriteGroup' && section.key !== 'flat' && section.key !== 'online:remaining';
+            const showHeader =
+                section.type !== 'favoriteGroup' &&
+                section.key !== 'flat' &&
+                section.key !== 'online:remaining';
             if (showHeader) {
                 rows.push({
                     type: 'header',
@@ -937,7 +1122,11 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 });
             }
 
-            for (let index = 0; index < friends.length; index += cardGridColumns) {
+            for (
+                let index = 0;
+                index < friends.length;
+                index += cardGridColumns
+            ) {
                 rows.push({
                     type: 'cards',
                     key: `cards:${section.key}:${index}`,
@@ -971,14 +1160,21 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
     const visibleVirtualRows = useMemo(() => {
         const overscan = Math.max(360, scrollMetrics.viewportHeight);
         const start = Math.max(0, scrollMetrics.scrollTop - overscan);
-        const end = scrollMetrics.scrollTop + scrollMetrics.viewportHeight + overscan;
+        const end =
+            scrollMetrics.scrollTop + scrollMetrics.viewportHeight + overscan;
 
-        return positionedRows.rows.filter((row) => row.top + row.height >= start && row.top <= end);
+        return positionedRows.rows.filter(
+            (row) => row.top + row.height >= start && row.top <= end
+        );
     }, [positionedRows, scrollMetrics.scrollTop, scrollMetrics.viewportHeight]);
 
     function canUseFriendLocation(location) {
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return false;
         }
 
@@ -991,33 +1187,57 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
 
     async function launchFriendLocation(location) {
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return;
         }
 
         try {
-            const opened = await tryOpenLaunchLocation(location, parsedLocation.shortName || '', currentEndpoint);
+            const opened = await tryOpenLaunchLocation(
+                location,
+                parsedLocation.shortName || '',
+                currentEndpoint
+            );
             if (opened) {
                 toast.success('VRChat launch request sent.');
                 return;
             }
             toast.error('Unable to open this instance in VRChat.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to launch instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to launch instance.'
+            );
         }
     }
 
     async function selfInviteFriendLocation(location) {
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return;
         }
 
         try {
-            await selfInviteToInstance(location, parsedLocation.shortName || '', currentEndpoint);
+            await selfInviteToInstance(
+                location,
+                parsedLocation.shortName || '',
+                currentEndpoint
+            );
             toast.success('Self invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send self invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send self invite.'
+            );
         }
     }
 
@@ -1027,7 +1247,9 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             return;
         }
         if (!currentInviteLocation) {
-            toast.error('Cannot invite: no current VRChat location is available.');
+            toast.error(
+                'Cannot invite: no current VRChat location is available.'
+            );
             return;
         }
         if (!canInviteFromCurrentLocation) {
@@ -1037,7 +1259,9 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error('Cannot invite: current location is not a concrete instance.');
+            toast.error(
+                'Cannot invite: current location is not a concrete instance.'
+            );
             return;
         }
 
@@ -1064,13 +1288,18 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 params: {
                     instanceId: inviteLocation,
                     worldId: parsedLocation.worldId,
-                    worldName: worldResponse.json?.name || parsedLocation.worldId,
+                    worldName:
+                        worldResponse.json?.name || parsedLocation.worldId,
                     rsvp: true
                 }
             });
             toast.success('Invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send invite.'
+            );
         }
     }
 
@@ -1100,7 +1329,11 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             });
             toast.success('Invite request sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to request invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to request invite.'
+            );
         }
     }
 
@@ -1113,7 +1346,8 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         try {
             const result = await prompt({
                 title: 'Send boop',
-                description: 'Optional emoji id. Leave blank to send the default boop.',
+                description:
+                    'Optional emoji id. Leave blank to send the default boop.',
                 inputValue: '',
                 confirmText: 'Send',
                 cancelText: 'Cancel'
@@ -1128,18 +1362,21 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             });
             toast.success('Boop sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send boop.');
+            toast.error(
+                error instanceof Error ? error.message : 'Failed to send boop.'
+            );
         }
     }
 
     function renderSectionHeader(section) {
         return (
-            <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-xl border bg-muted/20 px-3 py-2 md:flex-row md:items-center md:justify-between">
+            <div className="bg-muted/20 flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-xl border px-3 py-2 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
                     <div className="flex flex-wrap items-center gap-2">
-                        <LayersIcon className="size-4 text-muted-foreground" />
+                        <LayersIcon className="text-muted-foreground size-4" />
                         <div className="min-w-0 truncate font-medium">
-                            {section.rawLocation && !section.key.startsWith('instance:offline') ? (
+                            {section.rawLocation &&
+                            !section.key.startsWith('instance:offline') ? (
                                 <Location
                                     location={section.rawLocation}
                                     hint={section.title}
@@ -1151,15 +1388,17 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                 section.title
                             )}
                         </div>
-                        <Badge variant="outline">{section.friends.length}</Badge>
+                        <Badge variant="outline">
+                            {section.friends.length}
+                        </Badge>
                     </div>
                     {section.description ? (
-                        <div className="line-clamp-1 break-words text-xs text-muted-foreground">
+                        <div className="text-muted-foreground line-clamp-1 text-xs break-words">
                             {section.description}
                         </div>
                     ) : null}
                 </div>
-                {(section.worldId || section.groupId) ? (
+                {section.worldId || section.groupId ? (
                     <div className="flex shrink-0 flex-wrap gap-2">
                         {section.worldId ? (
                             <Button
@@ -1168,10 +1407,12 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                 variant="outline"
                                 onClick={() =>
                                     openWorldDialog({
-                                        worldId: resolveWorldDialogTarget(section),
+                                        worldId:
+                                            resolveWorldDialogTarget(section),
                                         title: section.title
                                     })
-                                }>
+                                }
+                            >
                                 <GlobeIcon data-icon="inline-start" />
                                 World
                             </Button>
@@ -1186,7 +1427,8 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                         groupId: section.groupId,
                                         title: undefined
                                     })
-                                }>
+                                }
+                            >
                                 <UsersIcon data-icon="inline-start" />
                                 Group
                             </Button>
@@ -1202,8 +1444,9 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             <Button
                 type="button"
                 variant="ghost"
-                className="h-auto w-full cursor-pointer select-none justify-start gap-1.5 px-1 py-1.5 text-left text-sm font-semibold"
-                onClick={() => toggleFavoriteGroup(section.groupKey)}>
+                className="h-auto w-full cursor-pointer justify-start gap-1.5 px-1 py-1.5 text-left text-sm font-semibold select-none"
+                onClick={() => toggleFavoriteGroup(section.groupKey)}
+            >
                 <ChevronDownIcon
                     data-icon="inline-start"
                     className={cn(
@@ -1212,7 +1455,9 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                     )}
                 />
                 <span className="min-w-0 truncate">{section.title}</span>
-                <span className="text-xs font-normal opacity-70">({section.friends.length})</span>
+                <span className="text-xs font-normal opacity-70">
+                    ({section.friends.length})
+                </span>
             </Button>
         );
     }
@@ -1222,10 +1467,15 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         const target = resolveLocationTarget(friend);
         const rawLocation = target.rawLocation;
         const groupHint = resolveFriendGroupName(friend);
-        const source = friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
-        const isTravelingLocation = normalizeId(source?.location).toLowerCase() === 'traveling';
-        const travelingLocation = source?.travelingToLocation || source?.$travelingToLocation || '';
-        const friendIsCurrentUser = normalizeId(friend?.id || friend?.userId) === normalizeId(currentUserId);
+        const source =
+            friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
+        const isTravelingLocation =
+            normalizeId(source?.location).toLowerCase() === 'traveling';
+        const travelingLocation =
+            source?.travelingToLocation || source?.$travelingToLocation || '';
+        const friendIsCurrentUser =
+            normalizeId(friend?.id || friend?.userId) ===
+            normalizeId(currentUserId);
         const friendIsOnline = isOnlineFriend(friend);
         const friendLocationAvailable = canUseFriendLocation(rawLocation);
 
@@ -1241,14 +1491,19 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 cardScale={cardScale}
                 spacingScale={spacingScale}
                 displayInstanceInfo={section.displayInstanceInfo !== false}
-                canUseFriendLocation={!friendIsCurrentUser && friendLocationAvailable}
+                canUseFriendLocation={
+                    !friendIsCurrentUser && friendLocationAvailable
+                }
                 canSendInvite={!friendIsCurrentUser && canSendInvite}
                 canRequestInvite={!friendIsCurrentUser && friendIsOnline}
                 canBoop={!friendIsCurrentUser && canBoop}
                 onOpenUser={() =>
                     openUserDialog({
                         userId: friend?.id,
-                        title: friend?.displayName || friend?.username || undefined,
+                        title:
+                            friend?.displayName ||
+                            friend?.username ||
+                            undefined,
                         seedData: friend
                     })
                 }
@@ -1271,7 +1526,9 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                         : undefined
                 }
                 onLaunchLocation={() => void launchFriendLocation(rawLocation)}
-                onSelfInviteLocation={() => void selfInviteFriendLocation(rawLocation)}
+                onSelfInviteLocation={() =>
+                    void selfInviteFriendLocation(rawLocation)
+                }
                 onSendInvite={() => void sendFriendInvite(friend)}
                 onRequestInvite={() => void requestFriendInvite(friend)}
                 onSendBoop={() => void sendFriendBoop(friend)}
@@ -1285,156 +1542,207 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 embedded
                     ? 'friend-view flex h-full min-h-0 flex-col p-3'
                     : 'friend-view x-container flex h-full min-h-0 flex-1 flex-col overflow-hidden p-4 pb-0'
-            }>
-                    <div className="friend-view__toolbar mb-3 flex shrink-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                        <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
-                            <Tabs value={activeSegment} onValueChange={setActiveSegment} className="gap-0">
-                                <TabsList>
-                                    {segmentOptions.map((segment) => (
-                                        <TabsTrigger key={segment.value} value={segment.value}>
-                                            {t(segment.labelKey)}
-                                        </TabsTrigger>
-                                    ))}
-                                </TabsList>
-                            </Tabs>
-
-                            <div className="relative w-full max-w-md lg:ml-auto">
-                                <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    value={searchQuery}
-                                    onChange={(event) => setSearchQuery(event.target.value)}
-                                    placeholder={t('view.friends_locations.search_placeholder')}
-                                    className="pl-9"
-                                />
-                            </div>
-
-                        </div>
-
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button type="button" size="icon-sm" variant="ghost" aria-label="Friends location settings">
-                                    <Settings2Icon data-icon="inline-start" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-72" align="end">
-                                <FieldGroup>
-                                    <Field orientation="horizontal">
-                                        <FieldContent>
-                                            <FieldLabel htmlFor="friends-locations-same-instance">
-                                                {t('view.friends_locations.separate_same_instance_friends')}
-                                            </FieldLabel>
-                                        </FieldContent>
-                                        <Switch
-                                            id="friends-locations-same-instance"
-                                            checked={showSameInstance}
-                                            onCheckedChange={(value) => {
-                                                setShowSameInstance(Boolean(value));
-                                                void configRepository.setBool('FriendLocationShowSameInstance', Boolean(value));
-                                            }}
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor="friends-locations-card-scale">
-                                                {t('view.friends_locations.scale')}
-                                            </FieldLabel>
-                                        </FieldContent>
-                                        <Slider
-                                            id="friends-locations-card-scale"
-                                            min={0.5}
-                                            max={1}
-                                            step={0.01}
-                                            value={[cardScale]}
-                                            onValueChange={([value]) => {
-                                                const nextValue = clampScale(value, 0.5, 1, 1);
-                                                setCardScale(nextValue);
-                                                void configRepository.setString(
-                                                    'FriendLocationCardScale',
-                                                    formatOptionValue(nextValue)
-                                                );
-                                            }}
-                                        />
-                                        <div className="text-sm text-muted-foreground">{Math.round(cardScale * 100)}%</div>
-                                    </Field>
-
-                                    <Field>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor="friends-locations-card-spacing">
-                                                {t('view.friends_locations.spacing')}
-                                            </FieldLabel>
-                                        </FieldContent>
-                                        <Slider
-                                            id="friends-locations-card-spacing"
-                                            min={0.25}
-                                            max={1}
-                                            step={0.05}
-                                            value={[spacingScale]}
-                                            onValueChange={([value]) => {
-                                                const nextValue = clampScale(value, 0.25, 1, 1);
-                                                setSpacingScale(nextValue);
-                                                void configRepository.setString(
-                                                    'FriendLocationCardSpacing',
-                                                    formatOptionValue(nextValue)
-                                                );
-                                            }}
-                                        />
-                                        <div className="text-sm text-muted-foreground">{Math.round(spacingScale * 100)}%</div>
-                                    </Field>
-                                </FieldGroup>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-
-                    <div ref={scrollRef} className="friend-view__scroll min-h-0 flex-1 overflow-auto">
-                    {isLoading ? (
-                        <LoadingState label={t('view.friends_locations.loading_more')} />
-                    ) : isError ? (
-                        <FriendsLocationsEmptyState
-                            title="Friends locations failed to load"
-                            description={rosterDetail || 'The roster bootstrap did not complete.'}
-                        />
-                    ) : hasVisibleSections ? (
-                        <div
-                            className="relative"
-                            style={{
-                                height: `${positionedRows.totalHeight}px`
-                            }}>
-                            {visibleVirtualRows.map((row) => (
-                                <div
-                                    key={row.key}
-                                    className="absolute left-0 right-0"
-                                    style={{
-                                        height: `${row.height}px`,
-                                        transform: `translateY(${row.top}px)`
-                                    }}>
-                                    {row.type === 'header' ? (
-                                        renderSectionHeader(row.section)
-                                    ) : row.type === 'group-header' ? (
-                                        renderFavoriteGroupHeader(row.section)
-                                    ) : (
-                                        <div
-                                            className="grid h-full overflow-hidden"
-                                            style={{
-                                                gap: `${cardGridGap}px`,
-                                                gridTemplateColumns: `repeat(${cardGridColumns}, minmax(${cardGridMinWidth}px, 1fr))`
-                                            }}>
-                                            {row.friends.map((friend) => renderFriendCard(row.section, friend))}
-                                        </div>
-                                    )}
-                                </div>
+            }
+        >
+            <div className="friend-view__toolbar mb-3 flex shrink-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
+                    <Tabs
+                        value={activeSegment}
+                        onValueChange={setActiveSegment}
+                        className="gap-0"
+                    >
+                        <TabsList>
+                            {segmentOptions.map((segment) => (
+                                <TabsTrigger
+                                    key={segment.value}
+                                    value={segment.value}
+                                >
+                                    {t(segment.labelKey)}
+                                </TabsTrigger>
                             ))}
-                        </div>
-                    ) : (
-                        <FriendsLocationsEmptyState
-                            title="No friends match the current filters"
-                            description={
-                                activeSegment === 'favorite' && !isFavoritesLoaded
-                                    ? 'Favorites are still hydrating.'
-                                    : 'Try a different segment or broaden the search query.'
+                        </TabsList>
+                    </Tabs>
+
+                    <div className="relative w-full max-w-md lg:ml-auto">
+                        <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                        <Input
+                            value={searchQuery}
+                            onChange={(event) =>
+                                setSearchQuery(event.target.value)
                             }
+                            placeholder={t(
+                                'view.friends_locations.search_placeholder'
+                            )}
+                            className="pl-9"
                         />
-                    )}
                     </div>
+                </div>
+
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label="Friends location settings"
+                        >
+                            <Settings2Icon data-icon="inline-start" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72" align="end">
+                        <FieldGroup>
+                            <Field orientation="horizontal">
+                                <FieldContent>
+                                    <FieldLabel htmlFor="friends-locations-same-instance">
+                                        {t(
+                                            'view.friends_locations.separate_same_instance_friends'
+                                        )}
+                                    </FieldLabel>
+                                </FieldContent>
+                                <Switch
+                                    id="friends-locations-same-instance"
+                                    checked={showSameInstance}
+                                    onCheckedChange={(value) => {
+                                        setShowSameInstance(Boolean(value));
+                                        void configRepository.setBool(
+                                            'FriendLocationShowSameInstance',
+                                            Boolean(value)
+                                        );
+                                    }}
+                                />
+                            </Field>
+                            <Field>
+                                <FieldContent>
+                                    <FieldLabel htmlFor="friends-locations-card-scale">
+                                        {t('view.friends_locations.scale')}
+                                    </FieldLabel>
+                                </FieldContent>
+                                <Slider
+                                    id="friends-locations-card-scale"
+                                    min={0.5}
+                                    max={1}
+                                    step={0.01}
+                                    value={[cardScale]}
+                                    onValueChange={([value]) => {
+                                        const nextValue = clampScale(
+                                            value,
+                                            0.5,
+                                            1,
+                                            1
+                                        );
+                                        setCardScale(nextValue);
+                                        void configRepository.setString(
+                                            'FriendLocationCardScale',
+                                            formatOptionValue(nextValue)
+                                        );
+                                    }}
+                                />
+                                <div className="text-muted-foreground text-sm">
+                                    {Math.round(cardScale * 100)}%
+                                </div>
+                            </Field>
+
+                            <Field>
+                                <FieldContent>
+                                    <FieldLabel htmlFor="friends-locations-card-spacing">
+                                        {t('view.friends_locations.spacing')}
+                                    </FieldLabel>
+                                </FieldContent>
+                                <Slider
+                                    id="friends-locations-card-spacing"
+                                    min={0.25}
+                                    max={1}
+                                    step={0.05}
+                                    value={[spacingScale]}
+                                    onValueChange={([value]) => {
+                                        const nextValue = clampScale(
+                                            value,
+                                            0.25,
+                                            1,
+                                            1
+                                        );
+                                        setSpacingScale(nextValue);
+                                        void configRepository.setString(
+                                            'FriendLocationCardSpacing',
+                                            formatOptionValue(nextValue)
+                                        );
+                                    }}
+                                />
+                                <div className="text-muted-foreground text-sm">
+                                    {Math.round(spacingScale * 100)}%
+                                </div>
+                            </Field>
+                        </FieldGroup>
+                    </PopoverContent>
+                </Popover>
+            </div>
+
+            <div
+                ref={scrollRef}
+                className="friend-view__scroll min-h-0 flex-1 overflow-auto"
+            >
+                {isLoading ? (
+                    <LoadingState
+                        label={t('view.friends_locations.loading_more')}
+                    />
+                ) : isError ? (
+                    <FriendsLocationsEmptyState
+                        title="Friends locations failed to load"
+                        description={
+                            rosterDetail ||
+                            'The roster bootstrap did not complete.'
+                        }
+                    />
+                ) : hasVisibleSections ? (
+                    <div
+                        className="relative"
+                        style={{
+                            height: `${positionedRows.totalHeight}px`
+                        }}
+                    >
+                        {visibleVirtualRows.map((row) => (
+                            <div
+                                key={row.key}
+                                className="absolute right-0 left-0"
+                                style={{
+                                    height: `${row.height}px`,
+                                    transform: `translateY(${row.top}px)`
+                                }}
+                            >
+                                {row.type === 'header' ? (
+                                    renderSectionHeader(row.section)
+                                ) : row.type === 'group-header' ? (
+                                    renderFavoriteGroupHeader(row.section)
+                                ) : (
+                                    <div
+                                        className="grid h-full overflow-hidden"
+                                        style={{
+                                            gap: `${cardGridGap}px`,
+                                            gridTemplateColumns: `repeat(${cardGridColumns}, minmax(${cardGridMinWidth}px, 1fr))`
+                                        }}
+                                    >
+                                        {row.friends.map((friend) =>
+                                            renderFriendCard(
+                                                row.section,
+                                                friend
+                                            )
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <FriendsLocationsEmptyState
+                        title="No friends match the current filters"
+                        description={
+                            activeSegment === 'favorite' && !isFavoritesLoaded
+                                ? 'Favorites are still hydrating.'
+                                : 'Try a different segment or broaden the search query.'
+                        }
+                    />
+                )}
+            </div>
         </div>
     );
 }

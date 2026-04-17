@@ -1,7 +1,9 @@
 import sqliteRepository from './sqliteRepository.js';
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeInstanceActivityRow(row) {
@@ -54,7 +56,8 @@ function normalizeWorldCacheRow(row) {
         imageUrl: row?.image_url ?? row?.imageUrl ?? '',
         name: row?.name ?? '',
         releaseStatus: row?.release_status ?? row?.releaseStatus ?? '',
-        thumbnailImageUrl: row?.thumbnail_image_url ?? row?.thumbnailImageUrl ?? '',
+        thumbnailImageUrl:
+            row?.thumbnail_image_url ?? row?.thumbnailImageUrl ?? '',
         updated_at: row?.updated_at ?? '',
         version: row?.version ?? 0
     };
@@ -78,8 +81,12 @@ async function getAvailableDates(userId) {
 
     return Array.isArray(rows)
         ? rows
-            .map((row) => (Array.isArray(row) ? row[0] : row?.created_at ?? row?.[0] ?? ''))
-            .filter(Boolean)
+              .map((row) =>
+                  Array.isArray(row)
+                      ? row[0]
+                      : (row?.created_at ?? row?.[0] ?? '')
+              )
+              .filter(Boolean)
         : [];
 }
 
@@ -102,14 +109,18 @@ async function getInstanceActivityRows(startDate, endDate) {
 
     return Array.isArray(rows)
         ? rows
-            .map(normalizeInstanceActivityRow)
-            .filter((row) => row.location && row.location !== 'traveling')
+              .map(normalizeInstanceActivityRow)
+              .filter((row) => row.location && row.location !== 'traveling')
         : [];
 }
 
 async function getWorldSummariesByIds(worldIds) {
     const ids = Array.from(
-        new Set((Array.isArray(worldIds) ? worldIds : []).map(normalizeString).filter(Boolean))
+        new Set(
+            (Array.isArray(worldIds) ? worldIds : [])
+                .map(normalizeString)
+                .filter(Boolean)
+        )
     );
     if (!ids.length) {
         return {};
@@ -148,9 +159,5 @@ const instanceActivityRepository = {
     getWorldSummariesByIds
 };
 
-export {
-    getAvailableDates,
-    getInstanceActivityRows,
-    getWorldSummariesByIds
-};
+export { getAvailableDates, getInstanceActivityRows, getWorldSummariesByIds };
 export default instanceActivityRepository;

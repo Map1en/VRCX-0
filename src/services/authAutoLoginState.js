@@ -38,11 +38,16 @@ function pruneAttempts(accountKey, now = Date.now()) {
 
 export function getReactAutoLoginAttemptCount(accountKey, now = Date.now()) {
     pruneAttempts(accountKey, now);
-    return attemptTimestampsByKey.get(normalizeThrottleKey(accountKey))?.length ?? 0;
+    return (
+        attemptTimestampsByKey.get(normalizeThrottleKey(accountKey))?.length ??
+        0
+    );
 }
 
 export function canAttemptReactAutoLogin(accountKey, now = Date.now()) {
-    return getReactAutoLoginAttemptCount(accountKey, now) < AUTO_LOGIN_MAX_ATTEMPTS;
+    return (
+        getReactAutoLoginAttemptCount(accountKey, now) < AUTO_LOGIN_MAX_ATTEMPTS
+    );
 }
 
 export function recordReactAutoLoginAttempt(accountKey, now = Date.now()) {

@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     BoxIcon,
     HeartIcon,
@@ -6,6 +5,7 @@ import {
     PencilIcon,
     SettingsIcon
 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
@@ -27,13 +27,10 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
 
+import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
+import { DashboardWidgetHeader } from './DashboardWidgetHeader.jsx';
 import {
     buildFavoriteIdSet,
     formatWidgetExactTime,
@@ -42,8 +39,6 @@ import {
     isDashboardWidgetFilterActive,
     normalizeString
 } from './shared.js';
-import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
-import { DashboardWidgetHeader } from './DashboardWidgetHeader.jsx';
 
 const FEED_WIDGET_MAX_ROWS = 100;
 const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
@@ -51,7 +46,9 @@ const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
 function resolveFeedUserDisplayName(row, friend) {
     const userId = normalizeString(row?.userId);
     const rowDisplayName = normalizeString(row?.displayName);
-    const friendDisplayName = normalizeString(friend?.displayName || friend?.username);
+    const friendDisplayName = normalizeString(
+        friend?.displayName || friend?.username
+    );
     if (rowDisplayName) {
         return rowDisplayName;
     }
@@ -80,7 +77,9 @@ function feedEntryMatchesWidget(row, { currentUserId, filters }) {
     if (row.ownerUserId && row.ownerUserId !== currentUserId) {
         return false;
     }
-    return !Array.isArray(filters) || !filters.length || filters.includes(row.type);
+    return (
+        !Array.isArray(filters) || !filters.length || filters.includes(row.type)
+    );
 }
 
 function getFeedRowId(row) {
@@ -99,8 +98,9 @@ function getFeedRowId(row) {
 }
 
 function collectMatchingLiveFeedEntries(entries, minSequence, context) {
-    const unseenEntries = (Array.isArray(entries) ? entries : [])
-        .filter((item) => item.sequence > minSequence);
+    const unseenEntries = (Array.isArray(entries) ? entries : []).filter(
+        (item) => item.sequence > minSequence
+    );
     if (!unseenEntries.length) {
         return {
             matchingEntries: [],
@@ -143,8 +143,12 @@ function FeedUserName({ row, friend, className = '' }) {
         <Button
             type="button"
             variant="link"
-            className={cn('h-auto shrink-0 cursor-pointer justify-start p-0 text-left font-normal', className)}
-            onClick={() => openFeedUser(row, friend)}>
+            className={cn(
+                'h-auto shrink-0 cursor-pointer justify-start p-0 text-left font-normal',
+                className
+            )}
+            onClick={() => openFeedUser(row, friend)}
+        >
             {displayName}
         </Button>
     );
@@ -169,19 +173,27 @@ function FeedLocation({ row }) {
 
 function FeedStatusDot({ status = '' }) {
     const normalizedStatus = String(status || '').toLowerCase();
-    const className = normalizedStatus === 'active'
-        ? 'bg-[var(--status-online)]'
-        : normalizedStatus === 'online'
+    const className =
+        normalizedStatus === 'active'
             ? 'bg-[var(--status-online)]'
-        : normalizedStatus === 'join me'
-            ? 'bg-[var(--status-joinme)]'
-            : normalizedStatus === 'ask me'
-                ? 'bg-[var(--status-askme)]'
-                : normalizedStatus === 'busy'
+            : normalizedStatus === 'online'
+              ? 'bg-[var(--status-online)]'
+              : normalizedStatus === 'join me'
+                ? 'bg-[var(--status-joinme)]'
+                : normalizedStatus === 'ask me'
+                  ? 'bg-[var(--status-askme)]'
+                  : normalizedStatus === 'busy'
                     ? 'bg-[var(--status-busy)]'
                     : '';
 
-    return className ? <span className={cn('mr-1 mt-1 size-2.5 shrink-0 rounded-full', className)} /> : null;
+    return className ? (
+        <span
+            className={cn(
+                'mt-1 mr-1 size-2.5 shrink-0 rounded-full',
+                className
+            )}
+        />
+    ) : null;
 }
 
 function FeedEntryContent({ row, friend, t }) {
@@ -189,9 +201,11 @@ function FeedEntryContent({ row, friend, t }) {
         case 'GPS':
             return (
                 <div className="flex min-w-0 items-center">
-                    <MapPinIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                    <MapPinIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
                     <FeedUserName row={row} friend={friend} />
-                    <span className="mx-1 shrink-0 text-muted-foreground">→</span>
+                    <span className="text-muted-foreground mx-1 shrink-0">
+                        →
+                    </span>
                     <FeedLocation row={row} />
                 </div>
             );
@@ -202,7 +216,9 @@ function FeedEntryContent({ row, friend, t }) {
                     <FeedUserName row={row} friend={friend} />
                     {row?.location ? (
                         <>
-                            <span className="mx-1 shrink-0 text-muted-foreground">→</span>
+                            <span className="text-muted-foreground mx-1 shrink-0">
+                                →
+                            </span>
                             <FeedLocation row={row} />
                         </>
                     ) : null}
@@ -219,7 +235,7 @@ function FeedEntryContent({ row, friend, t }) {
                 <div className="flex min-w-0 items-center">
                     <FeedStatusDot status={row?.status} />
                     <FeedUserName row={row} friend={friend} />
-                    <span className="ml-1 min-w-0 truncate text-muted-foreground">
+                    <span className="text-muted-foreground ml-1 min-w-0 truncate">
                         {row?.statusDescription || ''}
                     </span>
                 </div>
@@ -227,9 +243,9 @@ function FeedEntryContent({ row, friend, t }) {
         case 'Avatar':
             return (
                 <div className="flex min-w-0 items-center">
-                    <BoxIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                    <BoxIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
                     <FeedUserName row={row} friend={friend} />
-                    <span className="ml-1 min-w-0 truncate text-muted-foreground">
+                    <span className="text-muted-foreground ml-1 min-w-0 truncate">
                         {row?.avatarName ? `→ ${row.avatarName}` : ''}
                     </span>
                 </div>
@@ -237,9 +253,9 @@ function FeedEntryContent({ row, friend, t }) {
         case 'Bio':
             return (
                 <div className="flex min-w-0 items-center">
-                    <PencilIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                    <PencilIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
                     <FeedUserName row={row} friend={friend} />
-                    <span className="ml-1 text-muted-foreground">
+                    <span className="text-muted-foreground ml-1">
                         {t('dashboard.widget.feed_bio')}
                     </span>
                 </div>
@@ -248,7 +264,7 @@ function FeedEntryContent({ row, friend, t }) {
             return (
                 <div className="flex min-w-0 items-center">
                     <FeedUserName row={row} friend={friend} />
-                    <span className="ml-1 min-w-0 truncate text-muted-foreground">
+                    <span className="text-muted-foreground ml-1 min-w-0 truncate">
                         {row?.type || ''}
                     </span>
                 </div>
@@ -263,8 +279,12 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
         (state) => state.backendEvents.addGameLogEvent.count
     );
     const liveFeedEntries = useFeedLiveStore((state) => state.entries);
-    const remoteFavoriteFriendIds = useFavoriteStore((state) => state.favoriteFriendIds);
-    const localFriendFavorites = useFavoriteStore((state) => state.localFriendFavorites);
+    const remoteFavoriteFriendIds = useFavoriteStore(
+        (state) => state.favoriteFriendIds
+    );
+    const localFriendFavorites = useFavoriteStore(
+        (state) => state.localFriendFavorites
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
 
     const lastLiveFeedSequenceRef = useRef(0);
@@ -290,7 +310,8 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
         let active = true;
 
         if (!currentUserId) {
-            lastLiveFeedSequenceRef.current = useFeedLiveStore.getState().version;
+            lastLiveFeedSequenceRef.current =
+                useFeedLiveStore.getState().version;
             setRows([]);
             setLoadStatus('idle');
             setDetail('');
@@ -302,7 +323,8 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
         setLoadStatus('running');
         setDetail('');
 
-        const liveFeedSequenceAtRequestStart = useFeedLiveStore.getState().version;
+        const liveFeedSequenceAtRequestStart =
+            useFeedLiveStore.getState().version;
         const liveFeedContext = {
             currentUserId,
             filters: activeFilters
@@ -319,16 +341,23 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                 }
 
                 const liveFeedSnapshot = useFeedLiveStore.getState();
-                const { matchingEntries, maxSequence } = collectMatchingLiveFeedEntries(
-                    liveFeedSnapshot.entries,
-                    liveFeedSequenceAtRequestStart,
-                    liveFeedContext
-                );
+                const { matchingEntries, maxSequence } =
+                    collectMatchingLiveFeedEntries(
+                        liveFeedSnapshot.entries,
+                        liveFeedSequenceAtRequestStart,
+                        liveFeedContext
+                    );
                 if (maxSequence > lastLiveFeedSequenceRef.current) {
                     lastLiveFeedSequenceRef.current = maxSequence;
                 }
 
-                setRows(mergeLiveFeedEntries(nextRows, matchingEntries, FEED_WIDGET_MAX_ROWS));
+                setRows(
+                    mergeLiveFeedEntries(
+                        nextRows,
+                        matchingEntries,
+                        FEED_WIDGET_MAX_ROWS
+                    )
+                );
                 setLoadStatus('ready');
                 setDetail('');
             })
@@ -339,7 +368,11 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
 
                 setRows([]);
                 setLoadStatus('error');
-                setDetail(error instanceof Error ? error.message : 'Failed to load feed widget.');
+                setDetail(
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load feed widget.'
+                );
             });
 
         return () => {
@@ -365,7 +398,9 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
         if (!matchingEntries.length) {
             return;
         }
-        setRows((current) => mergeLiveFeedEntries(current, matchingEntries, FEED_WIDGET_MAX_ROWS));
+        setRows((current) =>
+            mergeLiveFeedEntries(current, matchingEntries, FEED_WIDGET_MAX_ROWS)
+        );
     }, [activeFilters, currentUserId, liveFeedEntries]);
 
     const annotatedRows = useMemo(
@@ -374,7 +409,9 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                 const normalizedUserId = normalizeString(row?.userId);
                 return {
                     ...row,
-                    isFavorite: normalizedUserId ? favoriteIdSet.has(normalizedUserId) : false
+                    isFavorite: normalizedUserId
+                        ? favoriteIdSet.has(normalizedUserId)
+                        : false
                 };
             }),
         [favoriteIdSet, rows]
@@ -384,7 +421,12 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     const settingsMenu = configUpdater ? (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Widget settings"
+                >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
@@ -393,13 +435,21 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                     {FEED_FILTER_TYPES.map((filterType) => (
                         <DropdownMenuCheckboxItem
                             key={filterType}
-                            checked={isDashboardWidgetFilterActive(config, filterType)}
+                            checked={isDashboardWidgetFilterActive(
+                                config,
+                                filterType
+                            )}
                             onSelect={(event) => event.preventDefault()}
                             onCheckedChange={() =>
                                 configUpdater(
-                                    getNextDashboardWidgetFilterConfig(config, filterType, FEED_FILTER_TYPES)
+                                    getNextDashboardWidgetFilterConfig(
+                                        config,
+                                        filterType,
+                                        FEED_FILTER_TYPES
+                                    )
                                 )
-                            }>
+                            }
+                        >
                             {t(`view.feed.filters.${filterType}`)}
                         </DropdownMenuCheckboxItem>
                     ))}
@@ -409,7 +459,13 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                     <DropdownMenuCheckboxItem
                         checked={showType}
                         onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={(checked) => configUpdater({ ...config, showType: Boolean(checked) })}>
+                        onCheckedChange={(checked) =>
+                            configUpdater({
+                                ...config,
+                                showType: Boolean(checked)
+                            })
+                        }
+                    >
                         {t('dashboard.widget.config.show_type')}
                     </DropdownMenuCheckboxItem>
                 </DropdownMenuGroup>
@@ -418,7 +474,11 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     ) : null;
     const renderShell = (children) => (
         <div className="flex h-full min-h-0 flex-col">
-            <DashboardWidgetHeader title={t('dashboard.widget.feed')} icon="ri-rss-line" path="/feed">
+            <DashboardWidgetHeader
+                title={t('dashboard.widget.feed')}
+                icon="ri-rss-line"
+                path="/feed"
+            >
                 {settingsMenu}
             </DashboardWidgetHeader>
             {children}
@@ -445,7 +505,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
 
     if (loadStatus === 'running' && annotatedRows.length === 0) {
         return renderShell(
-            <div className="flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm">
                 <Spinner />
                 Loading feed widget
             </div>
@@ -463,8 +523,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
 
     return renderShell(
         <>
-
-            <div className="flex flex-wrap gap-2 px-3 pt-3 text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex flex-wrap gap-2 px-3 pt-3 text-xs">
                 <span>{annotatedRows.length} recent rows</span>
                 <span>
                     {Array.isArray(config.filters) && config.filters.length
@@ -479,14 +538,18 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                     <TableBody>
                         {annotatedRows.map((row, index) => (
                             <TableRow
-                                key={`${row.type || 'feed'}-${row.created_at || index}-${index}`}>
+                                key={`${row.type || 'feed'}-${row.created_at || index}-${index}`}
+                            >
                                 <TableCell
-                                    className="w-24 align-top text-xs tabular-nums text-muted-foreground"
-                                    title={formatWidgetExactTime(row.created_at)}>
+                                    className="text-muted-foreground w-24 align-top text-xs tabular-nums"
+                                    title={formatWidgetExactTime(
+                                        row.created_at
+                                    )}
+                                >
                                     {formatWidgetTime(row.created_at)}
                                 </TableCell>
                                 {showType ? (
-                                    <TableCell className="w-20 align-top text-xs text-muted-foreground">
+                                    <TableCell className="text-muted-foreground w-20 align-top text-xs">
                                         {row.type || ''}
                                     </TableCell>
                                 ) : null}
@@ -495,12 +558,21 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                                         <div className="min-w-0 flex-1 truncate">
                                             <FeedEntryContent
                                                 row={row}
-                                                friend={friendsById?.[normalizeString(row?.userId)]}
+                                                friend={
+                                                    friendsById?.[
+                                                        normalizeString(
+                                                            row?.userId
+                                                        )
+                                                    ]
+                                                }
                                                 t={t}
                                             />
                                         </div>
                                         {row.isFavorite ? (
-                                            <Badge variant="secondary" className="shrink-0 gap-1 px-1.5">
+                                            <Badge
+                                                variant="secondary"
+                                                className="shrink-0 gap-1 px-1.5"
+                                            >
                                                 <HeartIcon className="size-3 fill-current" />
                                                 Favorite
                                             </Badge>

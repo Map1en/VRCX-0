@@ -219,9 +219,9 @@
                 },
                 "legal_notice": {
                     "header": "법적 공지",
-    "info": "VRCX-0는 친구 관계를 관리하고 관련 정보를 제공하는 보조 프로그램입니다. 비공식 VRChat API SDK를 사용합니다",
-    "disclaimer1": "VRCX-0는 VRChat이 보증하지 않고, VRChat 개발/운영에 공식적으로 관련한 사람의 견해나 의견을 반영하지 않습니다. VRChat은 VRChat Inc.의 상표입니다. VRChat © VRChat Inc",
-    "disclaimer2": "모든 기여자는 VRCX-0로 인한 문제의 책임을 지지 않습니다. 본인의 책임하에 사용하시기 바랍니다!",
+                    "info": "VRCX-0는 친구 관계를 관리하고 관련 정보를 제공하는 보조 프로그램입니다. 비공식 VRChat API SDK를 사용합니다",
+                    "disclaimer1": "VRCX-0는 VRChat이 보증하지 않고, VRChat 개발/운영에 공식적으로 관련한 사람의 견해나 의견을 반영하지 않습니다. VRChat은 VRChat Inc.의 상표입니다. VRChat © VRChat Inc",
+                    "disclaimer2": "모든 기여자는 VRCX-0로 인한 문제의 책임을 지지 않습니다. 본인의 책임하에 사용하시기 바랍니다!",
                     "open_source_software_notice": "오픈 소스 소프트웨어 공지"
                 },
                 "contributors": {

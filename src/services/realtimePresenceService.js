@@ -1,13 +1,14 @@
-import { parseLocation } from '@/shared/utils/locationParser.js';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import { configRepository } from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
+import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFeedLiveStore } from '@/state/feedLiveStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
-import { handleRealtimeNotificationEvent } from './vrcNotificationRuntimeService.js';
+
 import { pushSharedFeedNotification } from './sharedFeedFilterService.js';
+import { handleRealtimeNotificationEvent } from './vrcNotificationRuntimeService.js';
 
 const PENDING_OFFLINE_DELAY_MS = 170000;
 const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
@@ -18,18 +19,29 @@ let logEmptyAvatarsLoadPromise = null;
 let unsubscribeLogEmptyAvatars = null;
 
 function normalizeUserId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeStateBucket(value) {
     const normalized = normalizeUserId(value).toLowerCase();
-    if (normalized === 'online' || normalized === 'active' || normalized === 'offline') {
+    if (
+        normalized === 'online' ||
+        normalized === 'active' ||
+        normalized === 'offline'
+    ) {
         return normalized;
     }
     return '';
 }
 
-function resolveStateBucketFromEvent(content, patch, previous, fallback = 'offline') {
+function resolveStateBucketFromEvent(
+    content,
+    patch,
+    previous,
+    fallback = 'offline'
+) {
     return (
         normalizeStateBucket(content?.stateBucket) ||
         normalizeStateBucket(content?.state) ||
@@ -128,8 +140,17 @@ function firstString(...values) {
     return '';
 }
 
-function buildLocationPatch(location, travelingToLocation, worldId, fallback = {}) {
-    const normalizedLocation = firstString(location, fallback.location, fallback.$location?.tag);
+function buildLocationPatch(
+    location,
+    travelingToLocation,
+    worldId,
+    fallback = {}
+) {
+    const normalizedLocation = firstString(
+        location,
+        fallback.location,
+        fallback.$location?.tag
+    );
     const normalizedTraveling = firstString(
         travelingToLocation,
         fallback.travelingToLocation,
@@ -140,8 +161,7 @@ function buildLocationPatch(location, travelingToLocation, worldId, fallback = {
 
     return {
         location: normalizedLocation,
-        worldId:
-            firstString(worldId, parsedLocation.worldId, fallback.worldId),
+        worldId: firstString(worldId, parsedLocation.worldId, fallback.worldId),
         instanceId: parsedLocation.instanceId || '',
         travelingToLocation: normalizedTraveling,
         travelingToWorld: parsedTraveling.worldId || '',
@@ -152,7 +172,10 @@ function buildLocationPatch(location, travelingToLocation, worldId, fallback = {
 }
 
 function onlinePresenceFallback(previous) {
-    const location = firstString(previous?.location, previous?.$location?.tag).toLowerCase();
+    const location = firstString(
+        previous?.location,
+        previous?.$location?.tag
+    ).toLowerCase();
     if (!location || location === 'offline' || location === 'offline:offline') {
         return {};
     }
@@ -161,7 +184,12 @@ function onlinePresenceFallback(previous) {
 
 function isRealLocation(location) {
     const value = typeof location === 'string' ? location.trim() : '';
-    return Boolean(value && value !== 'offline' && value !== 'traveling' && value !== 'private');
+    return Boolean(
+        value &&
+        value !== 'offline' &&
+        value !== 'traveling' &&
+        value !== 'private'
+    );
 }
 
 function isOnlineState(row) {
@@ -172,11 +200,14 @@ function initLogEmptyAvatarsPreference() {
     if (unsubscribeLogEmptyAvatars) {
         return;
     }
-    unsubscribeLogEmptyAvatars = onPreferenceChanged('logEmptyAvatars', (value) => {
-        logEmptyAvatars = Boolean(value);
-        logEmptyAvatarsLoaded = true;
-        logEmptyAvatarsLoadPromise = null;
-    });
+    unsubscribeLogEmptyAvatars = onPreferenceChanged(
+        'logEmptyAvatars',
+        (value) => {
+            logEmptyAvatars = Boolean(value);
+            logEmptyAvatarsLoaded = true;
+            logEmptyAvatarsLoadPromise = null;
+        }
+    );
     logEmptyAvatarsLoadPromise = configRepository
         .getBool('logEmptyAvatars', false)
         .then((value) => {
@@ -190,7 +221,10 @@ function initLogEmptyAvatarsPreference() {
         });
 }
 
-function shouldRecordAvatarChange(currentAvatarImageUrl, previousAvatarImageUrl) {
+function shouldRecordAvatarChange(
+    currentAvatarImageUrl,
+    previousAvatarImageUrl
+) {
     initLogEmptyAvatarsPreference();
     if (!logEmptyAvatarsLoaded && !logEmptyAvatarsLoadPromise) {
         logEmptyAvatarsLoadPromise = configRepository
@@ -207,20 +241,28 @@ function shouldRecordAvatarChange(currentAvatarImageUrl, previousAvatarImageUrl)
     }
     return Boolean(
         currentAvatarImageUrl !== previousAvatarImageUrl &&
-            (logEmptyAvatars || previousAvatarImageUrl)
+        (logEmptyAvatars || previousAvatarImageUrl)
     );
 }
 
 function resolveLocationName(location, patch = {}, previous = {}) {
     const parsed = parseLocation(location || '');
     return {
-        worldName: patch.worldName || patch.world?.name || previous.worldName || parsed.worldId || location || '',
+        worldName:
+            patch.worldName ||
+            patch.world?.name ||
+            previous.worldName ||
+            parsed.worldId ||
+            location ||
+            '',
         groupName: patch.groupName || previous.groupName || parsed.groupId || ''
     };
 }
 
 function resolveDuration(previous) {
-    const timestamp = Number(previous?.locationUpdatedAt || previous?.$location_at || 0);
+    const timestamp = Number(
+        previous?.locationUpdatedAt || previous?.$location_at || 0
+    );
     return timestamp > 0 ? Date.now() - timestamp : '';
 }
 
@@ -260,11 +302,19 @@ function scheduleOfflineFeed({ userId, patch = {}, previous = {} }) {
         if (!ownerUserId || currentSessionUserId() !== ownerUserId) {
             return;
         }
-        const currentFriend = useFriendRosterStore.getState().friendsById[normalizedUserId];
-        if (!currentFriend || (isOnlineState(currentFriend) && !currentFriend.pendingOffline)) {
+        const currentFriend =
+            useFriendRosterStore.getState().friendsById[normalizedUserId];
+        if (
+            !currentFriend ||
+            (isOnlineState(currentFriend) && !currentFriend.pendingOffline)
+        ) {
             return;
         }
-        applyFriendPatch(normalizedUserId, { ...patch, pendingOffline: false }, patch.state || 'offline');
+        applyFriendPatch(
+            normalizedUserId,
+            { ...patch, pendingOffline: false },
+            patch.state || 'offline'
+        );
         recordOnlineFeed({
             type: 'Offline',
             userId: normalizedUserId,
@@ -284,7 +334,11 @@ function scheduleOfflineFeed({ userId, patch = {}, previous = {} }) {
 }
 
 function publishFeedEntry(entry, databaseMethod) {
-    if (!entry || !databaseMethod || typeof database[databaseMethod] !== 'function') {
+    if (
+        !entry ||
+        !databaseMethod ||
+        typeof database[databaseMethod] !== 'function'
+    ) {
         return;
     }
     void (async () => {
@@ -306,7 +360,10 @@ function publishFeedEntry(entry, databaseMethod) {
             }
             useFeedLiveStore.getState().pushEntry(entry, { ownerUserId });
             void pushSharedFeedNotification(entry).catch((error) => {
-                console.warn('Failed to publish shared feed notification:', error);
+                console.warn(
+                    'Failed to publish shared feed notification:',
+                    error
+                );
             });
         } catch (error) {
             console.error(error);
@@ -314,11 +371,22 @@ function publishFeedEntry(entry, databaseMethod) {
     })();
 }
 
-function recordOnlineFeed({ type, userId, patch = {}, previous = {}, location, time = '' }) {
+function recordOnlineFeed({
+    type,
+    userId,
+    patch = {},
+    previous = {},
+    location,
+    time = ''
+}) {
     if (!isRealLocation(location)) {
         return;
     }
-    const { worldName, groupName } = resolveLocationName(location, patch, previous);
+    const { worldName, groupName } = resolveLocationName(
+        location,
+        patch,
+        previous
+    );
     publishFeedEntry(
         {
             ...buildFeedBase({ type, userId, patch, previous }),
@@ -332,11 +400,20 @@ function recordOnlineFeed({ type, userId, patch = {}, previous = {}, location, t
 }
 
 function recordGpsFeed({ userId, patch = {}, previous = {}, location }) {
-    const previousLocation = typeof previous?.location === 'string' ? previous.location.trim() : '';
-    if (!isRealLocation(previousLocation) || !isRealLocation(location) || previousLocation === location) {
+    const previousLocation =
+        typeof previous?.location === 'string' ? previous.location.trim() : '';
+    if (
+        !isRealLocation(previousLocation) ||
+        !isRealLocation(location) ||
+        previousLocation === location
+    ) {
         return;
     }
-    const { worldName, groupName } = resolveLocationName(location, patch, previous);
+    const { worldName, groupName } = resolveLocationName(
+        location,
+        patch,
+        previous
+    );
     publishFeedEntry(
         {
             ...buildFeedBase({ type: 'GPS', userId, patch, previous }),
@@ -368,7 +445,8 @@ function recordProfileDiffFeed({ userId, patch = {}, previous = {} }) {
             {
                 ...buildFeedBase({ type: 'Status', userId, patch, previous }),
                 status: patch.status ?? previous.status ?? '',
-                statusDescription: patch.statusDescription ?? previous.statusDescription ?? '',
+                statusDescription:
+                    patch.statusDescription ?? previous.statusDescription ?? '',
                 previousStatus: previous.status ?? '',
                 previousStatusDescription: previous.statusDescription ?? ''
             },
@@ -393,24 +471,41 @@ function recordProfileDiffFeed({ userId, patch = {}, previous = {} }) {
     }
 
     const currentAvatarImageUrl =
-        patch.currentAvatarImageUrl || patch.currentAvatarThumbnailImageUrl || '';
+        patch.currentAvatarImageUrl ||
+        patch.currentAvatarThumbnailImageUrl ||
+        '';
     const previousAvatarImageUrl =
-        previous.currentAvatarImageUrl || previous.currentAvatarThumbnailImageUrl || '';
+        previous.currentAvatarImageUrl ||
+        previous.currentAvatarThumbnailImageUrl ||
+        '';
     if (currentAvatarImageUrl !== previousAvatarImageUrl) {
         const entry = {
             ...buildFeedBase({ type: 'Avatar', userId, patch, previous }),
             ownerId: patch.currentAvatarAuthorId || patch.authorId || '',
-            previousOwnerId: previous.currentAvatarAuthorId || previous.authorId || '',
+            previousOwnerId:
+                previous.currentAvatarAuthorId || previous.authorId || '',
             avatarName: patch.currentAvatarName || patch.avatarName || '',
-            previousAvatarName: previous.currentAvatarName || previous.avatarName || '',
+            previousAvatarName:
+                previous.currentAvatarName || previous.avatarName || '',
             currentAvatarImageUrl: patch.currentAvatarImageUrl || '',
-            currentAvatarThumbnailImageUrl: patch.currentAvatarThumbnailImageUrl || '',
+            currentAvatarThumbnailImageUrl:
+                patch.currentAvatarThumbnailImageUrl || '',
             previousCurrentAvatarImageUrl: previous.currentAvatarImageUrl || '',
-            previousCurrentAvatarThumbnailImageUrl: previous.currentAvatarThumbnailImageUrl || ''
+            previousCurrentAvatarThumbnailImageUrl:
+                previous.currentAvatarThumbnailImageUrl || ''
         };
-        if (shouldRecordAvatarChange(currentAvatarImageUrl, previousAvatarImageUrl)) {
+        if (
+            shouldRecordAvatarChange(
+                currentAvatarImageUrl,
+                previousAvatarImageUrl
+            )
+        ) {
             publishFeedEntry(entry, 'addAvatarToDatabase');
-        } else if (!logEmptyAvatarsLoaded && !previousAvatarImageUrl && logEmptyAvatarsLoadPromise) {
+        } else if (
+            !logEmptyAvatarsLoaded &&
+            !previousAvatarImageUrl &&
+            logEmptyAvatarsLoadPromise
+        ) {
             void logEmptyAvatarsLoadPromise.then(() => {
                 if (logEmptyAvatars) {
                     publishFeedEntry(entry, 'addAvatarToDatabase');
@@ -447,10 +542,22 @@ function syncCurrentUserFriendState(userId, stateBucket) {
         return;
     }
 
-    snapshot.friends = ensureArrayMembership(snapshot.friends, normalizedUserId);
-    snapshot.onlineFriends = removeFromArray(snapshot.onlineFriends, normalizedUserId);
-    snapshot.activeFriends = removeFromArray(snapshot.activeFriends, normalizedUserId);
-    snapshot.offlineFriends = removeFromArray(snapshot.offlineFriends, normalizedUserId);
+    snapshot.friends = ensureArrayMembership(
+        snapshot.friends,
+        normalizedUserId
+    );
+    snapshot.onlineFriends = removeFromArray(
+        snapshot.onlineFriends,
+        normalizedUserId
+    );
+    snapshot.activeFriends = removeFromArray(
+        snapshot.activeFriends,
+        normalizedUserId
+    );
+    snapshot.offlineFriends = removeFromArray(
+        snapshot.offlineFriends,
+        normalizedUserId
+    );
 
     if (nextStateBucket === 'online') {
         snapshot.onlineFriends = ensureArrayMembership(
@@ -487,9 +594,18 @@ function removeCurrentUserFriend(userId) {
     }
 
     snapshot.friends = removeFromArray(snapshot.friends, normalizedUserId);
-    snapshot.onlineFriends = removeFromArray(snapshot.onlineFriends, normalizedUserId);
-    snapshot.activeFriends = removeFromArray(snapshot.activeFriends, normalizedUserId);
-    snapshot.offlineFriends = removeFromArray(snapshot.offlineFriends, normalizedUserId);
+    snapshot.onlineFriends = removeFromArray(
+        snapshot.onlineFriends,
+        normalizedUserId
+    );
+    snapshot.activeFriends = removeFromArray(
+        snapshot.activeFriends,
+        normalizedUserId
+    );
+    snapshot.offlineFriends = removeFromArray(
+        snapshot.offlineFriends,
+        normalizedUserId
+    );
 
     runtimeStore.setAuthBootstrap({
         currentUserSnapshot: snapshot
@@ -517,181 +633,254 @@ function notifyFriendLogMenu() {
 
 export function handleRealtimePresenceEvent(message) {
     const type = typeof message?.type === 'string' ? message.type : '';
-    const content = message?.content && typeof message.content === 'object'
-        ? message.content
-        : null;
+    const content =
+        message?.content && typeof message.content === 'object'
+            ? message.content
+            : null;
 
     if (!type || !content) {
         return false;
     }
 
     switch (type) {
-    case 'notification':
-    case 'notification-v2':
-    case 'notification-v2-delete':
-    case 'notification-v2-update':
-    case 'see-notification':
-    case 'hide-notification':
-    case 'response-notification':
-        return handleRealtimeNotificationEvent(type, content);
-    case 'friend-add': {
-        const userId = normalizeUserId(content.userId || content.user?.id);
-        const userPatch = sanitizeTransportUser(content.user) ?? { id: userId };
-        const previous = useFriendRosterStore.getState().friendsById[userId] ?? null;
-        const currentStateBucket = resolveStateBucketFromEvent(content, userPatch, previous);
-        const changed = applyFriendPatch(userId, userPatch, currentStateBucket);
-        if (changed) {
+        case 'notification':
+        case 'notification-v2':
+        case 'notification-v2-delete':
+        case 'notification-v2-update':
+        case 'see-notification':
+        case 'hide-notification':
+        case 'response-notification':
+            return handleRealtimeNotificationEvent(type, content);
+        case 'friend-add': {
+            const userId = normalizeUserId(content.userId || content.user?.id);
+            const userPatch = sanitizeTransportUser(content.user) ?? {
+                id: userId
+            };
+            const previous =
+                useFriendRosterStore.getState().friendsById[userId] ?? null;
+            const currentStateBucket = resolveStateBucketFromEvent(
+                content,
+                userPatch,
+                previous
+            );
+            const changed = applyFriendPatch(
+                userId,
+                userPatch,
+                currentStateBucket
+            );
+            if (changed) {
+                notifyFriendLogMenu();
+            }
+            return changed;
+        }
+        case 'friend-delete': {
+            const userId = normalizeUserId(content.userId);
+            if (!userId) {
+                return false;
+            }
+            cancelPendingOffline(userId);
+            useFriendRosterStore.getState().removeFriend(userId);
+            removeCurrentUserFriend(userId);
             notifyFriendLogMenu();
+            return true;
         }
-        return changed;
-    }
-    case 'friend-delete': {
-        const userId = normalizeUserId(content.userId);
-        if (!userId) {
-            return false;
+        case 'friend-update': {
+            const userId = normalizeUserId(content.user?.id || content.userId);
+            const userPatch = sanitizeTransportUser(content.user) ?? {};
+            if (
+                !userId ||
+                (!Object.keys(userPatch).length &&
+                    !hasEventStateBucket(content))
+            ) {
+                return false;
+            }
+            const previous =
+                useFriendRosterStore.getState().friendsById[userId] ?? null;
+            const stateBucket = resolveStateBucketFromEvent(
+                content,
+                userPatch,
+                previous
+            );
+            const patch = { ...userPatch, id: userId };
+            recordProfileDiffFeed({ userId, patch, previous });
+            return applyFriendPatch(userId, patch, stateBucket);
         }
-        cancelPendingOffline(userId);
-        useFriendRosterStore.getState().removeFriend(userId);
-        removeCurrentUserFriend(userId);
-        notifyFriendLogMenu();
-        return true;
-    }
-    case 'friend-update': {
-        const userId = normalizeUserId(content.user?.id || content.userId);
-        const userPatch = sanitizeTransportUser(content.user) ?? {};
-        if (!userId || (!Object.keys(userPatch).length && !hasEventStateBucket(content))) {
-            return false;
+        case 'friend-online': {
+            const userId = normalizeUserId(content.userId || content.user?.id);
+            if (!userId) {
+                return false;
+            }
+            const canceledPendingOffline = cancelPendingOffline(userId);
+            const previous =
+                useFriendRosterStore.getState().friendsById[userId] ?? null;
+            const userPatch = sanitizeTransportUser(content.user) ?? {};
+            const eventLocation = firstString(
+                userPatch.location,
+                content.location
+            );
+            const eventTravelingToLocation = firstString(
+                userPatch.travelingToLocation,
+                content.travelingToLocation
+            );
+            const eventWorldId = firstString(
+                userPatch.worldId,
+                content.worldId
+            );
+            const patch = {
+                ...userPatch,
+                id: userId,
+                platform: content.platform,
+                state: 'online',
+                pendingOffline: false,
+                ...buildLocationPatch(
+                    eventLocation,
+                    eventTravelingToLocation,
+                    eventWorldId,
+                    onlinePresenceFallback(previous)
+                ),
+                locationUpdatedAt: Date.now(),
+                $location_at: Date.now()
+            };
+            if (!canceledPendingOffline && !isOnlineState(previous)) {
+                recordOnlineFeed({
+                    type: 'Online',
+                    userId,
+                    patch,
+                    previous,
+                    location: patch.location,
+                    time: ''
+                });
+            } else {
+                recordGpsFeed({
+                    userId,
+                    patch,
+                    previous,
+                    location: patch.location
+                });
+            }
+            return applyFriendPatch(userId, patch, 'online');
         }
-        const previous = useFriendRosterStore.getState().friendsById[userId] ?? null;
-        const stateBucket = resolveStateBucketFromEvent(content, userPatch, previous);
-        const patch = { ...userPatch, id: userId };
-        recordProfileDiffFeed({ userId, patch, previous });
-        return applyFriendPatch(userId, patch, stateBucket);
-    }
-    case 'friend-online': {
-        const userId = normalizeUserId(content.userId || content.user?.id);
-        if (!userId) {
-            return false;
+        case 'friend-active': {
+            const userId = normalizeUserId(content.userId || content.user?.id);
+            if (!userId) {
+                return false;
+            }
+            const previous =
+                useFriendRosterStore.getState().friendsById[userId] ?? null;
+            const patch = {
+                ...(sanitizeTransportUser(content.user) ?? {}),
+                id: userId,
+                platform: content.platform,
+                state: 'active',
+                ...buildLocationPatch('offline', 'offline', 'offline')
+            };
+            if (scheduleOfflineFeed({ userId, patch, previous })) {
+                return true;
+            }
+            return applyFriendPatch(userId, patch, 'active');
         }
-        const canceledPendingOffline = cancelPendingOffline(userId);
-        const previous = useFriendRosterStore.getState().friendsById[userId] ?? null;
-        const userPatch = sanitizeTransportUser(content.user) ?? {};
-        const eventLocation = firstString(userPatch.location, content.location);
-        const eventTravelingToLocation = firstString(userPatch.travelingToLocation, content.travelingToLocation);
-        const eventWorldId = firstString(userPatch.worldId, content.worldId);
-        const patch = {
-            ...userPatch,
-            id: userId,
-            platform: content.platform,
-            state: 'online',
-            pendingOffline: false,
-            ...buildLocationPatch(eventLocation, eventTravelingToLocation, eventWorldId, onlinePresenceFallback(previous)),
-            locationUpdatedAt: Date.now(),
-            $location_at: Date.now()
-        };
-        if (!canceledPendingOffline && !isOnlineState(previous)) {
-            recordOnlineFeed({
-                type: 'Online',
+        case 'friend-offline': {
+            const userId = normalizeUserId(content.userId);
+            if (!userId) {
+                return false;
+            }
+            const previous =
+                useFriendRosterStore.getState().friendsById[userId] ?? null;
+            const patch = {
+                id: userId,
+                platform: content.platform,
+                state: 'offline',
+                ...buildLocationPatch('offline', 'offline', 'offline')
+            };
+            if (scheduleOfflineFeed({ userId, patch, previous })) {
+                return true;
+            }
+            return applyFriendPatch(userId, patch, 'offline');
+        }
+        case 'friend-location': {
+            const userId = normalizeUserId(content.userId || content.user?.id);
+            if (!userId) {
+                return false;
+            }
+            cancelPendingOffline(userId);
+            const previous =
+                useFriendRosterStore.getState().friendsById[userId] ?? null;
+            const userPatch = sanitizeTransportUser(content.user) ?? {};
+            const eventLocation = firstString(
+                userPatch.location,
+                content.location
+            );
+            const eventTravelingToLocation = firstString(
+                userPatch.travelingToLocation,
+                content.travelingToLocation
+            );
+            const eventWorldId = firstString(
+                userPatch.worldId,
+                content.worldId
+            );
+            const patch = {
+                ...userPatch,
+                id: userId,
+                state: 'online',
+                pendingOffline: false,
+                ...buildLocationPatch(
+                    eventLocation,
+                    eventTravelingToLocation,
+                    eventWorldId,
+                    onlinePresenceFallback(previous)
+                ),
+                locationUpdatedAt: Date.now(),
+                $location_at: Date.now()
+            };
+            recordGpsFeed({
                 userId,
                 patch,
                 previous,
-                location: patch.location,
-                time: ''
+                location: patch.location
             });
-        } else {
-            recordGpsFeed({ userId, patch, previous, location: patch.location });
+            return applyFriendPatch(userId, patch, 'online');
         }
-        return applyFriendPatch(userId, patch, 'online');
-    }
-    case 'friend-active': {
-        const userId = normalizeUserId(content.userId || content.user?.id);
-        if (!userId) {
-            return false;
-        }
-        const previous = useFriendRosterStore.getState().friendsById[userId] ?? null;
-        const patch = {
-            ...(sanitizeTransportUser(content.user) ?? {}),
-            id: userId,
-            platform: content.platform,
-            state: 'active',
-            ...buildLocationPatch('offline', 'offline', 'offline')
-        };
-        if (scheduleOfflineFeed({ userId, patch, previous })) {
+        case 'user-update': {
+            const previous =
+                useRuntimeStore.getState().auth.currentUserSnapshot ?? null;
+            const userPatch =
+                sanitizeTransportUser(content.user, { preserveState: true }) ??
+                {};
+            const stateBucket = resolveStateBucketFromEvent(
+                content,
+                userPatch,
+                previous,
+                ''
+            );
+            const patch = { ...userPatch };
+            if (stateBucket) {
+                patch.stateBucket = stateBucket;
+            }
+            if (!Object.keys(patch).length) {
+                return false;
+            }
+            patchCurrentUserSnapshot(patch);
             return true;
         }
-        return applyFriendPatch(userId, patch, 'active');
-    }
-    case 'friend-offline': {
-        const userId = normalizeUserId(content.userId);
-        if (!userId) {
-            return false;
-        }
-        const previous = useFriendRosterStore.getState().friendsById[userId] ?? null;
-        const patch = {
-            id: userId,
-            platform: content.platform,
-            state: 'offline',
-            ...buildLocationPatch('offline', 'offline', 'offline')
-        };
-        if (scheduleOfflineFeed({ userId, patch, previous })) {
+        case 'user-location': {
+            const currentUserId = normalizeUserId(
+                useRuntimeStore.getState().auth.currentUserId
+            );
+            const userId = normalizeUserId(content.userId);
+            if (!currentUserId || !userId || currentUserId !== userId) {
+                return false;
+            }
+            patchCurrentUserSnapshot(
+                buildLocationPatch(
+                    content.location,
+                    content.travelingToLocation,
+                    content.worldId,
+                    useRuntimeStore.getState().auth.currentUserSnapshot
+                )
+            );
             return true;
         }
-        return applyFriendPatch(userId, patch, 'offline');
-    }
-    case 'friend-location': {
-        const userId = normalizeUserId(content.userId || content.user?.id);
-        if (!userId) {
+        default:
             return false;
-        }
-        cancelPendingOffline(userId);
-        const previous = useFriendRosterStore.getState().friendsById[userId] ?? null;
-        const userPatch = sanitizeTransportUser(content.user) ?? {};
-        const eventLocation = firstString(userPatch.location, content.location);
-        const eventTravelingToLocation = firstString(userPatch.travelingToLocation, content.travelingToLocation);
-        const eventWorldId = firstString(userPatch.worldId, content.worldId);
-        const patch = {
-            ...userPatch,
-            id: userId,
-            state: 'online',
-            pendingOffline: false,
-            ...buildLocationPatch(eventLocation, eventTravelingToLocation, eventWorldId, onlinePresenceFallback(previous)),
-            locationUpdatedAt: Date.now(),
-            $location_at: Date.now()
-        };
-        recordGpsFeed({ userId, patch, previous, location: patch.location });
-        return applyFriendPatch(userId, patch, 'online');
-    }
-    case 'user-update': {
-        const previous = useRuntimeStore.getState().auth.currentUserSnapshot ?? null;
-        const userPatch = sanitizeTransportUser(content.user, { preserveState: true }) ?? {};
-        const stateBucket = resolveStateBucketFromEvent(content, userPatch, previous, '');
-        const patch = { ...userPatch };
-        if (stateBucket) {
-            patch.stateBucket = stateBucket;
-        }
-        if (!Object.keys(patch).length) {
-            return false;
-        }
-        patchCurrentUserSnapshot(patch);
-        return true;
-    }
-    case 'user-location': {
-        const currentUserId = normalizeUserId(useRuntimeStore.getState().auth.currentUserId);
-        const userId = normalizeUserId(content.userId);
-        if (!currentUserId || !userId || currentUserId !== userId) {
-            return false;
-        }
-        patchCurrentUserSnapshot(
-            buildLocationPatch(
-                content.location,
-                content.travelingToLocation,
-                content.worldId,
-                useRuntimeStore.getState().auth.currentUserSnapshot
-            )
-        );
-        return true;
-    }
-    default:
-        return false;
     }
 }

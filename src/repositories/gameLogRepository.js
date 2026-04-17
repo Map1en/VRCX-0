@@ -15,11 +15,17 @@ export const GAME_LOG_FILTER_TYPES = Object.freeze([
     'ImageLoad'
 ]);
 
-const SESSION_EVENT_FILTER_TYPES = Object.freeze(['OnPlayerJoined', 'OnPlayerLeft', 'VideoPlay']);
+const SESSION_EVENT_FILTER_TYPES = Object.freeze([
+    'OnPlayerJoined',
+    'OnPlayerLeft',
+    'VideoPlay'
+]);
 const SESSION_GLOBAL_SEARCH_INITIAL_LOCATIONS = 500;
 
 function normalizeId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeFavoriteSet(favoriteUserIds = []) {
@@ -140,7 +146,11 @@ function sessionHeaderMatchesSearch(session, query) {
         session?.worldId,
         session?.worldName,
         session?.groupName
-    ].some((value) => String(value || '').toLowerCase().includes(query));
+    ].some((value) =>
+        String(value || '')
+            .toLowerCase()
+            .includes(query)
+    );
 }
 
 function sessionEventMatchesSearch(event, query) {
@@ -163,10 +173,17 @@ function sessionEventMatchesSearch(event, query) {
         }
     }
 
-    return values.some((value) => String(value || '').toLowerCase().includes(query));
+    return values.some((value) =>
+        String(value || '')
+            .toLowerCase()
+            .includes(query)
+    );
 }
 
-function filterSessionEvents(session, { eventFilters, favoriteUserIds, searchQuery }) {
+function filterSessionEvents(
+    session,
+    { eventFilters, favoriteUserIds, searchQuery }
+) {
     const filteredEvents = [];
 
     for (const event of session?.events ?? []) {
@@ -174,7 +191,10 @@ function filterSessionEvents(session, { eventFilters, favoriteUserIds, searchQue
             continue;
         }
 
-        const favoriteFilteredEvent = filterSessionEventByFavorite(event, favoriteUserIds);
+        const favoriteFilteredEvent = filterSessionEventByFavorite(
+            event,
+            favoriteUserIds
+        );
         if (!favoriteFilteredEvent) {
             continue;
         }
@@ -191,17 +211,24 @@ function filterSessionEvents(session, { eventFilters, favoriteUserIds, searchQue
 
 function normalizeSessionFilters(filters) {
     const hasLocationFilter = filters.includes('Location');
-    const eventFilters = filters.filter((filter) => SESSION_EVENT_FILTER_TYPES.includes(filter));
+    const eventFilters = filters.filter((filter) =>
+        SESSION_EVENT_FILTER_TYPES.includes(filter)
+    );
 
     return {
         hasLocationFilter,
-        hasUnsupportedOnlyFilter: filters.length > 0 && !hasLocationFilter && eventFilters.length === 0,
+        hasUnsupportedOnlyFilter:
+            filters.length > 0 &&
+            !hasLocationFilter &&
+            eventFilters.length === 0,
         eventFilters
     };
 }
 
 function filterSessions(sessions, { filters, favoriteUserIds, search }) {
-    const searchQuery = String(search || '').trim().toLowerCase();
+    const searchQuery = String(search || '')
+        .trim()
+        .toLowerCase();
     const { hasLocationFilter, hasUnsupportedOnlyFilter, eventFilters } =
         normalizeSessionFilters(filters);
 
@@ -210,15 +237,21 @@ function filterSessions(sessions, { filters, favoriteUserIds, search }) {
     }
 
     return sessions.reduce((result, session) => {
-        const headerMatchesSearch = sessionHeaderMatchesSearch(session, searchQuery);
+        const headerMatchesSearch = sessionHeaderMatchesSearch(
+            session,
+            searchQuery
+        );
         const nextEvents = filterSessionEvents(session, {
             eventFilters,
             favoriteUserIds,
             searchQuery: headerMatchesSearch ? '' : searchQuery
         });
-        const matchesFilter = filters.length === 0 || hasLocationFilter || nextEvents.length > 0;
-        const matchesFavorites = favoriteUserIds.size === 0 || nextEvents.length > 0;
-        const matchesSearch = !searchQuery || headerMatchesSearch || nextEvents.length > 0;
+        const matchesFilter =
+            filters.length === 0 || hasLocationFilter || nextEvents.length > 0;
+        const matchesFavorites =
+            favoriteUserIds.size === 0 || nextEvents.length > 0;
+        const matchesSearch =
+            !searchQuery || headerMatchesSearch || nextEvents.length > 0;
 
         if (matchesFilter && matchesFavorites && matchesSearch) {
             result.push({
@@ -240,7 +273,9 @@ function resolveSessionFetchLimit({
     searchLimit
 }) {
     const hasFiltering =
-        Boolean(normalizedSearch) || normalizedFilters.length > 0 || favoriteUserIds.size > 0;
+        Boolean(normalizedSearch) ||
+        normalizedFilters.length > 0 ||
+        favoriteUserIds.size > 0;
 
     if (!hasFiltering) {
         return normalizedLimit;
@@ -267,7 +302,11 @@ async function loadSessionEvents(locationSegments, favoriteUserIds) {
     const maxEpoch = epochs.length ? Math.max(...epochs) : Date.now();
     const dateWindowMs = 24 * 60 * 60 * 1000;
     const locationTags = Array.from(
-        new Set(locationSegments.map((segment) => normalizeId(segment?.location)).filter(Boolean))
+        new Set(
+            locationSegments
+                .map((segment) => normalizeId(segment?.location))
+                .filter(Boolean)
+        )
     );
     const events = await database.getSessionsEventsForSegments(
         locationTags,
@@ -284,7 +323,11 @@ async function loadSessionEvents(locationSegments, favoriteUserIds) {
     });
 }
 
-async function queryGameLog({ search = '', filters = [], favoriteUserIds = [] }) {
+async function queryGameLog({
+    search = '',
+    filters = [],
+    favoriteUserIds = []
+}) {
     const [maxTableSize, searchLimit] = await Promise.all([
         configRepository.getInt('maxTableSize_v2', 500),
         configRepository.getInt('searchLimit', 50000)
@@ -312,10 +355,21 @@ async function queryGameLog({ search = '', filters = [], favoriteUserIds = [] })
         );
     }
 
-    return database.lookupGameLogDatabase(normalizedFilters, normalizedFavorites, maxTableSize);
+    return database.lookupGameLogDatabase(
+        normalizedFilters,
+        normalizedFavorites,
+        maxTableSize
+    );
 }
 
-async function queryLatestSessions({ search = '', filters = [], favoriteUserIds = [], dateFrom = '', dateTo = '', limit = 25 } = {}) {
+async function queryLatestSessions({
+    search = '',
+    filters = [],
+    favoriteUserIds = [],
+    dateFrom = '',
+    dateTo = '',
+    limit = 25
+} = {}) {
     const [maxTableSize, searchLimit] = await Promise.all([
         configRepository.getInt('maxTableSize_v2', 500),
         configRepository.getInt('searchLimit', 50000)
@@ -347,7 +401,10 @@ async function queryLatestSessions({ search = '', filters = [], favoriteUserIds 
             latestFiltered.length < normalizedLimit &&
             allLocationSegments.length < searchLimit
         ) {
-            const batch = await database.getSessionsLocationSegments(beforeId, fetchCount);
+            const batch = await database.getSessionsLocationSegments(
+                beforeId,
+                fetchCount
+            );
             if (!Array.isArray(batch) || batch.length === 0) {
                 break;
             }
@@ -360,7 +417,10 @@ async function queryLatestSessions({ search = '', filters = [], favoriteUserIds 
                 break;
             }
 
-            const batchEvents = await loadSessionEvents(batch, normalizedFavoriteSet);
+            const batchEvents = await loadSessionEvents(
+                batch,
+                normalizedFavoriteSet
+            );
             allLocationSegments.push(...batch);
             allEvents.push(...batchEvents);
             beforeId = batch[batch.length - 1].id;
@@ -377,19 +437,23 @@ async function queryLatestSessions({ search = '', filters = [], favoriteUserIds 
         return latestFiltered;
     }
 
-    const locationSegments = normalizedDateFrom || normalizedDateTo
-        ? await database.getSessionsLocationSegmentsByDateRange(
-            normalizedDateFrom || '1970-01-01T00:00:00.000Z',
-            normalizedDateTo || new Date().toISOString(),
-            fetchLimit
-        )
-        : await database.getSessionsLocationSegments(null, fetchLimit);
+    const locationSegments =
+        normalizedDateFrom || normalizedDateTo
+            ? await database.getSessionsLocationSegmentsByDateRange(
+                  normalizedDateFrom || '1970-01-01T00:00:00.000Z',
+                  normalizedDateTo || new Date().toISOString(),
+                  fetchLimit
+              )
+            : await database.getSessionsLocationSegments(null, fetchLimit);
 
     if (!Array.isArray(locationSegments) || locationSegments.length === 0) {
         return [];
     }
 
-    const annotatedEvents = await loadSessionEvents(locationSegments, normalizedFavoriteSet);
+    const annotatedEvents = await loadSessionEvents(
+        locationSegments,
+        normalizedFavoriteSet
+    );
     const result = buildGameLogSessions(locationSegments, annotatedEvents);
 
     return filterSessions(result.segments ?? [], {
@@ -420,13 +484,19 @@ async function getWorldNameByWorldId(worldId) {
     if (!normalizedWorldId) {
         return '';
     }
-    return database.getGameLogWorldNameByWorldId(normalizedWorldId).catch(() => '');
+    return database
+        .getGameLogWorldNameByWorldId(normalizedWorldId)
+        .catch(() => '');
 }
 
 async function getAllUserStats({ userIds = [], displayNames = [] } = {}) {
     return database.getAllUserStats(
-        (Array.isArray(userIds) ? userIds : []).map((value) => normalizeId(value)).filter(Boolean),
-        (Array.isArray(displayNames) ? displayNames : []).map((value) => String(value || '').trim()).filter(Boolean)
+        (Array.isArray(userIds) ? userIds : [])
+            .map((value) => normalizeId(value))
+            .filter(Boolean),
+        (Array.isArray(displayNames) ? displayNames : [])
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
     );
 }
 

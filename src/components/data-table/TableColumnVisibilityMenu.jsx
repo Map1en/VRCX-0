@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import {
     ArrowDownIcon,
     ArrowUpIcon,
@@ -7,6 +6,7 @@ import {
     Settings2Icon,
     UnlockIcon
 } from 'lucide-react';
+import { Fragment } from 'react';
 
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -28,6 +28,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+
 import {
     getColumnOrder,
     getColumnOrderLocked,
@@ -56,7 +57,11 @@ function renderColumnLockLabel(locked) {
     return locked ? 'Unlock column order' : 'Lock column order';
 }
 
-export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLayout }) {
+export function TableColumnVisibilityMenu({
+    table,
+    label = 'Columns',
+    onResetLayout
+}) {
     const allLeafColumns = table.getAllLeafColumns();
     const columns = getToggleableColumns(allLeafColumns);
 
@@ -79,14 +84,18 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                     {label}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-h-96 w-72 overflow-y-auto">
+            <DropdownMenuContent
+                align="end"
+                className="max-h-96 w-72 overflow-y-auto"
+            >
                 <DropdownMenuLabel>Table layout</DropdownMenuLabel>
                 <DropdownMenuGroup>
                     <DropdownMenuItem
                         onSelect={(event) => {
                             event.preventDefault();
                             resetTableLayout(table, onResetLayout);
-                        }}>
+                        }}
+                    >
                         <RotateCcwIcon data-icon="inline-start" />
                         Reset columns
                     </DropdownMenuItem>
@@ -95,7 +104,8 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                             onSelect={(event) => {
                                 event.preventDefault();
                                 setColumnOrderLocked(table, !columnOrderLocked);
-                            }}>
+                            }}
+                        >
                             {columnOrderLocked ? (
                                 <UnlockIcon data-icon="inline-start" />
                             ) : (
@@ -108,26 +118,42 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                     {columns.map((column) => {
-                        const columnIndex = columnOrderIndexById.get(column.id) ?? -1;
+                        const columnIndex =
+                            columnOrderIndexById.get(column.id) ?? -1;
                         const columnLabel = resolveColumnLabel(column);
                         const canMoveUp = columnIndex > 0;
-                        const canMoveDown = columnIndex >= 0 && columnIndex < columnOrder.length - 1;
+                        const canMoveDown =
+                            columnIndex >= 0 &&
+                            columnIndex < columnOrder.length - 1;
 
                         return (
                             <Fragment key={column.id}>
                                 <DropdownMenuCheckboxItem
                                     checked={column.getIsVisible()}
-                                    onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
-                                    onSelect={(event) => event.preventDefault()}>
-                                    <span className="min-w-0 flex-1 truncate">{columnLabel}</span>
+                                    onCheckedChange={(checked) =>
+                                        column.toggleVisibility(
+                                            checked === true
+                                        )
+                                    }
+                                    onSelect={(event) => event.preventDefault()}
+                                >
+                                    <span className="min-w-0 flex-1 truncate">
+                                        {columnLabel}
+                                    </span>
                                 </DropdownMenuCheckboxItem>
                                 <DropdownMenuItem
                                     inset
                                     disabled={columnOrderLocked || !canMoveUp}
                                     onSelect={(event) => {
                                         event.preventDefault();
-                                        moveColumn(table, column.id, -1, columnOrder);
-                                    }}>
+                                        moveColumn(
+                                            table,
+                                            column.id,
+                                            -1,
+                                            columnOrder
+                                        );
+                                    }}
+                                >
                                     <ArrowUpIcon data-icon="inline-start" />
                                     Move up
                                 </DropdownMenuItem>
@@ -136,8 +162,14 @@ export function TableColumnVisibilityMenu({ table, label = 'Columns', onResetLay
                                     disabled={columnOrderLocked || !canMoveDown}
                                     onSelect={(event) => {
                                         event.preventDefault();
-                                        moveColumn(table, column.id, 1, columnOrder);
-                                    }}>
+                                        moveColumn(
+                                            table,
+                                            column.id,
+                                            1,
+                                            columnOrder
+                                        );
+                                    }}
+                                >
                                     <ArrowDownIcon data-icon="inline-start" />
                                     Move down
                                 </DropdownMenuItem>
@@ -160,8 +192,15 @@ export function TableColumnHeaderContextMenu({
     const columns = getToggleableColumns(allLeafColumns);
     const columnOrderLocked = getColumnOrderLocked(table);
     const showColumnOrderLock = hasColumnOrderLock(table);
-    const showReset = Boolean(onResetLayout || table?.resetColumnVisibility || table?.setColumnOrder || table?.setColumnSizing);
-    const showMenu = Boolean(columns.length || showColumnOrderLock || showReset);
+    const showReset = Boolean(
+        onResetLayout ||
+        table?.resetColumnVisibility ||
+        table?.setColumnOrder ||
+        table?.setColumnSizing
+    );
+    const showMenu = Boolean(
+        columns.length || showColumnOrderLock || showReset
+    );
 
     if (!showMenu) {
         return children;
@@ -177,8 +216,11 @@ export function TableColumnHeaderContextMenu({
                             <ContextMenuCheckboxItem
                                 key={column.id}
                                 checked={column.getIsVisible()}
-                                onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
-                                onSelect={(event) => event.preventDefault()}>
+                                onCheckedChange={(checked) =>
+                                    column.toggleVisibility(checked === true)
+                                }
+                                onSelect={(event) => event.preventDefault()}
+                            >
                                 <span className="min-w-0 flex-1 truncate">
                                     {resolveColumnLabel(column)}
                                 </span>
@@ -194,15 +236,24 @@ export function TableColumnHeaderContextMenu({
                         {showColumnOrderLock ? (
                             <ContextMenuCheckboxItem
                                 checked={columnOrderLocked}
-                                onCheckedChange={(checked) => setColumnOrderLocked(table, checked === true)}
-                                onSelect={(event) => event.preventDefault()}>
+                                onCheckedChange={(checked) =>
+                                    setColumnOrderLocked(
+                                        table,
+                                        checked === true
+                                    )
+                                }
+                                onSelect={(event) => event.preventDefault()}
+                            >
                                 {renderColumnLockLabel(columnOrderLocked)}
                             </ContextMenuCheckboxItem>
                         ) : null}
                         {showReset ? (
                             <ContextMenuItem
                                 inset={showColumnOrderLock}
-                                onSelect={() => resetTableLayout(table, onResetLayout)}>
+                                onSelect={() =>
+                                    resetTableLayout(table, onResetLayout)
+                                }
+                            >
                                 Reset columns
                             </ContextMenuItem>
                         ) : null}

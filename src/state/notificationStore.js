@@ -25,7 +25,9 @@ export const useNotificationStore = create((set) => ({
     },
     markNotificationRead(id) {
         set((state) => ({
-            items: state.items.map((item) => (item.id === id ? { ...item, read: true } : item))
+            items: state.items.map((item) =>
+                item.id === id ? { ...item, read: true } : item
+            )
         }));
     },
     dismissNotification(id) {
@@ -37,9 +39,10 @@ export const useNotificationStore = create((set) => ({
         const nextOpen = Boolean(isPanelOpen);
         set((state) => ({
             isPanelOpen: nextOpen,
-            items: !nextOpen && state.isPanelOpen
-                ? state.items.map((item) => ({ ...item, read: true }))
-                : state.items
+            items:
+                !nextOpen && state.isPanelOpen
+                    ? state.items.map((item) => ({ ...item, read: true }))
+                    : state.items
         }));
     },
     resetNotificationState() {

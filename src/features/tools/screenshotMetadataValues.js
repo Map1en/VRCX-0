@@ -42,7 +42,9 @@ export function normalizeDroppedFilePath(value) {
         try {
             const url = new URL(text);
             const pathname = decodeURIComponent(url.pathname);
-            return /^[A-Za-z]:/.test(pathname.slice(1)) ? pathname.slice(1) : pathname;
+            return /^[A-Za-z]:/.test(pathname.slice(1))
+                ? pathname.slice(1)
+                : pathname;
         } catch {
             return text;
         }
@@ -128,10 +130,12 @@ export function formatScreenshotDateTime(value) {
 }
 
 export function getFileNameFromPath(path) {
-    return String(path || '')
-        .split(/[\\/]/)
-        .filter(Boolean)
-        .at(-1) || '';
+    return (
+        String(path || '')
+            .split(/[\\/]/)
+            .filter(Boolean)
+            .at(-1) || ''
+    );
 }
 
 export function resolveScreenshotMetadataDate(metadata, extra, fileName) {
@@ -159,7 +163,8 @@ export function resolveScreenshotMetadataDate(metadata, extra, fileName) {
 
 export function normalizeScreenshotMetadata(metadata, extra) {
     const fileName =
-        extra?.fileName || getFileNameFromPath(extra?.filePath || metadata?.sourceFile);
+        extra?.fileName ||
+        getFileNameFromPath(extra?.filePath || metadata?.sourceFile);
     const dateTime = resolveScreenshotMetadataDate(metadata, extra, fileName);
 
     return {
@@ -178,7 +183,11 @@ export function normalizeScreenshotMetadata(metadata, extra) {
     };
 }
 
-export function buildScreenshotSearchRow(normalized, selectedSearchType, query) {
+export function buildScreenshotSearchRow(
+    normalized,
+    selectedSearchType,
+    query
+) {
     let match = '';
     if (selectedSearchType?.index === 0) {
         const normalizedQuery = String(query || '').toLowerCase();
@@ -209,9 +218,11 @@ export function buildScreenshotSearchRow(normalized, selectedSearchType, query) 
 }
 
 export function sortScreenshotRowsByNewest(rows) {
-    return (Array.isArray(rows) ? rows : []).filter(Boolean).sort((left, right) => {
-        const leftTime = left?.dateTime?.getTime?.() ?? 0;
-        const rightTime = right?.dateTime?.getTime?.() ?? 0;
-        return rightTime - leftTime;
-    });
+    return (Array.isArray(rows) ? rows : [])
+        .filter(Boolean)
+        .sort((left, right) => {
+            const leftTime = left?.dateTime?.getTime?.() ?? 0;
+            const rightTime = right?.dateTime?.getTime?.() ?? 0;
+            return rightTime - leftTime;
+        });
 }

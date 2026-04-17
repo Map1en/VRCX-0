@@ -11,7 +11,9 @@ describe('executeWithBackoff', () => {
         vi.useFakeTimers();
         const fn = vi.fn().mockResolvedValue('ok');
 
-        await expect(executeWithBackoff(fn, { baseDelay: 100 })).resolves.toBe('ok');
+        await expect(executeWithBackoff(fn, { baseDelay: 100 })).resolves.toBe(
+            'ok'
+        );
 
         expect(fn).toHaveBeenCalledTimes(1);
         expect(vi.getTimerCount()).toBe(0);
@@ -19,7 +21,8 @@ describe('executeWithBackoff', () => {
 
     it('retries with exponential delays before returning a later success', async () => {
         vi.useFakeTimers();
-        const fn = vi.fn()
+        const fn = vi
+            .fn()
             .mockRejectedValueOnce(new Error('first'))
             .mockRejectedValueOnce(new Error('second'))
             .mockResolvedValue('ok');
@@ -53,11 +56,13 @@ describe('executeWithBackoff', () => {
         const shouldRetry = vi.fn().mockReturnValue(false);
         const fn = vi.fn().mockRejectedValue(error);
 
-        await expect(executeWithBackoff(fn, {
-            maxRetries: 3,
-            baseDelay: 100,
-            shouldRetry
-        })).rejects.toBe(error);
+        await expect(
+            executeWithBackoff(fn, {
+                maxRetries: 3,
+                baseDelay: 100,
+                shouldRetry
+            })
+        ).rejects.toBe(error);
 
         expect(fn).toHaveBeenCalledTimes(1);
         expect(shouldRetry).toHaveBeenCalledWith(error);

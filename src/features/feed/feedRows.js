@@ -1,7 +1,9 @@
 export const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
 
 export function normalizeFeedId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 export function isUserIdLike(value) {
@@ -49,11 +51,24 @@ export function resolveFeedUserId(row) {
     return '';
 }
 
-export function resolveFeedUserDisplayName(row, friend, cachedDisplayName = '') {
+export function resolveFeedUserDisplayName(
+    row,
+    friend,
+    cachedDisplayName = ''
+) {
     const userId = resolveFeedUserId(row);
-    const rowDisplayName = resolveDisplayNameCandidate(row?.displayName, userId);
-    const friendDisplayName = resolveDisplayNameCandidate(friend?.displayName || friend?.username, userId);
-    const logDisplayName = resolveDisplayNameCandidate(cachedDisplayName, userId);
+    const rowDisplayName = resolveDisplayNameCandidate(
+        row?.displayName,
+        userId
+    );
+    const friendDisplayName = resolveDisplayNameCandidate(
+        friend?.displayName || friend?.username,
+        userId
+    );
+    const logDisplayName = resolveDisplayNameCandidate(
+        cachedDisplayName,
+        userId
+    );
     if (rowDisplayName) {
         return rowDisplayName;
     }
@@ -79,8 +94,14 @@ export function normalizePresenceState(value) {
 
 export function resolveFeedFriendStateBucket(friend, currentUserSnapshot) {
     const friendId = normalizeFeedId(friend?.id || friend?.userId);
-    const explicitState = normalizePresenceState(friend?.stateBucket || friend?.state);
-    if (explicitState === 'online' || explicitState === 'active' || explicitState === 'offline') {
+    const explicitState = normalizePresenceState(
+        friend?.stateBucket || friend?.state
+    );
+    if (
+        explicitState === 'online' ||
+        explicitState === 'active' ||
+        explicitState === 'offline'
+    ) {
         return explicitState;
     }
     if (!friendId) {
@@ -99,10 +120,15 @@ export function resolveFeedFriendStateBucket(friend, currentUserSnapshot) {
 }
 
 export function canRequestInviteFromFeedFriend(friend, currentUserSnapshot) {
-    return resolveFeedFriendStateBucket(friend, currentUserSnapshot) === 'online';
+    return (
+        resolveFeedFriendStateBucket(friend, currentUserSnapshot) === 'online'
+    );
 }
 
-export function resolveFeedCurrentInviteLocation(gameState, currentUserSnapshot) {
+export function resolveFeedCurrentInviteLocation(
+    gameState,
+    currentUserSnapshot
+) {
     const currentLocation = normalizeFeedId(gameState?.currentLocation);
     if (currentLocation === 'traveling') {
         return normalizeFeedId(gameState?.currentDestination);
@@ -111,20 +137,33 @@ export function resolveFeedCurrentInviteLocation(gameState, currentUserSnapshot)
     return (
         currentLocation ||
         normalizeFeedId(gameState?.currentDestination) ||
-        normalizeFeedId(currentUserSnapshot?.$locationTag || currentUserSnapshot?.location)
+        normalizeFeedId(
+            currentUserSnapshot?.$locationTag || currentUserSnapshot?.location
+        )
     );
 }
 
-export function buildFeedFavoriteIdSet(remoteFavoritesById, localFriendFavorites, selectedFavoriteGroupIds = []) {
+export function buildFeedFavoriteIdSet(
+    remoteFavoritesById,
+    localFriendFavorites,
+    selectedFavoriteGroupIds = []
+) {
     const ids = new Set();
-    const selectedGroups = Array.isArray(selectedFavoriteGroupIds) ? selectedFavoriteGroupIds : [];
-    const hasRemoteGroupFilter = selectedGroups.some((groupKey) => !String(groupKey || '').startsWith('local:'));
+    const selectedGroups = Array.isArray(selectedFavoriteGroupIds)
+        ? selectedFavoriteGroupIds
+        : [];
+    const hasRemoteGroupFilter = selectedGroups.some(
+        (groupKey) => !String(groupKey || '').startsWith('local:')
+    );
 
     for (const favorite of Object.values(remoteFavoritesById ?? {})) {
         if (favorite?.type !== 'friend') {
             continue;
         }
-        if (hasRemoteGroupFilter && !selectedGroups.includes(favorite.$groupKey)) {
+        if (
+            hasRemoteGroupFilter &&
+            !selectedGroups.includes(favorite.$groupKey)
+        ) {
             continue;
         }
         const favoriteId = normalizeFeedId(favorite.favoriteId);
@@ -148,11 +187,18 @@ export function buildFeedFavoriteIdSet(remoteFavoritesById, localFriendFavorites
 }
 
 export function feedSearchMatches(row, search) {
-    const query = String(search || '').trim().toUpperCase();
+    const query = String(search || '')
+        .trim()
+        .toUpperCase();
     if (!query) {
         return true;
     }
-    if ((query.startsWith('WRLD_') || query.startsWith('GRP_')) && String(row?.location || '').toUpperCase().includes(query)) {
+    if (
+        (query.startsWith('WRLD_') || query.startsWith('GRP_')) &&
+        String(row?.location || '')
+            .toUpperCase()
+            .includes(query)
+    ) {
         return true;
     }
     return [
@@ -167,7 +213,11 @@ export function feedSearchMatches(row, search) {
         row?.previousBio,
         row?.avatarName,
         row?.message
-    ].some((value) => String(value || '').toUpperCase().includes(query));
+    ].some((value) =>
+        String(value || '')
+            .toUpperCase()
+            .includes(query)
+    );
 }
 
 export function toIsoRangeStart(value) {
@@ -204,7 +254,11 @@ export function feedEntryMatchesView({
     if (row.ownerUserId && row.ownerUserId !== currentUserId) {
         return false;
     }
-    if (Array.isArray(activeFilters) && activeFilters.length && !activeFilters.includes(row.type)) {
+    if (
+        Array.isArray(activeFilters) &&
+        activeFilters.length &&
+        !activeFilters.includes(row.type)
+    ) {
         return false;
     }
     if (favoritesOnly && !favoriteIdSet.has(normalizeFeedId(row.userId))) {
@@ -238,8 +292,9 @@ export function getFeedRowId(row) {
 }
 
 export function collectMatchingLiveFeedEntries(entries, minSequence, context) {
-    const unseenEntries = (Array.isArray(entries) ? entries : [])
-        .filter((item) => item.sequence > minSequence);
+    const unseenEntries = (Array.isArray(entries) ? entries : []).filter(
+        (item) => item.sequence > minSequence
+    );
     if (!unseenEntries.length) {
         return {
             matchingEntries: [],
@@ -249,10 +304,12 @@ export function collectMatchingLiveFeedEntries(entries, minSequence, context) {
 
     const matchingEntries = unseenEntries
         .map((item) => item.entry)
-        .filter((entry) => feedEntryMatchesView({
-            ...context,
-            row: entry
-        }));
+        .filter((entry) =>
+            feedEntryMatchesView({
+                ...context,
+                row: entry
+            })
+        );
 
     return {
         matchingEntries,
@@ -279,7 +336,9 @@ export function parseDateInput(value) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
         return undefined;
     }
-    const [year, month, day] = normalizedValue.split('-').map((part) => Number.parseInt(part, 10));
+    const [year, month, day] = normalizedValue
+        .split('-')
+        .map((part) => Number.parseInt(part, 10));
     const date = new Date(year, month - 1, day);
     return Number.isNaN(date.valueOf()) ? undefined : date;
 }

@@ -1,21 +1,30 @@
 import { describe, expect, it } from 'vitest';
 
-import { MUTUAL_GRAPH_EMPTY_USER_ID } from './mutualFriendsSettings.js';
 import {
     buildMutualFriendsBaseGraph,
     filterMutualFriendsGraph
 } from './mutualFriendsGraphData.js';
+import { MUTUAL_GRAPH_EMPTY_USER_ID } from './mutualFriendsSettings.js';
 
 describe('mutualFriendsGraphData', () => {
     it('turns a cached mutual-friends snapshot into unique graph nodes and edges', () => {
         const graph = buildMutualFriendsBaseGraph(
             new Map([
-                ['usr_a', ['usr_b', 'usr_c', 'usr_b', MUTUAL_GRAPH_EMPTY_USER_ID]],
+                [
+                    'usr_a',
+                    ['usr_b', 'usr_c', 'usr_b', MUTUAL_GRAPH_EMPTY_USER_ID]
+                ],
                 ['usr_b', ['usr_a']],
                 ['usr_c', ['usr_a']]
             ]),
             new Map([
-                ['usr_c', { lastFetchedAt: '2026-04-01T00:00:00.000Z', optedOut: true }]
+                [
+                    'usr_c',
+                    {
+                        lastFetchedAt: '2026-04-01T00:00:00.000Z',
+                        optedOut: true
+                    }
+                ]
             ]),
             {
                 usr_a: { id: 'usr_a', displayName: 'Ava' },
@@ -24,11 +33,15 @@ describe('mutualFriendsGraphData', () => {
             }
         );
 
-        expect(graph.links.map((link) => [link.source, link.target].sort())).toEqual([
+        expect(
+            graph.links.map((link) => [link.source, link.target].sort())
+        ).toEqual([
             ['usr_a', 'usr_b'],
             ['usr_a', 'usr_c']
         ]);
-        expect(graph.nodes.map((node) => [node.id, node.label, node.degree])).toEqual([
+        expect(
+            graph.nodes.map((node) => [node.id, node.label, node.degree])
+        ).toEqual([
             ['usr_a', 'Ava', 2],
             ['usr_b', 'ben_user', 1],
             ['usr_c', 'Cora', 1]
@@ -61,7 +74,9 @@ describe('mutualFriendsGraphData', () => {
             null
         );
 
-        expect(graph.nodes.map((node) => [node.id, node.label, node.degree])).toEqual([
+        expect(
+            graph.nodes.map((node) => [node.id, node.label, node.degree])
+        ).toEqual([
             ['usr_a', 'usr_a', 1],
             ['usr_b', 'usr_b', 1]
         ]);
@@ -83,8 +98,14 @@ describe('mutualFriendsGraphData', () => {
 
         const filtered = filterMutualFriendsGraph(graph, 'ava');
 
-        expect(filtered.nodes.map((node) => node.id)).toEqual(['usr_a', 'usr_b']);
+        expect(filtered.nodes.map((node) => node.id)).toEqual([
+            'usr_a',
+            'usr_b'
+        ]);
         expect(filtered.links).toEqual([{ source: 'usr_a', target: 'usr_b' }]);
-        expect(filterMutualFriendsGraph(graph, 'missing')).toEqual({ nodes: [], links: [] });
+        expect(filterMutualFriendsGraph(graph, 'missing')).toEqual({
+            nodes: [],
+            links: []
+        });
     });
 });

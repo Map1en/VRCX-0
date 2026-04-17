@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-async function loadWebviewApi({ currentWindow = null, currentWebviewWindow = null } = {}) {
+async function loadWebviewApi({
+    currentWindow = null,
+    currentWebviewWindow = null
+} = {}) {
     vi.resetModules();
     vi.doMock('@tauri-apps/api/window', () => ({
         getCurrentWindow: vi.fn(() => currentWindow)

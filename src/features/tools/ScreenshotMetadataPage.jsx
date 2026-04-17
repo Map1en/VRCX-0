@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     ArrowDownIcon,
     ArrowLeftIcon,
@@ -15,17 +14,21 @@ import {
     UploadIcon,
     UsersIcon
 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { Location } from '@/components/Location.jsx';
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { Location } from '@/components/Location.jsx';
 import { convertFileSrc } from '@/platform/tauri/index.js';
-import { mediaRepository, userProfileRepository } from '@/repositories/index.js';
+import {
+    mediaRepository,
+    userProfileRepository
+} from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
+import { withUploadTimeout } from '@/shared/utils/imageUpload.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { withUploadTimeout } from '@/shared/utils/imageUpload.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -53,6 +56,7 @@ import {
     TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
+
 import {
     buildScreenshotSearchRow,
     DEFAULT_SCREENSHOT_SEARCH_SORT,
@@ -67,15 +71,17 @@ import {
 
 function EmptyState({ title, description, loading = false }) {
     return (
-        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
+        <div className="bg-muted/20 flex min-h-72 items-center justify-center rounded-xl border border-dashed p-6 text-center">
             <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <Spinner className="size-6 text-muted-foreground" />
+                        <Spinner className="text-muted-foreground size-6" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
+                <div className="text-muted-foreground text-sm">
+                    {description}
+                </div>
             </div>
         </div>
     );
@@ -83,15 +89,20 @@ function EmptyState({ title, description, loading = false }) {
 
 function SearchSortHead({ label, sortKey, sort, onToggle }) {
     const active = sort?.key === sortKey;
-    const Icon = active ? (sort.asc ? ArrowUpIcon : ArrowDownIcon) : ArrowUpDownIcon;
+    const Icon = active
+        ? sort.asc
+            ? ArrowUpIcon
+            : ArrowDownIcon
+        : ArrowUpDownIcon;
 
     return (
         <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-auto justify-start px-0 py-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
-            onClick={() => onToggle(sortKey)}>
+            className="text-muted-foreground hover:text-foreground h-auto justify-start px-0 py-0 text-left text-xs font-medium tracking-wide uppercase hover:bg-transparent"
+            onClick={() => onToggle(sortKey)}
+        >
             <span>{label}</span>
             <Icon data-icon="inline-end" />
         </Button>
@@ -116,7 +127,9 @@ function MetadataAuthorLink({ author, endpoint }) {
             .getUserProfile({ userId, endpoint })
             .then((profile) => {
                 if (active) {
-                    setDisplayName(profile?.displayName || profile?.username || userId);
+                    setDisplayName(
+                        profile?.displayName || profile?.username || userId
+                    );
                 }
             })
             .catch(() => {});
@@ -134,14 +147,15 @@ function MetadataAuthorLink({ author, endpoint }) {
         <Button
             type="button"
             variant="link"
-            className="h-auto justify-start gap-1 p-0 text-left text-muted-foreground"
+            className="text-muted-foreground h-auto justify-start gap-1 p-0 text-left"
             title={userId}
             onClick={() =>
                 openUserDialog({
                     userId,
                     title: displayName || userId
                 })
-            }>
+            }
+        >
             <CameraIcon data-icon="inline-start" />
             <span className="truncate">{displayName || userId}</span>
         </Button>
@@ -153,21 +167,29 @@ export function ScreenshotMetadataPage() {
     const { t } = useI18n();
     const confirm = useModalStore((state) => state.confirm);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const isVrcPlusSupporter = Boolean(
         currentUserSnapshot?.$isVRCPlus ||
-            currentUserSnapshot?.tags?.includes?.('system_supporter') ||
-            globalThis?.$debug?.debugVrcPlus
+        currentUserSnapshot?.tags?.includes?.('system_supporter') ||
+        globalThis?.$debug?.debugVrcPlus
     );
     const imageVersionRef = useRef(0);
     const metadataRequestRef = useRef(0);
     const searchRequestRef = useRef(0);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchType, setSearchType] = useState(SCREENSHOT_METADATA_SEARCH_TYPES[0].value);
+    const [searchType, setSearchType] = useState(
+        SCREENSHOT_METADATA_SEARCH_TYPES[0].value
+    );
     const [searchRows, setSearchRows] = useState([]);
     const [searchViewMode, setSearchViewMode] = useState('detail');
-    const [searchSort, setSearchSort] = useState(DEFAULT_SCREENSHOT_SEARCH_SORT);
+    const [searchSort, setSearchSort] = useState(
+        DEFAULT_SCREENSHOT_SEARCH_SORT
+    );
     const [selectedPath, setSelectedPath] = useState('');
     const [metadata, setMetadata] = useState(null);
     const [metadataError, setMetadataError] = useState('');
@@ -178,7 +200,10 @@ export function ScreenshotMetadataPage() {
     const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
 
     const currentSearchType = useMemo(
-        () => SCREENSHOT_METADATA_SEARCH_TYPES.find((type) => type.value === searchType) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0],
+        () =>
+            SCREENSHOT_METADATA_SEARCH_TYPES.find(
+                (type) => type.value === searchType
+            ) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0],
         [searchType]
     );
 
@@ -192,7 +217,10 @@ export function ScreenshotMetadataPage() {
         [sortedSearchRows]
     );
 
-    function resetSearchContext({ clearQuery = false, clearPreview = false } = {}) {
+    function resetSearchContext({
+        clearQuery = false,
+        clearPreview = false
+    } = {}) {
         setSearchRows([]);
         setSelectedPath('');
 
@@ -220,7 +248,8 @@ export function ScreenshotMetadataPage() {
         setMetadataError('');
 
         try {
-            const rawMetadata = await mediaRepository.getScreenshotMetadata(path);
+            const rawMetadata =
+                await mediaRepository.getScreenshotMetadata(path);
 
             if (metadataRequestRef.current !== requestId) {
                 return;
@@ -244,7 +273,10 @@ export function ScreenshotMetadataPage() {
                 return;
             }
 
-            const nextMetadata = normalizeScreenshotMetadata(rawMetadata, extra);
+            const nextMetadata = normalizeScreenshotMetadata(
+                rawMetadata,
+                extra
+            );
             imageVersionRef.current += 1;
 
             setMetadata(nextMetadata);
@@ -260,7 +292,10 @@ export function ScreenshotMetadataPage() {
 
             setMetadata(null);
             setImageUrl('');
-            const message = error instanceof Error ? error.message : 'Failed to load screenshot metadata.';
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load screenshot metadata.';
             setMetadataError(message);
             toast.error(message);
         } finally {
@@ -284,7 +319,10 @@ export function ScreenshotMetadataPage() {
             }
             await loadScreenshot(path, true);
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to load last screenshot.';
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load last screenshot.';
             setMetadata(null);
             setImageUrl('');
             setMetadataError(message);
@@ -336,7 +374,9 @@ export function ScreenshotMetadataPage() {
             await loadScreenshot(filePath, true);
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to open screenshot picker.'
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to open screenshot picker.'
             );
         }
     }
@@ -347,9 +387,16 @@ export function ScreenshotMetadataPage() {
         }
 
         try {
-            await mediaRepository.openFolderAndSelectItem(metadata.filePath, false);
+            await mediaRepository.openFolderAndSelectItem(
+                metadata.filePath,
+                false
+            );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to open folder.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to open folder.'
+            );
         }
     }
 
@@ -362,7 +409,9 @@ export function ScreenshotMetadataPage() {
             await mediaRepository.copyImageToClipboard(metadata.filePath);
             toast.success(t('message.image.copied_to_clipboard'));
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to copy image.');
+            toast.error(
+                error instanceof Error ? error.message : 'Failed to copy image.'
+            );
         }
     }
 
@@ -386,7 +435,8 @@ export function ScreenshotMetadataPage() {
         setIsDeletingMetadata(true);
 
         try {
-            const deleted = await mediaRepository.deleteScreenshotMetadata(filePath);
+            const deleted =
+                await mediaRepository.deleteScreenshotMetadata(filePath);
             if (!deleted) {
                 toast.error(t('message.screenshot_metadata.delete_failed'));
                 return;
@@ -395,7 +445,11 @@ export function ScreenshotMetadataPage() {
             toast.success(t('message.screenshot_metadata.deleted'));
             await loadScreenshot(filePath, true);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : t('message.screenshot_metadata.delete_failed'));
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('message.screenshot_metadata.delete_failed')
+            );
         } finally {
             setIsDeletingMetadata(false);
         }
@@ -416,22 +470,35 @@ export function ScreenshotMetadataPage() {
 
         setIsUploadingScreenshot(true);
         try {
-            const base64Body = await mediaRepository.getFileBase64(metadata.filePath);
+            const base64Body = await mediaRepository.getFileBase64(
+                metadata.filePath
+            );
             await withUploadTimeout(
-                mediaRepository.uploadGalleryImage(base64Body, { endpoint: currentEndpoint })
+                mediaRepository.uploadGalleryImage(base64Body, {
+                    endpoint: currentEndpoint
+                })
             );
             toast.success(t('message.gallery.uploaded'));
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : t('message.gallery.failed'));
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('message.gallery.failed')
+            );
         } finally {
             setIsUploadingScreenshot(false);
         }
     }
 
-    async function runSearch(nextSearchType = searchType, nextSearchQuery = searchQuery) {
+    async function runSearch(
+        nextSearchType = searchType,
+        nextSearchQuery = searchQuery
+    ) {
         const query = nextSearchQuery.trim();
         const selectedSearchType =
-            SCREENSHOT_METADATA_SEARCH_TYPES.find((type) => type.value === nextSearchType) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0];
+            SCREENSHOT_METADATA_SEARCH_TYPES.find(
+                (type) => type.value === nextSearchType
+            ) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0];
 
         if (!query) {
             searchRequestRef.current += 1;
@@ -471,10 +538,21 @@ export function ScreenshotMetadataPage() {
                             mediaRepository.getScreenshotMetadata(path),
                             mediaRepository.getExtraScreenshotData(path, false)
                         ]);
-                        const normalized = normalizeScreenshotMetadata(rawMetadata ?? {}, extra ?? {});
-                        return buildScreenshotSearchRow(normalized, selectedSearchType, query);
+                        const normalized = normalizeScreenshotMetadata(
+                            rawMetadata ?? {},
+                            extra ?? {}
+                        );
+                        return buildScreenshotSearchRow(
+                            normalized,
+                            selectedSearchType,
+                            query
+                        );
                     } catch (error) {
-                        console.error('Failed to enrich screenshot search result:', path, error);
+                        console.error(
+                            'Failed to enrich screenshot search result:',
+                            path,
+                            error
+                        );
                         return null;
                     }
                 })
@@ -491,9 +569,10 @@ export function ScreenshotMetadataPage() {
             setSelectedPath('');
             setSearchViewMode('table');
         } catch (error) {
-            const message = error instanceof Error
-                ? error.message
-                : 'Failed to search screenshot metadata.';
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to search screenshot metadata.';
             setMetadata(null);
             setImageUrl('');
             setMetadataError(message);
@@ -552,7 +631,10 @@ export function ScreenshotMetadataPage() {
         if (searchNavigationPaths.length && selectedPath) {
             const currentIndex = searchNavigationPaths.indexOf(selectedPath);
             if (currentIndex !== -1) {
-                const prevIndex = currentIndex > 0 ? currentIndex - 1 : searchNavigationPaths.length - 1;
+                const prevIndex =
+                    currentIndex > 0
+                        ? currentIndex - 1
+                        : searchNavigationPaths.length - 1;
                 setSelectedPath(searchNavigationPaths[prevIndex]);
                 await loadScreenshot(searchNavigationPaths[prevIndex], false);
                 return;
@@ -568,7 +650,10 @@ export function ScreenshotMetadataPage() {
         if (searchNavigationPaths.length && selectedPath) {
             const currentIndex = searchNavigationPaths.indexOf(selectedPath);
             if (currentIndex !== -1) {
-                const nextIndex = currentIndex < searchNavigationPaths.length - 1 ? currentIndex + 1 : 0;
+                const nextIndex =
+                    currentIndex < searchNavigationPaths.length - 1
+                        ? currentIndex + 1
+                        : 0;
                 setSelectedPath(searchNavigationPaths[nextIndex]);
                 await loadScreenshot(searchNavigationPaths[nextIndex], false);
                 return;
@@ -583,108 +668,146 @@ export function ScreenshotMetadataPage() {
     return (
         <div className="screenshot-metadata-page x-container flex min-h-0 flex-1 flex-col overflow-hidden p-6">
             <div className="ml-2 flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="mr-3" onClick={() => navigate('/tools')}>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mr-3"
+                    onClick={() => navigate('/tools')}
+                >
                     <ArrowLeftIcon data-icon="inline-start" />
                     {t('nav_tooltip.tools')}
                 </Button>
-                <span className="header">{t('dialog.screenshot_metadata.header')}</span>
-                {isDeletingMetadata ? <Badge variant="outline">Deleting metadata</Badge> : null}
-                {isUploadingScreenshot ? <Badge variant="outline">Uploading screenshot</Badge> : null}
+                <span className="header">
+                    {t('dialog.screenshot_metadata.header')}
+                </span>
+                {isDeletingMetadata ? (
+                    <Badge variant="outline">Deleting metadata</Badge>
+                ) : null}
+                {isUploadingScreenshot ? (
+                    <Badge variant="outline">Uploading screenshot</Badge>
+                ) : null}
             </div>
 
             <div className="my-2 flex flex-col gap-3 xl:flex-row xl:items-center">
-                    <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => void browseForScreenshot()}>
-                            <FolderSearchIcon data-icon="inline-start" />
-                            {t('dialog.screenshot_metadata.browse')}
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => void loadLastScreenshot()}>
-                            <ImageIcon data-icon="inline-start" />
-                            {t('dialog.screenshot_metadata.last_screenshot')}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={!metadata?.filePath}
-                            onClick={() => void openFolder()}
-                        >
-                            <FolderOpenIcon data-icon="inline-start" />
-                            {t('dialog.screenshot_metadata.open_folder')}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={!metadata?.filePath}
-                            onClick={() => void copyImage()}
-                        >
-                            <CopyIcon data-icon="inline-start" />
-                            {t('dialog.screenshot_metadata.copy_image')}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={!metadata?.filePath || !isVrcPlusSupporter || isUploadingScreenshot}
-                            onClick={() => void uploadScreenshotToGallery()}
-                        >
-                            <UploadIcon data-icon="inline-start" />
-                            {t('dialog.screenshot_metadata.upload')}
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            disabled={!metadata?.filePath || isDeletingMetadata}
-                            onClick={() => void deleteMetadata()}
-                        >
-                            <Trash2Icon data-icon="inline-start" />
-                            {t('dialog.screenshot_metadata.delete_metadata')}
-                        </Button>
-                    </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void browseForScreenshot()}
+                    >
+                        <FolderSearchIcon data-icon="inline-start" />
+                        {t('dialog.screenshot_metadata.browse')}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void loadLastScreenshot()}
+                    >
+                        <ImageIcon data-icon="inline-start" />
+                        {t('dialog.screenshot_metadata.last_screenshot')}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!metadata?.filePath}
+                        onClick={() => void openFolder()}
+                    >
+                        <FolderOpenIcon data-icon="inline-start" />
+                        {t('dialog.screenshot_metadata.open_folder')}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!metadata?.filePath}
+                        onClick={() => void copyImage()}
+                    >
+                        <CopyIcon data-icon="inline-start" />
+                        {t('dialog.screenshot_metadata.copy_image')}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={
+                            !metadata?.filePath ||
+                            !isVrcPlusSupporter ||
+                            isUploadingScreenshot
+                        }
+                        onClick={() => void uploadScreenshotToGallery()}
+                    >
+                        <UploadIcon data-icon="inline-start" />
+                        {t('dialog.screenshot_metadata.upload')}
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={!metadata?.filePath || isDeletingMetadata}
+                        onClick={() => void deleteMetadata()}
+                    >
+                        <Trash2Icon data-icon="inline-start" />
+                        {t('dialog.screenshot_metadata.delete_metadata')}
+                    </Button>
+                </div>
 
-                    <div className="flex flex-1 flex-col gap-2 lg:flex-row xl:justify-end">
-                        <div className="relative min-w-0 flex-1 xl:max-w-sm">
-                            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                value={searchQuery}
-                                className="pl-9"
-                                placeholder={t('dialog.screenshot_metadata.search_placeholder')}
-                                onChange={(event) => setSearchQuery(event.target.value)}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                        event.preventDefault();
-                                        void runSearch();
-                                    }
-                                }}
+                <div className="flex flex-1 flex-col gap-2 lg:flex-row xl:justify-end">
+                    <div className="relative min-w-0 flex-1 xl:max-w-sm">
+                        <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                        <Input
+                            value={searchQuery}
+                            className="pl-9"
+                            placeholder={t(
+                                'dialog.screenshot_metadata.search_placeholder'
+                            )}
+                            onChange={(event) =>
+                                setSearchQuery(event.target.value)
+                            }
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                    void runSearch();
+                                }
+                            }}
+                        />
+                    </div>
+                    <Select
+                        value={searchType}
+                        onValueChange={handleSearchTypeChange}
+                    >
+                        <SelectTrigger className="w-full lg:w-52">
+                            <SelectValue
+                                placeholder={t(
+                                    'dialog.screenshot_metadata.search_type_placeholder'
+                                )}
                             />
-                        </div>
-                        <Select value={searchType} onValueChange={handleSearchTypeChange}>
-                            <SelectTrigger className="w-full lg:w-52">
-                                <SelectValue
-                                    placeholder={t('dialog.screenshot_metadata.search_type_placeholder')}
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => (
-                                        <SelectItem key={type.value} value={type.value}>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {SCREENSHOT_METADATA_SEARCH_TYPES.map(
+                                    (type) => (
+                                        <SelectItem
+                                            key={type.value}
+                                            value={type.value}
+                                        >
                                             {t(type.labelKey)}
                                         </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <Button onClick={() => void runSearch()}>Search</Button>
-                        {searchViewMode === 'table' && searchRows.length ? (
-                            <span className="whitespace-pre-wrap text-xs">
-                                {t('dialog.screenshot_metadata.result_count', {
-                                    count: searchRows.length
-                                })}
-                            </span>
-                        ) : searchNavigationPaths.length && selectedPath ? (
-                            <span className="whitespace-pre-wrap text-xs">
-                                {searchNavigationPaths.indexOf(selectedPath) + 1}/{searchNavigationPaths.length}
-                            </span>
-                        ) : null}
-                    </div>
+                                    )
+                                )}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={() => void runSearch()}>Search</Button>
+                    {searchViewMode === 'table' && searchRows.length ? (
+                        <span className="text-xs whitespace-pre-wrap">
+                            {t('dialog.screenshot_metadata.result_count', {
+                                count: searchRows.length
+                            })}
+                        </span>
+                    ) : searchNavigationPaths.length && selectedPath ? (
+                        <span className="text-xs whitespace-pre-wrap">
+                            {searchNavigationPaths.indexOf(selectedPath) + 1}/
+                            {searchNavigationPaths.length}
+                        </span>
+                    ) : null}
+                </div>
             </div>
 
             {searchViewMode === 'table' ? (
@@ -701,7 +824,9 @@ export function ScreenshotMetadataPage() {
                                 <TableRow>
                                     <TableHead>
                                         <SearchSortHead
-                                            label={t('dialog.screenshot_metadata.col_date')}
+                                            label={t(
+                                                'dialog.screenshot_metadata.col_date'
+                                            )}
                                             sortKey="dateTime"
                                             sort={searchSort}
                                             onToggle={toggleSearchSort}
@@ -709,7 +834,9 @@ export function ScreenshotMetadataPage() {
                                     </TableHead>
                                     <TableHead>
                                         <SearchSortHead
-                                            label={t('dialog.screenshot_metadata.col_world')}
+                                            label={t(
+                                                'dialog.screenshot_metadata.col_world'
+                                            )}
                                             sortKey="world"
                                             sort={searchSort}
                                             onToggle={toggleSearchSort}
@@ -718,7 +845,9 @@ export function ScreenshotMetadataPage() {
                                     {currentSearchType.index <= 1 ? (
                                         <TableHead>
                                             <SearchSortHead
-                                                label={t('dialog.screenshot_metadata.col_match')}
+                                                label={t(
+                                                    'dialog.screenshot_metadata.col_match'
+                                                )}
                                                 sortKey="match"
                                                 sort={searchSort}
                                                 onToggle={toggleSearchSort}
@@ -727,7 +856,9 @@ export function ScreenshotMetadataPage() {
                                     ) : null}
                                     <TableHead>
                                         <SearchSortHead
-                                            label={t('dialog.screenshot_metadata.col_author')}
+                                            label={t(
+                                                'dialog.screenshot_metadata.col_author'
+                                            )}
                                             sortKey="author"
                                             sort={searchSort}
                                             onToggle={toggleSearchSort}
@@ -735,13 +866,19 @@ export function ScreenshotMetadataPage() {
                                     </TableHead>
                                     <TableHead>
                                         <SearchSortHead
-                                            label={t('dialog.screenshot_metadata.col_players')}
+                                            label={t(
+                                                'dialog.screenshot_metadata.col_players'
+                                            )}
                                             sortKey="playerCount"
                                             sort={searchSort}
                                             onToggle={toggleSearchSort}
                                         />
                                     </TableHead>
-                                    <TableHead>{t('dialog.screenshot_metadata.col_resolution')}</TableHead>
+                                    <TableHead>
+                                        {t(
+                                            'dialog.screenshot_metadata.col_resolution'
+                                        )}
+                                    </TableHead>
                                     <TableHead className="w-8" />
                                 </TableRow>
                             </TableHeader>
@@ -749,24 +886,38 @@ export function ScreenshotMetadataPage() {
                                 {sortedSearchRows.map((row) => (
                                     <TableRow
                                         key={row.filePath}
-                                        data-state={row.filePath === selectedPath ? 'selected' : undefined}
+                                        data-state={
+                                            row.filePath === selectedPath
+                                                ? 'selected'
+                                                : undefined
+                                        }
                                         className="cursor-pointer"
                                         tabIndex={0}
                                         aria-label={`Open screenshot ${row.dateLabel || row.fileName || row.filePath}`}
                                         onKeyDown={(event) => {
-                                            if (event.key !== 'Enter' && event.key !== ' ') {
+                                            if (
+                                                event.key !== 'Enter' &&
+                                                event.key !== ' '
+                                            ) {
                                                 return;
                                             }
                                             event.preventDefault();
                                             setSelectedPath(row.filePath);
                                             setSearchViewMode('detail');
-                                            void loadScreenshot(row.filePath, false);
+                                            void loadScreenshot(
+                                                row.filePath,
+                                                false
+                                            );
                                         }}
                                         onClick={() => {
                                             setSelectedPath(row.filePath);
                                             setSearchViewMode('detail');
-                                            void loadScreenshot(row.filePath, false);
-                                        }}>
+                                            void loadScreenshot(
+                                                row.filePath,
+                                                false
+                                            );
+                                        }}
+                                    >
                                         <TableCell>{row.dateLabel}</TableCell>
                                         <TableCell>{row.world}</TableCell>
                                         {currentSearchType.index <= 1 ? (
@@ -775,13 +926,13 @@ export function ScreenshotMetadataPage() {
                                         <TableCell>{row.author}</TableCell>
                                         <TableCell>
                                             <span className="inline-flex items-center gap-1">
-                                                <UsersIcon className="size-3 text-muted-foreground" />
+                                                <UsersIcon className="text-muted-foreground size-3" />
                                                 {row.playerCount}
                                             </span>
                                         </TableCell>
                                         <TableCell>{row.resolution}</TableCell>
                                         <TableCell>
-                                            <ArrowRightIcon className="size-4 text-muted-foreground" />
+                                            <ArrowRightIcon className="text-muted-foreground size-4" />
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -790,200 +941,264 @@ export function ScreenshotMetadataPage() {
                     )}
                 </div>
             ) : (
-            <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
-                <Card className="flex min-h-0 flex-col">
-                    <CardHeader>
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex flex-col gap-1">
-                                <CardTitle>Preview</CardTitle>
-                                <CardDescription>
-                                    {metadata?.fileName || t('dialog.screenshot_metadata.drag')}
-                                </CardDescription>
+                <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
+                    <Card className="flex min-h-0 flex-col">
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <CardTitle>Preview</CardTitle>
+                                    <CardDescription>
+                                        {metadata?.fileName ||
+                                            t(
+                                                'dialog.screenshot_metadata.drag'
+                                            )}
+                                    </CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => void navigatePrev()}
+                                    >
+                                        <ArrowLeftIcon data-icon="inline-start" />
+                                        Prev
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => void navigateNext()}
+                                    >
+                                        Next
+                                        <ArrowRightIcon data-icon="inline-end" />
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" onClick={() => void navigatePrev()}>
-                                    <ArrowLeftIcon data-icon="inline-start" />
-                                    Prev
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={() => void navigateNext()}>
-                                    Next
-                                    <ArrowRightIcon data-icon="inline-end" />
-                                </Button>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent
-                        className="flex min-h-0 flex-1 items-center justify-center"
-                        onDragOver={handleScreenshotDragOver}
-                        onDragEnter={handleScreenshotDragOver}
-                        onDrop={(event) => void handleScreenshotDrop(event)}>
-                        {isMetadataLoading ? (
-                            <EmptyState
-                                loading
-                                title="Loading screenshot"
-                                description="Fetching embedded metadata and file details."
-                            />
-                        ) : imageUrl ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-auto w-full p-0 hover:bg-transparent"
-                                onClick={() =>
-                                    openImagePreview({
-                                        url: imageUrl,
-                                        title: metadata?.fileName || 'Screenshot preview'
-                                    })
-                                }>
-                                <img
-                                    src={imageUrl}
-                                    alt={metadata?.fileName || 'Screenshot preview'}
-                                    className="max-h-[70vh] w-full rounded-lg object-contain"
+                        </CardHeader>
+                        <CardContent
+                            className="flex min-h-0 flex-1 items-center justify-center"
+                            onDragOver={handleScreenshotDragOver}
+                            onDragEnter={handleScreenshotDragOver}
+                            onDrop={(event) => void handleScreenshotDrop(event)}
+                        >
+                            {isMetadataLoading ? (
+                                <EmptyState
+                                    loading
+                                    title="Loading screenshot"
+                                    description="Fetching embedded metadata and file details."
                                 />
-                            </Button>
-                        ) : (
-                            <EmptyState
-                                title={t('dialog.screenshot_metadata.drag')}
-                                description="Browse for a screenshot, load the latest screenshot, or run a metadata search."
-                            />
-                        )}
-                    </CardContent>
-                </Card>
+                            ) : imageUrl ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-auto w-full p-0 hover:bg-transparent"
+                                    onClick={() =>
+                                        openImagePreview({
+                                            url: imageUrl,
+                                            title:
+                                                metadata?.fileName ||
+                                                'Screenshot preview'
+                                        })
+                                    }
+                                >
+                                    <img
+                                        src={imageUrl}
+                                        alt={
+                                            metadata?.fileName ||
+                                            'Screenshot preview'
+                                        }
+                                        className="max-h-[70vh] w-full rounded-lg object-contain"
+                                    />
+                                </Button>
+                            ) : (
+                                <EmptyState
+                                    title={t('dialog.screenshot_metadata.drag')}
+                                    description="Browse for a screenshot, load the latest screenshot, or run a metadata search."
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
 
-                <Card className="flex min-h-0 flex-col">
-                    <CardHeader>
-                        <CardTitle>Details</CardTitle>
-                        <CardDescription>
-                            Metadata extracted from the selected VRChat screenshot.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-6 overflow-y-auto">
-                        {searchRows.length ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="mb-2"
-                                onClick={() => setSearchViewMode('table')}>
-                                <ArrowLeftIcon data-icon="inline-start" />
-                                {t('dialog.screenshot_metadata.back_to_results', {
-                                    count: searchRows.length
-                                })}
-                            </Button>
-                        ) : null}
-                        {metadataError ? (
-                            <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
-                                {metadataError}
-                            </pre>
-                        ) : metadata ? (
-                            <>
-                                <section className="flex flex-col gap-2">
-                                    <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                                        {t('dialog.screenshot_metadata.section_location')}
-                                    </div>
-                                    {metadata.world?.instanceId || metadata.world?.id ? (
-                                        <Location
-                                            location={metadata.world?.instanceId || metadata.world?.id}
-                                            hint={metadata.world?.name || ''}
-                                            enableContextMenu
-                                            showLaunchActions
+                    <Card className="flex min-h-0 flex-col">
+                        <CardHeader>
+                            <CardTitle>Details</CardTitle>
+                            <CardDescription>
+                                Metadata extracted from the selected VRChat
+                                screenshot.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-6 overflow-y-auto">
+                            {searchRows.length ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="mb-2"
+                                    onClick={() => setSearchViewMode('table')}
+                                >
+                                    <ArrowLeftIcon data-icon="inline-start" />
+                                    {t(
+                                        'dialog.screenshot_metadata.back_to_results',
+                                        {
+                                            count: searchRows.length
+                                        }
+                                    )}
+                                </Button>
+                            ) : null}
+                            {metadataError ? (
+                                <pre className="text-muted-foreground text-xs whitespace-pre-wrap">
+                                    {metadataError}
+                                </pre>
+                            ) : metadata ? (
+                                <>
+                                    <section className="flex flex-col gap-2">
+                                        <div className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
+                                            {t(
+                                                'dialog.screenshot_metadata.section_location'
+                                            )}
+                                        </div>
+                                        {metadata.world?.instanceId ||
+                                        metadata.world?.id ? (
+                                            <Location
+                                                location={
+                                                    metadata.world
+                                                        ?.instanceId ||
+                                                    metadata.world?.id
+                                                }
+                                                hint={
+                                                    metadata.world?.name || ''
+                                                }
+                                                enableContextMenu
+                                                showLaunchActions
+                                            />
+                                        ) : (
+                                            <div className="text-sm">
+                                                {metadata.world?.name || '—'}
+                                            </div>
+                                        )}
+                                        <MetadataAuthorLink
+                                            author={metadata.author}
+                                            endpoint={currentEndpoint}
                                         />
-                                    ) : (
-                                        <div className="text-sm">{metadata.world?.name || '—'}</div>
-                                    )}
-                                    <MetadataAuthorLink author={metadata.author} endpoint={currentEndpoint} />
-                                </section>
+                                    </section>
 
-                                <section className="flex flex-col gap-2 border-t pt-4">
-                                    <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                                        {t('dialog.screenshot_metadata.section_players')} (
-                                        {metadata.players.length})
-                                    </div>
-                                    {metadata.players.length ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {metadata.players.map((player) => {
-                                                const playerLabel = player.displayName || player.id || 'Unknown player';
-                                                const playerContent = (
-                                                    <>
-                                                        <UsersIcon data-icon="inline-start" />
-                                                        {playerLabel}
-                                                    </>
-                                                );
-
-                                                return player.id ? (
-                                                    <Button
-                                                        key={`${player.id}-${player.displayName}`}
-                                                        variant="secondary"
-                                                        size="xs"
-                                                        type="button"
-                                                        className="rounded-full"
-                                                        onClick={() =>
-                                                            openUserDialog({
-                                                                userId: player.id,
-                                                                title: playerLabel
-                                                            })
-                                                        }>
-                                                        {playerContent}
-                                                    </Button>
-                                                ) : (
-                                                    <Badge key={`${player.id}-${player.displayName}`} variant="secondary">
-                                                        {playerContent}
-                                                    </Badge>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <div className="text-sm text-muted-foreground">
-                                            No player metadata.
-                                        </div>
-                                    )}
-                                </section>
-
-                                <section className="flex flex-col gap-2 border-t pt-4">
-                                    <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                                        {t('dialog.screenshot_metadata.section_file_info')}
-                                    </div>
-                                    <div className="text-sm">{formatScreenshotDateTime(metadata.dateTime)}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        {[metadata.resolution, formatScreenshotBytes(metadata.fileSizeBytes)]
-                                            .filter(Boolean)
-                                            .join(' · ') || '—'}
-                                    </div>
-                                    <div className="break-all text-xs text-muted-foreground">
-                                        {metadata.fileName || metadata.filePath}
-                                    </div>
-                                </section>
-
-                                {metadata.note ? (
                                     <section className="flex flex-col gap-2 border-t pt-4">
-                                        <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                                            {t('dialog.screenshot_metadata.section_note')}
+                                        <div className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
+                                            {t(
+                                                'dialog.screenshot_metadata.section_players'
+                                            )}{' '}
+                                            ({metadata.players.length})
                                         </div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {metadata.note}
+                                        {metadata.players.length ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {metadata.players.map(
+                                                    (player) => {
+                                                        const playerLabel =
+                                                            player.displayName ||
+                                                            player.id ||
+                                                            'Unknown player';
+                                                        const playerContent = (
+                                                            <>
+                                                                <UsersIcon data-icon="inline-start" />
+                                                                {playerLabel}
+                                                            </>
+                                                        );
+
+                                                        return player.id ? (
+                                                            <Button
+                                                                key={`${player.id}-${player.displayName}`}
+                                                                variant="secondary"
+                                                                size="xs"
+                                                                type="button"
+                                                                className="rounded-full"
+                                                                onClick={() =>
+                                                                    openUserDialog(
+                                                                        {
+                                                                            userId: player.id,
+                                                                            title: playerLabel
+                                                                        }
+                                                                    )
+                                                                }
+                                                            >
+                                                                {playerContent}
+                                                            </Button>
+                                                        ) : (
+                                                            <Badge
+                                                                key={`${player.id}-${player.displayName}`}
+                                                                variant="secondary"
+                                                            >
+                                                                {playerContent}
+                                                            </Badge>
+                                                        );
+                                                    }
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="text-muted-foreground text-sm">
+                                                No player metadata.
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    <section className="flex flex-col gap-2 border-t pt-4">
+                                        <div className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
+                                            {t(
+                                                'dialog.screenshot_metadata.section_file_info'
+                                            )}
+                                        </div>
+                                        <div className="text-sm">
+                                            {formatScreenshotDateTime(
+                                                metadata.dateTime
+                                            )}
+                                        </div>
+                                        <div className="text-muted-foreground text-sm">
+                                            {[
+                                                metadata.resolution,
+                                                formatScreenshotBytes(
+                                                    metadata.fileSizeBytes
+                                                )
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' · ') || '—'}
+                                        </div>
+                                        <div className="text-muted-foreground text-xs break-all">
+                                            {metadata.fileName ||
+                                                metadata.filePath}
                                         </div>
                                     </section>
-                                ) : null}
 
-                                {metadata.application ? (
-                                    <section className="flex flex-col gap-2 border-t pt-4">
-                                        <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                                            Application
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {metadata.application}
-                                        </div>
-                                    </section>
-                                ) : null}
-                            </>
-                        ) : (
-                            <EmptyState
-                                title="No screenshot selected."
-                                description="Load a screenshot to inspect embedded world, player and file metadata."
-                            />
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+                                    {metadata.note ? (
+                                        <section className="flex flex-col gap-2 border-t pt-4">
+                                            <div className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
+                                                {t(
+                                                    'dialog.screenshot_metadata.section_note'
+                                                )}
+                                            </div>
+                                            <div className="text-muted-foreground text-sm">
+                                                {metadata.note}
+                                            </div>
+                                        </section>
+                                    ) : null}
+
+                                    {metadata.application ? (
+                                        <section className="flex flex-col gap-2 border-t pt-4">
+                                            <div className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
+                                                Application
+                                            </div>
+                                            <div className="text-muted-foreground text-sm">
+                                                {metadata.application}
+                                            </div>
+                                        </section>
+                                    ) : null}
+                                </>
+                            ) : (
+                                <EmptyState
+                                    title="No screenshot selected."
+                                    description="Load a screenshot to inspect embedded world, player and file metadata."
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
             )}
         </div>
     );

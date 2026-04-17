@@ -24,10 +24,14 @@ export function onPreferenceChanged(keys, callback) {
     if (typeof window === 'undefined') {
         return () => {};
     }
-    const keySet = new Set((Array.isArray(keys) ? keys : [keys]).map(normalizePreferenceKey));
+    const keySet = new Set(
+        (Array.isArray(keys) ? keys : [keys]).map(normalizePreferenceKey)
+    );
     const handler = (event) => {
         const detail = event.detail || {};
-        const normalizedKey = normalizePreferenceKey(detail.normalizedKey || detail.key);
+        const normalizedKey = normalizePreferenceKey(
+            detail.normalizedKey || detail.key
+        );
         if (!keySet.has(normalizedKey)) {
             return;
         }

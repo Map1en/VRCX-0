@@ -1,5 +1,5 @@
-import webRepository from './webRepository.js';
 import { safeJsonParse } from './baseRepository.js';
+import webRepository from './webRepository.js';
 
 export const DEFAULT_ENDPOINT_DOMAIN = 'https://api.vrchat.cloud/api/1';
 export const DEFAULT_WEBSOCKET_DOMAIN = 'wss://pipeline.vrchat.cloud';
@@ -13,7 +13,10 @@ function normalizeEndpointDomain(endpointDomain) {
 }
 
 function buildUrl(path, endpointDomain) {
-    const baseUrl = normalizeEndpointDomain(endpointDomain).replace(/\/?$/, '/');
+    const baseUrl = normalizeEndpointDomain(endpointDomain).replace(
+        /\/?$/,
+        '/'
+    );
     return new URL(path, baseUrl).toString();
 }
 
@@ -50,7 +53,10 @@ function createAuthError(message, status, endpoint, payload = null) {
     return error;
 }
 
-async function execute(path, { endpoint = '', method = 'GET', headers = {}, params = null } = {}) {
+async function execute(
+    path,
+    { endpoint = '', method = 'GET', headers = {}, params = null } = {}
+) {
     const endpointDomain = normalizeEndpointDomain(endpoint);
     const requestOptions = {
         url: buildUrl(path, endpointDomain),
@@ -137,7 +143,8 @@ async function verifyTOTP({ code, endpoint = '' }) {
 }
 
 async function verifyOTP({ code, endpoint = '' }) {
-    const normalizedCode = typeof code === 'string' ? code.replace(/\s+/g, '') : '';
+    const normalizedCode =
+        typeof code === 'string' ? code.replace(/\s+/g, '') : '';
     const formattedCode =
         normalizedCode.length > 4 && !normalizedCode.includes('-')
             ? `${normalizedCode.slice(0, 4)}-${normalizedCode.slice(4)}`

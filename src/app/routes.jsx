@@ -4,16 +4,16 @@ import { LoginPage } from '@/features/auth/LoginPage.jsx';
 import { InstanceActivityPage } from '@/features/charts/InstanceActivityPage.jsx';
 import { MutualFriendsPage } from '@/features/charts/MutualFriendsPage.jsx';
 import { DashboardPage } from '@/features/dashboard/DashboardPage.jsx';
-import { FeedPage } from '@/features/feed/FeedPage.jsx';
 import {
     FavoriteAvatarsPage,
     FavoriteFriendsPage,
     FavoriteWorldsPage
 } from '@/features/favorites/FavoritesPage.jsx';
-import { GameLogPage } from '@/features/game-log/GameLogPage.jsx';
+import { FeedPage } from '@/features/feed/FeedPage.jsx';
+import { FriendListPage } from '@/features/friends/FriendListPage.jsx';
 import { FriendLogPage } from '@/features/friends/FriendLogPage.jsx';
 import { FriendsLocationsPage } from '@/features/friends/FriendsLocationsPage.jsx';
-import { FriendListPage } from '@/features/friends/FriendListPage.jsx';
+import { GameLogPage } from '@/features/game-log/GameLogPage.jsx';
 import { ModerationPage } from '@/features/moderation/ModerationPage.jsx';
 import { MyAvatarsPage } from '@/features/my-avatars/MyAvatarsPage.jsx';
 import { VrcNotificationPage } from '@/features/notifications/VrcNotificationPage.jsx';
@@ -53,7 +53,8 @@ export const protectedRoutes = [
     {
         path: '/player-list',
         title: 'Player List',
-        description: 'Current-instance player roster rebuilt from local activity data.',
+        description:
+            'Current-instance player roster rebuilt from local activity data.',
         element: <PlayerListPage />
     },
     {
@@ -65,7 +66,8 @@ export const protectedRoutes = [
     {
         path: '/dashboard/:id',
         title: 'Dashboard',
-        description: 'Dashboard shell with embedded widgets and supported page panels.',
+        description:
+            'Dashboard shell with embedded widgets and supported page panels.',
         element: <DashboardPage />
     },
     {

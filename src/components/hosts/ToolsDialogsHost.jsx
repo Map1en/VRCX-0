@@ -1,13 +1,36 @@
+import {
+    CalendarIcon,
+    ChevronDownIcon,
+    DownloadIcon,
+    ImageIcon,
+    RefreshCwIcon,
+    Share2Icon,
+    StarIcon,
+    Trash2Icon
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import dayjs from '@/lib/dayjs.js';
-import { CalendarIcon, ChevronDownIcon, DownloadIcon, ImageIcon, RefreshCwIcon, Share2Icon, StarIcon, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { cn } from '@/lib/utils.js';
-import { convertFileUrlToImageUrl, userImage } from '@/lib/entityMedia.js';
 import { timeToText } from '@/lib/dateTime.js';
+import dayjs from '@/lib/dayjs.js';
+import { convertFileUrlToImageUrl, userImage } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/index.js';
+import {
+    configRepository,
+    groupProfileRepository,
+    myAvatarRepository,
+    toolsRepository
+} from '@/repositories/index.js';
+import { database } from '@/services/database/index.js';
+import { openGroupDialog, openUserDialog } from '@/services/dialogService.js';
+import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
+import { replaceBioSymbols } from '@/shared/utils/base/string.js';
+import { useFavoriteStore } from '@/state/favoriteStore.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
+import { useModalStore } from '@/state/modalStore.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -28,30 +51,47 @@ import {
 import { Input } from '@/ui/shadcn/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
 import { Separator } from '@/ui/shadcn/separator';
 import { Switch } from '@/ui/shadcn/switch';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/shadcn/table';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from '@/ui/shadcn/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
-import { configRepository, groupProfileRepository, myAvatarRepository, toolsRepository } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
-import { openGroupDialog, openUserDialog } from '@/services/dialogService.js';
-import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
-import { replaceBioSymbols } from '@/shared/utils/base/string.js';
-import { useFavoriteStore } from '@/state/favoriteStore.js';
-import { useFriendRosterStore } from '@/state/friendRosterStore.js';
-import { useModalStore } from '@/state/modalStore.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 const statusOptions = ['join me', 'active', 'ask me', 'busy'];
 const inviteMessageTypes = [
     ['message', 'dialog.edit_invite_messages.invite_message_tab'],
     ['request', 'dialog.edit_invite_messages.invite_request_tab'],
-    ['requestResponse', 'dialog.edit_invite_messages.invite_request_response_tab'],
+    [
+        'requestResponse',
+        'dialog.edit_invite_messages.invite_request_response_tab'
+    ],
     ['response', 'dialog.edit_invite_messages.invite_response_tab']
 ];
-const instanceTypes = ['invite', 'invite+', 'friends', 'friends+', 'public', 'groupPublic', 'groupPlus', 'groupOnly'];
+const instanceTypes = [
+    'invite',
+    'invite+',
+    'friends',
+    'friends+',
+    'public',
+    'groupPublic',
+    'groupPlus',
+    'groupOnly'
+];
 
 function getAuthSnapshot() {
     return useRuntimeStore.getState().auth || {};
@@ -76,7 +116,8 @@ function getFriendIds(orderedFriendIds) {
 
 function csvEscape(value) {
     const text = String(value ?? '');
-    const needsEscaping = text.includes(',') ||
+    const needsEscaping =
+        text.includes(',') ||
         text.includes('"') ||
         Array.from(text).some((char) => char.charCodeAt(0) <= 31);
     if (needsEscaping) {
@@ -133,11 +174,15 @@ function normalizeAutoAcceptValue(value) {
 }
 
 function normalizeAutoAcceptMode(value) {
-    return value === 'Selected Favorites' ? 'Selected Favorites' : 'All Favorites';
+    return value === 'Selected Favorites'
+        ? 'Selected Favorites'
+        : 'All Favorites';
 }
 
 function isInviteMessageOnCooldown(row) {
-    return Boolean(row?.updatedAt && dayjs(row.updatedAt).add(1, 'hour').isAfter(dayjs()));
+    return Boolean(
+        row?.updatedAt && dayjs(row.updatedAt).add(1, 'hour').isAfter(dayjs())
+    );
 }
 
 function getInviteCooldownLabel(updatedAt, now = Date.now()) {
@@ -180,9 +225,20 @@ function ToolTextarea({ value, rows = 15 }) {
     );
 }
 
-function CheckRow({ id, label, description, checked, disabled, onCheckedChange }) {
+function CheckRow({
+    id,
+    label,
+    description,
+    checked,
+    disabled,
+    onCheckedChange
+}) {
     return (
-        <Field orientation="horizontal" data-disabled={disabled} className="rounded-md border p-3">
+        <Field
+            orientation="horizontal"
+            data-disabled={disabled}
+            className="rounded-md border p-3"
+        >
             <Checkbox
                 id={id}
                 checked={checked}
@@ -191,7 +247,9 @@ function CheckRow({ id, label, description, checked, disabled, onCheckedChange }
             />
             <FieldContent>
                 <FieldLabel htmlFor={id}>{label}</FieldLabel>
-                {description ? <FieldDescription>{description}</FieldDescription> : null}
+                {description ? (
+                    <FieldDescription>{description}</FieldDescription>
+                ) : null}
             </FieldContent>
         </Field>
     );
@@ -207,14 +265,28 @@ function MultiCheckList({ idPrefix, values, options, disabled, onChange }) {
                     label={option.label}
                     checked={values.includes(option.value)}
                     disabled={disabled}
-                    onCheckedChange={(checked) => onChange(updateArrayValue(values, option.value, checked))}
+                    onCheckedChange={(checked) =>
+                        onChange(
+                            updateArrayValue(values, option.value, checked)
+                        )
+                    }
                 />
             ))}
         </div>
     );
 }
 
-function StatusEditor({ id, label, disabled, status, descEnabled, desc, onStatusChange, onDescEnabledChange, onDescChange }) {
+function StatusEditor({
+    id,
+    label,
+    disabled,
+    status,
+    descEnabled,
+    desc,
+    onStatusChange,
+    onDescEnabledChange,
+    onDescChange
+}) {
     const { t } = useI18n();
     const descEnabledId = `${id}-description-enabled`;
 
@@ -222,15 +294,24 @@ function StatusEditor({ id, label, disabled, status, descEnabled, desc, onStatus
         <FieldGroup className="rounded-md border p-3">
             <Field>
                 <FieldLabel>{label}</FieldLabel>
-                <Select value={status} disabled={disabled} onValueChange={onStatusChange}>
+                <Select
+                    value={status}
+                    disabled={disabled}
+                    onValueChange={onStatusChange}
+                >
                     <SelectTrigger>
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
                             {statusOptions.map((statusOption) => (
-                                <SelectItem key={statusOption} value={statusOption}>
-                                    {t(`dialog.user.status.${statusOption.replace(' ', '_')}`)}
+                                <SelectItem
+                                    key={statusOption}
+                                    value={statusOption}
+                                >
+                                    {t(
+                                        `dialog.user.status.${statusOption.replace(' ', '_')}`
+                                    )}
                                 </SelectItem>
                             ))}
                         </SelectGroup>
@@ -238,8 +319,17 @@ function StatusEditor({ id, label, disabled, status, descEnabled, desc, onStatus
                 </Select>
             </Field>
             <Field orientation="horizontal" data-disabled={disabled}>
-                <Switch id={descEnabledId} checked={descEnabled} disabled={disabled} onCheckedChange={onDescEnabledChange} />
-                <FieldLabel htmlFor={descEnabledId}>{t('view.settings.general.automation.change_status_description')}</FieldLabel>
+                <Switch
+                    id={descEnabledId}
+                    checked={descEnabled}
+                    disabled={disabled}
+                    onCheckedChange={onDescEnabledChange}
+                />
+                <FieldLabel htmlFor={descEnabledId}>
+                    {t(
+                        'view.settings.general.automation.change_status_description'
+                    )}
+                </FieldLabel>
             </Field>
             {descEnabled ? (
                 <Field data-disabled={disabled}>
@@ -247,7 +337,9 @@ function StatusEditor({ id, label, disabled, status, descEnabled, desc, onStatus
                         value={desc}
                         maxLength={32}
                         disabled={disabled}
-                        placeholder={t('view.settings.general.automation.status_description_placeholder')}
+                        placeholder={t(
+                            'view.settings.general.automation.status_description_placeholder'
+                        )}
                         onChange={(event) => onDescChange(event.target.value)}
                     />
                 </Field>
@@ -258,8 +350,12 @@ function StatusEditor({ id, label, disabled, status, descEnabled, desc, onStatus
 
 function AutoChangeStatusDialog({ open, onOpenChange }) {
     const { t } = useI18n();
-    const favoriteFriendGroups = useFavoriteStore((state) => state.favoriteFriendGroups);
-    const localFriendFavoriteGroups = useFavoriteStore((state) => state.localFriendFavoriteGroups);
+    const favoriteFriendGroups = useFavoriteStore(
+        (state) => state.favoriteFriendGroups
+    );
+    const localFriendFavoriteGroups = useFavoriteStore(
+        (state) => state.localFriendFavoriteGroups
+    );
     const [values, setValues] = useState({
         autoStateChangeEnabled: false,
         autoStateChangeNoFriends: false,
@@ -297,11 +393,13 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                 return {
                     value: type,
                     label:
-                        mapKey === 'groupPublic' || mapKey === 'groupPlus' || mapKey === 'groupMembers'
+                        mapKey === 'groupPublic' ||
+                        mapKey === 'groupPlus' ||
+                        mapKey === 'groupMembers'
                             ? `${t(groupKey)} ${t(localeKey)}`
                             : localeKey
-                                ? t(localeKey)
-                                : type
+                              ? t(localeKey)
+                              : type
                 };
             }),
         [t]
@@ -322,7 +420,10 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
             configRepository.getString('autoStateChangeCompanyStatus', 'busy'),
             configRepository.getBool('autoStateChangeAloneDescEnabled', false),
             configRepository.getString('autoStateChangeAloneDesc', ''),
-            configRepository.getBool('autoStateChangeCompanyDescEnabled', false),
+            configRepository.getBool(
+                'autoStateChangeCompanyDescEnabled',
+                false
+            ),
             configRepository.getString('autoStateChangeCompanyDesc', ''),
             configRepository.getString('autoAcceptInviteRequests', 'Off'),
             configRepository.getString('autoAcceptInviteGroups', '[]')
@@ -342,11 +443,17 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                     autoStateChangeAloneDesc: result[7] || '',
                     autoStateChangeCompanyDescEnabled: result[8],
                     autoStateChangeCompanyDesc: result[9] || '',
-                    autoAcceptInviteRequests: normalizeAutoAcceptValue(result[10]),
+                    autoAcceptInviteRequests: normalizeAutoAcceptValue(
+                        result[10]
+                    ),
                     autoAcceptInviteGroups: parseJsonArray(result[11])
                 });
             })
-            .catch((error) => toast.error(error instanceof Error ? error.message : String(error)))
+            .catch((error) =>
+                toast.error(
+                    error instanceof Error ? error.message : String(error)
+                )
+            )
             .finally(() => {
                 if (active) {
                     setLoading(false);
@@ -382,123 +489,292 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>{t('view.settings.general.automation.auto_change_status')}</DialogTitle>
-                    <DialogDescription>{t('view.settings.general.automation.auto_state_change_tooltip')}</DialogDescription>
+                    <DialogTitle>
+                        {t(
+                            'view.settings.general.automation.auto_change_status'
+                        )}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {t(
+                            'view.settings.general.automation.auto_state_change_tooltip'
+                        )}
+                    </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <CheckRow
                         id="autoStateChangeEnabled"
-                        label={t('view.settings.general.automation.auto_change_status_switch')}
-                        description={t('view.settings.general.automation.auto_state_change_switch_tooltip')}
+                        label={t(
+                            'view.settings.general.automation.auto_change_status_switch'
+                        )}
+                        description={t(
+                            'view.settings.general.automation.auto_state_change_switch_tooltip'
+                        )}
                         checked={values.autoStateChangeEnabled}
                         disabled={loading}
-                        onCheckedChange={(checked) => void saveValue('autoStateChangeEnabled', checked, 'bool')}
+                        onCheckedChange={(checked) =>
+                            void saveValue(
+                                'autoStateChangeEnabled',
+                                checked,
+                                'bool'
+                            )
+                        }
                     />
-                    <Field data-disabled={loading || !values.autoStateChangeEnabled}>
-                        <FieldLabel>{t('view.settings.general.automation.alone_condition')}</FieldLabel>
+                    <Field
+                        data-disabled={
+                            loading || !values.autoStateChangeEnabled
+                        }
+                    >
+                        <FieldLabel>
+                            {t(
+                                'view.settings.general.automation.alone_condition'
+                            )}
+                        </FieldLabel>
                         <Select
-                            value={values.autoStateChangeNoFriends ? 'noFriends' : 'alone'}
+                            value={
+                                values.autoStateChangeNoFriends
+                                    ? 'noFriends'
+                                    : 'alone'
+                            }
                             disabled={loading || !values.autoStateChangeEnabled}
-                            onValueChange={(value) => void saveValue('autoStateChangeNoFriends', value === 'noFriends', 'bool')}>
+                            onValueChange={(value) =>
+                                void saveValue(
+                                    'autoStateChangeNoFriends',
+                                    value === 'noFriends',
+                                    'bool'
+                                )
+                            }
+                        >
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="alone">{t('view.settings.general.automation.alone')}</SelectItem>
-                                    <SelectItem value="noFriends">{t('view.settings.general.automation.no_friends')}</SelectItem>
+                                    <SelectItem value="alone">
+                                        {t(
+                                            'view.settings.general.automation.alone'
+                                        )}
+                                    </SelectItem>
+                                    <SelectItem value="noFriends">
+                                        {t(
+                                            'view.settings.general.automation.no_friends'
+                                        )}
+                                    </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
                     </Field>
-                    <Field data-disabled={loading || !values.autoStateChangeEnabled || !values.autoStateChangeNoFriends}>
-                        <FieldLabel>{t('view.settings.general.automation.auto_change_status_groups')}</FieldLabel>
+                    <Field
+                        data-disabled={
+                            loading ||
+                            !values.autoStateChangeEnabled ||
+                            !values.autoStateChangeNoFriends
+                        }
+                    >
+                        <FieldLabel>
+                            {t(
+                                'view.settings.general.automation.auto_change_status_groups'
+                            )}
+                        </FieldLabel>
                         <MultiCheckList
                             idPrefix="autoStateChangeGroups"
                             values={values.autoStateChangeGroups}
                             options={groupOptions}
-                            disabled={loading || !values.autoStateChangeEnabled || !values.autoStateChangeNoFriends}
-                            onChange={(next) => void saveValue('autoStateChangeGroups', next, 'array')}
+                            disabled={
+                                loading ||
+                                !values.autoStateChangeEnabled ||
+                                !values.autoStateChangeNoFriends
+                            }
+                            onChange={(next) =>
+                                void saveValue(
+                                    'autoStateChangeGroups',
+                                    next,
+                                    'array'
+                                )
+                            }
                         />
                     </Field>
-                    <Field data-disabled={loading || !values.autoStateChangeEnabled}>
-                        <FieldLabel>{t('view.settings.general.automation.allowed_instance_types')}</FieldLabel>
+                    <Field
+                        data-disabled={
+                            loading || !values.autoStateChangeEnabled
+                        }
+                    >
+                        <FieldLabel>
+                            {t(
+                                'view.settings.general.automation.allowed_instance_types'
+                            )}
+                        </FieldLabel>
                         <MultiCheckList
                             idPrefix="autoStateChangeInstanceTypes"
                             values={values.autoStateChangeInstanceTypes}
                             options={instanceOptions}
                             disabled={loading || !values.autoStateChangeEnabled}
-                            onChange={(next) => void saveValue('autoStateChangeInstanceTypes', next, 'array')}
+                            onChange={(next) =>
+                                void saveValue(
+                                    'autoStateChangeInstanceTypes',
+                                    next,
+                                    'array'
+                                )
+                            }
                         />
                     </Field>
                     <div className="grid gap-4 md:grid-cols-2">
                         <StatusEditor
                             id="auto-state-change-alone-status"
-                            label={t('view.settings.general.automation.alone_status')}
+                            label={t(
+                                'view.settings.general.automation.alone_status'
+                            )}
                             disabled={loading || !values.autoStateChangeEnabled}
                             status={values.autoStateChangeAloneStatus}
                             descEnabled={values.autoStateChangeAloneDescEnabled}
                             desc={values.autoStateChangeAloneDesc}
-                            onStatusChange={(value) => void saveValue('autoStateChangeAloneStatus', value)}
-                            onDescEnabledChange={(value) => void saveValue('autoStateChangeAloneDescEnabled', value, 'bool')}
-                            onDescChange={(value) => void saveValue('autoStateChangeAloneDesc', value)}
+                            onStatusChange={(value) =>
+                                void saveValue(
+                                    'autoStateChangeAloneStatus',
+                                    value
+                                )
+                            }
+                            onDescEnabledChange={(value) =>
+                                void saveValue(
+                                    'autoStateChangeAloneDescEnabled',
+                                    value,
+                                    'bool'
+                                )
+                            }
+                            onDescChange={(value) =>
+                                void saveValue(
+                                    'autoStateChangeAloneDesc',
+                                    value
+                                )
+                            }
                         />
                         <StatusEditor
                             id="auto-state-change-company-status"
-                            label={t('view.settings.general.automation.company_status')}
+                            label={t(
+                                'view.settings.general.automation.company_status'
+                            )}
                             disabled={loading || !values.autoStateChangeEnabled}
                             status={values.autoStateChangeCompanyStatus}
-                            descEnabled={values.autoStateChangeCompanyDescEnabled}
+                            descEnabled={
+                                values.autoStateChangeCompanyDescEnabled
+                            }
                             desc={values.autoStateChangeCompanyDesc}
-                            onStatusChange={(value) => void saveValue('autoStateChangeCompanyStatus', value)}
-                            onDescEnabledChange={(value) => void saveValue('autoStateChangeCompanyDescEnabled', value, 'bool')}
-                            onDescChange={(value) => void saveValue('autoStateChangeCompanyDesc', value)}
+                            onStatusChange={(value) =>
+                                void saveValue(
+                                    'autoStateChangeCompanyStatus',
+                                    value
+                                )
+                            }
+                            onDescEnabledChange={(value) =>
+                                void saveValue(
+                                    'autoStateChangeCompanyDescEnabled',
+                                    value,
+                                    'bool'
+                                )
+                            }
+                            onDescChange={(value) =>
+                                void saveValue(
+                                    'autoStateChangeCompanyDesc',
+                                    value
+                                )
+                            }
                         />
                     </div>
                     <Separator />
                     <CheckRow
                         id="autoAcceptInviteRequests"
-                        label={t('view.settings.general.automation.auto_invite_request_accept')}
-                        description={t('view.settings.general.automation.auto_invite_request_accept_tooltip')}
+                        label={t(
+                            'view.settings.general.automation.auto_invite_request_accept'
+                        )}
+                        description={t(
+                            'view.settings.general.automation.auto_invite_request_accept_tooltip'
+                        )}
                         checked={autoAcceptEnabled}
                         disabled={loading}
                         onCheckedChange={(checked) =>
                             void saveValue(
                                 'autoAcceptInviteRequests',
-                                checked ? normalizeAutoAcceptMode(values.autoAcceptInviteRequests) : 'Off'
+                                checked
+                                    ? normalizeAutoAcceptMode(
+                                          values.autoAcceptInviteRequests
+                                      )
+                                    : 'Off'
                             )
                         }
                     />
                     <Field data-disabled={loading || !autoAcceptEnabled}>
-                        <FieldLabel>{t('view.settings.general.automation.auto_invite_request_accept')}</FieldLabel>
+                        <FieldLabel>
+                            {t(
+                                'view.settings.general.automation.auto_invite_request_accept'
+                            )}
+                        </FieldLabel>
                         <Select
-                            value={normalizeAutoAcceptMode(values.autoAcceptInviteRequests)}
+                            value={normalizeAutoAcceptMode(
+                                values.autoAcceptInviteRequests
+                            )}
                             disabled={loading || !autoAcceptEnabled}
-                            onValueChange={(value) => void saveValue('autoAcceptInviteRequests', value)}>
+                            onValueChange={(value) =>
+                                void saveValue(
+                                    'autoAcceptInviteRequests',
+                                    value
+                                )
+                            }
+                        >
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="All Favorites">{t('view.settings.general.automation.auto_invite_request_accept_favs')}</SelectItem>
-                                    <SelectItem value="Selected Favorites">{t('view.settings.general.automation.auto_invite_request_accept_selected_favs')}</SelectItem>
+                                    <SelectItem value="All Favorites">
+                                        {t(
+                                            'view.settings.general.automation.auto_invite_request_accept_favs'
+                                        )}
+                                    </SelectItem>
+                                    <SelectItem value="Selected Favorites">
+                                        {t(
+                                            'view.settings.general.automation.auto_invite_request_accept_selected_favs'
+                                        )}
+                                    </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
                     </Field>
-                    <Field data-disabled={loading || values.autoAcceptInviteRequests !== 'Selected Favorites'}>
-                        <FieldLabel>{t('view.settings.general.automation.auto_accept_invite_groups')}</FieldLabel>
+                    <Field
+                        data-disabled={
+                            loading ||
+                            values.autoAcceptInviteRequests !==
+                                'Selected Favorites'
+                        }
+                    >
+                        <FieldLabel>
+                            {t(
+                                'view.settings.general.automation.auto_accept_invite_groups'
+                            )}
+                        </FieldLabel>
                         <MultiCheckList
                             idPrefix="autoAcceptInviteGroups"
                             values={values.autoAcceptInviteGroups}
                             options={groupOptions}
-                            disabled={loading || values.autoAcceptInviteRequests !== 'Selected Favorites'}
-                            onChange={(next) => void saveValue('autoAcceptInviteGroups', next, 'array')}
+                            disabled={
+                                loading ||
+                                values.autoAcceptInviteRequests !==
+                                    'Selected Favorites'
+                            }
+                            onChange={(next) =>
+                                void saveValue(
+                                    'autoAcceptInviteGroups',
+                                    next,
+                                    'array'
+                                )
+                            }
                         />
                     </Field>
                 </FieldGroup>
                 <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
                         Close
                     </Button>
                 </DialogFooter>
@@ -510,7 +786,9 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
 function ExportDiscordNamesDialog({ open, onOpenChange }) {
     const { t } = useI18n();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const orderedFriendIds = useFriendRosterStore((state) => state.orderedFriendIds);
+    const orderedFriendIds = useFriendRosterStore(
+        (state) => state.orderedFriendIds
+    );
     const [content, setContent] = useState('');
 
     useEffect(() => {
@@ -521,9 +799,13 @@ function ExportDiscordNamesDialog({ open, onOpenChange }) {
         const discordRegex = /(?:discord|dc|dis)(?: |=|:|˸|;)(.*)/i;
         for (const userId of getFriendIds(orderedFriendIds)) {
             const friend = friendsById[userId];
-            const match = discordRegex.exec(friend?.statusDescription || '') || discordRegex.exec(friend?.bio || '');
+            const match =
+                discordRegex.exec(friend?.statusDescription || '') ||
+                discordRegex.exec(friend?.bio || '');
             if (match?.[1]) {
-                lines.push(`${csvEscape(friend?.displayName || userId)},${csvEscape(match[1].trim())}`);
+                lines.push(
+                    `${csvEscape(friend?.displayName || userId)},${csvEscape(match[1].trim())}`
+                );
             }
         }
         setContent(lines.join('\n'));
@@ -533,8 +815,12 @@ function ExportDiscordNamesDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{t('dialog.discord_names.header')}</DialogTitle>
-                    <DialogDescription>{t('dialog.discord_names.description')}</DialogDescription>
+                    <DialogTitle>
+                        {t('dialog.discord_names.header')}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {t('dialog.discord_names.description')}
+                    </DialogDescription>
                 </DialogHeader>
                 <ToolTextarea value={content} />
             </DialogContent>
@@ -545,7 +831,9 @@ function ExportDiscordNamesDialog({ open, onOpenChange }) {
 function ExportFriendsListDialog({ open, onOpenChange }) {
     const { t } = useI18n();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const orderedFriendIds = useFriendRosterStore((state) => state.orderedFriendIds);
+    const orderedFriendIds = useFriendRosterStore(
+        (state) => state.orderedFriendIds
+    );
     const [csv, setCsv] = useState('');
     const [json, setJson] = useState('');
     const [tab, setTab] = useState('csv');
@@ -564,14 +852,22 @@ function ExportFriendsListDialog({ open, onOpenChange }) {
                 const friendsList = [];
                 for (const userId of getFriendIds(orderedFriendIds)) {
                     const friend = friendsById[userId];
-                    const memo = String(memosById.get(userId) || friend?.memo || '').replace(/\n/g, ' ');
-                    lines.push(`${csvEscape(userId)},${csvEscape(friend?.displayName || friend?.name || '')},${csvEscape(memo)}`);
+                    const memo = String(
+                        memosById.get(userId) || friend?.memo || ''
+                    ).replace(/\n/g, ' ');
+                    lines.push(
+                        `${csvEscape(userId)},${csvEscape(friend?.displayName || friend?.name || '')},${csvEscape(memo)}`
+                    );
                     friendsList.push(userId);
                 }
                 setCsv(lines.join('\n'));
                 setJson(JSON.stringify({ friends: friendsList }, null, 4));
             })
-            .catch((error) => toast.error(error instanceof Error ? error.message : String(error)));
+            .catch((error) =>
+                toast.error(
+                    error instanceof Error ? error.message : String(error)
+                )
+            );
         return () => {
             active = false;
         };
@@ -581,12 +877,18 @@ function ExportFriendsListDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{t('dialog.export_friends_list.header')}</DialogTitle>
+                    <DialogTitle>
+                        {t('dialog.export_friends_list.header')}
+                    </DialogTitle>
                 </DialogHeader>
                 <Tabs value={tab} onValueChange={setTab}>
                     <TabsList>
-                        <TabsTrigger value="csv">{t('dialog.export_friends_list.csv')}</TabsTrigger>
-                        <TabsTrigger value="json">{t('dialog.export_friends_list.json')}</TabsTrigger>
+                        <TabsTrigger value="csv">
+                            {t('dialog.export_friends_list.csv')}
+                        </TabsTrigger>
+                        <TabsTrigger value="json">
+                            {t('dialog.export_friends_list.json')}
+                        </TabsTrigger>
                     </TabsList>
                     <TabsContent value="csv">
                         <ToolTextarea value={csv} />
@@ -619,11 +921,17 @@ function ExportAvatarsListDialog({ open, onOpenChange }) {
                 }
                 const lines = ['AvatarID,AvatarName'];
                 for (const avatar of Array.isArray(avatars) ? avatars : []) {
-                    lines.push(`${csvEscape(avatar.id)},${csvEscape(avatar.name)}`);
+                    lines.push(
+                        `${csvEscape(avatar.id)},${csvEscape(avatar.name)}`
+                    );
                 }
                 setContent(lines.join('\n'));
             })
-            .catch((error) => toast.error(error instanceof Error ? error.message : String(error)))
+            .catch((error) =>
+                toast.error(
+                    error instanceof Error ? error.message : String(error)
+                )
+            )
             .finally(() => {
                 if (active) {
                     setLoading(false);
@@ -638,8 +946,12 @@ function ExportAvatarsListDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{t('dialog.export_own_avatars.header')}</DialogTitle>
-                    {loading ? <DialogDescription>Loading avatars.</DialogDescription> : null}
+                    <DialogTitle>
+                        {t('dialog.export_own_avatars.header')}
+                    </DialogTitle>
+                    {loading ? (
+                        <DialogDescription>Loading avatars.</DialogDescription>
+                    ) : null}
                 </DialogHeader>
                 <ToolTextarea value={content} />
             </DialogContent>
@@ -650,7 +962,9 @@ function ExportAvatarsListDialog({ open, onOpenChange }) {
 function NoteExportDialog({ open, onOpenChange }) {
     const { t } = useI18n();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const orderedFriendIds = useFriendRosterStore((state) => state.orderedFriendIds);
+    const orderedFriendIds = useFriendRosterStore(
+        (state) => state.orderedFriendIds
+    );
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const cancelRef = useRef(false);
     const [rows, setRows] = useState([]);
@@ -666,7 +980,9 @@ function NoteExportDialog({ open, onOpenChange }) {
             const nextRows = [];
             for (const userId of getFriendIds(orderedFriendIds)) {
                 const friend = friendsById[userId];
-                const memo = normalizeExportMemo(memosById.get(userId) || friend?.memo || '');
+                const memo = normalizeExportMemo(
+                    memosById.get(userId) || friend?.memo || ''
+                );
                 const vrchatNote = friend?.ref?.note ?? friend?.note ?? '';
                 if (memo && friend && vrchatNote !== truncateExportMemo(memo)) {
                     nextRows.push({
@@ -717,13 +1033,18 @@ function NoteExportDialog({ open, onOpenChange }) {
                         },
                         { endpoint: getEndpoint() }
                     );
-                    setRows((current) => current.filter((item) => item.id !== row.id));
+                    setRows((current) =>
+                        current.filter((item) => item.id !== row.id)
+                    );
                     setProgress({ done: index + 1, total: snapshot.length });
                     if (index < snapshot.length - 1) {
                         await delay(5000);
                     }
                 } catch (error) {
-                    setErrors((current) => `${current}Name: ${row.name}\n${error instanceof Error ? error.message : String(error)}\n\n`);
+                    setErrors(
+                        (current) =>
+                            `${current}Name: ${row.name}\n${error instanceof Error ? error.message : String(error)}\n\n`
+                    );
                     break;
                 }
             }
@@ -739,7 +1060,7 @@ function NoteExportDialog({ open, onOpenChange }) {
                 <DialogHeader>
                     <DialogTitle>{t('dialog.note_export.header')}</DialogTitle>
                 </DialogHeader>
-                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                <div className="text-muted-foreground flex flex-col gap-1 text-xs">
                     {Array.from({ length: 8 }, (_, index) => (
                         <div key={`note-export-description-${index + 1}`}>
                             {t(`dialog.note_export.description${index + 1}`)}
@@ -747,99 +1068,180 @@ function NoteExportDialog({ open, onOpenChange }) {
                     ))}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" variant="outline" disabled={loading} onClick={() => void refreshRows()}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => void refreshRows()}
+                    >
                         {t('dialog.note_export.refresh')}
                     </Button>
-                    <Button type="button" variant="outline" disabled={loading || rows.length === 0} onClick={() => void exportNotes()}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading || rows.length === 0}
+                        onClick={() => void exportNotes()}
+                    >
                         {t('dialog.note_export.export')}
                     </Button>
                     {loading ? (
-                        <Button type="button" variant="outline" onClick={() => { cancelRef.current = true; }}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                cancelRef.current = true;
+                            }}
+                        >
                             {t('dialog.note_export.cancel')}
                         </Button>
                     ) : null}
                     {loading ? (
-                        <span className="text-sm text-muted-foreground">
-                            {t('dialog.note_export.progress')} {progress.done}/{progress.total}
+                        <span className="text-muted-foreground text-sm">
+                            {t('dialog.note_export.progress')} {progress.done}/
+                            {progress.total}
                         </span>
                     ) : null}
                 </div>
                 {errors ? (
                     <div className="flex flex-col gap-2 rounded-md border p-3">
-                        <Button type="button" size="sm" variant="outline" onClick={() => setErrors('')}>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setErrors('')}
+                        >
                             {t('dialog.note_export.clear_errors')}
                         </Button>
-                        <pre className="whitespace-pre-wrap text-xs">{errors}</pre>
+                        <pre className="text-xs whitespace-pre-wrap">
+                            {errors}
+                        </pre>
                     </div>
                 ) : null}
                 <div className="overflow-hidden rounded-md border">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-16">{t('table.import.image')}</TableHead>
+                                <TableHead className="w-16">
+                                    {t('table.import.image')}
+                                </TableHead>
                                 <TableHead>{t('table.import.name')}</TableHead>
                                 <TableHead>{t('table.import.note')}</TableHead>
-                                <TableHead className="w-20 text-right">{t('table.import.skip_export')}</TableHead>
+                                <TableHead className="w-20 text-right">
+                                    {t('table.import.skip_export')}
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {rows.length ? rows.map((row) => (
-                                <TableRow key={row.id}>
-                                    <TableCell>
-                                        {userImage(row.ref, true, '64') ? (
+                            {rows.length ? (
+                                rows.map((row) => (
+                                    <TableRow key={row.id}>
+                                        <TableCell>
+                                            {userImage(row.ref, true, '64') ? (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="bg-muted size-10 overflow-hidden rounded-full border p-0"
+                                                    aria-label={row.name}
+                                                    onClick={() => {
+                                                        const fullImageUrl =
+                                                            userImage(
+                                                                row.ref,
+                                                                false,
+                                                                '512'
+                                                            );
+                                                        if (fullImageUrl) {
+                                                            openImagePreview({
+                                                                url: fullImageUrl,
+                                                                title: row.name
+                                                            });
+                                                        }
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={userImage(
+                                                            row.ref,
+                                                            true,
+                                                            '64'
+                                                        )}
+                                                        alt=""
+                                                        className="size-full object-cover"
+                                                        loading="lazy"
+                                                    />
+                                                </Button>
+                                            ) : (
+                                                <span className="bg-muted block size-10 rounded-full border" />
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
                                             <Button
                                                 type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-10 overflow-hidden rounded-full border bg-muted p-0"
-                                                aria-label={row.name}
-                                                onClick={() => {
-                                                    const fullImageUrl = userImage(row.ref, false, '512');
-                                                    if (fullImageUrl) {
-                                                        openImagePreview({ url: fullImageUrl, title: row.name });
-                                                    }
-                                                }}>
-                                                <img src={userImage(row.ref, true, '64')} alt="" className="size-full object-cover" loading="lazy" />
+                                                variant="link"
+                                                className="px-0"
+                                                onClick={() =>
+                                                    openUserDialog({
+                                                        userId: row.id,
+                                                        title: row.name
+                                                    })
+                                                }
+                                            >
+                                                {row.name}
                                             </Button>
-                                        ) : (
-                                            <span className="block size-10 rounded-full border bg-muted" />
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button type="button" variant="link" className="px-0" onClick={() => openUserDialog({ userId: row.id, title: row.name })}>
-                                            {row.name}
-                                        </Button>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Textarea
-                                            value={row.memo}
-                                            maxLength={256}
-                                            rows={2}
-                                            disabled={loading}
-                                            onChange={(event) =>
-                                                setRows((current) =>
-                                                    current.map((item) =>
-                                                        item.id === row.id ? { ...item, memo: normalizeExportMemo(event.target.value) } : item
+                                        </TableCell>
+                                        <TableCell>
+                                            <Textarea
+                                                value={row.memo}
+                                                maxLength={256}
+                                                rows={2}
+                                                disabled={loading}
+                                                onChange={(event) =>
+                                                    setRows((current) =>
+                                                        current.map((item) =>
+                                                            item.id === row.id
+                                                                ? {
+                                                                      ...item,
+                                                                      memo: normalizeExportMemo(
+                                                                          event
+                                                                              .target
+                                                                              .value
+                                                                      )
+                                                                  }
+                                                                : item
+                                                        )
                                                     )
-                                                )
-                                            }
-                                        />
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button
-                                            type="button"
-                                            size="icon"
-                                            variant="ghost"
-                                            disabled={loading}
-                                            onClick={() => setRows((current) => current.filter((item) => item.id !== row.id))}>
-                                            <Trash2Icon data-icon="inline-start" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
+                                                }
+                                            />
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                type="button"
+                                                size="icon"
+                                                variant="ghost"
+                                                disabled={loading}
+                                                onClick={() =>
+                                                    setRows((current) =>
+                                                        current.filter(
+                                                            (item) =>
+                                                                item.id !==
+                                                                row.id
+                                                        )
+                                                    )
+                                                }
+                                            >
+                                                <Trash2Icon data-icon="inline-start" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                        {loading ? 'Loading.' : 'No memo differences found.'}
+                                    <TableCell
+                                        colSpan={4}
+                                        className="text-muted-foreground h-24 text-center"
+                                    >
+                                        {loading
+                                            ? 'Loading.'
+                                            : 'No memo differences found.'}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -853,7 +1255,9 @@ function NoteExportDialog({ open, onOpenChange }) {
 
 function GroupCalendarDialog({ open, onOpenChange }) {
     const { t } = useI18n();
-    const [selectedDate, setSelectedDate] = useState(() => selectedDateKey(new Date()));
+    const [selectedDate, setSelectedDate] = useState(() =>
+        selectedDateKey(new Date())
+    );
     const [showFeaturedEvents, setShowFeaturedEvents] = useState(false);
     const [viewMode, setViewMode] = useState('timeline');
     const [search, setSearch] = useState('');
@@ -867,8 +1271,12 @@ function GroupCalendarDialog({ open, onOpenChange }) {
     const selectedDayEvents = useMemo(
         () =>
             events
-                .filter((event) => selectedDateKey(event.startsAt) === selectedDate)
-                .sort((left, right) => dayjs(left.startsAt).diff(dayjs(right.startsAt))),
+                .filter(
+                    (event) => selectedDateKey(event.startsAt) === selectedDate
+                )
+                .sort((left, right) =>
+                    dayjs(left.startsAt).diff(dayjs(right.startsAt))
+                ),
         [events, selectedDate]
     );
     const eventsByGroup = useMemo(() => {
@@ -883,8 +1291,12 @@ function GroupCalendarDialog({ open, onOpenChange }) {
             if (
                 query &&
                 !groupName.toLowerCase().includes(query) &&
-                !String(event.title || '').toLowerCase().includes(query) &&
-                !String(event.description || '').toLowerCase().includes(query)
+                !String(event.title || '')
+                    .toLowerCase()
+                    .includes(query) &&
+                !String(event.description || '')
+                    .toLowerCase()
+                    .includes(query)
             ) {
                 continue;
             }
@@ -897,13 +1309,19 @@ function GroupCalendarDialog({ open, onOpenChange }) {
             .map(([groupId, groupEvents]) => ({
                 groupId,
                 groupName: groupNames[groupId] || groupId,
-                events: groupEvents.sort((left, right) => dayjs(left.startsAt).diff(dayjs(right.startsAt)))
+                events: groupEvents.sort((left, right) =>
+                    dayjs(left.startsAt).diff(dayjs(right.startsAt))
+                )
             }))
-            .sort((left, right) => left.groupName.localeCompare(right.groupName));
+            .sort((left, right) =>
+                left.groupName.localeCompare(right.groupName)
+            );
     }, [events, groupNames, search]);
 
     async function resolveGroupNames(rows) {
-        const ids = Array.from(new Set(rows.map(getEventGroupId).filter(Boolean)));
+        const ids = Array.from(
+            new Set(rows.map(getEventGroupId).filter(Boolean))
+        );
         const nextNames = {};
         const nextProfiles = {};
         await Promise.all(
@@ -942,18 +1360,30 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                 offset: 0,
                 date: dayjs(selectedDate).format('YYYY-MM-DDTHH:mm:ss[Z]')
             };
-            const [calendarRows, followingRows, featuredRows] = await Promise.all([
-                toolsRepository.getAllGroupCalendars(params, { endpoint: getEndpoint(), force }),
-                toolsRepository.getAllFollowingGroupCalendars(params, { endpoint: getEndpoint(), force }),
-                showFeaturedEvents
-                    ? toolsRepository.getAllFeaturedGroupCalendars(params, { endpoint: getEndpoint(), force })
-                    : Promise.resolve([])
-            ]);
-            const normalizedRows = [...calendarRows, ...featuredRows].map((event) => ({
-                ...event,
-                title: replaceBioSymbols(event.title || ''),
-                description: replaceBioSymbols(event.description || '')
-            }));
+            const [calendarRows, followingRows, featuredRows] =
+                await Promise.all([
+                    toolsRepository.getAllGroupCalendars(params, {
+                        endpoint: getEndpoint(),
+                        force
+                    }),
+                    toolsRepository.getAllFollowingGroupCalendars(params, {
+                        endpoint: getEndpoint(),
+                        force
+                    }),
+                    showFeaturedEvents
+                        ? toolsRepository.getAllFeaturedGroupCalendars(params, {
+                              endpoint: getEndpoint(),
+                              force
+                          })
+                        : Promise.resolve([])
+                ]);
+            const normalizedRows = [...calendarRows, ...featuredRows].map(
+                (event) => ({
+                    ...event,
+                    title: replaceBioSymbols(event.title || ''),
+                    description: replaceBioSymbols(event.description || '')
+                })
+            );
             setEvents(normalizedRows);
             setFollowingIds(followingRows.map(getEventId).filter(Boolean));
             await resolveGroupNames([...normalizedRows, ...followingRows]);
@@ -982,7 +1412,9 @@ function GroupCalendarDialog({ open, onOpenChange }) {
 
     async function toggleFeatured(nextValue) {
         setShowFeaturedEvents(nextValue);
-        await configRepository.setBool('groupCalendarShowFeaturedEvents', nextValue).catch(() => {});
+        await configRepository
+            .setBool('groupCalendarShowFeaturedEvents', nextValue)
+            .catch(() => {});
     }
 
     async function toggleFollow(event) {
@@ -997,7 +1429,9 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                 { groupId, eventId, isFollowing: nextFollowing },
                 { endpoint: getEndpoint() }
             );
-            setFollowingIds((current) => updateArrayValue(current, eventId, nextFollowing));
+            setFollowingIds((current) =>
+                updateArrayValue(current, eventId, nextFollowing)
+            );
         } catch (error) {
             toast.error(error instanceof Error ? error.message : String(error));
         }
@@ -1007,69 +1441,155 @@ function GroupCalendarDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-5xl">
                 <DialogHeader>
-                    <DialogTitle>{t('dialog.group_calendar.header')}</DialogTitle>
-                    <DialogDescription>{loading ? 'Loading group events.' : 'Group calendar events for the selected date and month.'}</DialogDescription>
+                    <DialogTitle>
+                        {t('dialog.group_calendar.header')}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {loading
+                            ? 'Loading group events.'
+                            : 'Group calendar events for the selected date and month.'}
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-wrap items-center gap-3">
                     <Input
                         type="date"
                         value={selectedDate}
                         className="w-auto"
-                        onChange={(event) => setSelectedDate(event.target.value || selectedDateKey(new Date()))}
+                        onChange={(event) =>
+                            setSelectedDate(
+                                event.target.value ||
+                                    selectedDateKey(new Date())
+                            )
+                        }
                     />
                     <Field orientation="horizontal" className="w-auto">
-                        <Switch id="group-calendar-featured-events" checked={showFeaturedEvents} onCheckedChange={(checked) => void toggleFeatured(checked)} />
-                        <FieldLabel htmlFor="group-calendar-featured-events">{t('dialog.group_calendar.featured_events')}</FieldLabel>
+                        <Switch
+                            id="group-calendar-featured-events"
+                            checked={showFeaturedEvents}
+                            onCheckedChange={(checked) =>
+                                void toggleFeatured(checked)
+                            }
+                        />
+                        <FieldLabel htmlFor="group-calendar-featured-events">
+                            {t('dialog.group_calendar.featured_events')}
+                        </FieldLabel>
                     </Field>
-                    <Button type="button" variant="outline" disabled={loading} onClick={() => void loadCalendar({ force: true })}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => void loadCalendar({ force: true })}
+                    >
                         <RefreshCwIcon data-icon="inline-start" />
                         {t('common.actions.refresh')}
                     </Button>
-                    <Button type="button" variant="outline" onClick={() => setViewMode((current) => (current === 'timeline' ? 'grid' : 'timeline'))}>
-                        {viewMode === 'timeline' ? t('dialog.group_calendar.list_view') : t('dialog.group_calendar.calendar_view')}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                            setViewMode((current) =>
+                                current === 'timeline' ? 'grid' : 'timeline'
+                            )
+                        }
+                    >
+                        {viewMode === 'timeline'
+                            ? t('dialog.group_calendar.list_view')
+                            : t('dialog.group_calendar.calendar_view')}
                     </Button>
                 </div>
                 {viewMode === 'timeline' ? (
                     <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
                         <ScrollArea className="h-[52vh] rounded-md border p-4">
-                            {selectedDayEvents.length ? selectedDayEvents.map((event) => (
-                                <GroupEventCard
-                                    key={getEventId(event)}
-                                    event={event}
-                                    mode="timeline"
-                                    groupName={groupNames[getEventGroupId(event)] || getEventGroupId(event)}
-                                    groupProfile={groupProfiles[getEventGroupId(event)]}
-                                    isFollowing={followingIds.includes(getEventId(event))}
-                                    onToggleFollow={() => void toggleFollow(event)}
-                                />
-                            )) : (
-                                <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+                            {selectedDayEvents.length ? (
+                                selectedDayEvents.map((event) => (
+                                    <GroupEventCard
+                                        key={getEventId(event)}
+                                        event={event}
+                                        mode="timeline"
+                                        groupName={
+                                            groupNames[
+                                                getEventGroupId(event)
+                                            ] || getEventGroupId(event)
+                                        }
+                                        groupProfile={
+                                            groupProfiles[
+                                                getEventGroupId(event)
+                                            ]
+                                        }
+                                        isFollowing={followingIds.includes(
+                                            getEventId(event)
+                                        )}
+                                        onToggleFollow={() =>
+                                            void toggleFollow(event)
+                                        }
+                                    />
+                                ))
+                            ) : (
+                                <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
                                     {t('dialog.group_calendar.no_events')}
                                 </div>
                             )}
                         </ScrollArea>
                         <div className="rounded-md border p-4">
-                            <div className="text-sm font-medium">{dayjs(selectedDate).format('MMMM YYYY')}</div>
+                            <div className="text-sm font-medium">
+                                {dayjs(selectedDate).format('MMMM YYYY')}
+                            </div>
                             <div className="mt-3 grid grid-cols-7 gap-1 text-center text-xs">
-                                {Array.from({ length: dayjs(selectedDate).daysInMonth() }, (_, index) => {
-                                    const dateKey = dayjs(selectedDate).date(index + 1).format('YYYY-MM-DD');
-                                    const dayEvents = events.filter((event) => selectedDateKey(event.startsAt) === dateKey);
-                                    const count = dayEvents.length;
-                                    const hasFollowing = dayEvents.some((event) => followingIds.includes(getEventId(event)));
-                                    return (
-                                        <Button
-                                            key={dateKey}
-                                            type="button"
-                                            variant={dateKey === selectedDate ? 'default' : 'outline'}
-                                            size="sm"
-                                            className={cn('relative h-12 flex-col gap-0', hasFollowing && 'ring-1 ring-primary')}
-                                            onClick={() => setSelectedDate(dateKey)}>
-                                            <span>{index + 1}</span>
-                                            {count ? <span className="text-xs">{count}</span> : null}
-                                            {hasFollowing ? <span className="absolute right-1 top-1 size-1.5 rounded-full bg-primary" /> : null}
-                                        </Button>
-                                    );
-                                })}
+                                {Array.from(
+                                    {
+                                        length: dayjs(
+                                            selectedDate
+                                        ).daysInMonth()
+                                    },
+                                    (_, index) => {
+                                        const dateKey = dayjs(selectedDate)
+                                            .date(index + 1)
+                                            .format('YYYY-MM-DD');
+                                        const dayEvents = events.filter(
+                                            (event) =>
+                                                selectedDateKey(
+                                                    event.startsAt
+                                                ) === dateKey
+                                        );
+                                        const count = dayEvents.length;
+                                        const hasFollowing = dayEvents.some(
+                                            (event) =>
+                                                followingIds.includes(
+                                                    getEventId(event)
+                                                )
+                                        );
+                                        return (
+                                            <Button
+                                                key={dateKey}
+                                                type="button"
+                                                variant={
+                                                    dateKey === selectedDate
+                                                        ? 'default'
+                                                        : 'outline'
+                                                }
+                                                size="sm"
+                                                className={cn(
+                                                    'relative h-12 flex-col gap-0',
+                                                    hasFollowing &&
+                                                        'ring-primary ring-1'
+                                                )}
+                                                onClick={() =>
+                                                    setSelectedDate(dateKey)
+                                                }
+                                            >
+                                                <span>{index + 1}</span>
+                                                {count ? (
+                                                    <span className="text-xs">
+                                                        {count}
+                                                    </span>
+                                                ) : null}
+                                                {hasFollowing ? (
+                                                    <span className="bg-primary absolute top-1 right-1 size-1.5 rounded-full" />
+                                                ) : null}
+                                            </Button>
+                                        );
+                                    }
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1077,47 +1597,85 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                     <div className="flex flex-col gap-3">
                         <Input
                             value={search}
-                            placeholder={t('dialog.group_calendar.search_placeholder')}
+                            placeholder={t(
+                                'dialog.group_calendar.search_placeholder'
+                            )}
                             onChange={(event) => setSearch(event.target.value)}
                         />
                         <ScrollArea className="h-[55vh] rounded-md border p-4">
-                            {eventsByGroup.length ? eventsByGroup.map((group) => (
-                                <div key={group.groupId} className="mb-4 flex flex-col gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="justify-start px-0"
-                                        onClick={() =>
-                                            setCollapsedGroups((current) => ({
-                                                ...current,
-                                                [group.groupId]: !current[group.groupId]
-                                            }))
-                                        }>
-                                        <ChevronDownIcon
-                                            data-icon="inline-start"
-                                            className={cn('transition-transform', collapsedGroups[group.groupId] && '-rotate-90')}
-                                        />
-                                        {group.groupName}
-                                    </Button>
-                                    {!collapsedGroups[group.groupId] ? (
-                                        <div className="grid gap-3 md:grid-cols-2">
-                                            {group.events.map((event) => (
-                                                <GroupEventCard
-                                                    key={getEventId(event)}
-                                                    event={event}
-                                                    mode="grid"
-                                                    groupName={group.groupName}
-                                                    groupProfile={groupProfiles[getEventGroupId(event)]}
-                                                    isFollowing={followingIds.includes(getEventId(event))}
-                                                    onToggleFollow={() => void toggleFollow(event)}
-                                                />
-                                            ))}
-                                        </div>
-                                    ) : null}
-                                </div>
-                            )) : (
-                                <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                                    {search ? t('dialog.group_calendar.search_no_matching') : t('dialog.group_calendar.search_no_this_month')}
+                            {eventsByGroup.length ? (
+                                eventsByGroup.map((group) => (
+                                    <div
+                                        key={group.groupId}
+                                        className="mb-4 flex flex-col gap-2"
+                                    >
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="justify-start px-0"
+                                            onClick={() =>
+                                                setCollapsedGroups(
+                                                    (current) => ({
+                                                        ...current,
+                                                        [group.groupId]:
+                                                            !current[
+                                                                group.groupId
+                                                            ]
+                                                    })
+                                                )
+                                            }
+                                        >
+                                            <ChevronDownIcon
+                                                data-icon="inline-start"
+                                                className={cn(
+                                                    'transition-transform',
+                                                    collapsedGroups[
+                                                        group.groupId
+                                                    ] && '-rotate-90'
+                                                )}
+                                            />
+                                            {group.groupName}
+                                        </Button>
+                                        {!collapsedGroups[group.groupId] ? (
+                                            <div className="grid gap-3 md:grid-cols-2">
+                                                {group.events.map((event) => (
+                                                    <GroupEventCard
+                                                        key={getEventId(event)}
+                                                        event={event}
+                                                        mode="grid"
+                                                        groupName={
+                                                            group.groupName
+                                                        }
+                                                        groupProfile={
+                                                            groupProfiles[
+                                                                getEventGroupId(
+                                                                    event
+                                                                )
+                                                            ]
+                                                        }
+                                                        isFollowing={followingIds.includes(
+                                                            getEventId(event)
+                                                        )}
+                                                        onToggleFollow={() =>
+                                                            void toggleFollow(
+                                                                event
+                                                            )
+                                                        }
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
+                                    {search
+                                        ? t(
+                                              'dialog.group_calendar.search_no_matching'
+                                          )
+                                        : t(
+                                              'dialog.group_calendar.search_no_this_month'
+                                          )}
                                 </div>
                             )}
                         </ScrollArea>
@@ -1139,14 +1697,20 @@ async function getCalendarIcs(event) {
             { groupId, eventId },
             { endpoint: getEndpoint() }
         );
-        const normalizedContent = String(content || '').replace(/^\uFEFF/, '').trimStart();
+        const normalizedContent = String(content || '')
+            .replace(/^\uFEFF/, '')
+            .trimStart();
         if (!normalizedContent.startsWith('BEGIN:VCALENDAR')) {
-            toast.error('Failed to download .ics file, invalid iCalendar content');
+            toast.error(
+                'Failed to download .ics file, invalid iCalendar content'
+            );
             return '';
         }
         return normalizedContent;
     } catch (error) {
-        toast.error(`Failed to download .ics file, ${error instanceof Error ? error.message : String(error)}`);
+        toast.error(
+            `Failed to download .ics file, ${error instanceof Error ? error.message : String(error)}`
+        );
         return '';
     }
 }
@@ -1168,7 +1732,9 @@ async function downloadEventIcs(event) {
     try {
         await backend.app.SaveCalendarFile(fileName, content);
     } catch (error) {
-        toast.error(`Failed to save .ics file, ${error instanceof Error ? error.message : String(error)}`);
+        toast.error(
+            `Failed to save .ics file, ${error instanceof Error ? error.message : String(error)}`
+        );
     }
 }
 
@@ -1179,7 +1745,9 @@ async function copyEventLink(event, t) {
         return;
     }
     try {
-        await navigator.clipboard.writeText(`https://vrchat.com/home/group/${groupId}/calendar/${eventId}`);
+        await navigator.clipboard.writeText(
+            `https://vrchat.com/home/group/${groupId}/calendar/${eventId}`
+        );
         toast.success(t('dialog.group_calendar.event_card.copied_event_link'));
     } catch (error) {
         toast.error(error instanceof Error ? error.message : String(error));
@@ -1188,7 +1756,11 @@ async function copyEventLink(event, t) {
 
 function getEventBannerUrl(event, groupProfile) {
     return convertFileUrlToImageUrl(
-        event?.imageUrl || event?.thumbnailImageUrl || groupProfile?.bannerUrl || groupProfile?.iconUrl || '',
+        event?.imageUrl ||
+            event?.thumbnailImageUrl ||
+            groupProfile?.bannerUrl ||
+            groupProfile?.iconUrl ||
+            '',
         512
     );
 }
@@ -1208,7 +1780,14 @@ function capitalizeFirst(value) {
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : '—';
 }
 
-function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isFollowing, onToggleFollow }) {
+function GroupEventCard({
+    event,
+    mode = 'timeline',
+    groupName,
+    groupProfile,
+    isFollowing,
+    onToggleFollow
+}) {
     const { t } = useI18n();
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const groupId = getEventGroupId(event);
@@ -1218,7 +1797,8 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
     const bannerUrl = bannerError ? '' : getEventBannerUrl(event, groupProfile);
     const title = event.title || 'Untitled event';
     const showGroupName = mode === 'timeline';
-    const closeAfterMinutes = event.closeInstanceAfterEndMinutes ?? event.closeAfterEndMinutes ?? '';
+    const closeAfterMinutes =
+        event.closeInstanceAfterEndMinutes ?? event.closeAfterEndMinutes ?? '';
 
     function openPopover() {
         if (closeTimerRef.current) {
@@ -1232,14 +1812,20 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
         if (closeTimerRef.current) {
             clearTimeout(closeTimerRef.current);
         }
-        closeTimerRef.current = window.setTimeout(() => setPopoverOpen(false), 100);
+        closeTimerRef.current = window.setTimeout(
+            () => setPopoverOpen(false),
+            100
+        );
     }
 
-    useEffect(() => () => {
-        if (closeTimerRef.current) {
-            clearTimeout(closeTimerRef.current);
-        }
-    }, []);
+    useEffect(
+        () => () => {
+            if (closeTimerRef.current) {
+                clearTimeout(closeTimerRef.current);
+            }
+        },
+        []
+    );
 
     function stopAndRun(callback) {
         return (clickEvent) => {
@@ -1253,16 +1839,26 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
                 <div
-                    className="mb-3 overflow-hidden rounded-md border bg-card"
+                    className="bg-card mb-3 overflow-hidden rounded-md border"
                     onMouseEnter={openPopover}
-                    onMouseLeave={scheduleClosePopover}>
+                    onMouseLeave={scheduleClosePopover}
+                >
                     {bannerUrl ? (
                         <Button
                             type="button"
                             variant="ghost"
-                            className="h-28 w-full overflow-hidden rounded-none bg-muted p-0"
+                            className="bg-muted h-28 w-full overflow-hidden rounded-none p-0"
                             aria-label={title}
-                            onClick={stopAndRun(() => openImagePreview({ url: convertFileUrlToImageUrl(event.imageUrl || bannerUrl, 1024), title }))}>
+                            onClick={stopAndRun(() =>
+                                openImagePreview({
+                                    url: convertFileUrlToImageUrl(
+                                        event.imageUrl || bannerUrl,
+                                        1024
+                                    ),
+                                    title
+                                })
+                            )}
+                        >
                             <img
                                 src={bannerUrl}
                                 alt=""
@@ -1272,7 +1868,7 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
                             />
                         </Button>
                     ) : (
-                        <div className="flex h-28 items-center justify-center bg-muted text-muted-foreground">
+                        <div className="bg-muted text-muted-foreground flex h-28 items-center justify-center">
                             <ImageIcon className="size-6" />
                         </div>
                     )}
@@ -1283,40 +1879,91 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
                                     <Button
                                         type="button"
                                         variant="link"
-                                        className="h-auto max-w-full justify-start p-0 text-left text-xs font-normal text-muted-foreground"
-                                        onClick={stopAndRun(() => openGroupDialog({ groupId }))}>
-                                        <span className="truncate">{groupName || groupId}</span>
+                                        className="text-muted-foreground h-auto max-w-full justify-start p-0 text-left text-xs font-normal"
+                                        onClick={stopAndRun(() =>
+                                            openGroupDialog({ groupId })
+                                        )}
+                                    >
+                                        <span className="truncate">
+                                            {groupName || groupId}
+                                        </span>
                                     </Button>
                                 ) : null}
                                 <Button
                                     type="button"
                                     variant="link"
                                     className="h-auto max-w-full justify-start p-0 text-left text-sm font-medium"
-                                    onClick={stopAndRun(() => openGroupDialog({ groupId }))}>
+                                    onClick={stopAndRun(() =>
+                                        openGroupDialog({ groupId })
+                                    )}
+                                >
                                     <span className="truncate">{title}</span>
                                 </Button>
-                                <div className="text-xs text-muted-foreground">
-                                    {formatEventTimeRange(event, mode)} · {capitalizeFirst(event.accessType)}
+                                <div className="text-muted-foreground text-xs">
+                                    {formatEventTimeRange(event, mode)} ·{' '}
+                                    {capitalizeFirst(event.accessType)}
                                 </div>
-                                {event.description ? <p className="line-clamp-2 text-sm text-muted-foreground">{event.description}</p> : null}
+                                {event.description ? (
+                                    <p className="text-muted-foreground line-clamp-2 text-sm">
+                                        {event.description}
+                                    </p>
+                                ) : null}
                             </div>
                             <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                                <Button type="button" size="icon-sm" variant="outline" aria-label="Copy event link" onClick={stopAndRun(() => void copyEventLink(event, t))}>
+                                <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    variant="outline"
+                                    aria-label="Copy event link"
+                                    onClick={stopAndRun(
+                                        () => void copyEventLink(event, t)
+                                    )}
+                                >
                                     <Share2Icon data-icon="inline-start" />
                                 </Button>
-                                <Button type="button" size="icon-sm" variant={isFollowing ? 'default' : 'outline'} aria-label={isFollowing ? 'Unfollow event' : 'Follow event'} onClick={stopAndRun(onToggleFollow)}>
+                                <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    variant={
+                                        isFollowing ? 'default' : 'outline'
+                                    }
+                                    aria-label={
+                                        isFollowing
+                                            ? 'Unfollow event'
+                                            : 'Follow event'
+                                    }
+                                    onClick={stopAndRun(onToggleFollow)}
+                                >
                                     <StarIcon data-icon="inline-start" />
                                 </Button>
                             </div>
                         </div>
                         <div className="mt-3 flex flex-wrap justify-end gap-2">
-                            <Button type="button" size="sm" variant="outline" onClick={stopAndRun(() => void openCalendarEvent(event))}>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={stopAndRun(
+                                    () => void openCalendarEvent(event)
+                                )}
+                            >
                                 <CalendarIcon data-icon="inline-start" />
-                                {t('dialog.group_calendar.event_card.export_to_calendar')}
+                                {t(
+                                    'dialog.group_calendar.event_card.export_to_calendar'
+                                )}
                             </Button>
-                            <Button type="button" size="sm" variant="outline" onClick={stopAndRun(() => void downloadEventIcs(event))}>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={stopAndRun(
+                                    () => void downloadEventIcs(event)
+                                )}
+                            >
                                 <DownloadIcon data-icon="inline-start" />
-                                {t('dialog.group_calendar.event_card.download_ics')}
+                                {t(
+                                    'dialog.group_calendar.event_card.download_ics'
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -1327,39 +1974,78 @@ function GroupEventCard({ event, mode = 'timeline', groupName, groupProfile, isF
                 align="start"
                 className="w-125 p-3"
                 onMouseEnter={openPopover}
-                onMouseLeave={scheduleClosePopover}>
+                onMouseLeave={scheduleClosePopover}
+            >
                 <div className="flex items-baseline justify-between gap-3 text-xs">
                     <div className="min-w-0 text-sm font-semibold">{title}</div>
-                    <div className="shrink-0 whitespace-nowrap">{formatEventTimeRange(event)}</div>
+                    <div className="shrink-0 whitespace-nowrap">
+                        {formatEventTimeRange(event)}
+                    </div>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-                    <Button variant="outline" size="sm" onClick={() => void openCalendarEvent(event)}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void openCalendarEvent(event)}
+                    >
                         <CalendarIcon data-icon="inline-start" />
-                        {t('dialog.group_calendar.event_card.export_to_calendar')}
+                        {t(
+                            'dialog.group_calendar.event_card.export_to_calendar'
+                        )}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => void downloadEventIcs(event)}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void downloadEventIcs(event)}
+                    >
                         <DownloadIcon data-icon="inline-start" />
                         {t('dialog.group_calendar.event_card.download_ics')}
                     </Button>
                     <div className="flex min-w-0 flex-col gap-1">
-                        <div>{t('dialog.group_calendar.event_card.category')}</div>
-                        <div className="font-medium">{capitalizeFirst(event.category)}</div>
+                        <div>
+                            {t('dialog.group_calendar.event_card.category')}
+                        </div>
+                        <div className="font-medium">
+                            {capitalizeFirst(event.category)}
+                        </div>
                     </div>
                     <div className="flex min-w-0 flex-col gap-1">
-                        <div>{t('dialog.group_calendar.event_card.interested_user')}</div>
-                        <div className="font-medium">{event.interestedUserCount ?? 0}</div>
+                        <div>
+                            {t(
+                                'dialog.group_calendar.event_card.interested_user'
+                            )}
+                        </div>
+                        <div className="font-medium">
+                            {event.interestedUserCount ?? 0}
+                        </div>
                     </div>
                     <div className="flex min-w-0 flex-col gap-1">
-                        <div>{t('dialog.group_calendar.event_card.close_time')}</div>
-                        <div className="font-medium">{closeAfterMinutes !== '' ? `${closeAfterMinutes} min` : '—'}</div>
+                        <div>
+                            {t('dialog.group_calendar.event_card.close_time')}
+                        </div>
+                        <div className="font-medium">
+                            {closeAfterMinutes !== ''
+                                ? `${closeAfterMinutes} min`
+                                : '—'}
+                        </div>
                     </div>
                     <div className="flex min-w-0 flex-col gap-1">
-                        <div>{t('dialog.group_calendar.event_card.created')}</div>
-                        <div className="font-medium">{event.createdAt ? dayjs(event.createdAt).format('YYYY-MM-DD HH:mm') : '—'}</div>
+                        <div>
+                            {t('dialog.group_calendar.event_card.created')}
+                        </div>
+                        <div className="font-medium">
+                            {event.createdAt
+                                ? dayjs(event.createdAt).format(
+                                      'YYYY-MM-DD HH:mm'
+                                  )
+                                : '—'}
+                        </div>
                     </div>
                     <div className="col-span-2 flex min-w-0 flex-col gap-1">
-                        <div>{t('dialog.group_calendar.event_card.description')}</div>
-                        <div className="whitespace-pre-wrap break-words font-normal leading-snug">
+                        <div>
+                            {t('dialog.group_calendar.event_card.description')}
+                        </div>
+                        <div className="leading-snug font-normal break-words whitespace-pre-wrap">
                             {event.description || '—'}
                         </div>
                     </div>
@@ -1394,7 +2080,12 @@ function EditInviteMessagesDialog({ open, onOpenChange }) {
             );
             setRowsByType((current) => ({
                 ...current,
-                ...Object.fromEntries(entries.map(([type, rows]) => [type, Array.isArray(rows) ? rows : []]))
+                ...Object.fromEntries(
+                    entries.map(([type, rows]) => [
+                        type,
+                        Array.isArray(rows) ? rows : []
+                    ])
+                )
             }));
         } catch (error) {
             toast.error(error instanceof Error ? error.message : String(error));
@@ -1413,7 +2104,9 @@ function EditInviteMessagesDialog({ open, onOpenChange }) {
 
     function beginEdit(row, messageType) {
         if (isInviteMessageOnCooldown(row)) {
-            toast.warning('This invite message is on cooldown and cannot be edited yet.');
+            toast.warning(
+                'This invite message is on cooldown and cannot be edited yet.'
+            );
             return;
         }
         setEditingRow({ ...row, messageType });
@@ -1456,8 +2149,14 @@ function EditInviteMessagesDialog({ open, onOpenChange }) {
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-5xl">
                     <DialogHeader>
-                        <DialogTitle>{t('dialog.edit_invite_messages.header')}</DialogTitle>
-                        <DialogDescription>{loading ? 'Loading invite messages.' : 'Click a row to edit an invite message.'}</DialogDescription>
+                        <DialogTitle>
+                            {t('dialog.edit_invite_messages.header')}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {loading
+                                ? 'Loading invite messages.'
+                                : 'Click a row to edit an invite message.'}
+                        </DialogDescription>
                     </DialogHeader>
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
                         <TabsList className="flex-wrap">
@@ -1478,7 +2177,12 @@ function EditInviteMessagesDialog({ open, onOpenChange }) {
                         ))}
                     </Tabs>
                     <DialogFooter>
-                        <Button type="button" variant="outline" disabled={loading} onClick={() => void loadRows()}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={loading}
+                            onClick={() => void loadRows()}
+                        >
                             {t('common.actions.refresh')}
                         </Button>
                     </DialogFooter>
@@ -1516,31 +2220,45 @@ function InviteMessageTable({ rows, loading, onEdit }) {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="w-20">{t('table.profile.invite_messages.slot')}</TableHead>
-                        <TableHead>{t('table.profile.invite_messages.message')}</TableHead>
-                        <TableHead className="w-32 text-right">{t('table.profile.invite_messages.cool_down')}</TableHead>
+                        <TableHead className="w-20">
+                            {t('table.profile.invite_messages.slot')}
+                        </TableHead>
+                        <TableHead>
+                            {t('table.profile.invite_messages.message')}
+                        </TableHead>
+                        <TableHead className="w-32 text-right">
+                            {t('table.profile.invite_messages.cool_down')}
+                        </TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {rows.length ? rows.map((row) => (
-                        <TableRow key={row.slot}>
-                            <TableCell>{row.slot}</TableCell>
-                            <TableCell>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-auto w-full justify-start p-0 text-left font-normal whitespace-normal hover:bg-transparent"
-                                    onClick={() => onEdit(row)}>
-                                    {row.message}
-                                </Button>
-                            </TableCell>
-                            <TableCell className="text-right text-muted-foreground">
-                                <InviteCooldownText updatedAt={row.updatedAt} />
-                            </TableCell>
-                        </TableRow>
-                    )) : (
+                    {rows.length ? (
+                        rows.map((row) => (
+                            <TableRow key={row.slot}>
+                                <TableCell>{row.slot}</TableCell>
+                                <TableCell>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="h-auto w-full justify-start p-0 text-left font-normal whitespace-normal hover:bg-transparent"
+                                        onClick={() => onEdit(row)}
+                                    >
+                                        {row.message}
+                                    </Button>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-right">
+                                    <InviteCooldownText
+                                        updatedAt={row.updatedAt}
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
                         <TableRow>
-                            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                            <TableCell
+                                colSpan={3}
+                                className="text-muted-foreground h-24 text-center"
+                            >
                                 {loading ? 'Loading.' : 'No invite messages.'}
                             </TableCell>
                         </TableRow>
@@ -1565,8 +2283,12 @@ function EditInviteMessageDialog({ row, open, onOpenChange, onSave }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-sm">
                 <DialogHeader>
-                    <DialogTitle>{t('dialog.edit_invite_message.header')}</DialogTitle>
-                    <DialogDescription>{t('dialog.edit_invite_message.description')}</DialogDescription>
+                    <DialogTitle>
+                        {t('dialog.edit_invite_message.header')}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {t('dialog.edit_invite_message.description')}
+                    </DialogDescription>
                 </DialogHeader>
                 <Textarea
                     value={message}
@@ -1574,9 +2296,15 @@ function EditInviteMessageDialog({ row, open, onOpenChange, onSave }) {
                     maxLength={64}
                     onChange={(event) => setMessage(event.target.value)}
                 />
-                <div className="text-right text-xs text-muted-foreground">{message.length}/64</div>
+                <div className="text-muted-foreground text-right text-xs">
+                    {message.length}/64
+                </div>
                 <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
                         {t('dialog.edit_invite_message.cancel')}
                     </Button>
                     <Button type="button" onClick={() => void onSave(message)}>
@@ -1590,37 +2318,53 @@ function EditInviteMessageDialog({ row, open, onOpenChange, onSave }) {
 
 export function ToolsDialogsHost() {
     const systemHosts = useRuntimeStore((state) => state.systemHosts);
-    const setSystemHostOpen = useRuntimeStore((state) => state.setSystemHostOpen);
+    const setSystemHostOpen = useRuntimeStore(
+        (state) => state.setSystemHostOpen
+    );
 
     return (
         <>
             <AutoChangeStatusDialog
                 open={Boolean(systemHosts.autoChangeStatusOpen)}
-                onOpenChange={(open) => setSystemHostOpen('autoChangeStatusOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('autoChangeStatusOpen', open)
+                }
             />
             <GroupCalendarDialog
                 open={Boolean(systemHosts.groupCalendarOpen)}
-                onOpenChange={(open) => setSystemHostOpen('groupCalendarOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('groupCalendarOpen', open)
+                }
             />
             <ExportDiscordNamesDialog
                 open={Boolean(systemHosts.exportDiscordNamesOpen)}
-                onOpenChange={(open) => setSystemHostOpen('exportDiscordNamesOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('exportDiscordNamesOpen', open)
+                }
             />
             <NoteExportDialog
                 open={Boolean(systemHosts.noteExportOpen)}
-                onOpenChange={(open) => setSystemHostOpen('noteExportOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('noteExportOpen', open)
+                }
             />
             <ExportFriendsListDialog
                 open={Boolean(systemHosts.exportFriendsListOpen)}
-                onOpenChange={(open) => setSystemHostOpen('exportFriendsListOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('exportFriendsListOpen', open)
+                }
             />
             <ExportAvatarsListDialog
                 open={Boolean(systemHosts.exportAvatarsListOpen)}
-                onOpenChange={(open) => setSystemHostOpen('exportAvatarsListOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('exportAvatarsListOpen', open)
+                }
             />
             <EditInviteMessagesDialog
                 open={Boolean(systemHosts.editInviteMessagesOpen)}
-                onOpenChange={(open) => setSystemHostOpen('editInviteMessagesOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('editInviteMessagesOpen', open)
+                }
             />
         </>
     );

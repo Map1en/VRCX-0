@@ -1,4 +1,7 @@
-import { parseLocation, resolveFriendPresenceLocation } from '@/shared/utils/location.js';
+import {
+    parseLocation,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location.js';
 
 const SENTINEL_LOCATION_VALUES = new Set([
     'offline',
@@ -17,16 +20,24 @@ export function normalizeFriendsLocationId(value) {
         return String(value ?? '').trim();
     }
 
-    const tag = normalizeFriendsLocationId(value.tag || value.location || value.$location?.tag);
+    const tag = normalizeFriendsLocationId(
+        value.tag || value.location || value.$location?.tag
+    );
     if (tag) {
         return tag;
     }
-    const id = normalizeFriendsLocationId(value.id || value.userId || value.shortCode);
+    const id = normalizeFriendsLocationId(
+        value.id || value.userId || value.shortCode
+    );
     if (id) {
         return id;
     }
-    const worldId = normalizeFriendsLocationId(value.worldId || value.world_id || value.$location?.worldId);
-    const instanceId = normalizeFriendsLocationId(value.instanceId || value.instance_id || value.$location?.instanceId);
+    const worldId = normalizeFriendsLocationId(
+        value.worldId || value.world_id || value.$location?.worldId
+    );
+    const instanceId = normalizeFriendsLocationId(
+        value.instanceId || value.instance_id || value.$location?.instanceId
+    );
     if (worldId && instanceId) {
         return `${worldId}:${instanceId}`;
     }
@@ -90,7 +101,8 @@ export function resolveDisplayWorldName(...values) {
 }
 
 export function resolveFriendWorldName(friend) {
-    const source = friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
+    const source =
+        friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
     return resolveDisplayWorldName(
         source?.worldName,
         source?.$worldName,
@@ -103,7 +115,8 @@ export function resolveFriendWorldName(friend) {
 }
 
 export function resolveFriendTravelingWorldName(friend) {
-    const source = friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
+    const source =
+        friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
     return resolveDisplayWorldName(
         source?.travelingToWorld,
         source?.$travelingToWorld,
@@ -112,7 +125,8 @@ export function resolveFriendTravelingWorldName(friend) {
 }
 
 export function resolveFriendTravelingWorldId(friend) {
-    const source = friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
+    const source =
+        friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
     return resolveWorldIdCandidate(
         source?.travelingToWorld,
         source?.$travelingToWorld
@@ -120,7 +134,8 @@ export function resolveFriendTravelingWorldId(friend) {
 }
 
 export function resolveFriendGroupName(friend) {
-    const source = friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
+    const source =
+        friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
     return normalizeDisplayText(
         source?.groupName ||
             source?.$groupName ||
@@ -154,8 +169,13 @@ export function resolvePresenceLocation(friend) {
     return resolveFriendPresenceLocation(friend);
 }
 
-export function resolveFriendsLocationsCurrentInviteLocation(gameState, currentUserSnapshot) {
-    const currentLocation = normalizeFriendsLocationId(gameState?.currentLocation);
+export function resolveFriendsLocationsCurrentInviteLocation(
+    gameState,
+    currentUserSnapshot
+) {
+    const currentLocation = normalizeFriendsLocationId(
+        gameState?.currentLocation
+    );
     if (currentLocation === 'traveling') {
         return normalizeFriendsLocationId(gameState?.currentDestination);
     }
@@ -163,7 +183,9 @@ export function resolveFriendsLocationsCurrentInviteLocation(gameState, currentU
     return (
         currentLocation ||
         normalizeFriendsLocationId(gameState?.currentDestination) ||
-        normalizeFriendsLocationId(currentUserSnapshot?.$locationTag || currentUserSnapshot?.location)
+        normalizeFriendsLocationId(
+            currentUserSnapshot?.$locationTag || currentUserSnapshot?.location
+        )
     );
 }
 
@@ -192,7 +214,10 @@ export function buildSameInstanceGroups(friends, lastLocation = null) {
     const groupsByLocation = new Map();
 
     for (const friend of friends ?? []) {
-        const location = resolveFriendPresenceLocation(friend, { requireInstance: true, lastLocation });
+        const location = resolveFriendPresenceLocation(friend, {
+            requireInstance: true,
+            lastLocation
+        });
         if (!isShareableInstanceLocation(location)) {
             continue;
         }
@@ -208,7 +233,11 @@ export function buildSameInstanceGroups(friends, lastLocation = null) {
             location,
             friends: friendsInLocation
         }))
-        .sort((left, right) => left.location.localeCompare(right.location, undefined, { sensitivity: 'base' }));
+        .sort((left, right) =>
+            left.location.localeCompare(right.location, undefined, {
+                sensitivity: 'base'
+            })
+        );
 }
 
 export function resolveLocationTarget(friend) {
@@ -219,9 +248,10 @@ export function resolveLocationTarget(friend) {
         ? resolveFriendTravelingWorldId(friend)
         : '';
     const explicitWorldId = resolveWorldIdCandidate(friend?.worldId);
-    const worldId = !rawLocation || parsed.isOffline || parsed.isPrivate
-        ? ''
-        : parsedWorldId || travelingWorldId || explicitWorldId;
+    const worldId =
+        !rawLocation || parsed.isOffline || parsed.isPrivate
+            ? ''
+            : parsedWorldId || travelingWorldId || explicitWorldId;
 
     return {
         rawLocation,
@@ -237,7 +267,8 @@ export function resolveLocationTarget(friend) {
 }
 
 export function resolveLocationSummary(friend) {
-    const source = friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
+    const source =
+        friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
     const travelingToLocation = [
         source?.travelingToLocation,
         source?.$travelingToLocation
@@ -252,7 +283,9 @@ export function resolveLocationSummary(friend) {
         };
     }
 
-    const location = resolveFriendPresenceLocation(friend, { preferTraveling: false });
+    const location = resolveFriendPresenceLocation(friend, {
+        preferTraveling: false
+    });
     const parsedLocation = parseLocation(location);
 
     if (!location || parsedLocation.isOffline) {
@@ -278,7 +311,13 @@ export function resolveLocationSummary(friend) {
 
     return {
         label: resolveFriendWorldName(friend),
-        meta: [resolveFriendGroupName(friend), parsedLocation.accessTypeName, parsedLocation.instanceName].filter(Boolean).join(' · ')
+        meta: [
+            resolveFriendGroupName(friend),
+            parsedLocation.accessTypeName,
+            parsedLocation.instanceName
+        ]
+            .filter(Boolean)
+            .join(' · ')
     };
 }
 
@@ -295,7 +334,8 @@ export function resolveWorldDialogTarget(target) {
 
 function appendLabel(labelsByFriendId, friendId, label) {
     const normalizedFriendId = normalizeFriendsLocationId(friendId);
-    const normalizedLabel = typeof label === 'string' ? label.trim() : String(label ?? '').trim();
+    const normalizedLabel =
+        typeof label === 'string' ? label.trim() : String(label ?? '').trim();
     if (!normalizedFriendId || !normalizedLabel) {
         return;
     }
@@ -321,12 +361,15 @@ export function buildFavoriteGroupLabelsByFriendId({
         }
 
         const label = group?.displayName || group?.name || groupKey;
-        for (const friendId of groupedFavoriteFriendIdsByGroupKey?.[groupKey] ?? []) {
+        for (const friendId of groupedFavoriteFriendIdsByGroupKey?.[groupKey] ??
+            []) {
             appendLabel(labelsByFriendId, friendId, label);
         }
     }
 
-    for (const [groupName, friendIds] of Object.entries(localFriendFavorites ?? {})) {
+    for (const [groupName, friendIds] of Object.entries(
+        localFriendFavorites ?? {}
+    )) {
         if (!Array.isArray(friendIds)) {
             continue;
         }
@@ -359,7 +402,11 @@ export function compareFavoriteGroups(left, right, order = []) {
     );
 }
 
-export function resolveFavoriteGroupLabels(friend, favoriteGroupLabelsByFriendId, favoriteIds) {
+export function resolveFavoriteGroupLabels(
+    friend,
+    favoriteGroupLabelsByFriendId,
+    favoriteIds
+) {
     const friendId = normalizeFriendsLocationId(friend?.id);
     if (!friendId) {
         return [];
@@ -421,9 +468,7 @@ export function resolveInstanceSectionDescriptor(friend) {
             ...descriptor,
             key: `instance:${target.rawLocation || target.worldId}`,
             title: summary.label || target.worldId || 'World',
-            description: [summary.meta]
-                .filter(Boolean)
-                .join(' · '),
+            description: [summary.meta].filter(Boolean).join(' · '),
             worldId: target.worldId,
             groupId: target.groupId,
             rawLocation: target.rawLocation
@@ -439,22 +484,27 @@ export function resolveInstanceSectionDescriptor(friend) {
     };
 }
 
-export function buildSameInstanceSections({ sameInstanceGroups, displayInstanceInfo = true }) {
-    return sameInstanceGroups.map(({ location, friends }) => {
-        const descriptor = resolveInstanceSectionDescriptor({
-            ...friends[0],
-            location,
-            travelingToLocation: ''
-        });
+export function buildSameInstanceSections({
+    sameInstanceGroups,
+    displayInstanceInfo = true
+}) {
+    return sameInstanceGroups
+        .map(({ location, friends }) => {
+            const descriptor = resolveInstanceSectionDescriptor({
+                ...friends[0],
+                location,
+                travelingToLocation: ''
+            });
 
-        return {
-            ...descriptor,
-            key: `instance:${location}`,
-            rawLocation: location,
-            displayInstanceInfo,
-            friends
-        };
-    }).filter((section) => section.friends.length > 0);
+            return {
+                ...descriptor,
+                key: `instance:${location}`,
+                rawLocation: location,
+                displayInstanceInfo,
+                friends
+            };
+        })
+        .filter((section) => section.friends.length > 0);
 }
 
 function upsertSection(sectionMap, descriptor, friend) {
@@ -493,14 +543,22 @@ export function buildFriendSections({
 
     for (const friend of friends) {
         if (groupingMode === 'favoriteGroup') {
-            const labels = resolveFavoriteGroupLabels(friend, favoriteGroupLabelsByFriendId, favoriteIds);
-            const label = labels.length > 0 ? labels.join(' / ') : 'No favorite group';
+            const labels = resolveFavoriteGroupLabels(
+                friend,
+                favoriteGroupLabelsByFriendId,
+                favoriteIds
+            );
+            const label =
+                labels.length > 0 ? labels.join(' / ') : 'No favorite group';
             upsertSection(
                 sectionsByKey,
                 {
                     key: `favorite:${label}`,
                     title: label,
-                    description: labels.length > 0 ? 'Favorite group segment' : 'Friend is not in a hydrated favorite group.',
+                    description:
+                        labels.length > 0
+                            ? 'Favorite group segment'
+                            : 'Friend is not in a hydrated favorite group.',
                     worldId: '',
                     groupId: ''
                 },
@@ -509,7 +567,11 @@ export function buildFriendSections({
             continue;
         }
 
-        upsertSection(sectionsByKey, resolveInstanceSectionDescriptor(friend), friend);
+        upsertSection(
+            sectionsByKey,
+            resolveInstanceSectionDescriptor(friend),
+            friend
+        );
     }
 
     return Array.from(sectionsByKey.values()).sort((left, right) => {
@@ -519,11 +581,16 @@ export function buildFriendSections({
         if (right.title === 'Offline' && left.title !== 'Offline') {
             return -1;
         }
-        return left.title.localeCompare(right.title, undefined, { sensitivity: 'base' });
+        return left.title.localeCompare(right.title, undefined, {
+            sensitivity: 'base'
+        });
     });
 }
 
-export function buildFriendsLocationsFavoriteIdSet(remoteFavoriteIds, localFriendFavorites) {
+export function buildFriendsLocationsFavoriteIdSet(
+    remoteFavoriteIds,
+    localFriendFavorites
+) {
     const ids = new Set();
 
     for (const id of remoteFavoriteIds ?? []) {
@@ -561,13 +628,28 @@ export function matchesFriendLocationSearch(friend, searchQuery, favoriteIds) {
     }
 
     return (
-        String(friend?.displayName || '').toLowerCase().includes(query) ||
-        String(friend?.username || '').toLowerCase().includes(query) ||
-        String(friend?.statusDescription || '').toLowerCase().includes(query) ||
-        String(friend?.worldId || '').toLowerCase().includes(query) ||
-        String(friend?.location || '').toLowerCase().includes(query) ||
-        String(location.label || '').toLowerCase().includes(query) ||
-        String(location.meta || '').toLowerCase().includes(query) ||
-        (query === 'favorite' && favoriteIds.has(normalizeFriendsLocationId(friend?.id)))
+        String(friend?.displayName || '')
+            .toLowerCase()
+            .includes(query) ||
+        String(friend?.username || '')
+            .toLowerCase()
+            .includes(query) ||
+        String(friend?.statusDescription || '')
+            .toLowerCase()
+            .includes(query) ||
+        String(friend?.worldId || '')
+            .toLowerCase()
+            .includes(query) ||
+        String(friend?.location || '')
+            .toLowerCase()
+            .includes(query) ||
+        String(location.label || '')
+            .toLowerCase()
+            .includes(query) ||
+        String(location.meta || '')
+            .toLowerCase()
+            .includes(query) ||
+        (query === 'favorite' &&
+            favoriteIds.has(normalizeFriendsLocationId(friend?.id)))
     );
 }

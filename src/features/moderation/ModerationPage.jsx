@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    getCoreRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable
+} from '@tanstack/react-table';
 import {
     ArrowDownIcon,
     ArrowUpDownIcon,
@@ -7,23 +12,17 @@ import {
     Trash2Icon,
     XIcon
 } from 'lucide-react';
-import {
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable
-} from '@tanstack/react-table';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { formatDateFilter } from '@/lib/dateTime.js';
-import {
-    ResizableTableCell
-} from '@/components/data-table/ResizableTableParts.jsx';
+import { useI18n } from '@/app/hooks/use-i18n.js';
 import {
     DataTableHeader,
     DataTablePagination,
     DataTableScrollArea,
     DataTableSurface
 } from '@/components/data-table/DataTableView.jsx';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
+import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import {
     EmptyState,
     LoadingState,
@@ -33,9 +32,14 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold.jsx';
-import { configRepository, vrchatModerationRepository } from '@/repositories/index.js';
-import { moderationTypes } from '@/shared/constants';
+import { formatDateFilter } from '@/lib/dateTime.js';
+import {
+    configRepository,
+    vrchatModerationRepository
+} from '@/repositories/index.js';
+import { openUserDialog } from '@/services/dialogService.js';
 import { getTablePageSizesPreference } from '@/services/preferencesService.js';
+import { moderationTypes } from '@/shared/constants';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -50,18 +54,19 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Table,
-    TableBody,
-    TableRow
-} from '@/ui/shadcn/table';
-import { useI18n } from '@/app/hooks/use-i18n.js';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
-import { openUserDialog } from '@/services/dialogService.js';
+import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
 const DEFAULT_SORTING = [{ id: 'created', desc: true }];
-const COLUMN_IDS = ['spacer', 'created', 'type', 'sourceDisplayName', 'targetDisplayName', 'action', 'trailing'];
+const COLUMN_IDS = [
+    'spacer',
+    'created',
+    'type',
+    'sourceDisplayName',
+    'targetDisplayName',
+    'action',
+    'trailing'
+];
 const STORAGE_KEY = 'vrcx:table:moderation';
 const TYPE_FILTERS_CONFIG_KEY = 'VRCX_playerModerationTableFilters';
 const TYPE_LABELS = {
@@ -136,7 +141,10 @@ function sanitizeSorting(value) {
     }
 
     const filtered = value.filter(
-        (entry) => entry && typeof entry.id === 'string' && COLUMN_IDS.includes(entry.id)
+        (entry) =>
+            entry &&
+            typeof entry.id === 'string' &&
+            COLUMN_IDS.includes(entry.id)
     );
     return filtered.length ? filtered : DEFAULT_SORTING;
 }
@@ -177,8 +185,12 @@ function sanitizeColumnOrder(value) {
         return COLUMN_IDS;
     }
 
-    const orderedColumns = value.filter((columnId) => COLUMN_IDS.includes(columnId));
-    const missingColumns = COLUMN_IDS.filter((columnId) => !orderedColumns.includes(columnId));
+    const orderedColumns = value.filter((columnId) =>
+        COLUMN_IDS.includes(columnId)
+    );
+    const missingColumns = COLUMN_IDS.filter(
+        (columnId) => !orderedColumns.includes(columnId)
+    );
     return [...orderedColumns, ...missingColumns];
 }
 
@@ -243,8 +255,12 @@ function matchesSearch(row, searchQuery) {
     }
 
     return (
-        String(row?.sourceDisplayName ?? '').toLowerCase().includes(query) ||
-        String(row?.targetDisplayName ?? '').toLowerCase().includes(query)
+        String(row?.sourceDisplayName ?? '')
+            .toLowerCase()
+            .includes(query) ||
+        String(row?.targetDisplayName ?? '')
+            .toLowerCase()
+            .includes(query)
     );
 }
 
@@ -282,8 +298,9 @@ function SortButton({ column, label }) {
             type="button"
             variant="ghost"
             size="sm"
-            className="h-auto justify-start px-0 py-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
-            onClick={() => column.toggleSorting(direction === 'asc')}>
+            className="text-muted-foreground hover:text-foreground h-auto justify-start px-0 py-0 text-left text-xs font-medium tracking-wide uppercase hover:bg-transparent"
+            onClick={() => column.toggleSorting(direction === 'asc')}
+        >
             <span>{label}</span>
             {direction === 'asc' ? (
                 <ArrowUpIcon data-icon="inline-end" />
@@ -300,7 +317,11 @@ function ModerationEmptyState({ title, description }) {
     return <EmptyState title={title} description={description} />;
 }
 
-function ModerationTypeFilterDropdown({ value, onChange, getTypeLabel = (type) => TYPE_LABELS[type] || type }) {
+function ModerationTypeFilterDropdown({
+    value,
+    onChange,
+    getTypeLabel = (type) => TYPE_LABELS[type] || type
+}) {
     const selectedTypes = Array.isArray(value) ? value : [];
     const label = selectedTypes.length
         ? `${selectedTypes.length} moderation filters`
@@ -312,7 +333,8 @@ function ModerationTypeFilterDropdown({ value, onChange, getTypeLabel = (type) =
                 <Button
                     type="button"
                     variant="outline"
-                    className="h-9 min-w-0 flex-1 justify-start truncate">
+                    className="h-9 min-w-0 flex-1 justify-start truncate"
+                >
                     {label}
                 </Button>
             </DropdownMenuTrigger>
@@ -325,10 +347,13 @@ function ModerationTypeFilterDropdown({ value, onChange, getTypeLabel = (type) =
                             onCheckedChange={(checked) => {
                                 const next = checked
                                     ? [...selectedTypes, type]
-                                    : selectedTypes.filter((entry) => entry !== type);
+                                    : selectedTypes.filter(
+                                          (entry) => entry !== type
+                                      );
                                 onChange(normalizeSelectedTypes(next));
                             }}
-                            onSelect={(event) => event.preventDefault()}>
+                            onSelect={(event) => event.preventDefault()}
+                        >
                             {getTypeLabel(type)}
                         </DropdownMenuCheckboxItem>
                     ))}
@@ -341,7 +366,9 @@ function ModerationTypeFilterDropdown({ value, onChange, getTypeLabel = (type) =
 export function ModerationPage({ embedded = false } = {}) {
     const { t } = useI18n();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const confirm = useModalStore((state) => state.confirm);
 
     const persistedState = useMemo(() => readPersistedState(), []);
@@ -349,8 +376,12 @@ export function ModerationPage({ embedded = false } = {}) {
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);
     const hydratedTypeFiltersRef = useRef(false);
-    const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
-    const tablePageSizesPreference = usePreferencesStore((state) => state.tablePageSizes);
+    const preferencesHydrated = usePreferencesStore(
+        (state) => state.preferencesHydrated
+    );
+    const tablePageSizesPreference = usePreferencesStore(
+        (state) => state.tablePageSizes
+    );
 
     const [rows, setRows] = useState([]);
     const [loadStatus, setLoadStatus] = useState('idle');
@@ -365,12 +396,18 @@ export function ModerationPage({ embedded = false } = {}) {
         () => (type) => resolveModerationTypeLabel(type, t),
         [t]
     );
-    const [sorting, setSorting] = useState(() => sanitizeSorting(persistedState.sorting));
+    const [sorting, setSorting] = useState(() =>
+        sanitizeSorting(persistedState.sorting)
+    );
     const [columnVisibility, setColumnVisibility] = useState(() =>
         sanitizeColumnVisibility(persistedState.columnVisibility)
     );
-    const [columnOrder, setColumnOrder] = useState(() => sanitizeColumnOrder(persistedState.columnOrder));
-    const [columnSizing, setColumnSizing] = useState(() => sanitizeColumnSizing(persistedState.columnSizing));
+    const [columnOrder, setColumnOrder] = useState(() =>
+        sanitizeColumnOrder(persistedState.columnOrder)
+    );
+    const [columnSizing, setColumnSizing] = useState(() =>
+        sanitizeColumnSizing(persistedState.columnSizing)
+    );
     const [columnOrderLocked, setColumnOrderLocked] = useState(
         () => persistedState.columnOrderLocked === true
     );
@@ -397,9 +434,13 @@ export function ModerationPage({ embedded = false } = {}) {
                 }
 
                 const resolvedPageSizes = sanitizePageSizes(nextPageSizes);
-                const parsedPersistedPageSize = Number.parseInt(persistedState.pageSize, 10);
+                const parsedPersistedPageSize = Number.parseInt(
+                    persistedState.pageSize,
+                    10
+                );
                 const hasPersistedPageSize =
-                    Number.isFinite(parsedPersistedPageSize) && parsedPersistedPageSize > 0;
+                    Number.isFinite(parsedPersistedPageSize) &&
+                    parsedPersistedPageSize > 0;
                 const resolvedConfiguredPageSize = resolvePageSize(
                     nextPageSize,
                     resolvedPageSizes,
@@ -407,10 +448,10 @@ export function ModerationPage({ embedded = false } = {}) {
                 );
                 const resolvedActivePageSize = hasPersistedPageSize
                     ? resolvePageSize(
-                        parsedPersistedPageSize,
-                        resolvedPageSizes,
-                        resolvedConfiguredPageSize
-                    )
+                          parsedPersistedPageSize,
+                          resolvedPageSizes,
+                          resolvedConfiguredPageSize
+                      )
                     : resolvedConfiguredPageSize;
 
                 setPageSizes((current) =>
@@ -536,7 +577,9 @@ export function ModerationPage({ embedded = false } = {}) {
         if (!currentUserId) {
             setRows([]);
             setLoadStatus('idle');
-            setDetail('No authenticated user is available for the moderation snapshot.');
+            setDetail(
+                'No authenticated user is available for the moderation snapshot.'
+            );
             return () => {
                 active = false;
             };
@@ -552,8 +595,12 @@ export function ModerationPage({ embedded = false } = {}) {
                     return;
                 }
 
-                const nextRows = Array.isArray(response.json) ? response.json : [];
-                await vrchatModerationRepository.syncLocalModerationSnapshot(nextRows);
+                const nextRows = Array.isArray(response.json)
+                    ? response.json
+                    : [];
+                await vrchatModerationRepository.syncLocalModerationSnapshot(
+                    nextRows
+                );
                 if (!active) {
                     return;
                 }
@@ -582,7 +629,9 @@ export function ModerationPage({ embedded = false } = {}) {
     }, [currentEndpoint, currentUserId, refreshToken]);
 
     const filteredRows = useMemo(() => {
-        const activeTypeSet = selectedTypes.length ? new Set(selectedTypes) : null;
+        const activeTypeSet = selectedTypes.length
+            ? new Set(selectedTypes)
+            : null;
 
         return rows.filter((row) => {
             if (activeTypeSet && !activeTypeSet.has(row?.type)) {
@@ -594,7 +643,10 @@ export function ModerationPage({ embedded = false } = {}) {
     }, [rows, searchQuery, selectedTypes]);
 
     useEffect(() => {
-        const maxPageIndex = Math.max(0, Math.ceil(filteredRows.length / pagination.pageSize) - 1);
+        const maxPageIndex = Math.max(
+            0,
+            Math.ceil(filteredRows.length / pagination.pageSize) - 1
+        );
         if (pagination.pageIndex > maxPageIndex) {
             setPagination((current) => ({
                 ...current,
@@ -603,7 +655,10 @@ export function ModerationPage({ embedded = false } = {}) {
         }
     }, [filteredRows.length, pagination.pageIndex, pagination.pageSize]);
 
-    const handleDeleteModeration = async (row, { skipConfirm = false } = {}) => {
+    const handleDeleteModeration = async (
+        row,
+        { skipConfirm = false } = {}
+    ) => {
         const ownerUserId = currentUserId;
         if (!ownerUserId || row?.sourceUserId !== ownerUserId) {
             return;
@@ -612,14 +667,17 @@ export function ModerationPage({ embedded = false } = {}) {
         const result = skipConfirm
             ? { ok: true }
             : await confirm({
-                title: 'Confirm',
-                description: `Continue? Moderation ${row.type || ''}`.trim(),
-                destructive: true,
-                confirmText: 'Delete',
-                cancelText: 'Cancel'
-            });
+                  title: 'Confirm',
+                  description: `Continue? Moderation ${row.type || ''}`.trim(),
+                  destructive: true,
+                  confirmText: 'Delete',
+                  cancelText: 'Cancel'
+              });
 
-        if (!result.ok || useRuntimeStore.getState().auth.currentUserId !== ownerUserId) {
+        if (
+            !result.ok ||
+            useRuntimeStore.getState().auth.currentUserId !== ownerUserId
+        ) {
             return;
         }
 
@@ -637,14 +695,26 @@ export function ModerationPage({ embedded = false } = {}) {
                 return;
             }
 
-            const nextRows = rows.filter((entry) => !isSameModerationRow(entry, row));
+            const nextRows = rows.filter(
+                (entry) => !isSameModerationRow(entry, row)
+            );
             setRows(nextRows);
-            await vrchatModerationRepository.syncLocalModerationSnapshot(nextRows);
-            setDetail(`Deleted ${row.type || 'moderation'} for ${row.targetDisplayName || row.targetUserId}.`);
+            await vrchatModerationRepository.syncLocalModerationSnapshot(
+                nextRows
+            );
+            setDetail(
+                `Deleted ${row.type || 'moderation'} for ${row.targetDisplayName || row.targetUserId}.`
+            );
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : 'Failed to delete moderation.');
+            setDetail(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete moderation.'
+            );
         } finally {
-            setDeletingModerationKey((currentKey) => (currentKey === rowKey ? '' : currentKey));
+            setDeletingModerationKey((currentKey) =>
+                currentKey === rowKey ? '' : currentKey
+            );
         }
     };
 
@@ -665,20 +735,34 @@ export function ModerationPage({ embedded = false } = {}) {
                 size: 120,
                 meta: { label: t('table.moderation.date') },
                 accessorFn: (row) => row?.created || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.moderation.date')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.moderation.date')}
+                    />
+                ),
                 sortingFn: (rowA, rowB) => {
                     const leftTs = Date.parse(rowA.original?.created ?? '');
                     const rightTs = Date.parse(rowB.original?.created ?? '');
-                    if (Number.isFinite(leftTs) && Number.isFinite(rightTs) && leftTs !== rightTs) {
+                    if (
+                        Number.isFinite(leftTs) &&
+                        Number.isFinite(rightTs) &&
+                        leftTs !== rightTs
+                    ) {
                         return leftTs - rightTs;
                     }
 
-                    return String(rowA.original?.id || '').localeCompare(String(rowB.original?.id || ''));
+                    return String(rowA.original?.id || '').localeCompare(
+                        String(rowB.original?.id || '')
+                    );
                 },
                 cell: ({ row }) => {
                     const createdAt = row.original?.created || '';
                     return (
-                        <span className="text-sm" title={formatDateFilter(createdAt, 'long')}>
+                        <span
+                            className="text-sm"
+                            title={formatDateFilter(createdAt, 'long')}
+                        >
                             {formatDateFilter(createdAt, 'short')}
                         </span>
                     );
@@ -689,7 +773,12 @@ export function ModerationPage({ embedded = false } = {}) {
                 size: 140,
                 meta: { label: t('table.moderation.type') },
                 accessorFn: (row) => row?.type || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.moderation.type')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.moderation.type')}
+                    />
+                ),
                 cell: ({ row }) => (
                     <Badge variant="outline" className="text-muted-foreground">
                         {getModerationTypeLabel(row.original?.type)}
@@ -700,13 +789,25 @@ export function ModerationPage({ embedded = false } = {}) {
                 id: 'sourceDisplayName',
                 size: 120,
                 meta: { label: t('table.moderation.source') },
-                accessorFn: (row) => row?.sourceDisplayName || row?.sourceUserId || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.moderation.source')} />,
+                accessorFn: (row) =>
+                    row?.sourceDisplayName || row?.sourceUserId || '',
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.moderation.source')}
+                    />
+                ),
                 sortingFn: (rowA, rowB) =>
                     String(
-                        rowA.original?.sourceDisplayName || rowA.original?.sourceUserId || ''
+                        rowA.original?.sourceDisplayName ||
+                            rowA.original?.sourceUserId ||
+                            ''
                     ).localeCompare(
-                        String(rowB.original?.sourceDisplayName || rowB.original?.sourceUserId || ''),
+                        String(
+                            rowB.original?.sourceDisplayName ||
+                                rowB.original?.sourceUserId ||
+                                ''
+                        ),
                         undefined,
                         { sensitivity: 'base' }
                     ),
@@ -723,8 +824,11 @@ export function ModerationPage({ embedded = false } = {}) {
                                     row.original?.sourceDisplayName ||
                                     row.original?.sourceUserId
                             })
-                        }>
-                        {row.original?.sourceDisplayName || row.original?.sourceUserId || ''}
+                        }
+                    >
+                        {row.original?.sourceDisplayName ||
+                            row.original?.sourceUserId ||
+                            ''}
                     </Button>
                 )
             },
@@ -733,13 +837,25 @@ export function ModerationPage({ embedded = false } = {}) {
                 size: 260,
                 minSize: 80,
                 meta: { label: t('table.moderation.target'), stretch: true },
-                accessorFn: (row) => row?.targetDisplayName || row?.targetUserId || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.moderation.target')} />,
+                accessorFn: (row) =>
+                    row?.targetDisplayName || row?.targetUserId || '',
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.moderation.target')}
+                    />
+                ),
                 sortingFn: (rowA, rowB) =>
                     String(
-                        rowA.original?.targetDisplayName || rowA.original?.targetUserId || ''
+                        rowA.original?.targetDisplayName ||
+                            rowA.original?.targetUserId ||
+                            ''
                     ).localeCompare(
-                        String(rowB.original?.targetDisplayName || rowB.original?.targetUserId || ''),
+                        String(
+                            rowB.original?.targetDisplayName ||
+                                rowB.original?.targetUserId ||
+                                ''
+                        ),
                         undefined,
                         { sensitivity: 'base' }
                     ),
@@ -747,7 +863,7 @@ export function ModerationPage({ embedded = false } = {}) {
                     <Button
                         type="button"
                         variant="link"
-                        className="block h-auto w-full min-w-0 whitespace-normal p-0 pr-2.5 text-left text-sm font-normal break-words"
+                        className="block h-auto w-full min-w-0 p-0 pr-2.5 text-left text-sm font-normal break-words whitespace-normal"
                         disabled={!row.original?.targetUserId}
                         onClick={() =>
                             openUserDialog({
@@ -756,8 +872,11 @@ export function ModerationPage({ embedded = false } = {}) {
                                     row.original?.targetDisplayName ||
                                     row.original?.targetUserId
                             })
-                        }>
-                        {row.original?.targetDisplayName || row.original?.targetUserId || ''}
+                        }
+                    >
+                        {row.original?.targetDisplayName ||
+                            row.original?.targetUserId ||
+                            ''}
                     </Button>
                 )
             },
@@ -770,7 +889,7 @@ export function ModerationPage({ embedded = false } = {}) {
                 meta: { label: t('table.moderation.action') },
                 accessorFn: (row) => getModerationRowKey(row),
                 header: () => (
-                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                         {t('table.moderation.action')}
                     </span>
                 ),
@@ -778,7 +897,8 @@ export function ModerationPage({ embedded = false } = {}) {
                     const original = row.original;
                     const rowKey = getModerationRowKey(original);
                     const canDelete =
-                        Boolean(currentUserId) && original?.sourceUserId === currentUserId;
+                        Boolean(currentUserId) &&
+                        original?.sourceUserId === currentUserId;
                     const isDeleting = deletingModerationKey === rowKey;
 
                     if (!canDelete) {
@@ -795,12 +915,18 @@ export function ModerationPage({ embedded = false } = {}) {
                                 aria-label={t('common.actions.delete')}
                                 disabled={isDeleting}
                                 onClick={() =>
-                                    handleDeleteModeration(original, { skipConfirm: shiftHeld })
-                                }>
+                                    handleDeleteModeration(original, {
+                                        skipConfirm: shiftHeld
+                                    })
+                                }
+                            >
                                 {isDeleting ? (
                                     <Spinner data-icon="inline-start" />
                                 ) : shiftHeld ? (
-                                    <XIcon data-icon="inline-start" className="text-destructive" />
+                                    <XIcon
+                                        data-icon="inline-start"
+                                        className="text-destructive"
+                                    />
                                 ) : (
                                     <Trash2Icon data-icon="inline-start" />
                                 )}
@@ -819,7 +945,14 @@ export function ModerationPage({ embedded = false } = {}) {
                 cell: () => null
             }
         ],
-        [currentUserId, deletingModerationKey, getModerationTypeLabel, handleDeleteModeration, shiftHeld, t]
+        [
+            currentUserId,
+            deletingModerationKey,
+            getModerationTypeLabel,
+            handleDeleteModeration,
+            shiftHeld,
+            t
+        ]
     );
 
     const table = useReactTable({
@@ -873,7 +1006,8 @@ export function ModerationPage({ embedded = false } = {}) {
                         size="icon-sm"
                         aria-label="Refresh moderation snapshot"
                         disabled={!currentUserId || loadStatus === 'running'}
-                        onClick={() => setRefreshToken((value) => value + 1)}>
+                        onClick={() => setRefreshToken((value) => value + 1)}
+                    >
                         {loadStatus === 'running' ? (
                             <Spinner data-icon="inline-start" />
                         ) : (
@@ -883,7 +1017,11 @@ export function ModerationPage({ embedded = false } = {}) {
                     <TableColumnVisibilityMenu table={table} />
                 </PageToolbarRow>
 
-                {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
+                {detail ? (
+                    <div className="text-muted-foreground text-sm">
+                        {detail}
+                    </div>
+                ) : null}
             </PageToolbar>
 
             <PageBody>
@@ -892,7 +1030,9 @@ export function ModerationPage({ embedded = false } = {}) {
                 ) : isError ? (
                     <ModerationEmptyState
                         title="Moderation snapshot failed to load"
-                        description={detail || 'The moderation request did not complete.'}
+                        description={
+                            detail || 'The moderation request did not complete.'
+                        }
                     />
                 ) : hasRows ? (
                     <>
@@ -902,10 +1042,17 @@ export function ModerationPage({ embedded = false } = {}) {
                                     <DataTableHeader table={table} />
                                     <TableBody>
                                         {table.getRowModel().rows.map((row) => (
-                                            <TableRow key={row.original?.id || row.id}>
-                                                {row.getVisibleCells().map((cell) => (
-                                                    <ResizableTableCell key={cell.id} cell={cell} />
-                                                ))}
+                                            <TableRow
+                                                key={row.original?.id || row.id}
+                                            >
+                                                {row
+                                                    .getVisibleCells()
+                                                    .map((cell) => (
+                                                        <ResizableTableCell
+                                                            key={cell.id}
+                                                            cell={cell}
+                                                        />
+                                                    ))}
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -914,25 +1061,32 @@ export function ModerationPage({ embedded = false } = {}) {
                         </DataTableSurface>
 
                         <PageFooter>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-muted-foreground text-sm">
                                 Showing{' '}
-                                <span className="font-medium text-foreground">
+                                <span className="text-foreground font-medium">
                                     {table.getRowModel().rows.length}
                                 </span>{' '}
                                 of{' '}
-                                <span className="font-medium text-foreground">
+                                <span className="text-foreground font-medium">
                                     {filteredRows.length}
                                 </span>{' '}
-                                moderation row{filteredRows.length === 1 ? '' : 's'}
+                                moderation row
+                                {filteredRows.length === 1 ? '' : 's'}
                             </div>
                             <DataTablePagination
                                 table={table}
                                 pageIndex={pagination.pageIndex}
                                 pageSize={pagination.pageSize}
                                 pageSizes={pageSizes}
-                                pageSizeLabel={t('table.pagination.rows_per_page')}
+                                pageSizeLabel={t(
+                                    'table.pagination.rows_per_page'
+                                )}
                                 onPageSizeChange={(value) => {
-                                    const nextPageSize = resolvePageSize(value, pageSizes, pagination.pageSize);
+                                    const nextPageSize = resolvePageSize(
+                                        value,
+                                        pageSizes,
+                                        pagination.pageSize
+                                    );
                                     setPagination({
                                         pageIndex: 0,
                                         pageSize: nextPageSize

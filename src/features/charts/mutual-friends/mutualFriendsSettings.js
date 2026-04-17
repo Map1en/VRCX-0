@@ -12,9 +12,11 @@ export const MUTUAL_GRAPH_LAYOUT_DEFAULTS = {
     communitySeparation: 0
 };
 
-export const MUTUAL_GRAPH_EMPTY_USER_ID = 'usr_00000000-0000-0000-0000-000000000000';
+export const MUTUAL_GRAPH_EMPTY_USER_ID =
+    'usr_00000000-0000-0000-0000-000000000000';
 export const MUTUAL_GRAPH_PICKER_RESULT_LIMIT = 120;
-export const MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY = 'VRCX_MutualGraphExcludedFriends';
+export const MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY =
+    'VRCX_MutualGraphExcludedFriends';
 
 export function clampMutualGraphNumber(value, min, max, fallback) {
     const parsed = Number(value);
@@ -25,7 +27,9 @@ export function clampMutualGraphNumber(value, min, max, fallback) {
 }
 
 export function normalizeMutualFriendId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 export function isValidMutualFriendId(value) {
@@ -34,7 +38,9 @@ export function isValidMutualFriendId(value) {
 }
 
 export function normalizeExcludedMutualFriendIds(value) {
-    return Array.isArray(value) ? value.map(normalizeMutualFriendId).filter(isValidMutualFriendId) : [];
+    return Array.isArray(value)
+        ? value.map(normalizeMutualFriendId).filter(isValidMutualFriendId)
+        : [];
 }
 
 export function readExcludedMutualFriendIds() {

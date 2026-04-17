@@ -1,5 +1,8 @@
 import { backend } from '@/platform/index.js';
-import { instanceRepository, vrchatSearchRepository } from '@/repositories/index.js';
+import {
+    instanceRepository,
+    vrchatSearchRepository
+} from '@/repositories/index.js';
 import {
     openAvatarDialog,
     openGroupDialog,
@@ -9,7 +12,9 @@ import {
 import { parseLocation } from '@/shared/utils/location.js';
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function emptyArray(value) {
@@ -18,9 +23,10 @@ function emptyArray(value) {
 
 function openWorldLocation(location, title = '') {
     const parsedLocation = parseLocation(location);
-    const worldDialogTarget = parsedLocation.isRealInstance && parsedLocation.tag
-        ? parsedLocation.tag
-        : parsedLocation.worldId || location;
+    const worldDialogTarget =
+        parsedLocation.isRealInstance && parsedLocation.tag
+            ? parsedLocation.tag
+            : parsedLocation.worldId || location;
     openWorldDialog({
         worldId: worldDialogTarget,
         title: title || undefined
@@ -53,10 +59,18 @@ function normalizeLaunchLocation(location) {
 }
 
 function shouldUseProvidedLaunchToken(parsed, shortName) {
-    return Boolean(shortName && parsed.accessType !== 'public' && parsed.groupAccessType !== 'public');
+    return Boolean(
+        shortName &&
+        parsed.accessType !== 'public' &&
+        parsed.groupAccessType !== 'public'
+    );
 }
 
-export async function resolveInstanceLaunchToken(location, shortName = '', endpoint = '') {
+export async function resolveInstanceLaunchToken(
+    location,
+    shortName = '',
+    endpoint = ''
+) {
     const { parsed } = normalizeLaunchLocation(location);
     let launchToken = normalizeString(shortName || parsed.shortName);
 
@@ -71,22 +85,40 @@ export async function resolveInstanceLaunchToken(location, shortName = '', endpo
                 instanceId: parsed.instanceId,
                 endpoint
             });
-            launchToken = normalizeString(response.json?.shortName || response.json?.secureName);
+            launchToken = normalizeString(
+                response.json?.shortName || response.json?.secureName
+            );
         } catch (error) {
-            console.warn('Failed to resolve VRChat launch shortName, falling back to worldId and instanceId:', error);
+            console.warn(
+                'Failed to resolve VRChat launch shortName, falling back to worldId and instanceId:',
+                error
+            );
         }
     }
 
     return launchToken;
 }
 
-export async function resolveVrcLaunchUrl(location, shortName = '', endpoint = '') {
-    const { location: normalizedLocation, parsed } = normalizeLaunchLocation(location);
-    const launchToken = await resolveInstanceLaunchToken(normalizedLocation, shortName || parsed.shortName, endpoint);
+export async function resolveVrcLaunchUrl(
+    location,
+    shortName = '',
+    endpoint = ''
+) {
+    const { location: normalizedLocation, parsed } =
+        normalizeLaunchLocation(location);
+    const launchToken = await resolveInstanceLaunchToken(
+        normalizedLocation,
+        shortName || parsed.shortName,
+        endpoint
+    );
     return buildVrcLaunchUrl(normalizedLocation, launchToken);
 }
 
-export async function tryOpenLaunchLocation(location, shortName = '', endpoint = '') {
+export async function tryOpenLaunchLocation(
+    location,
+    shortName = '',
+    endpoint = ''
+) {
     const normalizedLocation = normalizeString(location);
     if (!normalizedLocation || !normalizedLocation.includes(':')) {
         return false;
@@ -94,7 +126,13 @@ export async function tryOpenLaunchLocation(location, shortName = '', endpoint =
 
     try {
         return Boolean(
-            await backend.app.TryOpenInstanceInVrc(await resolveVrcLaunchUrl(normalizedLocation, shortName, endpoint))
+            await backend.app.TryOpenInstanceInVrc(
+                await resolveVrcLaunchUrl(
+                    normalizedLocation,
+                    shortName,
+                    endpoint
+                )
+            )
         );
     } catch (error) {
         console.warn('Failed to open VRChat launch URL through IPC:', error);
@@ -103,26 +141,43 @@ export async function tryOpenLaunchLocation(location, shortName = '', endpoint =
 }
 
 async function verifyShortName(location, shortName, endpoint = '') {
-    const response = await vrchatSearchRepository.getInstanceFromShortName(shortName, { endpoint });
+    const response = await vrchatSearchRepository.getInstanceFromShortName(
+        shortName,
+        { endpoint }
+    );
     const nextLocation = response.json?.location || location;
     if (!nextLocation) {
         return false;
     }
 
-    if (await tryOpenLaunchLocation(nextLocation, response.json?.shortName || shortName, endpoint)) {
+    if (
+        await tryOpenLaunchLocation(
+            nextLocation,
+            response.json?.shortName || shortName,
+            endpoint
+        )
+    ) {
         return true;
     }
 
-    openWorldLocation(nextLocation, response.json?.world?.name || response.json?.worldName || nextLocation);
+    openWorldLocation(
+        nextLocation,
+        response.json?.world?.name || response.json?.worldName || nextLocation
+    );
     return true;
 }
 
 async function openGroupByShortCode(shortCode, endpoint = '') {
-    const response = await vrchatSearchRepository.getGroupsStrictSearch({
-        query: shortCode
-    }, { endpoint });
+    const response = await vrchatSearchRepository.getGroupsStrictSearch(
+        {
+            query: shortCode
+        },
+        { endpoint }
+    );
     const group = emptyArray(response.json).find(
-        (entry) => `${entry.shortCode || ''}.${entry.discriminator || ''}` === shortCode
+        (entry) =>
+            `${entry.shortCode || ''}.${entry.discriminator || ''}` ===
+            shortCode
     );
     if (!group?.id) {
         return false;
@@ -151,7 +206,9 @@ async function directAccessWorld(rawInput, endpoint = '') {
     }
 
     if (input.startsWith('https://vrch.at/')) {
-        const shortName = new URL(input).pathname.replace(/^\//, '').slice(0, 8);
+        const shortName = new URL(input).pathname
+            .replace(/^\//, '')
+            .slice(0, 8);
         return shortName ? verifyShortName('', shortName, endpoint) : false;
     }
 
@@ -169,16 +226,27 @@ async function directAccessWorld(rawInput, endpoint = '') {
             const shortName = url.searchParams.get('shortName');
             if (worldId && instanceId) {
                 const location = `${worldId}:${instanceId}`;
-                if (await tryOpenLaunchLocation(location, shortName || '', endpoint)) {
+                if (
+                    await tryOpenLaunchLocation(
+                        location,
+                        shortName || '',
+                        endpoint
+                    )
+                ) {
                     return true;
                 }
                 if (shortName) {
                     try {
-                        if (await verifyShortName(location, shortName, endpoint)) {
+                        if (
+                            await verifyShortName(location, shortName, endpoint)
+                        ) {
                             return true;
                         }
                     } catch (error) {
-                        console.warn('Failed to resolve VRChat launch shortName, falling back to worldId and instanceId:', error);
+                        console.warn(
+                            'Failed to resolve VRChat launch shortName, falling back to worldId and instanceId:',
+                            error
+                        );
                     }
                 }
                 openWorldLocation(location);
@@ -191,9 +259,16 @@ async function directAccessWorld(rawInput, endpoint = '') {
         }
     }
 
-    if (input.startsWith('wrld_') || input.startsWith('wld_') || input.startsWith('o_')) {
+    if (
+        input.startsWith('wrld_') ||
+        input.startsWith('wld_') ||
+        input.startsWith('o_')
+    ) {
         if (input.includes('&instanceId=')) {
-            return directAccessWorld(`https://vrchat.com/home/launch?worldId=${input}`, endpoint);
+            return directAccessWorld(
+                `https://vrchat.com/home/launch?worldId=${input}`,
+                endpoint
+            );
         }
 
         openWorldLocation(input.trim());
@@ -237,7 +312,10 @@ export async function directAccessParse(input, endpoint = '') {
     }
 
     if (value.startsWith('https://vrc.group/')) {
-        return openGroupByShortCode(value.substring('https://vrc.group/'.length), endpoint);
+        return openGroupByShortCode(
+            value.substring('https://vrc.group/'.length),
+            endpoint
+        );
     }
 
     if (/^[A-Za-z0-9]{3,6}\.[0-9]{4}$/.test(value)) {

@@ -1,8 +1,16 @@
 import { backend } from '@/platform/index.js';
-import { configRepository, mediaRepository, vrchatFriendRepository, webRepository } from '@/repositories/index.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { useSessionStore } from '@/state/sessionStore.js';
+import {
+    configRepository,
+    mediaRepository,
+    vrchatFriendRepository,
+    webRepository
+} from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
+import {
+    getEmojiFileName,
+    getPrintFileName,
+    getPrintLocalDate
+} from '@/shared/utils/gallery.js';
 import {
     createJoinLeaveEntry,
     createLocationEntry,
@@ -11,9 +19,11 @@ import {
     parseInventoryFromUrl,
     parsePrintFromUrl
 } from '@/shared/utils/gameLog.js';
-import { getEmojiFileName, getPrintFileName, getPrintLocalDate } from '@/shared/utils/gallery.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { parseVrchatScreenshotDateFromFileName } from '@/shared/utils/screenshot.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { useSessionStore } from '@/state/sessionStore.js';
+
 import { pushSharedFeedNotification } from './sharedFeedFilterService.js';
 
 const GAME_LOG_BATCH_LIMIT = 50;
@@ -44,7 +54,9 @@ const instanceMediaState = {
 let instanceMediaSaveQueue = Promise.resolve();
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function delay(ms) {
@@ -156,7 +168,9 @@ function getCurrentLocation() {
     return (
         ingestState.currentLocation ||
         normalizeString(useRuntimeStore.getState().gameState.currentLocation) ||
-        normalizeString(useRuntimeStore.getState().auth.currentUserSnapshot?.location)
+        normalizeString(
+            useRuntimeStore.getState().auth.currentUserSnapshot?.location
+        )
     );
 }
 
@@ -203,16 +217,17 @@ function parseWebJson(response) {
 }
 
 function convertYouTubeDurationToSeconds(duration) {
-    const match = /^P(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(
-        normalizeString(duration)
-    );
+    const match =
+        /^P(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(
+            normalizeString(duration)
+        );
     if (!match) {
         return 0;
     }
     const [, hours, minutes, seconds] = match;
     return (
-        (Number.parseInt(hours || '0', 10) * 60 * 60) +
-        (Number.parseInt(minutes || '0', 10) * 60) +
+        Number.parseInt(hours || '0', 10) * 60 * 60 +
+        Number.parseInt(minutes || '0', 10) * 60 +
         Number.parseInt(seconds || '0', 10)
     );
 }
@@ -235,7 +250,11 @@ async function lookupYouTubeVideo(videoId) {
             method: 'GET'
         });
         const payload = parseWebJson(response);
-        if (response.status !== 200 || !Array.isArray(payload.items) || !payload.items.length) {
+        if (
+            response.status !== 200 ||
+            !Array.isArray(payload.items) ||
+            !payload.items.length
+        ) {
             return null;
         }
         const item = payload.items[0];
@@ -249,7 +268,9 @@ async function lookupYouTubeVideo(videoId) {
             {};
         return {
             videoName: normalizeString(item?.snippet?.title),
-            videoLength: convertYouTubeDurationToSeconds(item?.contentDetails?.duration),
+            videoLength: convertYouTubeDurationToSeconds(
+                item?.contentDetails?.duration
+            ),
             thumbnailUrl: normalizeString(thumbnail.url)
         };
     } catch (error) {
@@ -259,7 +280,11 @@ async function lookupYouTubeVideo(videoId) {
 }
 
 function getFileNameFromPath(path) {
-    return String(path || '').split(/[/\\]/).pop() || '';
+    return (
+        String(path || '')
+            .split(/[/\\]/)
+            .pop() || ''
+    );
 }
 
 function resetRuntimeNowPlayingState() {
@@ -286,11 +311,15 @@ function buildScreenshotMetadataContext() {
         location,
         worldName:
             ingestState.currentWorldName ||
-            normalizeString(useRuntimeStore.getState().gameState.currentWorldName),
-        players: Array.from(ingestState.playersByKey.values()).map((player) => ({
-            userId: player.userId || '',
-            displayName: player.displayName || ''
-        }))
+            normalizeString(
+                useRuntimeStore.getState().gameState.currentWorldName
+            ),
+        players: Array.from(ingestState.playersByKey.values()).map(
+            (player) => ({
+                userId: player.userId || '',
+                displayName: player.displayName || ''
+            })
+        )
     };
 }
 
@@ -328,7 +357,8 @@ async function resolveScreenshotMetadataContext(path, screenshotDateTime) {
     }
 
     const screenshotDateIso = new Date(screenshotTimestamp).toJSON();
-    const locationEntry = await database.getLocationBeforeOrAt(screenshotDateIso);
+    const locationEntry =
+        await database.getLocationBeforeOrAt(screenshotDateIso);
     if (!locationEntry?.location) {
         return null;
     }
@@ -365,34 +395,46 @@ async function resolveScreenshotMetadataContext(path, screenshotDateTime) {
     };
 }
 
-async function processScreenshot(path, { screenshotDateTime, copyToClipboard: shouldCopyToClipboard = true } = {}) {
+async function processScreenshot(
+    path,
+    { screenshotDateTime, copyToClipboard: shouldCopyToClipboard = true } = {}
+) {
     const screenshotPath = normalizeString(path);
     if (!screenshotPath) {
         return '';
     }
 
-    const [screenshotHelper, modifyFilename, copyToClipboard] = await Promise.all([
-        configRepository.getBool('screenshotHelper', true),
-        configRepository.getBool('screenshotHelperModifyFilename', false),
-        configRepository.getBool('screenshotHelperCopyToClipboard', false)
-    ]);
+    const [screenshotHelper, modifyFilename, copyToClipboard] =
+        await Promise.all([
+            configRepository.getBool('screenshotHelper', true),
+            configRepository.getBool('screenshotHelperModifyFilename', false),
+            configRepository.getBool('screenshotHelperCopyToClipboard', false)
+        ]);
 
     let nextPath = screenshotPath;
     if (screenshotHelper) {
         const screenshotContext =
             buildScreenshotMetadataContext() ??
-            (await resolveScreenshotMetadataContext(screenshotPath, screenshotDateTime));
+            (await resolveScreenshotMetadataContext(
+                screenshotPath,
+                screenshotDateTime
+            ));
         if (screenshotContext?.location) {
             const location = parseLocation(screenshotContext.location);
-            const currentUser = useRuntimeStore.getState().auth.currentUserSnapshot || {};
+            const currentUser =
+                useRuntimeStore.getState().auth.currentUserSnapshot || {};
             const metadata = {
                 application: 'VRCX',
                 version: 1,
                 author: {
-                    id: currentUser.id || useRuntimeStore.getState().auth.currentUserId || '',
+                    id:
+                        currentUser.id ||
+                        useRuntimeStore.getState().auth.currentUserId ||
+                        '',
                     displayName:
                         currentUser.displayName ||
-                        useRuntimeStore.getState().auth.currentUserDisplayName ||
+                        useRuntimeStore.getState().auth
+                            .currentUserDisplayName ||
                         ''
                 },
                 world: {
@@ -407,12 +449,13 @@ async function processScreenshot(path, { screenshotDateTime, copyToClipboard: sh
             };
 
             try {
-                const metadataPath = await mediaRepository.addScreenshotMetadata(
-                    screenshotPath,
-                    JSON.stringify(metadata),
-                    location.worldId,
-                    modifyFilename
-                );
+                const metadataPath =
+                    await mediaRepository.addScreenshotMetadata(
+                        screenshotPath,
+                        JSON.stringify(metadata),
+                        location.worldId,
+                        modifyFilename
+                    );
                 if (metadataPath) {
                     nextPath = metadataPath;
                 }
@@ -448,8 +491,12 @@ function hasCachedMediaId(cache, id) {
 }
 
 async function getUgcFolderPath() {
-    const configuredPath = normalizeString(await configRepository.getString('userGeneratedContentPath', ''));
-    return normalizeString(await mediaRepository.getUgcPhotoLocation(configuredPath));
+    const configuredPath = normalizeString(
+        await configRepository.getString('userGeneratedContentPath', '')
+    );
+    return normalizeString(
+        await mediaRepository.getUgcPhotoLocation(configuredPath)
+    );
 }
 
 function enqueueInstanceMediaSave(cache, id, task) {
@@ -492,7 +539,10 @@ async function saveInstancePrintToFile(printId) {
             monthFolder,
             fileName
         );
-        if (filePath && (await configRepository.getBool('cropInstancePrints', false))) {
+        if (
+            filePath &&
+            (await configRepository.getBool('cropInstancePrints', false))
+        ) {
             const cropped = await mediaRepository.cropPrintImage(filePath);
             if (!cropped) {
                 console.warn('Failed to crop print image:', filePath);
@@ -515,16 +565,29 @@ async function saveInstanceStickerToFile({ displayName, userId, inventoryId }) {
             { endpoint: useRuntimeStore.getState().auth.currentUserEndpoint }
         );
         const item = response.json;
-        if (item?.itemType !== 'sticker' || !Array.isArray(item.flags) || !item.flags.includes('ugc')) {
+        if (
+            item?.itemType !== 'sticker' ||
+            !Array.isArray(item.flags) ||
+            !item.flags.includes('ugc')
+        ) {
             return;
         }
 
         const imageUrl = item.metadata?.imageUrl ?? item.imageUrl;
-        const createdAt = normalizeString(item.created_at) || new Date().toISOString();
+        const createdAt =
+            normalizeString(item.created_at) || new Date().toISOString();
         const monthFolder = createdAt.slice(0, 7);
-        const fileNameDate = createdAt.replace(/:/g, '-').replace(/T/g, '_').replace(/Z/g, '');
+        const fileNameDate = createdAt
+            .replace(/:/g, '-')
+            .replace(/T/g, '_')
+            .replace(/Z/g, '');
         const fileName = `${normalizeString(displayName)}_${fileNameDate}_${inventoryId}.png`;
-        await mediaRepository.saveStickerToFile(imageUrl, ugcFolderPath, monthFolder, fileName);
+        await mediaRepository.saveStickerToFile(
+            imageUrl,
+            ugcFolderPath,
+            monthFolder,
+            fileName
+        );
     } catch (error) {
         console.error('Failed to save sticker to file:', error);
     }
@@ -542,22 +605,35 @@ async function saveInstanceEmojiToFile({ inventoryId, userId }) {
             { endpoint: useRuntimeStore.getState().auth.currentUserEndpoint }
         );
         const item = response.json;
-        if (item?.itemType !== 'emoji' || !Array.isArray(item.flags) || !item.flags.includes('ugc')) {
+        if (
+            item?.itemType !== 'emoji' ||
+            !Array.isArray(item.flags) ||
+            !item.flags.includes('ugc')
+        ) {
             return;
         }
 
         const endpoint = useRuntimeStore.getState().auth.currentUserEndpoint;
-        let holderDisplayName = normalizeString(item.holderDisplayName || item.ownerDisplayName);
-        const holderUserId = normalizeString(item.holderId || item.holder?.id || item.userId || userId);
+        let holderDisplayName = normalizeString(
+            item.holderDisplayName || item.ownerDisplayName
+        );
+        const holderUserId = normalizeString(
+            item.holderId || item.holder?.id || item.userId || userId
+        );
         if (!holderDisplayName) {
             try {
                 const userResponse = await vrchatFriendRepository.getUser({
                     userId: holderUserId || userId,
                     endpoint
                 });
-                holderDisplayName = normalizeString(userResponse.json?.displayName);
+                holderDisplayName = normalizeString(
+                    userResponse.json?.displayName
+                );
             } catch (error) {
-                console.warn('Failed to resolve emoji holder display name:', error);
+                console.warn(
+                    'Failed to resolve emoji holder display name:',
+                    error
+                );
             }
         }
 
@@ -566,7 +642,8 @@ async function saveInstanceEmojiToFile({ inventoryId, userId }) {
             name: `${holderDisplayName || holderUserId || userId}_${inventoryId}`
         };
         const imageUrl = item.metadata?.imageUrl ?? item.imageUrl;
-        const createdAt = normalizeString(item.created_at) || new Date().toISOString();
+        const createdAt =
+            normalizeString(item.created_at) || new Date().toISOString();
         const monthFolder = createdAt.slice(0, 7);
         await mediaRepository.saveEmojiToFile(
             imageUrl,
@@ -608,10 +685,23 @@ async function persistVideoEntry(entry) {
     await database.addGamelogVideoPlayToDatabase(entry);
     void pushSharedFeedNotification({
         ...entry,
-        message: [entry.videoName || entry.videoUrl, entry.displayName ? `(${entry.displayName})` : ''].filter(Boolean).join(' '),
-        notyName: [entry.videoName || entry.videoUrl, entry.displayName ? `(${entry.displayName})` : ''].filter(Boolean).join(' ')
+        message: [
+            entry.videoName || entry.videoUrl,
+            entry.displayName ? `(${entry.displayName})` : ''
+        ]
+            .filter(Boolean)
+            .join(' '),
+        notyName: [
+            entry.videoName || entry.videoUrl,
+            entry.displayName ? `(${entry.displayName})` : ''
+        ]
+            .filter(Boolean)
+            .join(' ')
     }).catch((error) => {
-        console.warn('Failed to publish video shared feed notification:', error);
+        console.warn(
+            'Failed to publish video shared feed notification:',
+            error
+        );
     });
     return entry;
 }
@@ -623,7 +713,9 @@ async function resolveUserIdFromDisplayName(displayName) {
     }
 
     try {
-        return normalizeString(await database.getUserIdFromDisplayName(normalizedDisplayName));
+        return normalizeString(
+            await database.getUserIdFromDisplayName(normalizedDisplayName)
+        );
     } catch (error) {
         console.warn('Failed to resolve video uploader display name:', error);
         return '';
@@ -660,7 +752,8 @@ function createVideoEntry({
 
 async function createVideoEntryWithMetadata(args) {
     const entry = createVideoEntry(args);
-    const youtubeId = entry.videoId === 'YouTube' ? parseYouTubeVideoId(entry.videoUrl) : '';
+    const youtubeId =
+        entry.videoId === 'YouTube' ? parseYouTubeVideoId(entry.videoUrl) : '';
     if (!youtubeId) {
         return entry;
     }
@@ -681,7 +774,10 @@ async function persistProviderVideo(gameLog, location) {
     const type = data.slice(0, data.indexOf(' '));
 
     if (type === 'VideoPlay(PyPyDance)') {
-        const match = /VideoPlay\(PyPyDance\) "(.+?)",([\d.]+),([\d.]+),"(.*)"/g.exec(data);
+        const match =
+            /VideoPlay\(PyPyDance\) "(.+?)",([\d.]+),([\d.]+),"(.*)"/g.exec(
+                data
+            );
         if (!match) return null;
         const title = match[4];
         const parts = title.split('(');
@@ -695,20 +791,28 @@ async function persistProviderVideo(gameLog, location) {
             source = source.substr(source.indexOf(':') + 2);
         }
         if (displayName === 'Random') displayName = '';
-        return persistVideoEntry(await createVideoEntryWithMetadata({
-            dt: gameLog.dt,
-            location,
-            videoUrl: match[1],
-            videoPos: match[2],
-            videoLength: match[3],
-            videoId,
-            videoName: source.slice(0, -1),
-            displayName
-        }));
+        return persistVideoEntry(
+            await createVideoEntryWithMetadata({
+                dt: gameLog.dt,
+                location,
+                videoUrl: match[1],
+                videoPos: match[2],
+                videoLength: match[3],
+                videoId,
+                videoName: source.slice(0, -1),
+                displayName
+            })
+        );
     }
 
-    if (type === 'VideoPlay(VRDancing)' || type === 'VideoPlay(ZuwaZuwaDance)') {
-        const match = /VideoPlay\((?:VRDancing|ZuwaZuwaDance)\) "(.+?)",([\d.]+),([\d.]+),(-?[\d.]+),"(.+?)","(.+?)"/g.exec(data);
+    if (
+        type === 'VideoPlay(VRDancing)' ||
+        type === 'VideoPlay(ZuwaZuwaDance)'
+    ) {
+        const match =
+            /VideoPlay\((?:VRDancing|ZuwaZuwaDance)\) "(.+?)",([\d.]+),([\d.]+),(-?[\d.]+),"(.+?)","(.+?)"/g.exec(
+                data
+            );
         if (!match) return null;
         let videoId = match[4];
         let displayName = match[5];
@@ -721,32 +825,38 @@ async function persistProviderVideo(gameLog, location) {
             videoName = videoName.substring(markerIndex + 6);
         }
         if (displayName === 'Random') displayName = '';
-        return persistVideoEntry(await createVideoEntryWithMetadata({
-            dt: gameLog.dt,
-            location,
-            videoUrl: match[1],
-            videoPos: match[2] === match[3] ? 0 : match[2],
-            videoLength: match[3],
-            videoId,
-            videoName,
-            displayName
-        }));
+        return persistVideoEntry(
+            await createVideoEntryWithMetadata({
+                dt: gameLog.dt,
+                location,
+                videoUrl: match[1],
+                videoPos: match[2] === match[3] ? 0 : match[2],
+                videoLength: match[3],
+                videoId,
+                videoName,
+                displayName
+            })
+        );
     }
 
     if (type === 'LSMedia') {
-        const match = /LSMedia ([\d.]+),([\d.]+),(.+?),(.+?),(?=[^,]*$)/g.exec(data);
+        const match = /LSMedia ([\d.]+),([\d.]+),(.+?),(.+?),(?=[^,]*$)/g.exec(
+            data
+        );
         if (!match) return null;
         const videoName = match[4];
-        return persistVideoEntry(await createVideoEntryWithMetadata({
-            dt: gameLog.dt,
-            location,
-            videoUrl: videoName,
-            videoPos: match[1],
-            videoLength: match[2],
-            videoId: 'LSMedia',
-            videoName,
-            displayName: match[3]
-        }));
+        return persistVideoEntry(
+            await createVideoEntryWithMetadata({
+                dt: gameLog.dt,
+                location,
+                videoUrl: videoName,
+                videoPos: match[1],
+                videoLength: match[2],
+                videoId: 'LSMedia',
+                videoName,
+                displayName: match[3]
+            })
+        );
     }
 
     if (type === 'VideoPlay(PopcornPalace)') {
@@ -764,17 +874,19 @@ async function persistProviderVideo(gameLog, location) {
             resetRuntimeNowPlayingState();
             return null;
         }
-        return persistVideoEntry(await createVideoEntryWithMetadata({
-            dt: gameLog.dt,
-            location,
-            videoUrl: parsed.videoName,
-            videoPos: parsed.videoPos,
-            videoLength: parsed.videoLength,
-            videoId: 'PopcornPalace',
-            videoName: parsed.videoName,
-            displayName: parsed.displayName || '',
-            thumbnailUrl: parsed.thumbnailUrl || ''
-        }));
+        return persistVideoEntry(
+            await createVideoEntryWithMetadata({
+                dt: gameLog.dt,
+                location,
+                videoUrl: parsed.videoName,
+                videoPos: parsed.videoPos,
+                videoLength: parsed.videoLength,
+                videoId: 'PopcornPalace',
+                videoName: parsed.videoName,
+                displayName: parsed.displayName || '',
+                thumbnailUrl: parsed.thumbnailUrl || ''
+            })
+        );
     }
 
     return null;
@@ -784,7 +896,8 @@ function updateCurrentLocation({ location, worldName = '', createdAt = '' }) {
     const parsed = parseLocation(location);
     ingestState.currentLocation = location;
     ingestState.currentWorldName = worldName;
-    ingestState.currentLocationStartedAt = createdAt || new Date().toISOString();
+    ingestState.currentLocationStartedAt =
+        createdAt || new Date().toISOString();
     ingestState.playersByKey.clear();
     ingestState.lastVideoUrl = '';
     ingestState.lastResourceUrl = '';
@@ -817,7 +930,8 @@ function updateCurrentLocation({ location, worldName = '', createdAt = '' }) {
 async function persistGameLog(gameLog, options = {}) {
     const runtimeStore = useRuntimeStore.getState();
     const location = getCurrentLocation();
-    const copyScreenshotToClipboard = options.copyScreenshotToClipboard !== false;
+    const copyScreenshotToClipboard =
+        options.copyScreenshotToClipboard !== false;
     let entry = null;
 
     runtimeStore.setGameState({
@@ -846,7 +960,11 @@ async function persistGameLog(gameLog, options = {}) {
                 worldName
             );
             await database.addGamelogLocationToDatabase(entry);
-            updateCurrentLocation({ location: normalizedLocation, worldName, createdAt: gameLog.dt });
+            updateCurrentLocation({
+                location: normalizedLocation,
+                worldName,
+                createdAt: gameLog.dt
+            });
             break;
         }
         case 'player-joined': {
@@ -906,13 +1024,15 @@ async function persistGameLog(gameLog, options = {}) {
                 break;
             }
             ingestState.lastVideoUrl = videoUrl;
-            entry = await persistVideoEntry(await createVideoEntryWithMetadata({
-                dt: gameLog.dt,
-                location,
-                videoUrl,
-                displayName: normalizeString(gameLog.displayName),
-                userId: normalizeString(gameLog.userId)
-            }));
+            entry = await persistVideoEntry(
+                await createVideoEntryWithMetadata({
+                    dt: gameLog.dt,
+                    location,
+                    videoUrl,
+                    displayName: normalizeString(gameLog.displayName),
+                    userId: normalizeString(gameLog.userId)
+                })
+            );
             break;
         }
         case 'video-sync': {
@@ -931,13 +1051,25 @@ async function persistGameLog(gameLog, options = {}) {
         }
         case 'resource-load-string':
         case 'resource-load-image': {
-            const logResourceLoad = await configRepository.getBool('logResourceLoad', false);
+            const logResourceLoad = await configRepository.getBool(
+                'logResourceLoad',
+                false
+            );
             const resourceUrl = normalizeString(gameLog.resourceUrl);
-            if (!logResourceLoad || !resourceUrl || ingestState.lastResourceUrl === resourceUrl) {
+            if (
+                !logResourceLoad ||
+                !resourceUrl ||
+                ingestState.lastResourceUrl === resourceUrl
+            ) {
                 break;
             }
             ingestState.lastResourceUrl = resourceUrl;
-            entry = createResourceLoadEntry(gameLog.type, gameLog.dt, resourceUrl, location);
+            entry = createResourceLoadEntry(
+                gameLog.type,
+                gameLog.dt,
+                resourceUrl,
+                location
+            );
             await database.addGamelogResourceLoadToDatabase(entry);
             break;
         }
@@ -977,12 +1109,21 @@ async function persistGameLog(gameLog, options = {}) {
             entry = await persistProviderVideo(gameLog, location);
             break;
         case 'vrc-quit': {
-            const shouldQuit = await configRepository.getBool('vrcQuitFix', true);
-            if (shouldQuit && useRuntimeStore.getState().gameState.isGameRunning) {
+            const shouldQuit = await configRepository.getBool(
+                'vrcQuitFix',
+                true
+            );
+            if (
+                shouldQuit &&
+                useRuntimeStore.getState().gameState.isGameRunning
+            ) {
                 const bias = Date.parse(gameLog.dt) + 3000;
                 if (bias >= Date.now()) {
                     await backend.app.QuitGame().catch((error) => {
-                        console.warn('QuitGame failed during vrc-quit handling:', error);
+                        console.warn(
+                            'QuitGame failed during vrc-quit handling:',
+                            error
+                        );
                     });
                 }
             }
@@ -997,12 +1138,16 @@ async function persistGameLog(gameLog, options = {}) {
             await configRepository.setBool('isGameNoVR', true);
             break;
         case 'screenshot': {
-            const screenshotPath = await processScreenshot(gameLog.screenshotPath, {
-                screenshotDateTime: gameLog.dt,
-                copyToClipboard: copyScreenshotToClipboard
-            });
+            const screenshotPath = await processScreenshot(
+                gameLog.screenshotPath,
+                {
+                    screenshotDateTime: gameLog.dt,
+                    copyToClipboard: copyScreenshotToClipboard
+                }
+            );
             runtimeStore.setGameState({
-                lastScreenshotPath: screenshotPath || normalizeString(gameLog.screenshotPath)
+                lastScreenshotPath:
+                    screenshotPath || normalizeString(gameLog.screenshotPath)
             });
             break;
         }
@@ -1017,11 +1162,12 @@ async function persistGameLog(gameLog, options = {}) {
                 void enqueueInstanceMediaSave(
                     instanceMediaState.stickerInventoryIds,
                     inventoryId,
-                    () => saveInstanceStickerToFile({
-                        displayName: gameLog.displayName,
-                        userId: gameLog.userId,
-                        inventoryId
-                    })
+                    () =>
+                        saveInstanceStickerToFile({
+                            displayName: gameLog.displayName,
+                            userId: gameLog.userId,
+                            inventoryId
+                        })
                 );
             }
             break;
@@ -1069,11 +1215,18 @@ function resetCurrentGameLogSessionState() {
     ingestState.lastResourceUrl = '';
 }
 
-export async function finalizeCurrentGameLogSession(stoppedAt = new Date().toISOString()) {
+export async function finalizeCurrentGameLogSession(
+    stoppedAt = new Date().toISOString()
+) {
     const runtimeStore = useRuntimeStore.getState();
     const runtimeGameState = runtimeStore.gameState;
-    const location = ingestState.currentLocation || normalizeString(runtimeGameState.currentLocation);
-    const startedAt = ingestState.currentLocationStartedAt || runtimeGameState.currentLocationStartedAt || '';
+    const location =
+        ingestState.currentLocation ||
+        normalizeString(runtimeGameState.currentLocation);
+    const startedAt =
+        ingestState.currentLocationStartedAt ||
+        runtimeGameState.currentLocationStartedAt ||
+        '';
     const stoppedAtTime = Date.parse(stoppedAt);
     let persistenceError = null;
 
@@ -1081,16 +1234,18 @@ export async function finalizeCurrentGameLogSession(stoppedAt = new Date().toISO
         if (location && Number.isFinite(stoppedAtTime)) {
             const leaveEntries = [];
             for (const player of ingestState.playersByKey.values()) {
-                leaveEntries.unshift(createJoinLeaveEntry(
-                    'OnPlayerLeft',
-                    stoppedAt,
-                    player.displayName,
-                    location,
-                    player.userId,
-                    Number.isFinite(player.joinTime)
-                        ? Math.max(0, stoppedAtTime - player.joinTime)
-                        : 0
-                ));
+                leaveEntries.unshift(
+                    createJoinLeaveEntry(
+                        'OnPlayerLeft',
+                        stoppedAt,
+                        player.displayName,
+                        location,
+                        player.userId,
+                        Number.isFinite(player.joinTime)
+                            ? Math.max(0, stoppedAtTime - player.joinTime)
+                            : 0
+                    )
+                );
             }
 
             if (leaveEntries.length > 0) {
@@ -1098,7 +1253,11 @@ export async function finalizeCurrentGameLogSession(stoppedAt = new Date().toISO
             }
 
             const startedAtTime = Date.parse(startedAt);
-            if (startedAt && Number.isFinite(startedAtTime) && stoppedAtTime >= startedAtTime) {
+            if (
+                startedAt &&
+                Number.isFinite(startedAtTime) &&
+                stoppedAtTime >= startedAtTime
+            ) {
                 await database.updateGamelogLocationTimeToDatabase({
                     created_at: startedAt,
                     time: stoppedAtTime - startedAtTime
@@ -1166,7 +1325,10 @@ export async function syncGameLogTail() {
             }
         }
 
-        const detail = processed > 0 ? `Processed ${processed} game log events.` : 'Game log tail is current.';
+        const detail =
+            processed > 0
+                ? `Processed ${processed} game log events.`
+                : 'Game log tail is current.';
         useRuntimeStore.getState().setUpdateLoopState({
             lastGameLogSyncAt: new Date().toISOString(),
             lastGameLogSyncDetail: detail

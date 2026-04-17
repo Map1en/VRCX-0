@@ -76,7 +76,9 @@ export function formatDateFilter(dateStr, format) {
     }
 
     const { dateCulture, dateIsoFormat, dateHour12 } = useShellStore.getState();
-    const dateFormat = dateIsoFormat ? 'en-gb' : normalizeDateLocale(dateCulture);
+    const dateFormat = dateIsoFormat
+        ? 'en-gb'
+        : normalizeDateLocale(dateCulture);
 
     if (dateIsoFormat && format === 'long') {
         return toIsoLong(dt);

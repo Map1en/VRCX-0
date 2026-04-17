@@ -1,10 +1,10 @@
 /* eslint-disable no-bitwise */
 
 const S = [
-    7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14,
-    20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16,
-    23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10,
-    15, 21, 6, 10, 15, 21
+    7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5,
+    9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11,
+    16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10,
+    15, 21
 ];
 
 const K = new Uint32Array([
@@ -48,7 +48,7 @@ export function getBase64ByteLength(base64) {
 
 export function md5Bytes(input) {
     const bitLen = input.length * 8;
-    const padLen = ((56 - ((input.length + 1) % 64)) + 64) % 64;
+    const padLen = (56 - ((input.length + 1) % 64) + 64) % 64;
     const buf = new Uint8Array(input.length + 1 + padLen + 8);
     buf.set(input);
     buf[input.length] = 0x80;

@@ -64,9 +64,14 @@ function normalizeReleaseList(branch, releases) {
     const shouldKeepPrerelease = branch === 'Beta';
     return (Array.isArray(releases) ? releases : [releases])
         .map((release) => normalizeGitHubRelease(release))
-        .filter((release) => release && release.prerelease === shouldKeepPrerelease)
+        .filter(
+            (release) => release && release.prerelease === shouldKeepPrerelease
+        )
         .sort((left, right) =>
-            compareReleaseVersions(right.canonicalVersion, left.canonicalVersion)
+            compareReleaseVersions(
+                right.canonicalVersion,
+                left.canonicalVersion
+            )
         );
 }
 
@@ -95,12 +100,17 @@ function hasUpdateForBranch(branch, currentVersion, latestReleaseVersion) {
             return dateDelta > 0;
         }
 
-        if (currentParsed.channel === 'Stable' && latestParsed.channel === 'Beta') {
+        if (
+            currentParsed.channel === 'Stable' &&
+            latestParsed.channel === 'Beta'
+        ) {
             return true;
         }
     }
 
-    return compareReleaseVersions(latestParsed.canonicalVersion, currentParsed) > 0;
+    return (
+        compareReleaseVersions(latestParsed.canonicalVersion, currentParsed) > 0
+    );
 }
 
 async function fetchBranchReleases(branch) {
@@ -116,9 +126,10 @@ async function fetchBranchReleases(branch) {
         throw new Error(`GitHub release request failed (${response.status}).`);
     }
 
-    const data = typeof response.data === 'string'
-        ? JSON.parse(response.data)
-        : response.data;
+    const data =
+        typeof response.data === 'string'
+            ? JSON.parse(response.data)
+            : response.data;
     if (data?.message) {
         throw new Error(data.message);
     }
@@ -145,14 +156,17 @@ async function waitForUpdateDownload({
             throw new Error('Update download cancelled.');
         }
 
-        const progress = Number(await backend.app.CheckUpdateProgress().catch(() => 0)) || 0;
+        const progress =
+            Number(await backend.app.CheckUpdateProgress().catch(() => 0)) || 0;
         if (progress === UPDATE_PROGRESS_ERROR) {
             throw new Error('Update download failed.');
         }
 
         onProgress?.(Math.max(0, Math.min(100, progress)));
         if (progress >= UPDATE_PROGRESS_COMPLETE) {
-            const ready = await backend.app.CheckForUpdateExe().catch(() => false);
+            const ready = await backend.app
+                .CheckForUpdateExe()
+                .catch(() => false);
             if (ready) {
                 onProgress?.(100);
                 return true;

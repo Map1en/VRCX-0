@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     ArrowUpDownIcon,
     CopyIcon,
@@ -19,11 +18,12 @@ import {
     UsersIcon,
     XIcon
 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Location } from '@/components/Location.jsx';
-import { cn } from '@/lib/utils.js';
 import { userImage } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import {
     avatarProfileRepository,
     configRepository,
@@ -32,20 +32,27 @@ import {
     vrchatSearchRepository,
     vrchatFavoriteRepository
 } from '@/repositories/index.js';
-import { openAvatarDialog, openUserDialog, openWorldDialog } from '@/services/dialogService.js';
-import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
-import { selfInviteToInstance } from '@/services/launchService.js';
 import { database } from '@/services/database/index.js';
+import {
+    openAvatarDialog,
+    openUserDialog,
+    openWorldDialog
+} from '@/services/dialogService.js';
+import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { bootstrapFavorites } from '@/services/favoriteBootstrapService.js';
 import { openFavoriteImportDialog } from '@/services/favoriteImportService.js';
+import { selfInviteToInstance } from '@/services/launchService.js';
 import { setBoolConfigPreference } from '@/services/preferencesService.js';
+import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
+import {
+    parseLocation,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
-import { parseLocation, resolveFriendPresenceLocation } from '@/shared/utils/location.js';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -69,7 +76,11 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/ui/shadcn/resizable';
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup
+} from '@/ui/shadcn/resizable';
 import {
     Select,
     SelectContent,
@@ -84,10 +95,6 @@ import { Switch } from '@/ui/shadcn/switch';
 import { Textarea } from '@/ui/shadcn/textarea';
 
 import {
-    clearFavoriteRemoteDetailsCache,
-    useFavoriteRemoteDetails
-} from './useFavoriteRemoteDetails.js';
-import {
     buildFavoriteExportCsv,
     FAVORITES_EXPORT_ALL_VALUE as EXPORT_ALL_VALUE,
     FAVORITES_EXPORT_NONE_VALUE as EXPORT_NONE_VALUE,
@@ -101,6 +108,10 @@ import {
     shrinkFavoriteImage as shrinkImage,
     sortFavoriteItems as sortItems
 } from './favoritesItems.js';
+import {
+    clearFavoriteRemoteDetailsCache,
+    useFavoriteRemoteDetails
+} from './useFavoriteRemoteDetails.js';
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'];
 const EMPTY_ITEMS = Object.freeze([]);
@@ -142,22 +153,27 @@ function clampSplitterSizePx(value) {
     if (!Number.isFinite(parsed)) {
         return SPLITTER_DEFAULT_SIZE_PX;
     }
-    return Math.min(SPLITTER_MAX_SIZE_PX, Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed)));
+    return Math.min(
+        SPLITTER_MAX_SIZE_PX,
+        Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed))
+    );
 }
 
 function pxToSplitterPercent(value, width) {
     const parsedWidth = Number(width);
-    const safeWidth = Number.isFinite(parsedWidth) && parsedWidth > 0
-        ? parsedWidth
-        : SPLITTER_FALLBACK_WIDTH;
+    const safeWidth =
+        Number.isFinite(parsedWidth) && parsedWidth > 0
+            ? parsedWidth
+            : SPLITTER_FALLBACK_WIDTH;
     return Math.min(100, Math.max(0, (Number(value) / safeWidth) * 100));
 }
 
 function splitterPercentToPx(value, width) {
     const parsedWidth = Number(width);
-    const safeWidth = Number.isFinite(parsedWidth) && parsedWidth > 0
-        ? parsedWidth
-        : SPLITTER_FALLBACK_WIDTH;
+    const safeWidth =
+        Number.isFinite(parsedWidth) && parsedWidth > 0
+            ? parsedWidth
+            : SPLITTER_FALLBACK_WIDTH;
     return clampSplitterSizePx((Number(value) / 100) * safeWidth);
 }
 
@@ -171,7 +187,9 @@ function FavoriteExportDialog({
     localItemsByGroup
 }) {
     const fieldOptions = getFavoriteExportFieldOptions(kind);
-    const [selectedFields, setSelectedFields] = useState(() => fieldOptions.map((option) => option.value));
+    const [selectedFields, setSelectedFields] = useState(() =>
+        fieldOptions.map((option) => option.value)
+    );
     const [remoteGroupKey, setRemoteGroupKey] = useState(EXPORT_ALL_VALUE);
     const [localGroupKey, setLocalGroupKey] = useState(EXPORT_NONE_VALUE);
     const items = useMemo(() => {
@@ -213,7 +231,11 @@ function FavoriteExportDialog({
             await navigator.clipboard.writeText(content);
             toast.success('Copied favorite export data.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to copy favorite export data.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to copy favorite export data.'
+            );
         }
     }
 
@@ -223,55 +245,89 @@ function FavoriteExportDialog({
                 <DialogHeader>
                     <DialogTitle>Export favorite {kind}s</DialogTitle>
                     <DialogDescription>
-                        Review the CSV content before copying it to the clipboard.
+                        Review the CSV content before copying it to the
+                        clipboard.
                     </DialogDescription>
                 </DialogHeader>
-                <FieldGroup data-slot="checkbox-group" className="flex flex-row flex-wrap gap-3">
+                <FieldGroup
+                    data-slot="checkbox-group"
+                    className="flex flex-row flex-wrap gap-3"
+                >
                     {fieldOptions.map((option) => (
-                        <Field key={option.value} orientation="horizontal" className="w-auto items-center">
+                        <Field
+                            key={option.value}
+                            orientation="horizontal"
+                            className="w-auto items-center"
+                        >
                             <Checkbox
                                 id={`favorite-export-field-${kind}-${option.value}`}
                                 checked={selectedFields.includes(option.value)}
-                                onCheckedChange={(checked) => toggleField(option.value, Boolean(checked))}
+                                onCheckedChange={(checked) =>
+                                    toggleField(option.value, Boolean(checked))
+                                }
                             />
-                            <FieldLabel htmlFor={`favorite-export-field-${kind}-${option.value}`}>
+                            <FieldLabel
+                                htmlFor={`favorite-export-field-${kind}-${option.value}`}
+                            >
                                 {option.label}
                             </FieldLabel>
                         </Field>
                     ))}
                 </FieldGroup>
                 <div className="flex flex-wrap items-center gap-2">
-                    <Select value={remoteGroupKey} onValueChange={setRemoteGroupKey}>
+                    <Select
+                        value={remoteGroupKey}
+                        onValueChange={setRemoteGroupKey}
+                    >
                         <SelectTrigger size="sm" className="min-w-52">
                             <SelectValue placeholder="VRChat group" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                <SelectItem value={EXPORT_ALL_VALUE}>All VRChat favorites</SelectItem>
+                                <SelectItem value={EXPORT_ALL_VALUE}>
+                                    All VRChat favorites
+                                </SelectItem>
                                 {remoteGroups.map((group) => (
-                                    <SelectItem key={group.key} value={group.key}>
-                                        {group.label} ({group.capacity ? `${group.count}/${group.capacity}` : group.count})
+                                    <SelectItem
+                                        key={group.key}
+                                        value={group.key}
+                                    >
+                                        {group.label} (
+                                        {group.capacity
+                                            ? `${group.count}/${group.capacity}`
+                                            : group.count}
+                                        )
                                     </SelectItem>
                                 ))}
                             </SelectGroup>
                         </SelectContent>
                     </Select>
-                    <Select value={localGroupKey} onValueChange={setLocalGroupKey}>
+                    <Select
+                        value={localGroupKey}
+                        onValueChange={setLocalGroupKey}
+                    >
                         <SelectTrigger size="sm" className="min-w-52">
                             <SelectValue placeholder="Local group" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                <SelectItem value={EXPORT_NONE_VALUE}>No local group</SelectItem>
+                                <SelectItem value={EXPORT_NONE_VALUE}>
+                                    No local group
+                                </SelectItem>
                                 {localGroups.map((group) => (
-                                    <SelectItem key={group.key} value={group.key}>
+                                    <SelectItem
+                                        key={group.key}
+                                        value={group.key}
+                                    >
                                         {group.label} ({group.count})
                                     </SelectItem>
                                 ))}
                             </SelectGroup>
                         </SelectContent>
                     </Select>
-                    <span className="text-sm text-muted-foreground">{items.length} item(s)</span>
+                    <span className="text-muted-foreground text-sm">
+                        {items.length} item(s)
+                    </span>
                 </div>
                 <Textarea
                     readOnly
@@ -281,10 +337,18 @@ function FavoriteExportDialog({
                     onClick={(event) => event.currentTarget.select()}
                 />
                 <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
                         Close
                     </Button>
-                    <Button type="button" disabled={!items.length || !selectedFields.length} onClick={() => void copyExportContent()}>
+                    <Button
+                        type="button"
+                        disabled={!items.length || !selectedFields.length}
+                        onClick={() => void copyExportContent()}
+                    >
                         Copy
                     </Button>
                 </div>
@@ -327,36 +391,46 @@ function FavoritesToolbar({
                     <SelectGroup>
                         <SelectItem value="name">Sort by name</SelectItem>
                         <SelectItem value="date">Sort by date</SelectItem>
-                        {kind === 'world' ? <SelectItem value="players">Sort by players</SelectItem> : null}
+                        {kind === 'world' ? (
+                            <SelectItem value="players">
+                                Sort by players
+                            </SelectItem>
+                        ) : null}
                     </SelectGroup>
                 </SelectContent>
             </Select>
 
             <div className="flex min-w-72 flex-1 items-center gap-2">
                 <div className="relative flex-1">
-                    <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                     <Input
                         value={searchQuery}
                         onChange={(event) => onSearchChange(event.target.value)}
                         placeholder={searchPlaceholder}
-                        className="h-8 pl-9 pr-20 text-sm"
+                        className="h-8 pr-20 pl-9 text-sm"
                     />
                     {kind === 'world' ? (
-                        <div className="absolute right-1 top-1/2 flex -translate-y-1/2 rounded-md border bg-background p-0.5">
+                        <div className="bg-background absolute top-1/2 right-1 flex -translate-y-1/2 rounded-md border p-0.5">
                             <Button
                                 type="button"
                                 size="xs"
-                                variant={searchMode === 'name' ? 'default' : 'ghost'}
+                                variant={
+                                    searchMode === 'name' ? 'default' : 'ghost'
+                                }
                                 className="h-5 px-1.5 text-xs"
-                                onClick={() => onSearchModeChange('name')}>
+                                onClick={() => onSearchModeChange('name')}
+                            >
                                 Name
                             </Button>
                             <Button
                                 type="button"
                                 size="xs"
-                                variant={searchMode === 'tag' ? 'default' : 'ghost'}
+                                variant={
+                                    searchMode === 'tag' ? 'default' : 'ghost'
+                                }
                                 className="h-5 px-1.5 text-xs"
-                                onClick={() => onSearchModeChange('tag')}>
+                                onClick={() => onSearchModeChange('tag')}
+                            >
                                 Tag
                             </Button>
                         </div>
@@ -365,9 +439,10 @@ function FavoritesToolbar({
                             type="button"
                             size="icon-xs"
                             variant="ghost"
-                            className="absolute right-1 top-1/2 -translate-y-1/2"
+                            className="absolute top-1/2 right-1 -translate-y-1/2"
                             aria-label="Clear search"
-                            onClick={() => onSearchChange('')}>
+                            onClick={() => onSearchChange('')}
+                        >
                             <XIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
@@ -380,42 +455,64 @@ function FavoritesToolbar({
                     className="rounded-full"
                     aria-label="Refresh favorites"
                     disabled={refreshing}
-                    onClick={onRefresh}>
-                    {refreshing ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
+                    onClick={onRefresh}
+                >
+                    {refreshing ? (
+                        <Spinner data-icon="inline-start" />
+                    ) : (
+                        <RefreshCwIcon data-icon="inline-start" />
+                    )}
                 </Button>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button type="button" size="icon-sm" variant="ghost" className="rounded-full" aria-label="Favorite options">
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            className="rounded-full"
+                            aria-label="Favorite options"
+                        >
                             <EllipsisIcon data-icon="inline-start" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
-                        <FieldGroup className="gap-3 px-3 py-2" onClick={(event) => event.stopPropagation()}>
+                        <FieldGroup
+                            className="gap-3 px-3 py-2"
+                            onClick={(event) => event.stopPropagation()}
+                        >
                             <Field>
                                 <div className="flex items-center justify-between text-sm font-semibold">
                                     <FieldLabel>Scale</FieldLabel>
-                                    <span className="text-xs text-muted-foreground">{cardScalePercent}%</span>
+                                    <span className="text-muted-foreground text-xs">
+                                        {cardScalePercent}%
+                                    </span>
                                 </div>
                                 <Slider
                                     min={CARD_SCALE_SLIDER.min}
                                     max={CARD_SCALE_SLIDER.max}
                                     step={CARD_SCALE_SLIDER.step}
                                     value={[cardScale]}
-                                    onValueChange={(value) => onCardScaleChange(value[0])}
+                                    onValueChange={(value) =>
+                                        onCardScaleChange(value[0])
+                                    }
                                 />
                             </Field>
                             <Field>
                                 <div className="flex items-center justify-between text-sm font-semibold">
                                     <FieldLabel>Spacing</FieldLabel>
-                                    <span className="text-xs text-muted-foreground">{cardSpacingPercent}%</span>
+                                    <span className="text-muted-foreground text-xs">
+                                        {cardSpacingPercent}%
+                                    </span>
                                 </div>
                                 <Slider
                                     min={CARD_SPACING_SLIDER.min}
                                     max={CARD_SPACING_SLIDER.max}
                                     step={CARD_SPACING_SLIDER.step}
                                     value={[cardSpacing]}
-                                    onValueChange={(value) => onCardSpacingChange(value[0])}
+                                    onValueChange={(value) =>
+                                        onCardSpacingChange(value[0])
+                                    }
                                 />
                             </Field>
                         </FieldGroup>
@@ -442,7 +539,9 @@ function FavoritesEmptyState({ title, description }) {
         <div className="flex h-full min-h-60 items-center justify-center p-6 text-center">
             <div className="flex max-w-sm flex-col gap-2">
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">{description}</div>
+                <div className="text-muted-foreground text-sm">
+                    {description}
+                </div>
             </div>
         </div>
     );
@@ -451,7 +550,7 @@ function FavoritesEmptyState({ title, description }) {
 function FavoritesLoadingState({ title }) {
     return (
         <div className="flex h-full min-h-60 items-center justify-center">
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-3 text-sm">
                 <Spinner />
                 <span>{title}</span>
             </div>
@@ -472,15 +571,27 @@ function GroupMenu({
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button type="button" size="icon-xs" variant="ghost" className="rounded-full" aria-label="History group options" onClick={(event) => event.stopPropagation()}>
+                    <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="ghost"
+                        className="rounded-full"
+                        aria-label="History group options"
+                        onClick={(event) => event.stopPropagation()}
+                    >
                         <EllipsisIcon data-icon="inline-start" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent side="right" align="start" className="w-44">
+                <DropdownMenuContent
+                    side="right"
+                    align="start"
+                    className="w-44"
+                >
                     <DropdownMenuGroup>
                         <DropdownMenuItem
                             variant="destructive"
-                            onSelect={() => onHistoryClear(group)}>
+                            onSelect={() => onHistoryClear(group)}
+                        >
                             Clear
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
@@ -493,25 +604,48 @@ function GroupMenu({
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button type="button" size="icon-xs" variant="ghost" className="rounded-full" aria-label="Remote group options" onClick={(event) => event.stopPropagation()}>
+                    <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="ghost"
+                        className="rounded-full"
+                        aria-label="Remote group options"
+                        onClick={(event) => event.stopPropagation()}
+                    >
                         <MoreHorizontalIcon data-icon="inline-start" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent side="right" align="start" className="w-52">
+                <DropdownMenuContent
+                    side="right"
+                    align="start"
+                    className="w-52"
+                >
                     <DropdownMenuGroup>
-                        <DropdownMenuItem onSelect={() => onRemoteRename(group)}>
+                        <DropdownMenuItem
+                            onSelect={() => onRemoteRename(group)}
+                        >
                             Rename
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>Visibility</DropdownMenuSubTrigger>
+                        <DropdownMenuSubTrigger>
+                            Visibility
+                        </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent className="w-40">
                             <DropdownMenuGroup>
                                 {VISIBILITY_OPTIONS.map((visibility) => (
                                     <DropdownMenuCheckboxItem
                                         key={visibility}
-                                        checked={group.visibility === visibility}
-                                        onSelect={() => onRemoteVisibility(group, visibility)}>
+                                        checked={
+                                            group.visibility === visibility
+                                        }
+                                        onSelect={() =>
+                                            onRemoteVisibility(
+                                                group,
+                                                visibility
+                                            )
+                                        }
+                                    >
                                         {visibility}
                                     </DropdownMenuCheckboxItem>
                                 ))}
@@ -522,7 +656,8 @@ function GroupMenu({
                     <DropdownMenuGroup>
                         <DropdownMenuItem
                             variant="destructive"
-                            onSelect={() => onRemoteClear(group)}>
+                            onSelect={() => onRemoteClear(group)}
+                        >
                             Clear
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
@@ -534,7 +669,14 @@ function GroupMenu({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" size="icon-xs" variant="ghost" className="rounded-full" aria-label="Local group options" onClick={(event) => event.stopPropagation()}>
+                <Button
+                    type="button"
+                    size="icon-xs"
+                    variant="ghost"
+                    className="rounded-full"
+                    aria-label="Local group options"
+                    onClick={(event) => event.stopPropagation()}
+                >
                     <EllipsisIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
@@ -545,7 +687,8 @@ function GroupMenu({
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         variant="destructive"
-                        onSelect={() => onLocalDelete(group)}>
+                        onSelect={() => onLocalDelete(group)}
+                    >
                         Delete
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
@@ -588,8 +731,13 @@ function GroupRailSection({
                         className="rounded-full"
                         aria-label={`Refresh ${title}`}
                         disabled={loading}
-                        onClick={onRefresh}>
-                        {loading ? <Spinner data-icon="inline-start" /> : <RefreshCcwIcon data-icon="inline-start" />}
+                        onClick={onRefresh}
+                    >
+                        {loading ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <RefreshCcwIcon data-icon="inline-start" />
+                        )}
                     </Button>
                 ) : null}
             </div>
@@ -598,33 +746,53 @@ function GroupRailSection({
                     Array.from({ length: 5 }, (_, index) => (
                         <div
                             key={`group-placeholder-${index}`}
-                            className="pointer-events-none flex w-full items-start justify-between rounded-lg border border-border px-3 py-2 text-left text-sm opacity-70">
+                            className="border-border pointer-events-none flex w-full items-start justify-between rounded-lg border px-3 py-2 text-left text-sm opacity-70"
+                        >
                             <div className="min-w-0">
-                                <div className="truncate font-semibold">Group {index + 1}</div>
-                                <div className="mt-1 h-3 w-14 rounded bg-muted" />
+                                <div className="truncate font-semibold">
+                                    Group {index + 1}
+                                </div>
+                                <div className="bg-muted mt-1 h-3 w-14 rounded" />
                             </div>
                         </div>
                     ))
                 ) : groups.length ? (
                     groups.map((group) => {
-                        const isActive = selectedSource === group.source && selectedGroupKey === group.key;
+                        const isActive =
+                            selectedSource === group.source &&
+                            selectedGroupKey === group.key;
                         return (
                             <div
                                 key={`${group.source}:${group.key}`}
                                 className={cn(
-                                    'flex w-full items-start justify-between rounded-lg border transition-colors hover:bg-muted',
-                                    isActive ? 'border-primary bg-primary/5' : 'border-border'
-                                )}>
+                                    'hover:bg-muted flex w-full items-start justify-between rounded-lg border transition-colors',
+                                    isActive
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-border'
+                                )}
+                            >
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    className="h-auto min-w-0 flex-1 justify-start whitespace-normal rounded-lg px-3 py-2 text-left hover:bg-transparent"
-                                    onClick={() => onSelect(group)}>
+                                    className="h-auto min-w-0 flex-1 justify-start rounded-lg px-3 py-2 text-left whitespace-normal hover:bg-transparent"
+                                    onClick={() => onSelect(group)}
+                                >
                                     <span className="min-w-0">
-                                        <span className="block truncate font-semibold">{group.label}</span>
-                                        <span className="mt-1 flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
-                                            {group.visibility ? <span>{group.visibility}</span> : null}
-                                            {group.capacity ? <span>{group.count}/{group.capacity}</span> : <span>{group.count}</span>}
+                                        <span className="block truncate font-semibold">
+                                            {group.label}
+                                        </span>
+                                        <span className="text-muted-foreground mt-1 flex items-center gap-1.5 text-xs font-normal">
+                                            {group.visibility ? (
+                                                <span>{group.visibility}</span>
+                                            ) : null}
+                                            {group.capacity ? (
+                                                <span>
+                                                    {group.count}/
+                                                    {group.capacity}
+                                                </span>
+                                            ) : (
+                                                <span>{group.count}</span>
+                                            )}
                                         </span>
                                     </span>
                                 </Button>
@@ -643,7 +811,9 @@ function GroupRailSection({
                         );
                     })
                 ) : (
-                    <div className="py-3 text-center text-xs text-muted-foreground">No data</div>
+                    <div className="text-muted-foreground py-3 text-center text-xs">
+                        No data
+                    </div>
                 )}
                 {showNewGroup && !creating ? (
                     <Button
@@ -651,7 +821,8 @@ function GroupRailSection({
                         variant="outline"
                         className="w-full border-dashed"
                         disabled={loading}
-                        onClick={onStartCreate}>
+                        onClick={onStartCreate}
+                    >
                         <PlusIcon data-icon="inline-start" />
                         <span>New Group</span>
                     </Button>
@@ -663,7 +834,9 @@ function GroupRailSection({
                         className="h-8 text-sm"
                         disabled={loading}
                         placeholder="New Group"
-                        onChange={(event) => onNewGroupNameChange(event.target.value)}
+                        onChange={(event) =>
+                            onNewGroupNameChange(event.target.value)
+                        }
                         onKeyDown={(event) => {
                             if (event.key === 'Enter') {
                                 onConfirmCreate();
@@ -699,7 +872,11 @@ function FavoritesContentHeader({
             <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex flex-col gap-0.5 pl-0.5 text-base font-semibold">
                     <span>{title}</span>
-                    {subtitle ? <small className="text-xs font-normal text-muted-foreground">{subtitle}</small> : null}
+                    {subtitle ? (
+                        <small className="text-muted-foreground text-xs font-normal">
+                            {subtitle}
+                        </small>
+                    ) : null}
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                     <span>Edit mode</span>
@@ -713,19 +890,42 @@ function FavoritesContentHeader({
             <div className="flex items-center justify-end">
                 {editModeVisible ? (
                     <div className="mb-3 flex flex-wrap gap-2">
-                        <Button type="button" size="sm" variant="outline" onClick={onToggleSelectAll}>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={onToggleSelectAll}
+                        >
                             {isAllSelected ? 'Deselect All' : 'Select All'}
                         </Button>
-                        <Button type="button" size="sm" variant="secondary" disabled={!hasSelection} onClick={onClearSelection}>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            disabled={!hasSelection}
+                            onClick={onClearSelection}
+                        >
                             Clear
                         </Button>
                         {showCopyButton ? (
-                            <Button type="button" size="sm" variant="outline" disabled={!hasSelection} onClick={onCopySelection}>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={!hasSelection}
+                                onClick={onCopySelection}
+                            >
                                 <CopyIcon data-icon="inline-start" />
                                 Copy
                             </Button>
                         ) : null}
-                        <Button type="button" size="sm" variant="outline" disabled={!hasSelection} onClick={onBulkRemove}>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={!hasSelection}
+                            onClick={onBulkRemove}
+                        >
                             <Trash2Icon data-icon="inline-start" />
                             Bulk Unfavorite
                         </Button>
@@ -760,41 +960,77 @@ function FavoriteCard({
     onWorldSelfInvite,
     onAvatarSelect
 }) {
-    const Icon = item.kind === 'friend' ? UserIcon : item.kind === 'world' ? GlobeIcon : ImageIcon;
+    const Icon =
+        item.kind === 'friend'
+            ? UserIcon
+            : item.kind === 'world'
+              ? GlobeIcon
+              : ImageIcon;
     const openHandler =
         item.kind === 'friend'
             ? () =>
-                openUserDialog({
-                    userId: item.id,
-                    title: item.title || undefined,
-                    seedData: item.seedData ?? null
-                })
+                  openUserDialog({
+                      userId: item.id,
+                      title: item.title || undefined,
+                      seedData: item.seedData ?? null
+                  })
             : item.kind === 'world'
-                ? () =>
+              ? () =>
                     openWorldDialog({
                         worldId: item.id,
                         title: item.title || undefined,
                         seedData: item.seedData ?? null
                     })
-                : item.kind === 'avatar'
-                    ? () =>
-                        openAvatarDialog({
-                            avatarId: item.id,
-                            title: item.title || undefined,
-                            seedData: item.seedData ?? null
-                        })
+              : item.kind === 'avatar'
+                ? () =>
+                      openAvatarDialog({
+                          avatarId: item.id,
+                          title: item.title || undefined,
+                          seedData: item.seedData ?? null
+                      })
                 : null;
-    const canRemoveLocal = item.source === 'local' && typeof onRemoveLocal === 'function';
-    const canRemoveRemote = item.source === 'remote' && typeof onRemoveRemote === 'function';
-    const friendActionLocation = item.kind === 'friend' ? resolvePresenceLocation(item.seedData) : '';
-    const parsedFriendLocation = friendActionLocation ? parseLocation(friendActionLocation) : {};
-    const canUseFriendLocation = Boolean(parsedFriendLocation.isRealInstance && parsedFriendLocation.worldId && parsedFriendLocation.instanceId);
-    const isCurrentUser = Boolean(item.id && item.id === normalizeEntityId(currentUserId));
-    const isFriendOnline = Boolean(item.seedData?.state === 'online' || item.seedData?.stateBucket === 'online' || item.seedData?.status === 'active');
-    const canSelectAvatar = Boolean(item.kind === 'avatar' && item.id && item.id !== currentAvatarId && onAvatarSelect);
-    const hasCardActions = Boolean(canRemoveLocal || canRemoveRemote || canSelectAvatar || item.kind === 'friend' || item.kind === 'world');
-    const friendLocation = item.kind === 'friend' ? resolvePresenceLocation(item.seedData || item) : '';
-    const friendShowsLocation = Boolean(friendLocation && friendLocation !== 'offline');
+    const canRemoveLocal =
+        item.source === 'local' && typeof onRemoveLocal === 'function';
+    const canRemoveRemote =
+        item.source === 'remote' && typeof onRemoveRemote === 'function';
+    const friendActionLocation =
+        item.kind === 'friend' ? resolvePresenceLocation(item.seedData) : '';
+    const parsedFriendLocation = friendActionLocation
+        ? parseLocation(friendActionLocation)
+        : {};
+    const canUseFriendLocation = Boolean(
+        parsedFriendLocation.isRealInstance &&
+        parsedFriendLocation.worldId &&
+        parsedFriendLocation.instanceId
+    );
+    const isCurrentUser = Boolean(
+        item.id && item.id === normalizeEntityId(currentUserId)
+    );
+    const isFriendOnline = Boolean(
+        item.seedData?.state === 'online' ||
+        item.seedData?.stateBucket === 'online' ||
+        item.seedData?.status === 'active'
+    );
+    const canSelectAvatar = Boolean(
+        item.kind === 'avatar' &&
+        item.id &&
+        item.id !== currentAvatarId &&
+        onAvatarSelect
+    );
+    const hasCardActions = Boolean(
+        canRemoveLocal ||
+        canRemoveRemote ||
+        canSelectAvatar ||
+        item.kind === 'friend' ||
+        item.kind === 'world'
+    );
+    const friendLocation =
+        item.kind === 'friend'
+            ? resolvePresenceLocation(item.seedData || item)
+            : '';
+    const friendShowsLocation = Boolean(
+        friendLocation && friendLocation !== 'offline'
+    );
     const cardPaddingY = Math.max(4, Math.round(8 * cardScale * cardSpacing));
     const cardPaddingX = Math.max(4, Math.round(10 * cardScale * cardSpacing));
     const cardGap = Math.max(4, Math.round(8 * cardSpacing));
@@ -810,46 +1046,76 @@ function FavoriteCard({
 
     return (
         <div
-            className="flex min-w-56 cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-sm transition-colors hover:bg-muted"
+            className="hover:bg-muted flex min-w-56 cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-sm transition-colors"
             style={{
                 gap: `${cardGap}px`,
                 padding: `${cardPaddingY}px ${cardPaddingX}px`
             }}
             role={openHandler ? 'button' : undefined}
             tabIndex={openHandler ? 0 : undefined}
-            aria-label={openHandler ? `Open ${item.title || 'favorite item'}` : undefined}
+            aria-label={
+                openHandler
+                    ? `Open ${item.title || 'favorite item'}`
+                    : undefined
+            }
             onKeyDown={handleCardKeyDown}
-            onClick={openHandler ? openCard : undefined}>
-            <div className={cn(
-                'flex size-12 shrink-0 items-center justify-center overflow-hidden bg-muted',
-                item.kind === 'friend' ? 'rounded-full' : 'rounded-sm'
-            )}
-            style={{
-                width: `${mediaSize}px`,
-                height: `${mediaSize}px`
-            }}>
+            onClick={openHandler ? openCard : undefined}
+        >
+            <div
+                className={cn(
+                    'bg-muted flex size-12 shrink-0 items-center justify-center overflow-hidden',
+                    item.kind === 'friend' ? 'rounded-full' : 'rounded-sm'
+                )}
+                style={{
+                    width: `${mediaSize}px`,
+                    height: `${mediaSize}px`
+                }}
+            >
                 {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.title} loading="lazy" className="size-full object-cover" />
+                    <img
+                        src={item.imageUrl}
+                        alt={item.title}
+                        loading="lazy"
+                        className="size-full object-cover"
+                    />
+                ) : item.kind === 'friend' ? (
+                    <UsersIcon className="text-muted-foreground size-4" />
                 ) : (
-                    item.kind === 'friend' ? <UsersIcon className="size-4 text-muted-foreground" /> : <Icon className="size-4 text-muted-foreground" />
+                    <Icon className="text-muted-foreground size-4" />
                 )}
             </div>
             <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 items-center gap-1.5">
                     <span
                         className="truncate font-medium"
-                        style={item.titleColor ? { color: item.titleColor } : undefined}>
+                        style={
+                            item.titleColor
+                                ? { color: item.titleColor }
+                                : undefined
+                        }
+                    >
                         {item.title}
                     </span>
-                    {item.isUnavailable ? <TriangleAlertIcon className="size-4 shrink-0 text-destructive" /> : null}
-                    {item.isPrivate ? <LockIcon className="size-4 shrink-0 text-muted-foreground" /> : null}
+                    {item.isUnavailable ? (
+                        <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
+                    ) : null}
+                    {item.isPrivate ? (
+                        <LockIcon className="text-muted-foreground size-4 shrink-0" />
+                    ) : null}
                 </div>
                 {friendShowsLocation ? (
-                    <div className="truncate text-xs text-muted-foreground" onClick={(event) => event.stopPropagation()}>
+                    <div
+                        className="text-muted-foreground truncate text-xs"
+                        onClick={(event) => event.stopPropagation()}
+                    >
                         <Location
                             location={friendLocation}
                             traveling={item.travelingToLocation}
-                            hint={item.seedData?.worldName || item.seedData?.travelingToWorld || ''}
+                            hint={
+                                item.seedData?.worldName ||
+                                item.seedData?.travelingToWorld ||
+                                ''
+                            }
                             grouphint={item.seedData?.groupName || ''}
                             link={false}
                             asButton={false}
@@ -857,11 +1123,14 @@ function FavoriteCard({
                         />
                     </div>
                 ) : (
-                    <div className="truncate text-xs text-muted-foreground">{item.subtitle}</div>
+                    <div className="text-muted-foreground truncate text-xs">
+                        {item.subtitle}
+                    </div>
                 )}
                 {showGroupLabel ? (
-                    <div className="truncate text-xs text-muted-foreground">
-                        {item.source === 'remote' ? 'VRChat' : 'Local'} / {item.groupLabel}
+                    <div className="text-muted-foreground truncate text-xs">
+                        {item.source === 'remote' ? 'VRChat' : 'Local'} /{' '}
+                        {item.groupLabel}
                     </div>
                 ) : null}
             </div>
@@ -870,7 +1139,9 @@ function FavoriteCard({
                     aria-label={`Select ${item.title || 'favorite item'}`}
                     checked={selected}
                     onClick={(event) => event.stopPropagation()}
-                    onCheckedChange={(checked) => onToggleSelect(Boolean(checked))}
+                    onCheckedChange={(checked) =>
+                        onToggleSelect(Boolean(checked))
+                    }
                 />
             ) : hasCardActions ? (
                 <DropdownMenu>
@@ -882,7 +1153,8 @@ function FavoriteCard({
                             className="rounded-full"
                             aria-label="Favorite item options"
                             disabled={removing}
-                            onClick={(event) => event.stopPropagation()}>
+                            onClick={(event) => event.stopPropagation()}
+                        >
                             {removing ? (
                                 <Spinner data-icon="inline-start" />
                             ) : (
@@ -900,31 +1172,58 @@ function FavoriteCard({
                             <>
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem
-                                        disabled={isCurrentUser || !isFriendOnline || !onFriendRequestInvite}
-                                        onSelect={() => onFriendRequestInvite?.(item)}>
+                                        disabled={
+                                            isCurrentUser ||
+                                            !isFriendOnline ||
+                                            !onFriendRequestInvite
+                                        }
+                                        onSelect={() =>
+                                            onFriendRequestInvite?.(item)
+                                        }
+                                    >
                                         Request invite
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        disabled={isCurrentUser || !canSendInvite || !onFriendInvite}
-                                        onSelect={() => onFriendInvite?.(item)}>
+                                        disabled={
+                                            isCurrentUser ||
+                                            !canSendInvite ||
+                                            !onFriendInvite
+                                        }
+                                        onSelect={() => onFriendInvite?.(item)}
+                                    >
                                         Send invite
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        disabled={isCurrentUser || !canBoop || !onFriendBoop}
-                                        onSelect={() => onFriendBoop?.(item)}>
+                                        disabled={
+                                            isCurrentUser ||
+                                            !canBoop ||
+                                            !onFriendBoop
+                                        }
+                                        onSelect={() => onFriendBoop?.(item)}
+                                    >
                                         Send boop
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem
-                                        disabled={!canUseFriendLocation || !onFriendLaunch}
-                                        onSelect={() => onFriendLaunch?.(item)}>
+                                        disabled={
+                                            !canUseFriendLocation ||
+                                            !onFriendLaunch
+                                        }
+                                        onSelect={() => onFriendLaunch?.(item)}
+                                    >
                                         Launch in VRChat
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        disabled={!canUseFriendLocation || !onFriendSelfInvite}
-                                        onSelect={() => onFriendSelfInvite?.(item)}>
+                                        disabled={
+                                            !canUseFriendLocation ||
+                                            !onFriendSelfInvite
+                                        }
+                                        onSelect={() =>
+                                            onFriendSelfInvite?.(item)
+                                        }
+                                    >
                                         Self invite
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
@@ -934,12 +1233,14 @@ function FavoriteCard({
                             <DropdownMenuGroup>
                                 <DropdownMenuItem
                                     disabled={!onWorldNewInstance}
-                                    onSelect={() => onWorldNewInstance?.(item)}>
+                                    onSelect={() => onWorldNewInstance?.(item)}
+                                >
                                     New instance
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     disabled={!onWorldSelfInvite}
-                                    onSelect={() => onWorldSelfInvite?.(item)}>
+                                    onSelect={() => onWorldSelfInvite?.(item)}
+                                >
                                     New instance and self invite
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
@@ -948,7 +1249,8 @@ function FavoriteCard({
                             <DropdownMenuGroup>
                                 <DropdownMenuItem
                                     disabled={!canSelectAvatar}
-                                    onSelect={() => onAvatarSelect?.(item)}>
+                                    onSelect={() => onAvatarSelect?.(item)}
+                                >
                                     Select avatar
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
@@ -965,8 +1267,11 @@ function FavoriteCard({
                                                 return;
                                             }
                                             onRemoveRemote(item);
-                                        }}>
-                                        {item.source === 'local' ? 'Delete' : 'Unfavorite'}
+                                        }}
+                                    >
+                                        {item.source === 'local'
+                                            ? 'Delete'
+                                            : 'Unfavorite'}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                             </>
@@ -981,33 +1286,79 @@ function FavoriteCard({
 function FavoritesPage({ kind, embedded = false }) {
     const favoriteLoadStatus = useFavoriteStore((state) => state.loadStatus);
     const favoriteDetail = useFavoriteStore((state) => state.detail);
-    const favoritesSortOrder = useFavoriteStore((state) => state.favoritesSortOrder);
-    const remoteFavoritesById = useFavoriteStore((state) => state.remoteFavoritesById);
-    const favoriteFriendGroups = useFavoriteStore((state) => state.favoriteFriendGroups);
-    const favoriteWorldGroups = useFavoriteStore((state) => state.favoriteWorldGroups);
-    const favoriteAvatarGroups = useFavoriteStore((state) => state.favoriteAvatarGroups);
+    const favoritesSortOrder = useFavoriteStore(
+        (state) => state.favoritesSortOrder
+    );
+    const remoteFavoritesById = useFavoriteStore(
+        (state) => state.remoteFavoritesById
+    );
+    const favoriteFriendGroups = useFavoriteStore(
+        (state) => state.favoriteFriendGroups
+    );
+    const favoriteWorldGroups = useFavoriteStore(
+        (state) => state.favoriteWorldGroups
+    );
+    const favoriteAvatarGroups = useFavoriteStore(
+        (state) => state.favoriteAvatarGroups
+    );
     const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore(
         (state) => state.groupedFavoriteFriendIdsByGroupKey
     );
-    const localWorldFavorites = useFavoriteStore((state) => state.localWorldFavorites);
-    const localAvatarFavorites = useFavoriteStore((state) => state.localAvatarFavorites);
-    const localFriendFavorites = useFavoriteStore((state) => state.localFriendFavorites);
-    const localWorldFavoriteGroups = useFavoriteStore((state) => state.localWorldFavoriteGroups);
-    const localAvatarFavoriteGroups = useFavoriteStore((state) => state.localAvatarFavoriteGroups);
-    const localFriendFavoriteGroups = useFavoriteStore((state) => state.localFriendFavoriteGroups);
-    const localWorldDetailsById = useFavoriteStore((state) => state.localWorldDetailsById);
-    const localAvatarDetailsById = useFavoriteStore((state) => state.localAvatarDetailsById);
-    const favoriteWorldIds = useFavoriteStore((state) => state.favoriteWorldIds);
-    const favoriteAvatarIds = useFavoriteStore((state) => state.favoriteAvatarIds);
-    const favoriteFriendIds = useFavoriteStore((state) => state.favoriteFriendIds);
-    const removeLocalFavorite = useFavoriteStore((state) => state.removeLocalFavorite);
-    const removeRemoteFavorite = useFavoriteStore((state) => state.removeRemoteFavorite);
-    const createLocalFavoriteGroup = useFavoriteStore((state) => state.createLocalFavoriteGroup);
-    const renameLocalFavoriteGroup = useFavoriteStore((state) => state.renameLocalFavoriteGroup);
-    const deleteLocalFavoriteGroup = useFavoriteStore((state) => state.deleteLocalFavoriteGroup);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const localWorldFavorites = useFavoriteStore(
+        (state) => state.localWorldFavorites
+    );
+    const localAvatarFavorites = useFavoriteStore(
+        (state) => state.localAvatarFavorites
+    );
+    const localFriendFavorites = useFavoriteStore(
+        (state) => state.localFriendFavorites
+    );
+    const localWorldFavoriteGroups = useFavoriteStore(
+        (state) => state.localWorldFavoriteGroups
+    );
+    const localAvatarFavoriteGroups = useFavoriteStore(
+        (state) => state.localAvatarFavoriteGroups
+    );
+    const localFriendFavoriteGroups = useFavoriteStore(
+        (state) => state.localFriendFavoriteGroups
+    );
+    const localWorldDetailsById = useFavoriteStore(
+        (state) => state.localWorldDetailsById
+    );
+    const localAvatarDetailsById = useFavoriteStore(
+        (state) => state.localAvatarDetailsById
+    );
+    const favoriteWorldIds = useFavoriteStore(
+        (state) => state.favoriteWorldIds
+    );
+    const favoriteAvatarIds = useFavoriteStore(
+        (state) => state.favoriteAvatarIds
+    );
+    const favoriteFriendIds = useFavoriteStore(
+        (state) => state.favoriteFriendIds
+    );
+    const removeLocalFavorite = useFavoriteStore(
+        (state) => state.removeLocalFavorite
+    );
+    const removeRemoteFavorite = useFavoriteStore(
+        (state) => state.removeRemoteFavorite
+    );
+    const createLocalFavoriteGroup = useFavoriteStore(
+        (state) => state.createLocalFavoriteGroup
+    );
+    const renameLocalFavoriteGroup = useFavoriteStore(
+        (state) => state.renameLocalFavoriteGroup
+    );
+    const deleteLocalFavoriteGroup = useFavoriteStore(
+        (state) => state.deleteLocalFavoriteGroup
+    );
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const gameState = useRuntimeStore((state) => state.gameState);
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const confirm = useModalStore((state) => state.confirm);
@@ -1027,9 +1378,14 @@ function FavoritesPage({ kind, embedded = false }) {
     const [selectedKeys, setSelectedKeys] = useState([]);
     const [creatingLocalGroup, setCreatingLocalGroup] = useState(false);
     const [newLocalGroupName, setNewLocalGroupName] = useState('');
-    const [remoteDetailsRefreshToken, setRemoteDetailsRefreshToken] = useState(0);
-    const [splitterSizePx, setSplitterSizePx] = useState(SPLITTER_DEFAULT_SIZE_PX);
-    const [splitterGroupWidth, setSplitterGroupWidth] = useState(SPLITTER_FALLBACK_WIDTH);
+    const [remoteDetailsRefreshToken, setRemoteDetailsRefreshToken] =
+        useState(0);
+    const [splitterSizePx, setSplitterSizePx] = useState(
+        SPLITTER_DEFAULT_SIZE_PX
+    );
+    const [splitterGroupWidth, setSplitterGroupWidth] = useState(
+        SPLITTER_FALLBACK_WIDTH
+    );
     const [splitterLayoutVersion, setSplitterLayoutVersion] = useState(0);
     const [cardScale, setCardScale] = useState(1);
     const [cardSpacing, setCardSpacing] = useState(1);
@@ -1037,8 +1393,14 @@ function FavoritesPage({ kind, embedded = false }) {
     const splitterGroupRef = useRef(null);
     const splitterDraggingRef = useRef(false);
     const pendingSplitterSizePxRef = useRef(null);
-    const selectedKeysSet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
-    const friendsMap = useMemo(() => new Map(Object.entries(friendsById || {})), [friendsById]);
+    const selectedKeysSet = useMemo(
+        () => new Set(selectedKeys),
+        [selectedKeys]
+    );
+    const friendsMap = useMemo(
+        () => new Map(Object.entries(friendsById || {})),
+        [friendsById]
+    );
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUserSnapshot),
         [gameState, currentUserSnapshot]
@@ -1052,24 +1414,28 @@ function FavoritesPage({ kind, embedded = false }) {
             }),
         [currentInviteLocation, currentUserId]
     );
-    const canSendInvite = Boolean(gameState?.isGameRunning && currentInviteLocation && canInviteFromCurrentLocation);
+    const canSendInvite = Boolean(
+        gameState?.isGameRunning &&
+        currentInviteLocation &&
+        canInviteFromCurrentLocation
+    );
     const canBoop = Boolean(currentUserSnapshot?.isBoopingEnabled);
 
     const avatarTags = useMemo(
         () =>
             kind === 'avatar'
                 ? Array.from(
-                    new Set(
-                        Object.values(remoteFavoritesById)
-                            .filter((favorite) => favorite?.type === 'avatar')
-                            .map((favorite) =>
-                                typeof favorite?.tags?.[0] === 'string'
-                                    ? favorite.tags[0].trim()
-                                    : ''
-                            )
-                            .filter(Boolean)
-                    )
-                )
+                      new Set(
+                          Object.values(remoteFavoritesById)
+                              .filter((favorite) => favorite?.type === 'avatar')
+                              .map((favorite) =>
+                                  typeof favorite?.tags?.[0] === 'string'
+                                      ? favorite.tags[0].trim()
+                                      : ''
+                              )
+                              .filter(Boolean)
+                      )
+                  )
                 : [],
         [kind, remoteFavoritesById]
     );
@@ -1077,13 +1443,19 @@ function FavoritesPage({ kind, embedded = false }) {
     const remoteEntityDetails = useFavoriteRemoteDetails({
         type: kind === 'avatar' ? 'avatar' : 'world',
         favoriteIds:
-            kind === 'world' ? favoriteWorldIds : kind === 'avatar' ? favoriteAvatarIds : [],
+            kind === 'world'
+                ? favoriteWorldIds
+                : kind === 'avatar'
+                  ? favoriteAvatarIds
+                  : [],
         avatarTags,
         refreshToken: remoteDetailsRefreshToken,
         enabled:
             kind !== 'friend' &&
             favoriteLoadStatus === 'ready' &&
-            (kind === 'world' ? favoriteWorldIds.length > 0 : favoriteAvatarIds.length > 0)
+            (kind === 'world'
+                ? favoriteWorldIds.length > 0
+                : favoriteAvatarIds.length > 0)
     });
 
     useEffect(() => {
@@ -1164,8 +1536,22 @@ function FavoritesPage({ kind, embedded = false }) {
                 if (!active) {
                     return;
                 }
-                setCardScale(clampNumber(nextScale, CARD_SCALE_SLIDER.min, CARD_SCALE_SLIDER.max, 1));
-                setCardSpacing(clampNumber(nextSpacing, CARD_SPACING_SLIDER.min, CARD_SPACING_SLIDER.max, 1));
+                setCardScale(
+                    clampNumber(
+                        nextScale,
+                        CARD_SCALE_SLIDER.min,
+                        CARD_SCALE_SLIDER.max,
+                        1
+                    )
+                );
+                setCardSpacing(
+                    clampNumber(
+                        nextSpacing,
+                        CARD_SPACING_SLIDER.min,
+                        CARD_SPACING_SLIDER.max,
+                        1
+                    )
+                );
             })
             .catch(() => {
                 if (!active) {
@@ -1249,12 +1635,19 @@ function FavoritesPage({ kind, embedded = false }) {
                 currentUserSnapshot
             });
             if (kind === 'avatar') {
-                const rows = await database.getAvatarHistory(currentUserId, 100);
+                const rows = await database.getAvatarHistory(
+                    currentUserId,
+                    100
+                );
                 setAvatarHistory(Array.isArray(rows) ? rows : []);
             }
             toast.success('Favorites refreshed.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to refresh favorites.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to refresh favorites.'
+            );
         } finally {
             setRefreshing(false);
         }
@@ -1264,27 +1657,52 @@ function FavoritesPage({ kind, embedded = false }) {
         setSortValue(value);
         if (value === 'date' || value === 'name') {
             const nextSortByDate = value === 'date';
-            void setBoolConfigPreference('sortFavorites', nextSortByDate)
-                .catch((error) => {
-                    toast.error(error instanceof Error ? error.message : 'Failed to save favorite sort preference.');
-                });
+            void setBoolConfigPreference('sortFavorites', nextSortByDate).catch(
+                (error) => {
+                    toast.error(
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to save favorite sort preference.'
+                    );
+                }
+            );
         }
     };
 
     const handleCardScaleChange = (value) => {
-        const nextValue = clampNumber(value, CARD_SCALE_SLIDER.min, CARD_SCALE_SLIDER.max, 1);
+        const nextValue = clampNumber(
+            value,
+            CARD_SCALE_SLIDER.min,
+            CARD_SCALE_SLIDER.max,
+            1
+        );
         setCardScale(nextValue);
-        void configRepository.setString(CARD_SCALE_CONFIG_KEYS[kind], String(nextValue));
+        void configRepository.setString(
+            CARD_SCALE_CONFIG_KEYS[kind],
+            String(nextValue)
+        );
     };
 
     const handleCardSpacingChange = (value) => {
-        const nextValue = clampNumber(value, CARD_SPACING_SLIDER.min, CARD_SPACING_SLIDER.max, 1);
+        const nextValue = clampNumber(
+            value,
+            CARD_SPACING_SLIDER.min,
+            CARD_SPACING_SLIDER.max,
+            1
+        );
         setCardSpacing(nextValue);
-        void configRepository.setString(CARD_SPACING_CONFIG_KEYS[kind], String(nextValue));
+        void configRepository.setString(
+            CARD_SPACING_CONFIG_KEYS[kind],
+            String(nextValue)
+        );
     };
 
     const handleRemoveLocalFavorite = async (item, { silent = false } = {}) => {
-        if (!item || item.source !== 'local' || (!silent && removingFavoriteKeyRef.current)) {
+        if (
+            !item ||
+            item.source !== 'local' ||
+            (!silent && removingFavoriteKeyRef.current)
+        ) {
             return false;
         }
 
@@ -1325,7 +1743,11 @@ function FavoritesPage({ kind, embedded = false }) {
             if (silent) {
                 throw error;
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to remove local favorite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to remove local favorite.'
+            );
             return false;
         } finally {
             if (!silent) {
@@ -1337,8 +1759,15 @@ function FavoritesPage({ kind, embedded = false }) {
         }
     };
 
-    const handleRemoveRemoteFavorite = async (item, { silent = false } = {}) => {
-        if (!item || item.source !== 'remote' || (!silent && removingFavoriteKeyRef.current)) {
+    const handleRemoveRemoteFavorite = async (
+        item,
+        { silent = false } = {}
+    ) => {
+        if (
+            !item ||
+            item.source !== 'remote' ||
+            (!silent && removingFavoriteKeyRef.current)
+        ) {
             return false;
         }
 
@@ -1374,7 +1803,11 @@ function FavoritesPage({ kind, embedded = false }) {
             if (silent) {
                 throw error;
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to remove VRChat favorite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to remove VRChat favorite.'
+            );
             return false;
         } finally {
             if (!silent) {
@@ -1425,8 +1858,7 @@ function FavoritesPage({ kind, embedded = false }) {
 
         return {
             title: 'Favorite Worlds',
-            description:
-                'Remote world favorites with local cache fallback.',
+            description: 'Remote world favorites with local cache fallback.',
             icon: GlobeIcon,
             remoteSectionTitle: 'VRChat Favorites',
             localSectionTitle: 'Local Favorites',
@@ -1449,13 +1881,18 @@ function FavoritesPage({ kind, embedded = false }) {
             kind === 'friend'
                 ? favoriteFriendGroups
                 : kind === 'avatar'
-                    ? favoriteAvatarGroups
-                    : favoriteWorldGroups;
+                  ? favoriteAvatarGroups
+                  : favoriteWorldGroups;
 
         return sourceGroups.map((group) => ({
             source: 'remote',
             key: group.key,
-            name: group.name || String(group.key || '').split(':').pop() || '',
+            name:
+                group.name ||
+                String(group.key || '')
+                    .split(':')
+                    .pop() ||
+                '',
             type: group.type || favoriteGroupType(kind, group),
             label: group.displayName || group.name || group.key,
             count: Number(group.count) || 0,
@@ -1469,14 +1906,14 @@ function FavoritesPage({ kind, embedded = false }) {
             kind === 'friend'
                 ? localFriendFavoriteGroups
                 : kind === 'avatar'
-                    ? localAvatarFavoriteGroups
-                    : localWorldFavoriteGroups;
+                  ? localAvatarFavoriteGroups
+                  : localWorldFavoriteGroups;
         const source =
             kind === 'friend'
                 ? localFriendFavorites
                 : kind === 'avatar'
-                    ? localAvatarFavorites
-                    : localWorldFavorites;
+                  ? localAvatarFavorites
+                  : localWorldFavorites;
 
         return names.map((name) => ({
             source: 'local',
@@ -1500,19 +1937,23 @@ function FavoritesPage({ kind, embedded = false }) {
         if (kind !== 'avatar') {
             return [];
         }
-        return [{
-            source: 'history',
-            key: 'local-history',
-            label: 'Local History',
-            count: avatarHistory.length,
-            capacity: 100,
-            visibility: ''
-        }];
+        return [
+            {
+                source: 'history',
+                key: 'local-history',
+                label: 'Local History',
+                count: avatarHistory.length,
+                capacity: 100,
+                visibility: ''
+            }
+        ];
     }, [avatarHistory.length, kind]);
 
     const remoteGroupLabelByKey = useMemo(
         () =>
-            Object.fromEntries(remoteGroups.map((group) => [group.key, group.label])),
+            Object.fromEntries(
+                remoteGroups.map((group) => [group.key, group.label])
+            ),
         [remoteGroups]
     );
 
@@ -1528,9 +1969,14 @@ function FavoritesPage({ kind, embedded = false }) {
                 const items = ids.map((friendId, index) => {
                     const normalizedId = normalizeEntityId(friendId);
                     const friend = friendsById[normalizedId];
-                    const status = friend?.stateBucket || friend?.state || 'offline';
+                    const status =
+                        friend?.stateBucket || friend?.state || 'offline';
                     const location = resolvePresenceLocation(friend);
-                    const subtitle = friend ? (location && location !== 'offline' ? location : friend?.statusDescription || '') : '';
+                    const subtitle = friend
+                        ? location && location !== 'offline'
+                            ? location
+                            : friend?.statusDescription || ''
+                        : '';
 
                     return {
                         key: `remote:${group.key}:${normalizedId}`,
@@ -1539,7 +1985,8 @@ function FavoritesPage({ kind, embedded = false }) {
                         groupKey: group.key,
                         groupLabel: group.label,
                         id: normalizedId,
-                        title: friend?.displayName || friend?.username || 'User',
+                        title:
+                            friend?.displayName || friend?.username || 'User',
                         titleColor: friend?.$userColour || '',
                         subtitle,
                         detailText: '',
@@ -1561,12 +2008,17 @@ function FavoritesPage({ kind, embedded = false }) {
             return itemsByGroup;
         }
 
-        const remoteFavorites = Object.values(remoteFavoritesById).filter((favorite) => {
-            if (kind === 'avatar') {
-                return favorite?.type === 'avatar';
+        const remoteFavorites = Object.values(remoteFavoritesById).filter(
+            (favorite) => {
+                if (kind === 'avatar') {
+                    return favorite?.type === 'avatar';
+                }
+                return (
+                    favorite?.type === 'world' ||
+                    favorite?.type === 'vrcPlusWorld'
+                );
             }
-            return favorite?.type === 'world' || favorite?.type === 'vrcPlusWorld';
-        });
+        );
 
         for (const favorite of remoteFavorites) {
             const favoriteId = normalizeEntityId(favorite.favoriteId);
@@ -1576,7 +2028,8 @@ function FavoritesPage({ kind, embedded = false }) {
             }
 
             const detail = remoteEntityDetails.data[favoriteId];
-            const isUnavailable = remoteEntityDetails.status === 'ready' && !detail;
+            const isUnavailable =
+                remoteEntityDetails.status === 'ready' && !detail;
             const playerCount = Number(detail?.occupants) || 0;
             const subtitle =
                 kind === 'world'
@@ -1585,12 +2038,12 @@ function FavoritesPage({ kind, embedded = false }) {
                             ? `${detail.authorName} (${playerCount})`
                             : detail.authorName
                         : isUnavailable
-                            ? 'World details are unavailable.'
-                            : 'Loading world details.'
+                          ? 'World details are unavailable.'
+                          : 'Loading world details.'
                     : detail?.authorName ||
-                        (isUnavailable
-                            ? 'Avatar details are unavailable.'
-                            : 'Loading avatar details.');
+                      (isUnavailable
+                          ? 'Avatar details are unavailable.'
+                          : 'Loading avatar details.');
 
             itemsByGroup[groupKey].push({
                 key: `remote:${groupKey}:${favoriteId}`,
@@ -1610,12 +2063,16 @@ function FavoritesPage({ kind, embedded = false }) {
                 isUnavailable,
                 tags: detail?.tags || [],
                 playerCount,
-                orderIndex: favoritesSortIndex[favoriteId] ?? Number.MAX_SAFE_INTEGER
+                orderIndex:
+                    favoritesSortIndex[favoriteId] ?? Number.MAX_SAFE_INTEGER
             });
         }
 
         for (const group of remoteGroups) {
-            itemsByGroup[group.key] = sortItems(itemsByGroup[group.key] || [], sortValue);
+            itemsByGroup[group.key] = sortItems(
+                itemsByGroup[group.key] || [],
+                sortValue
+            );
         }
 
         return itemsByGroup;
@@ -1643,7 +2100,8 @@ function FavoritesPage({ kind, embedded = false }) {
                 const items = ids.map((friendId, index) => {
                     const normalizedId = normalizeEntityId(friendId);
                     const friend = friendsById[normalizedId];
-                    const status = friend?.stateBucket || friend?.state || 'offline';
+                    const status =
+                        friend?.stateBucket || friend?.state || 'offline';
                     const location = resolvePresenceLocation(friend);
                     return {
                         key: `local:${group.key}:${normalizedId}`,
@@ -1652,9 +2110,14 @@ function FavoritesPage({ kind, embedded = false }) {
                         groupKey: group.key,
                         groupLabel: group.label,
                         id: normalizedId,
-                        title: friend?.displayName || friend?.username || 'User',
+                        title:
+                            friend?.displayName || friend?.username || 'User',
                         titleColor: friend?.$userColour || '',
-                        subtitle: friend ? (location && location !== 'offline' ? location : friend?.statusDescription || '') : '',
+                        subtitle: friend
+                            ? location && location !== 'offline'
+                                ? location
+                                : friend?.statusDescription || ''
+                            : '',
                         detailText: '',
                         location,
                         travelingToLocation: friend?.travelingToLocation || '',
@@ -1674,7 +2137,8 @@ function FavoritesPage({ kind, embedded = false }) {
             return itemsByGroup;
         }
 
-        const localFavorites = kind === 'avatar' ? localAvatarFavorites : localWorldFavorites;
+        const localFavorites =
+            kind === 'avatar' ? localAvatarFavorites : localWorldFavorites;
         const localDetailsById =
             kind === 'avatar' ? localAvatarDetailsById : localWorldDetailsById;
 
@@ -1684,7 +2148,9 @@ function FavoritesPage({ kind, embedded = false }) {
                 : [];
             const items = ids.map((entityId, index) => {
                 const normalizedId = normalizeEntityId(entityId);
-                const detail = localDetailsById[normalizedId] || { id: normalizedId };
+                const detail = localDetailsById[normalizedId] || {
+                    id: normalizedId
+                };
                 const playerCount = Number(detail.occupants) || 0;
                 return {
                     key: `local:${group.key}:${normalizedId}`,
@@ -1693,7 +2159,8 @@ function FavoritesPage({ kind, embedded = false }) {
                     groupKey: group.key,
                     groupLabel: group.label,
                     id: normalizedId,
-                    title: detail.name || (kind === 'world' ? 'World' : 'Avatar'),
+                    title:
+                        detail.name || (kind === 'world' ? 'World' : 'Avatar'),
                     subtitle:
                         kind === 'world'
                             ? detail.authorName || ''
@@ -1744,7 +2211,9 @@ function FavoritesPage({ kind, embedded = false }) {
                 subtitle: detail?.authorName || '',
                 description: detail?.description || '',
                 seedData: detail || null,
-                imageUrl: shrinkImage(detail?.thumbnailImageUrl || detail?.imageUrl || ''),
+                imageUrl: shrinkImage(
+                    detail?.thumbnailImageUrl || detail?.imageUrl || ''
+                ),
                 isPrivate: detail?.releaseStatus === 'private',
                 isUnavailable: false,
                 tags: detail?.tags || [],
@@ -1755,7 +2224,10 @@ function FavoritesPage({ kind, embedded = false }) {
     }, [avatarHistory, kind]);
 
     const allItems = useMemo(
-        () => [...Object.values(remoteItemsByGroup).flat(), ...Object.values(localItemsByGroup).flat()],
+        () => [
+            ...Object.values(remoteItemsByGroup).flat(),
+            ...Object.values(localItemsByGroup).flat()
+        ],
         [localItemsByGroup, remoteItemsByGroup]
     );
 
@@ -1769,17 +2241,29 @@ function FavoritesPage({ kind, embedded = false }) {
 
         return allItems.filter((item) => {
             if (kind === 'world' && searchMode === 'tag') {
-                const matchesTag = Array.isArray(item.tags) &&
-                    item.tags.some((tag) =>
-                        typeof tag === 'string' &&
-                        tag.startsWith('author_tag_') &&
-                        tag.substring(11).toLowerCase().includes(searchNeedle)
+                const matchesTag =
+                    Array.isArray(item.tags) &&
+                    item.tags.some(
+                        (tag) =>
+                            typeof tag === 'string' &&
+                            tag.startsWith('author_tag_') &&
+                            tag
+                                .substring(11)
+                                .toLowerCase()
+                                .includes(searchNeedle)
                     );
                 if (!matchesTag) {
                     return false;
                 }
             } else {
-                const matchesText = [item.title, item.subtitle, item.description, item.id, item.groupLabel, item.statusLabel]
+                const matchesText = [
+                    item.title,
+                    item.subtitle,
+                    item.description,
+                    item.id,
+                    item.groupLabel,
+                    item.statusLabel
+                ]
                     .filter(Boolean)
                     .join(' ')
                     .toLowerCase()
@@ -1794,15 +2278,13 @@ function FavoritesPage({ kind, embedded = false }) {
     }, [allItems, isSearchActive, kind, searchMode, searchNeedle]);
 
     useEffect(() => {
-        const hasSelection =
-            (selectedSource === 'remote'
+        const hasSelection = (
+            selectedSource === 'remote'
                 ? remoteGroups
                 : selectedSource === 'history'
-                    ? avatarHistoryGroups
-                    : localGroups
-            ).some(
-                (group) => group.key === selectedGroupKey
-            );
+                  ? avatarHistoryGroups
+                  : localGroups
+        ).some((group) => group.key === selectedGroupKey);
         if (hasSelection) {
             return;
         }
@@ -1822,19 +2304,29 @@ function FavoritesPage({ kind, embedded = false }) {
 
         setSelectedSource(nextGroup.source);
         setSelectedGroupKey(nextGroup.key);
-    }, [avatarHistoryGroups, localGroups, remoteGroups, selectedGroupKey, selectedSource]);
+    }, [
+        avatarHistoryGroups,
+        localGroups,
+        remoteGroups,
+        selectedGroupKey,
+        selectedSource
+    ]);
 
     const selectedGroup = useMemo(
         () =>
             (selectedSource === 'remote'
                 ? remoteGroups
                 : selectedSource === 'history'
-                    ? avatarHistoryGroups
-                    : localGroups
-            ).find(
-                (group) => group.key === selectedGroupKey
-            ) || null,
-        [avatarHistoryGroups, localGroups, remoteGroups, selectedGroupKey, selectedSource]
+                  ? avatarHistoryGroups
+                  : localGroups
+            ).find((group) => group.key === selectedGroupKey) || null,
+        [
+            avatarHistoryGroups,
+            localGroups,
+            remoteGroups,
+            selectedGroupKey,
+            selectedSource
+        ]
     );
     const selectedItems = useMemo(() => {
         if (!selectedGroup) {
@@ -1844,24 +2336,42 @@ function FavoritesPage({ kind, embedded = false }) {
             return avatarHistoryItems;
         }
         return (
-            selectedSource === 'remote'
+            (selectedSource === 'remote'
                 ? remoteItemsByGroup[selectedGroup.key]
-                : localItemsByGroup[selectedGroup.key]
-        ) || EMPTY_ITEMS;
-    }, [avatarHistoryItems, localItemsByGroup, remoteItemsByGroup, selectedGroup, selectedSource]);
+                : localItemsByGroup[selectedGroup.key]) || EMPTY_ITEMS
+        );
+    }, [
+        avatarHistoryItems,
+        localItemsByGroup,
+        remoteItemsByGroup,
+        selectedGroup,
+        selectedSource
+    ]);
     const contentItems = useMemo(
         () => (isSearchActive ? filteredItems : selectedItems),
         [filteredItems, isSearchActive, selectedItems]
     );
-    const isAllSelected = contentItems.length > 0 && contentItems.every((item) => selectedKeysSet.has(item.key));
+    const isAllSelected =
+        contentItems.length > 0 &&
+        contentItems.every((item) => selectedKeysSet.has(item.key));
     const hasSelection = selectedKeys.length > 0;
-    const avatarEditSelectionDisabled = kind === 'avatar' && selectedSource !== 'remote';
-    const editModeDisabled = isSearchActive || !selectedGroup || contentItems.length === 0 || avatarEditSelectionDisabled;
+    const avatarEditSelectionDisabled =
+        kind === 'avatar' && selectedSource !== 'remote';
+    const editModeDisabled =
+        isSearchActive ||
+        !selectedGroup ||
+        contentItems.length === 0 ||
+        avatarEditSelectionDisabled;
     const showCopyButton = selectedSource !== 'local';
-    const selectedContentItems = contentItems.filter((item) => selectedKeysSet.has(item.key));
+    const selectedContentItems = contentItems.filter((item) =>
+        selectedKeysSet.has(item.key)
+    );
     const canCreateLocalGroup =
         kind !== 'avatar' ||
-        Boolean(currentUserSnapshot?.$isVRCPlus || currentUserSnapshot?.tags?.includes?.('system_supporter'));
+        Boolean(
+            currentUserSnapshot?.$isVRCPlus ||
+            currentUserSnapshot?.tags?.includes?.('system_supporter')
+        );
 
     useEffect(() => {
         if (isSearchActive && editMode) {
@@ -1872,7 +2382,9 @@ function FavoritesPage({ kind, embedded = false }) {
 
     useEffect(() => {
         setSelectedKeys((keys) => {
-            const nextKeys = keys.filter((key) => contentItems.some((item) => item.key === key));
+            const nextKeys = keys.filter((key) =>
+                contentItems.some((item) => item.key === key)
+            );
             return nextKeys.length === keys.length ? keys : nextKeys;
         });
     }, [contentItems]);
@@ -1915,7 +2427,11 @@ function FavoritesPage({ kind, embedded = false }) {
             await refreshFavorites();
             toast.success('Favorite group renamed.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to rename favorite group.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to rename favorite group.'
+            );
         }
     }
 
@@ -1935,7 +2451,11 @@ function FavoritesPage({ kind, embedded = false }) {
             await refreshFavorites();
             toast.success('Group visibility changed.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to change group visibility.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to change group visibility.'
+            );
         }
     }
 
@@ -1961,7 +2481,11 @@ function FavoritesPage({ kind, embedded = false }) {
             await refreshFavorites();
             toast.success('Favorite group cleared.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to clear favorite group.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to clear favorite group.'
+            );
         }
     }
 
@@ -1993,13 +2517,21 @@ function FavoritesPage({ kind, embedded = false }) {
                 groupName: group.key,
                 newGroupName: nextName
             });
-            renameLocalFavoriteGroup({ kind, groupName: group.key, newGroupName: nextName });
+            renameLocalFavoriteGroup({
+                kind,
+                groupName: group.key,
+                newGroupName: nextName
+            });
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey(nextName);
             }
             toast.success('Local favorite group renamed.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to rename local favorite group.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to rename local favorite group.'
+            );
         }
     }
 
@@ -2016,14 +2548,21 @@ function FavoritesPage({ kind, embedded = false }) {
         }
 
         try {
-            await localFavoritesRepository.deleteLocalFavoriteGroup({ kind, groupName: group.key });
+            await localFavoritesRepository.deleteLocalFavoriteGroup({
+                kind,
+                groupName: group.key
+            });
             deleteLocalFavoriteGroup({ kind, groupName: group.key });
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey('');
             }
             toast.success('Local favorite group deleted.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete local favorite group.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete local favorite group.'
+            );
         }
     }
 
@@ -2037,7 +2576,11 @@ function FavoritesPage({ kind, embedded = false }) {
             const rows = await database.getAvatarHistory(currentUserId, 100);
             setAvatarHistory(Array.isArray(rows) ? rows : []);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to refresh avatar history.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to refresh avatar history.'
+            );
         } finally {
             setAvatarHistoryLoading(false);
         }
@@ -2046,7 +2589,8 @@ function FavoritesPage({ kind, embedded = false }) {
     async function handleAvatarHistoryClear() {
         const result = await confirm({
             title: 'Clear avatar history?',
-            description: 'Clear local avatar history and cached avatar metadata?',
+            description:
+                'Clear local avatar history and cached avatar metadata?',
             destructive: true,
             confirmText: 'Clear',
             cancelText: 'Cancel'
@@ -2063,36 +2607,55 @@ function FavoritesPage({ kind, embedded = false }) {
             }
             toast.success('Avatar history cleared.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to clear avatar history.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to clear avatar history.'
+            );
         }
     }
 
     function getFavoriteFriend(item) {
         const userId = normalizeEntityId(item?.id);
-        return item?.seedData || friendsById[userId] || {
-            id: userId,
-            displayName: item?.title || userId,
-            location: ''
-        };
+        return (
+            item?.seedData ||
+            friendsById[userId] || {
+                id: userId,
+                displayName: item?.title || userId,
+                location: ''
+            }
+        );
     }
 
     async function launchFavoriteFriendLocation(item) {
         const friend = getFavoriteFriend(item);
         const location = resolvePresenceLocation(friend);
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return;
         }
 
         try {
-            const opened = await tryOpenLaunchLocation(location, parsedLocation.shortName || '', currentEndpoint);
+            const opened = await tryOpenLaunchLocation(
+                location,
+                parsedLocation.shortName || '',
+                currentEndpoint
+            );
             if (opened) {
                 toast.success('VRChat launch request sent.');
                 return;
             }
             toast.error('Unable to open this instance in VRChat.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to launch instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to launch instance.'
+            );
         }
     }
 
@@ -2100,19 +2663,37 @@ function FavoritesPage({ kind, embedded = false }) {
         const friend = getFavoriteFriend(item);
         const location = resolvePresenceLocation(friend);
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return;
         }
-        if (!checkCanInviteSelf(location, { currentUserId, cachedInstances: new Map(), friends: friendsMap })) {
+        if (
+            !checkCanInviteSelf(location, {
+                currentUserId,
+                cachedInstances: new Map(),
+                friends: friendsMap
+            })
+        ) {
             toast.error('Cannot self invite to this instance.');
             return;
         }
 
         try {
-            await selfInviteToInstance(location, parsedLocation.shortName || '', currentEndpoint);
+            await selfInviteToInstance(
+                location,
+                parsedLocation.shortName || '',
+                currentEndpoint
+            );
             toast.success('Self invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send self invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send self invite.'
+            );
         }
     }
 
@@ -2123,7 +2704,9 @@ function FavoritesPage({ kind, embedded = false }) {
             return;
         }
         if (!currentInviteLocation) {
-            toast.error('Cannot invite: no current VRChat location is available.');
+            toast.error(
+                'Cannot invite: no current VRChat location is available.'
+            );
             return;
         }
         if (!canInviteFromCurrentLocation) {
@@ -2133,7 +2716,9 @@ function FavoritesPage({ kind, embedded = false }) {
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error('Cannot invite: current location is not a concrete instance.');
+            toast.error(
+                'Cannot invite: current location is not a concrete instance.'
+            );
             return;
         }
 
@@ -2160,13 +2745,18 @@ function FavoritesPage({ kind, embedded = false }) {
                 params: {
                     instanceId: inviteLocation,
                     worldId: parsedLocation.worldId,
-                    worldName: worldResponse.json?.name || parsedLocation.worldId,
+                    worldName:
+                        worldResponse.json?.name || parsedLocation.worldId,
                     rsvp: true
                 }
             });
             toast.success('Invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send invite.'
+            );
         }
     }
 
@@ -2197,7 +2787,11 @@ function FavoritesPage({ kind, embedded = false }) {
             });
             toast.success('Invite request sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to request invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to request invite.'
+            );
         }
     }
 
@@ -2211,7 +2805,8 @@ function FavoritesPage({ kind, embedded = false }) {
         try {
             const result = await prompt({
                 title: 'Send boop',
-                description: 'Optional emoji id. Leave blank to send the default boop.',
+                description:
+                    'Optional emoji id. Leave blank to send the default boop.',
                 inputValue: '',
                 confirmText: 'Send',
                 cancelText: 'Cancel'
@@ -2226,7 +2821,9 @@ function FavoritesPage({ kind, embedded = false }) {
             });
             toast.success('Boop sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send boop.');
+            toast.error(
+                error instanceof Error ? error.message : 'Failed to send boop.'
+            );
         }
     }
 
@@ -2247,7 +2844,10 @@ function FavoritesPage({ kind, embedded = false }) {
         if (!item?.id) {
             return;
         }
-        const shouldConfirm = await configRepository.getBool('showConfirmationOnSwitchAvatar', true);
+        const shouldConfirm = await configRepository.getBool(
+            'showConfirmationOnSwitchAvatar',
+            true
+        );
         if (shouldConfirm) {
             const result = await confirm({
                 title: 'Select avatar?',
@@ -2267,7 +2867,11 @@ function FavoritesPage({ kind, embedded = false }) {
             });
             toast.success('Avatar selected.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to select avatar.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to select avatar.'
+            );
         }
     }
 
@@ -2287,14 +2891,21 @@ function FavoritesPage({ kind, embedded = false }) {
             return;
         }
         try {
-            await localFavoritesRepository.createLocalFavoriteGroup({ kind, groupName: nextName });
+            await localFavoritesRepository.createLocalFavoriteGroup({
+                kind,
+                groupName: nextName
+            });
             createLocalFavoriteGroup({ kind, groupName: nextName });
             setSelectedSource('local');
             setSelectedGroupKey(nextName);
             setCreatingLocalGroup(false);
             setNewLocalGroupName('');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create local favorite group.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to create local favorite group.'
+            );
         }
     }
 
@@ -2312,10 +2923,16 @@ function FavoritesPage({ kind, embedded = false }) {
         }
 
         try {
-            await navigator.clipboard.writeText(selectedContentItems.map((item) => `${item.id}\n`).join(''));
+            await navigator.clipboard.writeText(
+                selectedContentItems.map((item) => `${item.id}\n`).join('')
+            );
             toast.success('Copied selected favorite ids.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to copy selected favorites.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to copy selected favorites.'
+            );
         }
     }
 
@@ -2340,9 +2957,14 @@ function FavoritesPage({ kind, embedded = false }) {
         const removedKeys = new Set();
         for (const item of selectedContentItems) {
             try {
-                const removed = item.source === 'local'
-                    ? await handleRemoveLocalFavorite(item, { silent: true })
-                    : await handleRemoveRemoteFavorite(item, { silent: true });
+                const removed =
+                    item.source === 'local'
+                        ? await handleRemoveLocalFavorite(item, {
+                              silent: true
+                          })
+                        : await handleRemoveRemoteFavorite(item, {
+                              silent: true
+                          });
                 if (removed) {
                     removedCount += 1;
                     removedKeys.add(item.key);
@@ -2366,14 +2988,26 @@ function FavoritesPage({ kind, embedded = false }) {
         toast.error(`Removed ${removedCount}; ${failedCount} failed.`);
     }
 
-    const splitterDefaultSize = pxToSplitterPercent(splitterSizePx, splitterGroupWidth);
-    const splitterMinSize = pxToSplitterPercent(SPLITTER_MIN_SIZE_PX, splitterGroupWidth);
-    const splitterMaxSize = pxToSplitterPercent(SPLITTER_MAX_SIZE_PX, splitterGroupWidth);
+    const splitterDefaultSize = pxToSplitterPercent(
+        splitterSizePx,
+        splitterGroupWidth
+    );
+    const splitterMinSize = pxToSplitterPercent(
+        SPLITTER_MIN_SIZE_PX,
+        splitterGroupWidth
+    );
+    const splitterMaxSize = pxToSplitterPercent(
+        SPLITTER_MAX_SIZE_PX,
+        splitterGroupWidth
+    );
 
     function persistSplitterSizePx(nextSizePx) {
         const clampedSizePx = clampSplitterSizePx(nextSizePx);
         setSplitterSizePx(clampedSizePx);
-        void configRepository.setString(SPLITTER_CONFIG_KEYS[kind], String(clampedSizePx));
+        void configRepository.setString(
+            SPLITTER_CONFIG_KEYS[kind],
+            String(clampedSizePx)
+        );
     }
 
     function persistSplitterLayout(sizes) {
@@ -2384,7 +3018,10 @@ function FavoritesPage({ kind, embedded = false }) {
         if (!splitterDraggingRef.current) {
             return;
         }
-        pendingSplitterSizePxRef.current = splitterPercentToPx(nextSize, splitterGroupWidth);
+        pendingSplitterSizePxRef.current = splitterPercentToPx(
+            nextSize,
+            splitterGroupWidth
+        );
     }
 
     function handleSplitterDragging(isDragging) {
@@ -2402,22 +3039,23 @@ function FavoritesPage({ kind, embedded = false }) {
     const title = isSearchActive
         ? 'Search'
         : selectedGroup
-            ? selectedGroup.label
-            : 'No Group Selected';
+          ? selectedGroup.label
+          : 'No Group Selected';
     const subtitle = isSearchActive
         ? `${contentItems.length} result${contentItems.length === 1 ? '' : 's'}`
         : selectedGroup
-            ? selectedGroup.capacity
-                ? `${selectedGroup.count}/${selectedGroup.capacity}`
-                : String(selectedGroup.count)
-            : '';
+          ? selectedGroup.capacity
+              ? `${selectedGroup.count}/${selectedGroup.capacity}`
+              : String(selectedGroup.count)
+          : '';
 
     return (
         <div
             className={cn(
                 'flex h-full min-h-0 flex-1 flex-col',
                 embedded ? 'p-4 pb-0' : 'x-container pb-0'
-            )}>
+            )}
+        >
             <FavoritesToolbar
                 kind={kind}
                 sortValue={sortValue}
@@ -2451,15 +3089,30 @@ function FavoritesPage({ kind, embedded = false }) {
                     key={`${kind}:${splitterLayoutVersion}:${Math.round(splitterGroupWidth)}`}
                     direction="horizontal"
                     className="h-full min-h-0 flex-1"
-                    onLayout={persistSplitterLayout}>
-                    <ResizablePanel defaultSize={splitterDefaultSize} minSize={splitterMinSize} maxSize={splitterMaxSize} collapsible collapsedSize={0} order={1}>
+                    onLayout={persistSplitterLayout}
+                >
+                    <ResizablePanel
+                        defaultSize={splitterDefaultSize}
+                        minSize={splitterMinSize}
+                        maxSize={splitterMaxSize}
+                        collapsible
+                        collapsedSize={0}
+                        order={1}
+                    >
                         <div className="flex h-full min-h-0 flex-col gap-3 overflow-auto pr-2">
                             <GroupRailSection
                                 title={pageConfig.remoteSectionTitle}
                                 groups={remoteGroups}
-                                selectedSource={hasSearchInput ? '' : selectedSource}
-                                selectedGroupKey={hasSearchInput ? '' : selectedGroupKey}
-                                loading={favoriteLoadStatus === 'running' || refreshing}
+                                selectedSource={
+                                    hasSearchInput ? '' : selectedSource
+                                }
+                                selectedGroupKey={
+                                    hasSearchInput ? '' : selectedGroupKey
+                                }
+                                loading={
+                                    favoriteLoadStatus === 'running' ||
+                                    refreshing
+                                }
                                 onRefresh={() => void refreshFavorites()}
                                 onSelect={(group) => {
                                     setSearchQuery('');
@@ -2475,8 +3128,12 @@ function FavoritesPage({ kind, embedded = false }) {
                             <GroupRailSection
                                 title={pageConfig.localSectionTitle}
                                 groups={localGroups}
-                                selectedSource={hasSearchInput ? '' : selectedSource}
-                                selectedGroupKey={hasSearchInput ? '' : selectedGroupKey}
+                                selectedSource={
+                                    hasSearchInput ? '' : selectedSource
+                                }
+                                selectedGroupKey={
+                                    hasSearchInput ? '' : selectedGroupKey
+                                }
                                 loading={refreshing}
                                 creating={creatingLocalGroup}
                                 newGroupName={newLocalGroupName}
@@ -2507,118 +3164,208 @@ function FavoritesPage({ kind, embedded = false }) {
                                 <GroupRailSection
                                     title="Local History"
                                     groups={avatarHistoryGroups}
-                                    selectedSource={hasSearchInput ? '' : selectedSource}
-                                    selectedGroupKey={hasSearchInput ? '' : selectedGroupKey}
+                                    selectedSource={
+                                        hasSearchInput ? '' : selectedSource
+                                    }
+                                    selectedGroupKey={
+                                        hasSearchInput ? '' : selectedGroupKey
+                                    }
                                     loading={avatarHistoryLoading}
-                                    onRefresh={() => void refreshAvatarHistory()}
+                                    onRefresh={() =>
+                                        void refreshAvatarHistory()
+                                    }
                                     onSelect={(group) => {
                                         setSearchQuery('');
                                         setSelectedSource(group.source);
                                         setSelectedGroupKey(group.key);
                                     }}
                                     onRemoteRename={handleRemoteGroupRename}
-                                    onRemoteVisibility={handleRemoteGroupVisibility}
+                                    onRemoteVisibility={
+                                        handleRemoteGroupVisibility
+                                    }
                                     onRemoteClear={handleRemoteGroupClear}
                                     onLocalRename={handleLocalGroupRename}
                                     onLocalDelete={handleLocalGroupDelete}
-                                    onHistoryClear={() => void handleAvatarHistoryClear()}
+                                    onHistoryClear={() =>
+                                        void handleAvatarHistoryClear()
+                                    }
                                 />
                             ) : null}
                         </div>
                     </ResizablePanel>
-                    <ResizableHandle withHandle onDragging={handleSplitterDragging} />
+                    <ResizableHandle
+                        withHandle
+                        onDragging={handleSplitterDragging}
+                    />
                     <ResizablePanel order={2}>
-                    <div className="flex h-full min-h-0 flex-col pl-[26px]">
-                        <FavoritesContentHeader
-                            title={title}
-                            subtitle={subtitle}
-                            editMode={editMode}
-                            editModeDisabled={editModeDisabled}
-                            editModeVisible={editMode && !isSearchActive && !avatarEditSelectionDisabled}
-                            isAllSelected={isAllSelected}
-                            hasSelection={hasSelection}
-                            showCopyButton={showCopyButton}
-                            onEditModeChange={(value) => {
-                                setEditMode(value);
-                                if (!value) {
-                                    setSelectedKeys([]);
+                        <div className="flex h-full min-h-0 flex-col pl-[26px]">
+                            <FavoritesContentHeader
+                                title={title}
+                                subtitle={subtitle}
+                                editMode={editMode}
+                                editModeDisabled={editModeDisabled}
+                                editModeVisible={
+                                    editMode &&
+                                    !isSearchActive &&
+                                    !avatarEditSelectionDisabled
                                 }
-                            }}
-                            onToggleSelectAll={toggleSelectAll}
-                            onClearSelection={() => setSelectedKeys([])}
-                            onCopySelection={() => void copySelection()}
-                            onBulkRemove={() => void bulkRemoveSelection()}
-                        />
-                        <div className="min-h-0 flex-1 overflow-auto pr-2">
-                            {favoriteLoadStatus === 'running' && !contentItems.length ? (
-                                <FavoritesLoadingState title="Loading favorites baseline." />
-                            ) : favoriteLoadStatus === 'error' ? (
-                                <FavoritesEmptyState
-                                    title="Favorites failed to load"
-                                    description={favoriteDetail || 'The favorites baseline did not finish loading.'}
-                                />
-                            ) : kind !== 'friend' &&
-                              remoteEntityDetails.status === 'running' &&
-                              !Object.keys(remoteEntityDetails.data).length &&
-                              selectedSource === 'remote' ? (
-                                <FavoritesLoadingState
-                                    title={
-                                        kind === 'avatar'
-                                            ? 'Loading remote avatar details.'
-                                            : 'Loading remote world details.'
+                                isAllSelected={isAllSelected}
+                                hasSelection={hasSelection}
+                                showCopyButton={showCopyButton}
+                                onEditModeChange={(value) => {
+                                    setEditMode(value);
+                                    if (!value) {
+                                        setSelectedKeys([]);
                                     }
-                                />
-                            ) : !contentItems.length ? (
-                                <FavoritesEmptyState
-                                    title={isSearchActive ? 'No matches found' : 'No data'}
-                                    description={isSearchActive ? 'Try a different search term.' : 'The selected group currently has no items.'}
-                                />
-                            ) : (
-                                <div
-                                    className="grid"
-                                    style={{
-                                        gap: `${Math.max(4, Math.round(8 * cardSpacing))}px`,
-                                        gridTemplateColumns: `repeat(auto-fill,minmax(${Math.round(260 * cardScale)}px,1fr))`
-                                    }}>
-                                    {contentItems.map((item) => (
-                                        <FavoriteCard
-                                            key={item.key}
-                                            item={item}
-                                            editMode={editMode && !isSearchActive}
-                                            selected={selectedKeysSet.has(item.key)}
-                                            showGroupLabel={isSearchActive}
-                                            cardScale={cardScale}
-                                            cardSpacing={cardSpacing}
-                                            removing={removingFavoriteKey === item.key}
-                                            canSendInvite={canSendInvite}
-                                            canBoop={canBoop}
-                                            currentUserId={currentUserId}
-                                            currentAvatarId={currentUserSnapshot?.currentAvatar || ''}
-                                            onToggleSelect={(checked) => {
-                                                setSelectedKeys((keys) =>
-                                                    checked
-                                                        ? Array.from(new Set([...keys, item.key]))
-                                                        : keys.filter((key) => key !== item.key)
-                                                );
-                                            }}
-                                            onRemoveLocal={handleRemoveLocalFavorite}
-                                            onRemoveRemote={handleRemoveRemoteFavorite}
-                                            onFriendLaunch={(entry) => void launchFavoriteFriendLocation(entry)}
-                                            onFriendSelfInvite={(entry) => void selfInviteFavoriteFriendLocation(entry)}
-                                            onFriendInvite={(entry) => void sendFavoriteFriendInvite(entry)}
-                                            onFriendRequestInvite={(entry) => void requestFavoriteFriendInvite(entry)}
-                                            onFriendBoop={(entry) => void sendFavoriteFriendBoop(entry)}
-                                            onWorldNewInstance={(entry) => openWorldNewInstance(entry, false)}
-                                            onWorldSelfInvite={(entry) => openWorldNewInstance(entry, true)}
-                                            onAvatarSelect={(entry) => void selectFavoriteAvatar(entry)}
-                                        />
-                                    ))}
-                                </div>
-                            )}
+                                }}
+                                onToggleSelectAll={toggleSelectAll}
+                                onClearSelection={() => setSelectedKeys([])}
+                                onCopySelection={() => void copySelection()}
+                                onBulkRemove={() => void bulkRemoveSelection()}
+                            />
+                            <div className="min-h-0 flex-1 overflow-auto pr-2">
+                                {favoriteLoadStatus === 'running' &&
+                                !contentItems.length ? (
+                                    <FavoritesLoadingState title="Loading favorites baseline." />
+                                ) : favoriteLoadStatus === 'error' ? (
+                                    <FavoritesEmptyState
+                                        title="Favorites failed to load"
+                                        description={
+                                            favoriteDetail ||
+                                            'The favorites baseline did not finish loading.'
+                                        }
+                                    />
+                                ) : kind !== 'friend' &&
+                                  remoteEntityDetails.status === 'running' &&
+                                  !Object.keys(remoteEntityDetails.data)
+                                      .length &&
+                                  selectedSource === 'remote' ? (
+                                    <FavoritesLoadingState
+                                        title={
+                                            kind === 'avatar'
+                                                ? 'Loading remote avatar details.'
+                                                : 'Loading remote world details.'
+                                        }
+                                    />
+                                ) : !contentItems.length ? (
+                                    <FavoritesEmptyState
+                                        title={
+                                            isSearchActive
+                                                ? 'No matches found'
+                                                : 'No data'
+                                        }
+                                        description={
+                                            isSearchActive
+                                                ? 'Try a different search term.'
+                                                : 'The selected group currently has no items.'
+                                        }
+                                    />
+                                ) : (
+                                    <div
+                                        className="grid"
+                                        style={{
+                                            gap: `${Math.max(4, Math.round(8 * cardSpacing))}px`,
+                                            gridTemplateColumns: `repeat(auto-fill,minmax(${Math.round(260 * cardScale)}px,1fr))`
+                                        }}
+                                    >
+                                        {contentItems.map((item) => (
+                                            <FavoriteCard
+                                                key={item.key}
+                                                item={item}
+                                                editMode={
+                                                    editMode && !isSearchActive
+                                                }
+                                                selected={selectedKeysSet.has(
+                                                    item.key
+                                                )}
+                                                showGroupLabel={isSearchActive}
+                                                cardScale={cardScale}
+                                                cardSpacing={cardSpacing}
+                                                removing={
+                                                    removingFavoriteKey ===
+                                                    item.key
+                                                }
+                                                canSendInvite={canSendInvite}
+                                                canBoop={canBoop}
+                                                currentUserId={currentUserId}
+                                                currentAvatarId={
+                                                    currentUserSnapshot?.currentAvatar ||
+                                                    ''
+                                                }
+                                                onToggleSelect={(checked) => {
+                                                    setSelectedKeys((keys) =>
+                                                        checked
+                                                            ? Array.from(
+                                                                  new Set([
+                                                                      ...keys,
+                                                                      item.key
+                                                                  ])
+                                                              )
+                                                            : keys.filter(
+                                                                  (key) =>
+                                                                      key !==
+                                                                      item.key
+                                                              )
+                                                    );
+                                                }}
+                                                onRemoveLocal={
+                                                    handleRemoveLocalFavorite
+                                                }
+                                                onRemoveRemote={
+                                                    handleRemoveRemoteFavorite
+                                                }
+                                                onFriendLaunch={(entry) =>
+                                                    void launchFavoriteFriendLocation(
+                                                        entry
+                                                    )
+                                                }
+                                                onFriendSelfInvite={(entry) =>
+                                                    void selfInviteFavoriteFriendLocation(
+                                                        entry
+                                                    )
+                                                }
+                                                onFriendInvite={(entry) =>
+                                                    void sendFavoriteFriendInvite(
+                                                        entry
+                                                    )
+                                                }
+                                                onFriendRequestInvite={(
+                                                    entry
+                                                ) =>
+                                                    void requestFavoriteFriendInvite(
+                                                        entry
+                                                    )
+                                                }
+                                                onFriendBoop={(entry) =>
+                                                    void sendFavoriteFriendBoop(
+                                                        entry
+                                                    )
+                                                }
+                                                onWorldNewInstance={(entry) =>
+                                                    openWorldNewInstance(
+                                                        entry,
+                                                        false
+                                                    )
+                                                }
+                                                onWorldSelfInvite={(entry) =>
+                                                    openWorldNewInstance(
+                                                        entry,
+                                                        true
+                                                    )
+                                                }
+                                                onAvatarSelect={(entry) =>
+                                                    void selectFavoriteAvatar(
+                                                        entry
+                                                    )
+                                                }
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </ResizablePanel>
-            </ResizablePanelGroup>
+                    </ResizablePanel>
+                </ResizablePanelGroup>
             </div>
         </div>
     );

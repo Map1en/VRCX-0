@@ -317,9 +317,9 @@
                 },
                 "legal_notice": {
                     "header": "Aviso Legal",
-    "info": "VRCX-0 es una aplicación asistente para VRChat que proporciona información sobre la gestión de amistades. Esta aplicación utiliza el SDK de la API no oficial de VRChat.",
-    "disclaimer1": "VRCX-0 no está respaldado por VRChat y no refleja las opiniones o puntos de vista de VRChat ni de nadie oficialmente involucrado en la producción o gestión de las propiedades de VRChat. VRChat y todas las propiedades asociadas son marcas comerciales o marcas registradas de VRChat Inc. VRChat © VRChat Inc.",
-    "disclaimer2": "Todos los colaboradores no son responsables de ningún problema causado por VRCX-0. ¡Úselo bajo su propio riesgo!",
+                    "info": "VRCX-0 es una aplicación asistente para VRChat que proporciona información sobre la gestión de amistades. Esta aplicación utiliza el SDK de la API no oficial de VRChat.",
+                    "disclaimer1": "VRCX-0 no está respaldado por VRChat y no refleja las opiniones o puntos de vista de VRChat ni de nadie oficialmente involucrado en la producción o gestión de las propiedades de VRChat. VRChat y todas las propiedades asociadas son marcas comerciales o marcas registradas de VRChat Inc. VRChat © VRChat Inc.",
+                    "disclaimer2": "Todos los colaboradores no son responsables de ningún problema causado por VRCX-0. ¡Úselo bajo su propio riesgo!",
                     "open_source_software_notice": "Aviso de Software de Código Abierto"
                 },
                 "contributors": {

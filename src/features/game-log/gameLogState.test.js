@@ -62,7 +62,9 @@ describe('gameLogState', () => {
             pageSize: 50,
             columnVisibility: { detail: false }
         });
-        expect(readPersistedGameLogState().updatedAt).toEqual(expect.any(Number));
+        expect(readPersistedGameLogState().updatedAt).toEqual(
+            expect.any(Number)
+        );
     });
 
     it('falls back to defaults when saved sorting or page sizes are unusable', () => {
@@ -84,7 +86,9 @@ describe('gameLogState', () => {
             }
         };
         expect(readPersistedGameLogState()).toEqual({});
-        expect(() => writePersistedGameLogState({ pageSize: 10 })).not.toThrow();
+        expect(() =>
+            writePersistedGameLogState({ pageSize: 10 })
+        ).not.toThrow();
 
         expect(sanitizeGameLogSorting([{ id: 'unknown', desc: true }])).toBe(
             GAME_LOG_DEFAULT_SORTING
@@ -107,9 +111,7 @@ describe('gameLogState', () => {
         ]);
 
         expect(sanitizeGameLogPageSizes(['50', 10, 25, 10])).toEqual([
-            10,
-            25,
-            50
+            10, 25, 50
         ]);
         expect(resolveGameLogPageSize('50', [10, 25, 50], 25)).toBe(50);
         expect(resolveGameLogPageSize('999', [10, 25, 50], 25)).toBe(25);

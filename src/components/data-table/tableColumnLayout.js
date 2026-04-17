@@ -32,11 +32,16 @@ export function isSpacerColumn(column) {
     return Boolean(column.columnDef?.meta?.spacer);
 }
 
-export function getColumnOrder(table, leafColumns = table?.getAllLeafColumns?.() ?? []) {
+export function getColumnOrder(
+    table,
+    leafColumns = table?.getAllLeafColumns?.() ?? []
+) {
     const leafColumnIds = leafColumns.map((column) => column.id);
     const leafColumnIdSet = new Set(leafColumnIds);
     const currentOrder = table?.getState?.().columnOrder || [];
-    const ordered = currentOrder.filter((columnId) => leafColumnIdSet.has(columnId));
+    const ordered = currentOrder.filter((columnId) =>
+        leafColumnIdSet.has(columnId)
+    );
     const orderedIds = new Set(ordered);
 
     for (const columnId of leafColumnIds) {
@@ -79,11 +84,9 @@ export function hasColumnOrderLock(table) {
     const meta = table?.options?.meta;
     return Boolean(
         meta &&
-            (
-                meta.columnOrderLocked != null ||
-                typeof meta.setColumnOrderLocked === 'function' ||
-                typeof meta.onColumnOrderLockedChange === 'function'
-            )
+        (meta.columnOrderLocked != null ||
+            typeof meta.setColumnOrderLocked === 'function' ||
+            typeof meta.onColumnOrderLockedChange === 'function')
     );
 }
 
@@ -97,7 +100,11 @@ export function setColumnOrderLocked(table, locked) {
         meta.onColumnOrderLockedChange(locked);
         return;
     }
-    if (meta?.columnOrderLocked && typeof meta.columnOrderLocked === 'object' && 'value' in meta.columnOrderLocked) {
+    if (
+        meta?.columnOrderLocked &&
+        typeof meta.columnOrderLocked === 'object' &&
+        'value' in meta.columnOrderLocked
+    ) {
         meta.columnOrderLocked.value = locked;
     }
 }

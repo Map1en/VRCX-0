@@ -7,7 +7,13 @@ import {
     PaginationItem
 } from '@/ui/shadcn/pagination';
 
-export function SearchPagination({ show = false, prevDisabled = true, nextDisabled = true, onPrev, onNext }) {
+export function SearchPagination({
+    show = false,
+    prevDisabled = true,
+    nextDisabled = true,
+    onPrev,
+    onNext
+}) {
     if (!show) {
         return null;
     }
@@ -22,7 +28,8 @@ export function SearchPagination({ show = false, prevDisabled = true, nextDisabl
                         size="sm"
                         aria-label="Previous search page"
                         disabled={prevDisabled}
-                        onClick={onPrev}>
+                        onClick={onPrev}
+                    >
                         <ArrowLeftIcon data-icon="inline-start" />
                         Previous
                     </Button>
@@ -34,7 +41,8 @@ export function SearchPagination({ show = false, prevDisabled = true, nextDisabl
                         size="sm"
                         aria-label="Next search page"
                         disabled={nextDisabled}
-                        onClick={onNext}>
+                        onClick={onNext}
+                    >
                         Next
                         <ArrowRightIcon data-icon="inline-end" />
                     </Button>

@@ -17,9 +17,10 @@ function resolveSonnerTheme(themeMode) {
         return 'light';
     }
 
-    const documentTheme = typeof document !== 'undefined'
-        ? document.documentElement.dataset.theme
-        : '';
+    const documentTheme =
+        typeof document !== 'undefined'
+            ? document.documentElement.dataset.theme
+            : '';
     const resolvedTheme = documentTheme || 'system';
 
     if (resolvedTheme === 'dark') {

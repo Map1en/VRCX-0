@@ -40,17 +40,26 @@ export function getPlatformInfo(unityPackages) {
                 continue;
             }
             if (unityPackage.platform === 'standalonewindows') {
-                if (unityPackage.performanceRating === 'None' && pc.performanceRating) {
+                if (
+                    unityPackage.performanceRating === 'None' &&
+                    pc.performanceRating
+                ) {
                     continue;
                 }
                 pc = unityPackage;
             } else if (unityPackage.platform === 'android') {
-                if (unityPackage.performanceRating === 'None' && android.performanceRating) {
+                if (
+                    unityPackage.performanceRating === 'None' &&
+                    android.performanceRating
+                ) {
                     continue;
                 }
                 android = unityPackage;
             } else if (unityPackage.platform === 'ios') {
-                if (unityPackage.performanceRating === 'None' && ios.performanceRating) {
+                if (
+                    unityPackage.performanceRating === 'None' &&
+                    ios.performanceRating
+                ) {
                     continue;
                 }
                 ios = unityPackage;

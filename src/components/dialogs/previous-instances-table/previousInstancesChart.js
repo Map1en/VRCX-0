@@ -38,7 +38,11 @@ export function buildInfoChartTooltipParts(detailEntry, hour12) {
     };
 }
 
-export function buildInfoChartOption({ rows, hour12, tooltipFormatter = null }) {
+export function buildInfoChartOption({
+    rows,
+    hour12,
+    tooltipFormatter = null
+}) {
     if (!rows.length) {
         return null;
     }
@@ -153,7 +157,10 @@ export function buildInfoChartOption({ rows, hour12, tooltipFormatter = null }) 
                     if (tooltipFormatter) {
                         return tooltipFormatter(detailEntry, hour12);
                     }
-                    const parts = buildInfoChartTooltipParts(detailEntry, hour12);
+                    const parts = buildInfoChartTooltipParts(
+                        detailEntry,
+                        hour12
+                    );
                     return [parts.title, parts.timeRange, parts.duration]
                         .filter(Boolean)
                         .join('<br />');

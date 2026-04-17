@@ -1,6 +1,6 @@
-import webRepository from './webRepository.js';
 import { safeJsonParse } from './baseRepository.js';
 import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import webRepository from './webRepository.js';
 
 const PAGE_SIZE = 50;
 const MAX_OFFSET = 7500;
@@ -79,10 +79,18 @@ function createFriendRequestError(message, status, path, payload = null) {
 }
 
 function isValidFriendUser(user) {
-    return Boolean(user && typeof user === 'object' && typeof user.id === 'string' && user.id.trim());
+    return Boolean(
+        user &&
+        typeof user === 'object' &&
+        typeof user.id === 'string' &&
+        user.id.trim()
+    );
 }
 
-async function execute(path, { endpoint = '', method = 'GET', params = null } = {}) {
+async function execute(
+    path,
+    { endpoint = '', method = 'GET', params = null } = {}
+) {
     const requestOptions = {
         url: buildUrl(path, method === 'GET' ? params : {}, endpoint),
         method
@@ -137,7 +145,12 @@ async function executePost(path, params = null, { endpoint = '' } = {}) {
     return execute(path, { endpoint, method: 'POST', params });
 }
 
-async function getFriends({ endpoint = '', offline = false, n = PAGE_SIZE, offset = 0 } = {}) {
+async function getFriends({
+    endpoint = '',
+    offline = false,
+    n = PAGE_SIZE,
+    offset = 0
+} = {}) {
     return executeGet(
         'auth/user/friends',
         {
@@ -159,7 +172,9 @@ async function getAllFriends({ endpoint = '', offline = false } = {}) {
             n: PAGE_SIZE,
             offset
         });
-        const page = Array.isArray(response.json) ? response.json.filter(isValidFriendUser) : [];
+        const page = Array.isArray(response.json)
+            ? response.json.filter(isValidFriendUser)
+            : [];
         friends.push(...page);
 
         if (page.length < PAGE_SIZE) {
@@ -172,19 +187,29 @@ async function getAllFriends({ endpoint = '', offline = false } = {}) {
 
 async function getUser({ userId, endpoint = '' }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
         throw new Error('VrchatFriendRepository.getUser requires a user id.');
     }
 
-    return executeGet(`users/${encodeURIComponent(normalizedUserId)}`, {}, { endpoint });
+    return executeGet(
+        `users/${encodeURIComponent(normalizedUserId)}`,
+        {},
+        { endpoint }
+    );
 }
 
 async function deleteFriend({ userId, endpoint = '' }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('VrchatFriendRepository.deleteFriend requires a user id.');
+        throw new Error(
+            'VrchatFriendRepository.deleteFriend requires a user id.'
+        );
     }
 
     return executeDelete(
@@ -196,9 +221,13 @@ async function deleteFriend({ userId, endpoint = '' }) {
 
 async function sendFriendRequest({ userId, endpoint = '' }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('VrchatFriendRepository.sendFriendRequest requires a user id.');
+        throw new Error(
+            'VrchatFriendRepository.sendFriendRequest requires a user id.'
+        );
     }
 
     return executePost(
@@ -208,11 +237,19 @@ async function sendFriendRequest({ userId, endpoint = '' }) {
     );
 }
 
-async function cancelFriendRequest({ userId, notificationId = '', endpoint = '' }) {
+async function cancelFriendRequest({
+    userId,
+    notificationId = '',
+    endpoint = ''
+}) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('VrchatFriendRepository.cancelFriendRequest requires a user id.');
+        throw new Error(
+            'VrchatFriendRepository.cancelFriendRequest requires a user id.'
+        );
     }
 
     const params =

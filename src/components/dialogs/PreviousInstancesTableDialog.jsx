@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDownIcon, ArrowUpIcon, Trash2Icon } from 'lucide-react';
 import * as echarts from 'echarts';
+import { ArrowDownIcon, ArrowUpIcon, Trash2Icon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { InstanceActionBar } from '@/components/instances/InstanceActionBar.jsx';
 import { Location } from '@/components/Location.jsx';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
-import { InstanceActionBar } from '@/components/instances/InstanceActionBar.jsx';
 import { timeToText } from '@/lib/dateTime.js';
 import { userProfileRepository } from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
@@ -35,6 +35,7 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+
 import {
     INFO_CHART_BAR_WIDTH,
     buildInfoChartOption,
@@ -141,7 +142,7 @@ function InstanceOwnerCell({ userId, location = '', endpoint = '' }) {
         >
             <span className="truncate">{displayName || userId}</span>
             {displayName && displayName !== userId ? (
-                <span className="max-w-full truncate text-xs text-muted-foreground">
+                <span className="text-muted-foreground max-w-full truncate text-xs">
                     {userId}
                 </span>
             ) : null}
@@ -189,11 +190,12 @@ function PreviousInstanceInfoChart({ rows }) {
         [currentUserId, favoriteIdSet, friendsById, rows]
     );
     const chartPayload = useMemo(
-        () => buildInfoChartOption({
-            rows: chartRows,
-            hour12,
-            tooltipFormatter: createInfoChartTooltipElement
-        }),
+        () =>
+            buildInfoChartOption({
+                rows: chartRows,
+                hour12,
+                tooltipFormatter: createInfoChartTooltipElement
+            }),
         [chartRows, hour12]
     );
 
@@ -277,7 +279,7 @@ function PreviousInstanceInfoChart({ rows }) {
 
     if (!chartRows.length) {
         return (
-            <div className="flex min-h-52 items-center justify-center rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex min-h-52 items-center justify-center rounded-md border border-dashed p-6 text-sm">
                 No player detail rows for this instance.
             </div>
         );
@@ -534,7 +536,7 @@ function PreviousInstancesTableDialog({
                         className="max-w-sm"
                     />
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-muted-foreground text-sm">
                             Rows
                         </span>
                         <Select
@@ -564,7 +566,7 @@ function PreviousInstancesTableDialog({
                 </div>
                 <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
                     <table className="w-full text-left text-sm">
-                        <thead className="sticky top-0 bg-background">
+                        <thead className="bg-background sticky top-0">
                             <tr className="border-b">
                                 <th className="w-44 px-3 py-2">
                                     <Button
@@ -604,7 +606,7 @@ function PreviousInstancesTableDialog({
                                             key={`${location}:${row?.id || row?.created_at || row?.createdAt || index}`}
                                             className="border-b last:border-b-0"
                                         >
-                                            <td className="px-3 py-2 align-top text-xs text-muted-foreground">
+                                            <td className="text-muted-foreground px-3 py-2 align-top text-xs">
                                                 {formatDate(
                                                     row?.created_at ||
                                                         row?.createdAt
@@ -614,7 +616,7 @@ function PreviousInstancesTableDialog({
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
-                                                    className="absolute inset-0 h-full w-full rounded-none p-0 hover:bg-muted"
+                                                    className="hover:bg-muted absolute inset-0 h-full w-full rounded-none p-0"
                                                     onClick={() =>
                                                         openInfo(row)
                                                     }
@@ -631,7 +633,7 @@ function PreviousInstancesTableDialog({
                                                         : '—'}
                                                 </div>
                                             </td>
-                                            <td className="px-3 py-2 align-top text-xs text-muted-foreground">
+                                            <td className="text-muted-foreground px-3 py-2 align-top text-xs">
                                                 {[
                                                     row?.worldName,
                                                     row?.groupName
@@ -710,7 +712,7 @@ function PreviousInstancesTableDialog({
                                 <tr>
                                     <td
                                         colSpan={6}
-                                        className="px-3 py-8 text-center text-sm text-muted-foreground"
+                                        className="text-muted-foreground px-3 py-8 text-center text-sm"
                                     >
                                         No previous instances.
                                     </td>
@@ -720,7 +722,7 @@ function PreviousInstancesTableDialog({
                     </table>
                 </div>
                 <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-muted-foreground text-sm">
                         Page {currentPageIndex + 1} / {totalPages}
                     </div>
                     <div className="flex gap-2">
@@ -837,17 +839,17 @@ function PreviousInstancesTableDialog({
                                         Chart View
                                     </TabsTrigger>
                                 </TabsList>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-muted-foreground text-xs">
                                     {infoData.players.length} players
                                 </span>
                             </div>
                             {infoData.status === 'running' ? (
-                                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                                <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
                                     Loading instance details...
                                 </div>
                             ) : null}
                             {infoData.status === 'error' ? (
-                                <div className="rounded-md border border-destructive/40 p-4 text-sm text-destructive">
+                                <div className="border-destructive/40 text-destructive rounded-md border p-4 text-sm">
                                     {infoData.error}
                                 </div>
                             ) : null}
@@ -856,7 +858,7 @@ function PreviousInstancesTableDialog({
                                     <TabsContent value="table" className="mt-2">
                                         <div className="max-h-80 overflow-auto rounded-md border">
                                             <table className="w-full text-left text-sm">
-                                                <thead className="sticky top-0 bg-background">
+                                                <thead className="bg-background sticky top-0">
                                                     <tr className="border-b">
                                                         <th className="px-3 py-2">
                                                             Name
@@ -888,7 +890,7 @@ function PreviousInstancesTableDialog({
                                                                             player
                                                                         )}
                                                                     </td>
-                                                                    <td className="px-3 py-2 align-top font-mono text-xs text-muted-foreground">
+                                                                    <td className="text-muted-foreground px-3 py-2 align-top font-mono text-xs">
                                                                         {playerUserId(
                                                                             player
                                                                         ) ||
@@ -910,7 +912,7 @@ function PreviousInstancesTableDialog({
                                                                               )
                                                                             : '—'}
                                                                     </td>
-                                                                    <td className="px-3 py-2 align-top text-xs text-muted-foreground">
+                                                                    <td className="text-muted-foreground px-3 py-2 align-top text-xs">
                                                                         {formatDate(
                                                                             player?.created_at ||
                                                                                 player?.createdAt
@@ -923,7 +925,7 @@ function PreviousInstancesTableDialog({
                                                         <tr>
                                                             <td
                                                                 colSpan={5}
-                                                                className="px-3 py-6 text-center text-sm text-muted-foreground"
+                                                                className="text-muted-foreground px-3 py-6 text-center text-sm"
                                                             >
                                                                 No player detail
                                                                 rows for this
@@ -953,7 +955,7 @@ function PreviousInstancesTableDialog({
                                 </summary>
                                 <div className="mt-3 max-h-48 overflow-auto">
                                     <table className="w-full text-left text-xs">
-                                        <thead className="sticky top-0 bg-background">
+                                        <thead className="bg-background sticky top-0">
                                             <tr className="border-b">
                                                 <th className="px-2 py-1">
                                                     Left At
@@ -973,7 +975,7 @@ function PreviousInstancesTableDialog({
                                                         key={`${detailRow?.created_at}:${detailRow?.user_id}:${index}`}
                                                         className="border-b last:border-b-0"
                                                     >
-                                                        <td className="px-2 py-1 text-muted-foreground">
+                                                        <td className="text-muted-foreground px-2 py-1">
                                                             {formatDate(
                                                                 detailRow?.created_at
                                                             )}
@@ -1004,7 +1006,7 @@ function PreviousInstancesTableDialog({
                             </details>
                         ) : null}
                         {infoViewMode === 'table' ? (
-                            <pre className="max-h-[45vh] overflow-auto rounded-md border bg-muted/20 p-3 text-xs">
+                            <pre className="bg-muted/20 max-h-[45vh] overflow-auto rounded-md border p-3 text-xs">
                                 {JSON.stringify(infoRow ?? null, null, 2)}
                             </pre>
                         ) : null}

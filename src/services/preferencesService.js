@@ -1,9 +1,16 @@
-import { configRepository, storageRepository } from '@/repositories/index.js';
-import { backend } from '@/platform/index.js';
-import { normalizePreferenceKey, publishPreferenceChanged } from '@/lib/preferenceEvents.js';
-import { applyTrustColorClasses, isValidTrustColor, normalizeTrustColors, TRUST_COLOR_DEFAULTS } from '@/lib/trustColors.js';
+import {
+    normalizePreferenceKey,
+    publishPreferenceChanged
+} from '@/lib/preferenceEvents.js';
+import {
+    applyTrustColorClasses,
+    isValidTrustColor,
+    normalizeTrustColors,
+    TRUST_COLOR_DEFAULTS
+} from '@/lib/trustColors.js';
 import { languageCodes } from '@/localization/locales.js';
-import { normalizeNavWidth, normalizeTableDensity, useShellStore } from '@/state/shellStore.js';
+import { backend } from '@/platform/index.js';
+import { configRepository, storageRepository } from '@/repositories/index.js';
 import {
     DEFAULT_PREFERENCES,
     parseSharedFeedFilters,
@@ -12,18 +19,27 @@ import {
     normalizeTablePageSizes,
     usePreferencesStore
 } from '@/state/preferencesStore.js';
+import {
+    normalizeNavWidth,
+    normalizeTableDensity,
+    useShellStore
+} from '@/state/shellStore.js';
 
+import { refreshDiscordPresence } from './discordPresenceService.js';
+import {
+    configureRecentActionCooldown,
+    readRecentActionCooldown
+} from './recentActionService.js';
 import {
     applyThemeMode,
     applyZoomLevel,
     normalizeZoomLevel,
     resolveThemeMode
 } from './themeService.js';
-import { configureRecentActionCooldown, readRecentActionCooldown } from './recentActionService.js';
-import { refreshDiscordPresence } from './discordPresenceService.js';
 
 const DEFAULT_NOTIFICATION_LAYOUT = 'notification-center';
-const DEFAULT_TRANSLATION_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const DEFAULT_TRANSLATION_ENDPOINT =
+    'https://api.openai.com/v1/chat/completions';
 const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
 const DISCORD_BOOL_PREFERENCE_KEYS = new Set([
     'discordActive',
@@ -63,7 +79,10 @@ function applyTableDensityClass(density) {
 }
 
 function applyDataTableStripedClass(enabled) {
-    document.documentElement.classList.toggle('is-striped-table', Boolean(enabled));
+    document.documentElement.classList.toggle(
+        'is-striped-table',
+        Boolean(enabled)
+    );
 }
 
 function patchPreferences(patch) {
@@ -71,7 +90,9 @@ function patchPreferences(patch) {
 }
 
 function patchPreferenceValue(key, value) {
-    usePreferencesStore.getState().setPreferenceValue(normalizePreferenceKey(key), value);
+    usePreferencesStore
+        .getState()
+        .setPreferenceValue(normalizePreferenceKey(key), value);
 }
 
 function normalizeBioLanguage(language) {
@@ -164,7 +185,10 @@ export async function loadPreferenceSnapshot() {
     ] = await Promise.all([
         configRepository.getBool('navIsCollapsed', false),
         configRepository.getInt('navPanelWidth', 240),
-        configRepository.getString('notificationLayout', DEFAULT_NOTIFICATION_LAYOUT),
+        configRepository.getString(
+            'notificationLayout',
+            DEFAULT_NOTIFICATION_LAYOUT
+        ),
         configRepository.getBool('dataTableStriped', false),
         configRepository.getString('tableDensity', null),
         configRepository.getBool('compactTableMode', false),
@@ -219,17 +243,35 @@ export async function loadPreferenceSnapshot() {
         configRepository.getObject('VRCX_trustColor', null),
         backend.app.CurrentCulture().catch(() => navigator.language || 'en-gb'),
         storageRepository.getString('VRCX_ProxyServer', ''),
-        configRepository.getArray('VRCX_tablePageSizes', DEFAULT_PREFERENCES.tablePageSizes),
-        configRepository.getInt('maxTableSize_v2', DEFAULT_PREFERENCES.tableLimits.maxTableSize),
-        configRepository.getInt('searchLimit', DEFAULT_PREFERENCES.tableLimits.searchLimit),
+        configRepository.getArray(
+            'VRCX_tablePageSizes',
+            DEFAULT_PREFERENCES.tablePageSizes
+        ),
+        configRepository.getInt(
+            'maxTableSize_v2',
+            DEFAULT_PREFERENCES.tableLimits.maxTableSize
+        ),
+        configRepository.getInt(
+            'searchLimit',
+            DEFAULT_PREFERENCES.tableLimits.searchLimit
+        ),
         configRepository.getArray('localFavoriteFriendsGroups', []),
-        configRepository.getString('sharedFeedFilters', JSON.stringify(DEFAULT_PREFERENCES.sharedFeedFilters)),
+        configRepository.getString(
+            'sharedFeedFilters',
+            JSON.stringify(DEFAULT_PREFERENCES.sharedFeedFilters)
+        ),
         configRepository.getBool('youtubeAPI', false),
         configRepository.getBool('translationAPI', false),
         configRepository.getString('bioLanguage', 'en'),
         configRepository.getString('translationAPIType', 'google'),
-        configRepository.getString('translationAPIEndpoint', DEFAULT_TRANSLATION_ENDPOINT),
-        configRepository.getString('translationAPIModel', DEFAULT_TRANSLATION_MODEL),
+        configRepository.getString(
+            'translationAPIEndpoint',
+            DEFAULT_TRANSLATION_ENDPOINT
+        ),
+        configRepository.getString(
+            'translationAPIModel',
+            DEFAULT_TRANSLATION_MODEL
+        ),
         configRepository.getString('translationAPIPrompt', ''),
         configRepository.getBool('discordActive', false),
         configRepository.getBool('discordInstance', true),
@@ -243,7 +285,11 @@ export async function loadPreferenceSnapshot() {
 
     useShellStore.getState().setSidebarOpen(!navIsCollapsed);
     useShellStore.getState().setNavWidth(navPanelWidth);
-    useShellStore.getState().setNotificationLayout(notificationLayout || DEFAULT_NOTIFICATION_LAYOUT);
+    useShellStore
+        .getState()
+        .setNotificationLayout(
+            notificationLayout || DEFAULT_NOTIFICATION_LAYOUT
+        );
     useShellStore.getState().setNotificationIconDot(notificationIconDot);
     useShellStore.getState().setAppearancePreferences({
         displayVRCPlusIconsAsAvatar,
@@ -258,7 +304,9 @@ export async function loadPreferenceSnapshot() {
         dateIsoFormat: dtIsoFormat,
         dateHour12: dtHour12
     });
-    const normalizedRecentActionCooldownMinutes = Number.isFinite(recentActionCooldownMinutes)
+    const normalizedRecentActionCooldownMinutes = Number.isFinite(
+        recentActionCooldownMinutes
+    )
         ? recentActionCooldownMinutes
         : 60;
     applyTableDensityClass(resolvedTableDensity);
@@ -272,7 +320,10 @@ export async function loadPreferenceSnapshot() {
     });
     setDocumentLanguage(useShellStore.getState().locale || 'en');
     if (!tableDensity || tableDensity !== resolvedTableDensity) {
-        await configRepository.setString('VRCX_tableDensity', resolvedTableDensity);
+        await configRepository.setString(
+            'VRCX_tableDensity',
+            resolvedTableDensity
+        );
     }
 
     const snapshot = {
@@ -286,7 +337,9 @@ export async function loadPreferenceSnapshot() {
         recentActionCooldownMinutes: normalizedRecentActionCooldownMinutes,
         screenshotHelper: Boolean(screenshotHelper),
         screenshotHelperModifyFilename: Boolean(screenshotHelperModifyFilename),
-        screenshotHelperCopyToClipboard: Boolean(screenshotHelperCopyToClipboard),
+        screenshotHelperCopyToClipboard: Boolean(
+            screenshotHelperCopyToClipboard
+        ),
         saveInstancePrints: Boolean(saveInstancePrints),
         cropInstancePrints: Boolean(cropInstancePrints),
         saveInstanceStickers: Boolean(saveInstanceStickers),
@@ -316,7 +369,9 @@ export async function loadPreferenceSnapshot() {
         avatarAutoCleanup: avatarAutoCleanup || 'Off',
         enableAppLauncher: Boolean(enableAppLauncher),
         enableAppLauncherAutoClose: Boolean(enableAppLauncherAutoClose),
-        enableAppLauncherRunProcessOnce: Boolean(enableAppLauncherRunProcessOnce),
+        enableAppLauncherRunProcessOnce: Boolean(
+            enableAppLauncherRunProcessOnce
+        ),
         udonExceptionLogging: Boolean(udonExceptionLogging),
         logResourceLoad: Boolean(logResourceLoad),
         logEmptyAvatars: Boolean(logEmptyAvatars),
@@ -335,13 +390,17 @@ export async function loadPreferenceSnapshot() {
         proxyServer: proxyServer || '',
         tablePageSizes: normalizeTablePageSizes(tablePageSizes),
         tableLimits: normalizeTableLimits({ maxTableSize, searchLimit }),
-        localFavoriteFriendsGroups: normalizeStringList(localFavoriteFriendsGroups),
+        localFavoriteFriendsGroups: normalizeStringList(
+            localFavoriteFriendsGroups
+        ),
         sharedFeedFilters: parseSharedFeedFilters(sharedFeedFilters),
         youtubeAPI: Boolean(youtubeAPI),
         translationAPI: Boolean(translationAPI),
         bioLanguage: normalizeBioLanguage(bioLanguage),
-        translationAPIType: translationAPIType === 'openai' ? 'openai' : 'google',
-        translationAPIEndpoint: translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT,
+        translationAPIType:
+            translationAPIType === 'openai' ? 'openai' : 'google',
+        translationAPIEndpoint:
+            translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT,
         translationAPIModel: translationAPIModel || DEFAULT_TRANSLATION_MODEL,
         translationAPIPrompt: translationAPIPrompt || '',
         discordActive: Boolean(discordActive),
@@ -351,7 +410,9 @@ export async function loadPreferenceSnapshot() {
         discordHideImage: Boolean(discordHideImage),
         discordShowPlatform: Boolean(discordShowPlatform),
         discordWorldIntegration: Boolean(discordWorldIntegration),
-        discordWorldNameAsDiscordStatus: Boolean(discordWorldNameAsDiscordStatus)
+        discordWorldNameAsDiscordStatus: Boolean(
+            discordWorldNameAsDiscordStatus
+        )
     };
     usePreferencesStore.getState().hydratePreferences(snapshot);
     return snapshot;
@@ -431,7 +492,10 @@ export async function setPointerOnHoverPreference(value) {
 export async function setAccessibleStatusIndicatorsPreference(value) {
     const nextValue = Boolean(value);
     applyAccessibleStatusClass(nextValue);
-    await configRepository.setBool('VRCX_accessibleStatusIndicators', nextValue);
+    await configRepository.setBool(
+        'VRCX_accessibleStatusIndicators',
+        nextValue
+    );
     patchPreferences({ accessibleStatusIndicators: nextValue });
 }
 
@@ -452,7 +516,9 @@ export async function setRecentActionCooldownEnabledPreference(value) {
 
 export async function setRecentActionCooldownMinutesPreference(value) {
     const parsed = Number.parseInt(value, 10);
-    const minutes = Number.isNaN(parsed) ? 60 : Math.min(1440, Math.max(1, parsed));
+    const minutes = Number.isNaN(parsed)
+        ? 60
+        : Math.min(1440, Math.max(1, parsed));
     await configRepository.setInt('recentActionCooldownMinutes', minutes);
     configureRecentActionCooldown({
         ...readRecentActionCooldown(),
@@ -471,13 +537,19 @@ export async function setScreenshotHelperPreference(value) {
 
 export async function setScreenshotHelperModifyFilenamePreference(value) {
     const enabled = Boolean(value);
-    await configRepository.setBool('VRCX_screenshotHelperModifyFilename', enabled);
+    await configRepository.setBool(
+        'VRCX_screenshotHelperModifyFilename',
+        enabled
+    );
     patchPreferences({ screenshotHelperModifyFilename: enabled });
 }
 
 export async function setScreenshotHelperCopyToClipboardPreference(value) {
     const enabled = Boolean(value);
-    await configRepository.setBool('VRCX_screenshotHelperCopyToClipboard', enabled);
+    await configRepository.setBool(
+        'VRCX_screenshotHelperCopyToClipboard',
+        enabled
+    );
     patchPreferences({ screenshotHelperCopyToClipboard: enabled });
 }
 
@@ -514,13 +586,18 @@ export async function setUserGeneratedContentPathPreference(value) {
 
 export async function setStartAtWindowsStartupPreference(value) {
     const enabled = Boolean(value);
-    const previousEnabled = Boolean(await configRepository.getBool('StartAtWindowsStartup', false));
+    const previousEnabled = Boolean(
+        await configRepository.getBool('StartAtWindowsStartup', false)
+    );
     await backend.app.SetStartup(enabled);
     try {
         await configRepository.setBool('StartAtWindowsStartup', enabled);
     } catch (error) {
         await backend.app.SetStartup(previousEnabled).catch((rollbackError) => {
-            console.warn('Failed to roll back Windows startup setting:', rollbackError);
+            console.warn(
+                'Failed to roll back Windows startup setting:',
+                rollbackError
+            );
         });
         throw error;
     }
@@ -530,7 +607,10 @@ export async function setStartAtWindowsStartupPreference(value) {
 
 export async function setStartAsMinimizedPreference(value) {
     const enabled = Boolean(value);
-    await storageRepository.setString('VRCX_StartAsMinimizedState', String(enabled));
+    await storageRepository.setString(
+        'VRCX_StartAsMinimizedState',
+        String(enabled)
+    );
     patchPreferences({ isStartAsMinimizedState: enabled });
     publishPreferenceChanged('VRCX_StartAsMinimizedState', enabled);
 }
@@ -582,29 +662,44 @@ export async function setStringConfigPreference(key, value) {
     publishPreferenceChanged(key, nextValue);
 }
 
-export async function setIntConfigPreference(key, value, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER, fallback = 0 } = {}) {
+export async function setIntConfigPreference(
+    key,
+    value,
+    {
+        min = Number.MIN_SAFE_INTEGER,
+        max = Number.MAX_SAFE_INTEGER,
+        fallback = 0
+    } = {}
+) {
     const parsed = Number.parseInt(value, 10);
-    const nextValue = Number.isNaN(parsed) ? fallback : Math.min(max, Math.max(min, parsed));
+    const nextValue = Number.isNaN(parsed)
+        ? fallback
+        : Math.min(max, Math.max(min, parsed));
     await configRepository.setInt(key, nextValue);
     patchPreferenceValue(key, nextValue);
     publishPreferenceChanged(key, nextValue);
     return nextValue;
 }
 
-export async function setAppLauncherPreference({ enabled, autoClose, runProcessOnce }) {
+export async function setAppLauncherPreference({
+    enabled,
+    autoClose,
+    runProcessOnce
+}) {
     const nextEnabled = Boolean(enabled);
     const nextAutoClose = Boolean(autoClose);
     const nextRunProcessOnce = Boolean(runProcessOnce);
-    const [
-        previousEnabled,
-        previousAutoClose,
-        previousRunProcessOnce
-    ] = await Promise.all([
-        configRepository.getBool('enableAppLauncher', true),
-        configRepository.getBool('enableAppLauncherAutoClose', true),
-        configRepository.getBool('enableAppLauncherRunProcessOnce', true)
-    ]);
-    await backend.app.SetAppLauncherSettings(nextEnabled, nextAutoClose, nextRunProcessOnce);
+    const [previousEnabled, previousAutoClose, previousRunProcessOnce] =
+        await Promise.all([
+            configRepository.getBool('enableAppLauncher', true),
+            configRepository.getBool('enableAppLauncherAutoClose', true),
+            configRepository.getBool('enableAppLauncherRunProcessOnce', true)
+        ]);
+    await backend.app.SetAppLauncherSettings(
+        nextEnabled,
+        nextAutoClose,
+        nextRunProcessOnce
+    );
     try {
         await configRepository.setMany([
             ['enableAppLauncher', nextEnabled],
@@ -619,7 +714,10 @@ export async function setAppLauncherPreference({ enabled, autoClose, runProcessO
                 Boolean(previousRunProcessOnce)
             )
             .catch((rollbackError) => {
-                console.warn('Failed to roll back app launcher settings:', rollbackError);
+                console.warn(
+                    'Failed to roll back app launcher settings:',
+                    rollbackError
+                );
             });
         throw error;
     }
@@ -630,7 +728,10 @@ export async function setAppLauncherPreference({ enabled, autoClose, runProcessO
     });
     publishPreferenceChanged('enableAppLauncher', nextEnabled);
     publishPreferenceChanged('enableAppLauncherAutoClose', nextAutoClose);
-    publishPreferenceChanged('enableAppLauncherRunProcessOnce', nextRunProcessOnce);
+    publishPreferenceChanged(
+        'enableAppLauncherRunProcessOnce',
+        nextRunProcessOnce
+    );
 }
 
 export async function setProxyServerPreference(value, { restart = true } = {}) {
@@ -652,7 +753,9 @@ export async function setTablePageSizesPreference(value) {
     return tablePageSizes;
 }
 
-export async function getTablePageSizesPreference(fallback = DEFAULT_PREFERENCES.tablePageSizes) {
+export async function getTablePageSizesPreference(
+    fallback = DEFAULT_PREFERENCES.tablePageSizes
+) {
     const preferenceState = usePreferencesStore.getState();
     if (preferenceState.preferencesHydrated) {
         return preferenceState.tablePageSizes;
@@ -685,7 +788,10 @@ export async function loadTrustColorPreference() {
 }
 
 export async function setTrustColorPreference(key, value) {
-    if (!Object.prototype.hasOwnProperty.call(TRUST_COLOR_DEFAULTS, key) || !isValidTrustColor(value)) {
+    if (
+        !Object.prototype.hasOwnProperty.call(TRUST_COLOR_DEFAULTS, key) ||
+        !isValidTrustColor(value)
+    ) {
         throw new Error('Invalid color. Use #RRGGBB.');
     }
     const trustColor = normalizeTrustColors({
@@ -710,7 +816,10 @@ export async function resetTrustColorsPreference() {
 
 export async function setSharedFeedFiltersPreference(value) {
     const sharedFeedFilters = normalizeSharedFeedFilters(value);
-    await configRepository.setString('sharedFeedFilters', JSON.stringify(sharedFeedFilters));
+    await configRepository.setString(
+        'sharedFeedFilters',
+        JSON.stringify(sharedFeedFilters)
+    );
     patchPreferences({ sharedFeedFilters });
     publishPreferenceChanged('sharedFeedFilters', sharedFeedFilters);
     return sharedFeedFilters;
@@ -718,9 +827,15 @@ export async function setSharedFeedFiltersPreference(value) {
 
 export async function setLocalFavoriteFriendsGroupsPreference(value) {
     const localFavoriteFriendsGroups = normalizeStringList(value);
-    await configRepository.setArray('localFavoriteFriendsGroups', localFavoriteFriendsGroups);
+    await configRepository.setArray(
+        'localFavoriteFriendsGroups',
+        localFavoriteFriendsGroups
+    );
     patchPreferences({ localFavoriteFriendsGroups });
-    publishPreferenceChanged('localFavoriteFriendsGroups', localFavoriteFriendsGroups);
+    publishPreferenceChanged(
+        'localFavoriteFriendsGroups',
+        localFavoriteFriendsGroups
+    );
     return localFavoriteFriendsGroups;
 }
 
@@ -758,8 +873,12 @@ export async function setTranslationApiConfigPreference({
     const nextBioLanguage = normalizeBioLanguage(bioLanguage);
     const nextType = translationAPIType === 'openai' ? 'openai' : 'google';
     const nextKey = String(translationAPIKey ?? '').trim();
-    const nextEndpoint = String(translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT).trim() || DEFAULT_TRANSLATION_ENDPOINT;
-    const nextModel = String(translationAPIModel || DEFAULT_TRANSLATION_MODEL).trim() || DEFAULT_TRANSLATION_MODEL;
+    const nextEndpoint =
+        String(translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT).trim() ||
+        DEFAULT_TRANSLATION_ENDPOINT;
+    const nextModel =
+        String(translationAPIModel || DEFAULT_TRANSLATION_MODEL).trim() ||
+        DEFAULT_TRANSLATION_MODEL;
     const nextPrompt = String(translationAPIPrompt ?? '');
     await configRepository.setMany([
         ['bioLanguage', nextBioLanguage],
@@ -801,7 +920,10 @@ export async function setDiscordBoolPreference(key, value) {
     patchPreferences({ [key]: enabled });
     publishPreferenceChanged(key, enabled);
     void refreshDiscordPresence({ force: true }).catch((error) => {
-        console.warn('Failed to refresh Discord Rich Presence after setting change:', error);
+        console.warn(
+            'Failed to refresh Discord Rich Presence after setting change:',
+            error
+        );
     });
     return enabled;
 }

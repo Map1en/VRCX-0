@@ -1,9 +1,10 @@
+import sqliteService from '../../repositories/sqliteRepository.js';
 import { dbVars } from '../database';
 
-import sqliteService from '../../repositories/sqliteRepository.js';
-
 function getUserPrefix(userId) {
-    let userPrefix = String(userId || '').replaceAll('-', '').replaceAll('_', '');
+    let userPrefix = String(userId || '')
+        .replaceAll('-', '')
+        .replaceAll('_', '');
     if (userPrefix.match(/^\d/)) {
         userPrefix = '_' + userPrefix;
     }
@@ -134,7 +135,10 @@ const feed = {
     },
 
     async addStatusToDatabaseForUser(userId, entry) {
-        return addStatusToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
+        return addStatusToDatabaseWithPrefix(
+            await userFeedPrefix(userId),
+            entry
+        );
     },
 
     addBioToDatabase(entry) {
@@ -150,7 +154,10 @@ const feed = {
     },
 
     async addAvatarToDatabaseForUser(userId, entry) {
-        return addAvatarToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
+        return addAvatarToDatabaseWithPrefix(
+            await userFeedPrefix(userId),
+            entry
+        );
     },
 
     /**
@@ -178,7 +185,10 @@ const feed = {
     },
 
     async addOnlineOfflineToDatabaseForUser(userId, entry) {
-        return addOnlineOfflineToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
+        return addOnlineOfflineToDatabaseWithPrefix(
+            await userFeedPrefix(userId),
+            entry
+        );
     },
 
     async searchFeedDatabase(

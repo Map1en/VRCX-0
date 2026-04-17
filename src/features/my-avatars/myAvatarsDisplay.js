@@ -20,12 +20,12 @@ export function resolveMyAvatarActionDisabled(avatar, isUpdating) {
 export function resolveMyAvatarTagBadgeStyle(entry) {
     const color = entry?.color
         ? {
-            bg: entry.color,
-            text:
-                typeof entry.color === 'string'
-                    ? entry.color.replace(/\/ [\d.]+\)$/, ')')
-                    : entry.color
-        }
+              bg: entry.color,
+              text:
+                  typeof entry.color === 'string'
+                      ? entry.color.replace(/\/ [\d.]+\)$/, ')')
+                      : entry.color
+          }
         : getTagColor(entry?.tag || '');
     return {
         backgroundColor: color.bg,

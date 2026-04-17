@@ -1,30 +1,29 @@
+import { createInstance } from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
 import { getLocalizedStrings } from '@/localization/index.js';
 import { useShellStore } from '@/state/shellStore.js';
-import { initReactI18next } from 'react-i18next';
-import { createInstance } from 'i18next';
 
 const localeCache = new Map();
 export const appI18n = createInstance();
-const appI18nReady = appI18n
-    .use(initReactI18next)
-    .init({
-        lng: 'en',
-        fallbackLng: 'en',
-        ns: ['translation'],
-        defaultNS: 'translation',
-        resources: {
-            en: { translation: {} }
-        },
-        interpolation: {
-            escapeValue: false,
-            prefix: '{',
-            suffix: '}'
-        },
-        react: {
-            useSuspense: false
-        },
-        returnNull: false
-    });
+const appI18nReady = appI18n.use(initReactI18next).init({
+    lng: 'en',
+    fallbackLng: 'en',
+    ns: ['translation'],
+    defaultNS: 'translation',
+    resources: {
+        en: { translation: {} }
+    },
+    interpolation: {
+        escapeValue: false,
+        prefix: '{',
+        suffix: '}'
+    },
+    react: {
+        useSuspense: false
+    },
+    returnNull: false
+});
 
 function resolveMessage(messages, key) {
     return key.split('.').reduce((current, part) => current?.[part], messages);
@@ -55,8 +54,8 @@ export function buildTimeUnitLabels(messages, fallbackMessages, defaultLabels) {
             typeof localized === 'string'
                 ? localized
                 : typeof fallback === 'string'
-                    ? fallback
-                    : defaultLabels[unit];
+                  ? fallback
+                  : defaultLabels[unit];
     }
 
     return labels;
@@ -67,19 +66,36 @@ export async function ensureI18nLocale(locale) {
         typeof locale === 'string' && locale.trim() ? locale.trim() : 'en';
     const [fallbackMessages, localizedMessages] = await Promise.all([
         loadMessages('en'),
-        normalizedLocale === 'en' ? Promise.resolve(null) : loadMessages(normalizedLocale)
+        normalizedLocale === 'en'
+            ? Promise.resolve(null)
+            : loadMessages(normalizedLocale)
     ]);
 
     await appI18nReady;
-    appI18n.addResourceBundle('en', 'translation', fallbackMessages ?? {}, true, true);
+    appI18n.addResourceBundle(
+        'en',
+        'translation',
+        fallbackMessages ?? {},
+        true,
+        true
+    );
     if (normalizedLocale !== 'en') {
-        appI18n.addResourceBundle(normalizedLocale, 'translation', localizedMessages ?? {}, true, true);
+        appI18n.addResourceBundle(
+            normalizedLocale,
+            'translation',
+            localizedMessages ?? {},
+            true,
+            true
+        );
     }
 
     return {
         locale: normalizedLocale,
         fallbackMessages: fallbackMessages ?? {},
-        localizedMessages: normalizedLocale === 'en' ? fallbackMessages ?? {} : localizedMessages ?? {}
+        localizedMessages:
+            normalizedLocale === 'en'
+                ? (fallbackMessages ?? {})
+                : (localizedMessages ?? {})
     };
 }
 
@@ -103,5 +119,9 @@ export async function translateForLocale(locale, key, params = {}) {
 }
 
 export async function translateCurrentLocale(key, params = {}) {
-    return translateForLocale(useShellStore.getState().locale || 'en', key, params);
+    return translateForLocale(
+        useShellStore.getState().locale || 'en',
+        key,
+        params
+    );
 }

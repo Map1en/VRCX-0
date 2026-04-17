@@ -9,7 +9,9 @@ const regionCodeLabels = {
 };
 
 export function RegionCodeBadge({ region, className }) {
-    const normalizedRegion = String(region || '').trim().toLowerCase();
+    const normalizedRegion = String(region || '')
+        .trim()
+        .toLowerCase();
     const label = regionCodeLabels[normalizedRegion];
 
     if (!label) {
@@ -19,7 +21,7 @@ export function RegionCodeBadge({ region, className }) {
     return (
         <span
             className={cn(
-                'mr-1.5 inline-flex h-4 shrink-0 items-center rounded border border-border/70 bg-muted/70 px-1 font-mono text-[10px] font-semibold leading-none text-muted-foreground',
+                'border-border/70 bg-muted/70 text-muted-foreground mr-1.5 inline-flex h-4 shrink-0 items-center rounded border px-1 font-mono text-[10px] leading-none font-semibold',
                 className
             )}
             title={`Region: ${label}`}

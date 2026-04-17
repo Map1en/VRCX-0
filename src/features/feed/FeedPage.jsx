@@ -1,4 +1,10 @@
-import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    getCoreRowModel,
+    getExpandedRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable
+} from '@tanstack/react-table';
 import {
     ArrowDownIcon,
     ArrowRightIcon,
@@ -13,20 +19,17 @@ import {
     StarIcon,
     XIcon
 } from 'lucide-react';
+import {
+    Fragment,
+    useDeferredValue,
+    useEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 import { toast } from 'sonner';
-import {
-    getCoreRowModel,
-    getExpandedRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable
-} from '@tanstack/react-table';
 
-import { cn } from '@/lib/utils.js';
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import {
-    ResizableTableCell
-} from '@/components/data-table/ResizableTableParts.jsx';
 import {
     DataTableHeader,
     DataTableEmptyRow,
@@ -34,6 +37,9 @@ import {
     DataTableScrollArea,
     DataTableSurface
 } from '@/components/data-table/DataTableView.jsx';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
+import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
+import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import {
     PageBody,
     PageFooter,
@@ -41,11 +47,11 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold.jsx';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
-import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import { Location } from '@/components/Location.jsx';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import { copyTextToClipboard } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
+import avatarProfileRepository from '@/repositories/avatarProfileRepository.js';
 import {
     configRepository,
     FEED_FILTER_TYPES,
@@ -58,14 +64,21 @@ import {
     userProfileRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
-import avatarProfileRepository from '@/repositories/avatarProfileRepository.js';
-import { openAvatarDialog, openGroupDialog, openUserDialog, openWorldDialog } from '@/services/dialogService.js';
+import {
+    openAvatarDialog,
+    openGroupDialog,
+    openUserDialog,
+    openWorldDialog
+} from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
 import { getTablePageSizesPreference } from '@/services/preferencesService.js';
 import { extractFileId } from '@/shared/utils/fileUtils.js';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
-import { parseLocation, resolveFriendPresenceLocation } from '@/shared/utils/location.js';
+import {
+    parseLocation,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFeedLiveStore } from '@/state/feedLiveStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
@@ -86,30 +99,9 @@ import {
 import { Input } from '@/ui/shadcn/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableRow
-} from '@/ui/shadcn/table';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger
-} from '@/ui/shadcn/tooltip';
+import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import {
-    FEED_TABLE_DEFAULT_PAGE_SIZES as DEFAULT_PAGE_SIZES,
-    readPersistedFeedTableState as readPersistedState,
-    resolveFeedPageSize as resolvePageSize,
-    safeJsonParse,
-    sanitizeFeedColumnOrder as sanitizeColumnOrder,
-    sanitizeFeedColumnSizing as sanitizeColumnSizing,
-    sanitizeFeedColumnVisibility as sanitizeColumnVisibility,
-    sanitizeFeedPageSizes as sanitizePageSizes,
-    sanitizeFeedSorting as sanitizeSorting,
-    writePersistedFeedTableState as writePersistedState
-} from './feedTableState.js';
 import {
     buildFeedFavoriteIdSet as buildFavoriteIdSet,
     canRequestInviteFromFeedFriend,
@@ -128,6 +120,18 @@ import {
     toIsoRangeStart,
     UNKNOWN_FEED_USER_DISPLAY_NAME
 } from './feedRows.js';
+import {
+    FEED_TABLE_DEFAULT_PAGE_SIZES as DEFAULT_PAGE_SIZES,
+    readPersistedFeedTableState as readPersistedState,
+    resolveFeedPageSize as resolvePageSize,
+    safeJsonParse,
+    sanitizeFeedColumnOrder as sanitizeColumnOrder,
+    sanitizeFeedColumnSizing as sanitizeColumnSizing,
+    sanitizeFeedColumnVisibility as sanitizeColumnVisibility,
+    sanitizeFeedPageSizes as sanitizePageSizes,
+    sanitizeFeedSorting as sanitizeSorting,
+    writePersistedFeedTableState as writePersistedState
+} from './feedTableState.js';
 
 function resolvePresenceLocation(profile) {
     return resolveFriendPresenceLocation(profile);
@@ -140,14 +144,15 @@ async function findAvatarByImageUrl({ imageUrl, avatarName }) {
         return null;
     }
 
-    const cachedAvatars = await localFavoritesRepository.getAvatarCache().catch(() => []);
-    const cachedMatch = cachedAvatars.find((avatar) => (
-        avatar?.id &&
-        (
-            extractFileId(avatar.imageUrl) === fileId ||
-            extractFileId(avatar.thumbnailImageUrl) === fileId
-        )
-    ));
+    const cachedAvatars = await localFavoritesRepository
+        .getAvatarCache()
+        .catch(() => []);
+    const cachedMatch = cachedAvatars.find(
+        (avatar) =>
+            avatar?.id &&
+            (extractFileId(avatar.imageUrl) === fileId ||
+                extractFileId(avatar.thumbnailImageUrl) === fileId)
+    );
     if (cachedMatch) {
         return avatarProfileRepository.normalize(cachedMatch);
     }
@@ -162,13 +167,14 @@ async function findAvatarByImageUrl({ imageUrl, avatarName }) {
         query
     });
 
-    return response.avatars.find((avatar) => (
-        avatar?.id &&
-        (
-            extractFileId(avatar.imageUrl) === fileId ||
-            extractFileId(avatar.thumbnailImageUrl) === fileId
-        )
-    )) || null;
+    return (
+        response.avatars.find(
+            (avatar) =>
+                avatar?.id &&
+                (extractFileId(avatar.imageUrl) === fileId ||
+                    extractFileId(avatar.thumbnailImageUrl) === fileId)
+        ) || null
+    );
 }
 
 function formatTimestamp(value) {
@@ -201,7 +207,12 @@ function FeedStatusBadge({ status, label }) {
     return (
         <span className="inline-flex min-w-0 items-center gap-1.5">
             {meta.className ? (
-                <span className={cn('size-2.5 shrink-0 rounded-full', meta.className)} />
+                <span
+                    className={cn(
+                        'size-2.5 shrink-0 rounded-full',
+                        meta.className
+                    )}
+                />
             ) : null}
             {label ? <span className="truncate">{label}</span> : null}
         </span>
@@ -267,7 +278,11 @@ function formatDifferenceHtml(
             }
         }
 
-        return { oldStart: bestOldStart, newStart: bestNewStart, size: bestSize };
+        return {
+            oldStart: bestOldStart,
+            newStart: bestNewStart,
+            size: bestSize
+        };
     }
 
     function build(words, start, end, pattern) {
@@ -295,18 +310,43 @@ function formatDifferenceHtml(
 
         if (match.size > 0) {
             if (oldStart < match.oldStart || newStart < match.newStart) {
-                result.push(...buildDiff(oldStart, match.oldStart, newStart, match.newStart));
+                result.push(
+                    ...buildDiff(
+                        oldStart,
+                        match.oldStart,
+                        newStart,
+                        match.newStart
+                    )
+                );
             }
-            result.push(oldWords.slice(match.oldStart, match.oldStart + match.size).join(' '));
-            if (match.oldStart + match.size < oldEnd || match.newStart + match.size < newEnd) {
-                result.push(...buildDiff(match.oldStart + match.size, oldEnd, match.newStart + match.size, newEnd));
+            result.push(
+                oldWords
+                    .slice(match.oldStart, match.oldStart + match.size)
+                    .join(' ')
+            );
+            if (
+                match.oldStart + match.size < oldEnd ||
+                match.newStart + match.size < newEnd
+            ) {
+                result.push(
+                    ...buildDiff(
+                        match.oldStart + match.size,
+                        oldEnd,
+                        match.newStart + match.size,
+                        newEnd
+                    )
+                );
             }
         } else {
             if (oldStart < oldEnd) {
-                result.push(...build(oldWords, oldStart, oldEnd, markerDeletion));
+                result.push(
+                    ...build(oldWords, oldStart, oldEnd, markerDeletion)
+                );
             }
             if (newStart < newEnd) {
-                result.push(...build(newWords, newStart, newEnd, markerAddition));
+                result.push(
+                    ...build(newWords, newStart, newEnd, markerAddition)
+                );
             }
         }
 
@@ -327,8 +367,9 @@ function SortButton({ column, label }) {
             type="button"
             variant="ghost"
             size="sm"
-            className="h-auto justify-start gap-1 px-1 py-0 text-left text-xs font-medium uppercase tracking-wide"
-            onClick={() => column.toggleSorting(direction === 'asc')}>
+            className="h-auto justify-start gap-1 px-1 py-0 text-left text-xs font-medium tracking-wide uppercase"
+            onClick={() => column.toggleSorting(direction === 'asc')}
+        >
             <span>{label}</span>
             {direction === 'asc' ? (
                 <ArrowUpIcon data-icon="inline-end" />
@@ -343,8 +384,12 @@ function SortButton({ column, label }) {
 
 function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
     const { t } = useI18n();
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const [info, setInfo] = useState(() => ({
         avatarName: typeof avatarName === 'string' ? avatarName.trim() : '',
         ownerId: normalizeId(ownerId),
@@ -352,7 +397,8 @@ function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
     }));
 
     useEffect(() => {
-        const hintedName = typeof avatarName === 'string' ? avatarName.trim() : '';
+        const hintedName =
+            typeof avatarName === 'string' ? avatarName.trim() : '';
         const hintedOwnerId = normalizeId(ownerId);
 
         if (!imageUrl) {
@@ -389,7 +435,9 @@ function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
 
                 setInfo({
                     avatarName:
-                        typeof nextInfo?.avatarName === 'string' ? nextInfo.avatarName.trim() : '',
+                        typeof nextInfo?.avatarName === 'string'
+                            ? nextInfo.avatarName.trim()
+                            : '',
                     ownerId: normalizeId(nextInfo?.ownerId),
                     status: 'ready'
                 });
@@ -428,10 +476,18 @@ function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
             return;
         }
 
-        if (normalizedUserId && normalizeId(currentUserSnapshot?.id) === normalizedUserId && currentUserSnapshot?.currentAvatar) {
+        if (
+            normalizedUserId &&
+            normalizeId(currentUserSnapshot?.id) === normalizedUserId &&
+            currentUserSnapshot?.currentAvatar
+        ) {
             openAvatarDialog({
                 avatarId: currentUserSnapshot.currentAvatar,
-                title: currentUserSnapshot.currentAvatarName || currentUserSnapshot.avatarName || info.avatarName || undefined
+                title:
+                    currentUserSnapshot.currentAvatarName ||
+                    currentUserSnapshot.avatarName ||
+                    info.avatarName ||
+                    undefined
             });
             return;
         }
@@ -440,14 +496,19 @@ function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
         let nextAvatarName = info.avatarName;
         if (!nextOwnerId) {
             try {
-                const nextInfo = await avatarProfileRepository.getAvatarNameFromImageUrl(
-                    imageUrl,
-                    { endpoint: currentEndpoint }
-                );
+                const nextInfo =
+                    await avatarProfileRepository.getAvatarNameFromImageUrl(
+                        imageUrl,
+                        { endpoint: currentEndpoint }
+                    );
                 nextOwnerId = normalizeId(nextInfo?.ownerId);
                 nextAvatarName = nextInfo?.avatarName || nextAvatarName;
             } catch (error) {
-                toast.error(error instanceof Error ? error.message : 'Failed to resolve avatar author.');
+                toast.error(
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to resolve avatar author.'
+                );
                 return;
             }
         }
@@ -492,13 +553,18 @@ function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
                 variant="link"
                 className="h-auto w-fit justify-start p-0 text-left font-normal"
                 disabled={!imageUrl}
-                onClick={() => void openAvatarAuthorTarget()}>
+                onClick={() => void openAvatarAuthorTarget()}
+            >
                 {label}
-                {avatarType === 'own' ? <LockIcon data-icon="inline-end" /> : null}
+                {avatarType === 'own' ? (
+                    <LockIcon data-icon="inline-end" />
+                ) : null}
             </Button>
             {Array.isArray(avatarTags) && avatarTags.length ? (
-                <div className="truncate text-xs text-muted-foreground">
-                    {avatarTags.map((tag) => String(tag).replace('content_', '')).join(', ')}
+                <div className="text-muted-foreground truncate text-xs">
+                    {avatarTags
+                        .map((tag) => String(tag).replace('content_', ''))
+                        .join(', ')}
                 </div>
             ) : null}
         </div>
@@ -531,25 +597,38 @@ function FeedLocationLink({
                 enableContextMenu
                 showLaunchActions
                 disableTooltip={disableTooltip}
-                previousInstancesDisabled={!worldTarget || loadingHistoryKey === normalizedLocation}
-                onShowPreviousInstances={onOpenPreviousInstances ? (payload) =>
-                    onOpenPreviousInstances({
-                        ...payload,
-                        location: normalizedLocation || payload.location,
-                        worldId: worldTarget || payload.worldId,
-                        worldName: worldName || payload.worldName,
-                        groupName: groupName || payload.groupName
-                    }) : undefined
+                previousInstancesDisabled={
+                    !worldTarget || loadingHistoryKey === normalizedLocation
                 }
-                onNewInstance={onNewInstance ? (payload) =>
-                    onNewInstance({
-                        ...payload,
-                        location: normalizedLocation || payload.location,
-                        worldId: worldTarget || payload.worldId,
-                        worldName: worldName || payload.worldName
-                    }) : undefined
+                onShowPreviousInstances={
+                    onOpenPreviousInstances
+                        ? (payload) =>
+                              onOpenPreviousInstances({
+                                  ...payload,
+                                  location:
+                                      normalizedLocation || payload.location,
+                                  worldId: worldTarget || payload.worldId,
+                                  worldName: worldName || payload.worldName,
+                                  groupName: groupName || payload.groupName
+                              })
+                        : undefined
                 }
-                className={cn('max-w-full text-sm text-muted-foreground', className)}
+                onNewInstance={
+                    onNewInstance
+                        ? (payload) =>
+                              onNewInstance({
+                                  ...payload,
+                                  location:
+                                      normalizedLocation || payload.location,
+                                  worldId: worldTarget || payload.worldId,
+                                  worldName: worldName || payload.worldName
+                              })
+                        : undefined
+                }
+                className={cn(
+                    'text-muted-foreground max-w-full text-sm',
+                    className
+                )}
             />
         </span>
     );
@@ -568,15 +647,27 @@ function FeedUserLink({
     actions
 }) {
     const userId = resolveFeedUserId(row);
-    const displayName = resolveFeedUserDisplayName(row, friend, cachedDisplayName);
+    const displayName = resolveFeedUserDisplayName(
+        row,
+        friend,
+        cachedDisplayName
+    );
     const [resolvedDisplayName, setResolvedDisplayName] = useState(displayName);
     const location = resolvePresenceLocation(friend);
     const parsedLocation = parseLocation(location);
     const worldTarget = parsedLocation.worldId || '';
-    const worldDialogTarget = parsedLocation.isRealInstance && parsedLocation.tag ? parsedLocation.tag : worldTarget;
+    const worldDialogTarget =
+        parsedLocation.isRealInstance && parsedLocation.tag
+            ? parsedLocation.tag
+            : worldTarget;
     const groupTarget = parsedLocation.groupId || '';
-    const isCurrentUser = Boolean(userId && userId === normalizeId(currentUserId));
-    const canRequestInvite = canRequestInviteFromFeedFriend(friend, currentUserSnapshot);
+    const isCurrentUser = Boolean(
+        userId && userId === normalizeId(currentUserId)
+    );
+    const canRequestInvite = canRequestInviteFromFeedFriend(
+        friend,
+        currentUserSnapshot
+    );
     const canUseFriendLocation = Boolean(
         !isCurrentUser &&
         parsedLocation.isRealInstance &&
@@ -600,8 +691,13 @@ function FeedUserLink({
                 if (!active) {
                     return;
                 }
-                const nextName = resolveDisplayNameCandidate(profile?.displayName || profile?.username || profile?.name, userId);
-                setResolvedDisplayName(nextName || UNKNOWN_FEED_USER_DISPLAY_NAME);
+                const nextName = resolveDisplayNameCandidate(
+                    profile?.displayName || profile?.username || profile?.name,
+                    userId
+                );
+                setResolvedDisplayName(
+                    nextName || UNKNOWN_FEED_USER_DISPLAY_NAME
+                );
             })
             .catch(() => {
                 if (active) {
@@ -614,7 +710,8 @@ function FeedUserLink({
         };
     }, [displayName, endpoint, userId]);
 
-    const userLabel = resolvedDisplayName || displayName || UNKNOWN_FEED_USER_DISPLAY_NAME;
+    const userLabel =
+        resolvedDisplayName || displayName || UNKNOWN_FEED_USER_DISPLAY_NAME;
 
     const trigger = (
         <div className="flex min-w-0 flex-col gap-0.5">
@@ -628,7 +725,8 @@ function FeedUserLink({
                         userId,
                         title: userLabel
                     })
-                }>
+                }
+            >
                 <span className="truncate">{userLabel}</span>
             </Button>
         </div>
@@ -647,7 +745,8 @@ function FeedUserLink({
                             userId,
                             title: userLabel
                         })
-                    }>
+                    }
+                >
                     <ExternalLinkIcon className="size-4" />
                     Open user
                 </ContextMenuItem>
@@ -658,7 +757,8 @@ function FeedUserLink({
                             worldId: worldDialogTarget,
                             title: friend?.worldName || worldTarget
                         })
-                    }>
+                    }
+                >
                     <ExternalLinkIcon className="size-4" />
                     Open current location
                 </ContextMenuItem>
@@ -669,48 +769,62 @@ function FeedUserLink({
                             groupId: groupTarget,
                             title: undefined
                         })
-                    }>
+                    }
+                >
                     <ExternalLinkIcon className="size-4" />
                     Open group
                 </ContextMenuItem>
                 <ContextMenuSeparator />
                 <ContextMenuItem
                     disabled={!canUseFriendLocation}
-                    onSelect={() => void actions?.launchLocation(location)}>
+                    onSelect={() => void actions?.launchLocation(location)}
+                >
                     <ExternalLinkIcon className="size-4" />
                     Launch in VRChat
                 </ContextMenuItem>
                 <ContextMenuItem
                     disabled={!canUseFriendLocation}
-                    onSelect={() => void actions?.selfInviteLocation(location)}>
+                    onSelect={() => void actions?.selfInviteLocation(location)}
+                >
                     <ExternalLinkIcon className="size-4" />
                     Self invite
                 </ContextMenuItem>
                 <ContextMenuSeparator />
                 <ContextMenuItem
                     disabled={isCurrentUser || !canSendInvite}
-                    onSelect={() => void actions?.sendInvite(friend || row)}>
+                    onSelect={() => void actions?.sendInvite(friend || row)}
+                >
                     <ExternalLinkIcon className="size-4" />
                     Send invite
                 </ContextMenuItem>
                 <ContextMenuItem
                     disabled={isCurrentUser || !canRequestInvite}
-                    onSelect={() => void actions?.requestInvite(friend || row)}>
+                    onSelect={() => void actions?.requestInvite(friend || row)}
+                >
                     <ExternalLinkIcon className="size-4" />
                     Request invite
                 </ContextMenuItem>
                 <ContextMenuItem
                     disabled={isCurrentUser || !canBoop}
-                    onSelect={() => void actions?.sendBoop(friend || row)}>
+                    onSelect={() => void actions?.sendBoop(friend || row)}
+                >
                     <ExternalLinkIcon className="size-4" />
                     Send boop
                 </ContextMenuItem>
                 <ContextMenuSeparator />
-                <ContextMenuItem disabled={!userId} onSelect={() => void copyFeedText(userId, 'User ID')}>
+                <ContextMenuItem
+                    disabled={!userId}
+                    onSelect={() => void copyFeedText(userId, 'User ID')}
+                >
                     <CopyIcon className="size-4" />
                     Copy user ID
                 </ContextMenuItem>
-                <ContextMenuItem disabled={!displayName} onSelect={() => void copyFeedText(displayName, 'Display name')}>
+                <ContextMenuItem
+                    disabled={!displayName}
+                    onSelect={() =>
+                        void copyFeedText(displayName, 'Display name')
+                    }
+                >
                     <CopyIcon className="size-4" />
                     Copy display name
                 </ContextMenuItem>
@@ -719,7 +833,13 @@ function FeedUserLink({
     );
 }
 
-function FeedDetailCell({ row, loadingHistoryKey, endpoint = '', onOpenPreviousInstances, onNewInstance }) {
+function FeedDetailCell({
+    row,
+    loadingHistoryKey,
+    endpoint = '',
+    onOpenPreviousInstances,
+    onNewInstance
+}) {
     const type = row?.type;
 
     if (type === 'GPS' || type === 'Online' || type === 'Offline') {
@@ -742,7 +862,7 @@ function FeedDetailCell({ row, loadingHistoryKey, endpoint = '', onOpenPreviousI
             return (
                 <div className="flex min-w-0 items-center gap-2 text-sm">
                     <FeedStatusBadge status={row?.previousStatus} />
-                    <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" />
+                    <ArrowRightIcon className="text-muted-foreground size-4 shrink-0" />
                     <FeedStatusBadge status={row?.status} />
                 </div>
             );
@@ -751,7 +871,9 @@ function FeedDetailCell({ row, loadingHistoryKey, endpoint = '', onOpenPreviousI
         return (
             <div className="flex min-w-0 items-center gap-2">
                 <FeedStatusBadge status={row?.status} />
-                <span className="block w-full min-w-0 truncate">{row?.statusDescription || ''}</span>
+                <span className="block w-full min-w-0 truncate">
+                    {row?.statusDescription || ''}
+                </span>
             </div>
         );
     }
@@ -771,10 +893,16 @@ function FeedDetailCell({ row, loadingHistoryKey, endpoint = '', onOpenPreviousI
     }
 
     if (type === 'Bio') {
-        return <span className="block w-full min-w-0 truncate">{row?.bio || ''}</span>;
+        return (
+            <span className="block w-full min-w-0 truncate">
+                {row?.bio || ''}
+            </span>
+        );
     }
 
-    return row?.message ? <span className="block w-full min-w-0 truncate">{row.message}</span> : null;
+    return row?.message ? (
+        <span className="block w-full min-w-0 truncate">{row.message}</span>
+    ) : null;
 }
 
 function FeedExpandedRow({
@@ -883,11 +1011,17 @@ function FeedExpandedRow({
 
         return (
             <div className="flex items-center pl-5 text-sm">
-                <FeedStatusBadge status={row.previousStatus} label={row.previousStatusDescription || ''} />
+                <FeedStatusBadge
+                    status={row.previousStatus}
+                    label={row.previousStatusDescription || ''}
+                />
                 <span className="mx-2 inline-flex">
                     <ArrowRightIcon className="size-4" />
                 </span>
-                <FeedStatusBadge status={row.status} label={row.statusDescription || ''} />
+                <FeedStatusBadge
+                    status={row.status}
+                    label={row.statusDescription || ''}
+                />
             </div>
         );
     }
@@ -896,8 +1030,10 @@ function FeedExpandedRow({
         return (
             <div className="pl-5 text-sm">
                 <pre
-                    className="whitespace-pre-wrap font-inherit text-xs leading-5"
-                    dangerouslySetInnerHTML={{ __html: formatDifferenceHtml(row.previousBio, row.bio) }}
+                    className="font-inherit text-xs leading-5 whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{
+                        __html: formatDifferenceHtml(row.previousBio, row.bio)
+                    }}
                 />
             </div>
         );
@@ -905,9 +1041,13 @@ function FeedExpandedRow({
 
     if (row?.type === 'Avatar') {
         const previousImage =
-            row.previousCurrentAvatarThumbnailImageUrl || row.previousCurrentAvatarImageUrl || '';
+            row.previousCurrentAvatarThumbnailImageUrl ||
+            row.previousCurrentAvatarImageUrl ||
+            '';
         const currentImage =
-            row.currentAvatarThumbnailImageUrl || row.currentAvatarImageUrl || '';
+            row.currentAvatarThumbnailImageUrl ||
+            row.currentAvatarImageUrl ||
+            '';
 
         return (
             <div className="pl-5 text-sm">
@@ -920,10 +1060,17 @@ function FeedExpandedRow({
                                     variant="ghost"
                                     className="h-auto p-0"
                                     aria-label="Preview previous avatar"
-                                    onClick={() => onPreviewImage?.({
-                                        url: row.previousCurrentAvatarImageUrl || previousImage,
-                                        title: row.previousAvatarName || 'Previous avatar'
-                                    })}>
+                                    onClick={() =>
+                                        onPreviewImage?.({
+                                            url:
+                                                row.previousCurrentAvatarImageUrl ||
+                                                previousImage,
+                                            title:
+                                                row.previousAvatarName ||
+                                                'Previous avatar'
+                                        })
+                                    }
+                                >
                                     <img
                                         src={previousImage}
                                         alt="Previous avatar"
@@ -953,10 +1100,17 @@ function FeedExpandedRow({
                                     variant="ghost"
                                     className="h-auto p-0"
                                     aria-label="Preview current avatar"
-                                    onClick={() => onPreviewImage?.({
-                                        url: row.currentAvatarImageUrl || currentImage,
-                                        title: row.avatarName || 'Current avatar'
-                                    })}>
+                                    onClick={() =>
+                                        onPreviewImage?.({
+                                            url:
+                                                row.currentAvatarImageUrl ||
+                                                currentImage,
+                                            title:
+                                                row.avatarName ||
+                                                'Current avatar'
+                                        })
+                                    }
+                                >
                                     <img
                                         src={currentImage}
                                         alt={row.avatarName || 'Current avatar'}
@@ -986,22 +1140,42 @@ function FeedExpandedRow({
 export function FeedPage({ embedded = false } = {}) {
     const { t } = useI18n();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const gameState = useRuntimeStore((state) => state.gameState);
-    const isFavoritesLoaded = useSessionStore((state) => state.isFavoritesLoaded);
-    const remoteFavoritesById = useFavoriteStore((state) => state.remoteFavoritesById);
-    const localFriendFavorites = useFavoriteStore((state) => state.localFriendFavorites);
+    const isFavoritesLoaded = useSessionStore(
+        (state) => state.isFavoritesLoaded
+    );
+    const remoteFavoritesById = useFavoriteStore(
+        (state) => state.remoteFavoritesById
+    );
+    const localFriendFavorites = useFavoriteStore(
+        (state) => state.localFriendFavorites
+    );
     const liveFeedEntries = useFeedLiveStore((state) => state.entries);
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const friendRosterLastLoadedAt = useFriendRosterStore((state) => state.lastLoadedAt);
+    const friendRosterLastLoadedAt = useFriendRosterStore(
+        (state) => state.lastLoadedAt
+    );
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
-    const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
-    const tablePageSizesPreference = usePreferencesStore((state) => state.tablePageSizes);
-    const maxFeedRows = usePreferencesStore((state) => state.tableLimits.maxTableSize);
-    const favoriteGroupFilterIds = usePreferencesStore((state) => state.localFavoriteFriendsGroups);
+    const preferencesHydrated = usePreferencesStore(
+        (state) => state.preferencesHydrated
+    );
+    const tablePageSizesPreference = usePreferencesStore(
+        (state) => state.tablePageSizes
+    );
+    const maxFeedRows = usePreferencesStore(
+        (state) => state.tableLimits.maxTableSize
+    );
+    const favoriteGroupFilterIds = usePreferencesStore(
+        (state) => state.localFavoriteFriendsGroups
+    );
 
     const persistedState = useMemo(() => readPersistedState(), []);
     const persistedPageSize = Number.parseInt(persistedState.pageSize, 10);
@@ -1029,9 +1203,13 @@ export function FeedPage({ embedded = false } = {}) {
     const [pageSizes, setPageSizes] = useState(initialPageSizes);
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [previousInstancesRows, setPreviousInstancesRows] = useState([]);
-    const [previousInstancesTitle, setPreviousInstancesTitle] = useState('Previous Instances');
-    const [loadingPreviousInstancesKey, setLoadingPreviousInstancesKey] = useState('');
-    const [sorting, setSorting] = useState(() => sanitizeSorting(persistedState.sorting));
+    const [previousInstancesTitle, setPreviousInstancesTitle] =
+        useState('Previous Instances');
+    const [loadingPreviousInstancesKey, setLoadingPreviousInstancesKey] =
+        useState('');
+    const [sorting, setSorting] = useState(() =>
+        sanitizeSorting(persistedState.sorting)
+    );
     const [columnVisibility, setColumnVisibility] = useState(() =>
         sanitizeColumnVisibility(persistedState.columnVisibility)
     );
@@ -1051,10 +1229,18 @@ export function FeedPage({ embedded = false } = {}) {
     const deferredSearchQuery = useDeferredValue(searchQuery);
 
     const favoriteIdSet = useMemo(
-        () => buildFavoriteIdSet(remoteFavoritesById, localFriendFavorites, favoriteGroupFilterIds),
+        () =>
+            buildFavoriteIdSet(
+                remoteFavoritesById,
+                localFriendFavorites,
+                favoriteGroupFilterIds
+            ),
         [favoriteGroupFilterIds, localFriendFavorites, remoteFavoritesById]
     );
-    const friendsMap = useMemo(() => new Map(Object.entries(friendsById || {})), [friendsById]);
+    const friendsMap = useMemo(
+        () => new Map(Object.entries(friendsById || {})),
+        [friendsById]
+    );
     const dateDraftRange = useMemo(() => {
         const from = parseDateInput(dateDraftFrom);
         const to = parseDateInput(dateDraftTo);
@@ -1074,13 +1260,27 @@ export function FeedPage({ embedded = false } = {}) {
             }),
         [currentInviteLocation, currentUserId]
     );
-    const canSendInviteFromFeed = Boolean(gameState?.isGameRunning && currentInviteLocation && canInviteFromCurrentLocation);
+    const canSendInviteFromFeed = Boolean(
+        gameState?.isGameRunning &&
+        currentInviteLocation &&
+        canInviteFromCurrentLocation
+    );
     const canBoopFromFeed = Boolean(currentUserSnapshot?.isBoopingEnabled);
     const activeFilterCount = dateFrom || dateTo ? 1 : 0;
 
     function setFeedFilters(nextFilters) {
-        const nextUniqueFilters = [...new Set((Array.isArray(nextFilters) ? nextFilters : []).filter((filter) => FEED_FILTER_TYPES.includes(filter)))];
-        setActiveFilters(nextUniqueFilters.length === FEED_FILTER_TYPES.length ? [] : nextUniqueFilters);
+        const nextUniqueFilters = [
+            ...new Set(
+                (Array.isArray(nextFilters) ? nextFilters : []).filter(
+                    (filter) => FEED_FILTER_TYPES.includes(filter)
+                )
+            )
+        ];
+        setActiveFilters(
+            nextUniqueFilters.length === FEED_FILTER_TYPES.length
+                ? []
+                : nextUniqueFilters
+        );
     }
 
     function toggleFeedFilter(filter) {
@@ -1088,7 +1288,9 @@ export function FeedPage({ embedded = false } = {}) {
             const nextFilters = current.includes(filter)
                 ? current.filter((entry) => entry !== filter)
                 : [...current, filter];
-            return nextFilters.length === FEED_FILTER_TYPES.length ? [] : nextFilters;
+            return nextFilters.length === FEED_FILTER_TYPES.length
+                ? []
+                : nextFilters;
         });
     }
 
@@ -1127,16 +1329,18 @@ export function FeedPage({ embedded = false } = {}) {
         groupName = ''
     } = {}) {
         const normalizedLocation = normalizeId(location);
-        const normalizedWorldId = normalizeId(worldId) || parseLocation(normalizedLocation).worldId;
+        const normalizedWorldId =
+            normalizeId(worldId) || parseLocation(normalizedLocation).worldId;
         if (!normalizedWorldId || loadingPreviousInstancesKey) {
             return;
         }
 
         setLoadingPreviousInstancesKey(normalizedLocation || normalizedWorldId);
         try {
-            const instances = await gameLogRepository.getPreviousInstancesByWorldId({
-                worldId: normalizedWorldId
-            });
+            const instances =
+                await gameLogRepository.getPreviousInstancesByWorldId({
+                    worldId: normalizedWorldId
+                });
             const sortedInstances = [...instances].sort((left, right) => {
                 if (normalizedLocation) {
                     if (normalizeId(left?.location) === normalizedLocation) {
@@ -1146,15 +1350,23 @@ export function FeedPage({ embedded = false } = {}) {
                         return 1;
                     }
                 }
-                return Date.parse(right?.created_at || right?.createdAt || 0) - Date.parse(left?.created_at || left?.createdAt || 0);
+                return (
+                    Date.parse(right?.created_at || right?.createdAt || 0) -
+                    Date.parse(left?.created_at || left?.createdAt || 0)
+                );
             });
             setPreviousInstancesRows(sortedInstances);
             setPreviousInstancesTitle(
-                [worldName || 'World', groupName].filter(Boolean).join(' / ') || 'Previous Instances'
+                [worldName || 'World', groupName].filter(Boolean).join(' / ') ||
+                    'Previous Instances'
             );
             setPreviousInstancesOpen(true);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to load previous instances.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load previous instances.'
+            );
         } finally {
             setLoadingPreviousInstancesKey('');
         }
@@ -1162,7 +1374,11 @@ export function FeedPage({ embedded = false } = {}) {
 
     function canUseFeedFriendLocation(location) {
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return false;
         }
 
@@ -1175,33 +1391,57 @@ export function FeedPage({ embedded = false } = {}) {
 
     async function launchFeedFriendLocation(location) {
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return;
         }
 
         try {
-            const opened = await tryOpenLaunchLocation(location, parsedLocation.shortName || '', currentEndpoint);
+            const opened = await tryOpenLaunchLocation(
+                location,
+                parsedLocation.shortName || '',
+                currentEndpoint
+            );
             if (opened) {
                 toast.success('VRChat launch request sent.');
                 return;
             }
             toast.error('Unable to open this instance in VRChat.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to launch instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to launch instance.'
+            );
         }
     }
 
     async function selfInviteFeedFriendLocation(location) {
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return;
         }
 
         try {
-            await selfInviteToInstance(location, parsedLocation.shortName || '', currentEndpoint);
+            await selfInviteToInstance(
+                location,
+                parsedLocation.shortName || '',
+                currentEndpoint
+            );
             toast.success('Self invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send self invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send self invite.'
+            );
         }
     }
 
@@ -1211,7 +1451,9 @@ export function FeedPage({ embedded = false } = {}) {
             return;
         }
         if (!currentInviteLocation) {
-            toast.error('Cannot invite: no current VRChat location is available.');
+            toast.error(
+                'Cannot invite: no current VRChat location is available.'
+            );
             return;
         }
         if (!canInviteFromCurrentLocation) {
@@ -1221,7 +1463,9 @@ export function FeedPage({ embedded = false } = {}) {
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error('Cannot invite: current location is not a concrete instance.');
+            toast.error(
+                'Cannot invite: current location is not a concrete instance.'
+            );
             return;
         }
 
@@ -1248,13 +1492,18 @@ export function FeedPage({ embedded = false } = {}) {
                 params: {
                     instanceId: inviteLocation,
                     worldId: parsedLocation.worldId,
-                    worldName: worldResponse.json?.name || parsedLocation.worldId,
+                    worldName:
+                        worldResponse.json?.name || parsedLocation.worldId,
                     rsvp: true
                 }
             });
             toast.success('Invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send invite.'
+            );
         }
     }
 
@@ -1288,7 +1537,11 @@ export function FeedPage({ embedded = false } = {}) {
             });
             toast.success('Invite request sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to request invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to request invite.'
+            );
         }
     }
 
@@ -1301,7 +1554,8 @@ export function FeedPage({ embedded = false } = {}) {
         try {
             const result = await prompt({
                 title: 'Send boop',
-                description: 'Optional emoji id. Leave blank to send the default boop.',
+                description:
+                    'Optional emoji id. Leave blank to send the default boop.',
                 inputValue: '',
                 confirmText: 'Send',
                 cancelText: 'Cancel'
@@ -1316,7 +1570,9 @@ export function FeedPage({ embedded = false } = {}) {
             });
             toast.success('Boop sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send boop.');
+            toast.error(
+                error instanceof Error ? error.message : 'Failed to send boop.'
+            );
         }
     }
 
@@ -1326,7 +1582,10 @@ export function FeedPage({ embedded = false } = {}) {
         worldName = '',
         selfInvite = false
     } = {}) {
-        const target = normalizeId(worldId) || parseLocation(location).worldId || normalizeId(location);
+        const target =
+            normalizeId(worldId) ||
+            parseLocation(location).worldId ||
+            normalizeId(location);
         if (!target) {
             return;
         }
@@ -1361,7 +1620,10 @@ export function FeedPage({ embedded = false } = {}) {
                 const nextNamesById = {};
                 for (const entry of Array.isArray(entries) ? entries : []) {
                     const userId = normalizeId(entry?.userId);
-                    const displayName = resolveDisplayNameCandidate(entry?.displayName, userId);
+                    const displayName = resolveDisplayNameCandidate(
+                        entry?.displayName,
+                        userId
+                    );
                     if (userId && displayName) {
                         nextNamesById[userId] = displayName;
                     }
@@ -1385,7 +1647,11 @@ export function FeedPage({ embedded = false } = {}) {
 
         for (const row of rows) {
             const userId = resolveFeedUserId(row);
-            if (!userId || friendLogNamesById[userId] || seenUserIds.has(userId)) {
+            if (
+                !userId ||
+                friendLogNamesById[userId] ||
+                seenUserIds.has(userId)
+            ) {
                 continue;
             }
 
@@ -1415,9 +1681,14 @@ export function FeedPage({ embedded = false } = {}) {
                 setFriendLogNamesById((current) => {
                     let changed = false;
                     const nextNamesById = { ...current };
-                    for (const row of Array.isArray(statsRows) ? statsRows : []) {
+                    for (const row of Array.isArray(statsRows)
+                        ? statsRows
+                        : []) {
                         const userId = normalizeId(row?.userId);
-                        const displayName = resolveDisplayNameCandidate(row?.displayName, userId);
+                        const displayName = resolveDisplayNameCandidate(
+                            row?.displayName,
+                            userId
+                        );
                         if (userId && displayName && !nextNamesById[userId]) {
                             nextNamesById[userId] = displayName;
                             changed = true;
@@ -1455,16 +1726,25 @@ export function FeedPage({ embedded = false } = {}) {
                 }
 
                 const parsedFilters = safeJsonParse(savedFilters);
-                const nextPageSizes = sanitizePageSizes(
-                    savedPageSizes
+                const nextPageSizes = sanitizePageSizes(savedPageSizes);
+                const resolvedSavedPageSize = resolvePageSize(
+                    savedPageSize,
+                    nextPageSizes
                 );
-                const resolvedSavedPageSize = resolvePageSize(savedPageSize, nextPageSizes);
-                const resolvedActivePageSize = Number.isFinite(persistedPageSize)
-                    ? resolvePageSize(persistedPageSize, nextPageSizes, resolvedSavedPageSize)
+                const resolvedActivePageSize = Number.isFinite(
+                    persistedPageSize
+                )
+                    ? resolvePageSize(
+                          persistedPageSize,
+                          nextPageSizes,
+                          resolvedSavedPageSize
+                      )
                     : resolvedSavedPageSize;
                 setFeedFilters(
                     Array.isArray(parsedFilters)
-                        ? parsedFilters.filter((filter) => FEED_FILTER_TYPES.includes(filter))
+                        ? parsedFilters.filter((filter) =>
+                              FEED_FILTER_TYPES.includes(filter)
+                          )
                         : []
                 );
                 setFavoritesOnly(Boolean(savedVip));
@@ -1505,7 +1785,10 @@ export function FeedPage({ embedded = false } = {}) {
             return;
         }
 
-        void configRepository.setString('VRCX_feedTableFilters', JSON.stringify(activeFilters));
+        void configRepository.setString(
+            'VRCX_feedTableFilters',
+            JSON.stringify(activeFilters)
+        );
     }, [activeFilters, preferencesReady]);
 
     useEffect(() => {
@@ -1576,7 +1859,8 @@ export function FeedPage({ embedded = false } = {}) {
         const requestId = requestIdRef.current + 1;
         requestIdRef.current = requestId;
         const favoriteUserIds = favoritesOnly ? Array.from(favoriteIdSet) : [];
-        const liveFeedSequenceAtRequestStart = useFeedLiveStore.getState().version;
+        const liveFeedSequenceAtRequestStart =
+            useFeedLiveStore.getState().version;
         const liveFeedContext = {
             currentUserId,
             activeFilters,
@@ -1604,16 +1888,19 @@ export function FeedPage({ embedded = false } = {}) {
                 }
 
                 const liveFeedSnapshot = useFeedLiveStore.getState();
-                const { matchingEntries, maxSequence } = collectMatchingLiveFeedEntries(
-                    liveFeedSnapshot.entries,
-                    liveFeedSequenceAtRequestStart,
-                    liveFeedContext
-                );
+                const { matchingEntries, maxSequence } =
+                    collectMatchingLiveFeedEntries(
+                        liveFeedSnapshot.entries,
+                        liveFeedSequenceAtRequestStart,
+                        liveFeedContext
+                    );
                 if (maxSequence > lastLiveFeedSequenceRef.current) {
                     lastLiveFeedSequenceRef.current = maxSequence;
                 }
 
-                setRows(mergeLiveFeedEntries(nextRows, matchingEntries, maxFeedRows));
+                setRows(
+                    mergeLiveFeedEntries(nextRows, matchingEntries, maxFeedRows)
+                );
                 setLoadStatus('ready');
             })
             .catch((error) => {
@@ -1639,7 +1926,11 @@ export function FeedPage({ embedded = false } = {}) {
     ]);
 
     useEffect(() => {
-        if (!preferencesReady || !currentUserId || liveFeedEntries.length === 0) {
+        if (
+            !preferencesReady ||
+            !currentUserId ||
+            liveFeedEntries.length === 0
+        ) {
             return;
         }
         const { matchingEntries, maxSequence } = collectMatchingLiveFeedEntries(
@@ -1661,7 +1952,9 @@ export function FeedPage({ embedded = false } = {}) {
         if (!matchingEntries.length) {
             return;
         }
-        setRows((current) => mergeLiveFeedEntries(current, matchingEntries, maxFeedRows));
+        setRows((current) =>
+            mergeLiveFeedEntries(current, matchingEntries, maxFeedRows)
+        );
     }, [
         activeFilters,
         currentUserId,
@@ -1676,7 +1969,10 @@ export function FeedPage({ embedded = false } = {}) {
     ]);
 
     useEffect(() => {
-        const maxPageIndex = Math.max(0, Math.ceil(rows.length / pagination.pageSize) - 1);
+        const maxPageIndex = Math.max(
+            0,
+            Math.ceil(rows.length / pagination.pageSize) - 1
+        );
         if (pagination.pageIndex > maxPageIndex) {
             setPagination((current) => ({
                 ...current,
@@ -1701,7 +1997,8 @@ export function FeedPage({ embedded = false } = {}) {
                             variant="ghost"
                             size="icon"
                             className="size-8"
-                            onClick={() => row.toggleExpanded()}>
+                            onClick={() => row.toggleExpanded()}
+                        >
                             {row.getIsExpanded() ? (
                                 <ChevronDownIcon data-icon="icon" />
                             ) : (
@@ -1712,13 +2009,16 @@ export function FeedPage({ embedded = false } = {}) {
             },
             {
                 id: 'created_at',
-                accessorFn: (row) => new Date(row?.created_at || 0).valueOf() || 0,
+                accessorFn: (row) =>
+                    new Date(row?.created_at || 0).valueOf() || 0,
                 meta: { label: t('table.feed.date') },
-                header: ({ column }) => <SortButton column={column} label={t('table.feed.date')} />,
+                header: ({ column }) => (
+                    <SortButton column={column} label={t('table.feed.date')} />
+                ),
                 cell: ({ row }) => (
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-muted-foreground text-sm">
                                 {formatTimestamp(row.original.created_at)}
                             </span>
                         </TooltipTrigger>
@@ -1732,12 +2032,25 @@ export function FeedPage({ embedded = false } = {}) {
                 id: 'type',
                 accessorFn: (row) => String(row?.type || ''),
                 meta: { label: t('table.feed.type') },
-                header: ({ column }) => <SortButton column={column} label={t('table.feed.type')} />,
+                header: ({ column }) => (
+                    <SortButton column={column} label={t('table.feed.type')} />
+                ),
                 cell: ({ row }) => {
-                    const typeLabel = row.original.type ? t(`view.feed.filters.${row.original.type}`) : '';
-                    const parsedLocation = parseLocation(row.original?.location || '');
-                    const worldDialogTarget = parsedLocation.isRealInstance && parsedLocation.tag ? parsedLocation.tag : parsedLocation.worldId;
-                    if (row.original?.type !== 'Location' && row.original?.location && parsedLocation.worldId) {
+                    const typeLabel = row.original.type
+                        ? t(`view.feed.filters.${row.original.type}`)
+                        : '';
+                    const parsedLocation = parseLocation(
+                        row.original?.location || ''
+                    );
+                    const worldDialogTarget =
+                        parsedLocation.isRealInstance && parsedLocation.tag
+                            ? parsedLocation.tag
+                            : parsedLocation.worldId;
+                    if (
+                        row.original?.type !== 'Location' &&
+                        row.original?.location &&
+                        parsedLocation.worldId
+                    ) {
                         return (
                             <Button
                                 type="button"
@@ -1747,9 +2060,12 @@ export function FeedPage({ embedded = false } = {}) {
                                     event.stopPropagation();
                                     openWorldDialog({
                                         worldId: worldDialogTarget,
-                                        title: row.original.worldName || parsedLocation.worldId
+                                        title:
+                                            row.original.worldName ||
+                                            parsedLocation.worldId
                                     });
-                                }}>
+                                }}
+                            >
                                 <Badge variant="outline">{typeLabel}</Badge>
                             </Button>
                         );
@@ -1766,12 +2082,18 @@ export function FeedPage({ embedded = false } = {}) {
                         friendLogNamesById?.[resolveFeedUserId(row)]
                     ),
                 meta: { label: t('table.feed.user') },
-                header: ({ column }) => <SortButton column={column} label={t('table.feed.user')} />,
+                header: ({ column }) => (
+                    <SortButton column={column} label={t('table.feed.user')} />
+                ),
                 cell: ({ row }) => (
                     <FeedUserLink
                         row={row.original}
                         friend={friendsById?.[resolveFeedUserId(row.original)]}
-                        cachedDisplayName={friendLogNamesById?.[resolveFeedUserId(row.original)]}
+                        cachedDisplayName={
+                            friendLogNamesById?.[
+                                resolveFeedUserId(row.original)
+                            ]
+                        }
                         endpoint={currentEndpoint}
                         currentUserId={currentUserId}
                         currentUserSnapshot={currentUserSnapshot}
@@ -1798,7 +2120,9 @@ export function FeedPage({ embedded = false } = {}) {
                         row?.avatarName,
                         row?.bio,
                         row?.message
-                ].filter(Boolean).join(' '),
+                    ]
+                        .filter(Boolean)
+                        .join(' '),
                 enableSorting: false,
                 meta: { label: t('table.feed.detail') },
                 header: () => t('table.feed.detail'),
@@ -1808,7 +2132,9 @@ export function FeedPage({ embedded = false } = {}) {
                         row={row.original}
                         loadingHistoryKey={loadingPreviousInstancesKey}
                         endpoint={currentEndpoint}
-                        onOpenPreviousInstances={openPreviousInstancesForLocation}
+                        onOpenPreviousInstances={
+                            openPreviousInstancesForLocation
+                        }
                         onNewInstance={openFeedNewInstance}
                     />
                 )
@@ -1867,108 +2193,147 @@ export function FeedPage({ embedded = false } = {}) {
         <PageScaffold embedded={embedded} className={embedded ? '' : 'feed'}>
             <PageToolbar>
                 <PageToolbarRow>
-                            <div className="flex shrink-0 flex-wrap items-center gap-2">
-                                <Popover open={dateFilterOpen} onOpenChange={setDateFilterOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button type="button" variant="outline" size="sm" className="gap-1.5">
-                                            <ListFilterIcon data-icon="inline-start" />
-                                            {t('view.feed.filter')}
-                                            {activeFilterCount ? (
-                                                <Badge variant="secondary" className="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs">
-                                                    {activeFilterCount}
-                                                </Badge>
-                                            ) : null}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto" align="end">
-                                        <Calendar
-                                            mode="range"
-                                            numberOfMonths={2}
-                                            selected={dateDraftRange}
-                                            disabled={{ after: todayDate }}
-                                            onSelect={(range) => {
-                                                setDateDraftFrom(toDateInputValue(range?.from));
-                                                setDateDraftTo(toDateInputValue(range?.to));
-                                            }}
-                                        />
-                                        <div className="flex items-center justify-between gap-4 px-3 pb-3">
-                                            <div className="min-w-0 text-xs text-muted-foreground">
-                                                {[dateDraftFrom || '...', dateDraftTo || '...'].join(' - ')}
-                                            </div>
-                                            <div className="flex justify-end gap-2">
-                                                <Button type="button" variant="outline" size="sm" onClick={clearDateFilter}>
-                                                    {t('common.actions.clear')}
-                                                </Button>
-                                                <Button type="button" size="sm" onClick={applyDateFilter}>
-                                                    {t('common.actions.confirm')}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        <Popover
+                            open={dateFilterOpen}
+                            onOpenChange={setDateFilterOpen}
+                        >
+                            <PopoverTrigger asChild>
                                 <Button
                                     type="button"
-                                    variant={favoritesOnly ? 'default' : 'outline'}
-                                    size="icon-sm"
-                                    title={t('view.feed.favorites_only_tooltip')}
-                                    aria-label={t('view.feed.favorites_only_tooltip')}
-                                    onClick={() => setFavoritesOnly((current) => !current)}>
-                                    <StarIcon data-icon="icon" />
-                                </Button>
-                            </div>
-
-                            <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-                                <Button
-                                    type="button"
-                                    variant={activeFilters.length === 0 ? 'default' : 'outline'}
+                                    variant="outline"
                                     size="sm"
-                                    onClick={() => setFeedFilters([])}>
-                                    {t('view.search.avatar.all')}
+                                    className="gap-1.5"
+                                >
+                                    <ListFilterIcon data-icon="inline-start" />
+                                    {t('view.feed.filter')}
+                                    {activeFilterCount ? (
+                                        <Badge
+                                            variant="secondary"
+                                            className="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs"
+                                        >
+                                            {activeFilterCount}
+                                        </Badge>
+                                    ) : null}
                                 </Button>
-                                {FEED_FILTER_TYPES.map((filter) => {
-                                    const active = activeFilters.includes(filter);
-                                    return (
-                                        <Button
-                                            key={filter}
-                                            type="button"
-                                            variant={active ? 'default' : 'outline'}
-                                            size="sm"
-                                            onClick={() => toggleFeedFilter(filter)}>
-                                            {t(`view.feed.filters.${filter}`)}
-                                        </Button>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="relative min-w-64 flex-1">
-                                <Input
-                                    value={searchDraft}
-                                    onChange={(event) => setSearchDraft(event.target.value)}
-                                    onBlur={() => commitSearch()}
-                                    onKeyDown={(event) => {
-                                        if (event.key === 'Enter') {
-                                            commitSearch(event.currentTarget.value);
-                                        }
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto" align="end">
+                                <Calendar
+                                    mode="range"
+                                    numberOfMonths={2}
+                                    selected={dateDraftRange}
+                                    disabled={{ after: todayDate }}
+                                    onSelect={(range) => {
+                                        setDateDraftFrom(
+                                            toDateInputValue(range?.from)
+                                        );
+                                        setDateDraftTo(
+                                            toDateInputValue(range?.to)
+                                        );
                                     }}
-                                    placeholder={t('view.feed.search_placeholder')}
-                                    className="h-9 pr-9"
                                 />
-                                {searchDraft ? (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        aria-label="Clear search"
-                                        className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
-                                        onClick={clearSearch}>
-                                        <XIcon data-icon="icon" />
-                                    </Button>
-                                ) : null}
-                            </div>
+                                <div className="flex items-center justify-between gap-4 px-3 pb-3">
+                                    <div className="text-muted-foreground min-w-0 text-xs">
+                                        {[
+                                            dateDraftFrom || '...',
+                                            dateDraftTo || '...'
+                                        ].join(' - ')}
+                                    </div>
+                                    <div className="flex justify-end gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={clearDateFilter}
+                                        >
+                                            {t('common.actions.clear')}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={applyDateFilter}
+                                        >
+                                            {t('common.actions.confirm')}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                        <Button
+                            type="button"
+                            variant={favoritesOnly ? 'default' : 'outline'}
+                            size="icon-sm"
+                            title={t('view.feed.favorites_only_tooltip')}
+                            aria-label={t('view.feed.favorites_only_tooltip')}
+                            onClick={() =>
+                                setFavoritesOnly((current) => !current)
+                            }
+                        >
+                            <StarIcon data-icon="icon" />
+                        </Button>
+                    </div>
 
-                            <div className="flex items-center gap-2">
-                                <TableColumnVisibilityMenu table={table} />
-                            </div>
+                    <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+                        <Button
+                            type="button"
+                            variant={
+                                activeFilters.length === 0
+                                    ? 'default'
+                                    : 'outline'
+                            }
+                            size="sm"
+                            onClick={() => setFeedFilters([])}
+                        >
+                            {t('view.search.avatar.all')}
+                        </Button>
+                        {FEED_FILTER_TYPES.map((filter) => {
+                            const active = activeFilters.includes(filter);
+                            return (
+                                <Button
+                                    key={filter}
+                                    type="button"
+                                    variant={active ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => toggleFeedFilter(filter)}
+                                >
+                                    {t(`view.feed.filters.${filter}`)}
+                                </Button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="relative min-w-64 flex-1">
+                        <Input
+                            value={searchDraft}
+                            onChange={(event) =>
+                                setSearchDraft(event.target.value)
+                            }
+                            onBlur={() => commitSearch()}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                    commitSearch(event.currentTarget.value);
+                                }
+                            }}
+                            placeholder={t('view.feed.search_placeholder')}
+                            className="h-9 pr-9"
+                        />
+                        {searchDraft ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Clear search"
+                                className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
+                                onClick={clearSearch}
+                            >
+                                <XIcon data-icon="icon" />
+                            </Button>
+                        ) : null}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <TableColumnVisibilityMenu table={table} />
+                    </div>
                 </PageToolbarRow>
             </PageToolbar>
 
@@ -1982,20 +2347,40 @@ export function FeedPage({ embedded = false } = {}) {
                                     table.getRowModel().rows.map((row) => (
                                         <Fragment key={row.id}>
                                             <TableRow>
-                                                {row.getVisibleCells().map((cell) => (
-                                                    <ResizableTableCell key={cell.id} cell={cell} />
-                                                ))}
+                                                {row
+                                                    .getVisibleCells()
+                                                    .map((cell) => (
+                                                        <ResizableTableCell
+                                                            key={cell.id}
+                                                            cell={cell}
+                                                        />
+                                                    ))}
                                             </TableRow>
                                             {row.getIsExpanded() ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={row.getVisibleCells().length}>
+                                                    <TableCell
+                                                        colSpan={
+                                                            row.getVisibleCells()
+                                                                .length
+                                                        }
+                                                    >
                                                         <FeedExpandedRow
                                                             row={row.original}
-                                                            loadingHistoryKey={loadingPreviousInstancesKey}
-                                                            endpoint={currentEndpoint}
-                                                            onOpenPreviousInstances={openPreviousInstancesForLocation}
-                                                            onNewInstance={openFeedNewInstance}
-                                                            onPreviewImage={openImagePreview}
+                                                            loadingHistoryKey={
+                                                                loadingPreviousInstancesKey
+                                                            }
+                                                            endpoint={
+                                                                currentEndpoint
+                                                            }
+                                                            onOpenPreviousInstances={
+                                                                openPreviousInstancesForLocation
+                                                            }
+                                                            onNewInstance={
+                                                                openFeedNewInstance
+                                                            }
+                                                            onPreviewImage={
+                                                                openImagePreview
+                                                            }
                                                         />
                                                     </TableCell>
                                                 </TableRow>
@@ -2009,7 +2394,8 @@ export function FeedPage({ embedded = false } = {}) {
                                                 <Spinner />
                                                 Loading feed rows
                                             </span>
-                                        ) : favoritesOnly && !isFavoritesLoaded ? (
+                                        ) : favoritesOnly &&
+                                          !isFavoritesLoaded ? (
                                             'Favorites are still hydrating.'
                                         ) : loadStatus === 'error' ? (
                                             'Feed query failed.'
@@ -2024,9 +2410,9 @@ export function FeedPage({ embedded = false } = {}) {
                 </DataTableSurface>
 
                 <PageFooter>
-                    <div className="text-sm text-muted-foreground">
-                            {rows.length} rows
-                            {favoritesOnly ? ' · Favorites only' : ''}
+                    <div className="text-muted-foreground text-sm">
+                        {rows.length} rows
+                        {favoritesOnly ? ' · Favorites only' : ''}
                     </div>
                     <DataTablePagination
                         table={table}
@@ -2038,7 +2424,11 @@ export function FeedPage({ embedded = false } = {}) {
                         onPageSizeChange={(value) =>
                             setPagination({
                                 pageIndex: 0,
-                                pageSize: resolvePageSize(value, pageSizes, pagination.pageSize)
+                                pageSize: resolvePageSize(
+                                    value,
+                                    pageSizes,
+                                    pagination.pageSize
+                                )
                             })
                         }
                     />

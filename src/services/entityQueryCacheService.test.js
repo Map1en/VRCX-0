@@ -13,12 +13,17 @@ describe('entityQueryCacheService', () => {
     });
 
     it('builds stable query keys with sorted params and normalized endpoints', () => {
-        expect(queryKeys.worldsByUser({
-            userId: 'usr_123',
-            offset: 100,
-            n: 50,
-            releaseStatus: undefined
-        }, 'https://api.example.test///')).toEqual([
+        expect(
+            queryKeys.worldsByUser(
+                {
+                    userId: 'usr_123',
+                    offset: 100,
+                    n: 50,
+                    releaseStatus: undefined
+                },
+                'https://api.example.test///'
+            )
+        ).toEqual([
             'worlds',
             'user',
             'usr_123',
@@ -32,10 +37,12 @@ describe('entityQueryCacheService', () => {
             }
         ]);
 
-        expect(queryKeys.worldPersistData({
-            worldId: 'wrld_123',
-            userId: 'usr_123'
-        })).toEqual(['world', 'wrld_123', 'persistData', 'usr_123']);
+        expect(
+            queryKeys.worldPersistData({
+                worldId: 'wrld_123',
+                userId: 'usr_123'
+            })
+        ).toEqual(['world', 'wrld_123', 'persistData', 'usr_123']);
     });
 
     it('reports entity cache stats only for recognized entity ids', () => {

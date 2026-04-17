@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildLegacyInstanceTag, getLaunchURL, isRealInstance } from './instance.js';
+import {
+    buildLegacyInstanceTag,
+    getLaunchURL,
+    isRealInstance
+} from './instance.js';
 import { parseLocation } from './locationParser.js';
 
 describe('instance utils', () => {
@@ -21,7 +25,9 @@ describe('instance utils', () => {
         });
         const parsed = parseLocation(`wrld_123:${tag}`);
 
-        expect(tag).toBe('12345~private(usr_owner)~canRequestInvite~region(eu)');
+        expect(tag).toBe(
+            '12345~private(usr_owner)~canRequestInvite~region(eu)'
+        );
         expect(parsed).toMatchObject({
             worldId: 'wrld_123',
             instanceName: '12345',
@@ -43,7 +49,9 @@ describe('instance utils', () => {
         });
         const parsed = parseLocation(`wrld_123:${tag}`);
 
-        expect(tag).toBe('group-room~group(grp_123)~groupAccessType(plus)~ageGate~region(jp)');
+        expect(tag).toBe(
+            'group-room~group(grp_123)~groupAccessType(plus)~ageGate~region(jp)'
+        );
         expect(parsed).toMatchObject({
             accessType: 'group',
             accessTypeName: 'groupPlus',
@@ -55,12 +63,18 @@ describe('instance utils', () => {
     });
 
     it('builds launch URLs with encoded world, instance, and short name values', () => {
-        expect(getLaunchURL({
-            worldId: 'wrld_123',
-            instanceId: '12345~friends(usr_owner)',
-            shortName: 'abc 123'
-        })).toBe('https://vrchat.com/home/launch?worldId=wrld_123&instanceId=12345~friends(usr_owner)&shortName=abc%20123');
+        expect(
+            getLaunchURL({
+                worldId: 'wrld_123',
+                instanceId: '12345~friends(usr_owner)',
+                shortName: 'abc 123'
+            })
+        ).toBe(
+            'https://vrchat.com/home/launch?worldId=wrld_123&instanceId=12345~friends(usr_owner)&shortName=abc%20123'
+        );
 
-        expect(getLaunchURL({ worldId: 'wrld_123' })).toBe('https://vrchat.com/home/launch?worldId=wrld_123');
+        expect(getLaunchURL({ worldId: 'wrld_123' })).toBe(
+            'https://vrchat.com/home/launch?worldId=wrld_123'
+        );
     });
 });

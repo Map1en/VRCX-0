@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import { getPlatformInfo } from '@/lib/avatarPlatform.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis.js';
 import { backend } from '@/platform/tauri/index.js';
-import { AvatarDialogTabbedView } from './AvatarDialogTabbedView.jsx';
-import {
-    AvatarContentTagsDialog,
-    AvatarStylesDialog
-} from './AvatarOwnerEditDialogs.jsx';
-import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import {
     avatarProfileRepository,
     memoRepository,
@@ -23,18 +18,24 @@ import {
     validateImageUploadFile,
     withUploadTimeout
 } from '@/shared/utils/imageUpload.js';
-import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useDialogStore } from '@/state/dialogStore.js';
+import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
+
 import {
     avatarGalleryImageUrl,
     defaultAvatarSideData,
     resolveAssetBundleArgs
 } from './avatar-dialog/avatarAssets.js';
 import { readAvatarCacheInfo } from './avatar-dialog/avatarCacheAdapter.js';
+import { AvatarDialogTabbedView } from './AvatarDialogTabbedView.jsx';
+import {
+    AvatarContentTagsDialog,
+    AvatarStylesDialog
+} from './AvatarOwnerEditDialogs.jsx';
 
 function normalizeEntityId(value) {
     return typeof value === 'string'
@@ -44,15 +45,15 @@ function normalizeEntityId(value) {
 
 function AvatarDialogEmptyState({ title, description, loading = false }) {
     return (
-        <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
+        <div className="bg-muted/20 flex min-h-56 items-center justify-center rounded-xl border border-dashed p-6 text-center">
             <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <Spinner className="size-5 text-muted-foreground" />
+                        <Spinner className="text-muted-foreground size-5" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                     {description}
                 </div>
             </div>

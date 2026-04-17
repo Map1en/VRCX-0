@@ -22,7 +22,9 @@ function normalizeSharedFeedFilters(value) {
         },
         wrist: {
             ...sharedFeedFiltersDefaults.wrist,
-            ...(value?.wrist && typeof value.wrist === 'object' ? value.wrist : {})
+            ...(value?.wrist && typeof value.wrist === 'object'
+                ? value.wrist
+                : {})
         }
     };
 }
@@ -45,11 +47,14 @@ function initSharedFeedFilterSubscription() {
     if (unsubscribeSharedFeedFilters) {
         return;
     }
-    unsubscribeSharedFeedFilters = onPreferenceChanged('sharedFeedFilters', (value) => {
-        cachedSharedFeedFilters = parseSharedFeedFilters(value);
-        sharedFeedFiltersLoaded = true;
-        sharedFeedFiltersLoadPromise = null;
-    });
+    unsubscribeSharedFeedFilters = onPreferenceChanged(
+        'sharedFeedFilters',
+        (value) => {
+            cachedSharedFeedFilters = parseSharedFeedFilters(value);
+            sharedFeedFiltersLoaded = true;
+            sharedFeedFiltersLoadPromise = null;
+        }
+    );
 }
 
 async function loadSharedFeedFilters() {
@@ -59,7 +64,10 @@ async function loadSharedFeedFilters() {
     }
     if (!sharedFeedFiltersLoadPromise) {
         sharedFeedFiltersLoadPromise = configRepository
-            .getString('sharedFeedFilters', JSON.stringify(sharedFeedFiltersDefaults))
+            .getString(
+                'sharedFeedFilters',
+                JSON.stringify(sharedFeedFiltersDefaults)
+            )
             .then((value) => {
                 cachedSharedFeedFilters = parseSharedFeedFilters(value);
                 sharedFeedFiltersLoaded = true;
@@ -77,7 +85,9 @@ async function loadSharedFeedFilters() {
 }
 
 function normalizeId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function getEntryUserId(entry) {
@@ -89,9 +99,12 @@ function isLocalFavoriteFriend(userId) {
     if (!normalizedUserId) {
         return false;
     }
-    const localFriendFavorites = useFavoriteStore.getState().localFriendFavorites;
+    const localFriendFavorites =
+        useFavoriteStore.getState().localFriendFavorites;
     return Object.values(localFriendFavorites ?? {}).some(
-        (ids) => Array.isArray(ids) && ids.some((id) => normalizeId(id) === normalizedUserId)
+        (ids) =>
+            Array.isArray(ids) &&
+            ids.some((id) => normalizeId(id) === normalizedUserId)
     );
 }
 
@@ -100,7 +113,9 @@ function isFriend(userId) {
     if (!normalizedUserId) {
         return false;
     }
-    return Boolean(useFriendRosterStore.getState().friendsById?.[normalizedUserId]);
+    return Boolean(
+        useFriendRosterStore.getState().friendsById?.[normalizedUserId]
+    );
 }
 
 function getFeedFilterKey(type) {
@@ -109,22 +124,25 @@ function getFeedFilterKey(type) {
 
 function shouldShowForFilterValue(value, { friend, favorite }) {
     switch (value) {
-    case 'On':
-    case 'Everyone':
-        return true;
-    case 'Friends':
-        return friend;
-    case 'VIP':
-        return favorite;
-    default:
-        return false;
+        case 'On':
+        case 'Everyone':
+            return true;
+        case 'Friends':
+            return friend;
+        case 'VIP':
+            return favorite;
+        default:
+            return false;
     }
 }
 
 export async function shouldIncludeSharedFeedEntry(entry, mode = 'noty') {
     const filters = await loadSharedFeedFilters();
     const filterKey = getFeedFilterKey(entry?.type);
-    const filterValue = filters?.[mode]?.[filterKey] || sharedFeedFiltersDefaults?.[mode]?.[filterKey] || 'Off';
+    const filterValue =
+        filters?.[mode]?.[filterKey] ||
+        sharedFeedFiltersDefaults?.[mode]?.[filterKey] ||
+        'Off';
     const userId = getEntryUserId(entry);
     return shouldShowForFilterValue(filterValue, {
         friend: isFriend(userId),

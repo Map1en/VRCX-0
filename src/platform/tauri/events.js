@@ -58,7 +58,10 @@ async function ensureTauriSubscription(name) {
 
             return unlisten;
         } catch (error) {
-            throw normalizePlatformError(error, `Unable to subscribe to backend event: ${name}`);
+            throw normalizePlatformError(
+                error,
+                `Unable to subscribe to backend event: ${name}`
+            );
         }
     })();
 

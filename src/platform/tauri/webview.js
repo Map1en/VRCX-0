@@ -5,7 +5,10 @@ async function loadCurrentWebviewWindow() {
         const module = await import('@tauri-apps/api/webviewWindow');
         return module.getCurrentWebviewWindow;
     } catch (error) {
-        throw normalizePlatformError(error, 'Unable to load Tauri webviewWindow API');
+        throw normalizePlatformError(
+            error,
+            'Unable to load Tauri webviewWindow API'
+        );
     }
 }
 

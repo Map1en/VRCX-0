@@ -1,5 +1,5 @@
-import { backend } from '../platform/tauri/index.js';
 import { normalizePlatformError } from '../platform/tauri/errors.js';
+import { backend } from '../platform/tauri/index.js';
 
 async function clearCookies() {
     return backend.web.clearCookies();

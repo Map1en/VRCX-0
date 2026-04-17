@@ -80,7 +80,11 @@ describe('search request helpers', () => {
 
     it('uses option searches for special world categories', () => {
         expect(
-            buildWorldSearchRequest('ignored', { index: 3, sortHeading: 'favorite' }, false)
+            buildWorldSearchRequest(
+                'ignored',
+                { index: 3, sortHeading: 'favorite' },
+                false
+            )
         ).toEqual({
             categoryIndex: 3,
             option: 'favorites',

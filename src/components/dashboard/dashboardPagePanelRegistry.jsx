@@ -1,11 +1,11 @@
 import { InstanceActivityPage } from '@/features/charts/InstanceActivityPage.jsx';
 import { MutualFriendsPage } from '@/features/charts/MutualFriendsPage.jsx';
-import { FeedPage } from '@/features/feed/FeedPage.jsx';
 import {
     FavoriteAvatarsPage,
     FavoriteFriendsPage,
     FavoriteWorldsPage
 } from '@/features/favorites/FavoritesPage.jsx';
+import { FeedPage } from '@/features/feed/FeedPage.jsx';
 import { FriendListPage } from '@/features/friends/FriendListPage.jsx';
 import { FriendLogPage } from '@/features/friends/FriendLogPage.jsx';
 import { FriendsLocationsPage } from '@/features/friends/FriendsLocationsPage.jsx';
@@ -41,7 +41,9 @@ const dashboardPagePanelComponentMap = {
 
 export function getDashboardPagePanelComponent(key) {
     const normalizedKey = String(key || '').trim();
-    return normalizedKey ? dashboardPagePanelComponentMap[normalizedKey] ?? null : null;
+    return normalizedKey
+        ? (dashboardPagePanelComponentMap[normalizedKey] ?? null)
+        : null;
 }
 
 export function canEmbedDashboardPagePanel(key) {

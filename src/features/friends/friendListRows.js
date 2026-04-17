@@ -10,10 +10,15 @@ export const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
 ];
 
 export function normalizeFriendListId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
-export function buildFriendListFavoriteIdSet(remoteFavoriteIds, localFriendFavorites) {
+export function buildFriendListFavoriteIdSet(
+    remoteFavoriteIds,
+    localFriendFavorites
+) {
     const set = new Set();
     for (const id of remoteFavoriteIds ?? []) {
         const normalized = normalizeFriendListId(id);
@@ -90,7 +95,12 @@ export function buildFriendListUserStatsById(statsRows, rosterRows) {
 }
 
 export function friendNumberForSort(friend) {
-    return Number.parseInt(friend?.$friendNumber ?? friend?.friendNumber ?? 0, 10) || 0;
+    return (
+        Number.parseInt(
+            friend?.$friendNumber ?? friend?.friendNumber ?? 0,
+            10
+        ) || 0
+    );
 }
 
 export function matchesFriendListSearch(
@@ -118,8 +128,10 @@ export function matchesFriendListSearch(
 
     if (filters.has('displayName')) {
         const displayName = String(friend?.displayName || '');
-        const condensedDisplayName = removeWhitespace(displayName).toLowerCase();
-        const normalizedDisplayName = removeConfusables(displayName).toLowerCase();
+        const condensedDisplayName =
+            removeWhitespace(displayName).toLowerCase();
+        const normalizedDisplayName =
+            removeConfusables(displayName).toLowerCase();
         if (
             condensedDisplayName.includes(cleanedQuery) ||
             normalizedDisplayName.includes(cleanedQuery)
@@ -130,14 +142,18 @@ export function matchesFriendListSearch(
 
     if (
         filters.has('username') &&
-        String(friend?.username || '').toLowerCase().includes(loweredQuery)
+        String(friend?.username || '')
+            .toLowerCase()
+            .includes(loweredQuery)
     ) {
         return true;
     }
 
     if (
         filters.has('rank') &&
-        String(friend?.$trustLevel || '').toUpperCase().includes(uppercaseQuery)
+        String(friend?.$trustLevel || '')
+            .toUpperCase()
+            .includes(uppercaseQuery)
     ) {
         return true;
     }
@@ -153,14 +169,20 @@ export function matchesFriendListSearch(
 
     if (
         filters.has('bio') &&
-        String(friend?.bio || '').toLowerCase().includes(loweredQuery)
+        String(friend?.bio || '')
+            .toLowerCase()
+            .includes(loweredQuery)
     ) {
         return true;
     }
 
     if (
         filters.has('note') &&
-        String(userNoteById.get(normalizeFriendListId(friend?.id)) || friend?.note || '')
+        String(
+            userNoteById.get(normalizeFriendListId(friend?.id)) ||
+                friend?.note ||
+                ''
+        )
             .toLowerCase()
             .includes(loweredQuery)
     ) {
@@ -169,7 +191,12 @@ export function matchesFriendListSearch(
 
     if (
         filters.has('memo') &&
-        String(userMemoById.get(normalizeFriendListId(friend?.id)) || friend?.memo || friend?.$memo || '')
+        String(
+            userMemoById.get(normalizeFriendListId(friend?.id)) ||
+                friend?.memo ||
+                friend?.$memo ||
+                ''
+        )
             .toLowerCase()
             .includes(loweredQuery)
     ) {

@@ -18,12 +18,12 @@ import {
 
 describe('settingsValues', () => {
     it('normalizes table page sizes to the sorted usable choices users can save', () => {
-        expect(normalizeTablePageSizes(['50', 10, '10', 0, -5, 2000, 'bad', 25])).toEqual([
-            10,
-            25,
-            50
-        ]);
-        expect(normalizeTablePageSizes(['bad', 0])).toEqual(TABLE_PAGE_SIZE_DEFAULTS);
+        expect(
+            normalizeTablePageSizes(['50', 10, '10', 0, -5, 2000, 'bad', 25])
+        ).toEqual([10, 25, 50]);
+        expect(normalizeTablePageSizes(['bad', 0])).toEqual(
+            TABLE_PAGE_SIZE_DEFAULTS
+        );
     });
 
     it('builds table page size suggestions from defaults and the current draft', () => {
@@ -55,20 +55,28 @@ describe('settingsValues', () => {
         expect(buildOpenAiModelsEndpoint(DEFAULT_TRANSLATION_ENDPOINT)).toBe(
             'https://api.openai.com/v1/models'
         );
-        expect(buildOpenAiModelsEndpoint('https://proxy.example.test/openai/chat/completions?x=1#top')).toBe(
-            'https://proxy.example.test/openai/models'
+        expect(
+            buildOpenAiModelsEndpoint(
+                'https://proxy.example.test/openai/chat/completions?x=1#top'
+            )
+        ).toBe('https://proxy.example.test/openai/models');
+        expect(buildOpenAiModelsEndpoint('custom-base/chat/completions')).toBe(
+            'custom-base/models'
         );
-        expect(buildOpenAiModelsEndpoint('custom-base/chat/completions')).toBe('custom-base/models');
     });
 
     it('parses JSON responses from web requests regardless of object or text payload shape', () => {
         expect(parseWebJson({ data: { ok: true } })).toEqual({ ok: true });
-        expect(parseWebJson({ data: '{"models":["gpt"]}' })).toEqual({ models: ['gpt'] });
+        expect(parseWebJson({ data: '{"models":["gpt"]}' })).toEqual({
+            models: ['gpt']
+        });
         expect(parseWebJson({ data: '' })).toEqual({});
     });
 
     it('validates custom font stacks before they are persisted', () => {
-        expect(isValidFontFamilyList('"Comic Sans MS", Arial, system-ui')).toBe(true);
+        expect(isValidFontFamilyList('"Comic Sans MS", Arial, system-ui')).toBe(
+            true
+        );
         expect(isValidFontFamilyList('Noto Sans JP')).toBe(true);
         expect(isValidFontFamilyList('bad;font')).toBe(false);
         expect(isValidFontFamilyList('')).toBe(false);

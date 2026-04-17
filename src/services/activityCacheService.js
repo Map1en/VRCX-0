@@ -13,7 +13,9 @@ const FULL_CACHE_MAX_DAYS = 3650;
 const INITIAL_RANGE_DAYS = 90;
 
 function normalizeUserId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function getDisplayName(user) {
@@ -117,20 +119,19 @@ function setWarmupError(userId, currentUserSnapshot, error) {
         detail: message,
         fullCacheReady: false
     });
-    useRuntimeStore.getState().setStartupTask(
-        'services',
-        'error',
-        `Activity cache warm-up failed: ${message}`
-    );
+    useRuntimeStore
+        .getState()
+        .setStartupTask(
+            'services',
+            'error',
+            `Activity cache warm-up failed: ${message}`
+        );
 }
 
 function scheduleIdleTask(task) {
     return new Promise((resolve, reject) => {
         const callback = () => {
-            Promise.resolve()
-                .then(task)
-                .then(resolve)
-                .catch(reject);
+            Promise.resolve().then(task).then(resolve).catch(reject);
         };
 
         if (typeof requestIdleCallback === 'function') {
@@ -174,7 +175,9 @@ async function fullRefresh(snapshot, rangeDays) {
         fromDays: rangeDays
     });
     const sourceLastCreatedAt =
-        sourceItems.length > 0 ? sourceItems[sourceItems.length - 1].created_at : '';
+        sourceItems.length > 0
+            ? sourceItems[sourceItems.length - 1].created_at
+            : '';
     const result = await runActivityWorkerTask('computeSessionsSnapshot', {
         sourceType: 'self_gamelog',
         rows: sourceItems,
@@ -194,7 +197,10 @@ async function fullRefresh(snapshot, rangeDays) {
         cachedRangeDays: rangeDays
     };
 
-    await activityRepository.replaceActivitySessions(snapshot.userId, snapshot.sessions);
+    await activityRepository.replaceActivitySessions(
+        snapshot.userId,
+        snapshot.sessions
+    );
     await activityRepository.upsertActivitySyncState(snapshot.sync);
 }
 
@@ -242,7 +248,9 @@ async function incrementalRefresh(snapshot) {
     const tailSessions =
         replaceFromStartAt === null
             ? mergedSessions
-            : mergedSessions.filter((session) => session.start >= replaceFromStartAt);
+            : mergedSessions.filter(
+                  (session) => session.start >= replaceFromStartAt
+              );
 
     await activityRepository.appendActivitySessions({
         userId: snapshot.userId,
@@ -274,7 +282,10 @@ async function expandRange(snapshot, rangeDays) {
 
     if (result.sessions.length > 0) {
         snapshot.sessions = mergeSessions(result.sessions, snapshot.sessions);
-        await activityRepository.replaceActivitySessions(snapshot.userId, snapshot.sessions);
+        await activityRepository.replaceActivitySessions(
+            snapshot.userId,
+            snapshot.sessions
+        );
     }
 
     snapshot.sync.cachedRangeDays = rangeDays;
@@ -285,7 +296,9 @@ async function expandRange(snapshot, rangeDays) {
 async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
     const normalizedUserId = normalizeUserId(userId || currentUserSnapshot?.id);
     if (!normalizedUserId) {
-        throw new Error('Activity cache warm-up requires an authenticated user id.');
+        throw new Error(
+            'Activity cache warm-up requires an authenticated user id.'
+        );
     }
 
     const displayName = getDisplayName(currentUserSnapshot) || normalizedUserId;
@@ -404,15 +417,20 @@ async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
 }
 
 export function bootstrapActivityCache(options) {
-    const normalizedUserId = normalizeUserId(options?.userId || options?.currentUserSnapshot?.id);
+    const normalizedUserId = normalizeUserId(
+        options?.userId || options?.currentUserSnapshot?.id
+    );
     const currentUserSnapshot =
-        options?.currentUserSnapshot && typeof options.currentUserSnapshot === 'object'
+        options?.currentUserSnapshot &&
+        typeof options.currentUserSnapshot === 'object'
             ? options.currentUserSnapshot
             : null;
 
     if (!normalizedUserId || !currentUserSnapshot) {
         return Promise.reject(
-            new Error('Activity cache warm-up requires an authenticated user snapshot.')
+            new Error(
+                'Activity cache warm-up requires an authenticated user snapshot.'
+            )
         );
     }
 

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
-import dashboardRepository, { sanitizeDashboard } from '@/repositories/dashboardRepository.js';
+import dashboardRepository, {
+    sanitizeDashboard
+} from '@/repositories/dashboardRepository.js';
 import { DEFAULT_DASHBOARD_ICON } from '@/shared/constants/dashboard.js';
 
 const initialState = {
@@ -32,7 +34,9 @@ export const useDashboardStore = create((set, get) => ({
             return dashboards;
         } catch (error) {
             const message =
-                error instanceof Error ? error.message : 'Failed to load dashboard configurations.';
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load dashboard configurations.';
             set({
                 dashboards: [],
                 loaded: true,
@@ -63,14 +67,21 @@ export const useDashboardStore = create((set, get) => ({
             return null;
         }
 
-        return get().dashboards.find((dashboard) => dashboard.id === normalizedId) || null;
+        return (
+            get().dashboards.find(
+                (dashboard) => dashboard.id === normalizedId
+            ) || null
+        );
     },
     async createDashboard(baseName = 'Dashboard') {
         await get().ensureLoaded();
 
         const nextDashboard = sanitizeDashboard({
             id: dashboardRepository.generateDashboardId(),
-            name: dashboardRepository.generateNextDashboardName(get().dashboards, baseName),
+            name: dashboardRepository.generateNextDashboardName(
+                get().dashboards,
+                baseName
+            ),
             icon: DEFAULT_DASHBOARD_ICON,
             rows: []
         });
@@ -103,12 +114,15 @@ export const useDashboardStore = create((set, get) => ({
             id
         });
         if (!nextDashboard) {
-            throw new Error('Dashboard update produced an invalid configuration.');
+            throw new Error(
+                'Dashboard update produced an invalid configuration.'
+            );
         }
 
         const nextDashboards = dashboards.slice();
         nextDashboards[index] = nextDashboard;
-        const savedDashboards = await dashboardRepository.saveDashboards(nextDashboards);
+        const savedDashboards =
+            await dashboardRepository.saveDashboards(nextDashboards);
 
         set({
             dashboards: savedDashboards,
@@ -122,8 +136,11 @@ export const useDashboardStore = create((set, get) => ({
     async deleteDashboard(id) {
         await get().ensureLoaded();
 
-        const nextDashboards = get().dashboards.filter((dashboard) => dashboard.id !== id);
-        const savedDashboards = await dashboardRepository.saveDashboards(nextDashboards);
+        const nextDashboards = get().dashboards.filter(
+            (dashboard) => dashboard.id !== id
+        );
+        const savedDashboards =
+            await dashboardRepository.saveDashboards(nextDashboards);
 
         set((state) => ({
             dashboards: savedDashboards,
@@ -131,7 +148,9 @@ export const useDashboardStore = create((set, get) => ({
             loadStatus: 'ready',
             detail: '',
             editingDashboardId:
-                state.editingDashboardId === id ? null : state.editingDashboardId
+                state.editingDashboardId === id
+                    ? null
+                    : state.editingDashboardId
         }));
     },
     setEditingDashboardId(id) {

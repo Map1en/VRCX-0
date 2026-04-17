@@ -337,7 +337,8 @@ function aggregateGameLogSessionTailEvents(events, matchType, groupType) {
     }
 
     const windowStart =
-        toGameLogSessionEpoch(events[lastIndex].created_at) - SESSION_AGGREGATE_WINDOW_MS;
+        toGameLogSessionEpoch(events[lastIndex].created_at) -
+        SESSION_AGGREGATE_WINDOW_MS;
     const indices = [];
     for (let index = lastIndex; index >= 0; index -= 1) {
         if (toGameLogSessionEpoch(events[index].created_at) < windowStart) {
@@ -376,7 +377,8 @@ function aggregateGameLogSessionHeadEvents(events, matchType, groupType) {
     }
 
     const windowEnd =
-        toGameLogSessionEpoch(events[firstIndex].created_at) + SESSION_AGGREGATE_WINDOW_MS;
+        toGameLogSessionEpoch(events[firstIndex].created_at) +
+        SESSION_AGGREGATE_WINDOW_MS;
     const indices = [];
     for (let index = firstIndex; index < events.length; index += 1) {
         if (toGameLogSessionEpoch(events[index].created_at) > windowEnd) {
@@ -400,9 +402,21 @@ function aggregateGameLogSessionHeadEvents(events, matchType, groupType) {
 
 function applyGameLogSessionAggregation(segmentsAsc) {
     for (const segment of segmentsAsc) {
-        aggregateGameLogSessionTailEvents(segment.events, 'OnPlayerLeft', 'LeftGroup');
-        aggregateGameLogSessionTailEvents(segment.events, 'OnPlayerJoined', 'JoinGroup');
-        aggregateGameLogSessionHeadEvents(segment.events, 'OnPlayerJoined', 'JoinGroup');
+        aggregateGameLogSessionTailEvents(
+            segment.events,
+            'OnPlayerLeft',
+            'LeftGroup'
+        );
+        aggregateGameLogSessionTailEvents(
+            segment.events,
+            'OnPlayerJoined',
+            'JoinGroup'
+        );
+        aggregateGameLogSessionHeadEvents(
+            segment.events,
+            'OnPlayerJoined',
+            'JoinGroup'
+        );
     }
 }
 
@@ -414,7 +428,8 @@ function deduplicateGameLogSessionVideoPlay(events) {
             events[index].videoUrl === events[index - 1].videoUrl
         ) {
             events[index - 1].playCount =
-                (events[index - 1].playCount || 1) + (events[index].playCount || 1);
+                (events[index - 1].playCount || 1) +
+                (events[index].playCount || 1);
             events.splice(index, 1);
         }
     }
@@ -468,7 +483,11 @@ export function buildGameLogSessions(locationSegments, flatEvents) {
 
     if (dedupedEvents && dedupedEvents.length > 0) {
         for (const event of dedupedEvents) {
-            const index = findMatchingGameLogSessionIndex(event, segmentsAsc, locationMap);
+            const index = findMatchingGameLogSessionIndex(
+                event,
+                segmentsAsc,
+                locationMap
+            );
             if (index === -1) {
                 continue;
             }
@@ -479,7 +498,8 @@ export function buildGameLogSessions(locationSegments, flatEvents) {
     for (const segment of segmentsAsc) {
         segment.events.sort(
             (left, right) =>
-                toGameLogSessionEpoch(left.created_at) - toGameLogSessionEpoch(right.created_at)
+                toGameLogSessionEpoch(left.created_at) -
+                toGameLogSessionEpoch(right.created_at)
         );
     }
 
@@ -502,7 +522,11 @@ export function buildGameLogSessions(locationSegments, flatEvents) {
             }
         }
         if (joinedIds.size > 0) {
-            for (let index = segment.events.length - 1; index >= 0; index -= 1) {
+            for (
+                let index = segment.events.length - 1;
+                index >= 0;
+                index -= 1
+            ) {
                 const event = segment.events[index];
                 if (toGameLogSessionEpoch(event.created_at) > windowEnd) {
                     continue;
@@ -527,6 +551,8 @@ export function buildGameLogSessions(locationSegments, flatEvents) {
         segment.events.reverse();
     }
 
-    const segments = segmentsAsc.reverse().map(({ epoch: _epoch, ...rest }) => rest);
+    const segments = segmentsAsc
+        .reverse()
+        .map(({ epoch: _epoch, ...rest }) => rest);
     return { segments };
 }

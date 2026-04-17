@@ -31,13 +31,25 @@ afterEach(() => {
 
 describe('mutualFriendsSettings', () => {
     it('keeps saved hidden friend ids trimmed and ignores unusable entries', () => {
-        installLocalStorage(JSON.stringify([' usr_a ', '', null, MUTUAL_GRAPH_EMPTY_USER_ID, 'usr_b']));
+        installLocalStorage(
+            JSON.stringify([
+                ' usr_a ',
+                '',
+                null,
+                MUTUAL_GRAPH_EMPTY_USER_ID,
+                'usr_b'
+            ])
+        );
 
         expect(readExcludedMutualFriendIds()).toEqual(['usr_a', 'usr_b']);
-        expect(normalizeExcludedMutualFriendIds([' usr_c ', undefined, MUTUAL_GRAPH_EMPTY_USER_ID, 'usr_d'])).toEqual([
-            'usr_c',
-            'usr_d'
-        ]);
+        expect(
+            normalizeExcludedMutualFriendIds([
+                ' usr_c ',
+                undefined,
+                MUTUAL_GRAPH_EMPTY_USER_ID,
+                'usr_d'
+            ])
+        ).toEqual(['usr_c', 'usr_d']);
     });
 
     it('persists hidden friend ids in the same normalized shape the page reads back', () => {
@@ -45,10 +57,9 @@ describe('mutualFriendsSettings', () => {
 
         writeExcludedMutualFriendIds([' usr_a ', '', 'usr_b']);
 
-        expect(JSON.parse(store.get(MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY))).toEqual([
-            'usr_a',
-            'usr_b'
-        ]);
+        expect(
+            JSON.parse(store.get(MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY))
+        ).toEqual(['usr_a', 'usr_b']);
     });
 
     it('falls back to safe graph settings when stored values are out of range or invalid', () => {

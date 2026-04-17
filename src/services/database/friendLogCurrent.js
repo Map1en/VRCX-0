@@ -1,7 +1,6 @@
+import sqliteService from '../../repositories/sqliteRepository.js';
 import { dbVars } from '../database';
 import { buildValuesList } from './sqlHelpers.js';
-
-import sqliteService from '../../repositories/sqliteRepository.js';
 
 const friendLogCurrent = {
     async getFriendLogCurrent() {
@@ -45,12 +44,16 @@ const friendLogCurrent = {
                 {
                     column: 'display_name',
                     value: (line) =>
-                        typeof line.displayName === 'string' ? line.displayName : ''
+                        typeof line.displayName === 'string'
+                            ? line.displayName
+                            : ''
                 },
                 {
                     column: 'trust_level',
                     value: (line) =>
-                        typeof line.trustLevel === 'string' ? line.trustLevel : ''
+                        typeof line.trustLevel === 'string'
+                            ? line.trustLevel
+                            : ''
                 },
                 {
                     column: 'friend_number',

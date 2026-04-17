@@ -56,7 +56,9 @@ function createEmptyLocationDetails() {
 }
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function timestampSeconds(value) {
@@ -64,7 +66,9 @@ function timestampSeconds(value) {
         return 0;
     }
     if (typeof value === 'number' && Number.isFinite(value)) {
-        return value > 10_000_000_000 ? Math.floor(value / 1000) : Math.floor(value);
+        return value > 10_000_000_000
+            ? Math.floor(value / 1000)
+            : Math.floor(value);
     }
     const parsed = Date.parse(value);
     return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : 0;
@@ -124,7 +128,9 @@ function createActivityButtons(buttonText, buttonUrl) {
 
 function compactObject(value) {
     return Object.fromEntries(
-        Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== null && entry !== '')
+        Object.entries(value).filter(
+            ([, entry]) => entry !== undefined && entry !== null && entry !== ''
+        )
     );
 }
 
@@ -170,23 +176,31 @@ async function loadDiscordConfig() {
 }
 
 function getCurrentLocationContext(runtimeState, currentUser) {
-    let currentLocation = normalizeLocationValue(runtimeState.gameState.currentLocation);
+    let currentLocation = normalizeLocationValue(
+        runtimeState.gameState.currentLocation
+    );
     let startTime = runtimeState.gameState.currentLocationStartedAt;
     if (currentLocation === 'traveling') {
-        currentLocation = normalizeLocationValue(runtimeState.gameState.currentDestination);
+        currentLocation = normalizeLocationValue(
+            runtimeState.gameState.currentDestination
+        );
         startTime = runtimeState.gameState.currentLocationStartedAt;
     }
 
     if (!currentLocation) {
         currentLocation = normalizeLocationValue(
             currentUser?.$locationTag ||
-            currentUser?.location ||
-            currentUser?.worldId
+                currentUser?.location ||
+                currentUser?.worldId
         );
-        startTime = currentUser?.$location_at || currentUser?.locationAt || currentUser?.updated_at || '';
+        startTime =
+            currentUser?.$location_at ||
+            currentUser?.locationAt ||
+            currentUser?.updated_at ||
+            '';
         const travelingToLocation = normalizeLocationValue(
             currentUser?.$travelingToLocation ||
-            currentUser?.travelingToLocation
+                currentUser?.travelingToLocation
         );
         if (travelingToLocation) {
             currentLocation = travelingToLocation;
@@ -207,14 +221,18 @@ async function setDiscordActiveState(active) {
         isDiscordActive = false;
         useRuntimeStore.getState().setUpdateLoopState({
             lastDiscordPresenceAt: new Date().toISOString(),
-            lastDiscordPresenceDetail: error instanceof Error ? error.message : String(error)
+            lastDiscordPresenceDetail:
+                error instanceof Error ? error.message : String(error)
         });
         return false;
     }
 }
 
 async function loadLocationDetails(currentLocation, endpoint) {
-    if (currentLocation === lastLocationDetails.tag && lastLocationDetails.parsed) {
+    if (
+        currentLocation === lastLocationDetails.tag &&
+        lastLocationDetails.parsed
+    ) {
         return lastLocationDetails;
     }
 
@@ -232,13 +250,18 @@ async function loadLocationDetails(currentLocation, endpoint) {
                 endpoint
             });
             details.worldName = world.name || parsed.worldId;
-            details.thumbnailImageUrl = world.thumbnailImageUrl || world.imageUrl || '';
+            details.thumbnailImageUrl =
+                world.thumbnailImageUrl || world.imageUrl || '';
             details.worldCapacity = Number(world.capacity) || 0;
-            details.worldLink = world.releaseStatus === 'public'
-                ? `https://vrchat.com/home/world/${parsed.worldId}`
-                : '';
+            details.worldLink =
+                world.releaseStatus === 'public'
+                    ? `https://vrchat.com/home/world/${parsed.worldId}`
+                    : '';
         } catch (error) {
-            console.warn(`Failed to get world details for ${parsed.worldId}`, error);
+            console.warn(
+                `Failed to get world details for ${parsed.worldId}`,
+                error
+            );
             details.worldName = parsed.worldId;
         }
     }
@@ -252,7 +275,10 @@ async function loadLocationDetails(currentLocation, endpoint) {
             });
             details.groupName = group.name || '';
         } catch (error) {
-            console.warn(`Failed to get group details for ${parsed.groupId}`, error);
+            console.warn(
+                `Failed to get group details for ${parsed.groupId}`,
+                error
+            );
         }
     }
 
@@ -284,7 +310,11 @@ function buildAccessName({ parsed, groupName, platform, t }) {
             return `${t('dialog.new_instance.access_type_friend_plus')} #${parsed.instanceName}${platform}`;
         case 'group': {
             const groupAccessName = getGroupAccessName(parsed, t);
-            const suffix = groupName ? ` ${groupAccessName}(${groupName})` : groupAccessName ? ` ${groupAccessName}` : '';
+            const suffix = groupName
+                ? ` ${groupAccessName}(${groupName})`
+                : groupAccessName
+                  ? ` ${groupAccessName}`
+                  : '';
             return `${t('dialog.new_instance.access_type_group')}${suffix} #${parsed.instanceName}${platform}`;
         }
         default:
@@ -332,7 +362,8 @@ export async function refreshDiscordPresence({ force = false } = {}) {
     const runtimeState = useRuntimeStore.getState();
     const auth = runtimeState.auth;
     const currentUser = auth.currentUserSnapshot;
-    const { currentLocation, startTime: rawStartTime } = getCurrentLocationContext(runtimeState, currentUser);
+    const { currentLocation, startTime: rawStartTime } =
+        getCurrentLocationContext(runtimeState, currentUser);
 
     if (!config.discordActive || !isRealInstance(currentLocation)) {
         await setDiscordActiveState(false);
@@ -340,7 +371,10 @@ export async function refreshDiscordPresence({ force = false } = {}) {
     }
 
     const t = await createTranslator();
-    const locationDetails = await loadLocationDetails(currentLocation, auth.currentUserEndpoint);
+    const locationDetails = await loadLocationDetails(
+        currentLocation,
+        auth.currentUserEndpoint
+    );
     const parsed = locationDetails.parsed;
     if (!parsed) {
         await setDiscordActiveState(false);
@@ -349,11 +383,14 @@ export async function refreshDiscordPresence({ force = false } = {}) {
 
     const platform = config.discordShowPlatform
         ? getPlatformLabel(
-            currentUser?.presence?.platform || currentUser?.platform || currentUser?.last_platform || '',
-            Boolean(runtimeState.gameState.isGameRunning),
-            Boolean(runtimeState.gameState.isGameNoVR),
-            t
-        )
+              currentUser?.presence?.platform ||
+                  currentUser?.platform ||
+                  currentUser?.last_platform ||
+                  '',
+              Boolean(runtimeState.gameState.isGameRunning),
+              Boolean(runtimeState.gameState.isGameNoVR),
+              t
+          )
         : '';
     const accessName = buildAccessName({
         parsed,
@@ -374,7 +411,11 @@ export async function refreshDiscordPresence({ force = false } = {}) {
         hidePrivate = true;
     }
 
-    const statusInfo = getStatusInfo(currentUser?.status, config.discordHideInvite, t);
+    const statusInfo = getStatusInfo(
+        currentUser?.status,
+        config.discordHideInvite,
+        t
+    );
     if (statusInfo.hidePrivate) {
         hidePrivate = true;
     }
@@ -472,13 +513,20 @@ export async function refreshDiscordPresence({ force = false } = {}) {
         state: stateText,
         status_display_type: statusDisplayType,
         timestamps: createActivityTimestamps(startTime, endTime),
-        assets: createActivityAssets(bigIcon, poweredBy, statusInfo.statusImage, statusInfo.statusName),
+        assets: createActivityAssets(
+            bigIcon,
+            poweredBy,
+            statusInfo.statusImage,
+            statusInfo.statusName
+        ),
         party: createActivityParty(partyId, partySize, partyMaxSize),
         buttons: createActivityButtons(buttonText, buttonUrl)
     });
 
     try {
-        isDiscordActive = Boolean(await backend.discord.SetAssets({ appId, activity }));
+        isDiscordActive = Boolean(
+            await backend.discord.SetAssets({ appId, activity })
+        );
         useRuntimeStore.getState().setUpdateLoopState({
             lastDiscordPresenceAt: new Date().toISOString(),
             lastDiscordPresenceDetail: `${details}${stateText ? ` - ${stateText}` : ''}`
@@ -487,7 +535,8 @@ export async function refreshDiscordPresence({ force = false } = {}) {
         isDiscordActive = false;
         useRuntimeStore.getState().setUpdateLoopState({
             lastDiscordPresenceAt: new Date().toISOString(),
-            lastDiscordPresenceDetail: error instanceof Error ? error.message : String(error)
+            lastDiscordPresenceDetail:
+                error instanceof Error ? error.message : String(error)
         });
     }
 }

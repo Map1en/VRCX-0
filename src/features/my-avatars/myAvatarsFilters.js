@@ -42,7 +42,9 @@ export function filterMyAvatars({
     releaseStatusFilter,
     tagFilters
 }) {
-    const searchValue = String(searchQuery || '').trim().toLowerCase();
+    const searchValue = String(searchQuery || '')
+        .trim()
+        .toLowerCase();
     const selectedTags = tagFilters instanceof Set ? tagFilters : new Set();
 
     return (Array.isArray(avatars) ? avatars : []).filter((avatar) => {
@@ -58,7 +60,9 @@ export function filterMyAvatars({
         }
 
         if (selectedTags.size > 0) {
-            const avatarTags = new Set((avatar?.$tags || []).map((entry) => entry.tag));
+            const avatarTags = new Set(
+                (avatar?.$tags || []).map((entry) => entry.tag)
+            );
             if (![...selectedTags].some((tag) => avatarTags.has(tag))) {
                 return false;
             }

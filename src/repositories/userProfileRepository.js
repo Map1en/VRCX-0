@@ -1,17 +1,17 @@
 import {
-    computeTrustLevel,
-    computeUserPlatform,
-    createDefaultUserRef
-} from '@/shared/utils/userTransforms.js';
-import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys,
     setCachedQueryData
 } from '@/services/entityQueryCacheService.js';
+import {
+    computeTrustLevel,
+    computeUserPlatform,
+    createDefaultUserRef
+} from '@/shared/utils/userTransforms.js';
 
-import vrchatFriendRepository from './vrchatFriendRepository.js';
 import vrchatAuthRepository from './vrchatAuthRepository.js';
+import vrchatFriendRepository from './vrchatFriendRepository.js';
 
 function normalizeUserProfile(user) {
     const base = createDefaultUserRef(user ?? {});
@@ -56,9 +56,13 @@ function normalize(user) {
 
 async function getUserProfile({ userId, endpoint = '', force = false }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('UserProfileRepository.getUserProfile requires a user id.');
+        throw new Error(
+            'UserProfileRepository.getUserProfile requires a user id.'
+        );
     }
 
     const json = await fetchCachedData({
@@ -78,9 +82,13 @@ async function getUserProfile({ userId, endpoint = '', force = false }) {
 
 async function getUserGroups({ userId, endpoint = '' }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('UserProfileRepository.getUserGroups requires a user id.');
+        throw new Error(
+            'UserProfileRepository.getUserGroups requires a user id.'
+        );
     }
 
     return fetchCachedData({
@@ -99,9 +107,13 @@ async function getUserGroups({ userId, endpoint = '' }) {
 
 async function getRepresentedGroup({ userId, endpoint = '', force = false }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('UserProfileRepository.getRepresentedGroup requires a user id.');
+        throw new Error(
+            'UserProfileRepository.getRepresentedGroup requires a user id.'
+        );
     }
 
     return fetchCachedData({
@@ -114,16 +126,27 @@ async function getRepresentedGroup({ userId, endpoint = '', force = false }) {
                 {},
                 { endpoint }
             );
-            return response.json && typeof response.json === 'object' ? response.json : null;
+            return response.json && typeof response.json === 'object'
+                ? response.json
+                : null;
         }
     });
 }
 
-async function getMutualFriends({ userId, endpoint = '', n = 100, offset = 0 }) {
+async function getMutualFriends({
+    userId,
+    endpoint = '',
+    n = 100,
+    offset = 0
+}) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('UserProfileRepository.getMutualFriends requires a user id.');
+        throw new Error(
+            'UserProfileRepository.getMutualFriends requires a user id.'
+        );
     }
 
     const response = await vrchatFriendRepository.executeGet(
@@ -142,9 +165,13 @@ async function getAllMutualFriends({ userId, endpoint = '' }) {
 
 async function updateCurrentUser({ userId, endpoint = '', params = {} }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('UserProfileRepository.updateCurrentUser requires a user id.');
+        throw new Error(
+            'UserProfileRepository.updateCurrentUser requires a user id.'
+        );
     }
 
     const response = await vrchatAuthRepository.execute(
@@ -156,17 +183,32 @@ async function updateCurrentUser({ userId, endpoint = '', params = {} }) {
         }
     );
     const nextUser = normalize(response.json);
-    setCachedQueryData(queryKeys.user(normalizedUserId, endpoint), response.json);
+    setCachedQueryData(
+        queryKeys.user(normalizedUserId, endpoint),
+        response.json
+    );
     return nextUser;
 }
 
-async function updateCurrentUserBadge({ userId, endpoint = '', badgeId = '', hidden = false, showcased = false }) {
+async function updateCurrentUserBadge({
+    userId,
+    endpoint = '',
+    badgeId = '',
+    hidden = false,
+    showcased = false
+}) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     const normalizedBadgeId =
-        typeof badgeId === 'string' ? badgeId.trim() : String(badgeId ?? '').trim();
+        typeof badgeId === 'string'
+            ? badgeId.trim()
+            : String(badgeId ?? '').trim();
     if (!normalizedUserId || !normalizedBadgeId) {
-        throw new Error('UserProfileRepository.updateCurrentUserBadge requires a user id and badge id.');
+        throw new Error(
+            'UserProfileRepository.updateCurrentUserBadge requires a user id and badge id.'
+        );
     }
 
     await vrchatAuthRepository.execute(
@@ -188,9 +230,13 @@ async function updateCurrentUserBadge({ userId, endpoint = '', badgeId = '', hid
 
 async function addCurrentUserTags({ userId, endpoint = '', tags = [] }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('UserProfileRepository.addCurrentUserTags requires a user id.');
+        throw new Error(
+            'UserProfileRepository.addCurrentUserTags requires a user id.'
+        );
     }
 
     const response = await vrchatAuthRepository.execute(
@@ -202,15 +248,22 @@ async function addCurrentUserTags({ userId, endpoint = '', tags = [] }) {
         }
     );
     const nextUser = normalize(response.json);
-    setCachedQueryData(queryKeys.user(normalizedUserId, endpoint), response.json);
+    setCachedQueryData(
+        queryKeys.user(normalizedUserId, endpoint),
+        response.json
+    );
     return nextUser;
 }
 
 async function removeCurrentUserTags({ userId, endpoint = '', tags = [] }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('UserProfileRepository.removeCurrentUserTags requires a user id.');
+        throw new Error(
+            'UserProfileRepository.removeCurrentUserTags requires a user id.'
+        );
     }
 
     const response = await vrchatAuthRepository.execute(
@@ -222,7 +275,10 @@ async function removeCurrentUserTags({ userId, endpoint = '', tags = [] }) {
         }
     );
     const nextUser = normalize(response.json);
-    setCachedQueryData(queryKeys.user(normalizedUserId, endpoint), response.json);
+    setCachedQueryData(
+        queryKeys.user(normalizedUserId, endpoint),
+        response.json
+    );
     return nextUser;
 }
 

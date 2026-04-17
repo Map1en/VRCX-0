@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     HistoryIcon,
     LogInIcon,
@@ -7,27 +6,26 @@ import {
     UsersRoundIcon,
     XCircleIcon
 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { formatDateFilter } from '@/lib/dateTime.js';
+import { cn } from '@/lib/utils.js';
 import { instanceRepository } from '@/repositories/index.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
+import { parseLocation } from '@/shared/utils/location.js';
 import { useLaunchStore } from '@/state/launchStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { parseLocation } from '@/shared/utils/location.js';
-import { formatDateFilter } from '@/lib/dateTime.js';
-import { cn } from '@/lib/utils.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger
-} from '@/ui/shadcn/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function finiteNumber(value) {
@@ -48,7 +46,13 @@ function firstFiniteNumber(...values) {
     return null;
 }
 
-function ActionButton({ label, disabled = false, loading = false, icon: Icon, onClick }) {
+function ActionButton({
+    label,
+    disabled = false,
+    loading = false,
+    icon: Icon,
+    onClick
+}) {
     return (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -60,8 +64,13 @@ function ActionButton({ label, disabled = false, loading = false, icon: Icon, on
                         className="rounded-full"
                         aria-label={label}
                         disabled={disabled || loading}
-                        onClick={onClick}>
-                        {loading ? <Spinner data-icon="inline-start" /> : <Icon data-icon="inline-start" />}
+                        onClick={onClick}
+                    >
+                        {loading ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <Icon data-icon="inline-start" />
+                        )}
                     </Button>
                 </span>
             </TooltipTrigger>
@@ -112,14 +121,23 @@ function disabledContentSettings(instance) {
 }
 
 function hasGroupPermission(group, permission) {
-    const direct = Array.isArray(group?.myMember?.permissions) ? group.myMember.permissions : [];
+    const direct = Array.isArray(group?.myMember?.permissions)
+        ? group.myMember.permissions
+        : [];
     if (direct.includes('*') || direct.includes(permission)) {
         return true;
     }
-    const roleIds = Array.isArray(group?.myMember?.roleIds) ? group.myMember.roleIds : [];
+    const roleIds = Array.isArray(group?.myMember?.roleIds)
+        ? group.myMember.roleIds
+        : [];
     return (Array.isArray(group?.roles) ? group.roles : [])
         .filter((role) => roleIds.includes(role?.id))
-        .some((role) => Array.isArray(role.permissions) && (role.permissions.includes('*') || role.permissions.includes(permission)));
+        .some(
+            (role) =>
+                Array.isArray(role.permissions) &&
+                (role.permissions.includes('*') ||
+                    role.permissions.includes(permission))
+        );
 }
 
 function canCloseInstance(instance, currentUserId) {
@@ -133,11 +151,20 @@ function canCloseInstance(instance, currentUserId) {
     if (!ownerId.startsWith('grp_')) {
         return false;
     }
-    return hasGroupPermission(instance?.group, 'group-instance-moderate') ||
-        hasGroupPermission(instance?.owner, 'group-instance-moderate');
+    return (
+        hasGroupPermission(instance?.group, 'group-instance-moderate') ||
+        hasGroupPermission(instance?.owner, 'group-instance-moderate')
+    );
 }
 
-function InstanceInfoTooltip({ instance, location, canClose, closeDisabled, onClose, children }) {
+function InstanceInfoTooltip({
+    instance,
+    location,
+    canClose,
+    closeDisabled,
+    onClose,
+    children
+}) {
     const users = instanceUsers(instance);
     const disabledContent = disabledContentSettings(instance);
     return (
@@ -146,7 +173,10 @@ function InstanceInfoTooltip({ instance, location, canClose, closeDisabled, onCl
             <TooltipContent className="max-w-sm text-xs">
                 <div className="flex flex-col gap-1.5">
                     {instance?.closedAt ? (
-                        <div>Closed At: {formatDateFilter(instance.closedAt, 'long')}</div>
+                        <div>
+                            Closed At:{' '}
+                            {formatDateFilter(instance.closedAt, 'long')}
+                        </div>
                     ) : null}
                     {canClose ? (
                         <Button
@@ -154,31 +184,52 @@ function InstanceInfoTooltip({ instance, location, canClose, closeDisabled, onCl
                             size="xs"
                             variant="outline"
                             className="h-7"
-                            disabled={closeDisabled || Boolean(instance?.closedAt)}
+                            disabled={
+                                closeDisabled || Boolean(instance?.closedAt)
+                            }
                             onClick={(event) => {
                                 event.preventDefault();
                                 event.stopPropagation();
                                 onClose?.();
-                            }}>
+                            }}
+                        >
                             Close instance
                         </Button>
                     ) : null}
                     <div>
-                        <span className="text-platform-pc">PC: </span>{platformCount(instance, 'standalonewindows')}
-                        <span className="ml-2 text-platform-quest">Android: </span>{platformCount(instance, 'android')}
+                        <span className="text-platform-pc">PC: </span>
+                        {platformCount(instance, 'standalonewindows')}
+                        <span className="text-platform-quest ml-2">
+                            Android:{' '}
+                        </span>
+                        {platformCount(instance, 'android')}
                     </div>
                     <div>iOS: {platformCount(instance, 'ios')}</div>
-                    {instance?.gameServerVersion ? <div>Game version {instance.gameServerVersion}</div> : null}
-                    {instance?.queueEnabled ? <div>Instance queuing enabled</div> : null}
-                    {disabledContent ? <div>Disabled content {disabledContent}</div> : null}
-                    {location ? <div className="break-all text-muted-foreground">{location}</div> : null}
+                    {instance?.gameServerVersion ? (
+                        <div>Game version {instance.gameServerVersion}</div>
+                    ) : null}
+                    {instance?.queueEnabled ? (
+                        <div>Instance queuing enabled</div>
+                    ) : null}
+                    {disabledContent ? (
+                        <div>Disabled content {disabledContent}</div>
+                    ) : null}
+                    {location ? (
+                        <div className="text-muted-foreground break-all">
+                            {location}
+                        </div>
+                    ) : null}
                     {users.length ? (
                         <div>
                             <div>Instance users</div>
                             <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1">
                                 {users.map((user, index) => (
-                                    <span key={`${user?.id || user?.displayName || 'user'}:${index}`}>
-                                        {user?.displayName || user?.id || 'User'}
+                                    <span
+                                        key={`${user?.id || user?.displayName || 'user'}:${index}`}
+                                    >
+                                        {user?.displayName ||
+                                            user?.id ||
+                                            'User'}
                                     </span>
                                 ))}
                             </div>
@@ -220,7 +271,10 @@ export function InstanceActionBar({
     const [instanceInfo, setInstanceInfo] = useState(instance);
     const resolvedLaunchLocation = resolveLocation(launchLocation, location);
     const resolvedInviteLocation = resolveLocation(inviteLocation, location);
-    const resolvedInstanceLocation = resolveLocation(instanceLocation, location);
+    const resolvedInstanceLocation = resolveLocation(
+        instanceLocation,
+        location
+    );
     const parsedInviteLocation = useMemo(
         () => parseLocation(resolvedInviteLocation),
         [resolvedInviteLocation]
@@ -233,22 +287,48 @@ export function InstanceActionBar({
         () => parseLocation(resolvedInstanceLocation),
         [resolvedInstanceLocation]
     );
-    const isRealInviteLocation = Boolean(parsedInviteLocation.isRealInstance && parsedInviteLocation.worldId && parsedInviteLocation.instanceId);
-    const isRealLaunchLocation = Boolean(parsedLaunchLocation.isRealInstance && parsedLaunchLocation.worldId && parsedLaunchLocation.instanceId);
-    const isRealInstanceLocation = Boolean(parsedInstanceLocation.isRealInstance && parsedInstanceLocation.worldId && parsedInstanceLocation.instanceId);
+    const isRealInviteLocation = Boolean(
+        parsedInviteLocation.isRealInstance &&
+        parsedInviteLocation.worldId &&
+        parsedInviteLocation.instanceId
+    );
+    const isRealLaunchLocation = Boolean(
+        parsedLaunchLocation.isRealInstance &&
+        parsedLaunchLocation.worldId &&
+        parsedLaunchLocation.instanceId
+    );
+    const isRealInstanceLocation = Boolean(
+        parsedInstanceLocation.isRealInstance &&
+        parsedInstanceLocation.worldId &&
+        parsedInstanceLocation.instanceId
+    );
     const userCount = instanceUserCount(instanceInfo);
     const providedPlayerCount = finiteNumber(playerCount);
     const resolvedUserCount = userCount ?? providedPlayerCount ?? 0;
-    const capacity = instanceCapacity(instanceInfo) ?? finiteNumber(providedCapacity) ?? 0;
+    const capacity =
+        instanceCapacity(instanceInfo) ?? finiteNumber(providedCapacity) ?? 0;
     const hasUserCount = userCount !== null || providedPlayerCount !== null;
-    const canCloseCurrentInstance = canCloseInstance(instanceInfo, currentUserId);
-    const activeContextRef = useRef({ endpoint, location: resolvedInstanceLocation });
-    const hasInstanceSummary = Boolean(instanceInfo || hasUserCount || capacity || friendCount);
+    const canCloseCurrentInstance = canCloseInstance(
+        instanceInfo,
+        currentUserId
+    );
+    const activeContextRef = useRef({
+        endpoint,
+        location: resolvedInstanceLocation
+    });
+    const hasInstanceSummary = Boolean(
+        instanceInfo || hasUserCount || capacity || friendCount
+    );
     const queueSize = Number(instanceInfo?.queueSize) || 0;
-    const hasAgeGate = Boolean(instanceInfo?.ageGate || resolvedInstanceLocation.includes('~ageGate'));
+    const hasAgeGate = Boolean(
+        instanceInfo?.ageGate || resolvedInstanceLocation.includes('~ageGate')
+    );
 
     useEffect(() => {
-        activeContextRef.current = { endpoint, location: resolvedInstanceLocation };
+        activeContextRef.current = {
+            endpoint,
+            location: resolvedInstanceLocation
+        };
         setInstanceInfo(instance);
     }, [endpoint, instance, resolvedInstanceLocation]);
 
@@ -256,9 +336,14 @@ export function InstanceActionBar({
         if (!resolvedLaunchLocation || busy) {
             return;
         }
-        showLaunchDialog(resolvedLaunchLocation, parsedLaunchLocation.shortName || '', shortName || parsedLaunchLocation.shortName || '', {
-            worldName
-        });
+        showLaunchDialog(
+            resolvedLaunchLocation,
+            parsedLaunchLocation.shortName || '',
+            shortName || parsedLaunchLocation.shortName || '',
+            {
+                worldName
+            }
+        );
     }
 
     async function selfInvite() {
@@ -267,10 +352,18 @@ export function InstanceActionBar({
         }
         setBusy('invite');
         try {
-            await selfInviteToInstance(resolvedInviteLocation, shortName || parsedInviteLocation.shortName, endpoint);
+            await selfInviteToInstance(
+                resolvedInviteLocation,
+                shortName || parsedInviteLocation.shortName,
+                endpoint
+            );
             toast.success('Self invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send self invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send self invite.'
+            );
         } finally {
             setBusy('');
         }
@@ -309,7 +402,11 @@ export function InstanceActionBar({
             }
             toast.success('Instance refreshed.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to refresh instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to refresh instance.'
+            );
         } finally {
             setBusy('');
         }
@@ -350,29 +447,65 @@ export function InstanceActionBar({
             }
             toast.success('Instance closed.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to close instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to close instance.'
+            );
         } finally {
             setBusy('');
         }
     }
 
-    if (!resolvedInstanceLocation && !resolvedLaunchLocation && !resolvedInviteLocation) {
+    if (
+        !resolvedInstanceLocation &&
+        !resolvedLaunchLocation &&
+        !resolvedInviteLocation
+    ) {
         return null;
     }
 
     return (
-        <div className={cn('inline-flex items-center gap-1.5 align-middle', className)}>
+        <div
+            className={cn(
+                'inline-flex items-center gap-1.5 align-middle',
+                className
+            )}
+        >
             {showLaunch && isRealLaunchLocation ? (
-                <ActionButton label="Launch instance" icon={LogInIcon} loading={busy === 'launch'} disabled={Boolean(busy)} onClick={launchInstance} />
+                <ActionButton
+                    label="Launch instance"
+                    icon={LogInIcon}
+                    loading={busy === 'launch'}
+                    disabled={Boolean(busy)}
+                    onClick={launchInstance}
+                />
             ) : null}
             {showInvite && isRealInviteLocation ? (
-                <ActionButton label="Self invite" icon={MailIcon} loading={busy === 'invite'} disabled={Boolean(busy)} onClick={() => void selfInvite()} />
+                <ActionButton
+                    label="Self invite"
+                    icon={MailIcon}
+                    loading={busy === 'invite'}
+                    disabled={Boolean(busy)}
+                    onClick={() => void selfInvite()}
+                />
             ) : null}
             {showRefresh && isRealInstanceLocation ? (
-                <ActionButton label={refreshTooltip} icon={RefreshCwIcon} loading={busy === 'refresh'} disabled={Boolean(busy)} onClick={() => void refreshInstance()} />
+                <ActionButton
+                    label={refreshTooltip}
+                    icon={RefreshCwIcon}
+                    loading={busy === 'refresh'}
+                    disabled={Boolean(busy)}
+                    onClick={() => void refreshInstance()}
+                />
             ) : null}
             {showHistory ? (
-                <ActionButton label={historyTooltip} icon={HistoryIcon} disabled={Boolean(busy)} onClick={onHistory} />
+                <ActionButton
+                    label={historyTooltip}
+                    icon={HistoryIcon}
+                    disabled={Boolean(busy)}
+                    onClick={onHistory}
+                />
             ) : null}
             {showInstanceInfo && hasInstanceSummary ? (
                 <InstanceInfoTooltip
@@ -380,9 +513,15 @@ export function InstanceActionBar({
                     location={resolvedInstanceLocation}
                     canClose={canCloseCurrentInstance}
                     closeDisabled={Boolean(busy)}
-                    onClose={() => void closeInstance()}>
-                    <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        {hasUserCount || capacity ? <span>{resolvedUserCount}{capacity ? `/${capacity}` : ''}</span> : null}
+                    onClose={() => void closeInstance()}
+                >
+                    <div className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                        {hasUserCount || capacity ? (
+                            <span>
+                                {resolvedUserCount}
+                                {capacity ? `/${capacity}` : ''}
+                            </span>
+                        ) : null}
                         {friendCount ? (
                             <span className="inline-flex items-center gap-0.5">
                                 <UsersRoundIcon className="size-3.5" />
@@ -390,10 +529,16 @@ export function InstanceActionBar({
                             </span>
                         ) : null}
                         {canCloseCurrentInstance ? (
-                            busy === 'close' ? <Spinner className="size-3.5" /> : <XCircleIcon className="size-3.5" />
+                            busy === 'close' ? (
+                                <Spinner className="size-3.5" />
+                            ) : (
+                                <XCircleIcon className="size-3.5" />
+                            )
                         ) : null}
                         {queueSize ? <span>Queue {queueSize}</span> : null}
-                        {hasAgeGate ? <Badge variant="destructive">Age Gate</Badge> : null}
+                        {hasAgeGate ? (
+                            <Badge variant="destructive">Age Gate</Badge>
+                        ) : null}
                     </div>
                 </InstanceInfoTooltip>
             ) : null}

@@ -3,9 +3,11 @@
  * @returns {boolean}
  */
 export function needsCsvQuotes(text) {
-    return String(text).includes(',') ||
+    return (
+        String(text).includes(',') ||
         String(text).includes('"') ||
-        Array.from(String(text)).some((char) => char.charCodeAt(0) <= 31);
+        Array.from(String(text)).some((char) => char.charCodeAt(0) <= 31)
+    );
 }
 
 /**

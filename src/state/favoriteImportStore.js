@@ -62,7 +62,9 @@ export const useFavoriteImportStore = create((set) => ({
         set({ importProgress, importProgressTotal });
     },
     setErrors(errors) {
-        set({ errors: typeof errors === 'string' ? errors : String(errors ?? '') });
+        set({
+            errors: typeof errors === 'string' ? errors : String(errors ?? '')
+        });
     },
     appendError(error) {
         const text = typeof error === 'string' ? error : String(error ?? '');

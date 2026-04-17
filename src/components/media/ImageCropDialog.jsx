@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { computeAspectCrop, cropImageFileToAspect, validateImageUploadFile } from '@/shared/utils/imageUpload.js';
+import {
+    computeAspectCrop,
+    cropImageFileToAspect,
+    validateImageUploadFile
+} from '@/shared/utils/imageUpload.js';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -31,7 +35,12 @@ export function ImageCropDialog({
     const [isConfirming, setIsConfirming] = useState(false);
 
     useEffect(() => {
-        if (!open || !file || !validateImageUploadFile(file).ok || typeof createImageBitmap !== 'function') {
+        if (
+            !open ||
+            !file ||
+            !validateImageUploadFile(file).ok ||
+            typeof createImageBitmap !== 'function'
+        ) {
             setImageBitmap(null);
             return undefined;
         }
@@ -68,11 +77,16 @@ export function ImageCropDialog({
             return;
         }
 
-        const crop = computeAspectCrop(imageBitmap.width, imageBitmap.height, aspectRatio, {
-            zoom,
-            offsetX: offsetX / 100,
-            offsetY: offsetY / 100
-        });
+        const crop = computeAspectCrop(
+            imageBitmap.width,
+            imageBitmap.height,
+            aspectRatio,
+            {
+                zoom,
+                offsetX: offsetX / 100,
+                offsetY: offsetY / 100
+            }
+        );
         canvas.width = crop.width;
         canvas.height = crop.height;
         const context = canvas.getContext('2d');
@@ -127,8 +141,9 @@ export function ImageCropDialog({
                 </DialogHeader>
                 <div className="flex flex-col gap-4">
                     <div
-                        className="relative max-h-[60vh] overflow-hidden rounded-lg border bg-muted"
-                        style={frameStyle}>
+                        className="bg-muted relative max-h-[60vh] overflow-hidden rounded-lg border"
+                        style={frameStyle}
+                    >
                         {imageBitmap ? (
                             <canvas
                                 ref={canvasRef}
@@ -140,46 +155,67 @@ export function ImageCropDialog({
                     </div>
                     <FieldGroup className="grid gap-4 md:grid-cols-3">
                         <Field>
-                            <FieldLabel htmlFor="image-crop-zoom">Zoom</FieldLabel>
+                            <FieldLabel htmlFor="image-crop-zoom">
+                                Zoom
+                            </FieldLabel>
                             <Slider
                                 id="image-crop-zoom"
                                 min={1}
                                 max={3}
                                 step={0.05}
                                 value={[zoom]}
-                                onValueChange={([value]) => setZoom(Number(value) || 1)}
+                                onValueChange={([value]) =>
+                                    setZoom(Number(value) || 1)
+                                }
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="image-crop-offset-x">Horizontal</FieldLabel>
+                            <FieldLabel htmlFor="image-crop-offset-x">
+                                Horizontal
+                            </FieldLabel>
                             <Slider
                                 id="image-crop-offset-x"
                                 min={-100}
                                 max={100}
                                 step={1}
                                 value={[offsetX]}
-                                onValueChange={([value]) => setOffsetX(Number(value) || 0)}
+                                onValueChange={([value]) =>
+                                    setOffsetX(Number(value) || 0)
+                                }
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="image-crop-offset-y">Vertical</FieldLabel>
+                            <FieldLabel htmlFor="image-crop-offset-y">
+                                Vertical
+                            </FieldLabel>
                             <Slider
                                 id="image-crop-offset-y"
                                 min={-100}
                                 max={100}
                                 step={1}
                                 value={[offsetY]}
-                                onValueChange={([value]) => setOffsetY(Number(value) || 0)}
+                                onValueChange={([value]) =>
+                                    setOffsetY(Number(value) || 0)
+                                }
                             />
                         </Field>
                     </FieldGroup>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" disabled={isConfirming} onClick={() => onOpenChange?.(false)}>
+                    <Button
+                        variant="outline"
+                        disabled={isConfirming}
+                        onClick={() => onOpenChange?.(false)}
+                    >
                         Cancel
                     </Button>
-                    <Button disabled={isConfirming || !file} onClick={() => void confirmCrop()}>
-                        {isConfirming ? <Spinner data-icon="inline-start" /> : null}
+                    <Button
+                        disabled={isConfirming || !file}
+                        onClick={() => void confirmCrop()}
+                    >
+                        {isConfirming ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : null}
                         Upload
                     </Button>
                 </DialogFooter>

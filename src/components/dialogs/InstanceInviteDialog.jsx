@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
 import { PlusIcon, UserIcon, UsersIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Location } from '@/components/Location.jsx';
@@ -24,7 +24,6 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Field, FieldLabel } from '@/ui/shadcn/field';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -33,11 +32,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 function normalizeId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function onlineFriendIdsFromGroup(userIds, friendsById) {
@@ -45,9 +47,11 @@ function onlineFriendIdsFromGroup(userIds, friendsById) {
         .map(normalizeId)
         .filter((userId, index, source) => {
             const friend = friendsById[userId];
-            return userId &&
+            return (
+                userId &&
                 source.indexOf(userId) === index &&
-                (friend?.stateBucket === 'online' || friend?.state === 'online');
+                (friend?.stateBucket === 'online' || friend?.state === 'online')
+            );
         });
 }
 
@@ -56,7 +60,8 @@ function displayNameForUser(userId, friendsById, currentUser) {
         return currentUser.displayName || currentUser.username || userId;
     }
     const friend = friendsById[userId];
-    const ref = friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
+    const ref =
+        friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
     return ref?.displayName || ref?.username || friend?.name || userId;
 }
 
@@ -68,16 +73,28 @@ export function InstanceInviteDialog({
     endpoint = '',
     onOpenChange
 }) {
-    const currentUser = useRuntimeStore((state) => state.auth.currentUserSnapshot);
+    const currentUser = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentLocationPlayerIds = useRuntimeStore((state) => state.gameState.currentLocationPlayerIds);
+    const currentLocationPlayerIds = useRuntimeStore(
+        (state) => state.gameState.currentLocationPlayerIds
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const onlineIds = useFriendRosterStore((state) => state.onlineIds);
     const activeIds = useFriendRosterStore((state) => state.activeIds);
-    const favoriteFriendGroups = useFavoriteStore((state) => state.favoriteFriendGroups);
-    const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore((state) => state.groupedFavoriteFriendIdsByGroupKey);
-    const localFriendFavoriteGroups = useFavoriteStore((state) => state.localFriendFavoriteGroups);
-    const localFriendFavorites = useFavoriteStore((state) => state.localFriendFavorites);
+    const favoriteFriendGroups = useFavoriteStore(
+        (state) => state.favoriteFriendGroups
+    );
+    const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore(
+        (state) => state.groupedFavoriteFriendIdsByGroupKey
+    );
+    const localFriendFavoriteGroups = useFavoriteStore(
+        (state) => state.localFriendFavoriteGroups
+    );
+    const localFriendFavorites = useFavoriteStore(
+        (state) => state.localFriendFavorites
+    );
     const confirm = useModalStore((state) => state.confirm);
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [search, setSearch] = useState('');
@@ -109,10 +126,11 @@ export function InstanceInviteDialog({
             };
         }
 
-        worldProfileRepository.getWorldProfile({
-            worldId: parsedLocation.worldId,
-            endpoint
-        })
+        worldProfileRepository
+            .getWorldProfile({
+                worldId: parsedLocation.worldId,
+                endpoint
+            })
             .then((world) => {
                 if (active) {
                     setResolvedWorldName(normalizeId(world?.name));
@@ -144,21 +162,38 @@ export function InstanceInviteDialog({
             return selectableUserIds;
         }
         return selectableUserIds.filter((userId) => {
-            const displayName = displayNameForUser(userId, friendsById, currentUser);
-            return userId.toLowerCase().includes(query) || displayName.toLowerCase().includes(query);
+            const displayName = displayNameForUser(
+                userId,
+                friendsById,
+                currentUser
+            );
+            return (
+                userId.toLowerCase().includes(query) ||
+                displayName.toLowerCase().includes(query)
+            );
         });
     }, [currentUser, friendsById, search, selectableUserIds]);
 
     const friendsInCurrentInstanceIds = useMemo(() => {
-        const ids = new Set((Array.isArray(currentLocationPlayerIds) ? currentLocationPlayerIds : []).map(normalizeId));
+        const ids = new Set(
+            (Array.isArray(currentLocationPlayerIds)
+                ? currentLocationPlayerIds
+                : []
+            ).map(normalizeId)
+        );
         return [...ids].filter((userId) => userId && friendsById[userId]);
     }, [currentLocationPlayerIds, friendsById]);
 
     const favoriteGroupItems = useMemo(() => {
-        const remote = (Array.isArray(favoriteFriendGroups) ? favoriteFriendGroups : [])
+        const remote = (
+            Array.isArray(favoriteFriendGroups) ? favoriteFriendGroups : []
+        )
             .map((group) => {
                 const key = normalizeId(group?.key);
-                const userIds = onlineFriendIdsFromGroup(groupedFavoriteFriendIdsByGroupKey?.[key], friendsById);
+                const userIds = onlineFriendIdsFromGroup(
+                    groupedFavoriteFriendIdsByGroupKey?.[key],
+                    friendsById
+                );
                 return {
                     key: `remote:${key}`,
                     label: group?.displayName || key,
@@ -167,10 +202,17 @@ export function InstanceInviteDialog({
             })
             .filter((group) => group.key && group.userIds.length);
 
-        const local = (Array.isArray(localFriendFavoriteGroups) ? localFriendFavoriteGroups : [])
+        const local = (
+            Array.isArray(localFriendFavoriteGroups)
+                ? localFriendFavoriteGroups
+                : []
+        )
             .map((groupName) => {
                 const key = normalizeId(groupName);
-                const userIds = onlineFriendIdsFromGroup(localFriendFavorites?.[key], friendsById);
+                const userIds = onlineFriendIdsFromGroup(
+                    localFriendFavorites?.[key],
+                    friendsById
+                );
                 return {
                     key: `local:${key}`,
                     label: key,
@@ -180,7 +222,13 @@ export function InstanceInviteDialog({
             .filter((group) => group.key && group.userIds.length);
 
         return { remote, local };
-    }, [favoriteFriendGroups, friendsById, groupedFavoriteFriendIdsByGroupKey, localFriendFavoriteGroups, localFriendFavorites]);
+    }, [
+        favoriteFriendGroups,
+        friendsById,
+        groupedFavoriteFriendIdsByGroupKey,
+        localFriendFavoriteGroups,
+        localFriendFavorites
+    ]);
 
     function addUserIds(userIds) {
         const ids = (Array.isArray(userIds) ? userIds : [])
@@ -206,7 +254,9 @@ export function InstanceInviteDialog({
 
     async function sendInvites() {
         const parsedLocation = parseLocation(location);
-        const normalizedUserIds = selectedUserIds.map(normalizeId).filter(Boolean);
+        const normalizedUserIds = selectedUserIds
+            .map(normalizeId)
+            .filter(Boolean);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error('Cannot invite: location is not a concrete instance.');
             return;
@@ -234,7 +284,11 @@ export function InstanceInviteDialog({
             for (const receiverUserId of normalizedUserIds) {
                 try {
                     if (receiverUserId === currentUserId) {
-                        await selfInviteToInstance(parsedLocation.tag || location, launchToken || parsedLocation.shortName, endpoint);
+                        await selfInviteToInstance(
+                            parsedLocation.tag || location,
+                            launchToken || parsedLocation.shortName,
+                            endpoint
+                        );
                     } else {
                         await notificationRepository.sendInvite({
                             receiverUserId,
@@ -242,28 +296,49 @@ export function InstanceInviteDialog({
                             params: {
                                 instanceId: parsedLocation.tag || location,
                                 worldId: parsedLocation.worldId,
-                                worldName: resolvedWorldName || worldName || parsedLocation.worldId
+                                worldName:
+                                    resolvedWorldName ||
+                                    worldName ||
+                                    parsedLocation.worldId
                             }
                         });
                     }
                     successCount += 1;
                 } catch (error) {
                     failedUserIds.add(receiverUserId);
-                    failures.push(error instanceof Error ? error.message : 'Failed to send invite.');
+                    failures.push(
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to send invite.'
+                    );
                 }
             }
 
             if (successCount) {
-                toast.success(successCount === 1 ? 'Invite sent.' : `Sent ${successCount} invites.`);
+                toast.success(
+                    successCount === 1
+                        ? 'Invite sent.'
+                        : `Sent ${successCount} invites.`
+                );
             }
             if (failures.length) {
-                setSelectedUserIds((current) => current.filter((userId) => failedUserIds.has(userId)));
-                toast.error(failures.length === 1 ? failures[0] : `Failed to send ${failures.length} invites.`);
+                setSelectedUserIds((current) =>
+                    current.filter((userId) => failedUserIds.has(userId))
+                );
+                toast.error(
+                    failures.length === 1
+                        ? failures[0]
+                        : `Failed to send ${failures.length} invites.`
+                );
             } else {
                 onOpenChange?.(false);
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send invite.'
+            );
         } finally {
             setSending(false);
         }
@@ -274,24 +349,56 @@ export function InstanceInviteDialog({
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Invite</DialogTitle>
-                    <DialogDescription>Choose online friends to invite to this instance.</DialogDescription>
+                    <DialogDescription>
+                        Choose online friends to invite to this instance.
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-4 overflow-hidden">
-                    <div className="rounded-md border bg-muted/30 p-3 text-sm">
-                        <Location location={location} link={false} asButton={false} className="cursor-default" />
+                    <div className="bg-muted/30 rounded-md border p-3 text-sm">
+                        <Location
+                            location={location}
+                            link={false}
+                            asButton={false}
+                            className="cursor-default"
+                        />
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <Button type="button" size="sm" variant="outline" disabled={!currentUserId || sending} onClick={() => addUserIds([currentUserId])}>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={!currentUserId || sending}
+                            onClick={() => addUserIds([currentUserId])}
+                        >
                             <UserIcon data-icon="inline-start" />
                             Add Self
                         </Button>
-                        <Button type="button" size="sm" variant="outline" disabled={!friendsInCurrentInstanceIds.length || sending} onClick={() => addUserIds(friendsInCurrentInstanceIds)}>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={
+                                !friendsInCurrentInstanceIds.length || sending
+                            }
+                            onClick={() =>
+                                addUserIds(friendsInCurrentInstanceIds)
+                            }
+                        >
                             <UsersIcon data-icon="inline-start" />
                             Add Friends In Instance
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button type="button" size="sm" variant="outline" disabled={sending || (!favoriteGroupItems.remote.length && !favoriteGroupItems.local.length)}>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={
+                                        sending ||
+                                        (!favoriteGroupItems.remote.length &&
+                                            !favoriteGroupItems.local.length)
+                                    }
+                                >
                                     <PlusIcon data-icon="inline-start" />
                                     Add Favorite Friends
                                 </Button>
@@ -299,15 +406,28 @@ export function InstanceInviteDialog({
                             <DropdownMenuContent align="start" className="w-56">
                                 <DropdownMenuGroup>
                                     {favoriteGroupItems.remote.map((group) => (
-                                        <DropdownMenuItem key={group.key} onSelect={() => addUserIds(group.userIds)}>
+                                        <DropdownMenuItem
+                                            key={group.key}
+                                            onSelect={() =>
+                                                addUserIds(group.userIds)
+                                            }
+                                        >
                                             {group.label}
                                         </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuGroup>
-                                {favoriteGroupItems.remote.length && favoriteGroupItems.local.length ? <DropdownMenuSeparator /> : null}
+                                {favoriteGroupItems.remote.length &&
+                                favoriteGroupItems.local.length ? (
+                                    <DropdownMenuSeparator />
+                                ) : null}
                                 <DropdownMenuGroup>
                                     {favoriteGroupItems.local.map((group) => (
-                                        <DropdownMenuItem key={group.key} onSelect={() => addUserIds(group.userIds)}>
+                                        <DropdownMenuItem
+                                            key={group.key}
+                                            onSelect={() =>
+                                                addUserIds(group.userIds)
+                                            }
+                                        >
                                             {group.label}
                                         </DropdownMenuItem>
                                     ))}
@@ -325,48 +445,77 @@ export function InstanceInviteDialog({
                         {filteredUserIds.length ? (
                             filteredUserIds.map((userId) => {
                                 const friend = friendsById[userId];
-                                const displayName = displayNameForUser(userId, friendsById, currentUser);
-                                const checked = selectedUserIds.includes(userId);
-                                const imageUrl = friend ? userImage(friend, true) : userImage(currentUser, true);
+                                const displayName = displayNameForUser(
+                                    userId,
+                                    friendsById,
+                                    currentUser
+                                );
+                                const checked =
+                                    selectedUserIds.includes(userId);
+                                const imageUrl = friend
+                                    ? userImage(friend, true)
+                                    : userImage(currentUser, true);
                                 return (
                                     <Field
                                         key={userId}
                                         orientation="horizontal"
                                         data-disabled={sending}
-                                        className="cursor-pointer gap-3 border-b px-3 py-2 last:border-b-0">
+                                        className="cursor-pointer gap-3 border-b px-3 py-2 last:border-b-0"
+                                    >
                                         <Checkbox
                                             id={`invite-user-${userId}`}
                                             checked={checked}
                                             disabled={sending}
-                                            onCheckedChange={() => toggleUserId(userId)}
+                                            onCheckedChange={() =>
+                                                toggleUserId(userId)
+                                            }
                                         />
-                                        <FieldLabel htmlFor={`invite-user-${userId}`} className="min-w-0 flex-1 cursor-pointer items-center gap-3 font-normal">
-                                        {imageUrl ? (
-                                            <img src={imageUrl} alt="" loading="lazy" className="size-8 rounded-full object-cover" />
-                                        ) : (
-                                            <span className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                                                <UserIcon className="size-4" />
+                                        <FieldLabel
+                                            htmlFor={`invite-user-${userId}`}
+                                            className="min-w-0 flex-1 cursor-pointer items-center gap-3 font-normal"
+                                        >
+                                            {imageUrl ? (
+                                                <img
+                                                    src={imageUrl}
+                                                    alt=""
+                                                    loading="lazy"
+                                                    className="size-8 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <span className="bg-muted text-muted-foreground flex size-8 items-center justify-center rounded-full">
+                                                    <UserIcon className="size-4" />
+                                                </span>
+                                            )}
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate text-sm font-medium">
+                                                    {displayName}
+                                                </span>
                                             </span>
-                                        )}
-                                        <span className="min-w-0 flex-1">
-                                            <span className="block truncate text-sm font-medium">{displayName}</span>
-                                        </span>
                                         </FieldLabel>
                                     </Field>
                                 );
                             })
                         ) : (
-                            <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                            <div className="text-muted-foreground px-3 py-8 text-center text-sm">
                                 No online friends.
                             </div>
                         )}
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button type="button" variant="outline" disabled={sending} onClick={() => onOpenChange?.(false)}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={sending}
+                        onClick={() => onOpenChange?.(false)}
+                    >
                         Cancel
                     </Button>
-                    <Button type="button" disabled={sending || !selectedUserIds.length} onClick={() => void sendInvites()}>
+                    <Button
+                        type="button"
+                        disabled={sending || !selectedUserIds.length}
+                        onClick={() => void sendInvites()}
+                    >
                         {sending ? <Spinner data-icon="inline-start" /> : null}
                         Invite
                     </Button>

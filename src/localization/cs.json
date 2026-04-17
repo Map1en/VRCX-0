@@ -224,9 +224,9 @@
                 },
                 "legal_notice": {
                     "header": "Právní oznámení",
-    "info": "VRCX-0 je asistenční aplikace pro VRChat, která poskytuje informace o přátelství a jeho správě. Tato aplikace využívá neoficiální SDK API VRChat.",
-    "disclaimer1": "VRCX-0 není schváleno VRChatem a neodráží názory nebo stanoviska VRChatu ani kohokoli oficiálně zapojeného do tvorby nebo správy vlastností VRChat. VRChat a všechny související vlastnosti jsou ochranné známky nebo registrované ochranné známky společnosti VRChat Inc. VRChat © VRChat Inc.",
-    "disclaimer2": "Všichni přispěvatelé nenesou odpovědnost za jakékoli problémy způsobené VRCX-0. Používáte na vlastní riziko!",
+                    "info": "VRCX-0 je asistenční aplikace pro VRChat, která poskytuje informace o přátelství a jeho správě. Tato aplikace využívá neoficiální SDK API VRChat.",
+                    "disclaimer1": "VRCX-0 není schváleno VRChatem a neodráží názory nebo stanoviska VRChatu ani kohokoli oficiálně zapojeného do tvorby nebo správy vlastností VRChat. VRChat a všechny související vlastnosti jsou ochranné známky nebo registrované ochranné známky společnosti VRChat Inc. VRChat © VRChat Inc.",
+                    "disclaimer2": "Všichni přispěvatelé nenesou odpovědnost za jakékoli problémy způsobené VRCX-0. Používáte na vlastní riziko!",
                     "open_source_software_notice": "Oznámení o open source softwaru"
                 },
                 "contributors": {

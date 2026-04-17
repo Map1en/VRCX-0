@@ -41,7 +41,11 @@ const commandArgs = {
     app__get_ugc_photo_location: ['path'],
     app__open_ugc_photos_folder: ['ugcPath'],
     app__open_folder_and_select_item: ['path', 'isFolder'],
-    app__open_file_selector_dialog: ['defaultPath', 'defaultExt', 'defaultFilter'],
+    app__open_file_selector_dialog: [
+        'defaultPath',
+        'defaultExt',
+        'defaultFilter'
+    ],
     app__open_folder_selector_dialog: ['defaultPath'],
     app__quit_game: [],
     app__is_steamvr_running: [],
@@ -63,7 +67,11 @@ const commandArgs = {
     app__desktop_notification: ['boldText', 'text', 'image'],
     app__get_vrchat_moderations: ['currentUserId'],
     app__get_vrchat_user_moderation: ['currentUserId', 'userId'],
-    app__set_vrchat_user_moderation: ['currentUserId', 'userId', 'moderationType'],
+    app__set_vrchat_user_moderation: [
+        'currentUserId',
+        'userId',
+        'moderationType'
+    ],
     app__send_ipc: ['typeName', 'data'],
     app__ipc_announce_start: [],
     app__set_app_launcher_settings: ['enabled', 'killOnExit', 'runProcessOnce'],
@@ -80,18 +88,53 @@ const commandArgs = {
     app__get_screenshot_metadata: ['path'],
     app__find_screenshots_by_search: ['searchQuery', 'searchType'],
     app__delete_screenshot_metadata: ['path'],
-    app__add_screenshot_metadata: ['path', 'metadataString', 'worldId', 'changeFilename'],
+    app__add_screenshot_metadata: [
+        'path',
+        'metadataString',
+        'worldId',
+        'changeFilename'
+    ],
     app__crop_all_prints: ['ugcFolderPath'],
     app__crop_print_image: ['path'],
-    app__save_print_to_file: ['url', 'ugcFolderPath', 'monthFolder', 'fileName'],
-    app__save_sticker_to_file: ['url', 'ugcFolderPath', 'monthFolder', 'fileName'],
-    app__save_emoji_to_file: ['url', 'ugcFolderPath', 'monthFolder', 'fileName'],
+    app__save_print_to_file: [
+        'url',
+        'ugcFolderPath',
+        'monthFolder',
+        'fileName'
+    ],
+    app__save_sticker_to_file: [
+        'url',
+        'ugcFolderPath',
+        'monthFolder',
+        'fileName'
+    ],
+    app__save_emoji_to_file: [
+        'url',
+        'ugcFolderPath',
+        'monthFolder',
+        'fileName'
+    ],
     app__download_update: ['fileUrl', 'hashString', 'downloadSize'],
     app__cancel_update: [],
     app__check_update_progress: [],
-    asset_bundle__get_vrchat_cache_full_location: ['fileId', 'fileVersion', 'variant', 'variantVersion'],
-    asset_bundle__check_vrchat_cache: ['fileId', 'fileVersion', 'variant', 'variantVersion'],
-    asset_bundle__delete_cache: ['fileId', 'fileVersion', 'variant', 'variantVersion']
+    asset_bundle__get_vrchat_cache_full_location: [
+        'fileId',
+        'fileVersion',
+        'variant',
+        'variantVersion'
+    ],
+    asset_bundle__check_vrchat_cache: [
+        'fileId',
+        'fileVersion',
+        'variant',
+        'variantVersion'
+    ],
+    asset_bundle__delete_cache: [
+        'fileId',
+        'fileVersion',
+        'variant',
+        'variantVersion'
+    ]
 };
 
 let invokeFn = null;
@@ -164,7 +207,10 @@ export async function callBackendCommand(namespace, methodName, args = []) {
     try {
         return await invoke(commandName, toNamedArgs(commandName, args));
     } catch (error) {
-        throw normalizePlatformError(error, `Backend command failed: ${commandName}`);
+        throw normalizePlatformError(
+            error,
+            `Backend command failed: ${commandName}`
+        );
     }
 }
 
@@ -181,7 +227,8 @@ export function createBackendNamespace(namespace) {
                     return undefined;
                 }
 
-                return (...args) => callBackendCommand(namespace, methodName, args);
+                return (...args) =>
+                    callBackendCommand(namespace, methodName, args);
             }
         }
     );

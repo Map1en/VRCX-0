@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { Button } from '@/ui/shadcn/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle
+} from '@/ui/shadcn/card';
 import {
     Dialog,
     DialogContent,
@@ -18,7 +24,9 @@ function buildAssetUrl(relativePath) {
 
 export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
     const [entries, setEntries] = useState([]);
-    const [noticePath, setNoticePath] = useState('licenses/THIRD_PARTY_NOTICES.txt');
+    const [noticePath, setNoticePath] = useState(
+        'licenses/THIRD_PARTY_NOTICES.txt'
+    );
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedEntryId, setSelectedEntryId] = useState('');
     const [loading, setLoading] = useState(false);
@@ -43,7 +51,10 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
                 .includes(query)
         );
     }, [entries, searchQuery]);
-    const selectedEntry = filteredEntries.find((entry) => entry.id === selectedEntryId) || filteredEntries[0] || null;
+    const selectedEntry =
+        filteredEntries.find((entry) => entry.id === selectedEntryId) ||
+        filteredEntries[0] ||
+        null;
 
     useEffect(() => {
         if (!open || loaded || loading) {
@@ -52,10 +63,14 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
         let active = true;
         setLoading(true);
         setLoadError(false);
-        fetch(buildAssetUrl('licenses/third-party-licenses.json'), { cache: 'no-store' })
+        fetch(buildAssetUrl('licenses/third-party-licenses.json'), {
+            cache: 'no-store'
+        })
             .then((response) => {
                 if (!response.ok) {
-                    throw new Error(`Failed to load third-party license manifest: ${response.status}`);
+                    throw new Error(
+                        `Failed to load third-party license manifest: ${response.status}`
+                    );
                 }
                 return response.json();
             })
@@ -63,9 +78,13 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
                 if (!active) {
                     return;
                 }
-                const nextEntries = Array.isArray(manifest.entries) ? manifest.entries : [];
+                const nextEntries = Array.isArray(manifest.entries)
+                    ? manifest.entries
+                    : [];
                 setEntries(nextEntries);
-                setNoticePath(manifest.noticePath || 'licenses/THIRD_PARTY_NOTICES.txt');
+                setNoticePath(
+                    manifest.noticePath || 'licenses/THIRD_PARTY_NOTICES.txt'
+                );
                 setSelectedEntryId(nextEntries[0]?.id || '');
                 setLoaded(true);
             })
@@ -96,7 +115,8 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
                 <DialogHeader>
                     <DialogTitle>{t('dialog.open_source.header')}</DialogTitle>
                     <DialogDescription>
-                        {t('dialog.open_source.notice_location_prefix')} <code>{noticePath}</code>
+                        {t('dialog.open_source.notice_location_prefix')}{' '}
+                        <code>{noticePath}</code>
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex min-h-0 flex-col gap-4 overflow-hidden">
@@ -106,11 +126,11 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
                         onChange={(event) => setSearchQuery(event.target.value)}
                     />
                     {loading ? (
-                        <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+                        <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
                             {t('dialog.open_source.loading')}
                         </div>
                     ) : loadError ? (
-                        <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+                        <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
                             {t('dialog.open_source.unavailable')}
                         </div>
                     ) : (
@@ -120,17 +140,31 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
                                     <Button
                                         key={entry.id}
                                         type="button"
-                                        variant={entry.id === selectedEntry?.id ? 'secondary' : 'outline'}
+                                        variant={
+                                            entry.id === selectedEntry?.id
+                                                ? 'secondary'
+                                                : 'outline'
+                                        }
                                         className="h-auto w-full flex-col items-start justify-start p-3 text-left font-normal"
-                                        onClick={() => setSelectedEntryId(entry.id)}>
-                                        <span className="block truncate font-medium">{entry.name}</span>
-                                        <span className="block truncate text-xs text-muted-foreground">
-                                            {entry.version || t('dialog.open_source.no_version')}{' \u00b7 '}{entry.license}
+                                        onClick={() =>
+                                            setSelectedEntryId(entry.id)
+                                        }
+                                    >
+                                        <span className="block truncate font-medium">
+                                            {entry.name}
+                                        </span>
+                                        <span className="text-muted-foreground block truncate text-xs">
+                                            {entry.version ||
+                                                t(
+                                                    'dialog.open_source.no_version'
+                                                )}
+                                            {' \u00b7 '}
+                                            {entry.license}
                                         </span>
                                     </Button>
                                 ))}
                                 {!filteredEntries.length ? (
-                                    <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+                                    <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
                                         {t('dialog.open_source.no_results')}
                                     </div>
                                 ) : null}
@@ -139,37 +173,66 @@ export function OpenSourceNoticeDialog({ open, onOpenChange, t }) {
                                 {selectedEntry ? (
                                     <>
                                         <CardHeader>
-                                            <CardTitle>{selectedEntry.name}</CardTitle>
+                                            <CardTitle>
+                                                {selectedEntry.name}
+                                            </CardTitle>
                                             <CardDescription>
-                                                {selectedEntry.license}{' \u00b7 '}{selectedEntry.sourceLabel || ''}
+                                                {selectedEntry.license}
+                                                {' \u00b7 '}
+                                                {selectedEntry.sourceLabel ||
+                                                    ''}
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent className="flex flex-col gap-3">
                                             <div className="flex flex-wrap gap-2">
                                                 {selectedEntry.projectUrl ? (
-                                                    <Button type="button" size="sm" variant="outline" onClick={() => void openExternalLink(selectedEntry.projectUrl)}>
-                                                        {t('dialog.open_source.open_project')}
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            void openExternalLink(
+                                                                selectedEntry.projectUrl
+                                                            )
+                                                        }
+                                                    >
+                                                        {t(
+                                                            'dialog.open_source.open_project'
+                                                        )}
                                                     </Button>
                                                 ) : null}
                                                 {selectedEntry.licenseUrl ? (
-                                                    <Button type="button" size="sm" variant="outline" onClick={() => void openExternalLink(selectedEntry.licenseUrl)}>
-                                                        {t('dialog.open_source.open_license_url')}
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            void openExternalLink(
+                                                                selectedEntry.licenseUrl
+                                                            )
+                                                        }
+                                                    >
+                                                        {t(
+                                                            'dialog.open_source.open_license_url'
+                                                        )}
                                                     </Button>
                                                 ) : null}
                                             </div>
                                             {selectedEntry.noticeText ? (
-                                                <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">
+                                                <pre className="bg-muted max-h-[22rem] overflow-auto rounded-md p-3 text-xs break-words whitespace-pre-wrap">
                                                     {selectedEntry.noticeText}
                                                 </pre>
                                             ) : (
-                                                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                                                    {t('dialog.open_source.notice_unavailable')}
+                                                <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
+                                                    {t(
+                                                        'dialog.open_source.notice_unavailable'
+                                                    )}
                                                 </div>
                                             )}
                                         </CardContent>
                                     </>
                                 ) : (
-                                    <CardContent className="flex min-h-[30rem] items-center justify-center text-sm text-muted-foreground">
+                                    <CardContent className="text-muted-foreground flex min-h-[30rem] items-center justify-center text-sm">
                                         {t('dialog.open_source.select_package')}
                                     </CardContent>
                                 )}

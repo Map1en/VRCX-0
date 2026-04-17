@@ -108,7 +108,9 @@ export const useModalStore = create((set, get) => {
 
     function openBasePrompt(options = {}) {
         if (pendingPrompt) {
-            resolvePrompt(createResult(false, 'replaced', get().promptDialog.value));
+            resolvePrompt(
+                createResult(false, 'replaced', get().promptDialog.value)
+            );
         }
 
         set({
@@ -331,10 +333,14 @@ export const useModalStore = create((set, get) => {
                 resolveAlert(createResult(false, 'replaced'));
             }
             if (pendingPrompt) {
-                resolvePrompt(createResult(false, 'replaced', get().promptDialog.value));
+                resolvePrompt(
+                    createResult(false, 'replaced', get().promptDialog.value)
+                );
             }
             if (pendingOtp) {
-                resolveOtp(createResult(false, 'replaced', get().otpDialog.value));
+                resolveOtp(
+                    createResult(false, 'replaced', get().otpDialog.value)
+                );
             }
 
             set({

@@ -1,8 +1,9 @@
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { useShellStore } from '@/state/shellStore.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
+
 import { refreshSavedAuthSnapshot } from './authSnapshotService.js';
 import { runStartupMaintenance } from './backgroundMaintenanceService.js';
 import { initializeDatabaseUpgradeFlow } from './databaseUpgradeService.js';
@@ -31,7 +32,11 @@ export async function initializeReactRuntime() {
     const runtimeStore = useRuntimeStore.getState();
 
     sessionStore.setBootStatus('booting');
-    runtimeStore.setStartupTask('config', 'running', 'Loading config, locale, theme and zoom.');
+    runtimeStore.setStartupTask(
+        'config',
+        'running',
+        'Loading config, locale, theme and zoom.'
+    );
 
     try {
         await configRepository.init();
@@ -49,12 +54,18 @@ export async function initializeReactRuntime() {
             configRepository.getString('VRCX_ZoomLevel', null),
             configRepository.getString('VRCX_fontFamily', APP_FONT_DEFAULT_KEY),
             configRepository.getString('customFontFamily', ''),
-            configRepository.getString('VRCX_cjkFontPack', APP_CJK_FONT_PACK_DEFAULT_KEY)
+            configRepository.getString(
+                'VRCX_cjkFontPack',
+                APP_CJK_FONT_PACK_DEFAULT_KEY
+            )
         ]);
 
         shellStore.setLocale(locale || 'en');
         const resolvedThemeMode = resolveThemeMode(themeMode);
-        await runNonCriticalStartupSync('theme', applyThemeMode(resolvedThemeMode));
+        await runNonCriticalStartupSync(
+            'theme',
+            applyThemeMode(resolvedThemeMode)
+        );
         applyAppFontPreferences({ fontFamily, customFontFamily, cjkFontPack });
         await runNonCriticalStartupSync('zoom', applyZoomLevel(zoomLevel));
         const databaseReady = await initializeDatabaseUpgradeFlow();
@@ -69,7 +80,10 @@ export async function initializeReactRuntime() {
         try {
             await backend.app.SetUserAgent();
         } catch (error) {
-            console.warn('SetUserAgent is unavailable during application bootstrap:', error);
+            console.warn(
+                'SetUserAgent is unavailable during application bootstrap:',
+                error
+            );
         }
 
         await refreshSavedAuthSnapshot();
@@ -90,7 +104,11 @@ export async function initializeReactRuntime() {
     } catch (error) {
         sessionStore.setBootStatus('error');
         sessionStore.setTransportStatus('error');
-        runtimeStore.setStartupTask('config', 'error', error instanceof Error ? error.message : String(error));
+        runtimeStore.setStartupTask(
+            'config',
+            'error',
+            error instanceof Error ? error.message : String(error)
+        );
         console.error('Failed to initialize application runtime:', error);
         throw error;
     }

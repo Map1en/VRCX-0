@@ -38,7 +38,8 @@ function normalizeFriendLogHistoryRow(row) {
         userId: row?.user_id ?? row?.userId ?? '',
         displayName: row?.display_name ?? row?.displayName ?? '',
         friendNumber:
-            Number.parseInt(row?.friend_number ?? row?.friendNumber ?? 0, 10) || 0
+            Number.parseInt(row?.friend_number ?? row?.friendNumber ?? 0, 10) ||
+            0
     };
 
     if (normalizedRow.type === 'DisplayName') {
@@ -70,7 +71,9 @@ async function getFriendLogHistory(userId, options = {}) {
     const normalizedTypes = Array.isArray(options.types)
         ? options.types
               .map((entry) =>
-                  typeof entry === 'string' ? entry.trim() : String(entry ?? '').trim()
+                  typeof entry === 'string'
+                      ? entry.trim()
+                      : String(entry ?? '').trim()
               )
               .filter((entry) => entry && FRIEND_LOG_TYPES.includes(entry))
         : [];
@@ -83,7 +86,9 @@ async function getFriendLogHistory(userId, options = {}) {
         whereClauses.push(`type IN (${typePlaceholders.join(', ')})`);
     }
 
-    const whereSql = whereClauses.length ? ` WHERE ${whereClauses.join(' AND ')}` : '';
+    const whereSql = whereClauses.length
+        ? ` WHERE ${whereClauses.join(' AND ')}`
+        : '';
     const rows = await sqliteRepository.query(
         `SELECT id, created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number FROM ${userPrefix}_friend_log_history${whereSql} ORDER BY created_at DESC, id DESC`,
         args

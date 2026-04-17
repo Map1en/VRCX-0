@@ -6,8 +6,8 @@ vi.mock('./vrchatFriendRepository.js', () => ({
     }
 }));
 
-import vrchatFriendRepository from './vrchatFriendRepository.js';
 import userProfileRepository from './userProfileRepository.js';
+import vrchatFriendRepository from './vrchatFriendRepository.js';
 
 describe('UserProfileRepository', () => {
     beforeEach(() => {
@@ -15,14 +15,16 @@ describe('UserProfileRepository', () => {
     });
 
     it('normalizes user profile defaults, trust metadata, moderator flags, and platform fallback', () => {
-        expect(userProfileRepository.normalize({
-            id: 'usr_123',
-            displayName: 'User',
-            tags: ['system_trust_trusted', 'admin_moderator'],
-            developerType: 'none',
-            platform: 'web',
-            last_platform: 'android'
-        })).toMatchObject({
+        expect(
+            userProfileRepository.normalize({
+                id: 'usr_123',
+                displayName: 'User',
+                tags: ['system_trust_trusted', 'admin_moderator'],
+                developerType: 'none',
+                platform: 'web',
+                last_platform: 'android'
+            })
+        ).toMatchObject({
             id: 'usr_123',
             displayName: 'User',
             badges: [],
@@ -39,18 +41,26 @@ describe('UserProfileRepository', () => {
     });
 
     it('treats troll and probable-troll tags as trust sorting modifiers', () => {
-        expect(userProfileRepository.normalize({
-            tags: ['system_trust_basic', 'system_probable_troll']
-        })).toMatchObject({
+        expect(
+            userProfileRepository.normalize({
+                tags: ['system_trust_basic', 'system_probable_troll']
+            })
+        ).toMatchObject({
             $trustLevel: 'New User',
             $isTroll: false,
             $isProbableTroll: true,
             $trustSortNum: 2.1
         });
 
-        expect(userProfileRepository.normalize({
-            tags: ['system_trust_known', 'system_troll', 'system_probable_troll']
-        })).toMatchObject({
+        expect(
+            userProfileRepository.normalize({
+                tags: [
+                    'system_trust_known',
+                    'system_troll',
+                    'system_probable_troll'
+                ]
+            })
+        ).toMatchObject({
             $trustLevel: 'User',
             $isTroll: true,
             $isProbableTroll: false,
@@ -61,7 +71,9 @@ describe('UserProfileRepository', () => {
     it('collects mutual friends until the first short page', async () => {
         vi.mocked(vrchatFriendRepository.executeGet)
             .mockResolvedValueOnce({
-                json: Array.from({ length: 100 }, (_, index) => ({ id: `usr_page_1_${index}` }))
+                json: Array.from({ length: 100 }, (_, index) => ({
+                    id: `usr_page_1_${index}`
+                }))
             })
             .mockResolvedValueOnce({
                 json: [{ id: 'usr_last' }]

@@ -161,7 +161,7 @@
                 "local_favorites": "Favoris locaux (Requires VRC+)",
                 "new_group": "Nouveau groupe",
                 "cancel_refresh": "Annuler la réactualisation",
-                 "check_invalid": "Check for deleted/private avatars",
+                "check_invalid": "Check for deleted/private avatars",
                 "check_description": "Detect and remove invalid avatars from this group",
                 "checking": "Checking for invalid avatars...",
                 "removed_list_header": "Avatars pending deletion:",
@@ -472,9 +472,9 @@
                 },
                 "legal_notice": {
                     "header": "Mentions légales",
-    "info": "VRCX-0 est une application d'assistance pour VRChat qui aide à gérer les amitiés et fournit des informations associées. Cette application utilise l'API SDK non officielle de VRChat.",
-    "disclaimer1": "VRCX-0 n'est pas soutenu par VRChat et ne reflète pas les points de vue ou les opinions de VRChat ou de toute personne officiellement impliquée dans la production ou la gestion des propriétés de VRChat. VRChat et toutes les propriétés associées sont des marques commerciales ou des marques déposées de VRChat Inc. VRChat © VRChat Inc.",
-    "disclaimer2": "Tous les contributeurs ne sont pas responsables des problèmes causés par VRCX-0. Utilisez-le à vos risques et périls !",
+                    "info": "VRCX-0 est une application d'assistance pour VRChat qui aide à gérer les amitiés et fournit des informations associées. Cette application utilise l'API SDK non officielle de VRChat.",
+                    "disclaimer1": "VRCX-0 n'est pas soutenu par VRChat et ne reflète pas les points de vue ou les opinions de VRChat ou de toute personne officiellement impliquée dans la production ou la gestion des propriétés de VRChat. VRChat et toutes les propriétés associées sont des marques commerciales ou des marques déposées de VRChat Inc. VRChat © VRChat Inc.",
+                    "disclaimer2": "Tous les contributeurs ne sont pas responsables des problèmes causés par VRCX-0. Utilisez-le à vos risques et périls !",
                     "open_source_software_notice": "Mentions relatives aux logiciels libres"
                 },
                 "contributors": {

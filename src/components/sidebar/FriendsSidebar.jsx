@@ -1,16 +1,43 @@
-import { useEffect, useMemo, useState } from 'react';
 import { ChevronDownIcon, ClockIcon, UserIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
 import { timeToText } from '@/lib/dateTime.js';
-import { cn } from '@/lib/utils.js';
+import { getNameColour, userImage } from '@/lib/entityMedia.js';
 import { getTrustColor, TRUST_COLOR_DEFAULTS } from '@/lib/trustColors.js';
+import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
+import { cn } from '@/lib/utils.js';
 import {
-    userStatusIndicatorClassName
-} from '@/lib/userStatus.js';
+    configRepository,
+    notificationRepository,
+    userProfileRepository,
+    vrchatSearchRepository
+} from '@/repositories/index.js';
+import { openUserDialog } from '@/services/dialogService.js';
+import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
+import { selfInviteToInstance } from '@/services/launchService.js';
+import {
+    isActionRecent,
+    recordRecentAction,
+    subscribeRecentActions
+} from '@/services/recentActionService.js';
+import { getFriendsSortFunction } from '@/shared/utils/friend.js';
+import { isRealInstance } from '@/shared/utils/instance.js';
+import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
+import {
+    parseLocation,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location.js';
+import { useFavoriteStore } from '@/state/favoriteStore.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
+import { useModalStore } from '@/state/modalStore.js';
+import { usePreferencesStore } from '@/state/preferencesStore.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { useShellStore } from '@/state/shellStore.js';
+import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
     ContextMenuCheckboxItem,
@@ -23,24 +50,7 @@ import {
     ContextMenuSubTrigger,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { configRepository, notificationRepository, userProfileRepository, vrchatSearchRepository } from '@/repositories/index.js';
-import { openUserDialog } from '@/services/dialogService.js';
-import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
-import { selfInviteToInstance } from '@/services/launchService.js';
-import { isActionRecent, recordRecentAction, subscribeRecentActions } from '@/services/recentActionService.js';
-import { getNameColour, userImage } from '@/lib/entityMedia.js';
-import { getFriendsSortFunction } from '@/shared/utils/friend.js';
-import { isRealInstance } from '@/shared/utils/instance.js';
-import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
-import { parseLocation, resolveFriendPresenceLocation } from '@/shared/utils/location.js';
-import { useFavoriteStore } from '@/state/favoriteStore.js';
-import { useFriendRosterStore } from '@/state/friendRosterStore.js';
-import { useModalStore } from '@/state/modalStore.js';
-import { usePreferencesStore } from '@/state/preferencesStore.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { useShellStore } from '@/state/shellStore.js';
 
 const groupToggleKeys = {
     me: 'isFriendsGroupMe',
@@ -72,7 +82,9 @@ const statusOptions = [
     { value: 'busy', labelKey: 'dialog.user.status.busy' }
 ];
 function normalizeId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeLocationStatus(value) {
@@ -102,7 +114,12 @@ function readFriendStatusSource(friend) {
     if (!ref || ref === friend) {
         return friend;
     }
-    return { ...friend, ...ref, ref, pendingOffline: Boolean(friend?.pendingOffline || ref?.pendingOffline) };
+    return {
+        ...friend,
+        ...ref,
+        ref,
+        pendingOffline: Boolean(friend?.pendingOffline || ref?.pendingOffline)
+    };
 }
 
 function readFriendRefLocation(friend) {
@@ -112,7 +129,9 @@ function readFriendRefLocation(friend) {
 
 function readFriendRefTravelingLocation(friend) {
     const source = readFriendStatusSource(friend);
-    return normalizeId(source?.travelingToLocation || source?.$travelingToLocation);
+    return normalizeId(
+        source?.travelingToLocation || source?.$travelingToLocation
+    );
 }
 
 function timestampMsFromValue(value) {
@@ -146,12 +165,16 @@ function resolveCurrentInviteLocation(gameState, currentUserSnapshot) {
     return (
         currentLocation ||
         normalizeId(gameState?.currentDestination) ||
-        normalizeId(currentUserSnapshot?.$locationTag || currentUserSnapshot?.location)
+        normalizeId(
+            currentUserSnapshot?.$locationTag || currentUserSnapshot?.location
+        )
     );
 }
 
 function buildFavoriteIdSet(remoteFavoriteIds, localFriendFavorites) {
-    const ids = new Set((remoteFavoriteIds || []).map(normalizeId).filter(Boolean));
+    const ids = new Set(
+        (remoteFavoriteIds || []).map(normalizeId).filter(Boolean)
+    );
     for (const values of Object.values(localFriendFavorites || {})) {
         for (const id of values || []) {
             const normalized = normalizeId(id);
@@ -197,55 +220,92 @@ function legacyStatusDotClassName(status) {
 
 function normalizeStateBucket(value) {
     const normalized = normalizeLocationStatus(value);
-    return normalized === 'online' || normalized === 'active' || normalized === 'offline'
+    return normalized === 'online' ||
+        normalized === 'active' ||
+        normalized === 'offline'
         ? normalized
         : '';
 }
 
 function resolveCurrentUserStateBucket(currentUser) {
-    const explicitState = normalizeStateBucket(currentUser?.stateBucket) || normalizeStateBucket(currentUser?.state);
+    const explicitState =
+        normalizeStateBucket(currentUser?.stateBucket) ||
+        normalizeStateBucket(currentUser?.state);
     if (explicitState) {
         return explicitState;
     }
-    if (normalizeLocationStatus(currentUser?.location || currentUser?.$location?.tag) === 'offline') {
+    if (
+        normalizeLocationStatus(
+            currentUser?.location || currentUser?.$location?.tag
+        ) === 'offline'
+    ) {
         return 'offline';
     }
     return 'online';
 }
 
-function resolveSidebarStatusDotClassName(friend, currentUser, isCurrentUser = false) {
+function resolveSidebarStatusDotClassName(
+    friend,
+    currentUser,
+    isCurrentUser = false
+) {
     const source = readFriendStatusSource(friend);
     if (!source) {
         return '';
     }
     const userId = normalizeId(source?.id || source?.userId);
     const status = normalizeLocationStatus(source?.status);
-    const location = normalizeLocationStatus(source?.location || source?.$location?.tag);
-    const isOnlineByCurrentSnapshot = (currentUser?.onlineFriends || []).includes(userId);
-    const isActiveByCurrentSnapshot = (currentUser?.activeFriends || []).includes(userId);
-    const isOfflineByCurrentSnapshot = (currentUser?.offlineFriends || []).includes(userId);
+    const location = normalizeLocationStatus(
+        source?.location || source?.$location?.tag
+    );
+    const isOnlineByCurrentSnapshot = (
+        currentUser?.onlineFriends || []
+    ).includes(userId);
+    const isActiveByCurrentSnapshot = (
+        currentUser?.activeFriends || []
+    ).includes(userId);
+    const isOfflineByCurrentSnapshot = (
+        currentUser?.offlineFriends || []
+    ).includes(userId);
     const snapshotState = isOnlineByCurrentSnapshot
         ? 'online'
         : isActiveByCurrentSnapshot
-            ? 'active'
-            : isOfflineByCurrentSnapshot
-                ? 'offline'
-                : '';
-    const state = normalizeLocationStatus(source?.stateBucket || source?.state || snapshotState);
-    const stateBucket = normalizeLocationStatus(source?.stateBucket || snapshotState);
+          ? 'active'
+          : isOfflineByCurrentSnapshot
+            ? 'offline'
+            : '';
+    const state = normalizeLocationStatus(
+        source?.stateBucket || source?.state || snapshotState
+    );
+    const stateBucket = normalizeLocationStatus(
+        source?.stateBucket || snapshotState
+    );
 
-    if (!isCurrentUser && (state === 'active' || state === 'offline' || stateBucket === 'active' || stateBucket === 'offline')) {
+    if (
+        !isCurrentUser &&
+        (state === 'active' ||
+            state === 'offline' ||
+            stateBucket === 'active' ||
+            stateBucket === 'offline')
+    ) {
         return '';
     }
 
     if (isCurrentUser || userId === currentUser?.id) {
-        if (source?.pendingOffline || state === 'offline' || (location === 'offline' && state !== 'online')) {
+        if (
+            source?.pendingOffline ||
+            state === 'offline' ||
+            (location === 'offline' && state !== 'online')
+        ) {
             return '';
         }
         if (state === 'active') {
             return 'bg-[var(--status-active)]';
         }
-        return legacyStatusDotClassName(status) || (state === 'online' ? 'bg-[var(--status-online)]' : '');
+        return (
+            legacyStatusDotClassName(status) ||
+            (state === 'online' ? 'bg-[var(--status-online)]' : '')
+        );
     }
 
     if (source?.pendingOffline) {
@@ -292,20 +352,29 @@ function toLegacyFriendSortRow(friend) {
     const ref = readFriendRef(friend);
     return {
         ...friend,
-        name: friend?.name || friend?.displayName || friend?.username || friend?.id || '',
-        ref: ref && ref !== friend
-            ? { ...friend, ...ref }
-            : friend
+        name:
+            friend?.name ||
+            friend?.displayName ||
+            friend?.username ||
+            friend?.id ||
+            '',
+        ref: ref && ref !== friend ? { ...friend, ...ref } : friend
     };
 }
 
 function sortRows(rows, prefs) {
-    const methods = [prefs.sidebarSortMethod1, prefs.sidebarSortMethod2, prefs.sidebarSortMethod3].filter(Boolean);
+    const methods = [
+        prefs.sidebarSortMethod1,
+        prefs.sidebarSortMethod2,
+        prefs.sidebarSortMethod3
+    ].filter(Boolean);
     if (!methods.length) {
         return rows;
     }
     const sort = getFriendsSortFunction(methods);
-    return [...rows].sort((left, right) => sort(toLegacyFriendSortRow(left), toLegacyFriendSortRow(right)));
+    return [...rows].sort((left, right) =>
+        sort(toLegacyFriendSortRow(left), toLegacyFriendSortRow(right))
+    );
 }
 
 function lastLocationHasFriend(lastLocation, friendId) {
@@ -325,14 +394,21 @@ function lastLocationHasFriend(lastLocation, friendId) {
 
 function sameInstanceLocationTag(friend, lastLocation) {
     const source = readFriendStatusSource(friend);
-    if (normalizeLocationStatus(source?.stateBucket || source?.state) !== 'online') {
+    if (
+        normalizeLocationStatus(source?.stateBucket || source?.state) !==
+        'online'
+    ) {
         return '';
     }
-    const parsedLocation = source?.$location && typeof source.$location === 'object'
-        ? source.$location
-        : parseLocation(source?.location);
+    const parsedLocation =
+        source?.$location && typeof source.$location === 'object'
+            ? source.$location
+            : parseLocation(source?.location);
     let locationTag = normalizeId(parsedLocation?.tag || source?.location);
-    if (!parsedLocation?.isRealInstance && lastLocationHasFriend(lastLocation, friend?.id)) {
+    if (
+        !parsedLocation?.isRealInstance &&
+        lastLocationHasFriend(lastLocation, friend?.id)
+    ) {
         locationTag = normalizeId(lastLocation?.location);
     }
     return isRealInstance(locationTag) ? locationTag : '';
@@ -388,8 +464,16 @@ function CurrentUserActionItems({
                                 <CheckboxItem
                                     key={option.value}
                                     checked={friend?.status === option.value}
-                                    onSelect={() => void actions.changeStatus(option.value)}>
-                                    <i className={userStatusIndicatorClassName(option.value, { className: 'mr-2' })} />
+                                    onSelect={() =>
+                                        void actions.changeStatus(option.value)
+                                    }
+                                >
+                                    <i
+                                        className={userStatusIndicatorClassName(
+                                            option.value,
+                                            { className: 'mr-2' }
+                                        )}
+                                    />
                                     {t(option.labelKey)}
                                 </CheckboxItem>
                             ))}
@@ -397,10 +481,13 @@ function CurrentUserActionItems({
                     </SubContent>
                 </Sub>
                 <MenuItem onSelect={() => void actions.editStatusDescription()}>
-                    {t('view.settings.general.automation.change_status_description')}
+                    {t(
+                        'view.settings.general.automation.change_status_description'
+                    )}
                 </MenuItem>
             </Group>
-            {Array.isArray(friend?.statusHistory) && friend.statusHistory.length ? (
+            {Array.isArray(friend?.statusHistory) &&
+            friend.statusHistory.length ? (
                 <>
                     <Separator />
                     <Group>
@@ -408,24 +495,45 @@ function CurrentUserActionItems({
                             <SubTrigger>
                                 {t('dialog.social_status.history')}
                             </SubTrigger>
-                            <SubContent side="left" align="start" className="w-56">
+                            <SubContent
+                                side="left"
+                                align="start"
+                                className="w-56"
+                            >
                                 <Group>
                                     <CheckboxItem
                                         checked={!friend?.statusDescription}
-                                        onSelect={() => void actions.setStatusDescription('')}>
+                                        onSelect={() =>
+                                            void actions.setStatusDescription(
+                                                ''
+                                            )
+                                        }
+                                    >
                                         {t('dialog.gallery_select.none')}
                                     </CheckboxItem>
                                 </Group>
                                 <Separator />
                                 <Group>
-                                    {friend.statusHistory.slice(0, 10).map((item, index) => (
-                                        <CheckboxItem
-                                            key={`${item}:${index}`}
-                                            checked={friend?.statusDescription === item}
-                                            onSelect={() => void actions.setStatusDescription(item)}>
-                                            <span className="max-w-44 truncate">{item}</span>
-                                        </CheckboxItem>
-                                    ))}
+                                    {friend.statusHistory
+                                        .slice(0, 10)
+                                        .map((item, index) => (
+                                            <CheckboxItem
+                                                key={`${item}:${index}`}
+                                                checked={
+                                                    friend?.statusDescription ===
+                                                    item
+                                                }
+                                                onSelect={() =>
+                                                    void actions.setStatusDescription(
+                                                        item
+                                                    )
+                                                }
+                                            >
+                                                <span className="max-w-44 truncate">
+                                                    {item}
+                                                </span>
+                                            </CheckboxItem>
+                                        ))}
                                 </Group>
                             </SubContent>
                         </Sub>
@@ -440,13 +548,24 @@ function CurrentUserActionItems({
                             <SubTrigger>
                                 {t('dialog.social_status.presets')}
                             </SubTrigger>
-                            <SubContent side="left" align="start" className="w-56">
+                            <SubContent
+                                side="left"
+                                align="start"
+                                className="w-56"
+                            >
                                 <Group>
                                     {statusPresets.map((preset, index) => (
                                         <MenuItem
                                             key={`${preset?.status || 'status'}:${preset?.statusDescription || ''}:${index}`}
-                                            onSelect={() => void actions.applyStatusPreset(preset)}>
-                                            <span className="max-w-44 truncate">{statusPresetLabel(preset, t)}</span>
+                                            onSelect={() =>
+                                                void actions.applyStatusPreset(
+                                                    preset
+                                                )
+                                            }
+                                        >
+                                            <span className="max-w-44 truncate">
+                                                {statusPresetLabel(preset, t)}
+                                            </span>
                                         </MenuItem>
                                     ))}
                                 </Group>
@@ -473,8 +592,11 @@ function FriendActionItems({
     Separator,
     recentActionVersion = 0
 }) {
-    const recentInvite = recentActionVersion >= 0 && isActionRecent(friend?.id, 'Invite');
-    const recentRequestInvite = recentActionVersion >= 0 && isActionRecent(friend?.id, 'Request Invite');
+    const recentInvite =
+        recentActionVersion >= 0 && isActionRecent(friend?.id, 'Invite');
+    const recentRequestInvite =
+        recentActionVersion >= 0 &&
+        isActionRecent(friend?.id, 'Request Invite');
     return (
         <>
             <Group>
@@ -484,24 +606,47 @@ function FriendActionItems({
             </Group>
             <Separator />
             <Group>
-                <MenuItem disabled={!canUseFriendLocation} onSelect={() => void actions.launch(friendLocation)}>
+                <MenuItem
+                    disabled={!canUseFriendLocation}
+                    onSelect={() => void actions.launch(friendLocation)}
+                >
                     {t('dialog.user.info.launch_invite_tooltip')}
                 </MenuItem>
-                <MenuItem disabled={!canUseFriendLocation} onSelect={() => void actions.selfInvite(friendLocation)}>
+                <MenuItem
+                    disabled={!canUseFriendLocation}
+                    onSelect={() => void actions.selfInvite(friendLocation)}
+                >
                     {t('dialog.user.info.self_invite_tooltip')}
                 </MenuItem>
             </Group>
             <Separator />
             <Group>
-                <MenuItem disabled={!canSendInvite} onSelect={() => void actions.invite(friend)}>
-                    <span className="min-w-0 flex-1">{t('dialog.user.actions.invite')}</span>
-                    {recentInvite ? <ClockIcon className="ml-auto text-muted-foreground" /> : null}
+                <MenuItem
+                    disabled={!canSendInvite}
+                    onSelect={() => void actions.invite(friend)}
+                >
+                    <span className="min-w-0 flex-1">
+                        {t('dialog.user.actions.invite')}
+                    </span>
+                    {recentInvite ? (
+                        <ClockIcon className="text-muted-foreground ml-auto" />
+                    ) : null}
                 </MenuItem>
-                <MenuItem disabled={!canRequestInvite} onSelect={() => void actions.requestInvite(friend)}>
-                    <span className="min-w-0 flex-1">{t('dialog.user.actions.request_invite')}</span>
-                    {recentRequestInvite ? <ClockIcon className="ml-auto text-muted-foreground" /> : null}
+                <MenuItem
+                    disabled={!canRequestInvite}
+                    onSelect={() => void actions.requestInvite(friend)}
+                >
+                    <span className="min-w-0 flex-1">
+                        {t('dialog.user.actions.request_invite')}
+                    </span>
+                    {recentRequestInvite ? (
+                        <ClockIcon className="text-muted-foreground ml-auto" />
+                    ) : null}
                 </MenuItem>
-                <MenuItem disabled={!canBoop} onSelect={() => void actions.boop(friend)}>
+                <MenuItem
+                    disabled={!canBoop}
+                    onSelect={() => void actions.boop(friend)}
+                >
                     {t('dialog.user.actions.send_boop')}
                 </MenuItem>
             </Group>
@@ -556,76 +701,137 @@ function FriendRow({
 }) {
     const displaySource = readFriendRef(friend);
     const imageUrl = userImage(displaySource, true, '64');
-    const displayName = displaySource?.displayName || displaySource?.username || friend?.displayName || friend?.username || friend?.id || 'Unknown';
-    const nameStyle = randomUserColours && friend?.id
-        ? { color: getNameColour(friend.id, isDarkMode) }
-        : { color: displaySource?.$userColour || resolveTrustNameColour(displaySource, trustColor) };
-    const statusDotClassName = resolveSidebarStatusDotClassName(friend, currentUserSnapshot, isCurrentUser);
+    const displayName =
+        displaySource?.displayName ||
+        displaySource?.username ||
+        friend?.displayName ||
+        friend?.username ||
+        friend?.id ||
+        'Unknown';
+    const nameStyle =
+        randomUserColours && friend?.id
+            ? { color: getNameColour(friend.id, isDarkMode) }
+            : {
+                  color:
+                      displaySource?.$userColour ||
+                      resolveTrustNameColour(displaySource, trustColor)
+              };
+    const statusDotClassName = resolveSidebarStatusDotClassName(
+        friend,
+        currentUserSnapshot,
+        isCurrentUser
+    );
     const statusSource = readFriendStatusSource(friend);
-    const friendState = normalizeLocationStatus(statusSource?.stateBucket || statusSource?.state);
-    const friendStateBucket = normalizeLocationStatus(statusSource?.stateBucket);
-    const rawFriendLocation = isCurrentUser ? resolvePresenceLocation(friend) : readFriendRefLocation(friend);
-    const friendLocation = clearStaleOfflineLocation(rawFriendLocation, friendState);
+    const friendState = normalizeLocationStatus(
+        statusSource?.stateBucket || statusSource?.state
+    );
+    const friendStateBucket = normalizeLocationStatus(
+        statusSource?.stateBucket
+    );
+    const rawFriendLocation = isCurrentUser
+        ? resolvePresenceLocation(friend)
+        : readFriendRefLocation(friend);
+    const friendLocation = clearStaleOfflineLocation(
+        rawFriendLocation,
+        friendState
+    );
     const parsedFriendLocation = parseLocation(friendLocation);
     const isTraveling = normalizeLocationStatus(friendLocation) === 'traveling';
     const displayLocation = isTraveling ? 'traveling' : friendLocation;
-    const displayTraveling = isTraveling ? readFriendRefTravelingLocation(friend) || undefined : undefined;
-    const isActiveOrOffline = friendState === 'active' || friendState === 'offline' || friendStateBucket === 'active' || friendStateBucket === 'offline';
-    const groupByInstanceTimerVisible = Boolean(isGroupByInstance && !isActiveOrOffline && !statusSource?.pendingOffline);
+    const displayTraveling = isTraveling
+        ? readFriendRefTravelingLocation(friend) || undefined
+        : undefined;
+    const isActiveOrOffline =
+        friendState === 'active' ||
+        friendState === 'offline' ||
+        friendStateBucket === 'active' ||
+        friendStateBucket === 'offline';
+    const groupByInstanceTimerVisible = Boolean(
+        isGroupByInstance && !isActiveOrOffline && !statusSource?.pendingOffline
+    );
     const groupByInstanceEpoch = isTraveling
-        ? statusSource?.$travelingToTime || statusSource?.travelingToTime || statusSource?.traveling_to_time
-        : statusSource?.$location_at || statusSource?.locationAt || statusSource?.location_at;
+        ? statusSource?.$travelingToTime ||
+          statusSource?.travelingToTime ||
+          statusSource?.traveling_to_time
+        : statusSource?.$location_at ||
+          statusSource?.locationAt ||
+          statusSource?.location_at;
     const showLocationSubline = Boolean(
         displayLocation &&
-            !statusSource?.pendingOffline &&
-            !groupByInstanceTimerVisible &&
-            (!isActiveOrOffline || parsedFriendLocation.isRealInstance || isTraveling)
+        !statusSource?.pendingOffline &&
+        !groupByInstanceTimerVisible &&
+        (!isActiveOrOffline ||
+            parsedFriendLocation.isRealInstance ||
+            isTraveling)
     );
     const canUseFriendLocation = Boolean(
         canUseFriendInstance &&
-        parsedFriendLocation.isRealInstance && parsedFriendLocation.worldId && parsedFriendLocation.instanceId
+        parsedFriendLocation.isRealInstance &&
+        parsedFriendLocation.worldId &&
+        parsedFriendLocation.instanceId
     );
-    const subline =
-        statusSource?.pendingOffline
-            ? t('side_panel.pending_offline')
-            : displaySource?.statusDescription || '';
+    const subline = statusSource?.pendingOffline
+        ? t('side_panel.pending_offline')
+        : displaySource?.statusDescription || '';
 
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild>
-                <div className="flex w-full items-center rounded-lg hover:bg-muted/50">
+                <div className="hover:bg-muted/50 flex w-full items-center rounded-lg">
                     <Button
                         type="button"
                         variant="ghost"
                         className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal"
-                        onClick={actions.open}>
+                        onClick={actions.open}
+                    >
                         <span className="relative flex size-9 shrink-0 items-center justify-center overflow-visible">
-                            <span className="relative z-0 flex size-full items-center justify-center overflow-hidden rounded-full border bg-muted">
+                            <span className="bg-muted relative z-0 flex size-full items-center justify-center overflow-hidden rounded-full border">
                                 {imageUrl ? (
-                                    <img src={imageUrl} alt="" className="size-full object-cover" />
+                                    <img
+                                        src={imageUrl}
+                                        alt=""
+                                        className="size-full object-cover"
+                                    />
                                 ) : (
-                                    <UserIcon data-icon="inline-start" className="text-muted-foreground" />
+                                    <UserIcon
+                                        data-icon="inline-start"
+                                        className="text-muted-foreground"
+                                    />
                                 )}
                             </span>
                             {statusDotClassName ? (
                                 <span
                                     className={cn(
-                                        'absolute -bottom-0.5 -right-0.5 z-10 size-3.75 rounded-full border-3 border-background',
+                                        'border-background absolute -right-0.5 -bottom-0.5 z-10 size-3.75 rounded-full border-3',
                                         statusDotClassName
                                     )}
                                 />
                             ) : null}
                         </span>
                         <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium leading-5" style={nameStyle}>{displayName}</span>
-                            <span className="block truncate text-xs text-muted-foreground">
+                            <span
+                                className="block truncate leading-5 font-medium"
+                                style={nameStyle}
+                            >
+                                {displayName}
+                            </span>
+                            <span className="text-muted-foreground block truncate text-xs">
                                 {groupByInstanceTimerVisible ? (
-                                    <FriendInstanceTimer epoch={groupByInstanceEpoch} traveling={isTraveling} />
+                                    <FriendInstanceTimer
+                                        epoch={groupByInstanceEpoch}
+                                        traveling={isTraveling}
+                                    />
                                 ) : showLocationSubline ? (
                                     <Location
                                         location={displayLocation}
                                         traveling={displayTraveling}
-                                        hint={displaySource?.worldName || displaySource?.$worldName || displaySource?.travelingToWorld || displaySource?.$travelingToWorld || ''}
+                                        hint={
+                                            displaySource?.worldName ||
+                                            displaySource?.$worldName ||
+                                            displaySource?.travelingToWorld ||
+                                            displaySource?.$travelingToWorld ||
+                                            ''
+                                        }
                                         link={false}
                                         stopPropagation
                                         asButton={false}
@@ -698,11 +904,17 @@ function FriendSectionHeader({ id, title, count, open, onToggle }) {
             variant="ghost"
             size="sm"
             className="h-auto w-full justify-start px-0 py-1.5 pt-4 text-left text-xs font-normal hover:bg-transparent"
-            onClick={() => onToggle(id)}>
-            <ChevronDownIcon data-icon="inline-start" className={cn('transition-transform', !open && '-rotate-90')} />
+            onClick={() => onToggle(id)}
+        >
+            <ChevronDownIcon
+                data-icon="inline-start"
+                className={cn('transition-transform', !open && '-rotate-90')}
+            />
             <span className="ml-1.5">
                 {title}
-                {count !== null && count !== undefined ? ` \u2014 ${count}` : ''}
+                {count !== null && count !== undefined
+                    ? ` \u2014 ${count}`
+                    : ''}
             </span>
         </Button>
     );
@@ -711,7 +923,11 @@ function FriendSectionHeader({ id, title, count, open, onToggle }) {
 function InstanceHeaderRow({ location, count }) {
     return (
         <div className="mb-1 flex items-center px-1.5 text-xs">
-            <Location className="inline text-xs" location={location} asButton={false} />
+            <Location
+                className="inline text-xs"
+                location={location}
+                asButton={false}
+            />
             <span className="ml-1.5">{`(${count})`}</span>
         </div>
     );
@@ -720,35 +936,56 @@ function InstanceHeaderRow({ location, count }) {
 export function FriendsSidebar({ prefs }) {
     const { t } = useI18n();
     const themeMode = useShellStore((state) => state.themeMode);
-    const currentUser = useRuntimeStore((state) => state.auth.currentUserSnapshot);
+    const currentUser = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const gameState = useRuntimeStore((state) => state.gameState);
-    const currentLocation = gameState.currentLocation === 'traveling'
-        ? gameState.currentDestination
-        : gameState.currentLocation;
+    const currentLocation =
+        gameState.currentLocation === 'traveling'
+            ? gameState.currentDestination
+            : gameState.currentLocation;
     const currentLocationPlayerIds = gameState.currentLocationPlayerIds;
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const orderedFriendIds = useFriendRosterStore((state) => state.orderedFriendIds);
+    const orderedFriendIds = useFriendRosterStore(
+        (state) => state.orderedFriendIds
+    );
     const onlineIds = useFriendRosterStore((state) => state.onlineIds);
     const activeIds = useFriendRosterStore((state) => state.activeIds);
     const offlineIds = useFriendRosterStore((state) => state.offlineIds);
     const loadStatus = useFriendRosterStore((state) => state.loadStatus);
     const detail = useFriendRosterStore((state) => state.detail);
-    const favoriteFriendIds = useFavoriteStore((state) => state.favoriteFriendIds);
-    const favoriteFriendGroups = useFavoriteStore((state) => state.favoriteFriendGroups);
-    const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore((state) => state.groupedFavoriteFriendIdsByGroupKey);
-    const localFriendFavorites = useFavoriteStore((state) => state.localFriendFavorites);
-    const localFriendFavoriteGroups = useFavoriteStore((state) => state.localFriendFavoriteGroups);
+    const favoriteFriendIds = useFavoriteStore(
+        (state) => state.favoriteFriendIds
+    );
+    const favoriteFriendGroups = useFavoriteStore(
+        (state) => state.favoriteFriendGroups
+    );
+    const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore(
+        (state) => state.groupedFavoriteFriendIdsByGroupKey
+    );
+    const localFriendFavorites = useFavoriteStore(
+        (state) => state.localFriendFavorites
+    );
+    const localFriendFavoriteGroups = useFavoriteStore(
+        (state) => state.localFriendFavoriteGroups
+    );
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
-    const randomUserColours = usePreferencesStore((state) => state.randomUserColours);
+    const randomUserColours = usePreferencesStore(
+        (state) => state.randomUserColours
+    );
     const trustColor = usePreferencesStore((state) => state.trustColor);
     const [openGroups, setOpenGroups] = useState(defaultGroupState);
     const [statusPresets, setStatusPresets] = useState([]);
     const [recentActionVersion, setRecentActionVersion] = useState(0);
-    const isDarkMode = themeMode === 'dark' ||
-        (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+    const isDarkMode =
+        themeMode === 'dark' ||
+        (typeof document !== 'undefined' &&
+            document.documentElement.classList.contains('dark'));
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUser),
         [currentUser, gameState]
@@ -756,7 +993,11 @@ export function FriendsSidebar({ prefs }) {
     const currentLocationSnapshot = useMemo(
         () => ({
             location: currentLocation,
-            friendList: new Set(Array.isArray(currentLocationPlayerIds) ? currentLocationPlayerIds : [])
+            friendList: new Set(
+                Array.isArray(currentLocationPlayerIds)
+                    ? currentLocationPlayerIds
+                    : []
+            )
         }),
         [currentLocation, currentLocationPlayerIds]
     );
@@ -784,19 +1025,28 @@ export function FriendsSidebar({ prefs }) {
             configRepository.getBool(groupToggleKeys.offline, true),
             configRepository.getBool(groupToggleKeys.sameInstance, false)
         ])
-            .then(([me, favorites, online, activeFriends, offline, sameInstanceCollapsed]) => {
-                if (!active) {
-                    return;
+            .then(
+                ([
+                    me,
+                    favorites,
+                    online,
+                    activeFriends,
+                    offline,
+                    sameInstanceCollapsed
+                ]) => {
+                    if (!active) {
+                        return;
+                    }
+                    setOpenGroups({
+                        me: Boolean(me),
+                        favorites: Boolean(favorites),
+                        online: Boolean(online),
+                        active: Boolean(activeFriends),
+                        offline: Boolean(offline),
+                        sameInstance: !sameInstanceCollapsed
+                    });
                 }
-                setOpenGroups({
-                    me: Boolean(me),
-                    favorites: Boolean(favorites),
-                    online: Boolean(online),
-                    active: Boolean(activeFriends),
-                    offline: Boolean(offline),
-                    sameInstance: !sameInstanceCollapsed
-                });
-            })
+            )
             .catch(() => {});
         return () => {
             active = false;
@@ -809,7 +1059,9 @@ export function FriendsSidebar({ prefs }) {
             .getArray('VRCX_statusPresets', [])
             .then((nextPresets) => {
                 if (active) {
-                    setStatusPresets(Array.isArray(nextPresets) ? nextPresets : []);
+                    setStatusPresets(
+                        Array.isArray(nextPresets) ? nextPresets : []
+                    );
                 }
             })
             .catch(() => {
@@ -822,33 +1074,47 @@ export function FriendsSidebar({ prefs }) {
         };
     }, []);
 
-    useEffect(() => subscribeRecentActions(() => {
-        setRecentActionVersion((version) => version + 1);
-    }), []);
+    useEffect(
+        () =>
+            subscribeRecentActions(() => {
+                setRecentActionVersion((version) => version + 1);
+            }),
+        []
+    );
 
-    const rows = useMemo(() => orderedFriendIds.map((id) => friendsById[id]).filter(Boolean), [friendsById, orderedFriendIds]);
+    const rows = useMemo(
+        () => orderedFriendIds.map((id) => friendsById[id]).filter(Boolean),
+        [friendsById, orderedFriendIds]
+    );
     const favoriteIds = useMemo(
         () => buildFavoriteIdSet(favoriteFriendIds, localFriendFavorites),
         [favoriteFriendIds, localFriendFavorites]
     );
     const allFavoriteGroupKeys = useMemo(
         () => [
-            ...(favoriteFriendGroups || []).map((group) => group.key).filter(Boolean),
-            ...((localFriendFavoriteGroups?.length ? localFriendFavoriteGroups : Object.keys(localFriendFavorites || {}))).map(
-                (groupName) => `local:${groupName}`
-            )
+            ...(favoriteFriendGroups || [])
+                .map((group) => group.key)
+                .filter(Boolean),
+            ...(localFriendFavoriteGroups?.length
+                ? localFriendFavoriteGroups
+                : Object.keys(localFriendFavorites || {})
+            ).map((groupName) => `local:${groupName}`)
         ],
         [favoriteFriendGroups, localFriendFavoriteGroups, localFriendFavorites]
     );
     const selectedFavoriteGroupKeys = useMemo(() => {
-        const configured = Array.isArray(prefs.sidebarFavoriteGroups) ? prefs.sidebarFavoriteGroups.filter(Boolean) : [];
+        const configured = Array.isArray(prefs.sidebarFavoriteGroups)
+            ? prefs.sidebarFavoriteGroups.filter(Boolean)
+            : [];
         if (!configured.length) {
             return new Set(allFavoriteGroupKeys);
         }
         return new Set(configured);
     }, [allFavoriteGroupKeys, prefs.sidebarFavoriteGroups]);
     const hasFavoriteGroupFilter = useMemo(
-        () => Array.isArray(prefs.sidebarFavoriteGroups) && prefs.sidebarFavoriteGroups.length > 0,
+        () =>
+            Array.isArray(prefs.sidebarFavoriteGroups) &&
+            prefs.sidebarFavoriteGroups.length > 0,
         [prefs.sidebarFavoriteGroups]
     );
     const selectedFavoriteIds = useMemo(() => {
@@ -865,7 +1131,8 @@ export function FriendsSidebar({ prefs }) {
                     }
                 }
             } else {
-                for (const id of groupedFavoriteFriendIdsByGroupKey?.[key] || []) {
+                for (const id of groupedFavoriteFriendIdsByGroupKey?.[key] ||
+                    []) {
                     const normalized = normalizeId(id);
                     if (normalized) {
                         ids.add(normalized);
@@ -874,8 +1141,16 @@ export function FriendsSidebar({ prefs }) {
             }
         }
         return ids;
-    }, [allFavoriteGroupKeys, favoriteIds, groupedFavoriteFriendIdsByGroupKey, localFriendFavorites, selectedFavoriteGroupKeys]);
-    const excludedFavoriteIds = hasFavoriteGroupFilter ? selectedFavoriteIds : favoriteIds;
+    }, [
+        allFavoriteGroupKeys,
+        favoriteIds,
+        groupedFavoriteFriendIdsByGroupKey,
+        localFriendFavorites,
+        selectedFavoriteGroupKeys
+    ]);
+    const excludedFavoriteIds = hasFavoriteGroupFilter
+        ? selectedFavoriteIds
+        : favoriteIds;
     const sameInstanceGroups = useMemo(() => {
         if (!prefs.sidebarGroupByInstance) {
             return [];
@@ -883,22 +1158,32 @@ export function FriendsSidebar({ prefs }) {
         return buildSameInstanceGroups(rows, prefs, currentLocationSnapshot);
     }, [currentLocationSnapshot, prefs, rows]);
     const sameInstanceIds = useMemo(
-        () => new Set(sameInstanceGroups.flatMap((group) => group.rows.map((friend) => friend.id))),
+        () =>
+            new Set(
+                sameInstanceGroups.flatMap((group) =>
+                    group.rows.map((friend) => friend.id)
+                )
+            ),
         [sameInstanceGroups]
     );
     const onlineIdSet = useMemo(() => new Set(onlineIds), [onlineIds]);
     const favoriteRows = useMemo(
         () =>
             sortRows(
-                rows.filter(
-                (friend) => {
+                rows.filter((friend) => {
                     const source = readFriendStatusSource(friend);
-                    const state = normalizeLocationStatus(source?.stateBucket || source?.state);
-                    return selectedFavoriteIds.has(normalizeId(friend?.id)) &&
+                    const state = normalizeLocationStatus(
+                        source?.stateBucket || source?.state
+                    );
+                    return (
+                        selectedFavoriteIds.has(normalizeId(friend?.id)) &&
                         state === 'online' &&
-                        !(prefs.isHideFriendsInSameInstance && sameInstanceIds.has(friend.id));
-                }
-                ),
+                        !(
+                            prefs.isHideFriendsInSameInstance &&
+                            sameInstanceIds.has(friend.id)
+                        )
+                    );
+                }),
                 prefs
             ),
         [prefs, rows, sameInstanceIds, selectedFavoriteIds]
@@ -909,42 +1194,75 @@ export function FriendsSidebar({ prefs }) {
                 onlineIds
                     .map((id) => friendsById[id])
                     .filter(
-                    (friend) =>
-                        friend &&
-                        !excludedFavoriteIds.has(normalizeId(friend.id)) &&
-                        !(prefs.isHideFriendsInSameInstance && sameInstanceIds.has(friend.id))
+                        (friend) =>
+                            friend &&
+                            !excludedFavoriteIds.has(normalizeId(friend.id)) &&
+                            !(
+                                prefs.isHideFriendsInSameInstance &&
+                                sameInstanceIds.has(friend.id)
+                            )
                     ),
                 prefs
             ),
         [excludedFavoriteIds, friendsById, onlineIds, prefs, sameInstanceIds]
     );
-    const activeRows = useMemo(() => sortRows(activeIds.map((id) => friendsById[id]).filter(Boolean), prefs), [activeIds, friendsById, prefs]);
-    const offlineRows = useMemo(() => sortRows(offlineIds.map((id) => friendsById[id]).filter(Boolean), prefs), [offlineIds, friendsById, prefs]);
+    const activeRows = useMemo(
+        () =>
+            sortRows(
+                activeIds.map((id) => friendsById[id]).filter(Boolean),
+                prefs
+            ),
+        [activeIds, friendsById, prefs]
+    );
+    const offlineRows = useMemo(
+        () =>
+            sortRows(
+                offlineIds.map((id) => friendsById[id]).filter(Boolean),
+                prefs
+            ),
+        [offlineIds, friendsById, prefs]
+    );
     const favoriteGroupSections = useMemo(() => {
         if (!prefs.isSidebarDivideByFriendGroup) {
             return [];
         }
-        const favoriteRowById = new Map(favoriteRows.map((friend) => [normalizeId(friend.id), friend]));
+        const favoriteRowById = new Map(
+            favoriteRows.map((friend) => [normalizeId(friend.id), friend])
+        );
         const seen = new Set();
         const sections = [];
 
-        const orderedRemoteGroups = [...(favoriteFriendGroups || [])].sort((left, right) => {
-            const order = Array.isArray(prefs.sidebarFavoriteGroupOrder) ? prefs.sidebarFavoriteGroupOrder : [];
-            const leftIndex = order.indexOf(left.key);
-            const rightIndex = order.indexOf(right.key);
-            if (leftIndex >= 0 && rightIndex >= 0) {
-                return leftIndex - rightIndex;
+        const orderedRemoteGroups = [...(favoriteFriendGroups || [])].sort(
+            (left, right) => {
+                const order = Array.isArray(prefs.sidebarFavoriteGroupOrder)
+                    ? prefs.sidebarFavoriteGroupOrder
+                    : [];
+                const leftIndex = order.indexOf(left.key);
+                const rightIndex = order.indexOf(right.key);
+                if (leftIndex >= 0 && rightIndex >= 0) {
+                    return leftIndex - rightIndex;
+                }
+                if (leftIndex >= 0) {
+                    return -1;
+                }
+                if (rightIndex >= 0) {
+                    return 1;
+                }
+                return String(
+                    left.displayName || left.name || left.key || ''
+                ).localeCompare(
+                    String(right.displayName || right.name || right.key || '')
+                );
             }
-            if (leftIndex >= 0) {
-                return -1;
-            }
-            if (rightIndex >= 0) {
-                return 1;
-            }
-            return String(left.displayName || left.name || left.key || '').localeCompare(String(right.displayName || right.name || right.key || ''));
-        });
-        const orderedLocalGroups = [...(localFriendFavoriteGroups?.length ? localFriendFavoriteGroups : Object.keys(localFriendFavorites || {}))].sort((left, right) => {
-            const order = Array.isArray(prefs.sidebarFavoriteGroupOrder) ? prefs.sidebarFavoriteGroupOrder : [];
+        );
+        const orderedLocalGroups = [
+            ...(localFriendFavoriteGroups?.length
+                ? localFriendFavoriteGroups
+                : Object.keys(localFriendFavorites || {}))
+        ].sort((left, right) => {
+            const order = Array.isArray(prefs.sidebarFavoriteGroupOrder)
+                ? prefs.sidebarFavoriteGroupOrder
+                : [];
             const leftIndex = order.indexOf(`local:${left}`);
             const rightIndex = order.indexOf(`local:${right}`);
             if (leftIndex >= 0 && rightIndex >= 0) {
@@ -963,11 +1281,15 @@ export function FriendsSidebar({ prefs }) {
             if (!selectedFavoriteGroupKeys.has(group.key)) {
                 continue;
             }
-            const rowsForGroup = (groupedFavoriteFriendIdsByGroupKey?.[group.key] || [])
+            const rowsForGroup = (
+                groupedFavoriteFriendIdsByGroupKey?.[group.key] || []
+            )
                 .map((id) => favoriteRowById.get(normalizeId(id)))
                 .filter(Boolean);
             if (rowsForGroup.length) {
-                rowsForGroup.forEach((friend) => seen.add(normalizeId(friend.id)));
+                rowsForGroup.forEach((friend) =>
+                    seen.add(normalizeId(friend.id))
+                );
                 sections.push({
                     key: group.key,
                     label: group.displayName || group.name || group.key,
@@ -984,7 +1306,9 @@ export function FriendsSidebar({ prefs }) {
                 .map((id) => favoriteRowById.get(normalizeId(id)))
                 .filter(Boolean);
             if (rowsForGroup.length) {
-                rowsForGroup.forEach((friend) => seen.add(normalizeId(friend.id)));
+                rowsForGroup.forEach((friend) =>
+                    seen.add(normalizeId(friend.id))
+                );
                 sections.push({
                     key: `local:${groupName}`,
                     label: groupName,
@@ -993,7 +1317,9 @@ export function FriendsSidebar({ prefs }) {
             }
         }
 
-        const ungrouped = favoriteRows.filter((friend) => !seen.has(normalizeId(friend.id)));
+        const ungrouped = favoriteRows.filter(
+            (friend) => !seen.has(normalizeId(friend.id))
+        );
         if (ungrouped.length) {
             sections.push({
                 key: 'ungrouped',
@@ -1022,43 +1348,74 @@ export function FriendsSidebar({ prefs }) {
             };
             const configKey = groupToggleKeys[id];
             if (configKey) {
-                void configRepository.setBool(configKey, id === 'sameInstance' ? !next[id] : next[id]);
+                void configRepository.setBool(
+                    configKey,
+                    id === 'sameInstance' ? !next[id] : next[id]
+                );
             }
             return next;
         });
     }
 
     function openFriend(friend) {
-        openUserDialog({ userId: friend.id, title: friend.displayName || friend.username || undefined, seedData: friend });
+        openUserDialog({
+            userId: friend.id,
+            title: friend.displayName || friend.username || undefined,
+            seedData: friend
+        });
     }
 
     async function launchFriendLocation(location) {
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return;
         }
         try {
-            const opened = await tryOpenLaunchLocation(location, parsedLocation.shortName, currentEndpoint);
+            const opened = await tryOpenLaunchLocation(
+                location,
+                parsedLocation.shortName,
+                currentEndpoint
+            );
             if (opened) {
                 toast.success('VRChat launch request sent.');
                 return;
             }
             toast.error('Unable to open this instance in VRChat.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to launch instance.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to launch instance.'
+            );
         }
     }
 
     async function selfInviteToFriendLocation(location) {
         const parsedLocation = parseLocation(location);
-        if (!parsedLocation.isRealInstance || !parsedLocation.worldId || !parsedLocation.instanceId) {
+        if (
+            !parsedLocation.isRealInstance ||
+            !parsedLocation.worldId ||
+            !parsedLocation.instanceId
+        ) {
             return;
         }
         try {
-            await selfInviteToInstance(location, parsedLocation.shortName, currentEndpoint);
+            await selfInviteToInstance(
+                location,
+                parsedLocation.shortName,
+                currentEndpoint
+            );
             toast.success('Self invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send self invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send self invite.'
+            );
         }
     }
 
@@ -1068,7 +1425,9 @@ export function FriendsSidebar({ prefs }) {
             return;
         }
         if (!currentInviteLocation) {
-            toast.error('Cannot invite: no current VRChat location is available.');
+            toast.error(
+                'Cannot invite: no current VRChat location is available.'
+            );
             return;
         }
         if (!canInviteFromCurrentLocation) {
@@ -1077,7 +1436,9 @@ export function FriendsSidebar({ prefs }) {
         }
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error('Cannot invite: current location is not a concrete instance.');
+            toast.error(
+                'Cannot invite: current location is not a concrete instance.'
+            );
             return;
         }
         const result = await confirm({
@@ -1102,14 +1463,19 @@ export function FriendsSidebar({ prefs }) {
                 params: {
                     instanceId: inviteLocation,
                     worldId: parsedLocation.worldId,
-                    worldName: worldResponse.json?.name || parsedLocation.worldId,
+                    worldName:
+                        worldResponse.json?.name || parsedLocation.worldId,
                     rsvp: true
                 }
             });
             recordRecentAction(friendId, 'Invite');
             toast.success('Invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send invite.'
+            );
         }
     }
 
@@ -1138,7 +1504,11 @@ export function FriendsSidebar({ prefs }) {
             recordRecentAction(friendId, 'Request Invite');
             toast.success('Invite request sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to request invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to request invite.'
+            );
         }
     }
 
@@ -1150,7 +1520,8 @@ export function FriendsSidebar({ prefs }) {
         try {
             const result = await prompt({
                 title: 'Send boop',
-                description: 'Optional emoji id. Leave blank to send the default boop.',
+                description:
+                    'Optional emoji id. Leave blank to send the default boop.',
                 inputValue: '',
                 confirmText: 'Send',
                 cancelText: 'Cancel'
@@ -1165,13 +1536,20 @@ export function FriendsSidebar({ prefs }) {
             });
             toast.success('Boop sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send boop.');
+            toast.error(
+                error instanceof Error ? error.message : 'Failed to send boop.'
+            );
         }
     }
 
-    async function saveCurrentUserPatch(patch, { successMessage, errorMessage }) {
+    async function saveCurrentUserPatch(
+        patch,
+        { successMessage, errorMessage }
+    ) {
         if (!currentUserId) {
-            toast.error('Cannot update profile: no current user session is available.');
+            toast.error(
+                'Cannot update profile: no current user session is available.'
+            );
             return;
         }
         try {
@@ -1229,13 +1607,10 @@ export function FriendsSidebar({ prefs }) {
         if (Object.prototype.hasOwnProperty.call(preset, 'statusDescription')) {
             patch.statusDescription = preset.statusDescription || '';
         }
-        await saveCurrentUserPatch(
-            patch,
-            {
-                successMessage: 'Status updated.',
-                errorMessage: 'Failed to update status.'
-            }
-        );
+        await saveCurrentUserPatch(patch, {
+            successMessage: 'Status updated.',
+            errorMessage: 'Failed to update status.'
+        });
     }
 
     const rowActions = {
@@ -1269,7 +1644,10 @@ export function FriendsSidebar({ prefs }) {
                 type: 'friend',
                 key: `friend:${sectionKey}:${friendId}`,
                 friend,
-                isCurrentUser: Boolean(options.isCurrentUser || friendId === normalizeId(currentUserId)),
+                isCurrentUser: Boolean(
+                    options.isCurrentUser ||
+                    friendId === normalizeId(currentUserId)
+                ),
                 isGroupByInstance: Boolean(options.isGroupByInstance)
             });
         }
@@ -1313,7 +1691,13 @@ export function FriendsSidebar({ prefs }) {
                 pushFriendRows(
                     nextRows,
                     'me',
-                    [{ ...currentUser, stateBucket: resolveCurrentUserStateBucket(currentUser) }],
+                    [
+                        {
+                            ...currentUser,
+                            stateBucket:
+                                resolveCurrentUserStateBucket(currentUser)
+                        }
+                    ],
                     { isCurrentUser: true }
                 );
             } else {
@@ -1344,7 +1728,12 @@ export function FriendsSidebar({ prefs }) {
                         location: group.location,
                         count: group.rows.length
                     });
-                    pushFriendRows(nextRows, `sameInstance:${group.location}:${index}`, group.rows, { isGroupByInstance: true });
+                    pushFriendRows(
+                        nextRows,
+                        `sameInstance:${group.location}:${index}`,
+                        group.rows,
+                        { isGroupByInstance: true }
+                    );
                 });
             }
         };
@@ -1430,31 +1819,45 @@ export function FriendsSidebar({ prefs }) {
         t
     ]);
 
-    const {
-        viewportRef,
-        virtualItems,
-        totalSize
-    } = useVirtualSidebarRows(virtualRows, estimateFriendSidebarRowSize);
+    const { viewportRef, virtualItems, totalSize } = useVirtualSidebarRows(
+        virtualRows,
+        estimateFriendSidebarRowSize
+    );
 
-    function renderFriendVirtualRow(friend, isCurrentUser = false, isGroupByInstance = false) {
+    function renderFriendVirtualRow(
+        friend,
+        isCurrentUser = false,
+        isGroupByInstance = false
+    ) {
         const source = readFriendStatusSource(friend);
-        const state = normalizeLocationStatus(source?.stateBucket || source?.state);
+        const state = normalizeLocationStatus(
+            source?.stateBucket || source?.state
+        );
         const isOnlineFriend = onlineIdSet.has(friend.id) || state === 'online';
         return (
             <FriendRow
                 friend={friend}
                 isCurrentUser={isCurrentUser}
                 isGroupByInstance={isGroupByInstance}
-                canSendInvite={Boolean(gameState.isGameRunning && currentInviteLocation && canInviteFromCurrentLocation)}
+                canSendInvite={Boolean(
+                    gameState.isGameRunning &&
+                    currentInviteLocation &&
+                    canInviteFromCurrentLocation
+                )}
                 canRequestInvite={isOnlineFriend}
                 canBoop={Boolean(currentUser?.isBoopingEnabled)}
                 canUseFriendInstance={Boolean(
                     isOnlineFriend &&
-                    checkCanInviteSelf(isCurrentUser ? resolvePresenceLocation(friend) : readFriendRefLocation(friend), {
-                        currentUserId,
-                        cachedInstances: new Map(),
-                        friends: friendsMap
-                    })
+                    checkCanInviteSelf(
+                        isCurrentUser
+                            ? resolvePresenceLocation(friend)
+                            : readFriendRefLocation(friend),
+                        {
+                            currentUserId,
+                            cachedInstances: new Map(),
+                            friends: friendsMap
+                        }
+                    )
                 )}
                 actions={{
                     ...rowActions,
@@ -1485,15 +1888,25 @@ export function FriendsSidebar({ prefs }) {
                 );
             case 'favorite-group-header':
                 return (
-                    <div className="flex w-full items-center px-1.5 py-1 text-left text-xs text-muted-foreground">
+                    <div className="text-muted-foreground flex w-full items-center px-1.5 py-1 text-left text-xs">
                         {row.label} - {row.count}
                     </div>
                 );
             case 'instance-header':
-                return <InstanceHeaderRow location={row.location} count={row.count} />;
+                return (
+                    <InstanceHeaderRow
+                        location={row.location}
+                        count={row.count}
+                    />
+                );
             case 'message':
                 return (
-                    <div className={cn('rounded-md border border-dashed p-3 text-xs text-muted-foreground', row.className)}>
+                    <div
+                        className={cn(
+                            'text-muted-foreground rounded-md border border-dashed p-3 text-xs',
+                            row.className
+                        )}
+                    >
                         {row.text}
                     </div>
                 );
@@ -1501,19 +1914,30 @@ export function FriendsSidebar({ prefs }) {
                 return <div className="h-4" />;
             case 'friend':
             default:
-                return renderFriendVirtualRow(row.friend, row.isCurrentUser, row.isGroupByInstance);
+                return renderFriendVirtualRow(
+                    row.friend,
+                    row.isCurrentUser,
+                    row.isGroupByInstance
+                );
         }
     }
 
     return (
-        <div ref={viewportRef} className="relative h-full overflow-auto overflow-x-hidden">
+        <div
+            ref={viewportRef}
+            className="relative h-full overflow-auto overflow-x-hidden"
+        >
             <div className="px-1.5 py-2.5">
-                <div className="relative w-full" style={{ height: `${totalSize}px` }}>
+                <div
+                    className="relative w-full"
+                    style={{ height: `${totalSize}px` }}
+                >
                     {virtualItems.map((item) => (
                         <div
                             key={item.key}
-                            className="absolute left-0 top-0 w-full"
-                            style={{ transform: `translateY(${item.start}px)` }}>
+                            className="absolute top-0 left-0 w-full"
+                            style={{ transform: `translateY(${item.start}px)` }}
+                        >
                             {renderVirtualRow(item.row)}
                         </div>
                     ))}

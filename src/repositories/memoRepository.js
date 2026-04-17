@@ -1,7 +1,9 @@
 import { database } from '@/services/database/index.js';
 
 function normalizeEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function createEmptyUserMemo(userId = '') {

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
 import { PlusIcon, SaveIcon, XIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { TAG_COLORS, getTagColor } from '@/shared/constants/tags.js';
 import { Badge } from '@/ui/shadcn/badge';
@@ -16,7 +16,9 @@ import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 
 function normalizeTagName(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeTagEntries(entries) {
@@ -31,7 +33,10 @@ function normalizeTagEntries(entries) {
         seen.add(tag);
         normalized.push({
             tag,
-            color: typeof entry?.color === 'string' && entry.color.trim() ? entry.color.trim() : null
+            color:
+                typeof entry?.color === 'string' && entry.color.trim()
+                    ? entry.color.trim()
+                    : null
         });
     }
 
@@ -71,7 +76,10 @@ export function ManageAvatarTagsDialog({
         }
     }, [avatar, open]);
 
-    const tagNames = useMemo(() => new Set(tagEntries.map((entry) => entry.tag)), [tagEntries]);
+    const tagNames = useMemo(
+        () => new Set(tagEntries.map((entry) => entry.tag)),
+        [tagEntries]
+    );
 
     function addTag() {
         const tag = normalizeTagName(newTagName);
@@ -85,7 +93,9 @@ export function ManageAvatarTagsDialog({
     }
 
     function removeTag(tag) {
-        setTagEntries((current) => current.filter((entry) => entry.tag !== tag));
+        setTagEntries((current) =>
+            current.filter((entry) => entry.tag !== tag)
+        );
     }
 
     function setTagColor(tag, color) {
@@ -115,12 +125,16 @@ export function ManageAvatarTagsDialog({
                 <div className="flex flex-col gap-4">
                     <FieldGroup>
                         <Field>
-                            <FieldLabel htmlFor="avatar-tag-name">Add local tag</FieldLabel>
+                            <FieldLabel htmlFor="avatar-tag-name">
+                                Add local tag
+                            </FieldLabel>
                             <div className="flex gap-2">
                                 <Input
                                     id="avatar-tag-name"
                                     value={newTagName}
-                                    onChange={(event) => setNewTagName(event.target.value)}
+                                    onChange={(event) =>
+                                        setNewTagName(event.target.value)
+                                    }
                                     onKeyDown={(event) => {
                                         if (event.key === 'Enter') {
                                             event.preventDefault();
@@ -130,7 +144,12 @@ export function ManageAvatarTagsDialog({
                                     placeholder="Tag name"
                                     disabled={saving}
                                 />
-                                <Button type="button" variant="outline" onClick={addTag} disabled={saving}>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={addTag}
+                                    disabled={saving}
+                                >
                                     <PlusIcon data-icon="inline-start" />
                                     Add
                                 </Button>
@@ -143,23 +162,31 @@ export function ManageAvatarTagsDialog({
                             tagEntries.map((entry) => {
                                 const tagColor = resolveTagColor(entry);
                                 return (
-                                    <div key={entry.tag} className="rounded-xl border p-3">
+                                    <div
+                                        key={entry.tag}
+                                        className="rounded-xl border p-3"
+                                    >
                                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                             <Badge
                                                 variant="secondary"
                                                 className="w-fit"
                                                 style={{
-                                                    backgroundColor: tagColor.bg,
+                                                    backgroundColor:
+                                                        tagColor.bg,
                                                     color: tagColor.text
-                                                }}>
+                                                }}
+                                            >
                                                 {entry.tag}
                                             </Badge>
                                             <Button
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => removeTag(entry.tag)}
-                                                disabled={saving}>
+                                                onClick={() =>
+                                                    removeTag(entry.tag)
+                                                }
+                                                disabled={saving}
+                                            >
                                                 <XIcon data-icon="inline-start" />
                                                 Remove
                                             </Button>
@@ -167,24 +194,46 @@ export function ManageAvatarTagsDialog({
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             {TAG_COLORS.map((color) => {
                                                 const selected =
-                                                    (entry.color && entry.color === color.bg) ||
-                                                    (!entry.color && getTagColor(entry.tag).name === color.name);
+                                                    (entry.color &&
+                                                        entry.color ===
+                                                            color.bg) ||
+                                                    (!entry.color &&
+                                                        getTagColor(entry.tag)
+                                                            .name ===
+                                                            color.name);
                                                 return (
                                                     <Button
                                                         key={color.name}
                                                         type="button"
                                                         size="icon-sm"
                                                         variant="outline"
-                                                        className={selected ? 'size-6 p-0 ring-2 ring-ring ring-offset-2' : 'size-6 p-0'}
+                                                        className={
+                                                            selected
+                                                                ? 'ring-ring size-6 p-0 ring-2 ring-offset-2'
+                                                                : 'size-6 p-0'
+                                                        }
                                                         style={{
-                                                            backgroundColor: color.bg.replace('/ 0.2)', '/ 1)')
+                                                            backgroundColor:
+                                                                color.bg.replace(
+                                                                    '/ 0.2)',
+                                                                    '/ 1)'
+                                                                )
                                                         }}
                                                         aria-label={color.label}
                                                         aria-pressed={selected}
                                                         title={color.label}
                                                         disabled={saving}
-                                                        data-selected={selected ? 'true' : undefined}
-                                                        onClick={() => setTagColor(entry.tag, color)}
+                                                        data-selected={
+                                                            selected
+                                                                ? 'true'
+                                                                : undefined
+                                                        }
+                                                        onClick={() =>
+                                                            setTagColor(
+                                                                entry.tag,
+                                                                color
+                                                            )
+                                                        }
                                                     />
                                                 );
                                             })}
@@ -193,7 +242,7 @@ export function ManageAvatarTagsDialog({
                                 );
                             })
                         ) : (
-                            <div className="rounded-xl border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+                            <div className="bg-muted/20 text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
                                 This avatar has no local tags yet.
                             </div>
                         )}
@@ -205,13 +254,15 @@ export function ManageAvatarTagsDialog({
                         type="button"
                         variant="outline"
                         disabled={saving}
-                        onClick={() => onOpenChange(false)}>
+                        onClick={() => onOpenChange(false)}
+                    >
                         Cancel
                     </Button>
                     <Button
                         type="button"
                         disabled={saving || !avatarId}
-                        onClick={() => onSave({ avatarId, tags: tagEntries })}>
+                        onClick={() => onSave({ avatarId, tags: tagEntries })}
+                    >
                         <SaveIcon data-icon="inline-start" />
                         Save
                     </Button>

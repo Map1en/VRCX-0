@@ -1,4 +1,3 @@
-import { useMemo, useState } from 'react';
 import {
     AlertTriangleIcon,
     CopyIcon,
@@ -9,30 +8,32 @@ import {
     MessageSquareIcon,
     Share2Icon
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
+import { RegionCodeBadge } from '@/components/location/RegionCodeBadge.jsx';
 import {
     normalizeString,
     useLocationMetadata
 } from '@/components/location/useLocationMetadata.js';
-import { RegionCodeBadge } from '@/components/location/RegionCodeBadge.jsx';
-import { cn } from '@/lib/utils.js';
 import { copyTextToClipboard } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import { gameLogRepository } from '@/repositories/index.js';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService.js';
 import { directAccessParse } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
+import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
 import {
     getLocationText,
     normalizeLocationValue,
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location.js';
-import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
 import { useLaunchStore } from '@/state/launchStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
+import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
     ContextMenuContent,
@@ -41,17 +42,15 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger
-} from '@/ui/shadcn/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 function locationTarget(location, traveling) {
     const normalizedLocation = normalizeLocationValue(location);
-    if (typeof traveling !== 'undefined' && normalizedLocation === 'traveling') {
+    if (
+        typeof traveling !== 'undefined' &&
+        normalizedLocation === 'traveling'
+    ) {
         return normalizeLocationValue(traveling);
     }
     return normalizedLocation;
@@ -92,18 +91,34 @@ export function Location({
 }) {
     const { t } = useI18n();
     const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);
-    const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
-    const ageGatedInstancesVisiblePreference = usePreferencesStore((state) => state.isAgeGatedInstancesVisible);
-    const globalShowInstanceIdInLocation = usePreferencesStore((state) => state.showInstanceIdInLocation);
-    const ageGatedInstancesVisible = preferencesHydrated && ageGatedInstancesVisiblePreference;
+    const preferencesHydrated = usePreferencesStore(
+        (state) => state.preferencesHydrated
+    );
+    const ageGatedInstancesVisiblePreference = usePreferencesStore(
+        (state) => state.isAgeGatedInstancesVisible
+    );
+    const globalShowInstanceIdInLocation = usePreferencesStore(
+        (state) => state.showInstanceIdInLocation
+    );
+    const ageGatedInstancesVisible =
+        preferencesHydrated && ageGatedInstancesVisiblePreference;
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [previousInstancesRows, setPreviousInstancesRows] = useState([]);
-    const [previousInstancesTitle, setPreviousInstancesTitle] = useState('Previous Instances');
-    const [previousInstancesLoading, setPreviousInstancesLoading] = useState(false);
+    const [previousInstancesTitle, setPreviousInstancesTitle] =
+        useState('Previous Instances');
+    const [previousInstancesLoading, setPreviousInstancesLoading] =
+        useState(false);
     const currentLocation = locationTarget(location, traveling);
-    const hasShortNameHint = Boolean(!normalizeString(currentLocation) && normalizeString(hint).length === 8);
-    const isTraveling = typeof traveling !== 'undefined' && normalizeString(location) === 'traveling';
-    const parsedLocation = useMemo(() => parseLocation(currentLocation), [currentLocation]);
+    const hasShortNameHint = Boolean(
+        !normalizeString(currentLocation) && normalizeString(hint).length === 8
+    );
+    const isTraveling =
+        typeof traveling !== 'undefined' &&
+        normalizeString(location) === 'traveling';
+    const parsedLocation = useMemo(
+        () => parseLocation(currentLocation),
+        [currentLocation]
+    );
     const {
         currentEndpoint,
         region,
@@ -119,14 +134,20 @@ export function Location({
         hint,
         groupHint: grouphint
     });
-    const isAgeRestricted = Boolean(parsedLocation.ageGate && !ageGatedInstancesVisible);
+    const isAgeRestricted = Boolean(
+        parsedLocation.ageGate && !ageGatedInstancesVisible
+    );
     const isLocationLink = Boolean(
         link &&
-            !parsedLocation.isPrivate &&
-            !parsedLocation.isOffline &&
-            (normalizeString(currentLocation) || hasShortNameHint)
+        !parsedLocation.isPrivate &&
+        !parsedLocation.isOffline &&
+        (normalizeString(currentLocation) || hasShortNameHint)
     );
-    const accessTypeLabel = translateAccessType(parsedLocation.accessTypeName, t, accessTypeLocaleKeyMap);
+    const accessTypeLabel = translateAccessType(
+        parsedLocation.accessTypeName,
+        t,
+        accessTypeLocaleKeyMap
+    );
     const worldDialogTitle = worldName || worldNameHint || undefined;
     const text = getLocationText(parsedLocation, {
         hint: worldNameHint,
@@ -144,11 +165,19 @@ export function Location({
     const canOpenWorld = Boolean(
         isLocationLink && (parsedLocation.worldId || hasShortNameHint)
     );
-    const canUseCurrentInstance = Boolean(parsedLocation.isRealInstance && parsedLocation.worldId && parsedLocation.instanceId);
+    const canUseCurrentInstance = Boolean(
+        parsedLocation.isRealInstance &&
+        parsedLocation.worldId &&
+        parsedLocation.instanceId
+    );
     const shareUrl = parsedLocation.worldId
         ? `https://vrchat.com/home/world/${parsedLocation.worldId}`
         : '';
-    const showContextMenu = Boolean(enableContextMenu && parsedLocation.isRealInstance && parsedLocation.worldId);
+    const showContextMenu = Boolean(
+        enableContextMenu &&
+        parsedLocation.isRealInstance &&
+        parsedLocation.worldId
+    );
 
     function showExactPreviousInstanceInfo() {
         const payload = {
@@ -164,13 +193,17 @@ export function Location({
         if (!currentLocation) {
             return;
         }
-        setPreviousInstancesRows([{
-            location: currentLocation,
-            worldId: parsedLocation.worldId,
-            worldName: worldName || worldNameHint || parsedLocation.worldId,
-            groupName
-        }]);
-        setPreviousInstancesTitle(`Previous Instance - ${worldName || worldNameHint || parsedLocation.worldId || currentLocation}`);
+        setPreviousInstancesRows([
+            {
+                location: currentLocation,
+                worldId: parsedLocation.worldId,
+                worldName: worldName || worldNameHint || parsedLocation.worldId,
+                groupName
+            }
+        ]);
+        setPreviousInstancesTitle(
+            `Previous Instance - ${worldName || worldNameHint || parsedLocation.worldId || currentLocation}`
+        );
         setPreviousInstancesOpen(true);
     }
 
@@ -189,9 +222,10 @@ export function Location({
             void directAccessParse(normalizeString(hint), currentEndpoint);
             return;
         }
-        const worldDialogTarget = parsedLocation.isRealInstance && parsedLocation.tag
-            ? parsedLocation.tag
-            : parsedLocation.worldId;
+        const worldDialogTarget =
+            parsedLocation.isRealInstance && parsedLocation.tag
+                ? parsedLocation.tag
+                : parsedLocation.worldId;
         openWorldDialog({
             worldId: worldDialogTarget,
             title: worldDialogTitle
@@ -229,10 +263,18 @@ export function Location({
             return;
         }
         try {
-            await selfInviteToInstance(currentLocation, parsedLocation.shortName || '', currentEndpoint);
+            await selfInviteToInstance(
+                currentLocation,
+                parsedLocation.shortName || '',
+                currentEndpoint
+            );
             toast.success('Self invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send self invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send self invite.'
+            );
         }
     }
 
@@ -277,9 +319,10 @@ export function Location({
 
         setPreviousInstancesLoading(true);
         try {
-            const instances = await gameLogRepository.getPreviousInstancesByWorldId({
-                worldId: parsedLocation.worldId
-            });
+            const instances =
+                await gameLogRepository.getPreviousInstancesByWorldId({
+                    worldId: parsedLocation.worldId
+                });
             const normalizedCurrentLocation = normalizeString(currentLocation);
             const currentInstanceRow = {
                 location: normalizedCurrentLocation,
@@ -291,22 +334,36 @@ export function Location({
                 ...instances
             ].sort((left, right) => {
                 if (normalizedCurrentLocation) {
-                    if (normalizeString(left?.location) === normalizedCurrentLocation) {
+                    if (
+                        normalizeString(left?.location) ===
+                        normalizedCurrentLocation
+                    ) {
                         return -1;
                     }
-                    if (normalizeString(right?.location) === normalizedCurrentLocation) {
+                    if (
+                        normalizeString(right?.location) ===
+                        normalizedCurrentLocation
+                    ) {
                         return 1;
                     }
                 }
-                return Date.parse(right?.created_at || right?.createdAt || 0) -
-                    Date.parse(left?.created_at || left?.createdAt || 0);
+                return (
+                    Date.parse(right?.created_at || right?.createdAt || 0) -
+                    Date.parse(left?.created_at || left?.createdAt || 0)
+                );
             });
 
             setPreviousInstancesRows(nextRows);
-            setPreviousInstancesTitle(`Previous Instances - ${worldName || worldNameHint || parsedLocation.worldId}`);
+            setPreviousInstancesTitle(
+                `Previous Instances - ${worldName || worldNameHint || parsedLocation.worldId}`
+            );
             setPreviousInstancesOpen(true);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to load previous instances.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load previous instances.'
+            );
         } finally {
             setPreviousInstancesLoading(false);
         }
@@ -323,37 +380,57 @@ export function Location({
     const LocationTrigger = asButton ? 'button' : 'span';
 
     const content = (
-        <div className={cn('inline-flex min-w-0 max-w-full items-center', className)}>
+        <div
+            className={cn(
+                'inline-flex max-w-full min-w-0 items-center',
+                className
+            )}
+        >
             {!text ? (
                 <div className="text-transparent">-</div>
             ) : isAgeRestricted ? (
                 <LocationTooltip
                     disabled={disableTooltip}
-                    content={t('dialog.user.info.instance_age_restricted_tooltip')}>
-                    <div className="inline-flex min-w-0 items-center gap-1 text-muted-foreground">
+                    content={t(
+                        'dialog.user.info.instance_age_restricted_tooltip'
+                    )}
+                >
+                    <div className="text-muted-foreground inline-flex min-w-0 items-center gap-1">
                         <LockIcon className="size-3.5 shrink-0" />
-                        <span className="min-w-0 truncate">{t('dialog.user.info.instance_age_restricted')}</span>
+                        <span className="min-w-0 truncate">
+                            {t('dialog.user.info.instance_age_restricted')}
+                        </span>
                     </div>
                 </LocationTooltip>
             ) : (
                 <>
                     <RegionCodeBadge region={region} />
                     <LocationTooltip
-                        disabled={disableTooltip || !tooltipContent || shouldShowInstanceIdInLocation}
-                        content={tooltipContent}>
+                        disabled={
+                            disableTooltip ||
+                            !tooltipContent ||
+                            shouldShowInstanceIdInLocation
+                        }
+                        content={tooltipContent}
+                    >
                         <LocationTrigger
                             {...(asButton
                                 ? { type: 'button' }
                                 : {
-                                    role: isLocationLink ? 'button' : undefined,
-                                    tabIndex: isLocationLink ? 0 : undefined
-                                })}
+                                      role: isLocationLink
+                                          ? 'button'
+                                          : undefined,
+                                      tabIndex: isLocationLink ? 0 : undefined
+                                  })}
                             className={cn(
-                                'x-location inline-flex min-w-0 max-w-full flex-nowrap items-center overflow-hidden truncate text-left',
-                                isLocationLink ? 'cursor-pointer hover:underline' : 'cursor-default'
+                                'x-location inline-flex max-w-full min-w-0 flex-nowrap items-center truncate overflow-hidden text-left',
+                                isLocationLink
+                                    ? 'cursor-pointer hover:underline'
+                                    : 'cursor-default'
                             )}
                             onClick={openWorld}
-                            onKeyDown={openWorldFromKeyboard}>
+                            onKeyDown={openWorldFromKeyboard}
+                        >
                             {isTraveling ? (
                                 <Spinner
                                     aria-hidden="true"
@@ -364,7 +441,8 @@ export function Location({
                             ) : null}
                             <span className="min-w-0 flex-1 truncate">
                                 <span>{text}</span>
-                                {shouldShowInstanceIdInLocation && resolvedInstanceName ? (
+                                {shouldShowInstanceIdInLocation &&
+                                resolvedInstanceName ? (
                                     <span className="ml-1">{`· #${resolvedInstanceName}`}</span>
                                 ) : null}
                             </span>
@@ -376,19 +454,21 @@ export function Location({
                             variant="link"
                             className="ml-0.5 h-auto min-w-0 p-0 text-left font-normal text-inherit"
                             onClick={openGroup}
-                            onKeyDown={(event) => event.stopPropagation()}>
+                            onKeyDown={(event) => event.stopPropagation()}
+                        >
                             ({groupName})
                         </Button>
                     ) : null}
                     {isClosed ? (
                         <LocationTooltip
                             disabled={disableTooltip}
-                            content={t('dialog.user.info.instance_closed')}>
-                            <AlertTriangleIcon className="ml-2 inline-block size-3.5 shrink-0 text-muted-foreground" />
+                            content={t('dialog.user.info.instance_closed')}
+                        >
+                            <AlertTriangleIcon className="text-muted-foreground ml-2 inline-block size-3.5 shrink-0" />
                         </LocationTooltip>
                     ) : null}
                     {parsedLocation.strict ? (
-                        <LockIcon className="ml-2 inline-block size-3.5 shrink-0 text-muted-foreground" />
+                        <LockIcon className="text-muted-foreground ml-2 inline-block size-3.5 shrink-0" />
                     ) : null}
                 </>
             )}
@@ -419,45 +499,72 @@ export function Location({
         <>
             <ContextMenu>
                 <ContextMenuTrigger asChild>
-                    <span className="inline-flex min-w-0 max-w-full">{content}</span>
+                    <span className="inline-flex max-w-full min-w-0">
+                        {content}
+                    </span>
                 </ContextMenuTrigger>
                 <ContextMenuContent className="w-56">
                     <ContextMenuGroup>
-                        <ContextMenuItem disabled={!canOpenWorld} onSelect={openWorld}>
+                        <ContextMenuItem
+                            disabled={!canOpenWorld}
+                            onSelect={openWorld}
+                        >
                             <ExternalLinkIcon className="size-4" />
                             {t('common.actions.view_details')}
                         </ContextMenuItem>
-                        <ContextMenuItem disabled={!shareUrl} onSelect={copyShareLink}>
+                        <ContextMenuItem
+                            disabled={!shareUrl}
+                            onSelect={copyShareLink}
+                        >
                             <Share2Icon className="size-4" />
                             {t('dialog.world.actions.share')}
                         </ContextMenuItem>
-                        <ContextMenuItem disabled={!currentLocation} onSelect={() => void copyTextToClipboard(currentLocation)}>
+                        <ContextMenuItem
+                            disabled={!currentLocation}
+                            onSelect={() =>
+                                void copyTextToClipboard(currentLocation)
+                            }
+                        >
                             <CopyIcon className="size-4" />
                             Copy location
                         </ContextMenuItem>
                     </ContextMenuGroup>
                     <ContextMenuSeparator />
                     <ContextMenuGroup>
-                        <ContextMenuItem disabled={!parsedLocation.worldId} onSelect={() => newInstance(false)}>
+                        <ContextMenuItem
+                            disabled={!parsedLocation.worldId}
+                            onSelect={() => newInstance(false)}
+                        >
                             <FlagIcon className="size-4" />
                             {t('dialog.world.actions.new_instance')}
                         </ContextMenuItem>
-                        <ContextMenuItem disabled={!parsedLocation.worldId} onSelect={() => newInstance(true)}>
+                        <ContextMenuItem
+                            disabled={!parsedLocation.worldId}
+                            onSelect={() => newInstance(true)}
+                        >
                             <MessageSquareIcon className="size-4" />
-                            {t('dialog.world.actions.new_instance_and_self_invite')}
+                            {t(
+                                'dialog.world.actions.new_instance_and_self_invite'
+                            )}
                         </ContextMenuItem>
                     </ContextMenuGroup>
                     <ContextMenuSeparator />
                     <ContextMenuGroup>
                         <ContextMenuItem
-                            disabled={previousInstancesDisabled || previousInstancesLoading || (!parsedLocation.worldId && !isOpenPreviousInstanceInfoDialog)}
+                            disabled={
+                                previousInstancesDisabled ||
+                                previousInstancesLoading ||
+                                (!parsedLocation.worldId &&
+                                    !isOpenPreviousInstanceInfoDialog)
+                            }
                             onSelect={() => {
                                 if (isOpenPreviousInstanceInfoDialog) {
                                     showExactPreviousInstanceInfo();
                                     return;
                                 }
                                 void showPreviousInstances();
-                            }}>
+                            }}
+                        >
                             <HistoryIcon className="size-4" />
                             {t('dialog.world.actions.show_previous_instances')}
                         </ContextMenuItem>
@@ -466,11 +573,19 @@ export function Location({
                         <>
                             <ContextMenuSeparator />
                             <ContextMenuGroup>
-                                <ContextMenuItem disabled={!canUseCurrentInstance} onSelect={launchCurrentInstance}>
+                                <ContextMenuItem
+                                    disabled={!canUseCurrentInstance}
+                                    onSelect={launchCurrentInstance}
+                                >
                                     <ExternalLinkIcon className="size-4" />
                                     Launch in VRChat
                                 </ContextMenuItem>
-                                <ContextMenuItem disabled={!canUseCurrentInstance} onSelect={() => void selfInviteCurrentInstance()}>
+                                <ContextMenuItem
+                                    disabled={!canUseCurrentInstance}
+                                    onSelect={() =>
+                                        void selfInviteCurrentInstance()
+                                    }
+                                >
                                     <MessageSquareIcon className="size-4" />
                                     Self invite
                                 </ContextMenuItem>

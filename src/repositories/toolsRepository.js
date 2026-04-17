@@ -1,12 +1,13 @@
-import webRepository from './webRepository.js';
-import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
     invalidateEntityQueries,
     queryKeys
 } from '@/services/entityQueryCacheService.js';
+
+import { safeJsonParse } from './baseRepository.js';
+import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import webRepository from './webRepository.js';
 
 const PAGE_SIZE = 100;
 
@@ -59,19 +60,26 @@ async function processAllPages(fetchPage, { pageSize = PAGE_SIZE } = {}) {
         const rows = Array.isArray(page)
             ? page
             : Array.isArray(page?.results)
-                ? page.results
-                : Array.isArray(page?.json)
-                    ? page.json
-                    : [];
+              ? page.results
+              : Array.isArray(page?.json)
+                ? page.json
+                : [];
         results.push(...rows);
-        if (rows.length === 0 || page?.hasNext === false || rows.length < pageSize) {
+        if (
+            rows.length === 0 ||
+            page?.hasNext === false ||
+            rows.length < pageSize
+        ) {
             break;
         }
     }
     return results;
 }
 
-async function execute(path, { endpoint = '', method = 'GET', params = null } = {}) {
+async function execute(
+    path,
+    { endpoint = '', method = 'GET', params = null } = {}
+) {
     const requestOptions = {
         url: buildUrl(path, method === 'GET' ? params : {}, endpoint),
         method
@@ -88,10 +96,22 @@ async function execute(path, { endpoint = '', method = 'GET', params = null } = 
     const json = parseJsonResponse(response.data);
 
     if (response.status >= 400) {
-        throw new Error(unwrapErrorMessage(json, response.status, 'VRChat tool request failed'));
+        throw new Error(
+            unwrapErrorMessage(
+                json,
+                response.status,
+                'VRChat tool request failed'
+            )
+        );
     }
     if (json && typeof json === 'object' && 'error' in json) {
-        throw new Error(unwrapErrorMessage(json, response.status, 'VRChat tool request failed'));
+        throw new Error(
+            unwrapErrorMessage(
+                json,
+                response.status,
+                'VRChat tool request failed'
+            )
+        );
     }
 
     return {
@@ -101,7 +121,10 @@ async function execute(path, { endpoint = '', method = 'GET', params = null } = 
     };
 }
 
-async function getGroupCalendars(params = {}, { endpoint = '', force = false } = {}) {
+async function getGroupCalendars(
+    params = {},
+    { endpoint = '', force = false } = {}
+) {
     return fetchCachedData({
         queryKey: queryKeys.groupCalendarList('all', params, endpoint),
         policy: entityQueryPolicies.groupCollection,
@@ -117,7 +140,10 @@ async function getGroupCalendars(params = {}, { endpoint = '', force = false } =
     });
 }
 
-async function getFollowingGroupCalendars(params = {}, { endpoint = '', force = false } = {}) {
+async function getFollowingGroupCalendars(
+    params = {},
+    { endpoint = '', force = false } = {}
+) {
     return fetchCachedData({
         queryKey: queryKeys.groupCalendarList('following', params, endpoint),
         policy: entityQueryPolicies.groupCollection,
@@ -133,7 +159,10 @@ async function getFollowingGroupCalendars(params = {}, { endpoint = '', force = 
     });
 }
 
-async function getFeaturedGroupCalendars(params = {}, { endpoint = '', force = false } = {}) {
+async function getFeaturedGroupCalendars(
+    params = {},
+    { endpoint = '', force = false } = {}
+) {
     return fetchCachedData({
         queryKey: queryKeys.groupCalendarList('featured', params, endpoint),
         policy: entityQueryPolicies.groupCollection,
@@ -151,26 +180,32 @@ async function getFeaturedGroupCalendars(params = {}, { endpoint = '', force = f
 
 async function getAllGroupCalendars(params = {}, options = {}) {
     return processAllPages(
-        (pageParams) => getGroupCalendars({ ...params, ...pageParams }, options),
+        (pageParams) =>
+            getGroupCalendars({ ...params, ...pageParams }, options),
         { pageSize: params.n ?? PAGE_SIZE }
     );
 }
 
 async function getAllFollowingGroupCalendars(params = {}, options = {}) {
     return processAllPages(
-        (pageParams) => getFollowingGroupCalendars({ ...params, ...pageParams }, options),
+        (pageParams) =>
+            getFollowingGroupCalendars({ ...params, ...pageParams }, options),
         { pageSize: params.n ?? PAGE_SIZE }
     );
 }
 
 async function getAllFeaturedGroupCalendars(params = {}, options = {}) {
     return processAllPages(
-        (pageParams) => getFeaturedGroupCalendars({ ...params, ...pageParams }, options),
+        (pageParams) =>
+            getFeaturedGroupCalendars({ ...params, ...pageParams }, options),
         { pageSize: params.n ?? PAGE_SIZE }
     );
 }
 
-async function followGroupEvent({ groupId, eventId, isFollowing }, { endpoint = '' } = {}) {
+async function followGroupEvent(
+    { groupId, eventId, isFollowing },
+    { endpoint = '' } = {}
+) {
     const response = await execute(
         `calendar/${encodeURIComponent(groupId)}/${encodeURIComponent(eventId)}/follow`,
         {
@@ -183,7 +218,10 @@ async function followGroupEvent({ groupId, eventId, isFollowing }, { endpoint = 
     return response.json;
 }
 
-async function getGroupCalendarIcs({ groupId, eventId }, { endpoint = '', force = false } = {}) {
+async function getGroupCalendarIcs(
+    { groupId, eventId },
+    { endpoint = '', force = false } = {}
+) {
     return fetchCachedData({
         queryKey: queryKeys.groupCalendarEvent({ groupId, eventId }, endpoint),
         policy: entityQueryPolicies.groupCalendarEvent,
@@ -210,16 +248,25 @@ async function saveUserNote({ targetUserId, note }, { endpoint = '' } = {}) {
     return response.json;
 }
 
-async function reportUser({ userId, contentType = 'user', reason, type = 'report' }, { endpoint = '' } = {}) {
-    const response = await execute(`feedback/${encodeURIComponent(userId)}/user`, {
-        endpoint,
-        method: 'POST',
-        params: { contentType, reason, type }
-    });
+async function reportUser(
+    { userId, contentType = 'user', reason, type = 'report' },
+    { endpoint = '' } = {}
+) {
+    const response = await execute(
+        `feedback/${encodeURIComponent(userId)}/user`,
+        {
+            endpoint,
+            method: 'POST',
+            params: { contentType, reason, type }
+        }
+    );
     return response.json;
 }
 
-async function getInviteMessages({ currentUserId, messageType }, { endpoint = '' } = {}) {
+async function getInviteMessages(
+    { currentUserId, messageType },
+    { endpoint = '' } = {}
+) {
     const response = await execute(
         `message/${encodeURIComponent(currentUserId)}/${encodeURIComponent(messageType)}`,
         {
@@ -230,7 +277,10 @@ async function getInviteMessages({ currentUserId, messageType }, { endpoint = ''
     return response.json;
 }
 
-async function editInviteMessage({ currentUserId, messageType, slot, message }, { endpoint = '' } = {}) {
+async function editInviteMessage(
+    { currentUserId, messageType, slot, message },
+    { endpoint = '' } = {}
+) {
     const response = await execute(
         `message/${encodeURIComponent(currentUserId)}/${encodeURIComponent(messageType)}/${encodeURIComponent(slot)}`,
         {

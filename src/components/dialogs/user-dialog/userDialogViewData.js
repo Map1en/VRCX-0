@@ -202,9 +202,9 @@ export function buildUserDialogProfileSummary({
             userStats.joinCount ?? profile.joinCount ?? profile.$joinCount ?? 0
         ) || 0;
     const lastSeen = userStats.lastSeen || profile.lastSeen || '';
-    const languageOptions = normalizeLanguageOptionsFromConfig(
-        { constants: vrchatConfigConstants }
-    );
+    const languageOptions = normalizeLanguageOptionsFromConfig({
+        constants: vrchatConfigConstants
+    });
     const languageOptionsMap = new Map(
         languageOptions.map((option) => [option.key, option])
     );

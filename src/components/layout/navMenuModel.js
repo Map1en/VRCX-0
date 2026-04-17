@@ -1,8 +1,14 @@
 import { configRepository } from '@/repositories/index.js';
-import { NAV_LAYOUT_UPDATED_EVENT, publishNavLayoutUpdated } from '@/shared/events/navLayoutEvents.js';
-import { DASHBOARD_NAV_KEY_PREFIX, DEFAULT_DASHBOARD_ICON } from '@/shared/constants/dashboard.js';
+import {
+    DASHBOARD_NAV_KEY_PREFIX,
+    DEFAULT_DASHBOARD_ICON
+} from '@/shared/constants/dashboard.js';
 import { isToolNavKey } from '@/shared/constants/tools.js';
 import { navDefinitions } from '@/shared/constants/ui.js';
+import {
+    NAV_LAYOUT_UPDATED_EVENT,
+    publishNavLayoutUpdated
+} from '@/shared/events/navLayoutEvents.js';
 
 export const NAV_CONFIG_KEY = 'VRCX_customNavMenuLayoutList';
 export { NAV_LAYOUT_UPDATED_EVENT };
@@ -85,12 +91,21 @@ export function createBaseDefaultNavLayout(t) {
     ];
 }
 
-export function insertDashboardEntries(layout, dashboardDefinitions = [], hiddenKeys = []) {
+export function insertDashboardEntries(
+    layout,
+    dashboardDefinitions = [],
+    hiddenKeys = []
+) {
     const nextLayout = Array.isArray(layout) ? [...layout] : [];
     const existingKeys = collectLayoutKeys(nextLayout);
     const hiddenSet = new Set(Array.isArray(hiddenKeys) ? hiddenKeys : []);
     const dashboardEntries = dashboardDefinitions
-        .filter((definition) => definition?.key && !existingKeys.has(definition.key) && !hiddenSet.has(definition.key))
+        .filter(
+            (definition) =>
+                definition?.key &&
+                !existingKeys.has(definition.key) &&
+                !hiddenSet.has(definition.key)
+        )
         .map((definition) => ({
             type: 'item',
             key: definition.key
@@ -111,7 +126,11 @@ export function insertDashboardEntries(layout, dashboardDefinitions = [], hidden
 }
 
 export function createNavDefinitionMap(definitions = []) {
-    return new Map(definitions.filter((definition) => definition?.key).map((definition) => [definition.key, definition]));
+    return new Map(
+        definitions
+            .filter((definition) => definition?.key)
+            .map((definition) => [definition.key, definition])
+    );
 }
 
 function collectLayoutKeys(layout) {
@@ -149,26 +168,44 @@ function normalizeHiddenKeys(hiddenKeys, definitionMap) {
     return normalized;
 }
 
-function buildAppendDefinitions(baseDefinitions, dashboardDefinitions, layout, hiddenKeys) {
+function buildAppendDefinitions(
+    baseDefinitions,
+    dashboardDefinitions,
+    layout,
+    hiddenKeys
+) {
     const keysInLayout = collectLayoutKeys(layout);
     const hiddenSet = new Set(Array.isArray(hiddenKeys) ? hiddenKeys : []);
     const visibleBaseDefinitions = baseDefinitions.filter(
-        (definition) => !isToolNavKey(definition.key) || keysInLayout.has(definition.key)
+        (definition) =>
+            !isToolNavKey(definition.key) || keysInLayout.has(definition.key)
     );
     const visibleDashboardDefinitions = dashboardDefinitions.filter(
-        (definition) => keysInLayout.has(definition.key) || hiddenSet.has(definition.key)
+        (definition) =>
+            keysInLayout.has(definition.key) || hiddenSet.has(definition.key)
     );
     return [...visibleBaseDefinitions, ...visibleDashboardDefinitions];
 }
 
-export function sanitizeNavLayout({ layout, hiddenKeys, definitions, appendDefinitions, t }) {
+export function sanitizeNavLayout({
+    layout,
+    hiddenKeys,
+    definitions,
+    appendDefinitions,
+    t
+}) {
     const definitionMap = createNavDefinitionMap(definitions);
     const hiddenSet = new Set(normalizeHiddenKeys(hiddenKeys, definitionMap));
     const usedKeys = new Set();
     const normalized = [];
 
     const appendItemEntry = (key, target = normalized) => {
-        if (!key || usedKeys.has(key) || hiddenSet.has(key) || !definitionMap.has(key)) {
+        if (
+            !key ||
+            usedKeys.has(key) ||
+            hiddenSet.has(key) ||
+            !definitionMap.has(key)
+        ) {
             return;
         }
         target.push({ type: 'item', key });
@@ -207,7 +244,12 @@ export function sanitizeNavLayout({ layout, hiddenKeys, definitions, appendDefin
             if (entry?.type === 'folder') {
                 const folderItems = [];
                 for (const key of entry.items || []) {
-                    if (!key || usedKeys.has(key) || hiddenSet.has(key) || !definitionMap.has(key)) {
+                    if (
+                        !key ||
+                        usedKeys.has(key) ||
+                        hiddenSet.has(key) ||
+                        !definitionMap.has(key)
+                    ) {
                         continue;
                     }
                     folderItems.push(key);
@@ -217,7 +259,9 @@ export function sanitizeNavLayout({ layout, hiddenKeys, definitions, appendDefin
                     const nameKey = entry.nameKey || null;
                     normalized.push({
                         type: 'folder',
-                        id: entry.id || `nav-folder-${Math.random().toString(36).slice(2, 8)}`,
+                        id:
+                            entry.id ||
+                            `nav-folder-${Math.random().toString(36).slice(2, 8)}`,
                         name: nameKey ? t(nameKey) : entry.name || '',
                         nameKey,
                         icon: entry.icon || DEFAULT_FOLDER_ICON,
@@ -257,7 +301,9 @@ export function buildMenuItems(layout, definitionMap, t) {
                     ...definition,
                     index: definition.key,
                     title: definition.tooltip || definition.labelKey,
-                    titleIsCustom: Boolean(definition.titleIsCustom || definition.isDashboard)
+                    titleIsCustom: Boolean(
+                        definition.titleIsCustom || definition.isDashboard
+                    )
                 });
             }
             continue;
@@ -271,13 +317,17 @@ export function buildMenuItems(layout, definitionMap, t) {
                     ...definition,
                     label: definition.labelKey,
                     index: definition.key,
-                    titleIsCustom: Boolean(definition.titleIsCustom || definition.isDashboard)
+                    titleIsCustom: Boolean(
+                        definition.titleIsCustom || definition.isDashboard
+                    )
                 }));
             if (children.length) {
                 items.push({
                     index: entry.id,
                     icon: entry.icon || DEFAULT_FOLDER_ICON,
-                    title: entry.name?.trim() || t('nav_menu.custom_nav.folder_name_placeholder'),
+                    title:
+                        entry.name?.trim() ||
+                        t('nav_menu.custom_nav.folder_name_placeholder'),
                     titleIsCustom: true,
                     children
                 });
@@ -291,7 +341,10 @@ export async function loadNavMenuModel({ dashboards, notificationLayout, t }) {
     const dashboardDefinitions = buildDashboardNavDefinitions(dashboards);
     const definitions = [...navDefinitions, ...dashboardDefinitions];
     const definitionMap = createNavDefinitionMap(definitions);
-    const defaultLayout = insertDashboardEntries(createBaseDefaultNavLayout(t), dashboardDefinitions);
+    const defaultLayout = insertDashboardEntries(
+        createBaseDefaultNavLayout(t),
+        dashboardDefinitions
+    );
 
     let layout = defaultLayout;
     let hiddenKeys = [];
@@ -306,7 +359,11 @@ export async function loadNavMenuModel({ dashboards, notificationLayout, t }) {
                 hiddenKeys = Array.isArray(parsed.hiddenKeys)
                     ? parsed.hiddenKeys.filter((key) => !isToolNavKey(key))
                     : [];
-                layout = insertDashboardEntries(parsed.layout, dashboardDefinitions, hiddenKeys);
+                layout = insertDashboardEntries(
+                    parsed.layout,
+                    dashboardDefinitions,
+                    hiddenKeys
+                );
             }
         } catch {
             layout = defaultLayout;
@@ -318,7 +375,12 @@ export async function loadNavMenuModel({ dashboards, notificationLayout, t }) {
         layout,
         hiddenKeys,
         definitions,
-        appendDefinitions: buildAppendDefinitions(navDefinitions, dashboardDefinitions, layout, hiddenKeys),
+        appendDefinitions: buildAppendDefinitions(
+            navDefinitions,
+            dashboardDefinitions,
+            layout,
+            hiddenKeys
+        ),
         t
     });
 
@@ -329,11 +391,17 @@ export async function loadNavMenuModel({ dashboards, notificationLayout, t }) {
                 item.children
                     ? {
                           ...item,
-                          children: item.children.filter((child) => child.index !== 'notification')
+                          children: item.children.filter(
+                              (child) => child.index !== 'notification'
+                          )
                       }
                     : item
             )
-            .filter((item) => item.index !== 'notification' && (!item.children || item.children.length));
+            .filter(
+                (item) =>
+                    item.index !== 'notification' &&
+                    (!item.children || item.children.length)
+            );
     }
 
     return {
@@ -346,19 +414,32 @@ export async function loadNavMenuModel({ dashboards, notificationLayout, t }) {
     };
 }
 
-export async function saveNavMenuModel({ layout, hiddenKeys = [], dashboards, notificationLayout, t }) {
+export async function saveNavMenuModel({
+    layout,
+    hiddenKeys = [],
+    dashboards,
+    notificationLayout,
+    t
+}) {
     const dashboardDefinitions = buildDashboardNavDefinitions(dashboards);
     const definitions = [...navDefinitions, ...dashboardDefinitions];
     const definitionMap = createNavDefinitionMap(definitions);
     const normalizedHiddenKeys = normalizeHiddenKeys(
-        (Array.isArray(hiddenKeys) ? hiddenKeys : []).filter((key) => !isToolNavKey(key)),
+        (Array.isArray(hiddenKeys) ? hiddenKeys : []).filter(
+            (key) => !isToolNavKey(key)
+        ),
         definitionMap
     );
     const sanitizedLayout = sanitizeNavLayout({
         layout,
         hiddenKeys: normalizedHiddenKeys,
         definitions,
-        appendDefinitions: buildAppendDefinitions(navDefinitions, dashboardDefinitions, layout, normalizedHiddenKeys),
+        appendDefinitions: buildAppendDefinitions(
+            navDefinitions,
+            dashboardDefinitions,
+            layout,
+            normalizedHiddenKeys
+        ),
         t
     });
 
@@ -378,11 +459,17 @@ export async function saveNavMenuModel({ layout, hiddenKeys = [], dashboards, no
                 item.children
                     ? {
                           ...item,
-                          children: item.children.filter((child) => child.index !== 'notification')
+                          children: item.children.filter(
+                              (child) => child.index !== 'notification'
+                          )
                       }
                     : item
             )
-            .filter((item) => item.index !== 'notification' && (!item.children || item.children.length));
+            .filter(
+                (item) =>
+                    item.index !== 'notification' &&
+                    (!item.children || item.children.length)
+            );
     }
 
     return {
@@ -390,7 +477,11 @@ export async function saveNavMenuModel({ layout, hiddenKeys = [], dashboards, no
         definitionMap,
         hiddenKeys: normalizedHiddenKeys,
         layout: sanitizedLayout,
-        defaultLayout: insertDashboardEntries(createBaseDefaultNavLayout(t), dashboardDefinitions, normalizedHiddenKeys),
+        defaultLayout: insertDashboardEntries(
+            createBaseDefaultNavLayout(t),
+            dashboardDefinitions,
+            normalizedHiddenKeys
+        ),
         menuItems
     };
 }

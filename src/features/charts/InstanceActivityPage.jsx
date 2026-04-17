@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as echarts from 'echarts';
 import {
     CalendarDaysIcon,
     ChevronLeftIcon,
@@ -6,11 +6,11 @@ import {
     RefreshCcwIcon,
     Settings2Icon
 } from 'lucide-react';
-import * as echarts from 'echarts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { Location } from '@/components/Location.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
+import { Location } from '@/components/Location.jsx';
 import { timeToText } from '@/lib/dateTime.js';
 import {
     configRepository,
@@ -31,6 +31,7 @@ import { Separator } from '@/ui/shadcn/separator';
 import { Slider } from '@/ui/shadcn/slider';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
+
 import {
     buildChartOption,
     buildDetailChartOption,
@@ -81,8 +82,8 @@ function formatDateLabel(dayKey) {
 
 function ChartLoadingState() {
     return (
-        <div className="flex min-h-80 items-center justify-center rounded-xl border border-dashed bg-muted/20">
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        <div className="bg-muted/20 flex min-h-80 items-center justify-center rounded-xl border border-dashed">
+            <div className="text-muted-foreground flex items-center gap-3 text-sm">
                 <Spinner className="size-5" />
                 <span>Loading instance activity.</span>
             </div>
@@ -92,10 +93,10 @@ function ChartLoadingState() {
 
 function ChartEmptyState({ title, description }) {
     return (
-        <div className="flex min-h-80 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
+        <div className="bg-muted/20 flex min-h-80 items-center justify-center rounded-xl border border-dashed p-6 text-center">
             <div className="flex max-w-md flex-col gap-2">
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                     {description}
                 </div>
             </div>
@@ -244,7 +245,7 @@ function InstanceActivityDetailChart({
                     />
                 </div>
                 {currentUserEntry ? (
-                    <div className="shrink-0 text-muted-foreground">
+                    <div className="text-muted-foreground shrink-0">
                         {formatClock(currentUserEntry.joinMs, hour12, true)} -{' '}
                         {formatClock(currentUserEntry.leaveMs, hour12, true)}
                     </div>
@@ -878,7 +879,7 @@ export function InstanceActivityPage() {
 
                 <div className="mt-4 flex justify-center text-center">
                     <div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-muted-foreground text-sm">
                             {t('view.charts.instance_activity.online_time')}
                         </div>
                         <div className="text-2xl font-semibold">
@@ -922,7 +923,7 @@ export function InstanceActivityPage() {
                             <div className="px-[min(25vw,400px)] py-4">
                                 <div className="flex items-center">
                                     <Separator className="flex-1" />
-                                    <span className="px-2 text-muted-foreground">
+                                    <span className="text-muted-foreground px-2">
                                         ·
                                     </span>
                                     <Separator className="flex-1" />

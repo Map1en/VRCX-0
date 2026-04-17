@@ -1,11 +1,11 @@
-import { compareUnityVersion } from '@/shared/utils/avatar.js';
-import { extractFileId, extractFileVersion } from '@/shared/utils/fileUtils.js';
 import { vrchatAuthRepository } from '@/repositories/index.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/services/entityQueryCacheService.js';
+import { compareUnityVersion } from '@/shared/utils/avatar.js';
+import { extractFileId, extractFileVersion } from '@/shared/utils/fileUtils.js';
 
 function formatMiB(value) {
     const size = Number(value);
@@ -20,10 +20,18 @@ function isAnalyzablePackage(unityPackage, sdkUnityVersion) {
     if (!unityPackage || typeof unityPackage !== 'object') {
         return false;
     }
-    if (unityPackage.variant && unityPackage.variant !== 'standard' && unityPackage.variant !== 'security') {
+    if (
+        unityPackage.variant &&
+        unityPackage.variant !== 'standard' &&
+        unityPackage.variant !== 'security'
+    ) {
         return false;
     }
-    if (sdkUnityVersion && unityPackage.unitySortNumber && !compareUnityVersion(unityPackage.unitySortNumber, sdkUnityVersion)) {
+    if (
+        sdkUnityVersion &&
+        unityPackage.unitySortNumber &&
+        !compareUnityVersion(unityPackage.unitySortNumber, sdkUnityVersion)
+    ) {
         return false;
     }
     return true;
@@ -35,10 +43,18 @@ function formatFileAnalysis(json) {
     }
     return {
         ...json,
-        ...(typeof json.fileSize !== 'undefined' ? { _fileSize: formatMiB(json.fileSize) } : {}),
-        ...(typeof json.uncompressedSize !== 'undefined' ? { _uncompressedSize: formatMiB(json.uncompressedSize) } : {}),
+        ...(typeof json.fileSize !== 'undefined'
+            ? { _fileSize: formatMiB(json.fileSize) }
+            : {}),
+        ...(typeof json.uncompressedSize !== 'undefined'
+            ? { _uncompressedSize: formatMiB(json.uncompressedSize) }
+            : {}),
         ...(typeof json.avatarStats?.totalTextureUsage !== 'undefined'
-            ? { _totalTextureUsage: formatMiB(json.avatarStats.totalTextureUsage) }
+            ? {
+                  _totalTextureUsage: formatMiB(
+                      json.avatarStats.totalTextureUsage
+                  )
+              }
             : {})
     };
 }
@@ -62,20 +78,27 @@ export async function getFileAnalysisForUnityPackages({
         const assetUrl = unityPackage.assetUrl || '';
         const fileId = extractFileId(assetUrl);
         const version = Number.parseInt(extractFileVersion(assetUrl), 10);
-        const variant = !unityPackage.variant || unityPackage.variant === 'standard'
-            ? 'security'
-            : unityPackage.variant;
+        const variant =
+            !unityPackage.variant || unityPackage.variant === 'standard'
+                ? 'security'
+                : unityPackage.variant;
         if (!fileId || !Number.isFinite(version)) {
             continue;
         }
         try {
             const response = await fetchCachedData({
-                queryKey: queryKeys.fileAnalysis({ fileId, version, variant }, endpoint),
+                queryKey: queryKeys.fileAnalysis(
+                    { fileId, version, variant },
+                    endpoint
+                ),
                 policy: entityQueryPolicies.fileAnalysis,
                 queryFn: () =>
-                    vrchatAuthRepository.executeGet(`analysis/${fileId}/${version}/${variant}`, {
-                        endpoint
-                    })
+                    vrchatAuthRepository.executeGet(
+                        `analysis/${fileId}/${version}/${variant}`,
+                        {
+                            endpoint
+                        }
+                    )
             });
             const analysis = formatFileAnalysis(response.json);
             if (analysis?.success) {

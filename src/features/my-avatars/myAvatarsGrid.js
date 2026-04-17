@@ -1,8 +1,4 @@
-export function getMyAvatarsGridMetrics({
-    cardScale,
-    cardSpacing,
-    width
-}) {
+export function getMyAvatarsGridMetrics({ cardScale, cardSpacing, width }) {
     const gridGap = Math.round(12 * cardSpacing);
     const gridMinWidth = Math.round(Math.max(200, 320 * cardScale));
     const gridColumnCount = Math.max(
@@ -12,10 +8,10 @@ export function getMyAvatarsGridMetrics({
     const gridColumnWidth =
         width > 0
             ? Math.max(
-                gridMinWidth,
-                (width - gridGap * Math.max(0, gridColumnCount - 1)) /
-                    gridColumnCount
-            )
+                  gridMinWidth,
+                  (width - gridGap * Math.max(0, gridColumnCount - 1)) /
+                      gridColumnCount
+              )
             : gridMinWidth;
     const gridRowHeight = Math.ceil(
         Math.max(
@@ -40,7 +36,11 @@ export function buildMyAvatarsGridRows({
 }) {
     const rows = [];
     const visibleAvatars = Array.isArray(avatars) ? avatars : [];
-    for (let index = 0; index < visibleAvatars.length; index += gridColumnCount) {
+    for (
+        let index = 0;
+        index < visibleAvatars.length;
+        index += gridColumnCount
+    ) {
         rows.push({
             key: `grid-row:${index}`,
             avatars: visibleAvatars.slice(index, index + gridColumnCount),
@@ -60,5 +60,7 @@ export function getVisibleMyAvatarsGridRows({
     const start = Math.max(0, scrollTop - overscan);
     const end = scrollTop + viewportHeight + overscan;
     const visibleGridRows = Array.isArray(gridRows) ? gridRows : [];
-    return visibleGridRows.filter((row) => row.top + row.height >= start && row.top <= end);
+    return visibleGridRows.filter(
+        (row) => row.top + row.height >= start && row.top <= end
+    );
 }

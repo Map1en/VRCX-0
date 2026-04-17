@@ -10,7 +10,9 @@ const outputManifestPath = path.join(outputDir, 'third-party-licenses.json');
 const outputNoticePath = path.join(outputDir, 'THIRD_PARTY_NOTICES.txt');
 
 function normalizeWhitespace(value) {
-    return String(value ?? '').replace(/\r\n/g, '\n').trim();
+    return String(value ?? '')
+        .replace(/\r\n/g, '\n')
+        .trim();
 }
 
 function sanitizeId(value) {
@@ -30,7 +32,8 @@ function readJsonArrayIfExists(filePath) {
 }
 
 function normalizeFrontendEntry(entry, index) {
-    const packageName = normalizeWhitespace(entry?.name) || `frontend-package-${index + 1}`;
+    const packageName =
+        normalizeWhitespace(entry?.name) || `frontend-package-${index + 1}`;
     const version = normalizeWhitespace(entry?.version);
     const license = normalizeWhitespace(entry?.identifier || entry?.license);
     const noticeText = normalizeWhitespace(entry?.text || entry?.noticeText);
@@ -68,7 +71,8 @@ function createThirdPartyNoticeText(entries) {
         lines.push(
             `## ${entry.name}${entry.version ? ` - ${entry.version}` : ''}${entry.license ? ` (${entry.license})` : ''}`,
             '',
-            entry.noticeText || 'No local license text was generated for this entry.',
+            entry.noticeText ||
+                'No local license text was generated for this entry.',
             ''
         );
     }
@@ -89,9 +93,14 @@ function main() {
     };
 
     fs.writeFileSync(outputManifestPath, JSON.stringify(manifest, null, 4));
-    fs.writeFileSync(outputNoticePath, createThirdPartyNoticeText(frontendEntries));
+    fs.writeFileSync(
+        outputNoticePath,
+        createThirdPartyNoticeText(frontendEntries)
+    );
 
-    const reviewCount = manifest.entries.filter((entry) => entry.needsReview).length;
+    const reviewCount = manifest.entries.filter(
+        (entry) => entry.needsReview
+    ).length;
     console.log(
         `Generated third-party license manifest with ${manifest.entries.length} entries (${reviewCount} requiring review).`
     );

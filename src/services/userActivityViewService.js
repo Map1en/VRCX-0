@@ -177,7 +177,10 @@ async function fullRefresh(snapshot, rangeDays) {
     clearDerivedViews(snapshot);
 
     if (snapshot.isSelf) {
-        await database.replaceActivitySessionsV2(snapshot.userId, snapshot.sessions);
+        await database.replaceActivitySessionsV2(
+            snapshot.userId,
+            snapshot.sessions
+        );
         await database.upsertActivitySyncStateV2(snapshot.sync);
     }
 }
@@ -207,7 +210,9 @@ async function incrementalRefresh(snapshot) {
         sourceType: snapshot.isSelf ? 'self_gamelog' : 'friend_presence',
         rows: snapshot.isSelf ? sourceItems : undefined,
         events: snapshot.isSelf ? undefined : sourceItems,
-        initialStart: snapshot.isSelf ? null : snapshot.sync.pendingSessionStartAt,
+        initialStart: snapshot.isSelf
+            ? null
+            : snapshot.sync.pendingSessionStartAt,
         nowMs: Date.now(),
         mayHaveOpenTail: snapshot.isSelf,
         sourceRevision: sourceLastCreatedAt
@@ -229,9 +234,12 @@ async function incrementalRefresh(snapshot) {
     if (snapshot.isSelf) {
         await database.appendActivitySessionsV2({
             userId: snapshot.userId,
-            sessions: replaceFromStartAt === null
-                ? mergedSessions
-                : mergedSessions.filter((session) => session.start >= replaceFromStartAt),
+            sessions:
+                replaceFromStartAt === null
+                    ? mergedSessions
+                    : mergedSessions.filter(
+                          (session) => session.start >= replaceFromStartAt
+                      ),
             replaceFromStartAt
         });
         await database.upsertActivitySyncStateV2(snapshot.sync);
@@ -264,7 +272,10 @@ async function expandRange(snapshot, rangeDays) {
     if (result.sessions.length > 0) {
         snapshot.sessions = mergeSessions(result.sessions, snapshot.sessions);
         if (snapshot.isSelf) {
-            await database.replaceActivitySessionsV2(snapshot.userId, snapshot.sessions);
+            await database.replaceActivitySessionsV2(
+                snapshot.userId,
+                snapshot.sessions
+            );
         }
     }
     snapshot.sync.cachedRangeDays = rangeDays;
@@ -275,7 +286,10 @@ async function expandRange(snapshot, rangeDays) {
     }
 }
 
-async function ensureSnapshot(userId, { isSelf, rangeDays, forceRefresh = false, ownerUserId = '' }) {
+async function ensureSnapshot(
+    userId,
+    { isSelf, rangeDays, forceRefresh = false, ownerUserId = '' }
+) {
     const jobKey = `${ownerUserId}:${userId}:${isSelf}:${rangeDays}:${forceRefresh ? 'force' : 'normal'}`;
     const existingJob = inFlightJobs.get(jobKey);
     if (existingJob) {
@@ -284,7 +298,11 @@ async function ensureSnapshot(userId, { isSelf, rangeDays, forceRefresh = false,
 
     const job = (async () => {
         const snapshot = await hydrateSnapshot(userId, isSelf, ownerUserId);
-        if (forceRefresh || !snapshot.sync.updatedAt || !snapshot.sync.sourceLastCreatedAt) {
+        if (
+            forceRefresh ||
+            !snapshot.sync.updatedAt ||
+            !snapshot.sync.sourceLastCreatedAt
+        ) {
             await fullRefresh(snapshot, rangeDays);
         } else {
             await incrementalRefresh(snapshot);
@@ -303,31 +321,71 @@ async function ensureSnapshot(userId, { isSelf, rangeDays, forceRefresh = false,
 
 function pickActivityNormalizeConfig(isSelf, rangeDays) {
     const common = {
-        7: { floorPercentile: 10, capPercentile: 80, rankWeight: 0.15, targetCoverage: 0.12, targetVolume: 40 },
-        30: { floorPercentile: 15, capPercentile: 85, rankWeight: 0.2, targetCoverage: 0.25, targetVolume: 60 },
-        90: { floorPercentile: 15, capPercentile: 85, rankWeight: 0.2, targetCoverage: 0.3, targetVolume: 50 }
+        7: {
+            floorPercentile: 10,
+            capPercentile: 80,
+            rankWeight: 0.15,
+            targetCoverage: 0.12,
+            targetVolume: 40
+        },
+        30: {
+            floorPercentile: 15,
+            capPercentile: 85,
+            rankWeight: 0.2,
+            targetCoverage: 0.25,
+            targetVolume: 60
+        },
+        90: {
+            floorPercentile: 15,
+            capPercentile: 85,
+            rankWeight: 0.2,
+            targetCoverage: 0.3,
+            targetVolume: 50
+        }
     };
-    return common[rangeDays] || {
-        floorPercentile: 15,
-        capPercentile: 85,
-        rankWeight: 0.2,
-        targetCoverage: isSelf ? 0.25 : 0.2,
-        targetVolume: isSelf ? 60 : 35
-    };
+    return (
+        common[rangeDays] || {
+            floorPercentile: 15,
+            capPercentile: 85,
+            rankWeight: 0.2,
+            targetCoverage: isSelf ? 0.25 : 0.2,
+            targetVolume: isSelf ? 60 : 35
+        }
+    );
 }
 
 function pickOverlapNormalizeConfig(rangeDays) {
-    return ({
-        7: { floorPercentile: 10, capPercentile: 80, rankWeight: 0.15, targetCoverage: 0.08, targetVolume: 15 },
-        30: { floorPercentile: 15, capPercentile: 85, rankWeight: 0.2, targetCoverage: 0.15, targetVolume: 25 },
-        90: { floorPercentile: 15, capPercentile: 85, rankWeight: 0.2, targetCoverage: 0.18, targetVolume: 20 }
-    })[rangeDays] || {
-        floorPercentile: 15,
-        capPercentile: 85,
-        rankWeight: 0.2,
-        targetCoverage: 0.15,
-        targetVolume: 25
-    };
+    return (
+        {
+            7: {
+                floorPercentile: 10,
+                capPercentile: 80,
+                rankWeight: 0.15,
+                targetCoverage: 0.08,
+                targetVolume: 15
+            },
+            30: {
+                floorPercentile: 15,
+                capPercentile: 85,
+                rankWeight: 0.2,
+                targetCoverage: 0.15,
+                targetVolume: 25
+            },
+            90: {
+                floorPercentile: 15,
+                capPercentile: 85,
+                rankWeight: 0.2,
+                targetCoverage: 0.18,
+                targetVolume: 20
+            }
+        }[rangeDays] || {
+            floorPercentile: 15,
+            capPercentile: 85,
+            rankWeight: 0.2,
+            targetCoverage: 0.15,
+            targetVolume: 25
+        }
+    );
 }
 
 async function getCache(userId, isSelf = false, ownerUserId = '') {
@@ -343,8 +401,20 @@ async function getCache(userId, isSelf = false, ownerUserId = '') {
     };
 }
 
-async function loadActivityView({ userId, ownerUserId = '', isSelf = false, rangeDays = 30, dayLabels, forceRefresh = false }) {
-    const snapshot = await ensureSnapshot(userId, { isSelf, rangeDays, forceRefresh, ownerUserId });
+async function loadActivityView({
+    userId,
+    ownerUserId = '',
+    isSelf = false,
+    rangeDays = 30,
+    dayLabels,
+    forceRefresh = false
+}) {
+    const snapshot = await ensureSnapshot(userId, {
+        isSelf,
+        rangeDays,
+        forceRefresh,
+        ownerUserId
+    });
     const cacheOwnerUserId = ownerUserId || userId;
     const cacheTargetUserId = isSelf ? '' : userId;
     const cacheKey = String(rangeDays);
@@ -441,8 +511,18 @@ async function loadOverlapView({
     forceRefresh = false
 }) {
     const [selfSnapshot, targetSnapshot] = await Promise.all([
-        ensureSnapshot(currentUserId, { isSelf: true, rangeDays, forceRefresh, ownerUserId }),
-        ensureSnapshot(targetUserId, { isSelf: false, rangeDays, forceRefresh, ownerUserId })
+        ensureSnapshot(currentUserId, {
+            isSelf: true,
+            rangeDays,
+            forceRefresh,
+            ownerUserId
+        }),
+        ensureSnapshot(targetUserId, {
+            isSelf: false,
+            rangeDays,
+            forceRefresh,
+            ownerUserId
+        })
     ]);
     const excludeKey = overlapExcludeKey(excludeHours);
     const cacheKey = `${targetUserId}:${rangeDays}:${excludeKey}`;
@@ -532,7 +612,12 @@ async function loadOverlapView({
     };
 }
 
-async function loadTopWorldsView({ rangeDays = 30, limit = 5, sortBy = 'time', excludeWorldId = '' }) {
+async function loadTopWorldsView({
+    rangeDays = 30,
+    limit = 5,
+    sortBy = 'time',
+    excludeWorldId = ''
+}) {
     return database.getMyTopWorlds(rangeDays, limit, sortBy, excludeWorldId);
 }
 
@@ -542,7 +627,8 @@ function invalidateUser(userId, ownerUserId = '') {
     for (const key of snapshotMap.keys()) {
         if (
             key.endsWith(`:${normalizedUserId}`) &&
-            (!normalizedOwnerUserId || key.startsWith(`${normalizedOwnerUserId}:`))
+            (!normalizedOwnerUserId ||
+                key.startsWith(`${normalizedOwnerUserId}:`))
         ) {
             snapshotMap.delete(key);
         }

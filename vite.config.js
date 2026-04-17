@@ -1,13 +1,11 @@
+import fs from 'node:fs';
 import { resolve } from 'node:path';
 
-import fs from 'node:fs';
-
-import { defineConfig } from 'vite';
-import { browserslistToTargets } from 'lightningcss';
-
-import browserslist from 'browserslist';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import browserslist from 'browserslist';
+import { browserslistToTargets } from 'lightningcss';
+import { defineConfig } from 'vite';
 
 import { languageCodes } from './src/localization/locales';
 
@@ -71,16 +69,16 @@ function getAssetFilename({ name }) {
 
 export default defineConfig(() => {
     const tauriConf = JSON.parse(
-        fs.readFileSync(new URL('./src-tauri/tauri.conf.json', import.meta.url), 'utf-8')
+        fs.readFileSync(
+            new URL('./src-tauri/tauri.conf.json', import.meta.url),
+            'utf-8'
+        )
     );
     const version = tauriConf.version;
 
     return {
         base: '',
-        plugins: [
-            react(),
-            tailwindcss()
-        ],
+        plugins: [react(), tailwindcss()],
         resolve: {
             alias: {
                 '@': resolve(import.meta.dirname, 'src')

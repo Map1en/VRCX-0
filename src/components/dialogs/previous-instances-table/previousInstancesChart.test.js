@@ -44,13 +44,18 @@ describe('previousInstancesChart', () => {
     });
 
     it('builds tooltip content as pure text parts for the page adapter', () => {
-        expect(buildInfoChartTooltipParts({
-            displayName: 'Ava',
-            joinMs: Date.UTC(2026, 0, 1, 1, 0, 0),
-            leaveMs: Date.UTC(2026, 0, 1, 1, 30, 0),
-            durationMs: 30 * 60 * 1000,
-            isFavorite: true
-        }, false)).toMatchObject({
+        expect(
+            buildInfoChartTooltipParts(
+                {
+                    displayName: 'Ava',
+                    joinMs: Date.UTC(2026, 0, 1, 1, 0, 0),
+                    leaveMs: Date.UTC(2026, 0, 1, 1, 30, 0),
+                    durationMs: 30 * 60 * 1000,
+                    isFavorite: true
+                },
+                false
+            )
+        ).toMatchObject({
             title: 'Ava *',
             duration: '30m 0s'
         });

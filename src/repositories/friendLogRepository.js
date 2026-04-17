@@ -15,7 +15,9 @@ function normalizeFriendLogRow(row) {
         userId: row?.user_id ?? row?.userId ?? '',
         displayName: row?.display_name ?? row?.displayName ?? '',
         trustLevel: row?.trust_level ?? row?.trustLevel ?? 'Visitor',
-        friendNumber: Number.parseInt(row?.friend_number ?? row?.friendNumber ?? 0, 10) || 0
+        friendNumber:
+            Number.parseInt(row?.friend_number ?? row?.friendNumber ?? 0, 10) ||
+            0
     };
 }
 
@@ -38,7 +40,9 @@ async function replaceFriendLogCurrent(userId, entries = []) {
     const userPrefix = normalizeUserTablePrefix(userId);
 
     await sqliteRepository.transaction(async (tx) => {
-        await tx.executeNonQuery(`DELETE FROM ${userPrefix}_friend_log_current`);
+        await tx.executeNonQuery(
+            `DELETE FROM ${userPrefix}_friend_log_current`
+        );
 
         for (const entry of entries) {
             if (!entry?.userId) {
@@ -51,14 +55,18 @@ async function replaceFriendLogCurrent(userId, entries = []) {
                     '@user_id': entry.userId,
                     '@display_name': entry.displayName ?? '',
                     '@trust_level': entry.trustLevel ?? 'Visitor',
-                    '@friend_number': Number.parseInt(entry.friendNumber ?? 0, 10) || 0
+                    '@friend_number':
+                        Number.parseInt(entry.friendNumber ?? 0, 10) || 0
                 }
             );
         }
     });
 
     return {
-        userId: typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim(),
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim(),
         count: Array.isArray(entries) ? entries.length : 0
     };
 }

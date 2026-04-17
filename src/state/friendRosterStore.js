@@ -1,13 +1,23 @@
-import { computeTrustLevel, computeUserPlatform } from '@/shared/utils/userTransforms.js';
 import { create } from 'zustand';
 
+import {
+    computeTrustLevel,
+    computeUserPlatform
+} from '@/shared/utils/userTransforms.js';
+
 function normalizeUserId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeStateBucket(value) {
     const normalized = normalizeUserId(value).toLowerCase();
-    if (normalized === 'online' || normalized === 'active' || normalized === 'offline') {
+    if (
+        normalized === 'online' ||
+        normalized === 'active' ||
+        normalized === 'offline'
+    ) {
         return normalized;
     }
     return '';
@@ -32,15 +42,24 @@ function createFallbackFriendUser(userId, existingRow) {
 }
 
 function normalizeFriendEntry(friend, stateBucket, existingRow) {
-    const fallbackUserId = normalizeUserId(existingRow?.id || existingRow?.userId);
-    const source = friend ?? createFallbackFriendUser(fallbackUserId, existingRow);
+    const fallbackUserId = normalizeUserId(
+        existingRow?.id || existingRow?.userId
+    );
+    const source =
+        friend ?? createFallbackFriendUser(fallbackUserId, existingRow);
     const tags = Array.isArray(source.tags) ? source.tags : [];
     const trust = computeTrustLevel(tags, source.developerType || '');
-    const friendNumber = Number.parseInt(
-        source?.friendNumber ?? source?.$friendNumber ?? existingRow?.friendNumber ?? existingRow?.$friendNumber ?? 0,
-        10
-    ) || 0;
-    const displayName = getDisplayName(source) || existingRow?.displayName || source.id;
+    const friendNumber =
+        Number.parseInt(
+            source?.friendNumber ??
+                source?.$friendNumber ??
+                existingRow?.friendNumber ??
+                existingRow?.$friendNumber ??
+                0,
+            10
+        ) || 0;
+    const displayName =
+        getDisplayName(source) || existingRow?.displayName || source.id;
 
     return {
         ...source,
@@ -62,9 +81,12 @@ function normalizeFriendEntry(friend, stateBucket, existingRow) {
 }
 
 function compareFriendEntries(left, right) {
-    const leftNumber = Number.parseInt(left?.friendNumber ?? left?.$friendNumber ?? 0, 10) || 0;
+    const leftNumber =
+        Number.parseInt(left?.friendNumber ?? left?.$friendNumber ?? 0, 10) ||
+        0;
     const rightNumber =
-        Number.parseInt(right?.friendNumber ?? right?.$friendNumber ?? 0, 10) || 0;
+        Number.parseInt(right?.friendNumber ?? right?.$friendNumber ?? 0, 10) ||
+        0;
     const leftHasNumber = leftNumber > 0;
     const rightHasNumber = rightNumber > 0;
 
@@ -77,7 +99,9 @@ function compareFriendEntries(left, right) {
     }
 
     const leftName = String(left?.displayName || left?.id || '').toLowerCase();
-    const rightName = String(right?.displayName || right?.id || '').toLowerCase();
+    const rightName = String(
+        right?.displayName || right?.id || ''
+    ).toLowerCase();
     const nameComparison = leftName.localeCompare(rightName);
     if (nameComparison !== 0) {
         return nameComparison;
@@ -88,8 +112,12 @@ function compareFriendEntries(left, right) {
 
 function buildBucketIds(friendIds, friendsById, stateBucket) {
     return friendIds
-        .filter((friendId) => friendsById[friendId]?.stateBucket === stateBucket)
-        .sort((leftId, rightId) => compareFriendEntries(friendsById[leftId], friendsById[rightId]));
+        .filter(
+            (friendId) => friendsById[friendId]?.stateBucket === stateBucket
+        )
+        .sort((leftId, rightId) =>
+            compareFriendEntries(friendsById[leftId], friendsById[rightId])
+        );
 }
 
 function buildRosterOrdering(friendsById) {
@@ -177,7 +205,8 @@ export const useFriendRosterStore = create((set) => ({
                 normalizeStateBucket(existingEntry?.state) ||
                 'offline';
             const mergedUser = {
-                ...(existingEntry ?? createFallbackFriendUser(normalizedUserId, existingEntry)),
+                ...(existingEntry ??
+                    createFallbackFriendUser(normalizedUserId, existingEntry)),
                 ...(patch && typeof patch === 'object' ? patch : {}),
                 id: normalizedUserId
             };
@@ -199,7 +228,8 @@ export const useFriendRosterStore = create((set) => ({
                 ...state,
                 ...buildRosterOrdering(friendsById),
                 friendsById,
-                loadStatus: state.loadStatus === 'idle' ? 'ready' : state.loadStatus,
+                loadStatus:
+                    state.loadStatus === 'idle' ? 'ready' : state.loadStatus,
                 detail: detail || state.detail,
                 lastLoadedAt: new Date().toISOString()
             };
@@ -215,8 +245,13 @@ export const useFriendRosterStore = create((set) => ({
             const friendsById = { ...state.friendsById };
 
             for (const entry of patches) {
-                const patch = entry?.patch && typeof entry.patch === 'object' ? entry.patch : {};
-                const normalizedUserId = normalizeUserId(entry?.userId || patch?.id);
+                const patch =
+                    entry?.patch && typeof entry.patch === 'object'
+                        ? entry.patch
+                        : {};
+                const normalizedUserId = normalizeUserId(
+                    entry?.userId || patch?.id
+                );
                 if (!normalizedUserId) {
                     continue;
                 }
@@ -229,7 +264,11 @@ export const useFriendRosterStore = create((set) => ({
                     normalizeStateBucket(existingEntry?.state) ||
                     'offline';
                 const mergedUser = {
-                    ...(existingEntry ?? createFallbackFriendUser(normalizedUserId, existingEntry)),
+                    ...(existingEntry ??
+                        createFallbackFriendUser(
+                            normalizedUserId,
+                            existingEntry
+                        )),
                     ...patch,
                     id: normalizedUserId
                 };
@@ -254,7 +293,8 @@ export const useFriendRosterStore = create((set) => ({
                 ...state,
                 ...buildRosterOrdering(friendsById),
                 friendsById,
-                loadStatus: state.loadStatus === 'idle' ? 'ready' : state.loadStatus,
+                loadStatus:
+                    state.loadStatus === 'idle' ? 'ready' : state.loadStatus,
                 detail: detail || state.detail,
                 lastLoadedAt: new Date().toISOString()
             };

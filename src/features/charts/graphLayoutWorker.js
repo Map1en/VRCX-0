@@ -1,6 +1,6 @@
+import Graph from 'graphology';
 import forceAtlas2 from 'graphology-layout-forceatlas2';
 import noverlap from 'graphology-layout-noverlap';
-import Graph from 'graphology';
 
 function clampNumber(value, min, max) {
     const normalized = Number.isFinite(value) ? value : min;
@@ -52,18 +52,38 @@ function runLayout(data) {
         graph.addNode(node.id, node.attributes);
     }
     for (const edge of edges) {
-        graph.addEdgeWithKey(edge.key, edge.source, edge.target, edge.attributes);
+        graph.addEdgeWithKey(
+            edge.key,
+            edge.source,
+            edge.target,
+            edge.attributes
+        );
     }
 
     if (settings.reinitialize ?? false) {
         initPositions(graph);
     }
 
-    const iterations = clampNumber(settings.layoutIterations, LAYOUT_ITERATIONS_MIN, LAYOUT_ITERATIONS_MAX);
-    const spacing = clampNumber(settings.layoutSpacing, LAYOUT_SPACING_MIN, LAYOUT_SPACING_MAX);
-    const clampedT = clampNumber((spacing - LAYOUT_SPACING_MIN) / (LAYOUT_SPACING_MAX - LAYOUT_SPACING_MIN), 0, 1);
+    const iterations = clampNumber(
+        settings.layoutIterations,
+        LAYOUT_ITERATIONS_MIN,
+        LAYOUT_ITERATIONS_MAX
+    );
+    const spacing = clampNumber(
+        settings.layoutSpacing,
+        LAYOUT_SPACING_MIN,
+        LAYOUT_SPACING_MAX
+    );
+    const clampedT = clampNumber(
+        (spacing - LAYOUT_SPACING_MIN) /
+            (LAYOUT_SPACING_MAX - LAYOUT_SPACING_MIN),
+        0,
+        1
+    );
     const deltaSpacing = settings.deltaSpacing ?? 0;
-    const inferred = forceAtlas2.inferSettings ? forceAtlas2.inferSettings(graph) : {};
+    const inferred = forceAtlas2.inferSettings
+        ? forceAtlas2.inferSettings(graph)
+        : {};
 
     if (Math.abs(deltaSpacing) >= 8) {
         jitterPositions(graph, lerp(0.5, 2.0, clampedT));
@@ -83,7 +103,11 @@ function runLayout(data) {
     });
 
     noverlap.assign(graph, {
-        maxIterations: clampNumber(Math.round(Math.sqrt(graph.order) * 6), 200, 600),
+        maxIterations: clampNumber(
+            Math.round(Math.sqrt(graph.order) * 6),
+            200,
+            600
+        ),
         settings: {
             ratio: lerp(1.05, 1.35, clampedT),
             margin: lerp(1, 8, clampedT)
@@ -102,6 +126,9 @@ self.addEventListener('message', (event) => {
     try {
         self.postMessage({ requestId, positions: runLayout(event.data) });
     } catch (error) {
-        self.postMessage({ requestId, error: error instanceof Error ? error.message : String(error) });
+        self.postMessage({
+            requestId,
+            error: error instanceof Error ? error.message : String(error)
+        });
     }
 });

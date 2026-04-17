@@ -1,7 +1,11 @@
 import { backend } from '@/platform/index.js';
-import { configRepository, userSessionRepository } from '@/repositories/index.js';
+import {
+    configRepository,
+    userSessionRepository
+} from '@/repositories/index.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
+
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
 function getCurrentUserDisplayName(user) {
@@ -13,7 +17,10 @@ function normalizeBootstrapError(error) {
 }
 
 async function runAvatarAutoCleanup(userId) {
-    const cleanupSetting = await configRepository.getString('VRCX_avatarAutoCleanup', 'Off');
+    const cleanupSetting = await configRepository.getString(
+        'VRCX_avatarAutoCleanup',
+        'Off'
+    );
     if (cleanupSetting === 'Off') {
         return false;
     }
@@ -29,7 +36,8 @@ async function runAvatarAutoCleanup(userId) {
 
     if (lastCleanupStr) {
         const lastCleanup = new Date(lastCleanupStr);
-        const daysSinceLastCleanup = (now - lastCleanup) / (1000 * 60 * 60 * 24);
+        const daysSinceLastCleanup =
+            (now - lastCleanup) / (1000 * 60 * 60 * 24);
         if (daysSinceLastCleanup < 7) {
             return false;
         }
@@ -47,14 +55,19 @@ async function restoreGameRunningState() {
         await backend.app.CheckGameRunning();
         return true;
     } catch (error) {
-        console.warn('CheckGameRunning is unavailable during session bootstrap:', error);
+        console.warn(
+            'CheckGameRunning is unavailable during session bootstrap:',
+            error
+        );
         return false;
     }
 }
 
 export async function bootstrapAuthenticatedSession(user) {
     const userId =
-        typeof user?.id === 'string' ? user.id.trim() : String(user?.id ?? '').trim();
+        typeof user?.id === 'string'
+            ? user.id.trim()
+            : String(user?.id ?? '').trim();
     if (!userId) {
         throw new Error('Session bootstrap requires an authenticated user id.');
     }
@@ -69,7 +82,11 @@ export async function bootstrapAuthenticatedSession(user) {
         isFavoritesLoaded: false,
         sessionPhase: 'bootstrapping'
     });
-    runtimeStore.setStartupTask('services', 'running', `Preparing session data for ${displayName}.`);
+    runtimeStore.setStartupTask(
+        'services',
+        'running',
+        `Preparing session data for ${displayName}.`
+    );
 
     try {
         await userSessionRepository.initUserTables(userId);
@@ -97,7 +114,9 @@ export async function bootstrapAuthenticatedSession(user) {
         });
         syncStartupServicesTask([
             `Authenticated session is ready for ${displayName}.`,
-            avatarCleanupRan ? 'Avatar cleanup ran.' : 'Avatar cleanup was not needed.',
+            avatarCleanupRan
+                ? 'Avatar cleanup ran.'
+                : 'Avatar cleanup was not needed.',
             gameStateRestored
                 ? 'Host game state restore was requested.'
                 : 'Host game state restore is unavailable in the current host.'

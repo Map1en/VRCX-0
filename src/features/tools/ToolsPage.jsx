@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
+import { useI18n } from '@/app/hooks/use-i18n.js';
+import {
+    loadNavMenuModel,
+    NAV_LAYOUT_UPDATED_EVENT,
+    saveNavMenuModel
+} from '@/components/layout/navMenuModel.js';
 import { cn } from '@/lib/utils.js';
 import { configRepository } from '@/repositories/index.js';
-import { Button } from '@/ui/shadcn/button';
-import { useI18n } from '@/app/hooks/use-i18n.js';
-import { getToolsByCategory, toolCategories } from '@/shared/constants/tools.js';
 import { triggerToolByKey } from '@/services/toolActionService.js';
+import {
+    getToolsByCategory,
+    toolCategories
+} from '@/shared/constants/tools.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
-import { loadNavMenuModel, NAV_LAYOUT_UPDATED_EVENT, saveNavMenuModel } from '@/components/layout/navMenuModel.js';
+import { Button } from '@/ui/shadcn/button';
 
 const collapsibleCategories = toolCategories.map((category) => category.key);
 const configKey = 'VRCX_toolsCategoryCollapsed';
@@ -23,20 +30,39 @@ const defaultCollapsedState = {
     other: false
 };
 
-function ToolItem({ icon, title, description, pinLabel, unpinLabel, navEligible, isPinned, onClick, onPin, onUnpin }) {
+function ToolItem({
+    icon,
+    title,
+    description,
+    pinLabel,
+    unpinLabel,
+    navEligible,
+    isPinned,
+    onClick,
+    onPin,
+    onUnpin
+}) {
     return (
-        <div className="group flex gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-accent/50">
+        <div className="group hover:bg-accent/50 flex gap-3 rounded-lg border p-4 text-left transition-colors">
             <Button
                 type="button"
                 variant="ghost"
                 className="h-auto min-w-0 flex-1 items-start justify-start gap-3 p-0 text-left font-normal whitespace-normal hover:bg-transparent"
-                onClick={onClick}>
+                onClick={onClick}
+            >
                 <div className="flex size-10 flex-none items-center justify-center bg-transparent">
-                    <i className={cn(icon, 'inline-flex items-center justify-center text-2xl')} />
+                    <i
+                        className={cn(
+                            icon,
+                            'inline-flex items-center justify-center text-2xl'
+                        )}
+                    />
                 </div>
                 <div className="min-w-0 flex-1">
                     <div className="min-w-0 flex-1 font-medium">{title}</div>
-                    <div className="mt-1 text-sm text-muted-foreground">{description}</div>
+                    <div className="text-muted-foreground mt-1 text-sm">
+                        {description}
+                    </div>
                 </div>
             </Button>
             {navEligible ? (
@@ -53,13 +79,16 @@ function ToolItem({ icon, title, description, pinLabel, unpinLabel, navEligible,
                         } else {
                             onPin?.();
                         }
-                    }}>
+                    }}
+                >
                     <span className="relative inline-flex size-4">
                         <i className="ri-side-bar-line inline-flex size-4 items-center justify-center text-base" />
-                        <span className="absolute -top-1 -right-1 grid size-2.5 place-items-center rounded-full bg-background shadow-sm">
+                        <span className="bg-background absolute -top-1 -right-1 grid size-2.5 place-items-center rounded-full shadow-sm">
                             <i
                                 className={cn(
-                                    isPinned ? 'ri-subtract-line' : 'ri-add-line',
+                                    isPinned
+                                        ? 'ri-subtract-line'
+                                        : 'ri-add-line',
                                     'inline-flex size-2 items-center justify-center text-xs'
                                 )}
                             />
@@ -93,7 +122,9 @@ function insertToolNavItem(layout, navKey) {
         return nextLayout;
     }
     const insertIndex = nextLayout.findIndex(
-        (entry) => entry.type === 'item' && (entry.key === 'tools' || entry.key === 'direct-access')
+        (entry) =>
+            entry.type === 'item' &&
+            (entry.key === 'tools' || entry.key === 'direct-access')
     );
     if (insertIndex >= 0) {
         nextLayout.splice(insertIndex, 0, { type: 'item', key: navKey });
@@ -109,7 +140,9 @@ function removeToolNavItem(layout, navKey) {
                 return entry.key === navKey ? null : entry;
             }
             if (entry.type === 'folder') {
-                const nextItems = (entry.items || []).filter((key) => key !== navKey);
+                const nextItems = (entry.items || []).filter(
+                    (key) => key !== navKey
+                );
                 return nextItems.length ? { ...entry, items: nextItems } : null;
             }
             return entry;
@@ -121,11 +154,15 @@ export function ToolsPage() {
     const navigate = useNavigate();
     const { t, i18n } = useI18n();
     const dashboards = useDashboardStore((state) => state.dashboards);
-    const ensureDashboardsLoaded = useDashboardStore((state) => state.ensureLoaded);
+    const ensureDashboardsLoaded = useDashboardStore(
+        (state) => state.ensureLoaded
+    );
     const categories = useMemo(
         () =>
             toolCategories
-                .filter((category) => collapsibleCategories.includes(category.key))
+                .filter((category) =>
+                    collapsibleCategories.includes(category.key)
+                )
                 .map((category) => ({
                     ...category,
                     tools: getToolsByCategory(category.key)
@@ -137,8 +174,12 @@ export function ToolsPage() {
     });
     const [navLayout, setNavLayout] = useState([]);
     const [navHiddenKeys, setNavHiddenKeys] = useState([]);
-    const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
-    const notificationLayout = usePreferencesStore((state) => state.notificationLayout);
+    const preferencesHydrated = usePreferencesStore(
+        (state) => state.preferencesHydrated
+    );
+    const notificationLayout = usePreferencesStore(
+        (state) => state.notificationLayout
+    );
     const translateWithFallback = (key) => {
         const localized = t(key);
         if (localized !== key) {
@@ -185,10 +226,16 @@ export function ToolsPage() {
         const handleNavLayoutUpdated = () => {
             void loadModel().catch(() => {});
         };
-        window.addEventListener(NAV_LAYOUT_UPDATED_EVENT, handleNavLayoutUpdated);
+        window.addEventListener(
+            NAV_LAYOUT_UPDATED_EVENT,
+            handleNavLayoutUpdated
+        );
         return () => {
             active = false;
-            window.removeEventListener(NAV_LAYOUT_UPDATED_EVENT, handleNavLayoutUpdated);
+            window.removeEventListener(
+                NAV_LAYOUT_UPDATED_EVENT,
+                handleNavLayoutUpdated
+            );
         };
     }, [dashboards, notificationLayout, preferencesHydrated, t]);
 
@@ -224,7 +271,10 @@ export function ToolsPage() {
     }
 
     async function triggerTool(tool) {
-        await triggerToolByKey(tool?.key, { navigate, t: translateWithFallback });
+        await triggerToolByKey(tool?.key, {
+            navigate,
+            t: translateWithFallback
+        });
     }
 
     async function pinToolToNav(tool) {
@@ -244,7 +294,11 @@ export function ToolsPage() {
             setNavHiddenKeys(model.hiddenKeys);
             toast.success(translateWithFallback('nav_menu.custom_nav.pinned'));
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to pin tool to navigation.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to pin tool to navigation.'
+            );
         }
     }
 
@@ -263,16 +317,24 @@ export function ToolsPage() {
             });
             setNavLayout(model.layout);
             setNavHiddenKeys(model.hiddenKeys);
-            toast.success(translateWithFallback('nav_menu.custom_nav.unpinned'));
+            toast.success(
+                translateWithFallback('nav_menu.custom_nav.unpinned')
+            );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to unpin tool from navigation.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to unpin tool from navigation.'
+            );
         }
     }
 
     return (
         <div id="chart" className="x-container flex flex-1 flex-col p-6">
             <div className="options-container">
-                <span className="header">{translateWithFallback('view.tools.header')}</span>
+                <span className="header">
+                    {translateWithFallback('view.tools.header')}
+                </span>
 
                 <div className="mt-5 px-5">
                     {categories.map((category) => (
@@ -286,11 +348,14 @@ export function ToolsPage() {
                                         ...collapsed,
                                         [category.key]: !collapsed[category.key]
                                     })
-                                }>
+                                }
+                            >
                                 <i
                                     className={cn(
                                         'ri-arrow-down-s-line mr-2 text-sm transition-transform duration-300',
-                                        collapsed[category.key] ? '-rotate-90' : ''
+                                        collapsed[category.key]
+                                            ? '-rotate-90'
+                                            : ''
                                     )}
                                 />
                                 <span className="ml-1.5 text-base font-semibold">
@@ -304,12 +369,22 @@ export function ToolsPage() {
                                         <ToolItem
                                             key={tool.key}
                                             icon={tool.navIcon}
-                                            title={translateWithFallback(tool.titleKey)}
-                                            description={translateWithFallback(tool.descriptionKey)}
+                                            title={translateWithFallback(
+                                                tool.titleKey
+                                            )}
+                                            description={translateWithFallback(
+                                                tool.descriptionKey
+                                            )}
                                             navEligible={tool.navEligible}
-                                            isPinned={pinnedToolKeys.has(tool.key)}
-                                            pinLabel={translateWithFallback('nav_menu.custom_nav.pin_to_nav')}
-                                            unpinLabel={translateWithFallback('nav_menu.custom_nav.unpin_from_nav')}
+                                            isPinned={pinnedToolKeys.has(
+                                                tool.key
+                                            )}
+                                            pinLabel={translateWithFallback(
+                                                'nav_menu.custom_nav.pin_to_nav'
+                                            )}
+                                            unpinLabel={translateWithFallback(
+                                                'nav_menu.custom_nav.unpin_from_nav'
+                                            )}
                                             onClick={() => {
                                                 void triggerTool(tool);
                                             }}

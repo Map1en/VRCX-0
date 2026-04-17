@@ -63,7 +63,9 @@ function parseReleaseVersion(version) {
  * @returns {string}
  */
 function formatReleaseDisplayVersion(version) {
-    return parseReleaseVersion(version)?.displayVersion || String(version || '');
+    return (
+        parseReleaseVersion(version)?.displayVersion || String(version || '')
+    );
 }
 
 /**
@@ -80,7 +82,8 @@ function isBetaReleaseVersion(version) {
  * @returns {number}
  */
 function compareReleaseVersions(left, right) {
-    const parsedLeft = typeof left === 'string' ? parseReleaseVersion(left) : left;
+    const parsedLeft =
+        typeof left === 'string' ? parseReleaseVersion(left) : left;
     const parsedRight =
         typeof right === 'string' ? parseReleaseVersion(right) : right;
 

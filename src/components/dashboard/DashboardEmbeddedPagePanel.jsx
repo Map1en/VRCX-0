@@ -6,7 +6,7 @@ import { getDashboardPagePanelComponent } from './dashboardPagePanelRegistry.jsx
 
 function EmbeddedPageFallback() {
     return (
-        <div className="flex min-h-[220px] flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex min-h-[220px] flex-1 items-center justify-center gap-2 text-sm">
             <Spinner />
             Loading dashboard panel
         </div>

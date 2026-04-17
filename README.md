@@ -25,21 +25,21 @@ VRCX-0 is being rebuilt with **Tauri + React**, moving away from the previous CE
 
 This allows:
 
-* Lower memory usage
-* Smaller binary size
-* Better performance
-* Improved accessibility (a11y)
-* Full keyboard navigation support
-* A more modern and maintainable ecosystem
+- Lower memory usage
+- Smaller binary size
+- Better performance
+- Improved accessibility (a11y)
+- Full keyboard navigation support
+- A more modern and maintainable ecosystem
 
 ---
 
 ### Differences from VRCX
 
-* Rewritten with Tauri + React
-* Reduced resource usage
-* Different UI/UX direction
-* Independent roadmap and decisions
+- Rewritten with Tauri + React
+- Reduced resource usage
+- Different UI/UX direction
+- Independent roadmap and decisions
 
 ---
 
@@ -65,8 +65,8 @@ Support for **Linux and macOS is planned** and will be added gradually as the pr
 
 Make sure you have the following installed:
 
-* **Node.js** (LTS recommended)
-* **Rust** (latest stable via rustup)
+- **Node.js** (LTS recommended)
+- **Rust** (latest stable via rustup)
 
 ---
 
@@ -91,9 +91,9 @@ npm run tauri:dev
 
 VRCX-0 will **automatically migrate your existing VRCX database and configuration** on first run.
 
-* Your original VRCX data remains untouched
-* No manual setup required
-* You can start using it immediately
+- Your original VRCX data remains untouched
+- No manual setup required
+- You can start using it immediately
 
 ---
 
@@ -109,9 +109,9 @@ Core functionality is in place, and the application is usable, but there are sti
 
 If you're interested in the direction of VRCX-0:
 
-* ⭐ Star the repo
-* 👀 Follow updates
-* 🧪 Try it and share feedback
+- ⭐ Star the repo
+- 👀 Follow updates
+- 🧪 Try it and share feedback
 
 ---
 
@@ -134,21 +134,21 @@ VRCX-0 是我独立继续开发的版本，会按照新的思路推进。
 
 项目正在迁移到 **Tauri + React**，替代原有的 CEF 架构，从而带来：
 
-* 更低的内存占用
-* 更小的程序体积
-* 更好的性能表现
-* 更完善的无障碍支持（a11y）
-* 完整的键盘操作支持
-* 更现代、可维护性更强的生态
+- 更低的内存占用
+- 更小的程序体积
+- 更好的性能表现
+- 更完善的无障碍支持（a11y）
+- 完整的键盘操作支持
+- 更现代、可维护性更强的生态
 
 ---
 
 ### 与 VRCX 的区别
 
-* 基于 Tauri + React 重写
-* 更低资源占用
-* 不同的 UI / 交互方向
-* 独立的开发路线
+- 基于 Tauri + React 重写
+- 更低资源占用
+- 不同的 UI / 交互方向
+- 独立的开发路线
 
 ---
 
@@ -174,8 +174,8 @@ VRCX-0 更关注清晰、性能和实际使用体验。
 
 请先安装以下环境：
 
-* **Node.js**（建议 LTS 版本）
-* **Rust**（通过 rustup 安装最新稳定版）
+- **Node.js**（建议 LTS 版本）
+- **Rust**（通过 rustup 安装最新稳定版）
 
 ---
 
@@ -200,9 +200,9 @@ npm run tauri:dev
 
 VRCX-0 在首次运行时会**自动迁移原有 VRCX 的数据库和配置**：
 
-* 不会影响原有 VRCX 数据
-* 无需手动配置
-* 启动即可使用
+- 不会影响原有 VRCX 数据
+- 无需手动配置
+- 启动即可使用
 
 ---
 
@@ -218,8 +218,8 @@ VRCX-0 在首次运行时会**自动迁移原有 VRCX 的数据库和配置**：
 
 如果你对这个方向感兴趣：
 
-* ⭐ 点个 Star
-* 👀 关注更新
-* 🧪 试用并反馈
+- ⭐ 点个 Star
+- 👀 关注更新
+- 🧪 试用并反馈
 
 ---

@@ -3,22 +3,24 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 function describeAuthStartupTask(snapshot) {
     switch (snapshot.autoLoginStatus) {
-    case 'available':
-        return {
-            status: 'pending',
-            detail: snapshot.autoLoginReason
-        };
-    case 'missing-last-user':
-    case 'missing-credentials':
-        return {
-            status: 'completed',
-            detail: snapshot.autoLoginReason
-        };
-    default:
-        return {
-            status: 'completed',
-            detail: snapshot.autoLoginReason || 'No saved credentials were detected.'
-        };
+        case 'available':
+            return {
+                status: 'pending',
+                detail: snapshot.autoLoginReason
+            };
+        case 'missing-last-user':
+        case 'missing-credentials':
+            return {
+                status: 'completed',
+                detail: snapshot.autoLoginReason
+            };
+        default:
+            return {
+                status: 'completed',
+                detail:
+                    snapshot.autoLoginReason ||
+                    'No saved credentials were detected.'
+            };
     }
 }
 

@@ -24,7 +24,8 @@ export function PageScaffold({
                     : 'x-container x-container--auto-height p-4 pb-0',
                 embedded ? embeddedClassName : '',
                 className
-            )}>
+            )}
+        >
             {children}
         </div>
     );
@@ -32,7 +33,12 @@ export function PageScaffold({
 
 export function PageToolbar({ className = '', children }) {
     return (
-        <div className={cn('flex shrink-0 flex-col gap-2 border-border pb-3', className)}>
+        <div
+            className={cn(
+                'border-border flex shrink-0 flex-col gap-2 pb-3',
+                className
+            )}
+        >
             {children}
         </div>
     );
@@ -48,7 +54,12 @@ export function PageHeader({ className = '', children }) {
 
 export function PageTitle({ className = '', children }) {
     return (
-        <h1 className={cn('font-heading text-lg leading-none font-medium text-foreground', className)}>
+        <h1
+            className={cn(
+                'font-heading text-foreground text-lg leading-none font-medium',
+                className
+            )}
+        >
             {children}
         </h1>
     );
@@ -56,7 +67,7 @@ export function PageTitle({ className = '', children }) {
 
 export function PageDescription({ className = '', children }) {
     return (
-        <p className={cn('text-sm text-muted-foreground', className)}>
+        <p className={cn('text-muted-foreground text-sm', className)}>
             {children}
         </p>
     );
@@ -64,7 +75,12 @@ export function PageDescription({ className = '', children }) {
 
 export function PageToolbarRow({ className = '', children }) {
     return (
-        <div className={cn('flex min-w-0 flex-wrap items-center gap-2', className)}>
+        <div
+            className={cn(
+                'flex min-w-0 flex-wrap items-center gap-2',
+                className
+            )}
+        >
             {children}
         </div>
     );
@@ -72,7 +88,12 @@ export function PageToolbarRow({ className = '', children }) {
 
 export function PageBody({ className = '', children }) {
     return (
-        <div className={cn('flex min-h-0 flex-1 flex-col gap-3 overflow-hidden', className)}>
+        <div
+            className={cn(
+                'flex min-h-0 flex-1 flex-col gap-3 overflow-hidden',
+                className
+            )}
+        >
             {children}
         </div>
     );
@@ -84,7 +105,8 @@ export function PageFooter({ className = '', children }) {
             className={cn(
                 'flex shrink-0 flex-col gap-3 md:flex-row md:items-center md:justify-between',
                 className
-            )}>
+            )}
+        >
             {children}
         </div>
     );
@@ -107,7 +129,9 @@ export function EmptyState({
                     </EmptyMedia>
                 ) : null}
                 {title ? <EmptyTitle>{title}</EmptyTitle> : null}
-                {description ? <EmptyDescription>{description}</EmptyDescription> : null}
+                {description ? (
+                    <EmptyDescription>{description}</EmptyDescription>
+                ) : null}
             </EmptyHeader>
             {children ? <EmptyContent>{children}</EmptyContent> : null}
         </Empty>

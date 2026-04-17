@@ -1,7 +1,11 @@
 import { backend } from '@/platform/tauri/index.js';
-import { compareUnityVersion } from '@/shared/utils/avatar.js';
-import { extractFileId, extractFileVersion, extractVariantVersion } from '@/shared/utils/fileUtils.js';
 import { vrchatAuthRepository } from '@/repositories/index.js';
+import { compareUnityVersion } from '@/shared/utils/avatar.js';
+import {
+    extractFileId,
+    extractFileVersion,
+    extractVariantVersion
+} from '@/shared/utils/fileUtils.js';
 
 export function defaultWorldCacheInfo() {
     return {
@@ -16,17 +20,27 @@ function isWorldCacheCandidatePackage(unityPackage, sdkUnityVersion = '') {
     if (!unityPackage || unityPackage.platform !== 'standalonewindows') {
         return false;
     }
-    if (unityPackage.variant && unityPackage.variant !== 'standard' && unityPackage.variant !== 'security') {
+    if (
+        unityPackage.variant &&
+        unityPackage.variant !== 'standard' &&
+        unityPackage.variant !== 'security'
+    ) {
         return false;
     }
-    if (sdkUnityVersion && unityPackage.unitySortNumber && !compareUnityVersion(unityPackage.unitySortNumber, sdkUnityVersion)) {
+    if (
+        sdkUnityVersion &&
+        unityPackage.unitySortNumber &&
+        !compareUnityVersion(unityPackage.unitySortNumber, sdkUnityVersion)
+    ) {
         return false;
     }
     return true;
 }
 
 export function resolveWorldAssetBundleArgs(world, sdkUnityVersion = '') {
-    const unityPackages = Array.isArray(world?.unityPackages) ? world.unityPackages : [];
+    const unityPackages = Array.isArray(world?.unityPackages)
+        ? world.unityPackages
+        : [];
     let selectedPackage = null;
     for (let index = unityPackages.length - 1; index >= 0; index -= 1) {
         const unityPackage = unityPackages[index];
@@ -41,10 +55,12 @@ export function resolveWorldAssetBundleArgs(world, sdkUnityVersion = '') {
     const assetUrl = selectedPackage?.assetUrl || world?.assetUrl || '';
     const fileId = extractFileId(assetUrl);
     const fileVersion = Number.parseInt(extractFileVersion(assetUrl), 10);
-    const variant = !selectedPackage?.variant || selectedPackage.variant === 'standard'
-        ? 'security'
-        : selectedPackage.variant;
-    const variantVersion = Number.parseInt(extractVariantVersion(assetUrl), 10) || 0;
+    const variant =
+        !selectedPackage?.variant || selectedPackage.variant === 'standard'
+            ? 'security'
+            : selectedPackage.variant;
+    const variantVersion =
+        Number.parseInt(extractVariantVersion(assetUrl), 10) || 0;
     if (!fileId || !Number.isFinite(fileVersion)) {
         return null;
     }
@@ -56,11 +72,19 @@ export function resolveWorldAssetBundleArgs(world, sdkUnityVersion = '') {
     };
 }
 
-export async function readWorldCacheInfo(world, endpoint = '', sdkUnityVersion) {
+export async function readWorldCacheInfo(
+    world,
+    endpoint = '',
+    sdkUnityVersion
+) {
     let resolvedSdkUnityVersion = sdkUnityVersion;
     if (typeof resolvedSdkUnityVersion !== 'string') {
-        const configResponse = await vrchatAuthRepository.getConfig({ endpoint }).catch(() => null);
-        resolvedSdkUnityVersion = String(configResponse?.json?.sdkUnityVersion || '');
+        const configResponse = await vrchatAuthRepository
+            .getConfig({ endpoint })
+            .catch(() => null);
+        resolvedSdkUnityVersion = String(
+            configResponse?.json?.sdkUnityVersion || ''
+        );
     }
     const args = resolveWorldAssetBundleArgs(world, resolvedSdkUnityVersion);
     if (!args) {

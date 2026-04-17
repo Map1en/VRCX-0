@@ -1,4 +1,9 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    getCoreRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable
+} from '@tanstack/react-table';
 import {
     ArrowDownIcon,
     ArrowUpDownIcon,
@@ -19,30 +24,18 @@ import {
     VideoIcon,
     XIcon
 } from 'lucide-react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable
-} from '@tanstack/react-table';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import {
-    configRepository,
-    GAME_LOG_FILTER_TYPES,
-    gameLogRepository,
-    vrchatSearchRepository
-} from '@/repositories/index.js';
-import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import {
     DataTableHeader,
     DataTablePagination,
     DataTableSurface
 } from '@/components/data-table/DataTableView.jsx';
-import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
-import { Location } from '@/components/Location.jsx';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
+import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import {
     EmptyState,
     LoadingState,
@@ -51,9 +44,17 @@ import {
     PageScaffold,
     PageToolbar
 } from '@/components/layout/PageScaffold.jsx';
+import { Location } from '@/components/Location.jsx';
 import { formatDateFilter } from '@/lib/dateTime.js';
+import { timeToText } from '@/lib/dateTime.js';
 import { copyTextToClipboard, openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
+import {
+    configRepository,
+    GAME_LOG_FILTER_TYPES,
+    gameLogRepository,
+    vrchatSearchRepository
+} from '@/repositories/index.js';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { getTablePageSizesPreference } from '@/services/preferencesService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
@@ -84,11 +85,8 @@ import {
 import { Input } from '@/ui/shadcn/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    TableBody,
-    TableRow
-} from '@/ui/shadcn/table';
-import { timeToText } from '@/lib/dateTime.js';
+import { TableBody, TableRow } from '@/ui/shadcn/table';
+
 import {
     clampGameLogSessionDateInputRange,
     GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS,
@@ -98,18 +96,6 @@ import {
     toGameLogIsoRangeEnd,
     toGameLogIsoRangeStart
 } from './gameLogDateRange.js';
-import {
-    GAME_LOG_DEFAULT_PAGE_SIZES,
-    GAME_LOG_STRETCH_COLUMN_ID,
-    readPersistedGameLogState,
-    resolveGameLogPageSize,
-    sanitizeGameLogColumnOrder,
-    sanitizeGameLogColumnSizing,
-    sanitizeGameLogColumnVisibility,
-    sanitizeGameLogPageSizes,
-    sanitizeGameLogSorting,
-    writePersistedGameLogState
-} from './gameLogState.js';
 import {
     annotateGameLogSessionEvent as annotateSessionEvent,
     buildGameLogFavoriteIdSet as buildFavoriteIdSet,
@@ -128,10 +114,29 @@ import {
     resolveGameLogWorldTarget as resolveWorldTarget,
     shouldLinkGameLogPrimaryDetailToWorld as shouldLinkPrimaryDetailToWorld
 } from './gameLogRows.js';
+import {
+    GAME_LOG_DEFAULT_PAGE_SIZES,
+    GAME_LOG_STRETCH_COLUMN_ID,
+    readPersistedGameLogState,
+    resolveGameLogPageSize,
+    sanitizeGameLogColumnOrder,
+    sanitizeGameLogColumnSizing,
+    sanitizeGameLogColumnVisibility,
+    sanitizeGameLogPageSizes,
+    sanitizeGameLogSorting,
+    writePersistedGameLogState
+} from './gameLogState.js';
 
-const SESSION_FILTER_TYPES = ['Location', 'OnPlayerJoined', 'OnPlayerLeft', 'VideoPlay'];
+const SESSION_FILTER_TYPES = [
+    'Location',
+    'OnPlayerJoined',
+    'OnPlayerLeft',
+    'VideoPlay'
+];
 function normalizeId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 async function openGameLogUser(row) {
@@ -153,7 +158,9 @@ async function openGameLogUser(row) {
             auth?.currentUserSnapshot,
             ...Object.values(friendsById || {})
         ].find((user) => {
-            const name = normalizeId(user?.displayName || user?.username).toLowerCase();
+            const name = normalizeId(
+                user?.displayName || user?.username
+            ).toLowerCase();
             return name && name === lowerDisplayName;
         });
         if (localUser?.id) {
@@ -166,7 +173,9 @@ async function openGameLogUser(row) {
         }
 
         const resolvedUserId = normalizeId(
-            await gameLogRepository.getUserIdFromDisplayName(displayName).catch(() => '')
+            await gameLogRepository
+                .getUserIdFromDisplayName(displayName)
+                .catch(() => '')
         );
         if (resolvedUserId) {
             openUserDialog({ userId: resolvedUserId, title: displayName });
@@ -187,7 +196,11 @@ async function openGameLogUser(row) {
             { endpoint: auth?.currentUserEndpoint || '' }
         );
         const rows = Array.isArray(response.json) ? response.json : [];
-        const match = rows.find((user) => normalizeId(user?.displayName).toLowerCase() === lowerDisplayName);
+        const match = rows.find(
+            (user) =>
+                normalizeId(user?.displayName).toLowerCase() ===
+                lowerDisplayName
+        );
         if (match?.id) {
             openUserDialog({
                 userId: match.id,
@@ -198,7 +211,11 @@ async function openGameLogUser(row) {
         }
         toast.info(`No user id was found for ${displayName}.`);
     } catch (error) {
-        toast.error(error instanceof Error ? error.message : `Failed to look up ${displayName}.`);
+        toast.error(
+            error instanceof Error
+                ? error.message
+                : `Failed to look up ${displayName}.`
+        );
     }
 }
 
@@ -210,8 +227,9 @@ function SortButton({ column, label }) {
             type="button"
             variant="ghost"
             size="sm"
-            className="h-auto justify-start px-0 py-0 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hover:bg-transparent hover:text-foreground"
-            onClick={() => column.toggleSorting(direction === 'asc')}>
+            className="text-muted-foreground hover:text-foreground h-auto justify-start px-0 py-0 text-left text-xs font-medium tracking-wide uppercase hover:bg-transparent"
+            onClick={() => column.toggleSorting(direction === 'asc')}
+        >
             <span>{label}</span>
             {direction === 'asc' ? (
                 <ArrowUpIcon data-icon="inline-end" />
@@ -240,7 +258,12 @@ function EmptyTableValue() {
     return null;
 }
 
-function GameLogLocationDetail({ row, detailValue, worldTarget, onPreviousInstances }) {
+function GameLogLocationDetail({
+    row,
+    detailValue,
+    worldTarget,
+    onPreviousInstances
+}) {
     const location = getGameLogLocationTarget(row);
     const targetLocation = location || worldTarget;
 
@@ -248,10 +271,13 @@ function GameLogLocationDetail({ row, detailValue, worldTarget, onPreviousInstan
         return (
             <div
                 className="flex min-w-0 items-center gap-1.5 text-sm"
-                title={[detailValue.primary, detailValue.secondary].filter(Boolean).join(' · ')}>
+                title={[detailValue.primary, detailValue.secondary]
+                    .filter(Boolean)
+                    .join(' · ')}
+            >
                 <span className="min-w-0 truncate">{detailValue.primary}</span>
                 {detailValue.secondary ? (
-                    <span className="min-w-0 truncate text-xs text-muted-foreground">
+                    <span className="text-muted-foreground min-w-0 truncate text-xs">
                         {detailValue.secondary}
                     </span>
                 ) : null}
@@ -262,7 +288,10 @@ function GameLogLocationDetail({ row, detailValue, worldTarget, onPreviousInstan
     return (
         <div
             className="flex min-w-0 items-center gap-1.5 text-sm"
-            title={[detailValue.primary, detailValue.secondary].filter(Boolean).join(' · ')}>
+            title={[detailValue.primary, detailValue.secondary]
+                .filter(Boolean)
+                .join(' · ')}
+        >
             <Location
                 location={targetLocation}
                 hint={row?.worldName || detailValue.primary}
@@ -273,7 +302,7 @@ function GameLogLocationDetail({ row, detailValue, worldTarget, onPreviousInstan
                 className="text-sm"
             />
             {detailValue.secondary ? (
-                <span className="min-w-0 truncate text-xs text-muted-foreground">
+                <span className="text-muted-foreground min-w-0 truncate text-xs">
                     {detailValue.secondary}
                 </span>
             ) : null}
@@ -287,18 +316,27 @@ function TypeFilterDropdown({ types, selectedTypes, onSelectedTypesChange }) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="min-w-44 justify-between">
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="min-w-44 justify-between"
+                >
                     <span>
                         {selectedTypes.length
                             ? `${selectedTypes.length}/${types.length}`
                             : t('view.game_log.filter_placeholder')}
                     </span>
-                    <ChevronRightIcon data-icon="inline-end" className="rotate-90 text-muted-foreground" />
+                    <ChevronRightIcon
+                        data-icon="inline-end"
+                        className="text-muted-foreground rotate-90"
+                    />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuGroup>
-                    <DropdownMenuItem onSelect={() => onSelectedTypesChange([])}>
+                    <DropdownMenuItem
+                        onSelect={() => onSelectedTypesChange([])}
+                    >
                         {t('view.search.avatar.all')}
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
@@ -313,9 +351,12 @@ function TypeFilterDropdown({ types, selectedTypes, onSelectedTypesChange }) {
                                 onSelectedTypesChange(
                                     checked
                                         ? [...selectedTypes, type]
-                                        : selectedTypes.filter((entry) => entry !== type)
+                                        : selectedTypes.filter(
+                                              (entry) => entry !== type
+                                          )
                                 );
-                            }}>
+                            }}
+                        >
                             {t(`view.game_log.filters.${type}`)}
                         </DropdownMenuCheckboxItem>
                     ))}
@@ -338,7 +379,9 @@ function TypeFilterToggleGroup({
             ? selectedTypes.filter((entry) => entry !== type)
             : [...selectedTypes, type];
 
-        onSelectedTypesChange(nextTypes.length === types.length ? [] : nextTypes);
+        onSelectedTypesChange(
+            nextTypes.length === types.length ? [] : nextTypes
+        );
     }
 
     return (
@@ -347,16 +390,20 @@ function TypeFilterToggleGroup({
                 type="button"
                 variant={selectedTypes.length === 0 ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => onSelectedTypesChange([])}>
+                onClick={() => onSelectedTypesChange([])}
+            >
                 {t('view.search.avatar.all')}
             </Button>
             {types.map((type) => (
                 <Button
                     key={type}
                     type="button"
-                    variant={selectedTypes.includes(type) ? 'default' : 'outline'}
+                    variant={
+                        selectedTypes.includes(type) ? 'default' : 'outline'
+                    }
                     size="sm"
-                    onClick={() => toggleType(type)}>
+                    onClick={() => toggleType(type)}
+                >
                     {t(`view.game_log.filters.${type}`)}
                 </Button>
             ))}
@@ -372,41 +419,61 @@ function renderSessionMember(member) {
     return (
         <div
             key={`${userId}:${member?.created_at || displayName}`}
-            className="flex items-center gap-1 rounded px-2 py-px text-sm text-muted-foreground hover:bg-muted/30">
+            className="text-muted-foreground hover:bg-muted/30 flex items-center gap-1 rounded px-2 py-px text-sm"
+        >
             {canOpenUser ? (
                 <Button
                     type="button"
                     variant="link"
                     className="h-auto p-0 text-sm"
-                    onClick={() => void openGameLogUser(member)}>
+                    onClick={() => void openGameLogUser(member)}
+                >
                     {displayName}
                 </Button>
             ) : (
                 <span>{displayName}</span>
             )}
-            {member?.isFriend ? <span>{member?.isFavorite ? '⭐' : '💚'}</span> : null}
+            {member?.isFriend ? (
+                <span>{member?.isFavorite ? '⭐' : '💚'}</span>
+            ) : null}
         </div>
     );
 }
 
 function SessionEventRow({ event }) {
     const { t } = useI18n();
-    const isJoin = event.type === 'OnPlayerJoined' || event.type === 'JoinGroup';
+    const isJoin =
+        event.type === 'OnPlayerJoined' || event.type === 'JoinGroup';
     const isLeave = event.type === 'OnPlayerLeft' || event.type === 'LeftGroup';
     const isVideo = event.type === 'VideoPlay';
     const [isExpanded, setIsExpanded] = useState(false);
     const userId = normalizeId(event?.userId);
     const displayName = event?.displayName || '';
-    const eventLabel = event.type === 'JoinGroup'
-        ? TYPE_LABELS.OnPlayerJoined
-        : event.type === 'LeftGroup'
-            ? TYPE_LABELS.OnPlayerLeft
-            : TYPE_LABELS[event.type] || event.type || '';
-    const EventIcon = isJoin ? LogInIcon : isLeave ? LogOutIcon : isVideo ? VideoIcon : LogsIcon;
+    const eventLabel =
+        event.type === 'JoinGroup'
+            ? TYPE_LABELS.OnPlayerJoined
+            : event.type === 'LeftGroup'
+              ? TYPE_LABELS.OnPlayerLeft
+              : TYPE_LABELS[event.type] || event.type || '';
+    const EventIcon = isJoin
+        ? LogInIcon
+        : isLeave
+          ? LogOutIcon
+          : isVideo
+            ? VideoIcon
+            : LogsIcon;
     const groupMembers = Array.isArray(event?.members) ? event.members : [];
     const isGroup = event.type === 'JoinGroup' || event.type === 'LeftGroup';
-    const videoLabel = event?.videoName || event?.videoUrl || event?.videoId || 'Unknown Video';
-    const showVideoLink = isVideo && event?.videoUrl && event.videoId !== 'LSMedia' && event.videoId !== 'PopcornPalace';
+    const videoLabel =
+        event?.videoName ||
+        event?.videoUrl ||
+        event?.videoId ||
+        'Unknown Video';
+    const showVideoLink =
+        isVideo &&
+        event?.videoUrl &&
+        event.videoId !== 'LSMedia' &&
+        event.videoId !== 'PopcornPalace';
 
     if (isGroup) {
         const count = groupMembers.length || event?.count || 0;
@@ -416,23 +483,28 @@ function SessionEventRow({ event }) {
                 <Button
                     type="button"
                     variant="ghost"
-                    className="flex min-h-7 w-full cursor-pointer items-center gap-1.5 rounded border-none bg-transparent px-2 py-0.5 text-left text-sm text-muted-foreground hover:bg-muted/50"
-                    onClick={() => setIsExpanded((current) => !current)}>
-                    <span className="min-w-[5.5rem] shrink-0 text-xs tabular-nums text-muted-foreground">
+                    className="text-muted-foreground hover:bg-muted/50 flex min-h-7 w-full cursor-pointer items-center gap-1.5 rounded border-none bg-transparent px-2 py-0.5 text-left text-sm"
+                    onClick={() => setIsExpanded((current) => !current)}
+                >
+                    <span className="text-muted-foreground min-w-[5.5rem] shrink-0 text-xs tabular-nums">
                         {formatDateFilter(event?.created_at, 'short')}
                     </span>
                     <div className="min-w-[7rem] shrink-0">
-                        <Badge variant="outline" className="justify-center text-muted-foreground">
+                        <Badge
+                            variant="outline"
+                            className="text-muted-foreground justify-center"
+                        >
                             {eventLabel}
                         </Badge>
                     </div>
                     <span className="flex-1 font-medium">
-                        {count} player{count === 1 ? '' : 's'} {isJoin ? 'joined' : 'left'}
+                        {count} player{count === 1 ? '' : 's'}{' '}
+                        {isJoin ? 'joined' : 'left'}
                     </span>
                     <ChevronRightIcon
                         data-icon="inline-end"
                         className={cn(
-                            'shrink-0 text-muted-foreground transition-transform duration-150',
+                            'text-muted-foreground shrink-0 transition-transform duration-150',
                             isExpanded && 'rotate-90'
                         )}
                     />
@@ -448,12 +520,15 @@ function SessionEventRow({ event }) {
 
     return (
         <div className={cn('py-0.5', isLeave && 'text-muted-foreground')}>
-            <div className="flex min-h-7 items-center gap-1.5 rounded px-2 py-0.5 text-sm hover:bg-muted/50">
-                <span className="min-w-[5.5rem] shrink-0 text-xs tabular-nums text-muted-foreground">
+            <div className="hover:bg-muted/50 flex min-h-7 items-center gap-1.5 rounded px-2 py-0.5 text-sm">
+                <span className="text-muted-foreground min-w-[5.5rem] shrink-0 text-xs tabular-nums">
                     {formatDateFilter(event?.created_at, 'short')}
                 </span>
                 <div className="min-w-[7rem] shrink-0">
-                    <Badge variant="outline" className="justify-center text-muted-foreground">
+                    <Badge
+                        variant="outline"
+                        className="text-muted-foreground justify-center"
+                    >
                         {eventLabel}
                     </Badge>
                 </div>
@@ -467,19 +542,32 @@ function SessionEventRow({ event }) {
                                     <Button
                                         type="button"
                                         variant="link"
-                                        className="h-auto min-w-0 justify-start p-0 text-left font-normal text-foreground"
+                                        className="text-foreground h-auto min-w-0 justify-start p-0 text-left font-normal"
                                         onClick={(eventObject) => {
                                             eventObject.stopPropagation();
-                                            void openExternalLink(event.videoUrl);
-                                        }}>
-                                        <span className="truncate">{videoLabel}</span>
+                                            void openExternalLink(
+                                                event.videoUrl
+                                            );
+                                        }}
+                                    >
+                                        <span className="truncate">
+                                            {videoLabel}
+                                        </span>
                                     </Button>
                                 ) : (
-                                    <span className="truncate">{videoLabel}</span>
+                                    <span className="truncate">
+                                        {videoLabel}
+                                    </span>
                                 )}
                                 {event?.playCount > 1 ? (
-                                    <Badge variant="secondary" className="h-4 shrink-0 px-1 text-xs">
-                                        {t('view.game_log.sessions.play_count', { count: event.playCount })}
+                                    <Badge
+                                        variant="secondary"
+                                        className="h-4 shrink-0 px-1 text-xs"
+                                    >
+                                        {t(
+                                            'view.game_log.sessions.play_count',
+                                            { count: event.playCount }
+                                        )}
                                     </Badge>
                                 ) : null}
                             </div>
@@ -487,38 +575,57 @@ function SessionEventRow({ event }) {
                         <ContextMenuContent>
                             {showVideoLink ? (
                                 <>
-                                    <ContextMenuItem onSelect={() => void openExternalLink(event.videoUrl)}>
+                                    <ContextMenuItem
+                                        onSelect={() =>
+                                            void openExternalLink(
+                                                event.videoUrl
+                                            )
+                                        }
+                                    >
                                         <ExternalLinkIcon data-icon="inline-start" />
                                         {t('common.actions.open_link')}
                                     </ContextMenuItem>
                                     <ContextMenuSeparator />
                                 </>
                             ) : null}
-                            <ContextMenuItem onSelect={() => void copyTextToClipboard(event?.videoUrl || videoLabel)}>
+                            <ContextMenuItem
+                                onSelect={() =>
+                                    void copyTextToClipboard(
+                                        event?.videoUrl || videoLabel
+                                    )
+                                }
+                            >
                                 <CopyIcon data-icon="inline-start" />
                                 {t('common.actions.copy')}
                             </ContextMenuItem>
                         </ContextMenuContent>
                     </ContextMenu>
-                    ) : (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className={cn(
-                                'h-auto min-w-0 flex-1 justify-start gap-1 px-0 py-0 text-left font-normal hover:bg-transparent',
-                                userId || event?.displayName ? 'cursor-pointer' : 'cursor-default'
-                            )}
-                            onClick={() => void openGameLogUser(event)}>
-                            <EventIcon data-icon="inline-start" />
-                            <span className="truncate">{displayName}</span>
+                ) : (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        className={cn(
+                            'h-auto min-w-0 flex-1 justify-start gap-1 px-0 py-0 text-left font-normal hover:bg-transparent',
+                            userId || event?.displayName
+                                ? 'cursor-pointer'
+                                : 'cursor-default'
+                        )}
+                        onClick={() => void openGameLogUser(event)}
+                    >
+                        <EventIcon data-icon="inline-start" />
+                        <span className="truncate">{displayName}</span>
                         {event?.isFriend ? (
-                            <span className="ml-1">{event?.isFavorite ? '⭐' : '💚'}</span>
+                            <span className="ml-1">
+                                {event?.isFavorite ? '⭐' : '💚'}
+                            </span>
                         ) : null}
                     </Button>
                 )}
 
                 {isVideo && event?.displayName ? (
-                    <span className="shrink-0 text-xs text-muted-foreground">{event.displayName}</span>
+                    <span className="text-muted-foreground shrink-0 text-xs">
+                        {event.displayName}
+                    </span>
                 ) : null}
             </div>
         </div>
@@ -553,8 +660,8 @@ function GameLogSessionSegment({
         durationMs > 0
             ? timeToText(durationMs)
             : liveDurationMs > 0
-                ? timeToText(liveDurationMs)
-                : '';
+              ? timeToText(liveDurationMs)
+              : '';
     const sessionLocation = session.location || '';
     const toggleCollapsed = () => onCollapsedChange?.(!collapsed);
 
@@ -562,24 +669,34 @@ function GameLogSessionSegment({
         if (!shouldShowLiveDuration) {
             return undefined;
         }
-        const timerId = window.setInterval(() => setLiveNow(Date.now()), 30_000);
+        const timerId = window.setInterval(
+            () => setLiveNow(Date.now()),
+            30_000
+        );
         return () => {
             window.clearInterval(timerId);
         };
     }, [shouldShowLiveDuration]);
 
     return (
-        <div className={cn('border-b border-border', isLast && 'border-b-0')}>
-            <div className="sticky top-0 z-[5] border-b border-border bg-muted/80 transition-colors">
+        <div className={cn('border-border border-b', isLast && 'border-b-0')}>
+            <div className="border-border bg-muted/80 sticky top-0 z-[5] border-b transition-colors">
                 <Button
                     type="button"
                     variant="ghost"
                     aria-expanded={!collapsed}
-                    aria-label={collapsed ? 'Expand game log session' : 'Collapse game log session'}
-                    className="absolute inset-0 z-0 h-full w-full rounded-none p-0 hover:bg-muted"
-                    onClick={toggleCollapsed}>
+                    aria-label={
+                        collapsed
+                            ? 'Expand game log session'
+                            : 'Collapse game log session'
+                    }
+                    className="hover:bg-muted absolute inset-0 z-0 h-full w-full rounded-none p-0"
+                    onClick={toggleCollapsed}
+                >
                     <span className="sr-only">
-                        {collapsed ? 'Expand game log session' : 'Collapse game log session'}
+                        {collapsed
+                            ? 'Expand game log session'
+                            : 'Collapse game log session'}
                     </span>
                 </Button>
                 <div className="pointer-events-none relative z-10 flex w-full items-center gap-2 px-3 py-2 text-left">
@@ -588,16 +705,21 @@ function GameLogSessionSegment({
                         variant="ghost"
                         size="icon-sm"
                         aria-expanded={!collapsed}
-                        aria-label={collapsed ? 'Expand game log session' : 'Collapse game log session'}
+                        aria-label={
+                            collapsed
+                                ? 'Expand game log session'
+                                : 'Collapse game log session'
+                        }
                         className="pointer-events-auto -ml-1 size-6 shrink-0"
                         onClick={(event) => {
                             event.stopPropagation();
                             toggleCollapsed();
-                        }}>
+                        }}
+                    >
                         <ChevronRightIcon
                             data-icon="inline-start"
                             className={cn(
-                                'shrink-0 text-muted-foreground transition-transform duration-150',
+                                'text-muted-foreground shrink-0 transition-transform duration-150',
                                 !collapsed && 'rotate-90'
                             )}
                         />
@@ -617,7 +739,8 @@ function GameLogSessionSegment({
                                     <Badge
                                         variant="outline"
                                         className="h-4 shrink-0 px-1 text-xs tabular-nums"
-                                        title="Time spent in this instance">
+                                        title="Time spent in this instance"
+                                    >
                                         {durationText}
                                     </Badge>
                                 ) : null}
@@ -626,30 +749,45 @@ function GameLogSessionSegment({
                             <span className="truncate text-sm" />
                         )}
                     </div>
-                    <span className="shrink-0 text-xs text-muted-foreground">
+                    <span className="text-muted-foreground shrink-0 text-xs">
                         {formatDateFilter(session.created_at, 'long')}
                     </span>
                     {!durationText && isLatest && isGameRunning ? (
-                        <Badge variant="outline" className="h-4 shrink-0 px-1 text-xs">
+                        <Badge
+                            variant="outline"
+                            className="h-4 shrink-0 px-1 text-xs"
+                        >
                             {t('common.current_session')}
                         </Badge>
                     ) : null}
-                    <div className="ml-auto flex min-w-0 max-w-full shrink-0 items-center justify-end gap-2 text-xs text-muted-foreground">
+                    <div className="text-muted-foreground ml-auto flex max-w-full min-w-0 shrink-0 items-center justify-end gap-2 text-xs">
                         {session.events?.length ? (
                             <>
                                 {joinedCount ? (
-                                    <span className="flex items-center gap-0.5" title={TYPE_LABELS.OnPlayerJoined}>
-                                        <LogInIcon className="size-3" /> {joinedCount}
+                                    <span
+                                        className="flex items-center gap-0.5"
+                                        title={TYPE_LABELS.OnPlayerJoined}
+                                    >
+                                        <LogInIcon className="size-3" />{' '}
+                                        {joinedCount}
                                     </span>
                                 ) : null}
                                 {leftCount ? (
-                                    <span className="flex items-center gap-0.5" title={TYPE_LABELS.OnPlayerLeft}>
-                                        <LogOutIcon className="size-3" /> {leftCount}
+                                    <span
+                                        className="flex items-center gap-0.5"
+                                        title={TYPE_LABELS.OnPlayerLeft}
+                                    >
+                                        <LogOutIcon className="size-3" />{' '}
+                                        {leftCount}
                                     </span>
                                 ) : null}
                                 {videoCount ? (
-                                    <span className="flex items-center gap-0.5" title={TYPE_LABELS.VideoPlay}>
-                                        <VideoIcon className="size-3" /> {videoCount}
+                                    <span
+                                        className="flex items-center gap-0.5"
+                                        title={TYPE_LABELS.VideoPlay}
+                                    >
+                                        <VideoIcon className="size-3" />{' '}
+                                        {videoCount}
                                     </span>
                                 ) : null}
                             </>
@@ -685,9 +823,14 @@ function GameLogSessionsView({
     const scrollRef = useRef(null);
     const sentinelRef = useRef(null);
     const [autoFillAttempts, setAutoFillAttempts] = useState(0);
-    const [collapsedSessionIds, setCollapsedSessionIds] = useState(() => new Set());
+    const [collapsedSessionIds, setCollapsedSessionIds] = useState(
+        () => new Set()
+    );
     const sessionKeys = useMemo(
-        () => sessions.map((session) => getGameLogSessionKey(session)).filter(Boolean),
+        () =>
+            sessions
+                .map((session) => getGameLogSessionKey(session))
+                .filter(Boolean),
         [sessions]
     );
 
@@ -746,7 +889,13 @@ function GameLogSessionsView({
     }, [hasMore, isLoadingMore, onLoadMore, sessions.length]);
 
     useEffect(() => {
-        if (!autoFill || !hasMore || isLoadingMore || autoFillAttempts >= 3 || typeof onLoadMore !== 'function') {
+        if (
+            !autoFill ||
+            !hasMore ||
+            isLoadingMore ||
+            autoFillAttempts >= 3 ||
+            typeof onLoadMore !== 'function'
+        ) {
             return undefined;
         }
 
@@ -765,11 +914,21 @@ function GameLogSessionsView({
         return () => {
             window.clearTimeout(timeoutId);
         };
-    }, [autoFill, autoFillAttempts, hasMore, isLoadingMore, onLoadMore, sessions.length]);
+    }, [
+        autoFill,
+        autoFillAttempts,
+        hasMore,
+        isLoadingMore,
+        onLoadMore,
+        sessions.length
+    ]);
 
     return (
         <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border">
-            <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
+            <div
+                ref={scrollRef}
+                className="flex-1 overflow-x-hidden overflow-y-auto"
+            >
                 {sessions.map((session, index) => {
                     const sessionKey = getGameLogSessionKey(session);
                     return (
@@ -799,10 +958,14 @@ function GameLogSessionsView({
                 })}
                 <div
                     ref={sentinelRef}
-                    className="flex items-center justify-center py-4 pb-6 text-sm text-muted-foreground">
+                    className="text-muted-foreground flex items-center justify-center py-4 pb-6 text-sm"
+                >
                     {isLoadingMore ? (
                         <>
-                            <Spinner data-icon="inline-start" className="mr-2" />
+                            <Spinner
+                                data-icon="inline-start"
+                                className="mr-2"
+                            />
                             {t('common.load_more')}...
                         </>
                     ) : hasMore ? (
@@ -822,14 +985,26 @@ export function GameLogPage({ embedded = false } = {}) {
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.backendEvents.addGameLogEvent.count
     );
-    const isGameRunning = useRuntimeStore((state) => Boolean(state.gameState.isGameRunning));
+    const isGameRunning = useRuntimeStore((state) =>
+        Boolean(state.gameState.isGameRunning)
+    );
     const confirm = useModalStore((state) => state.confirm);
-    const isFavoritesLoaded = useSessionStore((state) => state.isFavoritesLoaded);
-    const localFriendFavorites = useFavoriteStore((state) => state.localFriendFavorites);
+    const isFavoritesLoaded = useSessionStore(
+        (state) => state.isFavoritesLoaded
+    );
+    const localFriendFavorites = useFavoriteStore(
+        (state) => state.localFriendFavorites
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
-    const gameLogDisabled = usePreferencesStore((state) => state.gameLogDisabled);
-    const tablePageSizesPreference = usePreferencesStore((state) => state.tablePageSizes);
+    const preferencesHydrated = usePreferencesStore(
+        (state) => state.preferencesHydrated
+    );
+    const gameLogDisabled = usePreferencesStore(
+        (state) => state.gameLogDisabled
+    );
+    const tablePageSizesPreference = usePreferencesStore(
+        (state) => state.tablePageSizes
+    );
 
     const persistedState = useMemo(() => readPersistedGameLogState(), []);
     const hasWrittenSortingRef = useRef(false);
@@ -846,9 +1021,12 @@ export function GameLogPage({ embedded = false } = {}) {
     const [deletingGameLogKey, setDeletingGameLogKey] = useState('');
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [previousInstancesRows, setPreviousInstancesRows] = useState([]);
-    const [previousInstancesTitle, setPreviousInstancesTitle] = useState('Previous Instances');
-    const [previousInstancesAutoInfo, setPreviousInstancesAutoInfo] = useState(false);
-    const [loadingPreviousInstancesKey, setLoadingPreviousInstancesKey] = useState('');
+    const [previousInstancesTitle, setPreviousInstancesTitle] =
+        useState('Previous Instances');
+    const [previousInstancesAutoInfo, setPreviousInstancesAutoInfo] =
+        useState(false);
+    const [loadingPreviousInstancesKey, setLoadingPreviousInstancesKey] =
+        useState('');
     const [shiftHeld, setShiftHeld] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchDraft, setSearchDraft] = useState('');
@@ -862,14 +1040,22 @@ export function GameLogPage({ embedded = false } = {}) {
     const [sessionDateDraftTo, setSessionDateDraftTo] = useState('');
     const [sessionDatePopoverOpen, setSessionDatePopoverOpen] = useState(false);
     const [pageSizes, setPageSizes] = useState(GAME_LOG_DEFAULT_PAGE_SIZES);
-    const [sessionLimit, setSessionLimit] = useState(GAME_LOG_DEFAULT_PAGE_SIZES[1]);
+    const [sessionLimit, setSessionLimit] = useState(
+        GAME_LOG_DEFAULT_PAGE_SIZES[1]
+    );
     const [savedViewMode, setSavedViewMode] = useState('sessions');
-    const [sorting, setSorting] = useState(() => sanitizeGameLogSorting(persistedState.sorting));
+    const [sorting, setSorting] = useState(() =>
+        sanitizeGameLogSorting(persistedState.sorting)
+    );
     const [columnVisibility, setColumnVisibility] = useState(() =>
         sanitizeGameLogColumnVisibility(persistedState.columnVisibility)
     );
-    const [columnOrder, setColumnOrder] = useState(() => sanitizeGameLogColumnOrder(persistedState.columnOrder));
-    const [columnSizing, setColumnSizing] = useState(() => sanitizeGameLogColumnSizing(persistedState.columnSizing));
+    const [columnOrder, setColumnOrder] = useState(() =>
+        sanitizeGameLogColumnOrder(persistedState.columnOrder)
+    );
+    const [columnSizing, setColumnSizing] = useState(() =>
+        sanitizeGameLogColumnSizing(persistedState.columnSizing)
+    );
     const [columnOrderLocked, setColumnOrderLocked] = useState(
         () => persistedState.columnOrderLocked === true
     );
@@ -920,27 +1106,54 @@ export function GameLogPage({ embedded = false } = {}) {
         () => buildFavoriteIdSet(localFriendFavorites),
         [localFriendFavorites]
     );
-    const friendIdSet = useMemo(() => new Set(Object.keys(friendsById || {})), [friendsById]);
-    const availableFilterTypes = savedViewMode === 'sessions' ? SESSION_FILTER_TYPES : GAME_LOG_FILTER_TYPES;
+    const friendIdSet = useMemo(
+        () => new Set(Object.keys(friendsById || {})),
+        [friendsById]
+    );
+    const availableFilterTypes =
+        savedViewMode === 'sessions'
+            ? SESSION_FILTER_TYPES
+            : GAME_LOG_FILTER_TYPES;
     const tableQueryFilterTypes = useMemo(
-        () => tableSelectedTypes.filter((type) => GAME_LOG_FILTER_TYPES.includes(type)),
+        () =>
+            tableSelectedTypes.filter((type) =>
+                GAME_LOG_FILTER_TYPES.includes(type)
+            ),
         [tableSelectedTypes]
     );
     const sessionQueryFilterTypes = useMemo(
-        () => sessionSelectedTypes.filter((type) => SESSION_FILTER_TYPES.includes(type)),
+        () =>
+            sessionSelectedTypes.filter((type) =>
+                SESSION_FILTER_TYPES.includes(type)
+            ),
         [sessionSelectedTypes]
     );
-    const queryFilterTypes = savedViewMode === 'sessions' ? sessionQueryFilterTypes : tableQueryFilterTypes;
-    const favoritesOnly = savedViewMode === 'sessions' ? sessionFavoritesOnly : tableFavoritesOnly;
-    const setActiveSelectedTypes = savedViewMode === 'sessions' ? setSessionSelectedTypes : setTableSelectedTypes;
-    const setActiveFavoritesOnly = savedViewMode === 'sessions' ? setSessionFavoritesOnly : setTableFavoritesOnly;
+    const queryFilterTypes =
+        savedViewMode === 'sessions'
+            ? sessionQueryFilterTypes
+            : tableQueryFilterTypes;
+    const favoritesOnly =
+        savedViewMode === 'sessions'
+            ? sessionFavoritesOnly
+            : tableFavoritesOnly;
+    const setActiveSelectedTypes =
+        savedViewMode === 'sessions'
+            ? setSessionSelectedTypes
+            : setTableSelectedTypes;
+    const setActiveFavoritesOnly =
+        savedViewMode === 'sessions'
+            ? setSessionFavoritesOnly
+            : setTableFavoritesOnly;
 
     useEffect(() => {
         let active = true;
 
         Promise.all([
             getTablePageSizesPreference(GAME_LOG_DEFAULT_PAGE_SIZES),
-            configRepository.getInt('tablePageSize', GAME_LOG_DEFAULT_PAGE_SIZES[1]),
+            configRepository.getInt(
+                'tablePageSize',
+                GAME_LOG_DEFAULT_PAGE_SIZES[1]
+            ),
             configRepository.getString('gameLogTableFilters', '[]'),
             configRepository.getBool('VRCX_gameLogTableVIPFilter', false),
             configRepository.getString('gameLogSessionsFilters', '[]'),
@@ -965,10 +1178,15 @@ export function GameLogPage({ embedded = false } = {}) {
                         return;
                     }
 
-                    const resolvedPageSizes = sanitizeGameLogPageSizes(nextPageSizes);
-                    const parsedPersistedPageSize = Number.parseInt(persistedState.pageSize, 10);
+                    const resolvedPageSizes =
+                        sanitizeGameLogPageSizes(nextPageSizes);
+                    const parsedPersistedPageSize = Number.parseInt(
+                        persistedState.pageSize,
+                        10
+                    );
                     const hasPersistedPageSize =
-                        Number.isFinite(parsedPersistedPageSize) && parsedPersistedPageSize > 0;
+                        Number.isFinite(parsedPersistedPageSize) &&
+                        parsedPersistedPageSize > 0;
                     const resolvedConfiguredPageSize = resolveGameLogPageSize(
                         nextPageSize,
                         resolvedPageSizes,
@@ -976,10 +1194,10 @@ export function GameLogPage({ embedded = false } = {}) {
                     );
                     const resolvedActivePageSize = hasPersistedPageSize
                         ? resolveGameLogPageSize(
-                            parsedPersistedPageSize,
-                            resolvedPageSizes,
-                            resolvedConfiguredPageSize
-                        )
+                              parsedPersistedPageSize,
+                              resolvedPageSizes,
+                              resolvedConfiguredPageSize
+                          )
                         : resolvedConfiguredPageSize;
 
                     setPageSizes((current) =>
@@ -996,26 +1214,38 @@ export function GameLogPage({ embedded = false } = {}) {
                     }));
                     setSessionLimit(resolvedActivePageSize);
 
-                    const parsedTableFilters = safeJsonParse(nextTableTypeFilters);
-                    const parsedSessionFilters = safeJsonParse(nextSessionTypeFilters);
+                    const parsedTableFilters =
+                        safeJsonParse(nextTableTypeFilters);
+                    const parsedSessionFilters = safeJsonParse(
+                        nextSessionTypeFilters
+                    );
                     setTableSelectedTypes(
                         Array.isArray(parsedTableFilters)
-                            ? parsedTableFilters.filter((entry) => GAME_LOG_FILTER_TYPES.includes(entry))
+                            ? parsedTableFilters.filter((entry) =>
+                                  GAME_LOG_FILTER_TYPES.includes(entry)
+                              )
                             : []
                     );
                     setSessionSelectedTypes(
                         Array.isArray(parsedSessionFilters)
-                            ? parsedSessionFilters.filter((entry) => SESSION_FILTER_TYPES.includes(entry))
+                            ? parsedSessionFilters.filter((entry) =>
+                                  SESSION_FILTER_TYPES.includes(entry)
+                              )
                             : []
                     );
                     setTableFavoritesOnly(Boolean(nextTableFavoritesOnly));
                     setSessionFavoritesOnly(Boolean(nextSessionFavoritesOnly));
                     setSessionDateFrom(String(nextSessionDateFrom || ''));
                     setSessionDateTo(String(nextSessionDateTo || ''));
-                    setSessionDateDraftFrom(isoToGameLogDateInputValue(nextSessionDateFrom));
-                    setSessionDateDraftTo(isoToGameLogDateInputValue(nextSessionDateTo));
+                    setSessionDateDraftFrom(
+                        isoToGameLogDateInputValue(nextSessionDateFrom)
+                    );
+                    setSessionDateDraftTo(
+                        isoToGameLogDateInputValue(nextSessionDateTo)
+                    );
                     setSavedViewMode(
-                        nextSavedViewMode === 'sessions' || nextSavedViewMode === 'table'
+                        nextSavedViewMode === 'sessions' ||
+                            nextSavedViewMode === 'table'
                             ? nextSavedViewMode
                             : 'table'
                     );
@@ -1038,14 +1268,21 @@ export function GameLogPage({ embedded = false } = {}) {
         if (!preferencesHydrated) {
             return;
         }
-        const resolvedPageSizes = sanitizeGameLogPageSizes(tablePageSizesPreference);
+        const resolvedPageSizes = sanitizeGameLogPageSizes(
+            tablePageSizesPreference
+        );
         setPageSizes(resolvedPageSizes);
         setPagination((current) => ({
             ...current,
             pageIndex: 0,
-            pageSize: resolveGameLogPageSize(current.pageSize, resolvedPageSizes)
+            pageSize: resolveGameLogPageSize(
+                current.pageSize,
+                resolvedPageSizes
+            )
         }));
-        setSessionLimit((current) => resolveGameLogPageSize(current, resolvedPageSizes));
+        setSessionLimit((current) =>
+            resolveGameLogPageSize(current, resolvedPageSizes)
+        );
     }, [preferencesHydrated, tablePageSizesPreference]);
 
     useEffect(() => {
@@ -1053,7 +1290,10 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        void configRepository.setString('VRCX_gameLogTableFilters', JSON.stringify(tableSelectedTypes));
+        void configRepository.setString(
+            'VRCX_gameLogTableFilters',
+            JSON.stringify(tableSelectedTypes)
+        );
     }, [tableSelectedTypes]);
 
     useEffect(() => {
@@ -1061,7 +1301,10 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        void configRepository.setBool('VRCX_gameLogTableVIPFilter', tableFavoritesOnly);
+        void configRepository.setBool(
+            'VRCX_gameLogTableVIPFilter',
+            tableFavoritesOnly
+        );
     }, [tableFavoritesOnly]);
 
     useEffect(() => {
@@ -1069,7 +1312,10 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        void configRepository.setString('VRCX_gameLogSessionsFilters', JSON.stringify(sessionSelectedTypes));
+        void configRepository.setString(
+            'VRCX_gameLogSessionsFilters',
+            JSON.stringify(sessionSelectedTypes)
+        );
     }, [sessionSelectedTypes]);
 
     useEffect(() => {
@@ -1077,7 +1323,10 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        void configRepository.setBool('VRCX_gameLogSessionsVIPFilter', sessionFavoritesOnly);
+        void configRepository.setBool(
+            'VRCX_gameLogSessionsVIPFilter',
+            sessionFavoritesOnly
+        );
     }, [sessionFavoritesOnly]);
 
     useEffect(() => {
@@ -1085,7 +1334,10 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        void configRepository.setString('VRCX_gameLogSessionsDateFrom', sessionDateFrom);
+        void configRepository.setString(
+            'VRCX_gameLogSessionsDateFrom',
+            sessionDateFrom
+        );
     }, [sessionDateFrom]);
 
     useEffect(() => {
@@ -1093,7 +1345,10 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        void configRepository.setString('VRCX_gameLogSessionsDateTo', sessionDateTo);
+        void configRepository.setString(
+            'VRCX_gameLogSessionsDateTo',
+            sessionDateTo
+        );
     }, [sessionDateTo]);
 
     useEffect(() => {
@@ -1172,7 +1427,9 @@ export function GameLogPage({ embedded = false } = {}) {
                 setRows([]);
                 setSessions([]);
                 setLoadStatus('idle');
-                setDetail('No authenticated user is available for the game log snapshot.');
+                setDetail(
+                    'No authenticated user is available for the game log snapshot.'
+                );
             }
             return;
         }
@@ -1199,15 +1456,20 @@ export function GameLogPage({ embedded = false } = {}) {
         setDetail('');
 
         gameLogRepository[
-            savedViewMode === 'sessions' ? 'queryLatestSessions' : 'queryGameLog'
+            savedViewMode === 'sessions'
+                ? 'queryLatestSessions'
+                : 'queryGameLog'
         ]({
-                search: deferredSearchQuery,
-                filters: queryFilterTypes,
-                favoriteUserIds,
-                dateFrom: savedViewMode === 'sessions' ? sessionDateFrom : '',
-                dateTo: savedViewMode === 'sessions' ? sessionDateTo : '',
-                limit: savedViewMode === 'sessions' ? sessionLimit : pagination.pageSize
-            })
+            search: deferredSearchQuery,
+            filters: queryFilterTypes,
+            favoriteUserIds,
+            dateFrom: savedViewMode === 'sessions' ? sessionDateFrom : '',
+            dateTo: savedViewMode === 'sessions' ? sessionDateTo : '',
+            limit:
+                savedViewMode === 'sessions'
+                    ? sessionLimit
+                    : pagination.pageSize
+        })
             .then((nextResult) => {
                 if (requestIdRef.current !== requestId) {
                     return;
@@ -1251,7 +1513,7 @@ export function GameLogPage({ embedded = false } = {}) {
         savedViewMode,
         sessionDateFrom,
         sessionDateTo,
-        sessionLimit,
+        sessionLimit
     ]);
 
     const annotatedSessions = useMemo(
@@ -1271,8 +1533,12 @@ export function GameLogPage({ embedded = false } = {}) {
                 const normalizedUserId = normalizeId(row?.userId);
                 return {
                     ...row,
-                    isFavorite: normalizedUserId ? favoriteIdSet.has(normalizedUserId) : false,
-                    isFriend: normalizedUserId ? friendIdSet.has(normalizedUserId) : false
+                    isFavorite: normalizedUserId
+                        ? favoriteIdSet.has(normalizedUserId)
+                        : false,
+                    isFriend: normalizedUserId
+                        ? friendIdSet.has(normalizedUserId)
+                        : false
                 };
             }),
         [favoriteIdSet, friendIdSet, rows]
@@ -1307,11 +1573,17 @@ export function GameLogPage({ embedded = false } = {}) {
         try {
             await gameLogRepository.deleteGameLogEntry(row);
             setRows((currentRows) =>
-                currentRows.filter((entry) => getGameLogRowKey(entry) !== rowKey)
+                currentRows.filter(
+                    (entry) => getGameLogRowKey(entry) !== rowKey
+                )
             );
             toast.success('Game log row deleted.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete game log row.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete game log row.'
+            );
         } finally {
             setDeletingGameLogKey('');
         }
@@ -1327,7 +1599,10 @@ export function GameLogPage({ embedded = false } = {}) {
         setPreviousInstancesAutoInfo(false);
         setLoadingPreviousInstancesKey(rowKey || worldId);
         try {
-            const instances = await gameLogRepository.getPreviousInstancesByWorldId({ worldId });
+            const instances =
+                await gameLogRepository.getPreviousInstancesByWorldId({
+                    worldId
+                });
             const currentLocation = normalizeId(row?.location);
             const sortedInstances = [...instances].sort((left, right) => {
                 if (currentLocation) {
@@ -1338,7 +1613,10 @@ export function GameLogPage({ embedded = false } = {}) {
                         return 1;
                     }
                 }
-                return Date.parse(right?.created_at || 0) - Date.parse(left?.created_at || 0);
+                return (
+                    Date.parse(right?.created_at || 0) -
+                    Date.parse(left?.created_at || 0)
+                );
             });
             setPreviousInstancesRows(sortedInstances);
             setPreviousInstancesTitle(
@@ -1367,7 +1645,10 @@ export function GameLogPage({ embedded = false } = {}) {
     }
 
     useEffect(() => {
-        const maxPageIndex = Math.max(0, Math.ceil(annotatedRows.length / pagination.pageSize) - 1);
+        const maxPageIndex = Math.max(
+            0,
+            Math.ceil(annotatedRows.length / pagination.pageSize) - 1
+        );
         if (pagination.pageIndex > maxPageIndex) {
             setPagination((current) => ({
                 ...current,
@@ -1392,11 +1673,20 @@ export function GameLogPage({ embedded = false } = {}) {
                 id: 'created_at',
                 size: 140,
                 accessorFn: (row) => row?.created_at || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.gameLog.date')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.gameLog.date')}
+                    />
+                ),
                 sortingFn: (rowA, rowB) => {
                     const leftTs = Date.parse(rowA.original?.created_at ?? '');
                     const rightTs = Date.parse(rowB.original?.created_at ?? '');
-                    if (Number.isFinite(leftTs) && Number.isFinite(rightTs) && leftTs !== rightTs) {
+                    if (
+                        Number.isFinite(leftTs) &&
+                        Number.isFinite(rightTs) &&
+                        leftTs !== rightTs
+                    ) {
                         return leftTs - rightTs;
                     }
 
@@ -1408,7 +1698,10 @@ export function GameLogPage({ embedded = false } = {}) {
                 cell: ({ row }) => {
                     const createdAt = row.original?.created_at || '';
                     return (
-                        <span className="text-sm" title={formatDateFilter(createdAt, 'long')}>
+                        <span
+                            className="text-sm"
+                            title={formatDateFilter(createdAt, 'long')}
+                        >
                             {formatDateFilter(createdAt, 'short')}
                         </span>
                     );
@@ -1418,10 +1711,17 @@ export function GameLogPage({ embedded = false } = {}) {
                 id: 'type',
                 size: 150,
                 accessorFn: (row) => row?.type || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.gameLog.type')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.gameLog.type')}
+                    />
+                ),
                 cell: ({ row }) => {
                     const worldTarget = resolveWorldTarget(row.original);
-                    const typeLabel = row.original?.type ? t(`view.game_log.filters.${row.original.type}`) : '';
+                    const typeLabel = row.original?.type
+                        ? t(`view.game_log.filters.${row.original.type}`)
+                        : '';
                     if (row.original?.type !== 'Location' && worldTarget) {
                         return (
                             <Button
@@ -1432,10 +1732,16 @@ export function GameLogPage({ embedded = false } = {}) {
                                     event.stopPropagation();
                                     openWorldDialog({
                                         worldId: worldTarget,
-                                        title: row.original?.worldName || worldTarget
+                                        title:
+                                            row.original?.worldName ||
+                                            worldTarget
                                     });
-                                }}>
-                                <Badge variant="outline" className="text-muted-foreground">
+                                }}
+                            >
+                                <Badge
+                                    variant="outline"
+                                    className="text-muted-foreground"
+                                >
                                     {typeLabel}
                                 </Badge>
                             </Button>
@@ -1443,7 +1749,10 @@ export function GameLogPage({ embedded = false } = {}) {
                     }
 
                     return (
-                        <Badge variant="outline" className="text-muted-foreground">
+                        <Badge
+                            variant="outline"
+                            className="text-muted-foreground"
+                        >
                             {typeLabel}
                         </Badge>
                     );
@@ -1453,17 +1762,32 @@ export function GameLogPage({ embedded = false } = {}) {
                 id: 'displayName',
                 size: 200,
                 accessorFn: (row) => row?.displayName || row?.userId || '',
-                header: ({ column }) => <SortButton column={column} label={t('table.gameLog.user')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.gameLog.user')}
+                    />
+                ),
                 sortingFn: (rowA, rowB) =>
-                    String(rowA.original?.displayName || rowA.original?.userId || '').localeCompare(
-                        String(rowB.original?.displayName || rowB.original?.userId || ''),
+                    String(
+                        rowA.original?.displayName ||
+                            rowA.original?.userId ||
+                            ''
+                    ).localeCompare(
+                        String(
+                            rowB.original?.displayName ||
+                                rowB.original?.userId ||
+                                ''
+                        ),
                         undefined,
                         { sensitivity: 'base' }
-                ),
+                    ),
                 cell: ({ row }) => {
                     const displayName = row.original?.displayName || '';
                     const userId = normalizeId(row.original?.userId);
-                    const canOpenUser = Boolean(displayName && (userId || row.original?.displayName));
+                    const canOpenUser = Boolean(
+                        displayName && (userId || row.original?.displayName)
+                    );
                     return (
                         <div className="flex min-w-0 items-center gap-1 text-sm">
                             {canOpenUser ? (
@@ -1471,14 +1795,21 @@ export function GameLogPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="link"
                                     className="h-auto min-w-0 p-0 text-left text-sm"
-                                    onClick={() => void openGameLogUser(row.original)}>
-                                    <span className="truncate">{displayName}</span>
+                                    onClick={() =>
+                                        void openGameLogUser(row.original)
+                                    }
+                                >
+                                    <span className="truncate">
+                                        {displayName}
+                                    </span>
                                 </Button>
                             ) : (
                                 <span className="truncate">{displayName}</span>
                             )}
                             {row.original?.isFriend ? (
-                                <span className="shrink-0">{row.original?.isFavorite ? '⭐' : '💚'}</span>
+                                <span className="shrink-0">
+                                    {row.original?.isFavorite ? '⭐' : '💚'}
+                                </span>
                             ) : null}
                         </div>
                     );
@@ -1489,36 +1820,55 @@ export function GameLogPage({ embedded = false } = {}) {
                 minSize: 150,
                 accessorFn: (row) => {
                     const detailValue = describeGameLogDetail(row);
-                    return [detailValue.primary, detailValue.secondary].filter(Boolean).join(' ');
+                    return [detailValue.primary, detailValue.secondary]
+                        .filter(Boolean)
+                        .join(' ');
                 },
                 enableSorting: false,
                 header: () => t('table.gameLog.detail'),
                 cell: ({ row }) => {
                     const detailValue = describeGameLogDetail(row.original);
                     const worldTarget = resolveWorldTarget(row.original);
-                    if (row.original?.type === 'Location' || row.original?.type === 'PortalSpawn') {
+                    if (
+                        row.original?.type === 'Location' ||
+                        row.original?.type === 'PortalSpawn'
+                    ) {
                         return (
                             <GameLogLocationDetail
                                 row={row.original}
                                 detailValue={detailValue}
                                 worldTarget={worldTarget}
-                                onPreviousInstances={(targetRow) => void openPreviousInstancesForRow(targetRow)}
+                                onPreviousInstances={(targetRow) =>
+                                    void openPreviousInstancesForRow(targetRow)
+                                }
                             />
                         );
                     }
                     if (GAME_LOG_DETAILLESS_TYPES.has(row.original?.type)) {
                         return <EmptyTableValue />;
                     }
-                    const canOpenWorld = worldTarget && shouldLinkPrimaryDetailToWorld(row.original);
-                    const externalTarget = getGameLogExternalTarget(row.original);
+                    const canOpenWorld =
+                        worldTarget &&
+                        shouldLinkPrimaryDetailToWorld(row.original);
+                    const externalTarget = getGameLogExternalTarget(
+                        row.original
+                    );
                     const copyTarget = getGameLogCopyTarget(row.original);
-                    if (!detailValue.primary && !detailValue.secondary && !externalTarget && !copyTarget) {
+                    if (
+                        !detailValue.primary &&
+                        !detailValue.secondary &&
+                        !externalTarget &&
+                        !copyTarget
+                    ) {
                         return <EmptyTableValue />;
                     }
                     return (
                         <div
                             className="flex min-w-0 items-center gap-1.5 text-sm"
-                            title={[detailValue.primary, detailValue.secondary].filter(Boolean).join(' · ')}>
+                            title={[detailValue.primary, detailValue.secondary]
+                                .filter(Boolean)
+                                .join(' · ')}
+                        >
                             {canOpenWorld ? (
                                 <Button
                                     type="button"
@@ -1527,16 +1877,24 @@ export function GameLogPage({ embedded = false } = {}) {
                                     onClick={() =>
                                         openWorldDialog({
                                             worldId: worldTarget,
-                                            title: row.original?.worldName || detailValue.primary || worldTarget
+                                            title:
+                                                row.original?.worldName ||
+                                                detailValue.primary ||
+                                                worldTarget
                                         })
-                                    }>
-                                    <span className="truncate">{detailValue.primary}</span>
+                                    }
+                                >
+                                    <span className="truncate">
+                                        {detailValue.primary}
+                                    </span>
                                 </Button>
                             ) : (
-                                <span className="min-w-0 truncate">{detailValue.primary}</span>
+                                <span className="min-w-0 truncate">
+                                    {detailValue.primary}
+                                </span>
                             )}
                             {detailValue.secondary ? (
-                                <span className="min-w-0 truncate text-xs text-muted-foreground">
+                                <span className="text-muted-foreground min-w-0 truncate text-xs">
                                     {detailValue.secondary}
                                 </span>
                             ) : null}
@@ -1551,8 +1909,11 @@ export function GameLogPage({ embedded = false } = {}) {
                                             className="size-6 p-0"
                                             onClick={(event) => {
                                                 event.stopPropagation();
-                                                void openExternalLink(externalTarget);
-                                            }}>
+                                                void openExternalLink(
+                                                    externalTarget
+                                                );
+                                            }}
+                                        >
                                             <ExternalLinkIcon data-icon="inline-start" />
                                         </Button>
                                     ) : null}
@@ -1565,8 +1926,11 @@ export function GameLogPage({ embedded = false } = {}) {
                                             className="size-6 p-0"
                                             onClick={(event) => {
                                                 event.stopPropagation();
-                                                void copyGameLogDetail(row.original);
-                                            }}>
+                                                void copyGameLogDetail(
+                                                    row.original
+                                                );
+                                            }}
+                                        >
                                             <CopyIcon data-icon="inline-start" />
                                         </Button>
                                     ) : null}
@@ -1586,7 +1950,9 @@ export function GameLogPage({ embedded = false } = {}) {
                 cell: ({ row }) => {
                     const rowKey = getGameLogRowKey(row.original);
                     const canDelete = canDeleteGameLogRow(row.original);
-                    const canShowPrevious = row.original?.type === 'Location' && resolveWorldId(row.original);
+                    const canShowPrevious =
+                        row.original?.type === 'Location' &&
+                        resolveWorldId(row.original);
 
                     if (!canDelete && !canShowPrevious) {
                         return <EmptyTableValue align="right" />;
@@ -1599,18 +1965,27 @@ export function GameLogPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    aria-label={shiftHeld ? 'Delete game log row without confirmation' : 'Delete game log row'}
-                                    className="size-6 p-0 text-muted-foreground hover:text-destructive"
+                                    aria-label={
+                                        shiftHeld
+                                            ? 'Delete game log row without confirmation'
+                                            : 'Delete game log row'
+                                    }
+                                    className="text-muted-foreground hover:text-destructive size-6 p-0"
                                     disabled={deletingGameLogKey === rowKey}
                                     onClick={(event) =>
                                         void deleteGameLogRow(row.original, {
-                                            skipConfirm: shiftHeld || event.shiftKey
+                                            skipConfirm:
+                                                shiftHeld || event.shiftKey
                                         })
-                                    }>
+                                    }
+                                >
                                     {deletingGameLogKey === rowKey ? (
                                         <Spinner data-icon="inline-start" />
                                     ) : shiftHeld ? (
-                                        <XIcon data-icon="inline-start" className="text-destructive" />
+                                        <XIcon
+                                            data-icon="inline-start"
+                                            className="text-destructive"
+                                        />
                                     ) : (
                                         <Trash2Icon data-icon="inline-start" />
                                     )}
@@ -1622,9 +1997,16 @@ export function GameLogPage({ embedded = false } = {}) {
                                     variant="ghost"
                                     size="icon"
                                     aria-label="Show previous instances"
-                                    className="size-6 p-0 text-muted-foreground hover:text-foreground"
-                                    disabled={loadingPreviousInstancesKey === rowKey}
-                                    onClick={() => void openPreviousInstancesForRow(row.original)}>
+                                    className="text-muted-foreground hover:text-foreground size-6 p-0"
+                                    disabled={
+                                        loadingPreviousInstancesKey === rowKey
+                                    }
+                                    onClick={() =>
+                                        void openPreviousInstancesForRow(
+                                            row.original
+                                        )
+                                    }
+                                >
                                     {loadingPreviousInstancesKey === rowKey ? (
                                         <Spinner data-icon="inline-start" />
                                     ) : (
@@ -1669,14 +2051,22 @@ export function GameLogPage({ embedded = false } = {}) {
     const pageCount = Math.max(1, table.getPageCount());
     const isLoading =
         loadStatus === 'running' &&
-        (savedViewMode === 'sessions' ? sessions.length === 0 : rows.length === 0);
+        (savedViewMode === 'sessions'
+            ? sessions.length === 0
+            : rows.length === 0);
     const isLoadingMoreSessions =
-        loadStatus === 'running' && savedViewMode === 'sessions' && sessions.length > 0;
+        loadStatus === 'running' &&
+        savedViewMode === 'sessions' &&
+        sessions.length > 0;
     const hasMoreSessions =
-        savedViewMode === 'sessions' && sessions.length >= sessionLimit && sessionLimit < 1000;
+        savedViewMode === 'sessions' &&
+        sessions.length >= sessionLimit &&
+        sessionLimit < 1000;
     const isError =
         loadStatus === 'error' &&
-        (savedViewMode === 'sessions' ? sessions.length === 0 : rows.length === 0);
+        (savedViewMode === 'sessions'
+            ? sessions.length === 0
+            : rows.length === 0);
     const hasRows = annotatedRows.length > 0;
     const hasSessions = annotatedSessions.length > 0;
 
@@ -1698,7 +2088,10 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        const [clampedFrom, clampedTo] = clampGameLogSessionDateInputRange(nextFrom, nextTo);
+        const [clampedFrom, clampedTo] = clampGameLogSessionDateInputRange(
+            nextFrom,
+            nextTo
+        );
         setSessionDateDraftFrom(clampedFrom);
         setSessionDateDraftTo(clampedTo);
     }
@@ -1741,8 +2134,12 @@ export function GameLogPage({ embedded = false } = {}) {
                     aria-label="Show sessions"
                     onClick={() => {
                         setSavedViewMode('sessions');
-                        void configRepository.setString('gameLogViewMode', 'sessions');
-                    }}>
+                        void configRepository.setString(
+                            'gameLogViewMode',
+                            'sessions'
+                        );
+                    }}
+                >
                     <LogsIcon data-icon="inline-start" />
                 </Button>
                 <Button
@@ -1753,8 +2150,12 @@ export function GameLogPage({ embedded = false } = {}) {
                     aria-label="Show table"
                     onClick={() => {
                         setSavedViewMode('table');
-                        void configRepository.setString('gameLogViewMode', 'table');
-                    }}>
+                        void configRepository.setString(
+                            'gameLogViewMode',
+                            'table'
+                        );
+                    }}
+                >
                     <Table2Icon data-icon="inline-start" />
                 </Button>
             </div>
@@ -1769,7 +2170,8 @@ export function GameLogPage({ embedded = false } = {}) {
                 size="icon"
                 title="Favorites only"
                 aria-label="Favorites only"
-                onClick={() => setActiveFavoritesOnly((current) => !current)}>
+                onClick={() => setActiveFavoritesOnly((current) => !current)}
+            >
                 <StarIcon data-icon="inline-start" />
             </Button>
         );
@@ -1784,7 +2186,8 @@ export function GameLogPage({ embedded = false } = {}) {
                         syncSessionDateDraft();
                     }
                     setSessionDatePopoverOpen(open);
-                }}>
+                }}
+            >
                 <PopoverTrigger asChild>
                     <Button
                         type="button"
@@ -1792,15 +2195,18 @@ export function GameLogPage({ embedded = false } = {}) {
                         size="sm"
                         className={cn(
                             'h-8 shrink-0 gap-1.5',
-                            (sessionDateFrom || sessionDateTo) && 'bg-accent text-accent-foreground'
+                            (sessionDateFrom || sessionDateTo) &&
+                                'bg-accent text-accent-foreground'
                         )}
                         title="Session date range"
-                        aria-label="Session date range">
+                        aria-label="Session date range"
+                    >
                         <CalendarRangeIcon data-icon="inline-start" />
-                        {(sessionDateFrom || sessionDateTo) ? (
+                        {sessionDateFrom || sessionDateTo ? (
                             <Badge
                                 variant="secondary"
-                                className="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs">
+                                className="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs"
+                            >
                                 1
                             </Badge>
                         ) : null}
@@ -1816,19 +2222,29 @@ export function GameLogPage({ embedded = false } = {}) {
                         onSelect={updateSessionDateDraftRange}
                     />
                     <div className="flex items-center justify-between gap-4 px-3 pb-3">
-                        <div className="min-w-0 text-xs text-muted-foreground">
-                            {[sessionDateDraftFrom || '...', sessionDateDraftTo || '...'].join(' - ')}
-                            <span className="ml-2">Max {GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS} days</span>
+                        <div className="text-muted-foreground min-w-0 text-xs">
+                            {[
+                                sessionDateDraftFrom || '...',
+                                sessionDateDraftTo || '...'
+                            ].join(' - ')}
+                            <span className="ml-2">
+                                Max {GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS} days
+                            </span>
                         </div>
                         <div className="flex justify-end gap-2">
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={clearSessionDateRange}>
+                                onClick={clearSessionDateRange}
+                            >
                                 {t('common.actions.clear')}
                             </Button>
-                            <Button type="button" size="sm" onClick={applySessionDateRange}>
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={applySessionDateRange}
+                            >
                                 {t('common.actions.confirm')}
                             </Button>
                         </div>
@@ -1841,7 +2257,7 @@ export function GameLogPage({ embedded = false } = {}) {
     function renderSearchInput(className = 'relative min-w-56 flex-1') {
         return (
             <div className={className}>
-                <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                 <Input
                     value={searchDraft}
                     onChange={(event) => setSearchDraft(event.target.value)}
@@ -1852,7 +2268,7 @@ export function GameLogPage({ embedded = false } = {}) {
                         }
                     }}
                     placeholder="Search"
-                    className="pl-9 pr-9"
+                    className="pr-9 pl-9"
                 />
                 {searchDraft ? (
                     <Button
@@ -1865,7 +2281,8 @@ export function GameLogPage({ embedded = false } = {}) {
                         onClick={() => {
                             setSearchDraft('');
                             setSearchQuery('');
-                        }}>
+                        }}
+                    >
                         <XIcon data-icon="inline-start" />
                     </Button>
                 ) : null}
@@ -1882,15 +2299,22 @@ export function GameLogPage({ embedded = false } = {}) {
                     size="icon"
                     title="Refresh"
                     aria-label="Refresh game log"
-                    disabled={!currentUserId || gameLogDisabled || loadStatus === 'running'}
-                    onClick={() => setRefreshToken((value) => value + 1)}>
+                    disabled={
+                        !currentUserId ||
+                        gameLogDisabled ||
+                        loadStatus === 'running'
+                    }
+                    onClick={() => setRefreshToken((value) => value + 1)}
+                >
                     {loadStatus === 'running' ? (
                         <Spinner data-icon="inline-start" />
                     ) : (
                         <RefreshCwIcon data-icon="inline-start" />
                     )}
                 </Button>
-                {savedViewMode === 'table' ? <TableColumnVisibilityMenu table={table} /> : null}
+                {savedViewMode === 'table' ? (
+                    <TableColumnVisibilityMenu table={table} />
+                ) : null}
             </div>
         );
     }
@@ -1910,7 +2334,9 @@ export function GameLogPage({ embedded = false } = {}) {
                                     <TypeFilterDropdown
                                         types={availableFilterTypes}
                                         selectedTypes={queryFilterTypes}
-                                        onSelectedTypesChange={setActiveSelectedTypes}
+                                        onSelectedTypesChange={
+                                            setActiveSelectedTypes
+                                        }
                                     />
                                 </div>
                                 {renderSearchInput('relative w-60 shrink-0')}
@@ -1926,7 +2352,9 @@ export function GameLogPage({ embedded = false } = {}) {
                                 <TypeFilterToggleGroup
                                     types={availableFilterTypes}
                                     selectedTypes={queryFilterTypes}
-                                    onSelectedTypesChange={setActiveSelectedTypes}
+                                    onSelectedTypesChange={
+                                        setActiveSelectedTypes
+                                    }
                                     className="flex shrink-0 items-center gap-1"
                                 />
                                 {renderSearchInput('relative w-60 shrink-0')}
@@ -1934,7 +2362,11 @@ export function GameLogPage({ embedded = false } = {}) {
                             </div>
                         </div>
                     )}
-                    {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
+                    {detail ? (
+                        <div className="text-muted-foreground text-sm">
+                            {detail}
+                        </div>
+                    ) : null}
                 </PageToolbar>
 
                 <PageBody>
@@ -1943,7 +2375,9 @@ export function GameLogPage({ embedded = false } = {}) {
                     ) : isError ? (
                         <GameLogEmptyState
                             title="Game log failed to load"
-                            description={detail || 'The game log query did not complete.'}
+                            description={
+                                detail || 'The game log query did not complete.'
+                            }
                         />
                     ) : gameLogDisabled ? (
                         <GameLogEmptyState
@@ -1957,11 +2391,18 @@ export function GameLogPage({ embedded = false } = {}) {
                                 isGameRunning={isGameRunning}
                                 hasMore={hasMoreSessions}
                                 isLoadingMore={isLoadingMoreSessions}
-                                autoFill={Boolean(deferredSearchQuery.trim()) && !sessionDateFrom && !sessionDateTo}
+                                autoFill={
+                                    Boolean(deferredSearchQuery.trim()) &&
+                                    !sessionDateFrom &&
+                                    !sessionDateTo
+                                }
                                 autoFillKey={`${deferredSearchQuery}:${sessionDateFrom}:${sessionDateTo}:${queryFilterTypes.join(',')}:${favoritesOnly}`}
                                 onLoadMore={() =>
                                     setSessionLimit((current) =>
-                                        Math.min(current + pagination.pageSize, 1000)
+                                        Math.min(
+                                            current + pagination.pageSize,
+                                            1000
+                                        )
                                     )
                                 }
                             />
@@ -1977,7 +2418,7 @@ export function GameLogPage({ embedded = false } = {}) {
                         )
                     ) : hasRows ? (
                         <div className="flex min-h-0 flex-1 flex-col gap-3">
-                            <DataTableSurface className="overflow-y-auto overflow-x-hidden">
+                            <DataTableSurface className="overflow-x-hidden overflow-y-auto">
                                 <table className="w-full table-fixed caption-bottom text-sm">
                                     <DataTableHeader
                                         table={table}
@@ -1990,14 +2431,19 @@ export function GameLogPage({ embedded = false } = {}) {
                                                     row.original?.rowId != null
                                                         ? `${row.original.type}:${row.original.rowId}`
                                                         : row.id
-                                                }>
-                                                {row.getVisibleCells().map((cell) => (
-                                                    <ResizableTableCell
-                                                        key={cell.id}
-                                                        cell={cell}
-                                                        style={getGameLogColumnStyle(cell.column)}
-                                                    />
-                                                ))}
+                                                }
+                                            >
+                                                {row
+                                                    .getVisibleCells()
+                                                    .map((cell) => (
+                                                        <ResizableTableCell
+                                                            key={cell.id}
+                                                            cell={cell}
+                                                            style={getGameLogColumnStyle(
+                                                                cell.column
+                                                            )}
+                                                        />
+                                                    ))}
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -2005,16 +2451,17 @@ export function GameLogPage({ embedded = false } = {}) {
                             </DataTableSurface>
 
                             <PageFooter>
-                                <div className="text-sm text-muted-foreground">
+                                <div className="text-muted-foreground text-sm">
                                     Showing{' '}
-                                    <span className="font-medium text-foreground">
+                                    <span className="text-foreground font-medium">
                                         {table.getRowModel().rows.length}
                                     </span>{' '}
                                     of{' '}
-                                    <span className="font-medium text-foreground">
+                                    <span className="text-foreground font-medium">
                                         {annotatedRows.length}
                                     </span>{' '}
-                                    game log row{annotatedRows.length === 1 ? '' : 's'}
+                                    game log row
+                                    {annotatedRows.length === 1 ? '' : 's'}
                                 </div>
                                 <DataTablePagination
                                     table={table}
@@ -2022,9 +2469,16 @@ export function GameLogPage({ embedded = false } = {}) {
                                     pageCount={pageCount}
                                     pageSize={pagination.pageSize}
                                     pageSizes={pageSizes}
-                                    pageSizeLabel={t('table.pagination.rows_per_page')}
+                                    pageSizeLabel={t(
+                                        'table.pagination.rows_per_page'
+                                    )}
                                     onPageSizeChange={(value) => {
-                                        const nextPageSize = resolveGameLogPageSize(value, pageSizes, pagination.pageSize);
+                                        const nextPageSize =
+                                            resolveGameLogPageSize(
+                                                value,
+                                                pageSizes,
+                                                pagination.pageSize
+                                            );
                                         setPagination({
                                             pageIndex: 0,
                                             pageSize: nextPageSize

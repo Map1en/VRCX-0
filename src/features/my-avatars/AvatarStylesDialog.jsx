@@ -12,7 +12,12 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel
+} from '@/ui/shadcn/field';
 import {
     Select,
     SelectContent,
@@ -27,12 +32,16 @@ import { Textarea } from '@/ui/shadcn/textarea';
 const CLEAR_STYLE_VALUE = '__clear__';
 
 function normalizeStyleName(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function resolveAuthorTags(tags) {
     return (Array.isArray(tags) ? tags : [])
-        .filter((tag) => typeof tag === 'string' && tag.startsWith('author_tag_'))
+        .filter(
+            (tag) => typeof tag === 'string' && tag.startsWith('author_tag_')
+        )
         .map((tag) => tag.slice('author_tag_'.length))
         .join(',');
 }
@@ -55,14 +64,24 @@ function buildTags(initialTags, authorTags) {
 }
 
 function arraysMatch(left, right) {
-    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+    if (
+        !Array.isArray(left) ||
+        !Array.isArray(right) ||
+        left.length !== right.length
+    ) {
         return false;
     }
 
     return left.every((entry, index) => entry === right[index]);
 }
 
-function applyStyleParam(params, key, styleName, initialStyleName, styleIdByName) {
+function applyStyleParam(
+    params,
+    key,
+    styleName,
+    initialStyleName,
+    styleIdByName
+) {
     if (!styleName) {
         params[key] = '';
         return true;
@@ -95,7 +114,10 @@ export function AvatarStylesDialog({
     const avatarId = normalizeStyleName(avatar?.id);
     const initialPrimaryStyle = normalizeStyleName(avatar?.styles?.primary);
     const initialSecondaryStyle = normalizeStyleName(avatar?.styles?.secondary);
-    const initialTags = useMemo(() => (Array.isArray(avatar?.tags) ? avatar.tags : []), [avatar]);
+    const initialTags = useMemo(
+        () => (Array.isArray(avatar?.tags) ? avatar.tags : []),
+        [avatar]
+    );
     const [primaryStyle, setPrimaryStyle] = useState('');
     const [secondaryStyle, setSecondaryStyle] = useState('');
     const [authorTags, setAuthorTags] = useState('');
@@ -142,7 +164,11 @@ export function AvatarStylesDialog({
                     return;
                 }
                 setLoadStatus('error');
-                toast.error(error instanceof Error ? error.message : 'Failed to load avatar styles.');
+                toast.error(
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load avatar styles.'
+                );
             });
 
         return () => {
@@ -162,7 +188,9 @@ export function AvatarStylesDialog({
     }, [availableStyles]);
 
     const styleNames = useMemo(() => {
-        const names = new Set([initialPrimaryStyle, initialSecondaryStyle].filter(Boolean));
+        const names = new Set(
+            [initialPrimaryStyle, initialSecondaryStyle].filter(Boolean)
+        );
         for (const style of availableStyles) {
             const name = normalizeStyleName(style?.styleName);
             if (name) {
@@ -230,7 +258,11 @@ export function AvatarStylesDialog({
             toast.success('Avatar styles updated.');
             onOpenChange(false);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update avatar styles.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update avatar styles.'
+            );
         } finally {
             setSaving(false);
         }
@@ -241,7 +273,9 @@ export function AvatarStylesDialog({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Set Avatar Styles</DialogTitle>
-                    <DialogDescription>{avatar?.name || avatarId || 'Avatar'}</DialogDescription>
+                    <DialogDescription>
+                        {avatar?.name || avatarId || 'Avatar'}
+                    </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <Field>
@@ -249,16 +283,24 @@ export function AvatarStylesDialog({
                         <Select
                             value={primaryStyle || CLEAR_STYLE_VALUE}
                             onValueChange={(value) =>
-                                setPrimaryStyle(value === CLEAR_STYLE_VALUE ? '' : value)
-                            }>
+                                setPrimaryStyle(
+                                    value === CLEAR_STYLE_VALUE ? '' : value
+                                )
+                            }
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select style" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value={CLEAR_STYLE_VALUE}>None</SelectItem>
+                                    <SelectItem value={CLEAR_STYLE_VALUE}>
+                                        None
+                                    </SelectItem>
                                     {styleNames.map((styleName) => (
-                                        <SelectItem key={styleName} value={styleName}>
+                                        <SelectItem
+                                            key={styleName}
+                                            value={styleName}
+                                        >
                                             {styleName}
                                         </SelectItem>
                                     ))}
@@ -271,16 +313,24 @@ export function AvatarStylesDialog({
                         <Select
                             value={secondaryStyle || CLEAR_STYLE_VALUE}
                             onValueChange={(value) =>
-                                setSecondaryStyle(value === CLEAR_STYLE_VALUE ? '' : value)
-                            }>
+                                setSecondaryStyle(
+                                    value === CLEAR_STYLE_VALUE ? '' : value
+                                )
+                            }
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select style" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value={CLEAR_STYLE_VALUE}>None</SelectItem>
+                                    <SelectItem value={CLEAR_STYLE_VALUE}>
+                                        None
+                                    </SelectItem>
                                     {styleNames.map((styleName) => (
-                                        <SelectItem key={styleName} value={styleName}>
+                                        <SelectItem
+                                            key={styleName}
+                                            value={styleName}
+                                        >
                                             {styleName}
                                         </SelectItem>
                                     ))}
@@ -292,22 +342,33 @@ export function AvatarStylesDialog({
                         <FieldLabel>Author tags</FieldLabel>
                         <Textarea
                             value={authorTags}
-                            onChange={(event) => setAuthorTags(event.target.value)}
+                            onChange={(event) =>
+                                setAuthorTags(event.target.value)
+                            }
                             rows={3}
                             placeholder="comma,separated,tags"
                         />
                     </Field>
                     {loadStatus === 'error' ? (
                         <FieldDescription>
-                            Style list could not be loaded. Unknown style selections will be preserved.
+                            Style list could not be loaded. Unknown style
+                            selections will be preserved.
                         </FieldDescription>
                     ) : null}
                 </FieldGroup>
                 <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
                         Cancel
                     </Button>
-                    <Button type="button" disabled={saving || loadStatus === 'running'} onClick={() => void saveStyles()}>
+                    <Button
+                        type="button"
+                        disabled={saving || loadStatus === 'running'}
+                        onClick={() => void saveStyles()}
+                    >
                         {saving || loadStatus === 'running' ? (
                             <Spinner data-icon="inline-start" />
                         ) : null}

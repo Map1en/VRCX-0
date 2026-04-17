@@ -2,10 +2,19 @@ import { database } from '@/services/database/index.js';
 
 import configRepository from './configRepository.js';
 
-export const FEED_FILTER_TYPES = Object.freeze(['GPS', 'Online', 'Offline', 'Status', 'Avatar', 'Bio']);
+export const FEED_FILTER_TYPES = Object.freeze([
+    'GPS',
+    'Online',
+    'Offline',
+    'Status',
+    'Avatar',
+    'Bio'
+]);
 
 function normalizeUserId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeFilterList(filters = []) {
@@ -85,7 +94,11 @@ class FeedRepository {
             );
         }
 
-        return database.lookupFeedDatabase(normalizedFilters, normalizedFavorites, maxTableSize);
+        return database.lookupFeedDatabase(
+            normalizedFilters,
+            normalizedFavorites,
+            maxTableSize
+        );
     }
 }
 

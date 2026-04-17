@@ -1,7 +1,15 @@
 export const FEED_TABLE_DEFAULT_PAGE_SIZES = [10, 25, 50];
 export const FEED_TABLE_DEFAULT_SORTING = [];
-export const FEED_TABLE_COLUMN_IDS = ['created_at', 'type', 'displayName', 'detail'];
-export const FEED_TABLE_ORDER_COLUMN_IDS = ['expander', ...FEED_TABLE_COLUMN_IDS];
+export const FEED_TABLE_COLUMN_IDS = [
+    'created_at',
+    'type',
+    'displayName',
+    'detail'
+];
+export const FEED_TABLE_ORDER_COLUMN_IDS = [
+    'expander',
+    ...FEED_TABLE_COLUMN_IDS
+];
 
 const STORAGE_KEY = 'vrcx:table:feed';
 
@@ -55,7 +63,10 @@ export function sanitizeFeedSorting(value) {
     }
 
     const allowedIds = new Set(FEED_TABLE_COLUMN_IDS);
-    const filtered = value.filter((entry) => entry && typeof entry.id === 'string' && allowedIds.has(entry.id));
+    const filtered = value.filter(
+        (entry) =>
+            entry && typeof entry.id === 'string' && allowedIds.has(entry.id)
+    );
     return filtered.length ? filtered : FEED_TABLE_DEFAULT_SORTING;
 }
 
@@ -67,7 +78,9 @@ export function sanitizeFeedPageSizes(value) {
     const sizes = value
         .map((entry) => Number.parseInt(entry, 10))
         .filter((entry) => Number.isFinite(entry) && entry > 0);
-    return sizes.length ? [...new Set(sizes)].sort((left, right) => left - right) : FEED_TABLE_DEFAULT_PAGE_SIZES;
+    return sizes.length
+        ? [...new Set(sizes)].sort((left, right) => left - right)
+        : FEED_TABLE_DEFAULT_PAGE_SIZES;
 }
 
 export function sanitizeFeedColumnVisibility(value) {
@@ -89,7 +102,9 @@ export function sanitizeFeedColumnOrder(value) {
         return [];
     }
 
-    return value.filter((columnId) => FEED_TABLE_ORDER_COLUMN_IDS.includes(columnId));
+    return value.filter((columnId) =>
+        FEED_TABLE_ORDER_COLUMN_IDS.includes(columnId)
+    );
 }
 
 export function sanitizeFeedColumnSizing(value) {
@@ -118,5 +133,7 @@ export function resolveFeedPageSize(
         return parsed;
     }
 
-    return pageSizes.includes(fallback) ? fallback : (pageSizes[0] ?? FEED_TABLE_DEFAULT_PAGE_SIZES[0]);
+    return pageSizes.includes(fallback)
+        ? fallback
+        : (pageSizes[0] ?? FEED_TABLE_DEFAULT_PAGE_SIZES[0]);
 }

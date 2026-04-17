@@ -18,47 +18,50 @@ describe('friendRosterStore', () => {
             friendsById: {}
         });
 
-        store.applyFriendPatches([
-            {
-                userId: ' usr_b ',
-                stateBucket: 'online',
-                patch: {
-                    id: 'usr_b',
-                    displayName: 'Bravo',
-                    friendNumber: 2,
-                    platform: 'standalonewindows',
-                    tags: ['system_trust_basic']
+        store.applyFriendPatches(
+            [
+                {
+                    userId: ' usr_b ',
+                    stateBucket: 'online',
+                    patch: {
+                        id: 'usr_b',
+                        displayName: 'Bravo',
+                        friendNumber: 2,
+                        platform: 'standalonewindows',
+                        tags: ['system_trust_basic']
+                    }
+                },
+                {
+                    userId: 'usr_a',
+                    stateBucket: 'online',
+                    patch: {
+                        id: 'usr_a',
+                        displayName: 'Alpha',
+                        friendNumber: 1,
+                        tags: []
+                    }
+                },
+                {
+                    userId: 'usr_c',
+                    stateBucket: 'active',
+                    patch: {
+                        id: 'usr_c',
+                        displayName: 'Charlie',
+                        tags: ['system_trust_known']
+                    }
+                },
+                {
+                    userId: 'usr_d',
+                    stateBucket: 'offline',
+                    patch: {
+                        id: 'usr_d',
+                        displayName: 'Delta',
+                        tags: []
+                    }
                 }
-            },
-            {
-                userId: 'usr_a',
-                stateBucket: 'online',
-                patch: {
-                    id: 'usr_a',
-                    displayName: 'Alpha',
-                    friendNumber: 1,
-                    tags: []
-                }
-            },
-            {
-                userId: 'usr_c',
-                stateBucket: 'active',
-                patch: {
-                    id: 'usr_c',
-                    displayName: 'Charlie',
-                    tags: ['system_trust_known']
-                }
-            },
-            {
-                userId: 'usr_d',
-                stateBucket: 'offline',
-                patch: {
-                    id: 'usr_d',
-                    displayName: 'Delta',
-                    tags: []
-                }
-            }
-        ], 'patch applied');
+            ],
+            'patch applied'
+        );
 
         const state = useFriendRosterStore.getState();
 
@@ -67,7 +70,12 @@ describe('friendRosterStore', () => {
         expect(state.onlineIds).toEqual(['usr_a', 'usr_b']);
         expect(state.activeIds).toEqual(['usr_c']);
         expect(state.offlineIds).toEqual(['usr_d']);
-        expect(state.orderedFriendIds).toEqual(['usr_a', 'usr_b', 'usr_c', 'usr_d']);
+        expect(state.orderedFriendIds).toEqual([
+            'usr_a',
+            'usr_b',
+            'usr_c',
+            'usr_d'
+        ]);
         expect(state.friendsById.usr_b).toMatchObject({
             id: 'usr_b',
             displayName: 'Bravo',
@@ -104,8 +112,16 @@ describe('friendRosterStore', () => {
         const store = useFriendRosterStore.getState();
 
         store.applyFriendPatches([
-            { userId: 'usr_a', stateBucket: 'online', patch: { id: 'usr_a', displayName: 'Alpha' } },
-            { userId: 'usr_b', stateBucket: 'active', patch: { id: 'usr_b', displayName: 'Bravo' } }
+            {
+                userId: 'usr_a',
+                stateBucket: 'online',
+                patch: { id: 'usr_a', displayName: 'Alpha' }
+            },
+            {
+                userId: 'usr_b',
+                stateBucket: 'active',
+                patch: { id: 'usr_b', displayName: 'Bravo' }
+            }
         ]);
         store.removeFriend(' usr_a ', 'removed');
 

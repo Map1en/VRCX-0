@@ -1,7 +1,8 @@
-import webRepository from './webRepository.js';
+import { database } from '@/services/database/index.js';
+
 import { safeJsonParse } from './baseRepository.js';
 import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
-import { database } from '@/services/database/index.js';
+import webRepository from './webRepository.js';
 
 function normalizeEndpointDomain(endpointDomain) {
     if (typeof endpointDomain === 'string' && endpointDomain.trim()) {
@@ -12,7 +13,10 @@ function normalizeEndpointDomain(endpointDomain) {
 }
 
 function buildUrl(path, endpointDomain) {
-    const baseUrl = normalizeEndpointDomain(endpointDomain).replace(/\/?$/, '/');
+    const baseUrl = normalizeEndpointDomain(endpointDomain).replace(
+        /\/?$/,
+        '/'
+    );
     return new URL(path, baseUrl).toString();
 }
 
@@ -54,8 +58,14 @@ function normalizePlayerModerationRow(row) {
         return null;
     }
 
-    const id = typeof row.id === 'string' ? row.id.trim() : String(row.id ?? '').trim();
-    const type = typeof row.type === 'string' ? row.type.trim() : String(row.type ?? '').trim();
+    const id =
+        typeof row.id === 'string'
+            ? row.id.trim()
+            : String(row.id ?? '').trim();
+    const type =
+        typeof row.type === 'string'
+            ? row.type.trim()
+            : String(row.type ?? '').trim();
     const sourceUserId =
         typeof row.sourceUserId === 'string'
             ? row.sourceUserId.trim()
@@ -74,10 +84,14 @@ function normalizePlayerModerationRow(row) {
         type,
         sourceUserId,
         sourceDisplayName:
-            typeof row.sourceDisplayName === 'string' ? row.sourceDisplayName : '',
+            typeof row.sourceDisplayName === 'string'
+                ? row.sourceDisplayName
+                : '',
         targetUserId,
         targetDisplayName:
-            typeof row.targetDisplayName === 'string' ? row.targetDisplayName : '',
+            typeof row.targetDisplayName === 'string'
+                ? row.targetDisplayName
+                : '',
         created: typeof row.created === 'string' ? row.created : ''
     };
 }
@@ -121,7 +135,9 @@ async function executePut(path, payload = {}, { endpoint = '' } = {}) {
         headers: {
             'Content-Type': 'application/json;charset=utf-8'
         },
-        body: JSON.stringify(payload && typeof payload === 'object' ? payload : {})
+        body: JSON.stringify(
+            payload && typeof payload === 'object' ? payload : {}
+        )
     });
     const json = parseJsonResponse(response.data);
 
@@ -157,7 +173,9 @@ async function executePost(path, payload = {}, { endpoint = '' } = {}) {
         headers: {
             'Content-Type': 'application/json;charset=utf-8'
         },
-        body: JSON.stringify(payload && typeof payload === 'object' ? payload : {})
+        body: JSON.stringify(
+            payload && typeof payload === 'object' ? payload : {}
+        )
     });
     const json = parseJsonResponse(response.data);
 
@@ -187,7 +205,9 @@ async function executePost(path, payload = {}, { endpoint = '' } = {}) {
 }
 
 async function getPlayerModerations({ endpoint = '' } = {}) {
-    const response = await executeGet('auth/user/playermoderations', { endpoint });
+    const response = await executeGet('auth/user/playermoderations', {
+        endpoint
+    });
     const rows = Array.isArray(response.json)
         ? response.json.map(normalizePlayerModerationRow).filter(Boolean)
         : [];
@@ -250,11 +270,16 @@ async function syncLocalModerationSnapshot(rows = []) {
 
 async function sendPlayerModeration({ endpoint = '', moderated, type } = {}) {
     const normalizedModerated =
-        typeof moderated === 'string' ? moderated.trim() : String(moderated ?? '').trim();
-    const normalizedType = typeof type === 'string' ? type.trim() : String(type ?? '').trim();
+        typeof moderated === 'string'
+            ? moderated.trim()
+            : String(moderated ?? '').trim();
+    const normalizedType =
+        typeof type === 'string' ? type.trim() : String(type ?? '').trim();
 
     if (!normalizedModerated || !normalizedType) {
-        throw new Error('VrchatModerationRepository.sendPlayerModeration requires moderated and type.');
+        throw new Error(
+            'VrchatModerationRepository.sendPlayerModeration requires moderated and type.'
+        );
     }
 
     return executePost(
@@ -269,11 +294,16 @@ async function sendPlayerModeration({ endpoint = '', moderated, type } = {}) {
 
 async function deletePlayerModeration({ endpoint = '', moderated, type } = {}) {
     const normalizedModerated =
-        typeof moderated === 'string' ? moderated.trim() : String(moderated ?? '').trim();
-    const normalizedType = typeof type === 'string' ? type.trim() : String(type ?? '').trim();
+        typeof moderated === 'string'
+            ? moderated.trim()
+            : String(moderated ?? '').trim();
+    const normalizedType =
+        typeof type === 'string' ? type.trim() : String(type ?? '').trim();
 
     if (!normalizedModerated || !normalizedType) {
-        throw new Error('VrchatModerationRepository.deletePlayerModeration requires moderated and type.');
+        throw new Error(
+            'VrchatModerationRepository.deletePlayerModeration requires moderated and type.'
+        );
     }
 
     return executePut(
@@ -288,7 +318,9 @@ async function deletePlayerModeration({ endpoint = '', moderated, type } = {}) {
 
 async function getLocalModeration({ userId } = {}) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
         return {
             userId: '',
@@ -305,11 +337,20 @@ async function getLocalModeration({ userId } = {}) {
     };
 }
 
-async function saveLocalModeration({ userId, displayName = '', block = false, mute = false } = {}) {
+async function saveLocalModeration({
+    userId,
+    displayName = '',
+    block = false,
+    mute = false
+} = {}) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('VrchatModerationRepository.saveLocalModeration requires a user id.');
+        throw new Error(
+            'VrchatModerationRepository.saveLocalModeration requires a user id.'
+        );
     }
 
     if (!block && !mute) {

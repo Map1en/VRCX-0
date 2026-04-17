@@ -3,7 +3,9 @@ import { parseLocation } from '@/shared/utils/locationParser.js';
 import sqliteRepository from './sqliteRepository.js';
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function parseDateMs(value) {
@@ -28,7 +30,9 @@ function getRowValue(row, key, index) {
         return row[key];
     }
 
-    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+        letter.toUpperCase()
+    );
     if (camelKey in row) {
         return row[camelKey];
     }
@@ -62,9 +66,9 @@ function isLiveLocation(location) {
     const normalizedLocation = normalizeString(location);
     return Boolean(
         normalizedLocation &&
-            normalizedLocation !== 'offline' &&
-            normalizedLocation !== 'private' &&
-            normalizedLocation !== 'traveling'
+        normalizedLocation !== 'offline' &&
+        normalizedLocation !== 'private' &&
+        normalizedLocation !== 'traveling'
     );
 }
 
@@ -83,11 +87,7 @@ function buildAnonymousPlayerKey(event, rowIndex) {
         return `row:${rowId}`;
     }
 
-    return [
-        'anonymous',
-        rowIndex,
-        normalizeString(event?.createdAt)
-    ].join(':');
+    return ['anonymous', rowIndex, normalizeString(event?.createdAt)].join(':');
 }
 
 function findAnonymousPlayerKeyForLeave(playersByKey, event) {
@@ -107,7 +107,9 @@ function findAnonymousPlayerKeyForLeave(playersByKey, event) {
             candidates.push({ playerKey, player });
         }
     }
-    candidates.sort((left, right) => String(left.playerKey).localeCompare(String(right.playerKey)));
+    candidates.sort((left, right) =>
+        String(left.playerKey).localeCompare(String(right.playerKey))
+    );
 
     if (candidates.length === 1) {
         return candidates[0].playerKey;
@@ -119,7 +121,8 @@ function findAnonymousPlayerKeyForLeave(playersByKey, event) {
     }
 
     const nameMatches = candidates.filter(
-        ({ player }) => normalizeString(player.displayName).toLowerCase() === displayName
+        ({ player }) =>
+            normalizeString(player.displayName).toLowerCase() === displayName
     );
     return nameMatches.length ? nameMatches[0].playerKey : '';
 }
@@ -195,7 +198,10 @@ async function resolveCurrentLocationContext(currentLocation) {
     };
 }
 
-async function getCurrentInstanceSnapshot({ currentUserId = '', currentLocation = '' } = {}) {
+async function getCurrentInstanceSnapshot({
+    currentUserId = '',
+    currentLocation = ''
+} = {}) {
     const context = await resolveCurrentLocationContext(currentLocation);
 
     if (!isLiveLocation(context.location)) {
@@ -220,7 +226,9 @@ async function getCurrentInstanceSnapshot({ currentUserId = '', currentLocation 
 
     for (const [rowIndex, row] of (Array.isArray(rows) ? rows : []).entries()) {
         const event = mapJoinLeaveRow(row);
-        const playerKey = buildPlayerKey(event.userId) || buildAnonymousPlayerKey(event, rowIndex);
+        const playerKey =
+            buildPlayerKey(event.userId) ||
+            buildAnonymousPlayerKey(event, rowIndex);
 
         if (event.type === 'OnPlayerJoined') {
             playersByKey.set(playerKey, {
@@ -235,7 +243,10 @@ async function getCurrentInstanceSnapshot({ currentUserId = '', currentLocation 
             if (event.userId) {
                 playersByKey.delete(playerKey);
             } else {
-                const anonymousPlayerKey = findAnonymousPlayerKeyForLeave(playersByKey, event);
+                const anonymousPlayerKey = findAnonymousPlayerKeyForLeave(
+                    playersByKey,
+                    event
+                );
                 if (anonymousPlayerKey) {
                     playersByKey.delete(anonymousPlayerKey);
                 }
@@ -246,7 +257,10 @@ async function getCurrentInstanceSnapshot({ currentUserId = '', currentLocation 
     const players = Array.from(playersByKey.values())
         .filter((player) => {
             const normalizedUserId = normalizeString(player.userId);
-            if (normalizedCurrentUserId && normalizedUserId === normalizedCurrentUserId) {
+            if (
+                normalizedCurrentUserId &&
+                normalizedUserId === normalizedCurrentUserId
+            ) {
                 return false;
             }
 

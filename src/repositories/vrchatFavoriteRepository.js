@@ -1,11 +1,12 @@
-import webRepository from './webRepository.js';
-import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/services/entityQueryCacheService.js';
+
+import { safeJsonParse } from './baseRepository.js';
+import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import webRepository from './webRepository.js';
 
 const FAVORITES_PAGE_SIZE = 300;
 const FAVORITE_GROUPS_PAGE_SIZE = 50;

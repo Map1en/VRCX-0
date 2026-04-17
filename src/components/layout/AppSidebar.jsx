@@ -1,12 +1,11 @@
 import { useEffect, useRef } from 'react';
 
 import {
-    Sidebar,
-    SidebarInset,
-    SidebarProvider
-} from '@/ui/shadcn/sidebar';
-import { setNavWidthPreference, setSidebarCollapsedPreference } from '@/services/preferencesService.js';
+    setNavWidthPreference,
+    setSidebarCollapsedPreference
+} from '@/services/preferencesService.js';
 import { useShellStore } from '@/state/shellStore.js';
+import { Sidebar, SidebarInset, SidebarProvider } from '@/ui/shadcn/sidebar';
 
 import { AppNavMenu } from './AppNavMenu.jsx';
 
@@ -86,12 +85,14 @@ export function AppSidebar({ children }) {
             style={{ '--sidebar-width': `${navWidth}px` }}
             onOpenChange={(open) => {
                 void setSidebarCollapsedPreference(!open);
-            }}>
+            }}
+        >
             <Sidebar
                 side="left"
                 variant="sidebar"
                 collapsible="icon"
-                style={{ top: '2rem', bottom: 0, height: 'auto' }}>
+                style={{ top: '2rem', bottom: 0, height: 'auto' }}
+            >
                 <AppNavMenu isCollapsed={!sidebarOpen} />
             </Sidebar>
             {sidebarOpen ? (
@@ -101,7 +102,9 @@ export function AppSidebar({ children }) {
                     onPointerDown={startNavResize}
                 />
             ) : null}
-            <SidebarInset className="min-w-0 overflow-hidden bg-background">{children}</SidebarInset>
+            <SidebarInset className="bg-background min-w-0 overflow-hidden">
+                {children}
+            </SidebarInset>
         </SidebarProvider>
     );
 }

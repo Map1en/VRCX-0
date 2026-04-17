@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from 'react';
 import {
     HeartIcon,
     LogInIcon,
@@ -8,12 +7,16 @@ import {
     SettingsIcon,
     WaypointsIcon
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
-import { cn } from '@/lib/utils.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
-import { GAME_LOG_FILTER_TYPES, gameLogRepository } from '@/repositories/index.js';
+import { cn } from '@/lib/utils.js';
+import {
+    GAME_LOG_FILTER_TYPES,
+    gameLogRepository
+} from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -28,13 +31,10 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
 
+import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
+import { DashboardWidgetHeader } from './DashboardWidgetHeader.jsx';
 import {
     buildFavoriteIdSet,
     formatWidgetExactTime,
@@ -43,8 +43,6 @@ import {
     isDashboardWidgetFilterActive,
     normalizeString
 } from './shared.js';
-import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
-import { DashboardWidgetHeader } from './DashboardWidgetHeader.jsx';
 
 const GAME_LOG_WIDGET_MAX_ROWS = 200;
 
@@ -71,8 +69,12 @@ function GameLogWidgetUserName({ row, className = '' }) {
         <Button
             type="button"
             variant="link"
-            className={cn('h-auto min-w-0 cursor-pointer justify-start p-0 text-left font-normal', className)}
-            onClick={() => openGameLogWidgetUser(row)}>
+            className={cn(
+                'h-auto min-w-0 cursor-pointer justify-start p-0 text-left font-normal',
+                className
+            )}
+            onClick={() => openGameLogWidgetUser(row)}
+        >
             {displayName}
         </Button>
     );
@@ -80,7 +82,11 @@ function GameLogWidgetUserName({ row, className = '' }) {
 
 function GameLogWidgetLocation({ row }) {
     if (!row?.location) {
-        return <span className="text-muted-foreground">{row?.worldName || ''}</span>;
+        return (
+            <span className="text-muted-foreground">
+                {row?.worldName || ''}
+            </span>
+        );
     }
 
     return (
@@ -101,54 +107,83 @@ function GameLogEntryContent({ row, showDetail }) {
         case 'Location':
             return (
                 <div className="flex min-w-0 items-center">
-                    <MapPinIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                    <MapPinIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
                     <GameLogWidgetLocation row={row} />
                 </div>
             );
         case 'OnPlayerJoined':
             return (
                 <div className="flex min-w-0 items-center">
-                    <LogInIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                    <LogInIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
                     <GameLogWidgetUserName row={row} />
-                    {row?.isFriend ? <span className="ml-1">{row?.isFavorite ? '⭐' : '💚'}</span> : null}
+                    {row?.isFriend ? (
+                        <span className="ml-1">
+                            {row?.isFavorite ? '⭐' : '💚'}
+                        </span>
+                    ) : null}
                 </div>
             );
         case 'OnPlayerLeft':
             return (
                 <div className="flex min-w-0 items-center">
-                    <LogOutIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
-                    <GameLogWidgetUserName row={row} className="text-muted-foreground/70" />
-                    {row?.isFriend ? <span className="ml-1">{row?.isFavorite ? '⭐' : '💚'}</span> : null}
+                    <LogOutIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
+                    <GameLogWidgetUserName
+                        row={row}
+                        className="text-muted-foreground/70"
+                    />
+                    {row?.isFriend ? (
+                        <span className="ml-1">
+                            {row?.isFavorite ? '⭐' : '💚'}
+                        </span>
+                    ) : null}
                 </div>
             );
         case 'PortalSpawn':
             return (
                 <div className="flex min-w-0 items-center">
-                    <WaypointsIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                    <WaypointsIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
                     <GameLogWidgetUserName row={row} />
-                    <span className="mx-1 shrink-0 text-muted-foreground">→</span>
+                    <span className="text-muted-foreground mx-1 shrink-0">
+                        →
+                    </span>
                     <GameLogWidgetLocation row={row} />
                 </div>
             );
         case 'VideoPlay': {
             const videoLabel = row?.videoName || row?.videoUrl || '';
-            const canOpenVideo = Boolean(row?.videoUrl && row?.videoId !== 'LSMedia' && row?.videoId !== 'PopcornPalace');
+            const canOpenVideo = Boolean(
+                row?.videoUrl &&
+                row?.videoId !== 'LSMedia' &&
+                row?.videoId !== 'PopcornPalace'
+            );
             return (
                 <div
                     className="flex min-w-0 items-center"
-                    title={row?.videoId ? `${row.videoId}: ${videoLabel}` : videoLabel}>
-                    <PlayIcon className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
-                    {row?.videoId ? <span className="mr-1 shrink-0 text-muted-foreground">{row.videoId}:</span> : null}
+                    title={
+                        row?.videoId
+                            ? `${row.videoId}: ${videoLabel}`
+                            : videoLabel
+                    }
+                >
+                    <PlayIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
+                    {row?.videoId ? (
+                        <span className="text-muted-foreground mr-1 shrink-0">
+                            {row.videoId}:
+                        </span>
+                    ) : null}
                     {canOpenVideo ? (
                         <Button
                             type="button"
                             variant="link"
-                            className="h-auto min-w-0 justify-start p-0 text-left font-normal text-muted-foreground"
-                            onClick={() => void openExternalLink(row.videoUrl)}>
+                            className="text-muted-foreground h-auto min-w-0 justify-start p-0 text-left font-normal"
+                            onClick={() => void openExternalLink(row.videoUrl)}
+                        >
                             <span className="truncate">{videoLabel}</span>
                         </Button>
                     ) : (
-                        <span className="min-w-0 truncate text-muted-foreground">{videoLabel}</span>
+                        <span className="text-muted-foreground min-w-0 truncate">
+                            {videoLabel}
+                        </span>
                     )}
                 </div>
             );
@@ -157,9 +192,11 @@ function GameLogEntryContent({ row, showDetail }) {
             return (
                 <div className="flex min-w-0 items-center">
                     <span className="truncate">{row?.displayName || ''}</span>
-                    <span className="ml-1 shrink-0 text-muted-foreground">{row?.type || ''}</span>
+                    <span className="text-muted-foreground ml-1 shrink-0">
+                        {row?.type || ''}
+                    </span>
                     {showDetail && (row?.data || row?.message) ? (
-                        <span className="ml-1 min-w-0 truncate text-muted-foreground">
+                        <span className="text-muted-foreground ml-1 min-w-0 truncate">
                             — {row.data || row.message}
                         </span>
                     ) : null}
@@ -174,8 +211,12 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.backendEvents.addGameLogEvent.count
     );
-    const remoteFavoriteFriendIds = useFavoriteStore((state) => state.favoriteFriendIds);
-    const localFriendFavorites = useFavoriteStore((state) => state.localFriendFavorites);
+    const remoteFavoriteFriendIds = useFavoriteStore(
+        (state) => state.favoriteFriendIds
+    );
+    const localFriendFavorites = useFavoriteStore(
+        (state) => state.localFriendFavorites
+    );
 
     const [rows, setRows] = useState([]);
     const [loadStatus, setLoadStatus] = useState('idle');
@@ -210,7 +251,11 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                     return;
                 }
 
-                setRows(Array.isArray(nextRows) ? nextRows.slice(0, GAME_LOG_WIDGET_MAX_ROWS) : []);
+                setRows(
+                    Array.isArray(nextRows)
+                        ? nextRows.slice(0, GAME_LOG_WIDGET_MAX_ROWS)
+                        : []
+                );
                 setLoadStatus('ready');
                 setDetail('');
             })
@@ -222,7 +267,9 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                 setRows([]);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error ? error.message : 'Failed to load game-log widget.'
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load game-log widget.'
                 );
             });
 
@@ -237,7 +284,9 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                 const normalizedUserId = normalizeString(row?.userId);
                 return {
                     ...row,
-                    isFavorite: normalizedUserId ? favoriteIdSet.has(normalizedUserId) : false
+                    isFavorite: normalizedUserId
+                        ? favoriteIdSet.has(normalizedUserId)
+                        : false
                 };
             }),
         [favoriteIdSet, rows]
@@ -247,7 +296,12 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
     const settingsMenu = configUpdater ? (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon-sm" aria-label="Widget settings">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Widget settings"
+                >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
@@ -256,13 +310,21 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                     {GAME_LOG_FILTER_TYPES.map((filterType) => (
                         <DropdownMenuCheckboxItem
                             key={filterType}
-                            checked={isDashboardWidgetFilterActive(config, filterType)}
+                            checked={isDashboardWidgetFilterActive(
+                                config,
+                                filterType
+                            )}
                             onSelect={(event) => event.preventDefault()}
                             onCheckedChange={() =>
                                 configUpdater(
-                                    getNextDashboardWidgetFilterConfig(config, filterType, GAME_LOG_FILTER_TYPES)
+                                    getNextDashboardWidgetFilterConfig(
+                                        config,
+                                        filterType,
+                                        GAME_LOG_FILTER_TYPES
+                                    )
                                 )
-                            }>
+                            }
+                        >
                             {t(`view.game_log.filters.${filterType}`)}
                         </DropdownMenuCheckboxItem>
                     ))}
@@ -272,7 +334,13 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                     <DropdownMenuCheckboxItem
                         checked={showDetail}
                         onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={(checked) => configUpdater({ ...config, showDetail: Boolean(checked) })}>
+                        onCheckedChange={(checked) =>
+                            configUpdater({
+                                ...config,
+                                showDetail: Boolean(checked)
+                            })
+                        }
+                    >
                         {t('dashboard.widget.config.detail')}
                     </DropdownMenuCheckboxItem>
                 </DropdownMenuGroup>
@@ -281,7 +349,11 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
     ) : null;
     const renderShell = (children) => (
         <div className="flex h-full min-h-0 flex-col">
-            <DashboardWidgetHeader title={t('dashboard.widget.game_log')} icon="ri-history-line" path="/game-log">
+            <DashboardWidgetHeader
+                title={t('dashboard.widget.game_log')}
+                icon="ri-history-line"
+                path="/game-log"
+            >
                 {settingsMenu}
             </DashboardWidgetHeader>
             {children}
@@ -301,14 +373,16 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <DashboardWidgetEmptyState
                 title="Game log widget failed"
-                description={detail || 'The local game-log query did not complete.'}
+                description={
+                    detail || 'The local game-log query did not complete.'
+                }
             />
         );
     }
 
     if (loadStatus === 'running' && annotatedRows.length === 0) {
         return renderShell(
-            <div className="flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm">
                 <Spinner />
                 Loading game log widget
             </div>
@@ -326,8 +400,7 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
 
     return renderShell(
         <>
-
-            <div className="flex flex-wrap gap-2 px-3 pt-3 text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex flex-wrap gap-2 px-3 pt-3 text-xs">
                 <span>{annotatedRows.length} recent rows</span>
                 <span>
                     {Array.isArray(config.filters) && config.filters.length
@@ -343,24 +416,37 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                         {annotatedRows.map((row, index) => {
                             return (
                                 <TableRow
-                                    key={`${row.type || 'gamelog'}-${row.created_at || index}-${index}`}>
+                                    key={`${row.type || 'gamelog'}-${row.created_at || index}-${index}`}
+                                >
                                     <TableCell
-                                        className="w-24 align-top text-xs tabular-nums text-muted-foreground"
-                                        title={formatWidgetExactTime(row.created_at)}>
+                                        className="text-muted-foreground w-24 align-top text-xs tabular-nums"
+                                        title={formatWidgetExactTime(
+                                            row.created_at
+                                        )}
+                                    >
                                         {formatWidgetTime(row.created_at)}
                                     </TableCell>
                                     <TableCell className="w-24 align-top">
-                                        <Badge variant="outline" className="text-xs">
+                                        <Badge
+                                            variant="outline"
+                                            className="text-xs"
+                                        >
                                             {row.type || ''}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="align-top">
                                         <div className="flex min-w-0 items-center gap-2 text-sm">
                                             <div className="min-w-0 flex-1 truncate">
-                                                <GameLogEntryContent row={row} showDetail={showDetail} />
+                                                <GameLogEntryContent
+                                                    row={row}
+                                                    showDetail={showDetail}
+                                                />
                                             </div>
                                             {row.isFavorite ? (
-                                                <Badge variant="secondary" className="shrink-0 gap-1 px-1.5">
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="shrink-0 gap-1 px-1.5"
+                                                >
                                                     <HeartIcon className="size-3 fill-current" />
                                                     Favorite
                                                 </Badge>

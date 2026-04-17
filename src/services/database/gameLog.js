@@ -1,10 +1,11 @@
+import sqliteService from '../../repositories/sqliteRepository.js';
 import { dbVars } from '../database';
 import { buildInClause, buildValuesList } from './sqlHelpers.js';
 
-import sqliteService from '../../repositories/sqliteRepository.js';
-
 function normalizeGameLogIdentifier(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function bulkValue(value) {
@@ -166,13 +167,19 @@ const gameLog = {
         const { valuesSql, args } = buildValuesList(
             inputData,
             [
-                { column: 'created_at', value: (line) => bulkValue(line.created_at) },
+                {
+                    column: 'created_at',
+                    value: (line) => bulkValue(line.created_at)
+                },
                 { column: 'type', value: (line) => bulkValue(line.type) },
                 {
                     column: 'display_name',
                     value: (line) => bulkValue(line.displayName)
                 },
-                { column: 'location', value: (line) => bulkValue(line.location) },
+                {
+                    column: 'location',
+                    value: (line) => bulkValue(line.location)
+                },
                 { column: 'user_id', value: (line) => bulkValue(line.userId) },
                 { column: 'time', value: (line) => bulkValue(line.time) }
             ],
@@ -513,7 +520,11 @@ const gameLog = {
             return [];
         }
         const data = [];
-        const userIdFilter = buildInClause('g.user_id', userIds, 'stat_user_id');
+        const userIdFilter = buildInClause(
+            'g.user_id',
+            userIds,
+            'stat_user_id'
+        );
         const displayNameFilter = buildInClause(
             'g.display_name',
             displayNames,
@@ -1316,7 +1327,8 @@ const gameLog = {
                 var created_at = dbRow[1];
                 var displayName = normalizeGameLogIdentifier(dbRow[2]);
                 var userId = normalizeGameLogIdentifier(dbRow[3]);
-                var playerKey = userId || `${displayName || 'anonymous'}:${rowId}`;
+                var playerKey =
+                    userId || `${displayName || 'anonymous'}:${rowId}`;
                 if (dbRow[4]) {
                     time = dbRow[4];
                 }
@@ -1710,8 +1722,8 @@ const gameLog = {
     deleteGameLogInstance(input) {
         const eventIds = Array.isArray(input.events)
             ? input.events
-                .map((value) => Number.parseInt(value, 10))
-                .filter((value) => Number.isFinite(value) && value > 0)
+                  .map((value) => Number.parseInt(value, 10))
+                  .filter((value) => Number.isFinite(value) && value > 0)
             : [];
         if (!eventIds.length) {
             return Promise.resolve();

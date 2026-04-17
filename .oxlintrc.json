@@ -3,10 +3,7 @@
     "categories": {
         "correctness": "off"
     },
-    "ignorePatterns": [
-        "build/**",
-        "node_modules/**"
-    ],
+    "ignorePatterns": ["build/**", "node_modules/**"],
     "env": {
         "builtin": true
     },
@@ -780,9 +777,7 @@
     },
     "overrides": [
         {
-            "files": [
-                "**/*.{js,jsx,mjs,cjs}"
-            ],
+            "files": ["**/*.{js,jsx,mjs,cjs}"],
             "rules": {
                 "constructor-super": "error",
                 "for-direction": "error",
@@ -870,9 +865,7 @@
             }
         },
         {
-            "files": [
-                "src/services/confusables.js"
-            ],
+            "files": ["src/services/confusables.js"],
             "rules": {
                 "no-irregular-whitespace": "off",
                 "no-misleading-character-class": "off"

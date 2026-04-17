@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from 'react';
 import {
     ArrowDownIcon,
     ArrowUpIcon,
@@ -11,9 +10,17 @@ import {
     RotateCcwIcon,
     Trash2Icon
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils.js';
+import {
+    DASHBOARD_NAV_KEY_PREFIX,
+    DEFAULT_DASHBOARD_ICON
+} from '@/shared/constants/dashboard.js';
+import { isToolNavKey } from '@/shared/constants/tools.js';
+import { useDashboardStore } from '@/state/dashboardStore.js';
+import { useModalStore } from '@/state/modalStore.js';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -23,10 +30,6 @@ import {
     DialogTitle
 } from '@/ui/shadcn/dialog';
 import { Separator } from '@/ui/shadcn/separator';
-import { DASHBOARD_NAV_KEY_PREFIX, DEFAULT_DASHBOARD_ICON } from '@/shared/constants/dashboard.js';
-import { isToolNavKey } from '@/shared/constants/tools.js';
-import { useDashboardStore } from '@/state/dashboardStore.js';
-import { useModalStore } from '@/state/modalStore.js';
 
 const DEFAULT_FOLDER_ICON = 'ri-folder-line';
 
@@ -58,7 +61,10 @@ function cloneLayout(source) {
 }
 
 function createFolderId() {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    if (
+        typeof crypto !== 'undefined' &&
+        typeof crypto.randomUUID === 'function'
+    ) {
         return `custom-folder-${crypto.randomUUID()}`;
     }
     return `custom-folder-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -69,7 +75,9 @@ function definitionLabel(definition, t) {
         return '';
     }
     if (definition.titleIsCustom || definition.isDashboard) {
-        return definition.labelKey || definition.tooltip || definition.key || '';
+        return (
+            definition.labelKey || definition.tooltip || definition.key || ''
+        );
     }
     return t(definition.labelKey || definition.tooltip || definition.key || '');
 }
@@ -105,7 +113,11 @@ function removeKeyFromLayout(layout, key) {
 
         if (entry.type === 'folder') {
             const items = [];
-            for (let itemIndex = 0; itemIndex < (entry.items || []).length; itemIndex += 1) {
+            for (
+                let itemIndex = 0;
+                itemIndex < (entry.items || []).length;
+                itemIndex += 1
+            ) {
                 const itemKey = entry.items[itemIndex];
                 if (itemKey === normalizedKey) {
                     removed = true;
@@ -133,9 +145,16 @@ function insertKeyIntoLayout(layout, key, placement) {
     const next = cloneLayout(layout);
 
     if (placement?.parentId) {
-        const folder = next.find((item) => item.type === 'folder' && String(item.id) === String(placement.parentId));
+        const folder = next.find(
+            (item) =>
+                item.type === 'folder' &&
+                String(item.id) === String(placement.parentId)
+        );
         if (folder) {
-            const index = Math.max(0, Math.min(placement.index, folder.items.length));
+            const index = Math.max(
+                0,
+                Math.min(placement.index, folder.items.length)
+            );
             folder.items.splice(index, 0, key);
             return next;
         }
@@ -151,7 +170,9 @@ function insertKeyIntoLayout(layout, key, placement) {
 }
 
 function cleanLayout(layout) {
-    return cloneLayout(layout).filter((entry) => entry.type !== 'folder' || entry.items.length);
+    return cloneLayout(layout).filter(
+        (entry) => entry.type !== 'folder' || entry.items.length
+    );
 }
 
 function isDashboardKey(key) {
@@ -172,26 +193,67 @@ function NavItemRow({
     onDeleteDashboard
 }) {
     return (
-        <div className={cn('flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm', indent && 'ml-6')}>
+        <div
+            className={cn(
+                'flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm',
+                indent && 'ml-6'
+            )}
+        >
             <span className="min-w-0 flex-1 truncate">{label}</span>
-            <Button type="button" variant="ghost" size="icon-sm" aria-label={`Move ${label} up`} disabled={!canMoveUp} onClick={onMoveUp}>
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Move ${label} up`}
+                disabled={!canMoveUp}
+                onClick={onMoveUp}
+            >
                 <ArrowUpIcon data-icon="inline-start" />
             </Button>
-            <Button type="button" variant="ghost" size="icon-sm" aria-label={`Move ${label} down`} disabled={!canMoveDown} onClick={onMoveDown}>
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Move ${label} down`}
+                disabled={!canMoveDown}
+                onClick={onMoveDown}
+            >
                 <ArrowDownIcon data-icon="inline-start" />
             </Button>
             {isDashboard ? (
                 <>
-                    <Button type="button" variant="ghost" size="icon-sm" aria-label={`Edit ${label}`} onClick={onEditDashboard}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Edit ${label}`}
+                        onClick={onEditDashboard}
+                    >
                         <PencilIcon data-icon="inline-start" />
                     </Button>
-                    <Button type="button" variant="ghost" size="icon-sm" aria-label={`Delete ${label}`} onClick={onDeleteDashboard}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Delete ${label}`}
+                        onClick={onDeleteDashboard}
+                    >
                         <Trash2Icon data-icon="inline-start" />
                     </Button>
                 </>
             ) : null}
-            <Button type="button" variant="ghost" size="icon-sm" aria-label={`${isTool ? 'Remove' : 'Hide'} ${label}`} onClick={onHide}>
-                {isTool ? <Trash2Icon data-icon="inline-start" /> : <EyeOffIcon data-icon="inline-start" />}
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`${isTool ? 'Remove' : 'Hide'} ${label}`}
+                onClick={onHide}
+            >
+                {isTool ? (
+                    <Trash2Icon data-icon="inline-start" />
+                ) : (
+                    <EyeOffIcon data-icon="inline-start" />
+                )}
             </Button>
         </div>
     );
@@ -216,7 +278,9 @@ export function CustomNavDialog({
     const deleteDashboard = useDashboardStore((state) => state.deleteDashboard);
     const getDashboard = useDashboardStore((state) => state.getDashboard);
     const [localLayout, setLocalLayout] = useState(() => cloneLayout(layout));
-    const [localHiddenKeys, setLocalHiddenKeys] = useState(() => new Set(hiddenKeys || []));
+    const [localHiddenKeys, setLocalHiddenKeys] = useState(
+        () => new Set(hiddenKeys || [])
+    );
     const [hiddenPlacement, setHiddenPlacement] = useState(() => new Map());
 
     useEffect(() => {
@@ -224,19 +288,30 @@ export function CustomNavDialog({
             return;
         }
         setLocalLayout(cloneLayout(layout));
-        setLocalHiddenKeys(new Set((hiddenKeys || []).filter((key) => !isToolNavKey(key))));
+        setLocalHiddenKeys(
+            new Set((hiddenKeys || []).filter((key) => !isToolNavKey(key)))
+        );
         setHiddenPlacement(new Map());
     }, [hiddenKeys, layout, open]);
 
     const definitionMap = useMemo(
-        () => new Map((definitions || []).filter((definition) => definition?.key).map((definition) => [definition.key, definition])),
+        () =>
+            new Map(
+                (definitions || [])
+                    .filter((definition) => definition?.key)
+                    .map((definition) => [definition.key, definition])
+            ),
         [definitions]
     );
 
     const hiddenItems = useMemo(
         () =>
             (definitions || [])
-                .filter((definition) => localHiddenKeys.has(definition.key) && !isToolNavKey(definition.key))
+                .filter(
+                    (definition) =>
+                        localHiddenKeys.has(definition.key) &&
+                        !isToolNavKey(definition.key)
+                )
                 .map((definition) => ({
                     key: definition.key,
                     label: definitionLabel(definition, t)
@@ -262,14 +337,18 @@ export function CustomNavDialog({
     }
 
     function moveFolderChild(folderIndex, itemIndex, delta) {
-        updateFolderItems(folderIndex, (items) => moveArrayItem(items, itemIndex, delta));
+        updateFolderItems(folderIndex, (items) =>
+            moveArrayItem(items, itemIndex, delta)
+        );
     }
 
     function hideItem(key) {
         const result = removeKeyFromLayout(localLayout, key);
         setLocalLayout(result.layout);
         if (result.placement) {
-            setHiddenPlacement((current) => new Map(current).set(key, result.placement));
+            setHiddenPlacement((current) =>
+                new Map(current).set(key, result.placement)
+            );
         }
         if (!isToolNavKey(key)) {
             setLocalHiddenKeys((current) => {
@@ -292,7 +371,9 @@ export function CustomNavDialog({
             next.delete(key);
             return next;
         });
-        setLocalLayout((current) => insertKeyIntoLayout(current, key, placement));
+        setLocalLayout((current) =>
+            insertKeyIntoLayout(current, key, placement)
+        );
     }
 
     async function addFolder() {
@@ -354,25 +435,40 @@ export function CustomNavDialog({
                 return current;
             }
             const next = [...current];
-            next.splice(folderIndex, 1, ...(folder.items || []).map((key) => ({ type: 'item', key })));
+            next.splice(
+                folderIndex,
+                1,
+                ...(folder.items || []).map((key) => ({ type: 'item', key }))
+            );
             return next;
         });
     }
 
     async function addDashboard() {
         try {
-            const dashboard = await createDashboard(t('dashboard.default_name'));
+            const dashboard = await createDashboard(
+                t('dashboard.default_name')
+            );
             const key = `${DASHBOARD_NAV_KEY_PREFIX}${dashboard.id}`;
             const nextLayout = [...localLayout, { type: 'item', key }];
             setLocalLayout(nextLayout);
-            await onDashboardCreated?.(dashboard.id, cleanLayout(nextLayout), [...localHiddenKeys]);
+            await onDashboardCreated?.(dashboard.id, cleanLayout(nextLayout), [
+                ...localHiddenKeys
+            ]);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create dashboard.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to create dashboard.'
+            );
         }
     }
 
     async function editDashboard(key) {
-        const dashboardId = String(key || '').replace(DASHBOARD_NAV_KEY_PREFIX, '');
+        const dashboardId = String(key || '').replace(
+            DASHBOARD_NAV_KEY_PREFIX,
+            ''
+        );
         const dashboard = getDashboard(dashboardId);
         if (!dashboard) {
             return;
@@ -395,12 +491,19 @@ export function CustomNavDialog({
             });
             toast.success(t('message.update_success'));
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update dashboard.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update dashboard.'
+            );
         }
     }
 
     async function removeDashboard(key) {
-        const dashboardId = String(key || '').replace(DASHBOARD_NAV_KEY_PREFIX, '');
+        const dashboardId = String(key || '').replace(
+            DASHBOARD_NAV_KEY_PREFIX,
+            ''
+        );
         const result = await confirm({
             title: t('dashboard.confirmations.delete_title'),
             description: t('dashboard.confirmations.delete_description'),
@@ -411,15 +514,25 @@ export function CustomNavDialog({
         }
         try {
             await deleteDashboard(dashboardId);
-            setLocalLayout((current) => removeKeyFromLayout(current, key).layout);
+            setLocalLayout(
+                (current) => removeKeyFromLayout(current, key).layout
+            );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete dashboard.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete dashboard.'
+            );
         }
     }
 
     function resetLayout() {
         setLocalLayout(cloneLayout(defaultLayout));
-        setLocalHiddenKeys(new Set((defaultHiddenKeys || []).filter((key) => !isToolNavKey(key))));
+        setLocalHiddenKeys(
+            new Set(
+                (defaultHiddenKeys || []).filter((key) => !isToolNavKey(key))
+            )
+        );
         setHiddenPlacement(new Map());
     }
 
@@ -431,23 +544,33 @@ export function CustomNavDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[85vh] gap-4 overflow-hidden sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>{t('nav_menu.custom_nav.dialog_title')}</DialogTitle>
+                    <DialogTitle>
+                        {t('nav_menu.custom_nav.dialog_title')}
+                    </DialogTitle>
                 </DialogHeader>
                 <div className="min-h-[40vh] overflow-y-auto pr-2">
                     <div className="flex flex-col gap-1">
                         {localLayout.map((entry, index) => {
                             if (entry.type === 'folder') {
                                 return (
-                                    <div key={entry.id} className="flex flex-col gap-1 rounded-lg border p-2">
+                                    <div
+                                        key={entry.id}
+                                        className="flex flex-col gap-1 rounded-lg border p-2"
+                                    >
                                         <div className="flex items-center gap-2 text-sm font-medium">
-                                            <span className="min-w-0 flex-1 truncate">{entry.name}</span>
+                                            <span className="min-w-0 flex-1 truncate">
+                                                {entry.name}
+                                            </span>
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 aria-label={`Move ${entry.name} up`}
                                                 disabled={index === 0}
-                                                onClick={() => moveTopLevel(index, -1)}>
+                                                onClick={() =>
+                                                    moveTopLevel(index, -1)
+                                                }
+                                            >
                                                 <ArrowUpIcon data-icon="inline-start" />
                                             </Button>
                                             <Button
@@ -455,8 +578,14 @@ export function CustomNavDialog({
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 aria-label={`Move ${entry.name} down`}
-                                                disabled={index === localLayout.length - 1}
-                                                onClick={() => moveTopLevel(index, 1)}>
+                                                disabled={
+                                                    index ===
+                                                    localLayout.length - 1
+                                                }
+                                                onClick={() =>
+                                                    moveTopLevel(index, 1)
+                                                }
+                                            >
                                                 <ArrowDownIcon data-icon="inline-start" />
                                             </Button>
                                             <Button
@@ -464,7 +593,10 @@ export function CustomNavDialog({
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 aria-label={`Edit ${entry.name}`}
-                                                onClick={() => void editFolder(index)}>
+                                                onClick={() =>
+                                                    void editFolder(index)
+                                                }
+                                            >
                                                 <PencilIcon data-icon="inline-start" />
                                             </Button>
                                             <Button
@@ -472,38 +604,87 @@ export function CustomNavDialog({
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 aria-label={`Delete ${entry.name}`}
-                                                onClick={() => deleteFolder(index)}>
+                                                onClick={() =>
+                                                    deleteFolder(index)
+                                                }
+                                            >
                                                 <FolderXIcon data-icon="inline-start" />
                                             </Button>
                                         </div>
                                         {entry.items?.length ? (
                                             <div className="flex flex-col gap-1">
-                                                {entry.items.map((key, childIndex) => {
-                                                    const definition = definitionMap.get(key);
-                                                    if (!definition) {
-                                                        return null;
+                                                {entry.items.map(
+                                                    (key, childIndex) => {
+                                                        const definition =
+                                                            definitionMap.get(
+                                                                key
+                                                            );
+                                                        if (!definition) {
+                                                            return null;
+                                                        }
+                                                        return (
+                                                            <NavItemRow
+                                                                key={key}
+                                                                indent
+                                                                label={definitionLabel(
+                                                                    definition,
+                                                                    t
+                                                                )}
+                                                                canMoveUp={
+                                                                    childIndex >
+                                                                    0
+                                                                }
+                                                                canMoveDown={
+                                                                    childIndex <
+                                                                    entry.items
+                                                                        .length -
+                                                                        1
+                                                                }
+                                                                isTool={isToolNavKey(
+                                                                    key
+                                                                )}
+                                                                isDashboard={isDashboardKey(
+                                                                    key
+                                                                )}
+                                                                onMoveUp={() =>
+                                                                    moveFolderChild(
+                                                                        index,
+                                                                        childIndex,
+                                                                        -1
+                                                                    )
+                                                                }
+                                                                onMoveDown={() =>
+                                                                    moveFolderChild(
+                                                                        index,
+                                                                        childIndex,
+                                                                        1
+                                                                    )
+                                                                }
+                                                                onHide={() =>
+                                                                    hideItem(
+                                                                        key
+                                                                    )
+                                                                }
+                                                                onEditDashboard={() =>
+                                                                    void editDashboard(
+                                                                        key
+                                                                    )
+                                                                }
+                                                                onDeleteDashboard={() =>
+                                                                    void removeDashboard(
+                                                                        key
+                                                                    )
+                                                                }
+                                                            />
+                                                        );
                                                     }
-                                                    return (
-                                                        <NavItemRow
-                                                            key={key}
-                                                            indent
-                                                            label={definitionLabel(definition, t)}
-                                                            canMoveUp={childIndex > 0}
-                                                            canMoveDown={childIndex < entry.items.length - 1}
-                                                            isTool={isToolNavKey(key)}
-                                                            isDashboard={isDashboardKey(key)}
-                                                            onMoveUp={() => moveFolderChild(index, childIndex, -1)}
-                                                            onMoveDown={() => moveFolderChild(index, childIndex, 1)}
-                                                            onHide={() => hideItem(key)}
-                                                            onEditDashboard={() => void editDashboard(key)}
-                                                            onDeleteDashboard={() => void removeDashboard(key)}
-                                                        />
-                                                    );
-                                                })}
+                                                )}
                                             </div>
                                         ) : (
-                                            <div className="ml-6 rounded-md border border-dashed px-2 py-1.5 text-sm text-muted-foreground">
-                                                {t('nav_menu.custom_nav.folder_drop_here')}
+                                            <div className="text-muted-foreground ml-6 rounded-md border border-dashed px-2 py-1.5 text-sm">
+                                                {t(
+                                                    'nav_menu.custom_nav.folder_drop_here'
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -525,8 +706,12 @@ export function CustomNavDialog({
                                     onMoveUp={() => moveTopLevel(index, -1)}
                                     onMoveDown={() => moveTopLevel(index, 1)}
                                     onHide={() => hideItem(entry.key)}
-                                    onEditDashboard={() => void editDashboard(entry.key)}
-                                    onDeleteDashboard={() => void removeDashboard(entry.key)}
+                                    onEditDashboard={() =>
+                                        void editDashboard(entry.key)
+                                    }
+                                    onDeleteDashboard={() =>
+                                        void removeDashboard(entry.key)
+                                    }
                                 />
                             );
                         })}
@@ -535,7 +720,9 @@ export function CustomNavDialog({
                         <>
                             <div className="my-4 flex items-center gap-2">
                                 <Separator className="flex-1" />
-                                <span className="text-xs text-muted-foreground">{t('nav_menu.custom_nav.hidden_items')}</span>
+                                <span className="text-muted-foreground text-xs">
+                                    {t('nav_menu.custom_nav.hidden_items')}
+                                </span>
                                 <Separator className="flex-1" />
                             </div>
                             <div className="flex flex-col gap-1">
@@ -544,10 +731,13 @@ export function CustomNavDialog({
                                         key={item.key}
                                         type="button"
                                         variant="ghost"
-                                        className="h-auto w-full justify-start px-2 py-1.5 text-left font-normal text-muted-foreground"
-                                        onClick={() => showItem(item.key)}>
+                                        className="text-muted-foreground h-auto w-full justify-start px-2 py-1.5 text-left font-normal"
+                                        onClick={() => showItem(item.key)}
+                                    >
                                         <EyeIcon data-icon="inline-start" />
-                                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                                        <span className="min-w-0 flex-1 truncate">
+                                            {item.label}
+                                        </span>
                                     </Button>
                                 ))}
                             </div>
@@ -556,21 +746,38 @@ export function CustomNavDialog({
                 </div>
                 <DialogFooter className="items-center justify-between sm:justify-between">
                     <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="outline" onClick={() => void addFolder()}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => void addFolder()}
+                        >
                             <FolderPlusIcon data-icon="inline-start" />
                             {t('nav_menu.custom_nav.new_folder')}
                         </Button>
-                        <Button type="button" variant="outline" onClick={() => void addDashboard()}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => void addDashboard()}
+                        >
                             <PlusIcon data-icon="inline-start" />
                             {t('dashboard.new_dashboard')}
                         </Button>
-                        <Button type="button" variant="ghost" className="text-destructive" onClick={resetLayout}>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={resetLayout}
+                        >
                             <RotateCcwIcon data-icon="inline-start" />
                             {t('nav_menu.custom_nav.restore_default')}
                         </Button>
                     </div>
                     <div className="flex gap-2">
-                        <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => onOpenChange(false)}
+                        >
                             {t('nav_menu.custom_nav.cancel')}
                         </Button>
                         <Button type="button" onClick={() => void save()}>

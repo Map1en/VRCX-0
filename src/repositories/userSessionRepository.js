@@ -1,8 +1,8 @@
-import sqliteRepository from './sqliteRepository.js';
 import {
     buildInitUserTableStatements,
     normalizeUserTablePrefix as baseNormalizeUserTablePrefix
 } from '../services/database/userTables.js';
+import sqliteRepository from './sqliteRepository.js';
 
 function normalizeUserTablePrefix(userId) {
     return baseNormalizeUserTablePrefix(userId);
@@ -15,7 +15,10 @@ async function initUserTables(userId) {
     }
 
     return {
-        userId: typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim(),
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim(),
         userPrefix
     };
 }
@@ -32,7 +35,9 @@ async function purgeAvatarFeedData(userId, cutoffDate = null) {
         return;
     }
 
-    await sqliteRepository.executeNonQuery(`DELETE FROM ${userPrefix}_feed_avatar`);
+    await sqliteRepository.executeNonQuery(
+        `DELETE FROM ${userPrefix}_feed_avatar`
+    );
 }
 
 const userSessionRepository = {

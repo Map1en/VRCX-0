@@ -1,9 +1,4 @@
-import webRepository from './webRepository.js';
-import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
 import { database } from '@/services/database/index.js';
-import { extractFileId } from '@/shared/utils/fileUtils.js';
-import { storeAvatarImage } from '@/shared/utils/avatar.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -11,6 +6,12 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/services/entityQueryCacheService.js';
+import { storeAvatarImage } from '@/shared/utils/avatar.js';
+import { extractFileId } from '@/shared/utils/fileUtils.js';
+
+import { safeJsonParse } from './baseRepository.js';
+import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import webRepository from './webRepository.js';
 
 const cachedAvatarNames = new Map();
 

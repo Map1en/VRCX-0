@@ -1,11 +1,11 @@
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
+import { refreshDiscordPresence } from '@/services/discordPresenceService.js';
 import {
     finalizeCurrentGameLogSession,
     resetNowPlayingState
 } from '@/services/gameLogIngestService.js';
-import { refreshDiscordPresence } from '@/services/discordPresenceService.js';
 import { isRealInstance } from '@/shared/utils/instance.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
@@ -44,8 +44,14 @@ function buildLaunchUrl(location) {
 
 async function launchVrchat(location, desktopMode) {
     const args = [buildLaunchUrl(location)];
-    const launchArguments = await configRepository.getString('launchArguments', '');
-    const launchPathOverride = await configRepository.getString('vrcLaunchPathOverride', '');
+    const launchArguments = await configRepository.getString(
+        'launchArguments',
+        ''
+    );
+    const launchPathOverride = await configRepository.getString(
+        'vrcLaunchPathOverride',
+        ''
+    );
     if (launchArguments) {
         args.push(launchArguments);
     }
@@ -55,7 +61,10 @@ async function launchVrchat(location, desktopMode) {
 
     const argumentString = args.join(' ');
     const launched = launchPathOverride
-        ? await backend.app.StartGameFromPath(launchPathOverride, argumentString)
+        ? await backend.app.StartGameFromPath(
+              launchPathOverride,
+              argumentString
+          )
         : await backend.app.StartGame(argumentString);
     if (!launched) {
         throw new Error(
@@ -79,7 +88,10 @@ async function persistGameStopSession(previousGameState, currentUserSnapshot) {
     }
 
     await Promise.all([
-        configRepository.setString('lastGameSessionMs', String(sessionDuration)),
+        configRepository.setString(
+            'lastGameSessionMs',
+            String(sessionDuration)
+        ),
         configRepository.setString('lastGameOfflineAt', String(offlineAt))
     ]);
 
@@ -96,11 +108,15 @@ async function sweepVrchatCacheIfEnabled() {
 
     try {
         const removedPaths = await backend.assetBundle.SweepCache();
-        const removedCount = Array.isArray(removedPaths) ? removedPaths.length : 0;
+        const removedCount = Array.isArray(removedPaths)
+            ? removedPaths.length
+            : 0;
         useNotificationStore.getState().pushNotification({
             level: 'info',
             title: 'VRChat cache swept',
-            message: removedCount ? `Removed ${removedCount} cache entries.` : 'No cache entries were removed.'
+            message: removedCount
+                ? `Removed ${removedCount} cache entries.`
+                : 'No cache entries were removed.'
         });
     } catch (error) {
         console.warn('SweepCache failed:', error);
@@ -134,40 +150,51 @@ async function scheduleCrashRelaunchIfNeeded(previousGameState) {
         lastCrashedAt: new Date(now).toISOString()
     });
     clearCrashRelaunchTimer();
-    crashRelaunchTimer = window.setTimeout(() => {
-        crashRelaunchTimer = null;
-        (async () => {
-            if (!previousGameState.isGameNoVR) {
-                const steamVrRunning = await backend.app
-                    .IsSteamVRRunning()
-                    .catch(() => useRuntimeStore.getState().gameState.isSteamVRRunning);
-                if (!steamVrRunning) {
-                    console.log("SteamVR isn't running, not relaunching VRChat");
-                    return;
+    crashRelaunchTimer = window.setTimeout(
+        () => {
+            crashRelaunchTimer = null;
+            (async () => {
+                if (!previousGameState.isGameNoVR) {
+                    const steamVrRunning = await backend.app
+                        .IsSteamVRRunning()
+                        .catch(
+                            () =>
+                                useRuntimeStore.getState().gameState
+                                    .isSteamVRRunning
+                        );
+                    if (!steamVrRunning) {
+                        console.log(
+                            "SteamVR isn't running, not relaunching VRChat"
+                        );
+                        return;
+                    }
                 }
-            }
 
-            await backend.app.FocusWindow().catch(() => {});
-            const message = 'VRChat crashed, attempting to rejoin last instance.';
-            await database.addGamelogEventToDatabase({
-                created_at: new Date().toJSON(),
-                type: 'Event',
-                data: message
+                await backend.app.FocusWindow().catch(() => {});
+                const message =
+                    'VRChat crashed, attempting to rejoin last instance.';
+                await database.addGamelogEventToDatabase({
+                    created_at: new Date().toJSON(),
+                    type: 'Event',
+                    data: message
+                });
+                useNotificationStore.getState().pushNotification({
+                    level: 'warning',
+                    title: 'VRChat crash detected',
+                    message
+                });
+                await launchVrchat(location, previousGameState.isGameNoVR);
+            })().catch((error) => {
+                useNotificationStore.getState().pushNotification({
+                    level: 'error',
+                    title: 'VRChat relaunch failed',
+                    message:
+                        error instanceof Error ? error.message : String(error)
+                });
             });
-            useNotificationStore.getState().pushNotification({
-                level: 'warning',
-                title: 'VRChat crash detected',
-                message
-            });
-            await launchVrchat(location, previousGameState.isGameNoVR);
-        })().catch((error) => {
-            useNotificationStore.getState().pushNotification({
-                level: 'error',
-                title: 'VRChat relaunch failed',
-                message: error instanceof Error ? error.message : String(error)
-            });
-        });
-    }, previousGameState.isGameNoVR ? 2000 : 8000);
+        },
+        previousGameState.isGameNoVR ? 2000 : 8000
+    );
 }
 
 async function handleGameStopped(previousGameState, currentUserSnapshot) {
@@ -182,7 +209,10 @@ async function handleGameStopped(previousGameState, currentUserSnapshot) {
     ]);
     for (const result of finalizeResult) {
         if (result.status === 'rejected') {
-            console.warn('Game stop session finalization failed:', result.reason);
+            console.warn(
+                'Game stop session finalization failed:',
+                result.reason
+            );
         }
     }
 
@@ -203,13 +233,18 @@ async function handleGameStopped(previousGameState, currentUserSnapshot) {
     }
 }
 
-function clearStoppedGameLocationSnapshot(previousGameState, currentUserSnapshot) {
+function clearStoppedGameLocationSnapshot(
+    previousGameState,
+    currentUserSnapshot
+) {
     if (!currentUserSnapshot || typeof currentUserSnapshot !== 'object') {
         return;
     }
 
     const stoppedLocation = normalizeString(previousGameState.currentLocation);
-    const stoppedDestination = normalizeString(previousGameState.currentDestination);
+    const stoppedDestination = normalizeString(
+        previousGameState.currentDestination
+    );
     const stoppedWorldId = normalizeString(previousGameState.currentWorldId);
     if (!stoppedLocation && !stoppedDestination && !stoppedWorldId) {
         return;
@@ -218,7 +253,10 @@ function clearStoppedGameLocationSnapshot(previousGameState, currentUserSnapshot
     let changed = false;
     const clearIfMatches = (field, ...values) => {
         const currentValue = normalizeString(currentUserSnapshot[field]);
-        if (currentValue && values.some((value) => value && currentValue === value)) {
+        if (
+            currentValue &&
+            values.some((value) => value && currentValue === value)
+        ) {
             currentUserSnapshot[field] = '';
             changed = true;
         }
@@ -244,13 +282,21 @@ export async function checkVRChatDebugLogging() {
 
     let loggingEnabled;
     try {
-        loggingEnabled = await backend.app.GetVRChatRegistryKey('LOGGING_ENABLED');
+        loggingEnabled =
+            await backend.app.GetVRChatRegistryKey('LOGGING_ENABLED');
     } catch (error) {
-        console.warn('Unable to read VRChat debug logging registry key:', error);
+        console.warn(
+            'Unable to read VRChat debug logging registry key:',
+            error
+        );
         return;
     }
 
-    if (loggingEnabled === null || loggingEnabled === undefined || loggingEnabled === '') {
+    if (
+        loggingEnabled === null ||
+        loggingEnabled === undefined ||
+        loggingEnabled === ''
+    ) {
         return;
     }
 
@@ -259,7 +305,11 @@ export async function checkVRChatDebugLogging() {
     }
 
     try {
-        const result = await backend.app.SetVRChatRegistryKey('LOGGING_ENABLED', 1, 4);
+        const result = await backend.app.SetVRChatRegistryKey(
+            'LOGGING_ENABLED',
+            1,
+            4
+        );
         if (result) {
             useNotificationStore.getState().pushNotification({
                 level: 'info',
@@ -308,7 +358,9 @@ export async function handleGameRunningUpdate(payload = {}) {
         useNotificationStore.getState().pushNotification({
             level: 'info',
             title: nextGameRunning ? 'VRChat running' : 'VRChat stopped',
-            message: nextSteamVrRunning ? 'SteamVR is running.' : 'SteamVR is not running.'
+            message: nextSteamVrRunning
+                ? 'SteamVR is running.'
+                : 'SteamVR is not running.'
         });
     }
 
@@ -320,14 +372,21 @@ export async function handleGameRunningUpdate(payload = {}) {
         debugLoggingTimer = null;
     }
 
-    if (gameRunningChanged && previousGameRunning === true && !nextGameRunning) {
+    if (
+        gameRunningChanged &&
+        previousGameRunning === true &&
+        !nextGameRunning
+    ) {
         await handleGameStopped(previousGameState, currentUserSnapshot);
         return;
     }
 
     if (gameRunningChanged) {
         await refreshDiscordPresence({ force: true }).catch((error) => {
-            console.warn('Discord presence refresh after game state update failed:', error);
+            console.warn(
+                'Discord presence refresh after game state update failed:',
+                error
+            );
         });
     }
 }

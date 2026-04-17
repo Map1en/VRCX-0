@@ -1,6 +1,5 @@
-import { dbVars } from '../database';
-
 import sqliteService from '../../repositories/sqliteRepository.js';
+import { dbVars } from '../database';
 
 const moderation = {
     async getModeration(userId) {
@@ -33,18 +32,15 @@ const moderation = {
 
     async getAllModerations() {
         var rows = [];
-        await sqliteService.execute(
-            (dbRow) => {
-                rows.push({
-                    userId: dbRow[0],
-                    updatedAt: dbRow[1],
-                    displayName: dbRow[2],
-                    block: dbRow[3] === 1,
-                    mute: dbRow[4] === 1
-                });
-            },
-            `SELECT * FROM ${dbVars.userPrefix}_moderation`
-        );
+        await sqliteService.execute((dbRow) => {
+            rows.push({
+                userId: dbRow[0],
+                updatedAt: dbRow[1],
+                displayName: dbRow[2],
+                block: dbRow[3] === 1,
+                mute: dbRow[4] === 1
+            });
+        }, `SELECT * FROM ${dbVars.userPrefix}_moderation`);
         return rows;
     },
 

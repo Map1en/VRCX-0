@@ -4,15 +4,25 @@ import { handleRealtimePresenceEvent } from '@/services/realtimePresenceService.
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 function normalizeUserId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function isCurrentAuthTarget({ currentUserId, endpoint }) {
     const auth = useRuntimeStore.getState().auth;
-    return auth.currentUserId === currentUserId && auth.currentUserEndpoint === endpoint;
+    return (
+        auth.currentUserId === currentUserId &&
+        auth.currentUserEndpoint === endpoint
+    );
 }
 
-async function deleteFriend({ friend, userId, endpoint = '', currentUserId = '' }) {
+async function deleteFriend({
+    friend,
+    userId,
+    endpoint = '',
+    currentUserId = ''
+}) {
     const normalizedUserId = normalizeUserId(userId || friend?.id);
     if (!normalizedUserId) {
         throw new Error('deleteFriend requires a friend user id.');

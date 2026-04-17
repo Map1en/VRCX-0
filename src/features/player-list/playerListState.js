@@ -34,8 +34,9 @@ export function readPersistedPlayerListState() {
 
     try {
         return (
-            safeJsonParse(window.localStorage.getItem(PLAYER_LIST_STORAGE_KEY)) ??
-            {}
+            safeJsonParse(
+                window.localStorage.getItem(PLAYER_LIST_STORAGE_KEY)
+            ) ?? {}
         );
     } catch {
         return {};

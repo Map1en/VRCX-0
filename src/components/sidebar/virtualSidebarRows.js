@@ -6,7 +6,9 @@ const DEFAULT_OVERSCAN = 8;
 export function useVirtualSidebarRows(rows, estimateSize, options = {}) {
     const viewportRef = useRef(null);
     const [viewport, setViewport] = useState({ scrollTop: 0, height: 0 });
-    const overscan = Number.isFinite(options.overscan) ? options.overscan : DEFAULT_OVERSCAN;
+    const overscan = Number.isFinite(options.overscan)
+        ? options.overscan
+        : DEFAULT_OVERSCAN;
 
     const rowMetrics = useMemo(() => {
         let totalSize = 0;
@@ -15,9 +17,10 @@ export function useVirtualSidebarRows(rows, estimateSize, options = {}) {
 
         rows.forEach((row, index) => {
             const estimatedSize = Number(estimateSize?.(row, index));
-            const size = Number.isFinite(estimatedSize) && estimatedSize > 0
-                ? estimatedSize
-                : DEFAULT_ROW_SIZE;
+            const size =
+                Number.isFinite(estimatedSize) && estimatedSize > 0
+                    ? estimatedSize
+                    : DEFAULT_ROW_SIZE;
             offsets.push(totalSize);
             sizes.push(size);
             totalSize += size;
@@ -87,7 +90,8 @@ export function useVirtualSidebarRows(rows, estimateSize, options = {}) {
         }
 
         const { offsets, sizes } = rowMetrics;
-        const viewportBottom = viewport.scrollTop + Math.max(viewport.height, DEFAULT_ROW_SIZE);
+        const viewportBottom =
+            viewport.scrollTop + Math.max(viewport.height, DEFAULT_ROW_SIZE);
         let firstIndex = 0;
         while (
             firstIndex < rows.length &&

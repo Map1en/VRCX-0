@@ -24,11 +24,16 @@ function formatDate(value) {
     if (Number.isNaN(date.getTime())) {
         return String(value);
     }
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    }).format(date);
 }
 
 function rowLocation(row) {
-    return row?.$location?.tag || row?.location || row?.worldId || row?.id || '';
+    return (
+        row?.$location?.tag || row?.location || row?.worldId || row?.id || ''
+    );
 }
 
 function rowWorldId(row) {
@@ -51,12 +56,15 @@ function rowTitle(row) {
 }
 
 function normalizePlayerRows(players) {
-    const rows = players instanceof Map
-        ? Array.from(players.values())
-        : Array.isArray(players)
-            ? players
-            : [];
-    return rows.sort((left, right) => Number(right?.time || 0) - Number(left?.time || 0));
+    const rows =
+        players instanceof Map
+            ? Array.from(players.values())
+            : Array.isArray(players)
+              ? players
+              : [];
+    return rows.sort(
+        (left, right) => Number(right?.time || 0) - Number(left?.time || 0)
+    );
 }
 
 function playerDisplayName(row) {
@@ -67,10 +75,19 @@ function playerUserId(row) {
     return row?.userId || row?.user_id || '';
 }
 
-function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instances', instances = [] }) {
+function PreviousInstancesDialog({
+    open,
+    onOpenChange,
+    title = 'Previous Instances',
+    instances = []
+}) {
     const rows = useMemo(() => {
         const nextRows = Array.isArray(instances) ? instances : [];
-        return [...nextRows].sort((left, right) => new Date(right?.created_at || right?.createdAt || 0).getTime() - new Date(left?.created_at || left?.createdAt || 0).getTime());
+        return [...nextRows].sort(
+            (left, right) =>
+                new Date(right?.created_at || right?.createdAt || 0).getTime() -
+                new Date(left?.created_at || left?.createdAt || 0).getTime()
+        );
     }, [instances]);
     const [viewMode, setViewMode] = useState('table');
     const [infoRow, setInfoRow] = useState(null);
@@ -91,13 +108,23 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
 
     useEffect(() => {
         if (!infoRow) {
-            setInfoData({ status: 'idle', error: '', players: [], details: [] });
+            setInfoData({
+                status: 'idle',
+                error: '',
+                players: [],
+                details: []
+            });
             return undefined;
         }
 
         const location = rowLocation(infoRow);
         if (!location) {
-            setInfoData({ status: 'ready', error: '', players: [], details: [] });
+            setInfoData({
+                status: 'ready',
+                error: '',
+                players: [],
+                details: []
+            });
             return undefined;
         }
 
@@ -125,7 +152,10 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                 }
                 setInfoData({
                     status: 'error',
-                    error: error instanceof Error ? error.message : 'Failed to load instance details.',
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to load instance details.',
                     players: [],
                     details: []
                 });
@@ -150,7 +180,11 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
     }
 
     const chartRows = useMemo(
-        () => [...rows].sort((left, right) => rowDurationValue(right) - rowDurationValue(left)),
+        () =>
+            [...rows].sort(
+                (left, right) =>
+                    rowDurationValue(right) - rowDurationValue(left)
+            ),
         [rows]
     );
     const maxChartDuration = useMemo(
@@ -163,7 +197,11 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
             <DialogContent className="flex max-h-[90vh] max-w-[min(92vw,72rem)] flex-col">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{rows.length ? `${rows.length} recorded instance visits.` : 'No recorded instance visits.'}</DialogDescription>
+                    <DialogDescription>
+                        {rows.length
+                            ? `${rows.length} recorded instance visits.`
+                            : 'No recorded instance visits.'}
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="flex items-center justify-between gap-3">
                     <Tabs value={viewMode} onValueChange={setViewMode}>
@@ -172,64 +210,144 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                             <TabsTrigger value="chart">Chart View</TabsTrigger>
                         </TabsList>
                     </Tabs>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange?.(false)}>Close</Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange?.(false)}
+                    >
+                        Close
+                    </Button>
                 </div>
                 <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
                     {viewMode === 'table' ? (
                         <div className="min-h-0 overflow-auto">
                             <table className="w-full text-left text-sm">
-                                <thead className="sticky top-0 bg-background">
+                                <thead className="bg-background sticky top-0">
                                     <tr className="border-b">
-                                        <th className="w-44 px-3 py-2">Created</th>
+                                        <th className="w-44 px-3 py-2">
+                                            Created
+                                        </th>
                                         <th className="px-3 py-2">Instance</th>
-                                        <th className="w-48 px-3 py-2">World / Group</th>
-                                        <th className="w-24 px-3 py-2">Duration</th>
-                                        <th className="w-72 px-3 py-2 text-right">Actions</th>
+                                        <th className="w-48 px-3 py-2">
+                                            World / Group
+                                        </th>
+                                        <th className="w-24 px-3 py-2">
+                                            Duration
+                                        </th>
+                                        <th className="w-72 px-3 py-2 text-right">
+                                            Actions
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {rows.length ? rows.map((instance, index) => {
-                                        const location = rowLocation(instance);
-                                        return (
-                                            <tr key={`${location}:${instance?.created_at || instance?.createdAt || index}`} className="border-b last:border-b-0">
-                                                <td className="px-3 py-2 align-top text-xs text-muted-foreground">{formatDate(instance?.created_at || instance?.createdAt)}</td>
-                                                <td className="px-3 py-2 align-top text-xs">
-                                                    <Button
-                                                        type="button"
-                                                        variant="link"
-                                                        className="h-auto max-w-full justify-start p-0 text-left font-normal"
-                                                        onClick={() => openInfo(instance)}>
-                                                        <span className="block truncate font-mono">{rowTitle(instance)}</span>
-                                                    </Button>
-                                                </td>
-                                                <td className="px-3 py-2 align-top text-xs text-muted-foreground">
-                                                    {[instance?.worldName, instance?.groupName].filter(Boolean).join(' / ') || '—'}
-                                                </td>
-                                                <td className="px-3 py-2 align-top text-xs tabular-nums">{rowDuration(instance)}</td>
-                                                <td className="px-3 py-2 align-top">
-                                                    <div className="flex justify-end gap-2">
-                                                        <InstanceActionBar
-                                                            location={location}
-                                                            launchLocation={location}
-                                                            inviteLocation={location}
-                                                            instanceLocation={location}
-                                                            worldName={instance?.worldName || ''}
-                                                            showRefresh={false}
-                                                            showInstanceInfo={false}
-                                                        />
-                                                        <Button type="button" size="sm" variant="outline" disabled={!location} onClick={() => openLocation(instance)}>
-                                                            Open
+                                    {rows.length ? (
+                                        rows.map((instance, index) => {
+                                            const location =
+                                                rowLocation(instance);
+                                            return (
+                                                <tr
+                                                    key={`${location}:${instance?.created_at || instance?.createdAt || index}`}
+                                                    className="border-b last:border-b-0"
+                                                >
+                                                    <td className="text-muted-foreground px-3 py-2 align-top text-xs">
+                                                        {formatDate(
+                                                            instance?.created_at ||
+                                                                instance?.createdAt
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2 align-top text-xs">
+                                                        <Button
+                                                            type="button"
+                                                            variant="link"
+                                                            className="h-auto max-w-full justify-start p-0 text-left font-normal"
+                                                            onClick={() =>
+                                                                openInfo(
+                                                                    instance
+                                                                )
+                                                            }
+                                                        >
+                                                            <span className="block truncate font-mono">
+                                                                {rowTitle(
+                                                                    instance
+                                                                )}
+                                                            </span>
                                                         </Button>
-                                                        <Button type="button" size="sm" variant="outline" onClick={() => openInfo(instance)}>
-                                                            Info
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    }) : (
+                                                    </td>
+                                                    <td className="text-muted-foreground px-3 py-2 align-top text-xs">
+                                                        {[
+                                                            instance?.worldName,
+                                                            instance?.groupName
+                                                        ]
+                                                            .filter(Boolean)
+                                                            .join(' / ') || '—'}
+                                                    </td>
+                                                    <td className="px-3 py-2 align-top text-xs tabular-nums">
+                                                        {rowDuration(instance)}
+                                                    </td>
+                                                    <td className="px-3 py-2 align-top">
+                                                        <div className="flex justify-end gap-2">
+                                                            <InstanceActionBar
+                                                                location={
+                                                                    location
+                                                                }
+                                                                launchLocation={
+                                                                    location
+                                                                }
+                                                                inviteLocation={
+                                                                    location
+                                                                }
+                                                                instanceLocation={
+                                                                    location
+                                                                }
+                                                                worldName={
+                                                                    instance?.worldName ||
+                                                                    ''
+                                                                }
+                                                                showRefresh={
+                                                                    false
+                                                                }
+                                                                showInstanceInfo={
+                                                                    false
+                                                                }
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                disabled={
+                                                                    !location
+                                                                }
+                                                                onClick={() =>
+                                                                    openLocation(
+                                                                        instance
+                                                                    )
+                                                                }
+                                                            >
+                                                                Open
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() =>
+                                                                    openInfo(
+                                                                        instance
+                                                                    )
+                                                                }
+                                                            >
+                                                                Info
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
                                         <tr>
-                                            <td colSpan={5} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                                            <td
+                                                colSpan={5}
+                                                className="text-muted-foreground px-3 py-8 text-center text-sm"
+                                            >
                                                 No previous instances.
                                             </td>
                                         </tr>
@@ -243,46 +361,116 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                                 <div className="flex flex-col gap-2">
                                     {chartRows.map((instance, index) => {
                                         const location = rowLocation(instance);
-                                        const durationValue = rowDurationValue(instance);
-                                        const percent = Math.max(8, Math.round((durationValue / maxChartDuration) * 100));
+                                        const durationValue =
+                                            rowDurationValue(instance);
+                                        const percent = Math.max(
+                                            8,
+                                            Math.round(
+                                                (durationValue /
+                                                    maxChartDuration) *
+                                                    100
+                                            )
+                                        );
                                         return (
-                                            <div key={`${location}:${instance?.created_at || instance?.createdAt || index}`} className="rounded-md border bg-muted/10 p-3">
+                                            <div
+                                                key={`${location}:${instance?.created_at || instance?.createdAt || index}`}
+                                                className="bg-muted/10 rounded-md border p-3"
+                                            >
                                                 <div className="flex items-start justify-between gap-3">
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
                                                         className="h-auto min-w-0 flex-1 flex-col items-start justify-start p-0 text-left font-normal hover:bg-transparent"
-                                                        onClick={() => openInfo(instance)}>
-                                                        <span className="truncate text-sm font-medium">{rowTitle(instance)}</span>
-                                                        <span className="truncate text-xs text-muted-foreground">
-                                                            {[formatDate(instance?.created_at || instance?.createdAt), instance?.groupName].filter(Boolean).join(' · ') || '—'}
+                                                        onClick={() =>
+                                                            openInfo(instance)
+                                                        }
+                                                    >
+                                                        <span className="truncate text-sm font-medium">
+                                                            {rowTitle(instance)}
+                                                        </span>
+                                                        <span className="text-muted-foreground truncate text-xs">
+                                                            {[
+                                                                formatDate(
+                                                                    instance?.created_at ||
+                                                                        instance?.createdAt
+                                                                ),
+                                                                instance?.groupName
+                                                            ]
+                                                                .filter(Boolean)
+                                                                .join(' · ') ||
+                                                                '—'}
                                                         </span>
                                                     </Button>
-                                                    <Badge variant="outline" className="shrink-0 tabular-nums">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="shrink-0 tabular-nums"
+                                                    >
                                                         {rowDuration(instance)}
                                                     </Badge>
                                                 </div>
-                                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                                                    <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${percent}%` }} />
+                                                <div className="bg-muted mt-3 h-2 overflow-hidden rounded-full">
+                                                    <div
+                                                        className="bg-primary h-full rounded-full transition-[width]"
+                                                        style={{
+                                                            width: `${percent}%`
+                                                        }}
+                                                    />
                                                 </div>
                                                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {[instance?.worldName, instance?.groupName].filter(Boolean).join(' / ') || location || '—'}
+                                                    <div className="text-muted-foreground text-xs">
+                                                        {[
+                                                            instance?.worldName,
+                                                            instance?.groupName
+                                                        ]
+                                                            .filter(Boolean)
+                                                            .join(' / ') ||
+                                                            location ||
+                                                            '—'}
                                                     </div>
                                                     <div className="flex flex-wrap justify-end gap-2">
                                                         <InstanceActionBar
                                                             location={location}
-                                                            launchLocation={location}
-                                                            inviteLocation={location}
-                                                            instanceLocation={location}
-                                                            worldName={instance?.worldName || ''}
+                                                            launchLocation={
+                                                                location
+                                                            }
+                                                            inviteLocation={
+                                                                location
+                                                            }
+                                                            instanceLocation={
+                                                                location
+                                                            }
+                                                            worldName={
+                                                                instance?.worldName ||
+                                                                ''
+                                                            }
                                                             showRefresh={false}
-                                                            showInstanceInfo={false}
+                                                            showInstanceInfo={
+                                                                false
+                                                            }
                                                         />
-                                                        <Button type="button" size="sm" variant="outline" disabled={!location} onClick={() => openLocation(instance)}>
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="outline"
+                                                            disabled={!location}
+                                                            onClick={() =>
+                                                                openLocation(
+                                                                    instance
+                                                                )
+                                                            }
+                                                        >
                                                             Open
                                                         </Button>
-                                                        <Button type="button" size="sm" variant="outline" onClick={() => openInfo(instance)}>
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() =>
+                                                                openInfo(
+                                                                    instance
+                                                                )
+                                                            }
+                                                        >
                                                             Info
                                                         </Button>
                                                     </div>
@@ -292,65 +480,149 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                                     })}
                                 </div>
                             ) : (
-                                <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                                <div className="text-muted-foreground rounded-md border border-dashed p-6 text-center text-sm">
                                     No previous instances.
                                 </div>
                             )}
                         </div>
                     )}
                 </div>
-                <Dialog open={Boolean(infoRow)} onOpenChange={(nextOpen) => {
-                    if (!nextOpen) {
-                        setInfoRow(null);
-                    }
-                }}>
+                <Dialog
+                    open={Boolean(infoRow)}
+                    onOpenChange={(nextOpen) => {
+                        if (!nextOpen) {
+                            setInfoRow(null);
+                        }
+                    }}
+                >
                     <DialogContent className="max-h-[90vh] max-w-4xl overflow-auto">
                         <DialogHeader>
                             <DialogTitle>Previous Instance Info</DialogTitle>
-                            <DialogDescription>{rowLocation(infoRow) || 'Instance details'}</DialogDescription>
+                            <DialogDescription>
+                                {rowLocation(infoRow) || 'Instance details'}
+                            </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-2 text-sm sm:grid-cols-2">
-                            <div><span className="text-muted-foreground">Created</span><div>{formatDate(infoRow?.created_at || infoRow?.createdAt)}</div></div>
-                            <div><span className="text-muted-foreground">Duration</span><div>{rowDuration(infoRow)}</div></div>
-                            <div><span className="text-muted-foreground">World</span><div>{infoRow?.worldName || '—'}</div></div>
-                            <div><span className="text-muted-foreground">Group</span><div>{infoRow?.groupName || '—'}</div></div>
+                            <div>
+                                <span className="text-muted-foreground">
+                                    Created
+                                </span>
+                                <div>
+                                    {formatDate(
+                                        infoRow?.created_at ||
+                                            infoRow?.createdAt
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">
+                                    Duration
+                                </span>
+                                <div>{rowDuration(infoRow)}</div>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">
+                                    World
+                                </span>
+                                <div>{infoRow?.worldName || '—'}</div>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">
+                                    Group
+                                </span>
+                                <div>{infoRow?.groupName || '—'}</div>
+                            </div>
                         </div>
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-medium">Players</h4>
-                                <span className="text-xs text-muted-foreground">{infoData.players.length} players</span>
+                                <span className="text-muted-foreground text-xs">
+                                    {infoData.players.length} players
+                                </span>
                             </div>
                             {infoData.status === 'running' ? (
-                                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">Loading instance details...</div>
+                                <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
+                                    Loading instance details...
+                                </div>
                             ) : null}
                             {infoData.status === 'error' ? (
-                                <div className="rounded-md border border-destructive/40 p-4 text-sm text-destructive">{infoData.error}</div>
+                                <div className="border-destructive/40 text-destructive rounded-md border p-4 text-sm">
+                                    {infoData.error}
+                                </div>
                             ) : null}
                             {infoData.status === 'ready' ? (
                                 <div className="max-h-80 overflow-auto rounded-md border">
                                     <table className="w-full text-left text-sm">
-                                        <thead className="sticky top-0 bg-background">
+                                        <thead className="bg-background sticky top-0">
                                             <tr className="border-b">
-                                                <th className="px-3 py-2">Name</th>
-                                                <th className="px-3 py-2">User ID</th>
-                                                <th className="w-24 px-3 py-2">Visits</th>
-                                                <th className="w-28 px-3 py-2">Time</th>
-                                                <th className="w-44 px-3 py-2">First Seen</th>
+                                                <th className="px-3 py-2">
+                                                    Name
+                                                </th>
+                                                <th className="px-3 py-2">
+                                                    User ID
+                                                </th>
+                                                <th className="w-24 px-3 py-2">
+                                                    Visits
+                                                </th>
+                                                <th className="w-28 px-3 py-2">
+                                                    Time
+                                                </th>
+                                                <th className="w-44 px-3 py-2">
+                                                    First Seen
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {infoData.players.length ? infoData.players.map((player, index) => (
-                                                <tr key={`${playerDisplayName(player)}:${playerUserId(player)}:${index}`} className="border-b last:border-b-0">
-                                                    <td className="px-3 py-2 align-top">{playerDisplayName(player)}</td>
-                                                    <td className="px-3 py-2 align-top font-mono text-xs text-muted-foreground">{playerUserId(player) || '—'}</td>
-                                                    <td className="px-3 py-2 align-top text-xs tabular-nums">{player?.count || '—'}</td>
-                                                    <td className="px-3 py-2 align-top text-xs tabular-nums">{Number(player?.time || 0) > 0 ? timeToText(Number(player.time)) : '—'}</td>
-                                                    <td className="px-3 py-2 align-top text-xs text-muted-foreground">{formatDate(player?.created_at || player?.createdAt)}</td>
-                                                </tr>
-                                            )) : (
+                                            {infoData.players.length ? (
+                                                infoData.players.map(
+                                                    (player, index) => (
+                                                        <tr
+                                                            key={`${playerDisplayName(player)}:${playerUserId(player)}:${index}`}
+                                                            className="border-b last:border-b-0"
+                                                        >
+                                                            <td className="px-3 py-2 align-top">
+                                                                {playerDisplayName(
+                                                                    player
+                                                                )}
+                                                            </td>
+                                                            <td className="text-muted-foreground px-3 py-2 align-top font-mono text-xs">
+                                                                {playerUserId(
+                                                                    player
+                                                                ) || '—'}
+                                                            </td>
+                                                            <td className="px-3 py-2 align-top text-xs tabular-nums">
+                                                                {player?.count ||
+                                                                    '—'}
+                                                            </td>
+                                                            <td className="px-3 py-2 align-top text-xs tabular-nums">
+                                                                {Number(
+                                                                    player?.time ||
+                                                                        0
+                                                                ) > 0
+                                                                    ? timeToText(
+                                                                          Number(
+                                                                              player.time
+                                                                          )
+                                                                      )
+                                                                    : '—'}
+                                                            </td>
+                                                            <td className="text-muted-foreground px-3 py-2 align-top text-xs">
+                                                                {formatDate(
+                                                                    player?.created_at ||
+                                                                        player?.createdAt
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                )
+                                            ) : (
                                                 <tr>
-                                                    <td colSpan={5} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                                                        No player detail rows for this instance.
+                                                    <td
+                                                        colSpan={5}
+                                                        className="text-muted-foreground px-3 py-6 text-center text-sm"
+                                                    >
+                                                        No player detail rows
+                                                        for this instance.
                                                     </td>
                                                 </tr>
                                             )}
@@ -361,24 +633,56 @@ function PreviousInstancesDialog({ open, onOpenChange, title = 'Previous Instanc
                         </div>
                         {infoData.details.length ? (
                             <details className="rounded-md border p-3">
-                                <summary className="cursor-pointer text-sm font-medium">Leave Details ({infoData.details.length})</summary>
+                                <summary className="cursor-pointer text-sm font-medium">
+                                    Leave Details ({infoData.details.length})
+                                </summary>
                                 <div className="mt-3 max-h-48 overflow-auto">
                                     <table className="w-full text-left text-xs">
-                                        <thead className="sticky top-0 bg-background">
+                                        <thead className="bg-background sticky top-0">
                                             <tr className="border-b">
-                                                <th className="px-2 py-1">Left At</th>
-                                                <th className="px-2 py-1">Name</th>
-                                                <th className="px-2 py-1">Duration</th>
+                                                <th className="px-2 py-1">
+                                                    Left At
+                                                </th>
+                                                <th className="px-2 py-1">
+                                                    Name
+                                                </th>
+                                                <th className="px-2 py-1">
+                                                    Duration
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {infoData.details.map((detailRow, index) => (
-                                                <tr key={`${detailRow?.created_at}:${detailRow?.user_id}:${index}`} className="border-b last:border-b-0">
-                                                    <td className="px-2 py-1 text-muted-foreground">{formatDate(detailRow?.created_at)}</td>
-                                                    <td className="px-2 py-1">{playerDisplayName(detailRow)}</td>
-                                                    <td className="px-2 py-1 tabular-nums">{Number(detailRow?.time || 0) > 0 ? timeToText(Number(detailRow.time)) : '—'}</td>
-                                                </tr>
-                                            ))}
+                                            {infoData.details.map(
+                                                (detailRow, index) => (
+                                                    <tr
+                                                        key={`${detailRow?.created_at}:${detailRow?.user_id}:${index}`}
+                                                        className="border-b last:border-b-0"
+                                                    >
+                                                        <td className="text-muted-foreground px-2 py-1">
+                                                            {formatDate(
+                                                                detailRow?.created_at
+                                                            )}
+                                                        </td>
+                                                        <td className="px-2 py-1">
+                                                            {playerDisplayName(
+                                                                detailRow
+                                                            )}
+                                                        </td>
+                                                        <td className="px-2 py-1 tabular-nums">
+                                                            {Number(
+                                                                detailRow?.time ||
+                                                                    0
+                                                            ) > 0
+                                                                ? timeToText(
+                                                                      Number(
+                                                                          detailRow.time
+                                                                      )
+                                                                  )
+                                                                : '—'}
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>

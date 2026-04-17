@@ -6,8 +6,8 @@ vi.mock('./webRepository.js', () => ({
     }
 }));
 
-import webRepository from './webRepository.js';
 import instanceRepository from './instanceRepository.js';
+import webRepository from './webRepository.js';
 
 describe('InstanceRepository', () => {
     beforeEach(() => {
@@ -20,13 +20,15 @@ describe('InstanceRepository', () => {
     });
 
     it('maps invite+ instance options to the VRChat create-instance payload', async () => {
-        await expect(instanceRepository.createInstance({
-            worldId: ' wrld_test ',
-            ownerId: ' usr_owner ',
-            accessType: 'invite+',
-            region: 'Europe',
-            endpoint: 'https://api.example.test/api/1'
-        })).resolves.toMatchObject({
+        await expect(
+            instanceRepository.createInstance({
+                worldId: ' wrld_test ',
+                ownerId: ' usr_owner ',
+                accessType: 'invite+',
+                region: 'Europe',
+                endpoint: 'https://api.example.test/api/1'
+            })
+        ).resolves.toMatchObject({
             json: { ok: true },
             status: 200
         });
@@ -60,17 +62,19 @@ describe('InstanceRepository', () => {
             region: 'Japan'
         });
 
-        expect(JSON.parse(webRepository.execute.mock.calls[0][0].body)).toEqual({
-            type: 'group',
-            canRequestInvite: false,
-            worldId: 'wrld_group',
-            ownerId: 'grp_team',
-            region: 'jp',
-            groupAccessType: 'plus',
-            queueEnabled: false,
-            ageGate: true,
-            displayName: 'Raid Night'
-        });
+        expect(JSON.parse(webRepository.execute.mock.calls[0][0].body)).toEqual(
+            {
+                type: 'group',
+                canRequestInvite: false,
+                worldId: 'wrld_group',
+                ownerId: 'grp_team',
+                region: 'jp',
+                groupAccessType: 'plus',
+                queueEnabled: false,
+                ageGate: true,
+                displayName: 'Raid Night'
+            }
+        );
     });
 
     it('includes group role ids only for members access instances', async () => {
@@ -82,17 +86,21 @@ describe('InstanceRepository', () => {
             roleIds: ['grol_a', 'grol_b']
         });
 
-        expect(JSON.parse(webRepository.execute.mock.calls[0][0].body)).toMatchObject({
+        expect(
+            JSON.parse(webRepository.execute.mock.calls[0][0].body)
+        ).toMatchObject({
             groupAccessType: 'members',
             roleIds: ['grol_a', 'grol_b']
         });
     });
 
     it('rejects private instance creation before sending an ownerless request', async () => {
-        await expect(instanceRepository.createInstance({
-            worldId: 'wrld_test',
-            accessType: 'friends'
-        })).rejects.toThrow('requires an owner id');
+        await expect(
+            instanceRepository.createInstance({
+                worldId: 'wrld_test',
+                accessType: 'friends'
+            })
+        ).rejects.toThrow('requires an owner id');
 
         expect(webRepository.execute).not.toHaveBeenCalled();
     });

@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+import {
+    TRUST_COLOR_DEFAULTS,
+    normalizeTrustColors
+} from '@/lib/trustColors.js';
 import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters.js';
 import {
     DEFAULT_MAX_TABLE_SIZE,
@@ -9,11 +13,12 @@ import {
     TABLE_MAX_SIZE_MAX,
     TABLE_MAX_SIZE_MIN
 } from '@/shared/constants/settings.js';
-import { TRUST_COLOR_DEFAULTS, normalizeTrustColors } from '@/lib/trustColors.js';
+
 import { normalizeNavWidth, normalizeTableDensity } from './shellStore.js';
 
 const DEFAULT_TABLE_PAGE_SIZES = Object.freeze([10, 15, 20, 25, 50, 100]);
-const DEFAULT_TRANSLATION_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const DEFAULT_TRANSLATION_ENDPOINT =
+    'https://api.openai.com/v1/chat/completions';
 const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
 
 function normalizeBool(value) {
@@ -26,7 +31,14 @@ function normalizeBool(value) {
     return Boolean(value);
 }
 
-function normalizeBoundedInt(value, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER, fallback = 0 } = {}) {
+function normalizeBoundedInt(
+    value,
+    {
+        min = Number.MIN_SAFE_INTEGER,
+        max = Number.MAX_SAFE_INTEGER,
+        fallback = 0
+    } = {}
+) {
     const parsed = Number.parseInt(value, 10);
     if (!Number.isFinite(parsed)) {
         return fallback;
@@ -38,8 +50,12 @@ export function normalizeTablePageSizes(value) {
     const source = Array.isArray(value) ? value : DEFAULT_TABLE_PAGE_SIZES;
     const nextSizes = source
         .map((entry) => Number.parseInt(entry, 10))
-        .filter((entry) => Number.isFinite(entry) && entry > 0 && entry <= 1000);
-    const normalized = Array.from(new Set(nextSizes)).sort((left, right) => left - right);
+        .filter(
+            (entry) => Number.isFinite(entry) && entry > 0 && entry <= 1000
+        );
+    const normalized = Array.from(new Set(nextSizes)).sort(
+        (left, right) => left - right
+    );
     return normalized.length ? normalized : [...DEFAULT_TABLE_PAGE_SIZES];
 }
 
@@ -66,7 +82,9 @@ export function normalizeSharedFeedFilters(value) {
         },
         wrist: {
             ...sharedFeedFiltersDefaults.wrist,
-            ...(value?.wrist && typeof value.wrist === 'object' ? value.wrist : {})
+            ...(value?.wrist && typeof value.wrist === 'object'
+                ? value.wrist
+                : {})
         }
     };
 }
@@ -175,28 +193,48 @@ export function normalizePreferenceSnapshot(snapshot = {}) {
     };
 
     return {
-        notificationLayout: next.notificationLayout === 'table' ? 'table' : 'notification-center',
+        notificationLayout:
+            next.notificationLayout === 'table'
+                ? 'table'
+                : 'notification-center',
         dataTableStriped: normalizeBool(next.dataTableStriped),
         tableDensity: normalizeTableDensity(next.tableDensity),
         showPointerOnHover: normalizeBool(next.showPointerOnHover),
-        accessibleStatusIndicators: normalizeBool(next.accessibleStatusIndicators),
+        accessibleStatusIndicators: normalizeBool(
+            next.accessibleStatusIndicators
+        ),
         showNewDashboardButton: normalizeBool(next.showNewDashboardButton),
-        recentActionCooldownEnabled: normalizeBool(next.recentActionCooldownEnabled),
-        recentActionCooldownMinutes: normalizeBoundedInt(next.recentActionCooldownMinutes, { min: 1, max: 1440, fallback: 60 }),
+        recentActionCooldownEnabled: normalizeBool(
+            next.recentActionCooldownEnabled
+        ),
+        recentActionCooldownMinutes: normalizeBoundedInt(
+            next.recentActionCooldownMinutes,
+            { min: 1, max: 1440, fallback: 60 }
+        ),
         screenshotHelper: normalizeBool(next.screenshotHelper),
-        screenshotHelperModifyFilename: normalizeBool(next.screenshotHelperModifyFilename),
-        screenshotHelperCopyToClipboard: normalizeBool(next.screenshotHelperCopyToClipboard),
+        screenshotHelperModifyFilename: normalizeBool(
+            next.screenshotHelperModifyFilename
+        ),
+        screenshotHelperCopyToClipboard: normalizeBool(
+            next.screenshotHelperCopyToClipboard
+        ),
         saveInstancePrints: normalizeBool(next.saveInstancePrints),
         cropInstancePrints: normalizeBool(next.cropInstancePrints),
         saveInstanceStickers: normalizeBool(next.saveInstanceStickers),
         saveInstanceEmoji: normalizeBool(next.saveInstanceEmoji),
         userGeneratedContentPath: String(next.userGeneratedContentPath || ''),
         showInstanceIdInLocation: normalizeBool(next.showInstanceIdInLocation),
-        isAgeGatedInstancesVisible: normalizeBool(next.isAgeGatedInstancesVisible),
+        isAgeGatedInstancesVisible: normalizeBool(
+            next.isAgeGatedInstancesVisible
+        ),
         hideNicknames: normalizeBool(next.hideNicknames),
-        displayVRCPlusIconsAsAvatar: normalizeBool(next.displayVRCPlusIconsAsAvatar),
+        displayVRCPlusIconsAsAvatar: normalizeBool(
+            next.displayVRCPlusIconsAsAvatar
+        ),
         sortFavorites: normalizeBool(next.sortFavorites),
-        weekStartsOn: [0, 1, 6].includes(Number(next.weekStartsOn)) ? Number(next.weekStartsOn) : 1,
+        weekStartsOn: [0, 1, 6].includes(Number(next.weekStartsOn))
+            ? Number(next.weekStartsOn)
+            : 1,
         dtIsoFormat: normalizeBool(next.dtIsoFormat),
         dtHour12: normalizeBool(next.dtHour12),
         hideUserNotes: normalizeBool(next.hideUserNotes),
@@ -212,17 +250,27 @@ export function normalizePreferenceSnapshot(snapshot = {}) {
         relaunchVRChatAfterCrash: normalizeBool(next.relaunchVRChatAfterCrash),
         vrcQuitFix: normalizeBool(next.vrcQuitFix),
         autoSweepVRChatCache: normalizeBool(next.autoSweepVRChatCache),
-        showConfirmationOnSwitchAvatar: normalizeBool(next.showConfirmationOnSwitchAvatar),
+        showConfirmationOnSwitchAvatar: normalizeBool(
+            next.showConfirmationOnSwitchAvatar
+        ),
         gameLogDisabled: normalizeBool(next.gameLogDisabled),
         avatarAutoCleanup: next.avatarAutoCleanup || 'Off',
         enableAppLauncher: normalizeBool(next.enableAppLauncher),
-        enableAppLauncherAutoClose: normalizeBool(next.enableAppLauncherAutoClose),
-        enableAppLauncherRunProcessOnce: normalizeBool(next.enableAppLauncherRunProcessOnce),
+        enableAppLauncherAutoClose: normalizeBool(
+            next.enableAppLauncherAutoClose
+        ),
+        enableAppLauncherRunProcessOnce: normalizeBool(
+            next.enableAppLauncherRunProcessOnce
+        ),
         udonExceptionLogging: normalizeBool(next.udonExceptionLogging),
         logResourceLoad: normalizeBool(next.logResourceLoad),
         logEmptyAvatars: normalizeBool(next.logEmptyAvatars),
         autoLoginDelayEnabled: normalizeBool(next.autoLoginDelayEnabled),
-        autoLoginDelaySeconds: normalizeBoundedInt(next.autoLoginDelaySeconds, { min: 0, max: 10, fallback: 0 }),
+        autoLoginDelaySeconds: normalizeBoundedInt(next.autoLoginDelaySeconds, {
+            min: 0,
+            max: 10,
+            fallback: 0
+        }),
         isStartAtWindowsStartup: normalizeBool(next.isStartAtWindowsStartup),
         isStartAsMinimizedState: normalizeBool(next.isStartAsMinimizedState),
         isCloseToTray: normalizeBool(next.isCloseToTray),
@@ -231,7 +279,9 @@ export function normalizePreferenceSnapshot(snapshot = {}) {
         proxyServer: String(next.proxyServer || ''),
         tablePageSizes: normalizeTablePageSizes(next.tablePageSizes),
         tableLimits: normalizeTableLimits(next.tableLimits),
-        localFavoriteFriendsGroups: Array.isArray(next.localFavoriteFriendsGroups)
+        localFavoriteFriendsGroups: Array.isArray(
+            next.localFavoriteFriendsGroups
+        )
             ? next.localFavoriteFriendsGroups.filter(Boolean)
             : [],
         sharedFeedFilters: parseSharedFeedFilters(next.sharedFeedFilters),
@@ -239,9 +289,12 @@ export function normalizePreferenceSnapshot(snapshot = {}) {
         youtubeAPI: normalizeBool(next.youtubeAPI),
         translationAPI: normalizeBool(next.translationAPI),
         bioLanguage: next.bioLanguage || 'en',
-        translationAPIType: next.translationAPIType === 'openai' ? 'openai' : 'google',
-        translationAPIEndpoint: next.translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT,
-        translationAPIModel: next.translationAPIModel || DEFAULT_TRANSLATION_MODEL,
+        translationAPIType:
+            next.translationAPIType === 'openai' ? 'openai' : 'google',
+        translationAPIEndpoint:
+            next.translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT,
+        translationAPIModel:
+            next.translationAPIModel || DEFAULT_TRANSLATION_MODEL,
         translationAPIPrompt: String(next.translationAPIPrompt || ''),
         discordActive: normalizeBool(next.discordActive),
         discordInstance: normalizeBool(next.discordInstance),
@@ -250,7 +303,9 @@ export function normalizePreferenceSnapshot(snapshot = {}) {
         discordHideImage: normalizeBool(next.discordHideImage),
         discordShowPlatform: normalizeBool(next.discordShowPlatform),
         discordWorldIntegration: normalizeBool(next.discordWorldIntegration),
-        discordWorldNameAsDiscordStatus: normalizeBool(next.discordWorldNameAsDiscordStatus)
+        discordWorldNameAsDiscordStatus: normalizeBool(
+            next.discordWorldNameAsDiscordStatus
+        )
     };
 }
 
@@ -264,15 +319,19 @@ export const usePreferencesStore = create((set) => ({
         });
     },
     patchPreferences(patch) {
-        set((state) => normalizePreferenceSnapshot({
-            ...state,
-            ...patch
-        }));
+        set((state) =>
+            normalizePreferenceSnapshot({
+                ...state,
+                ...patch
+            })
+        );
     },
     setPreferenceValue(key, value) {
-        set((state) => normalizePreferenceSnapshot({
-            ...state,
-            [key]: value
-        }));
+        set((state) =>
+            normalizePreferenceSnapshot({
+                ...state,
+                [key]: value
+            })
+        );
     }
 }));

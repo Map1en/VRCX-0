@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard
@@ -12,13 +13,6 @@ import {
     resolveWorldAssetBundleArgs
 } from '@/lib/worldAssetBundle.js';
 import { backend } from '@/platform/tauri/index.js';
-import { WorldDialogTabbedView } from './WorldDialogTabbedView.jsx';
-import { InstanceInviteDialog } from './InstanceInviteDialog.jsx';
-import {
-    WorldAllowedDomainsDialog,
-    WorldTagsDialog
-} from './WorldOwnerEditDialogs.jsx';
-import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import {
     configRepository,
     gameLogRepository,
@@ -29,19 +23,19 @@ import {
     vrchatAuthRepository,
     worldProfileRepository
 } from '@/repositories/index.js';
-import { useDialogStore } from '@/state/dialogStore.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
-import { parseLocation } from '@/shared/utils/locationParser.js';
 import {
     IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
     validateImageUploadFile,
     withUploadTimeout
 } from '@/shared/utils/imageUpload.js';
+import { parseLocation } from '@/shared/utils/locationParser.js';
+import { useDialogStore } from '@/state/dialogStore.js';
+import { useLaunchStore } from '@/state/launchStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { useLaunchStore } from '@/state/launchStore.js';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -65,25 +59,32 @@ import {
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+
+import { InstanceInviteDialog } from './InstanceInviteDialog.jsx';
+import { resolveCreatedInstanceDetails } from './world-dialog/worldInstanceResolver.js';
 import {
     buildLegacyCreatedInstance,
     normalizeEntityId,
     parseRoleIds,
     resolveInstanceLocation
 } from './world-dialog/worldInstances.js';
-import { resolveCreatedInstanceDetails } from './world-dialog/worldInstanceResolver.js';
+import { WorldDialogTabbedView } from './WorldDialogTabbedView.jsx';
+import {
+    WorldAllowedDomainsDialog,
+    WorldTagsDialog
+} from './WorldOwnerEditDialogs.jsx';
 
 function WorldDialogEmptyState({ title, description, loading = false }) {
     return (
-        <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
+        <div className="bg-muted/20 flex min-h-56 items-center justify-center rounded-xl border border-dashed p-6 text-center">
             <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <Spinner className="size-5 text-muted-foreground" />
+                        <Spinner className="text-muted-foreground size-5" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                     {description}
                 </div>
             </div>

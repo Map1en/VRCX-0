@@ -1,19 +1,25 @@
-import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
     gameLogRepository,
     groupProfileRepository,
     worldProfileRepository
 } from '@/repositories/index.js';
-import { entityQueryPolicies, queryKeys } from '@/services/entityQueryCacheService.js';
+import {
+    entityQueryPolicies,
+    queryKeys
+} from '@/services/entityQueryCacheService.js';
 import { parseLocation, resolveRegion } from '@/shared/utils/location.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
-const WORLD_ID_PATTERN = /(?:^|\b)wrld_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::|$|\s)/i;
+const WORLD_ID_PATTERN =
+    /(?:^|\b)wrld_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::|$|\s)/i;
 
 export function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function isRawWorldReference(value) {
@@ -38,7 +44,9 @@ function normalizeWorldNameHint(hint, parsedLocation, currentLocation) {
 }
 
 function instanceLocation(instance) {
-    return normalizeString(instance?.location || instance?.tag || instance?.$location?.tag);
+    return normalizeString(
+        instance?.location || instance?.tag || instance?.$location?.tag
+    );
 }
 
 function locationCacheKey(location) {
@@ -129,11 +137,15 @@ function readInstanceGroupName(instance) {
 }
 
 function isInstanceClosed(instance) {
-    return Boolean(instance?.closedAt || instance?.closed_at || instance?.isClosed);
+    return Boolean(
+        instance?.closedAt || instance?.closed_at || instance?.isClosed
+    );
 }
 
 function groupProfileName(group) {
-    return normalizeString(group?.name || group?.displayName || group?.shortCode);
+    return normalizeString(
+        group?.name || group?.displayName || group?.shortCode
+    );
 }
 
 export function useLocationMetadata({
@@ -145,29 +157,58 @@ export function useLocationMetadata({
     groupHint = '',
     instanceName = ''
 }) {
-    const storeEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const storeEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const currentEndpoint = endpoint || storeEndpoint;
-    const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
-    const groupInstances = groupInstancesState.endpoint === currentEndpoint ? groupInstancesState.instances : [];
-    const groupInstancesRevision = groupInstancesState.endpoint === currentEndpoint
-        ? groupInstancesState.lastLoadedAt || groupInstancesState.fetchedAt || groupInstancesState.status
-        : '';
-    const cachedInstances = useMemo(() => buildCachedInstanceMap(groupInstances), [groupInstances, groupInstancesRevision]);
+    const groupInstancesState = useRuntimeStore(
+        (state) => state.groupInstances
+    );
+    const groupInstances =
+        groupInstancesState.endpoint === currentEndpoint
+            ? groupInstancesState.instances
+            : [];
+    const groupInstancesRevision =
+        groupInstancesState.endpoint === currentEndpoint
+            ? groupInstancesState.lastLoadedAt ||
+              groupInstancesState.fetchedAt ||
+              groupInstancesState.status
+            : '';
+    const cachedInstances = useMemo(
+        () => buildCachedInstanceMap(groupInstances),
+        [groupInstances, groupInstancesRevision]
+    );
     const [localWorldName, setLocalWorldName] = useState('');
-    const normalizedCurrentLocation = normalizeString(currentLocation || locationInfo?.tag);
+    const normalizedCurrentLocation = normalizeString(
+        currentLocation || locationInfo?.tag
+    );
     const locationTag = normalizeString(locationInfo?.tag);
     const locationValue = normalizeString(locationInfo?.location);
     const worldId = normalizeString(locationInfo?.worldId);
     const groupId = normalizeString(locationInfo?.groupId);
     const cachedInstance = useMemo(
-        () => findCachedInstance(cachedInstances, [locationTag, normalizedCurrentLocation, locationValue]),
+        () =>
+            findCachedInstance(cachedInstances, [
+                locationTag,
+                normalizedCurrentLocation,
+                locationValue
+            ]),
         [cachedInstances, locationTag, normalizedCurrentLocation, locationValue]
     );
     const worldNameHint =
         normalizeWorldNameHint(hint, locationInfo, normalizedCurrentLocation) ||
-        normalizeWorldNameHint(providedWorldNameHint, locationInfo, normalizedCurrentLocation);
-    const cachedWorldName = normalizeWorldNameHint(readInstanceWorldName(cachedInstance), locationInfo, normalizedCurrentLocation);
-    const hintedGroupName = normalizeString(groupHint) || readInstanceGroupName(cachedInstance);
+        normalizeWorldNameHint(
+            providedWorldNameHint,
+            locationInfo,
+            normalizedCurrentLocation
+        );
+    const cachedWorldName = normalizeWorldNameHint(
+        readInstanceWorldName(cachedInstance),
+        locationInfo,
+        normalizedCurrentLocation
+    );
+    const hintedGroupName =
+        normalizeString(groupHint) || readInstanceGroupName(cachedInstance);
     const resolvedInstanceName =
         readInstanceDisplayName(cachedInstance) ||
         normalizeString(instanceName) ||
@@ -175,7 +216,12 @@ export function useLocationMetadata({
 
     const groupProfileQuery = useQuery({
         queryKey: queryKeys.group(groupId, false, currentEndpoint),
-        queryFn: () => groupProfileRepository.getGroupProfile({ groupId, endpoint: currentEndpoint, includeRoles: false }),
+        queryFn: () =>
+            groupProfileRepository.getGroupProfile({
+                groupId,
+                endpoint: currentEndpoint,
+                includeRoles: false
+            }),
         enabled: Boolean(groupId),
         staleTime: entityQueryPolicies.group.staleTime,
         gcTime: entityQueryPolicies.group.gcTime,
@@ -184,7 +230,11 @@ export function useLocationMetadata({
     });
     const worldProfileQuery = useQuery({
         queryKey: queryKeys.world(worldId, currentEndpoint),
-        queryFn: () => worldProfileRepository.fetchWorldProfile({ worldId, endpoint: currentEndpoint }),
+        queryFn: () =>
+            worldProfileRepository.fetchWorldProfile({
+                worldId,
+                endpoint: currentEndpoint
+            }),
         enabled: Boolean(worldId),
         staleTime: entityQueryPolicies.world.staleTime,
         gcTime: entityQueryPolicies.world.gcTime,
@@ -196,7 +246,12 @@ export function useLocationMetadata({
         () => groupProfileName(groupProfileQuery.data) || hintedGroupName,
         [groupProfileQuery.data, hintedGroupName]
     );
-    const worldName = normalizeWorldNameHint(worldProfileQuery.data?.name, locationInfo, normalizedCurrentLocation) ||
+    const worldName =
+        normalizeWorldNameHint(
+            worldProfileQuery.data?.name,
+            locationInfo,
+            normalizedCurrentLocation
+        ) ||
         cachedWorldName ||
         localWorldName ||
         worldNameHint;
@@ -214,7 +269,11 @@ export function useLocationMetadata({
         gameLogRepository
             .getWorldNameByWorldId(worldId)
             .then((name) => {
-                const nextName = normalizeWorldNameHint(name, locationInfo, normalizedCurrentLocation);
+                const nextName = normalizeWorldNameHint(
+                    name,
+                    locationInfo,
+                    normalizedCurrentLocation
+                );
                 if (active && nextName) {
                     setLocalWorldName(nextName);
                 }
@@ -224,7 +283,13 @@ export function useLocationMetadata({
         return () => {
             active = false;
         };
-    }, [cachedWorldName, locationInfo, normalizedCurrentLocation, worldId, worldNameHint]);
+    }, [
+        cachedWorldName,
+        locationInfo,
+        normalizedCurrentLocation,
+        worldId,
+        worldNameHint
+    ]);
 
     return {
         currentEndpoint,

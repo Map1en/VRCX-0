@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -52,15 +52,23 @@ export function AvatarProviderSettingsDialog({
         inFlightProviderListKeyRef.current = nextProviderListKey;
         setIsSaving(true);
         try {
-            const savedConfig = await avatarSearchProviderRepository.saveConfig({
-                enabled: nextProviderList.filter(Boolean).length > 0,
-                providerList: nextProviderList
-            });
+            const savedConfig = await avatarSearchProviderRepository.saveConfig(
+                {
+                    enabled: nextProviderList.filter(Boolean).length > 0,
+                    providerList: nextProviderList
+                }
+            );
             setDraftProviderList(savedConfig.providerList);
-            lastSavedProviderListKeyRef.current = providerListKey(savedConfig.providerList);
+            lastSavedProviderListKeyRef.current = providerListKey(
+                savedConfig.providerList
+            );
             onConfigSaved?.(savedConfig);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to save avatar providers.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to save avatar providers.'
+            );
         } finally {
             if (inFlightProviderListKeyRef.current === nextProviderListKey) {
                 inFlightProviderListKeyRef.current = '';
@@ -82,7 +90,9 @@ export function AvatarProviderSettingsDialog({
     }
 
     function removeProvider(index) {
-        const nextProviderList = draftProviderList.filter((_, providerIndex) => providerIndex !== index);
+        const nextProviderList = draftProviderList.filter(
+            (_, providerIndex) => providerIndex !== index
+        );
         setDraftProviderList(nextProviderList);
         void saveProviderList(nextProviderList);
     }
@@ -98,16 +108,24 @@ export function AvatarProviderSettingsDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{t('dialog.avatar_database_provider.header')}</DialogTitle>
+                    <DialogTitle>
+                        {t('dialog.avatar_database_provider.header')}
+                    </DialogTitle>
                 </DialogHeader>
                 <FieldGroup className="gap-2">
                     {draftProviderList.map((provider, index) => (
-                        <Field key={`avatar-provider-${index}`} orientation="horizontal" data-disabled={isSaving}>
+                        <Field
+                            key={`avatar-provider-${index}`}
+                            orientation="horizontal"
+                            data-disabled={isSaving}
+                        >
                             <Input
                                 aria-label={`Avatar provider ${index + 1}`}
                                 value={provider}
                                 disabled={isSaving}
-                                onChange={(event) => updateProvider(index, event.target.value)}
+                                onChange={(event) =>
+                                    updateProvider(index, event.target.value)
+                                }
                                 onBlur={() => void saveProviderList()}
                             />
                             <Button
@@ -116,12 +134,18 @@ export function AvatarProviderSettingsDialog({
                                 size="icon"
                                 aria-label={`Remove avatar provider ${index + 1}`}
                                 disabled={isSaving}
-                                onClick={() => removeProvider(index)}>
+                                onClick={() => removeProvider(index)}
+                            >
                                 <Trash2Icon data-icon="inline-start" />
                             </Button>
                         </Field>
                     ))}
-                    <Button type="button" size="sm" disabled={isSaving} onClick={addProvider}>
+                    <Button
+                        type="button"
+                        size="sm"
+                        disabled={isSaving}
+                        onClick={addProvider}
+                    >
                         <PlusIcon data-icon="inline-start" />
                         {t('dialog.avatar_database_provider.add_provider')}
                     </Button>

@@ -3,11 +3,15 @@ import { useDialogStore } from '@/state/dialogStore.js';
 let entityDialogOpenNonce = 0;
 
 function normalizeEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function normalizeTitle(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function defaultEntityTitle(kind) {
@@ -31,11 +35,15 @@ function readSeedTitle(kind, seedData) {
     }
     switch (kind) {
         case 'user':
-            return normalizeTitle(seedData.displayName || seedData.username || seedData.name);
+            return normalizeTitle(
+                seedData.displayName || seedData.username || seedData.name
+            );
         case 'world':
         case 'avatar':
         case 'group':
-            return normalizeTitle(seedData.name || seedData.displayName || seedData.shortName);
+            return normalizeTitle(
+                seedData.name || seedData.displayName || seedData.shortName
+            );
         default:
             return '';
     }
@@ -88,19 +96,28 @@ function openEntityDialog({
         openNonce
     };
     const store = useDialogStore.getState();
-    const existingIndex = store.breadcrumbs.findIndex((entry) => entry?.key === crumb.key);
-    const activeDialogIsEntity = Boolean(store.activeDialog?.kind && store.activeDialog?.entityId);
+    const existingIndex = store.breadcrumbs.findIndex(
+        (entry) => entry?.key === crumb.key
+    );
+    const activeDialogIsEntity = Boolean(
+        store.activeDialog?.kind && store.activeDialog?.entityId
+    );
     const breadcrumbs =
         existingIndex >= 0
             ? store.breadcrumbs.slice(0, existingIndex + 1)
             : activeDialogIsEntity
-                ? [...store.breadcrumbs, crumb]
-                : [crumb];
+              ? [...store.breadcrumbs, crumb]
+              : [crumb];
 
     store.setDialogTrail(dialog, breadcrumbs);
 }
 
-export function openUserDialog({ userId, title = '', description = '', seedData = null } = {}) {
+export function openUserDialog({
+    userId,
+    title = '',
+    description = '',
+    seedData = null
+} = {}) {
     openEntityDialog({
         kind: 'user',
         entityId: userId,
@@ -122,13 +139,23 @@ export function openWorldDialog({
         entityId: worldId,
         title,
         description,
-        payload: seedData || initialAction
-            ? { seedData, initialAction, initialActionNonce: initialAction ? Date.now() : 0 }
-            : null
+        payload:
+            seedData || initialAction
+                ? {
+                      seedData,
+                      initialAction,
+                      initialActionNonce: initialAction ? Date.now() : 0
+                  }
+                : null
     });
 }
 
-export function openAvatarDialog({ avatarId, title = '', description = '', seedData = null } = {}) {
+export function openAvatarDialog({
+    avatarId,
+    title = '',
+    description = '',
+    seedData = null
+} = {}) {
     openEntityDialog({
         kind: 'avatar',
         entityId: avatarId,
@@ -138,7 +165,12 @@ export function openAvatarDialog({ avatarId, title = '', description = '', seedD
     });
 }
 
-export function openGroupDialog({ groupId, title = '', description = '', seedData = null } = {}) {
+export function openGroupDialog({
+    groupId,
+    title = '',
+    description = '',
+    seedData = null
+} = {}) {
     openEntityDialog({
         kind: 'group',
         entityId: groupId,

@@ -27,6 +27,7 @@ vi.mock('./avatarProfileRepository.js', () => ({
 }));
 
 import { publishPreferenceChanged } from '@/lib/preferenceEvents.js';
+
 import avatarProfileRepository from './avatarProfileRepository.js';
 import avatarSearchProviderRepository from './avatarSearchProviderRepository.js';
 import configRepository from './configRepository.js';
@@ -38,8 +39,8 @@ describe('AvatarSearchProviderRepository', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         vi.mocked(configRepository.getBool).mockResolvedValue(true);
-        vi.mocked(configRepository.getString).mockImplementation((key, fallback = '') =>
-            Promise.resolve(fallback)
+        vi.mocked(configRepository.getString).mockImplementation(
+            (key, fallback = '') => Promise.resolve(fallback)
         );
         vi.mocked(configRepository.setString).mockResolvedValue(undefined);
         vi.mocked(configRepository.setBool).mockResolvedValue(undefined);
@@ -49,58 +50,62 @@ describe('AvatarSearchProviderRepository', () => {
             data: '[]',
             raw: []
         });
-        vi.mocked(avatarProfileRepository.normalize).mockImplementation((avatar) => ({
-            ...avatar,
-            normalized: true
-        }));
+        vi.mocked(avatarProfileRepository.normalize).mockImplementation(
+            (avatar) => ({
+                ...avatar,
+                normalized: true
+            })
+        );
     });
 
     it('normalizes legacy provider lists and preserves a selected custom provider', async () => {
         const customProvider = 'https://avatars.example.test/search';
         const selectedProvider = 'https://selected.example.test/search';
-        vi.mocked(configRepository.getString).mockImplementation((key, fallback = '') => {
-            if (key === 'VRCX_avatarRemoteDatabaseProviderList') {
-                return Promise.resolve(JSON.stringify([
-                    'https://api.avtrdb.com/v1/avatar/search/vrcx',
-                    customProvider,
-                    'https://avtr.just-h.party/vrcx_search.php',
-                    customProvider
-                ]));
+        vi.mocked(configRepository.getString).mockImplementation(
+            (key, fallback = '') => {
+                if (key === 'VRCX_avatarRemoteDatabaseProviderList') {
+                    return Promise.resolve(
+                        JSON.stringify([
+                            'https://api.avtrdb.com/v1/avatar/search/vrcx',
+                            customProvider,
+                            'https://avtr.just-h.party/vrcx_search.php',
+                            customProvider
+                        ])
+                    );
+                }
+                if (key === 'VRCX_avatarRemoteDatabaseProvider') {
+                    return Promise.resolve(selectedProvider);
+                }
+                return Promise.resolve(fallback);
             }
-            if (key === 'VRCX_avatarRemoteDatabaseProvider') {
-                return Promise.resolve(selectedProvider);
-            }
-            return Promise.resolve(fallback);
-        });
+        );
 
-        await expect(avatarSearchProviderRepository.getConfig()).resolves.toEqual({
+        await expect(
+            avatarSearchProviderRepository.getConfig()
+        ).resolves.toEqual({
             enabled: true,
-            providerList: [
-                DEFAULT_PROVIDER,
-                customProvider,
-                selectedProvider
-            ],
+            providerList: [DEFAULT_PROVIDER, customProvider, selectedProvider],
             selectedProvider
         });
 
         expect(configRepository.setString).toHaveBeenCalledWith(
             'VRCX_avatarRemoteDatabaseProviderList',
-            JSON.stringify([
-                DEFAULT_PROVIDER,
-                customProvider,
-                selectedProvider
-            ])
+            JSON.stringify([DEFAULT_PROVIDER, customProvider, selectedProvider])
         );
-        expect(configRepository.remove).toHaveBeenCalledWith('avatarRemoteDatabaseProvider');
+        expect(configRepository.remove).toHaveBeenCalledWith(
+            'avatarRemoteDatabaseProvider'
+        );
     });
 
     it('builds provider search requests and deduplicates normalized avatar ids', async () => {
-        vi.mocked(configRepository.getString).mockImplementation((key, fallback = '') => {
-            if (key === 'id') {
-                return Promise.resolve('client-id');
+        vi.mocked(configRepository.getString).mockImplementation(
+            (key, fallback = '') => {
+                if (key === 'id') {
+                    return Promise.resolve('client-id');
+                }
+                return Promise.resolve(fallback);
             }
-            return Promise.resolve(fallback);
-        });
+        );
         vi.mocked(webRepository.execute).mockResolvedValue({
             status: 200,
             data: JSON.stringify([
@@ -131,7 +136,9 @@ describe('AvatarSearchProviderRepository', () => {
 
         const request = webRepository.execute.mock.calls[0][0];
         const url = new URL(request.url);
-        expect(`${url.origin}${url.pathname}`).toBe('https://avatars.example.test/search');
+        expect(`${url.origin}${url.pathname}`).toBe(
+            'https://avatars.example.test/search'
+        );
         expect(url.searchParams.get('search')).toBe('alpha');
         expect(url.searchParams.get('n')).toBe('5000');
         expect(request).toMatchObject({
@@ -141,45 +148,57 @@ describe('AvatarSearchProviderRepository', () => {
                 'VRCX-ID': 'client-id'
             }
         });
-        expect(avatarProfileRepository.normalize).toHaveBeenNthCalledWith(1, expect.objectContaining({
-            id: 'avtr_alpha',
-            name: 'Alpha',
-            authorName: 'Creator A',
-            imageUrl: 'https://cdn.example.test/alpha.png',
-            releaseStatus: 'public'
-        }));
+        expect(avatarProfileRepository.normalize).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({
+                id: 'avtr_alpha',
+                name: 'Alpha',
+                authorName: 'Creator A',
+                imageUrl: 'https://cdn.example.test/alpha.png',
+                releaseStatus: 'public'
+            })
+        );
         expect(result).toMatchObject({
             provider: 'https://avatars.example.test/search',
             query: 'alpha',
             status: 200,
             raw: { provider: true }
         });
-        expect(result.avatars.map((avatar) => avatar.id)).toEqual(['avtr_alpha', 'avtr_beta']);
+        expect(result.avatars.map((avatar) => avatar.id)).toEqual([
+            'avtr_alpha',
+            'avtr_beta'
+        ]);
     });
 
     it('validates provider and query before calling the network', async () => {
-        await expect(avatarSearchProviderRepository.search({
-            provider: '',
-            query: 'avatar'
-        })).rejects.toThrow('Avatar provider is not configured');
-        await expect(avatarSearchProviderRepository.search({
-            provider: DEFAULT_PROVIDER,
-            query: 'ab'
-        })).rejects.toThrow('at least 3 characters');
+        await expect(
+            avatarSearchProviderRepository.search({
+                provider: '',
+                query: 'avatar'
+            })
+        ).rejects.toThrow('Avatar provider is not configured');
+        await expect(
+            avatarSearchProviderRepository.search({
+                provider: DEFAULT_PROVIDER,
+                query: 'ab'
+            })
+        ).rejects.toThrow('at least 3 characters');
 
         expect(webRepository.execute).not.toHaveBeenCalled();
     });
 
     it('publishes normalized config after saving provider preferences', async () => {
-        await expect(avatarSearchProviderRepository.saveConfig({
-            enabled: true,
-            providerList: [
-                'https://api.avtrdb.com/v2/avatar/search/vrcx',
-                'https://custom.example.test/search',
-                'https://custom.example.test/search'
-            ],
-            selectedProvider: ''
-        })).resolves.toEqual({
+        await expect(
+            avatarSearchProviderRepository.saveConfig({
+                enabled: true,
+                providerList: [
+                    'https://api.avtrdb.com/v2/avatar/search/vrcx',
+                    'https://custom.example.test/search',
+                    'https://custom.example.test/search'
+                ],
+                selectedProvider: ''
+            })
+        ).resolves.toEqual({
             enabled: true,
             providerList: [
                 DEFAULT_PROVIDER,
@@ -195,7 +214,10 @@ describe('AvatarSearchProviderRepository', () => {
                 'https://custom.example.test/search'
             ])
         );
-        expect(configRepository.setBool).toHaveBeenCalledWith('VRCX_avatarRemoteDatabase', true);
+        expect(configRepository.setBool).toHaveBeenCalledWith(
+            'VRCX_avatarRemoteDatabase',
+            true
+        );
         expect(configRepository.setString).toHaveBeenCalledWith(
             'VRCX_avatarRemoteDatabaseProvider',
             DEFAULT_PROVIDER

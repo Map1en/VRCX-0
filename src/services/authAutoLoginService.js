@@ -5,17 +5,17 @@ import { webRepository } from '@/repositories/index.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 
-import { applySavedAuthSnapshot } from './authSnapshotService.js';
+import { resetActivityCacheState } from './activityCacheService.js';
 import {
     AUTO_LOGIN_MAX_ATTEMPTS,
     canAttemptReactAutoLogin,
     recordReactAutoLoginAttempt
 } from './authAutoLoginState.js';
-import { resetActivityCacheState } from './activityCacheService.js';
 import {
     executeCookieSessionRestore,
     executeSavedCredentialLogin
 } from './authExecutionService.js';
+import { applySavedAuthSnapshot } from './authSnapshotService.js';
 import { translateCurrentLocale } from './i18nService.js';
 
 function createAutoLoginAbortError() {
@@ -87,9 +87,12 @@ async function applyAutoLoginDelay(seconds, { signal, onCountdown } = {}) {
 
     try {
         for (let remaining = seconds; remaining > 0; remaining -= 1) {
-            const message = await translateCurrentLocale('message.auto_login_delay_countdown', {
-                seconds: remaining
-            });
+            const message = await translateCurrentLocale(
+                'message.auto_login_delay_countdown',
+                {
+                    seconds: remaining
+                }
+            );
             if (toastId) {
                 toast.dismiss(toastId);
             }
@@ -123,7 +126,10 @@ function setSignedOutSessionState() {
     resetActivityCacheState();
 }
 
-export async function executeReactAutoLogin(snapshot, { signal, onCountdown } = {}) {
+export async function executeReactAutoLogin(
+    snapshot,
+    { signal, onCountdown } = {}
+) {
     const runtimeStore = useRuntimeStore.getState();
     const savedCredential = getAutoLoginTarget(snapshot);
     const displayName =
@@ -154,7 +160,9 @@ export async function executeReactAutoLogin(snapshot, { signal, onCountdown } = 
             );
 
             await applyAutoLoginDelay(
-                snapshot.autoLoginDelayEnabled ? snapshot.autoLoginDelaySeconds : 0,
+                snapshot.autoLoginDelayEnabled
+                    ? snapshot.autoLoginDelaySeconds
+                    : 0,
                 {
                     signal,
                     onCountdown
@@ -169,7 +177,11 @@ export async function executeReactAutoLogin(snapshot, { signal, onCountdown } = 
                 const restoredSnapshot = await executeCookieSessionRestore({
                     endpoint: restoreEndpoint
                 });
-                toast.success(await translateCurrentLocale('message.auth.auto_login_success'));
+                toast.success(
+                    await translateCurrentLocale(
+                        'message.auth.auto_login_success'
+                    )
+                );
                 return {
                     status: 'success',
                     snapshot: restoredSnapshot
@@ -208,7 +220,9 @@ export async function executeReactAutoLogin(snapshot, { signal, onCountdown } = 
                 `Automatic login paused for ${displayName} after ${AUTO_LOGIN_MAX_ATTEMPTS} attempts in the last hour.`
             );
             await flashWindowSafely();
-            toast.error(await translateCurrentLocale('message.auth.auto_login_failed'));
+            toast.error(
+                await translateCurrentLocale('message.auth.auto_login_failed')
+            );
             return {
                 status: 'throttled',
                 snapshot
@@ -223,7 +237,9 @@ export async function executeReactAutoLogin(snapshot, { signal, onCountdown } = 
         recordReactAutoLoginAttempt(throttleKey);
         const nextSnapshot = await executeSavedCredentialLogin(savedCredential);
 
-        toast.success(await translateCurrentLocale('message.auth.auto_login_success'));
+        toast.success(
+            await translateCurrentLocale('message.auth.auto_login_success')
+        );
         return {
             status: 'success',
             snapshot: nextSnapshot
@@ -250,7 +266,9 @@ export async function executeReactAutoLogin(snapshot, { signal, onCountdown } = 
             'error',
             error instanceof Error ? error.message : String(error)
         );
-        toast.error(await translateCurrentLocale('message.auth.auto_login_failed'));
+        toast.error(
+            await translateCurrentLocale('message.auth.auto_login_failed')
+        );
 
         if (typeof navigator !== 'undefined' && navigator.onLine === false) {
             toast.error(await translateCurrentLocale('message.auth.offline'));

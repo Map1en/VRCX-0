@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 
 import '@/styles/globals.css';
 import '@/lib/dayjs.js';
-
 import { App } from './app/App.jsx';
 
 const rootElement = document.getElementById('root');
@@ -13,9 +12,5 @@ if (!rootElement) {
 }
 
 createRoot(rootElement).render(
-    createElement(
-        StrictMode,
-        null,
-        createElement(App)
-    )
+    createElement(StrictMode, null, createElement(App))
 );

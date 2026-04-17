@@ -11,7 +11,11 @@ function getCachedInstance(location, parsed, cachedInstances) {
     if (!cachedInstances) {
         return null;
     }
-    return cachedInstances.get(location) || cachedInstances.get(locationCacheKey(parsed)) || null;
+    return (
+        cachedInstances.get(location) ||
+        cachedInstances.get(locationCacheKey(parsed)) ||
+        null
+    );
 }
 
 /**

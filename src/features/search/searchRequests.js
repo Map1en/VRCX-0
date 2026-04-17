@@ -2,7 +2,12 @@ import { replaceBioSymbols } from '@/shared/utils/base/string.js';
 
 export const SEARCH_PAGE_SIZE = 10;
 
-export function buildWorldSearchRequest(searchText, category, includeCommunityLabs, offset = 0) {
+export function buildWorldSearchRequest(
+    searchText,
+    category,
+    includeCommunityLabs,
+    offset = 0
+) {
     const params = {
         n: SEARCH_PAGE_SIZE,
         offset: Math.max(0, offset)
@@ -64,7 +69,9 @@ export function buildWorldSearchRequest(searchText, category, includeCommunityLa
     }
 
     if (!includeCommunityLabs) {
-        params.tag = params.tag ? `${params.tag},system_approved` : 'system_approved';
+        params.tag = params.tag
+            ? `${params.tag},system_approved`
+            : 'system_approved';
     }
 
     return {

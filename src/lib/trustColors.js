@@ -30,19 +30,29 @@ export const TRUST_COLOR_ENTRIES = Object.freeze([
     {
         key: 'trusted',
         className: 'x-tag-trusted',
-        labelKey: 'view.settings.appearance.user_colors.trust_levels.known_user',
+        labelKey:
+            'view.settings.appearance.user_colors.trust_levels.known_user',
         presets: Object.freeze(['#ff7b42'])
     },
     {
         key: 'veteran',
         className: 'x-tag-veteran',
-        labelKey: 'view.settings.appearance.user_colors.trust_levels.trusted_user',
-        presets: Object.freeze(['#b18fff', '#8143e6', '#ff69b4', '#b52626', '#ffd000', '#abcdef'])
+        labelKey:
+            'view.settings.appearance.user_colors.trust_levels.trusted_user',
+        presets: Object.freeze([
+            '#b18fff',
+            '#8143e6',
+            '#ff69b4',
+            '#b52626',
+            '#ffd000',
+            '#abcdef'
+        ])
     },
     {
         key: 'vip',
         className: 'x-tag-vip',
-        labelKey: 'view.settings.appearance.user_colors.trust_levels.vrchat_team',
+        labelKey:
+            'view.settings.appearance.user_colors.trust_levels.vrchat_team',
         presets: Object.freeze(['#ff2626'])
     },
     {
@@ -96,7 +106,10 @@ export function applyTrustColorClasses(value) {
     const style = document.createElement('style');
     style.id = TRUST_COLOR_STYLE_ID;
     style.textContent = Object.entries(trustColors)
-        .map(([key, color]) => `.x-tag-${key} { color: ${color} !important; border-color: ${color} !important; }`)
+        .map(
+            ([key, color]) =>
+                `.x-tag-${key} { color: ${color} !important; border-color: ${color} !important; }`
+        )
         .join(' ');
     document.head.appendChild(style);
 }
@@ -108,7 +121,9 @@ export function resolveTrustColorKey(user) {
     if (user?.$isTroll || user?.$isProbableTroll) {
         return 'troll';
     }
-    const classKey = String(user?.$trustClass || user?.trustClass || '').replace(/^x-tag-/, '');
+    const classKey = String(
+        user?.$trustClass || user?.trustClass || ''
+    ).replace(/^x-tag-/, '');
     return Object.prototype.hasOwnProperty.call(TRUST_COLOR_DEFAULTS, classKey)
         ? classKey
         : 'untrusted';

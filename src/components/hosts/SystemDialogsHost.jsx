@@ -1,43 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/ui/shadcn/button';
-import { Checkbox } from '@/ui/shadcn/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/ui/shadcn/dialog';
-import {
-    Field,
-    FieldContent,
-    FieldGroup,
-    FieldLabel
-} from '@/ui/shadcn/field';
-import { Input } from '@/ui/shadcn/input';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
-import { Switch } from '@/ui/shadcn/switch';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
-import { Textarea } from '@/ui/shadcn/textarea';
-import { backend } from '@/platform/index.js';
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
-import {
-    VRChatCameraResolutions,
-    VRChatScreenshotResolutions
-} from '@/shared/constants/settings.js';
-import {
-    defaultBranchForVersion,
-    downloadUpdateAndWait,
-    fetchBranchReleases,
-    formatReleaseDisplayVersion,
-    sanitizeBranch
-} from '@/services/updateService.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { useModalStore } from '@/state/modalStore.js';
 import {
     confirmLegacyDatabaseMigration,
     skipLegacyDatabaseMigration
@@ -51,10 +17,48 @@ import {
     restoreVrcRegistryBackupFromFile,
     saveVrcRegistryBackupToFile
 } from '@/services/registryBackupService.js';
+import {
+    defaultBranchForVersion,
+    downloadUpdateAndWait,
+    fetchBranchReleases,
+    formatReleaseDisplayVersion,
+    sanitizeBranch
+} from '@/services/updateService.js';
+import {
+    VRChatCameraResolutions,
+    VRChatScreenshotResolutions
+} from '@/shared/constants/settings.js';
+import { useModalStore } from '@/state/modalStore.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/ui/shadcn/dialog';
+import { Field, FieldContent, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
+import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Textarea } from '@/ui/shadcn/textarea';
 
 function UpdaterDialog({ open, onOpenChange }) {
     const cancelTokenRef = useRef(null);
-    const [branch, setBranch] = useState(() => defaultBranchForVersion(VERSION || ''));
+    const [branch, setBranch] = useState(() =>
+        defaultBranchForVersion(VERSION || '')
+    );
     const [releases, setReleases] = useState([]);
     const [releaseVersion, setReleaseVersion] = useState('');
     const [pendingInstall, setPendingInstall] = useState(false);
@@ -63,7 +67,10 @@ function UpdaterDialog({ open, onOpenChange }) {
     const [progress, setProgress] = useState(0);
     const [detail, setDetail] = useState('');
     const selectedRelease = useMemo(
-        () => releases.find((release) => release.canonicalVersion === releaseVersion) || null,
+        () =>
+            releases.find(
+                (release) => release.canonicalVersion === releaseVersion
+            ) || null,
         [releaseVersion, releases]
     );
 
@@ -93,15 +100,21 @@ function UpdaterDialog({ open, onOpenChange }) {
 
                 setReleases(nextReleases);
                 setReleaseVersion((current) =>
-                    nextReleases.some((release) => release.canonicalVersion === current)
+                    nextReleases.some(
+                        (release) => release.canonicalVersion === current
+                    )
                         ? current
                         : nextReleases[0]?.canonicalVersion || ''
                 );
-                setDetail(nextReleases.length ? '' : 'No downloadable releases found.');
+                setDetail(
+                    nextReleases.length ? '' : 'No downloadable releases found.'
+                );
             })
             .catch((error) => {
                 if (active) {
-                    setDetail(error instanceof Error ? error.message : String(error));
+                    setDetail(
+                        error instanceof Error ? error.message : String(error)
+                    );
                 }
             })
             .finally(() => {
@@ -162,24 +175,43 @@ function UpdaterDialog({ open, onOpenChange }) {
                 <DialogHeader>
                     <DialogTitle>VRCX Update</DialogTitle>
                     <DialogDescription>
-                        Current version {formatReleaseDisplayVersion(VERSION || '') || '-'}.
+                        Current version{' '}
+                        {formatReleaseDisplayVersion(VERSION || '') || '-'}.
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
-                    <Tabs value={branch} onValueChange={(value) => setBranch(sanitizeBranch(value))}>
+                    <Tabs
+                        value={branch}
+                        onValueChange={(value) =>
+                            setBranch(sanitizeBranch(value))
+                        }
+                    >
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="Stable">Stable</TabsTrigger>
                             <TabsTrigger value="Beta">Beta</TabsTrigger>
                         </TabsList>
                     </Tabs>
-                    <Select value={releaseVersion} onValueChange={setReleaseVersion} disabled={loading || downloading}>
+                    <Select
+                        value={releaseVersion}
+                        onValueChange={setReleaseVersion}
+                        disabled={loading || downloading}
+                    >
                         <SelectTrigger>
-                            <SelectValue placeholder={loading ? 'Loading releases' : 'Select release'} />
+                            <SelectValue
+                                placeholder={
+                                    loading
+                                        ? 'Loading releases'
+                                        : 'Select release'
+                                }
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
                                 {releases.map((release) => (
-                                    <SelectItem key={release.canonicalVersion} value={release.canonicalVersion}>
+                                    <SelectItem
+                                        key={release.canonicalVersion}
+                                        value={release.canonicalVersion}
+                                    >
                                         {release.displayName}
                                     </SelectItem>
                                 ))}
@@ -188,36 +220,52 @@ function UpdaterDialog({ open, onOpenChange }) {
                     </Select>
                     {downloading ? (
                         <div className="flex flex-col gap-2">
-                            <div className="h-2 overflow-hidden rounded-full bg-muted">
-                                <div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} />
+                            <div className="bg-muted h-2 overflow-hidden rounded-full">
+                                <div
+                                    className="bg-primary h-full transition-[width]"
+                                    style={{ width: `${progress}%` }}
+                                />
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                                {progress === 100 ? 'Checking hash.' : `${progress}%`}
+                            <div className="text-muted-foreground text-xs">
+                                {progress === 100
+                                    ? 'Checking hash.'
+                                    : `${progress}%`}
                             </div>
                         </div>
                     ) : null}
                     {pendingInstall ? (
-                        <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                        <div className="bg-muted/30 rounded-md border p-3 text-sm">
                             An update is downloaded and ready to install.
                         </div>
                     ) : null}
                     {detail ? (
-                        <div className="text-sm text-muted-foreground">{detail}</div>
+                        <div className="text-muted-foreground text-sm">
+                            {detail}
+                        </div>
                     ) : null}
                 </FieldGroup>
                 <DialogFooter>
                     {downloading ? (
-                        <Button type="button" variant="outline" onClick={() => void handleCancel()}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => void handleCancel()}
+                        >
                             Cancel
                         </Button>
                     ) : null}
                     <Button
                         type="button"
                         disabled={!selectedRelease || loading || downloading}
-                        onClick={() => void handleDownload()}>
+                        onClick={() => void handleDownload()}
+                    >
                         Download
                     </Button>
-                    <Button type="button" disabled={downloading || !pendingInstall} onClick={handleInstall}>
+                    <Button
+                        type="button"
+                        disabled={downloading || !pendingInstall}
+                        onClick={handleInstall}
+                    >
                         Install And Restart
                     </Button>
                 </DialogFooter>
@@ -228,9 +276,10 @@ function UpdaterDialog({ open, onOpenChange }) {
 
 function formatBackupLabel(backup) {
     const date = backup.date ? new Date(backup.date) : null;
-    const dateLabel = date && !Number.isNaN(date.getTime())
-        ? date.toLocaleString()
-        : 'Unknown date';
+    const dateLabel =
+        date && !Number.isNaN(date.getTime())
+            ? date.toLocaleString()
+            : 'Unknown date';
     return `${backup.name || 'Backup'} - ${dateLabel}`;
 }
 
@@ -252,11 +301,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
         setLoading(true);
         setDetail('');
         try {
-            const [nextBackups, nextAutoBackup, nextAskRestore] = await Promise.all([
-                listVrcRegistryBackups(),
-                configRepository.getBool('vrcRegistryAutoBackup', true),
-                configRepository.getBool('vrcRegistryAskRestore', true)
-            ]);
+            const [nextBackups, nextAutoBackup, nextAskRestore] =
+                await Promise.all([
+                    listVrcRegistryBackups(),
+                    configRepository.getBool('vrcRegistryAutoBackup', true),
+                    configRepository.getBool('vrcRegistryAskRestore', true)
+                ]);
             setBackups(nextBackups);
             setAutoBackup(Boolean(nextAutoBackup));
             setAskRestore(Boolean(nextAskRestore));
@@ -357,7 +407,9 @@ function RegistryBackupDialog({ open, onOpenChange }) {
         setLoading(true);
         setDetail(`Deleting ${selectedBackup.name}.`);
         try {
-            const nextBackups = await deleteVrcRegistryBackup(selectedBackup.key);
+            const nextBackups = await deleteVrcRegistryBackup(
+                selectedBackup.key
+            );
             setBackups(nextBackups);
             setSelectedKey(nextBackups[0]?.key || '');
             setDetail('Registry backup deleted.');
@@ -376,8 +428,14 @@ function RegistryBackupDialog({ open, onOpenChange }) {
         setLoading(true);
         setDetail(`Saving ${selectedBackup.name}.`);
         try {
-            const filePath = await saveVrcRegistryBackupToFile(selectedBackup.key);
-            setDetail(filePath ? `Registry backup saved to ${filePath}.` : 'Save cancelled.');
+            const filePath = await saveVrcRegistryBackupToFile(
+                selectedBackup.key
+            );
+            setDetail(
+                filePath
+                    ? `Registry backup saved to ${filePath}.`
+                    : 'Save cancelled.'
+            );
         } catch (error) {
             setDetail(error instanceof Error ? error.message : String(error));
         } finally {
@@ -390,7 +448,11 @@ function RegistryBackupDialog({ open, onOpenChange }) {
         setDetail('Restoring registry backup from file.');
         try {
             const restored = await restoreVrcRegistryBackupFromFile();
-            setDetail(restored ? 'Registry backup restored from file.' : 'Restore cancelled.');
+            setDetail(
+                restored
+                    ? 'Registry backup restored from file.'
+                    : 'Restore cancelled.'
+            );
         } catch (error) {
             setDetail(error instanceof Error ? error.message : String(error));
         } finally {
@@ -401,7 +463,8 @@ function RegistryBackupDialog({ open, onOpenChange }) {
     async function handleDeleteRegistryFolder() {
         const result = await confirm({
             title: 'Delete VRChat registry',
-            description: 'Delete the VRChat registry folder. This matches the old reset action and cannot be undone from here.',
+            description:
+                'Delete the VRChat registry folder. This matches the old reset action and cannot be undone from here.',
             confirmText: 'Delete',
             cancelText: 'Cancel',
             destructive: true
@@ -428,35 +491,64 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                 <DialogHeader>
                     <DialogTitle>VRChat Registry Backup</DialogTitle>
                     <DialogDescription>
-                        Create, restore, or remove saved VRChat registry backups.
+                        Create, restore, or remove saved VRChat registry
+                        backups.
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <FieldGroup className="gap-3 rounded-md border p-3">
                         <Field orientation="horizontal" data-disabled={loading}>
                             <FieldContent>
-                                <FieldLabel htmlFor="registry-auto-backup">Auto backup</FieldLabel>
+                                <FieldLabel htmlFor="registry-auto-backup">
+                                    Auto backup
+                                </FieldLabel>
                             </FieldContent>
-                            <Switch id="registry-auto-backup" checked={autoBackup} disabled={loading} onCheckedChange={(value) => void handleAutoBackupChange(value)} />
+                            <Switch
+                                id="registry-auto-backup"
+                                checked={autoBackup}
+                                disabled={loading}
+                                onCheckedChange={(value) =>
+                                    void handleAutoBackupChange(value)
+                                }
+                            />
                         </Field>
                         <Field orientation="horizontal" data-disabled={loading}>
                             <FieldContent>
-                                <FieldLabel htmlFor="registry-ask-restore">Ask to restore</FieldLabel>
+                                <FieldLabel htmlFor="registry-ask-restore">
+                                    Ask to restore
+                                </FieldLabel>
                             </FieldContent>
-                            <Switch id="registry-ask-restore" checked={askRestore} disabled={loading} onCheckedChange={(value) => void handleAskRestoreChange(value)} />
+                            <Switch
+                                id="registry-ask-restore"
+                                checked={askRestore}
+                                disabled={loading}
+                                onCheckedChange={(value) =>
+                                    void handleAskRestoreChange(value)
+                                }
+                            />
                         </Field>
                     </FieldGroup>
                     <Select
                         value={selectedKey}
                         onValueChange={setSelectedKey}
-                        disabled={loading || backups.length === 0}>
+                        disabled={loading || backups.length === 0}
+                    >
                         <SelectTrigger>
-                            <SelectValue placeholder={loading ? 'Loading backups' : 'Select backup'} />
+                            <SelectValue
+                                placeholder={
+                                    loading
+                                        ? 'Loading backups'
+                                        : 'Select backup'
+                                }
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
                                 {backups.map((backup) => (
-                                    <SelectItem key={backup.key} value={backup.key}>
+                                    <SelectItem
+                                        key={backup.key}
+                                        value={backup.key}
+                                    >
                                         {formatBackupLabel(backup)}
                                     </SelectItem>
                                 ))}
@@ -464,35 +556,71 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         </SelectContent>
                     </Select>
                     {selectedBackup ? (
-                        <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                        <div className="bg-muted/30 rounded-md border p-3 text-sm">
                             <div>Name: {selectedBackup.name}</div>
                             <div>Date: {selectedBackup.date || 'Unknown'}</div>
                         </div>
                     ) : null}
                     {detail ? (
-                        <div className="text-sm text-muted-foreground">{detail}</div>
+                        <div className="text-muted-foreground text-sm">
+                            {detail}
+                        </div>
                     ) : null}
                 </FieldGroup>
                 <DialogFooter>
-                    <Button type="button" variant="outline" disabled={loading} onClick={() => void refreshBackups()}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => void refreshBackups()}
+                    >
                         Refresh
                     </Button>
-                    <Button type="button" variant="outline" disabled={loading} onClick={() => void handleCreateBackup()}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => void handleCreateBackup()}
+                    >
                         Create Backup
                     </Button>
-                    <Button type="button" variant="outline" disabled={loading || !selectedBackup} onClick={() => void handleDeleteBackup()}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading || !selectedBackup}
+                        onClick={() => void handleDeleteBackup()}
+                    >
                         Delete
                     </Button>
-                    <Button type="button" variant="outline" disabled={loading || !selectedBackup} onClick={() => void handleSaveBackupToFile()}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading || !selectedBackup}
+                        onClick={() => void handleSaveBackupToFile()}
+                    >
                         Save To File
                     </Button>
-                    <Button type="button" variant="outline" disabled={loading} onClick={() => void handleRestoreFromFile()}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => void handleRestoreFromFile()}
+                    >
                         Restore From File
                     </Button>
-                    <Button type="button" variant="destructive" disabled={loading} onClick={() => void handleDeleteRegistryFolder()}>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={loading}
+                        onClick={() => void handleDeleteRegistryFolder()}
+                    >
                         Reset
                     </Button>
-                    <Button type="button" disabled={loading || !selectedBackup} onClick={() => void handleRestoreBackup()}>
+                    <Button
+                        type="button"
+                        disabled={loading || !selectedBackup}
+                        onClick={() => void handleRestoreBackup()}
+                    >
                         Restore
                     </Button>
                 </DialogFooter>
@@ -523,15 +651,22 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
                     return;
                 }
                 const normalizedLaunchPath =
-                    nextLaunchPath && nextLaunchPath !== 'null' ? nextLaunchPath : '';
+                    nextLaunchPath && nextLaunchPath !== 'null'
+                        ? nextLaunchPath
+                        : '';
                 setLaunchArguments(nextLaunchArguments || '');
                 setVrcLaunchPathOverride(normalizedLaunchPath);
                 if (nextLaunchPath === 'null') {
-                    void configRepository.setString('vrcLaunchPathOverride', '');
+                    void configRepository.setString(
+                        'vrcLaunchPathOverride',
+                        ''
+                    );
                 }
             })
             .catch((error) => {
-                toast.error(error instanceof Error ? error.message : String(error));
+                toast.error(
+                    error instanceof Error ? error.message : String(error)
+                );
             })
             .finally(() => {
                 if (active) {
@@ -545,7 +680,9 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
     }, [open]);
 
     async function handleSave() {
-        const normalizedArguments = String(launchArguments).replace(/\s+/g, ' ').trim();
+        const normalizedArguments = String(launchArguments)
+            .replace(/\s+/g, ' ')
+            .trim();
         if (
             vrcLaunchPathOverride &&
             vrcLaunchPathOverride.endsWith('.exe') &&
@@ -558,8 +695,14 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
         setLoading(true);
         try {
             await Promise.all([
-                configRepository.setString('launchArguments', normalizedArguments),
-                configRepository.setString('vrcLaunchPathOverride', vrcLaunchPathOverride)
+                configRepository.setString(
+                    'launchArguments',
+                    normalizedArguments
+                ),
+                configRepository.setString(
+                    'vrcLaunchPathOverride',
+                    vrcLaunchPathOverride
+                )
             ]);
             setLaunchArguments(normalizedArguments);
             toast.success('Updated launch options');
@@ -575,34 +718,45 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{t('dialog.launch_options.header')}</DialogTitle>
+                    <DialogTitle>
+                        {t('dialog.launch_options.header')}
+                    </DialogTitle>
                     <DialogDescription>
-                        {t('dialog.launch_options.description')} {t('dialog.launch_options.example')}
+                        {t('dialog.launch_options.description')}{' '}
+                        {t('dialog.launch_options.example')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
-                    <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+                    <div className="bg-muted/30 text-muted-foreground rounded-md border p-3 text-xs">
                         <div>--fps=144</div>
                         <div>--enable-debug-gui</div>
                         <div>--enable-sdk-log-levels</div>
                         <div>--enable-udon-debug-logging</div>
                     </div>
                     <Field>
-                        <FieldLabel>{t('dialog.launch_options.header')}</FieldLabel>
+                        <FieldLabel>
+                            {t('dialog.launch_options.header')}
+                        </FieldLabel>
                         <Textarea
                             rows={3}
                             value={launchArguments}
                             placeholder="e.g. --fps=144 --enable-sdk-log-levels"
-                            onChange={(event) => setLaunchArguments(event.target.value)}
+                            onChange={(event) =>
+                                setLaunchArguments(event.target.value)
+                            }
                         />
                     </Field>
                     <Field>
-                        <FieldLabel>{t('dialog.launch_options.path_override')}</FieldLabel>
+                        <FieldLabel>
+                            {t('dialog.launch_options.path_override')}
+                        </FieldLabel>
                         <Input
                             value={vrcLaunchPathOverride}
                             placeholder="C:\\Program Files (x86)\\Steam\\steamapps\\common\\VRChat\\launch.exe"
                             spellCheck={false}
-                            onChange={(event) => setVrcLaunchPathOverride(event.target.value)}
+                            onChange={(event) =>
+                                setVrcLaunchPathOverride(event.target.value)
+                            }
                         />
                     </Field>
                 </FieldGroup>
@@ -610,16 +764,30 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => void backend.app.OpenLink('https://docs.vrchat.com/docs/launch-options')}>
+                        onClick={() =>
+                            void backend.app.OpenLink(
+                                'https://docs.vrchat.com/docs/launch-options'
+                            )
+                        }
+                    >
                         {t('dialog.launch_options.vrchat_docs')}
                     </Button>
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => void backend.app.OpenLink('https://docs.unity3d.com/Manual/CommandLineArguments.html')}>
+                        onClick={() =>
+                            void backend.app.OpenLink(
+                                'https://docs.unity3d.com/Manual/CommandLineArguments.html'
+                            )
+                        }
+                    >
                         {t('dialog.launch_options.unity_manual')}
                     </Button>
-                    <Button type="button" disabled={loading} onClick={() => void handleSave()}>
+                    <Button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => void handleSave()}
+                    >
                         {t('dialog.launch_options.save')}
                     </Button>
                 </DialogFooter>
@@ -673,17 +841,44 @@ function normalizeVrchatConfigForSave(config) {
 function VRChatConfigDialog({ open, onOpenChange }) {
     const { t } = useI18n();
     const confirm = useModalStore((state) => state.confirm);
-    const [config, setConfig] = useState({ picture_output_split_by_date: true });
+    const [config, setConfig] = useState({
+        picture_output_split_by_date: true
+    });
     const [cacheSize, setCacheSize] = useState('');
     const [loading, setLoading] = useState(false);
 
     const configFields = useMemo(
         () => [
-            ['cache_size', t('dialog.config_json.max_cache_size'), '30', 'number'],
-            ['cache_expiry_delay', t('dialog.config_json.cache_expiry_delay'), '30', 'number'],
-            ['cache_directory', t('dialog.config_json.cache_directory'), '%AppData%\\..\\LocalLow\\VRChat\\VRChat', 'text'],
-            ['picture_output_folder', t('dialog.config_json.picture_directory'), '%UserProfile%\\Pictures\\VRChat', 'text'],
-            ['fpv_steadycam_fov', t('dialog.config_json.fpv_steadycam_fov'), '50', 'number']
+            [
+                'cache_size',
+                t('dialog.config_json.max_cache_size'),
+                '30',
+                'number'
+            ],
+            [
+                'cache_expiry_delay',
+                t('dialog.config_json.cache_expiry_delay'),
+                '30',
+                'number'
+            ],
+            [
+                'cache_directory',
+                t('dialog.config_json.cache_directory'),
+                '%AppData%\\..\\LocalLow\\VRChat\\VRChat',
+                'text'
+            ],
+            [
+                'picture_output_folder',
+                t('dialog.config_json.picture_directory'),
+                '%UserProfile%\\Pictures\\VRChat',
+                'text'
+            ],
+            [
+                'fpv_steadycam_fov',
+                t('dialog.config_json.fpv_steadycam_fov'),
+                '50',
+                'number'
+            ]
         ],
         [t]
     );
@@ -701,7 +896,11 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                 ...parsed
             });
             const cacheBytes = Number(nextCacheSize) || 0;
-            setCacheSize(cacheBytes > 0 ? `${(cacheBytes / 1024 / 1024 / 1024).toFixed(2)} GB` : '0 GB');
+            setCacheSize(
+                cacheBytes > 0
+                    ? `${(cacheBytes / 1024 / 1024 / 1024).toFixed(2)} GB`
+                    : '0 GB'
+            );
         } catch (error) {
             toast.error(error instanceof Error ? error.message : String(error));
         } finally {
@@ -716,10 +915,14 @@ function VRChatConfigDialog({ open, onOpenChange }) {
     }, [open]);
 
     async function openFolderBrowser(key) {
-        const selected = await backend.app.OpenFolderSelectorDialog(config[key] || '').catch((error) => {
-            toast.error(error instanceof Error ? error.message : String(error));
-            return '';
-        });
+        const selected = await backend.app
+            .OpenFolderSelectorDialog(config[key] || '')
+            .catch((error) => {
+                toast.error(
+                    error instanceof Error ? error.message : String(error)
+                );
+                return '';
+            });
         if (selected) {
             setConfig((current) => ({ ...current, [key]: selected }));
         }
@@ -729,7 +932,11 @@ function VRChatConfigDialog({ open, onOpenChange }) {
         setLoading(true);
         try {
             const removed = await backend.assetBundle.SweepCache();
-            toast.success(Array.isArray(removed) ? `Removed ${removed.length} cache entries.` : t('message.cache.deleted'));
+            toast.success(
+                Array.isArray(removed)
+                    ? `Removed ${removed.length} cache entries.`
+                    : t('message.cache.deleted')
+            );
             await loadConfig();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : String(error));
@@ -764,7 +971,11 @@ function VRChatConfigDialog({ open, onOpenChange }) {
     async function handleSave() {
         setLoading(true);
         try {
-            const json = JSON.stringify(normalizeVrchatConfigForSave(config), null, '\t');
+            const json = JSON.stringify(
+                normalizeVrchatConfigForSave(config),
+                null,
+                '\t'
+            );
             await backend.app.WriteConfigFile(json);
             toast.success('Saved VRChat config.');
             onOpenChange(false);
@@ -781,19 +992,40 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                 <DialogHeader>
                     <DialogTitle>{t('dialog.config_json.header')}</DialogTitle>
                     <DialogDescription>
-                        {t('dialog.config_json.description1')} {t('dialog.config_json.description2')}
+                        {t('dialog.config_json.description1')}{' '}
+                        {t('dialog.config_json.description2')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
-                    <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-3 text-sm">
-                        <span>{t('dialog.config_json.cache_size')}: {cacheSize}</span>
-                        <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => void loadConfig()}>
+                    <div className="bg-muted/30 flex flex-wrap items-center gap-2 rounded-md border p-3 text-sm">
+                        <span>
+                            {t('dialog.config_json.cache_size')}: {cacheSize}
+                        </span>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={loading}
+                            onClick={() => void loadConfig()}
+                        >
                             {t('dialog.config_json.refresh')}
                         </Button>
-                        <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => void handleDeleteAllCache()}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={loading}
+                            onClick={() => void handleDeleteAllCache()}
+                        >
                             {t('dialog.config_json.delete_cache')}
                         </Button>
-                        <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => void handleSweepCache()}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={loading}
+                            onClick={() => void handleSweepCache()}
+                        >
                             {t('dialog.config_json.sweep_cache')}
                         </Button>
                     </div>
@@ -807,11 +1039,21 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                                     value={config[key] ?? ''}
                                     placeholder={placeholder}
                                     onChange={(event) =>
-                                        setConfig((current) => ({ ...current, [key]: event.target.value }))
+                                        setConfig((current) => ({
+                                            ...current,
+                                            [key]: event.target.value
+                                        }))
                                     }
                                 />
-                                {key.endsWith('_directory') || key.endsWith('_folder') ? (
-                                    <Button type="button" variant="outline" onClick={() => void openFolderBrowser(key)}>
+                                {key.endsWith('_directory') ||
+                                key.endsWith('_folder') ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            void openFolderBrowser(key)
+                                        }
+                                    >
                                         Browse
                                     </Button>
                                 ) : null}
@@ -822,56 +1064,117 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                     <div className="grid gap-4 md:grid-cols-3">
                         <ResolutionSelect
                             label={t('dialog.config_json.camera_resolution')}
-                            value={getResolutionKey({ width: config.camera_res_width, height: config.camera_res_height })}
+                            value={getResolutionKey({
+                                width: config.camera_res_width,
+                                height: config.camera_res_height
+                            })}
                             rows={VRChatCameraResolutions}
-                            onValueChange={(value) => setConfig((current) => applyResolution(current, 'camera_res', value))}
+                            onValueChange={(value) =>
+                                setConfig((current) =>
+                                    applyResolution(
+                                        current,
+                                        'camera_res',
+                                        value
+                                    )
+                                )
+                            }
                         />
                         <ResolutionSelect
                             label={t('dialog.config_json.spout_resolution')}
-                            value={getResolutionKey({ width: config.camera_spout_res_width, height: config.camera_spout_res_height })}
+                            value={getResolutionKey({
+                                width: config.camera_spout_res_width,
+                                height: config.camera_spout_res_height
+                            })}
                             rows={VRChatScreenshotResolutions}
-                            onValueChange={(value) => setConfig((current) => applyResolution(current, 'camera_spout_res', value))}
+                            onValueChange={(value) =>
+                                setConfig((current) =>
+                                    applyResolution(
+                                        current,
+                                        'camera_spout_res',
+                                        value
+                                    )
+                                )
+                            }
                         />
                         <ResolutionSelect
-                            label={t('dialog.config_json.screenshot_resolution')}
-                            value={getResolutionKey({ width: config.screenshot_res_width, height: config.screenshot_res_height })}
+                            label={t(
+                                'dialog.config_json.screenshot_resolution'
+                            )}
+                            value={getResolutionKey({
+                                width: config.screenshot_res_width,
+                                height: config.screenshot_res_height
+                            })}
                             rows={VRChatScreenshotResolutions}
-                            onValueChange={(value) => setConfig((current) => applyResolution(current, 'screenshot_res', value))}
+                            onValueChange={(value) =>
+                                setConfig((current) =>
+                                    applyResolution(
+                                        current,
+                                        'screenshot_res',
+                                        value
+                                    )
+                                )
+                            }
                         />
                     </div>
 
                     <Field orientation="horizontal">
                         <Checkbox
                             id="vrchat-config-picture-sort-by-date"
-                            checked={Boolean(config.picture_output_split_by_date)}
+                            checked={Boolean(
+                                config.picture_output_split_by_date
+                            )}
                             onCheckedChange={(checked) =>
-                                setConfig((current) => ({ ...current, picture_output_split_by_date: Boolean(checked) }))
+                                setConfig((current) => ({
+                                    ...current,
+                                    picture_output_split_by_date:
+                                        Boolean(checked)
+                                }))
                             }
                         />
-                        <FieldLabel htmlFor="vrchat-config-picture-sort-by-date">{t('dialog.config_json.picture_sort_by_date')}</FieldLabel>
+                        <FieldLabel htmlFor="vrchat-config-picture-sort-by-date">
+                            {t('dialog.config_json.picture_sort_by_date')}
+                        </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">
                         <Checkbox
                             id="vrchat-config-disable-rich-presence"
                             checked={Boolean(config.disableRichPresence)}
                             onCheckedChange={(checked) =>
-                                setConfig((current) => ({ ...current, disableRichPresence: Boolean(checked) }))
+                                setConfig((current) => ({
+                                    ...current,
+                                    disableRichPresence: Boolean(checked)
+                                }))
                             }
                         />
-                        <FieldLabel htmlFor="vrchat-config-disable-rich-presence">{t('dialog.config_json.disable_discord_presence')}</FieldLabel>
+                        <FieldLabel htmlFor="vrchat-config-disable-rich-presence">
+                            {t('dialog.config_json.disable_discord_presence')}
+                        </FieldLabel>
                     </Field>
                 </FieldGroup>
                 <DialogFooter>
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => void backend.app.OpenLink('https://docs.vrchat.com/docs/configuration-file')}>
+                        onClick={() =>
+                            void backend.app.OpenLink(
+                                'https://docs.vrchat.com/docs/configuration-file'
+                            )
+                        }
+                    >
                         {t('dialog.config_json.vrchat_docs')}
                     </Button>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
                         {t('dialog.config_json.cancel')}
                     </Button>
-                    <Button type="button" disabled={loading} onClick={() => void handleSave()}>
+                    <Button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => void handleSave()}
+                    >
                         {t('dialog.config_json.save')}
                     </Button>
                 </DialogFooter>
@@ -891,7 +1194,10 @@ function ResolutionSelect({ label, value, rows, onValueChange }) {
                 <SelectContent>
                     <SelectGroup>
                         {rows.map((row) => (
-                            <SelectItem key={row.name} value={getResolutionKey(row)}>
+                            <SelectItem
+                                key={row.name}
+                                value={getResolutionKey(row)}
+                            >
                                 {row.name}
                             </SelectItem>
                         ))}
@@ -920,8 +1226,12 @@ function getDatabaseUpgradeTitle(phase) {
 export function SystemDialogsHost() {
     const systemHosts = useRuntimeStore((state) => state.systemHosts);
     const databaseUpgrade = useRuntimeStore((state) => state.databaseUpgrade);
-    const setSystemHostOpen = useRuntimeStore((state) => state.setSystemHostOpen);
-    const setDatabaseUpgradeState = useRuntimeStore((state) => state.setDatabaseUpgradeState);
+    const setSystemHostOpen = useRuntimeStore(
+        (state) => state.setSystemHostOpen
+    );
+    const setDatabaseUpgradeState = useRuntimeStore(
+        (state) => state.setDatabaseUpgradeState
+    );
 
     return (
         <>
@@ -931,52 +1241,68 @@ export function SystemDialogsHost() {
             />
             <RegistryBackupDialog
                 open={Boolean(systemHosts.registryBackupOpen)}
-                onOpenChange={(open) => setSystemHostOpen('registryBackupOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('registryBackupOpen', open)
+                }
             />
             <LaunchOptionsDialog
                 open={Boolean(systemHosts.launchOptionsOpen)}
-                onOpenChange={(open) => setSystemHostOpen('launchOptionsOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('launchOptionsOpen', open)
+                }
             />
             <VRChatConfigDialog
                 open={Boolean(systemHosts.vrchatConfigOpen)}
-                onOpenChange={(open) => setSystemHostOpen('vrchatConfigOpen', open)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('vrchatConfigOpen', open)
+                }
             />
             <Dialog
-                open={Boolean(databaseUpgrade.open || systemHosts.databaseUpgradeOpen)}
+                open={Boolean(
+                    databaseUpgrade.open || systemHosts.databaseUpgradeOpen
+                )}
                 onOpenChange={(open) => {
                     if (!open && databaseUpgrade.phase === 'running') {
                         return;
                     }
                     setDatabaseUpgradeState({ open });
-                }}>
+                }}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{getDatabaseUpgradeTitle(databaseUpgrade.phase)}</DialogTitle>
+                        <DialogTitle>
+                            {getDatabaseUpgradeTitle(databaseUpgrade.phase)}
+                        </DialogTitle>
                         <DialogDescription>
-                            {databaseUpgrade.detail || 'Local database migration status.'}
+                            {databaseUpgrade.detail ||
+                                'Local database migration status.'}
                         </DialogDescription>
                     </DialogHeader>
-                    {databaseUpgrade.fromVersion || databaseUpgrade.toVersion ? (
-                        <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    {databaseUpgrade.fromVersion ||
+                    databaseUpgrade.toVersion ? (
+                        <div className="bg-muted/30 text-muted-foreground rounded-md border p-3 text-sm">
                             {`Version ${databaseUpgrade.fromVersion || 0} -> ${databaseUpgrade.toVersion || 0}`}
                         </div>
                     ) : null}
                     <DialogFooter>
-                        {databaseUpgrade.phase === 'confirm-legacy-migration' ? (
+                        {databaseUpgrade.phase ===
+                        'confirm-legacy-migration' ? (
                             <>
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => {
                                         void skipLegacyDatabaseMigration();
-                                    }}>
+                                    }}
+                                >
                                     Skip
                                 </Button>
                                 <Button
                                     type="button"
                                     onClick={() => {
                                         void confirmLegacyDatabaseMigration();
-                                    }}>
+                                    }}
+                                >
                                     Migrate And Restart
                                 </Button>
                             </>
@@ -985,7 +1311,10 @@ export function SystemDialogsHost() {
                                 type="button"
                                 variant="outline"
                                 disabled={databaseUpgrade.phase === 'running'}
-                                onClick={() => setDatabaseUpgradeState({ open: false })}>
+                                onClick={() =>
+                                    setDatabaseUpgradeState({ open: false })
+                                }
+                            >
                                 Close
                             </Button>
                         )}

@@ -3,7 +3,9 @@ import { formatDateFilter } from '@/lib/dateTime.js';
 export const MAX_WIDGET_ROWS = 50;
 
 export function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 export function buildFavoriteIdSet(remoteFavoriteIds, localFriendFavorites) {
@@ -65,7 +67,11 @@ export function isDashboardWidgetFilterActive(config, filterType) {
     return filters.length === 0 || filters.includes(filterType);
 }
 
-export function getNextDashboardWidgetFilterConfig(config, filterType, filterTypes) {
+export function getNextDashboardWidgetFilterConfig(
+    config,
+    filterType,
+    filterTypes
+) {
     const currentFilters = Array.isArray(config?.filters) ? config.filters : [];
     let filters;
 

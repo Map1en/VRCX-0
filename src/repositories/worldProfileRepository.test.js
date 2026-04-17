@@ -15,32 +15,34 @@ describe('WorldProfileRepository', () => {
     });
 
     it('normalizes raw world API data into the shape dialogs and lists consume', () => {
-        expect(worldProfileRepository.normalize({
-            id: ' wrld_123 ',
-            name: ' Test World ',
-            description: '  A world  ',
-            authorId: ' usr_author ',
-            authorName: '',
-            releaseStatus: '',
-            thumbnailImageUrl: ' thumb.png ',
-            imageUrl: ' image.png ',
-            occupants: '12',
-            capacity: '40',
-            recommendedCapacity: '24',
-            favorites: '100',
-            visits: '2000',
-            popularity: '7',
-            heat: '5',
-            tags: [' system_labs ', '', null],
-            created_at: '2026-01-01',
-            updated_at: '2026-01-02',
-            platforms: ['standalonewindows', 'quest'],
-            unityPackages: [
-                { platform: 'android' },
-                { platformName: 'ios' },
-                { assetVersion: { platform: 'windows' } }
-            ]
-        })).toMatchObject({
+        expect(
+            worldProfileRepository.normalize({
+                id: ' wrld_123 ',
+                name: ' Test World ',
+                description: '  A world  ',
+                authorId: ' usr_author ',
+                authorName: '',
+                releaseStatus: '',
+                thumbnailImageUrl: ' thumb.png ',
+                imageUrl: ' image.png ',
+                occupants: '12',
+                capacity: '40',
+                recommendedCapacity: '24',
+                favorites: '100',
+                visits: '2000',
+                popularity: '7',
+                heat: '5',
+                tags: [' system_labs ', '', null],
+                created_at: '2026-01-01',
+                updated_at: '2026-01-02',
+                platforms: ['standalonewindows', 'quest'],
+                unityPackages: [
+                    { platform: 'android' },
+                    { platformName: 'ios' },
+                    { assetVersion: { platform: 'windows' } }
+                ]
+            })
+        ).toMatchObject({
             id: 'wrld_123',
             name: 'Test World',
             description: 'A world',
@@ -91,7 +93,9 @@ describe('WorldProfileRepository', () => {
         const request = vi.mocked(webRepository.execute).mock.calls[0][0];
         const url = new URL(request.url);
         expect(request.method).toBe('GET');
-        expect(`${url.origin}${url.pathname}`).toBe('https://api.example.test/custom/worlds');
+        expect(`${url.origin}${url.pathname}`).toBe(
+            'https://api.example.test/custom/worlds'
+        );
         expect(url.searchParams.getAll('tag')).toEqual(['featured', 'labs']);
         expect(url.searchParams.get('n')).toBe('50');
         expect(url.searchParams.has('ignored')).toBe(false);
@@ -108,7 +112,9 @@ describe('WorldProfileRepository', () => {
             raw: {}
         });
 
-        await expect(worldProfileRepository.executeGet('worlds/wrld_missing')).rejects.toMatchObject({
+        await expect(
+            worldProfileRepository.executeGet('worlds/wrld_missing')
+        ).rejects.toMatchObject({
             message: 'World not found',
             status: 404,
             endpoint: 'worlds/wrld_missing',

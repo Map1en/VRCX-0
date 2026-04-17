@@ -21,9 +21,9 @@ describe('gameLogDateRange', () => {
     });
 
     it('accepts valid calendar dates and ignores invalid input', () => {
-        expect(toGameLogDateInputValue(parseGameLogDateInput('2026-04-16'))).toBe(
-            '2026-04-16'
-        );
+        expect(
+            toGameLogDateInputValue(parseGameLogDateInput('2026-04-16'))
+        ).toBe('2026-04-16');
         expect(parseGameLogDateInput('04/16/2026')).toBeUndefined();
         expect(toGameLogDateInputValue(new Date(Number.NaN))).toBe('');
     });
@@ -43,15 +43,13 @@ describe('gameLogDateRange', () => {
     });
 
     it('keeps a user-selected session range ordered and within the supported max days', () => {
-        expect(clampGameLogSessionDateInputRange('2026-04-18', '2026-04-16')).toEqual([
-            '2026-04-16',
-            '2026-04-18'
-        ]);
+        expect(
+            clampGameLogSessionDateInputRange('2026-04-18', '2026-04-16')
+        ).toEqual(['2026-04-16', '2026-04-18']);
 
-        expect(clampGameLogSessionDateInputRange('2026-04-01', '2026-04-30')).toEqual([
-            '2026-04-01',
-            '2026-04-08'
-        ]);
+        expect(
+            clampGameLogSessionDateInputRange('2026-04-01', '2026-04-30')
+        ).toEqual(['2026-04-01', '2026-04-08']);
 
         expect(GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS).toBe(7);
         expect(clampGameLogSessionDateInputRange('bad', '2026-04-16')).toEqual([

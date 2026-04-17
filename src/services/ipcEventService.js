@@ -1,17 +1,22 @@
 import { backend } from '@/platform/index.js';
-import { avatarSearchProviderRepository, configRepository, webRepository } from '@/repositories/index.js';
+import {
+    avatarSearchProviderRepository,
+    configRepository,
+    webRepository
+} from '@/repositories/index.js';
+import { database } from '@/services/database/index.js';
+import { useModalStore } from '@/state/modalStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { useModalStore } from '@/state/modalStore.js';
-import { database } from '@/services/database/index.js';
-import { bootstrapFavorites } from './favoriteBootstrapService.js';
+
 import {
     openAvatarDialog,
     openGroupDialog,
     openUserDialog,
     openWorldDialog
 } from './dialogService.js';
+import { bootstrapFavorites } from './favoriteBootstrapService.js';
 import { openFavoriteImportDialog } from './favoriteImportService.js';
 
 let ipcTimeoutId = null;
@@ -40,7 +45,9 @@ function parseIpcPayload(payload) {
 }
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 async function persistVrcxMessage(data) {
@@ -105,7 +112,9 @@ async function handleLaunchCommand(input) {
     const commandArg = args[1]?.trim();
     let shouldFocusWindow = true;
     const runtimeState = useRuntimeStore.getState();
-    const endpoint = runtimeState.auth.currentUserEndpoint || 'https://api.vrchat.cloud/api/1';
+    const endpoint =
+        runtimeState.auth.currentUserEndpoint ||
+        'https://api.vrchat.cloud/api/1';
 
     switch (command) {
         case 'world':
@@ -135,7 +144,8 @@ async function handleLaunchCommand(input) {
             break;
         }
         case 'local-favorite-avatar': {
-            const [avatarId, groupName] = normalizeString(commandArg).split(':');
+            const [avatarId, groupName] =
+                normalizeString(commandArg).split(':');
             if (!avatarId || !groupName) {
                 throw new Error('Invalid local favorite avatar command.');
             }
@@ -156,7 +166,9 @@ async function handleLaunchCommand(input) {
             const config = await avatarSearchProviderRepository.getConfig();
             await avatarSearchProviderRepository.saveConfig({
                 enabled: true,
-                providerList: Array.from(new Set([...config.providerList, provider]))
+                providerList: Array.from(
+                    new Set([...config.providerList, provider])
+                )
             });
             useNotificationStore.getState().pushNotification({
                 level: 'info',
@@ -172,7 +184,10 @@ async function handleLaunchCommand(input) {
             if (!regexAvatarId.test(avatarId) || avatarId.length !== 41) {
                 throw new Error('Invalid Avatar ID.');
             }
-            const shouldConfirm = await configRepository.getBool('showConfirmationOnSwitchAvatar', true);
+            const shouldConfirm = await configRepository.getBool(
+                'showConfirmationOnSwitchAvatar',
+                true
+            );
             if (shouldConfirm) {
                 const result = await useModalStore.getState().confirm({
                     title: 'Confirm',
@@ -187,7 +202,10 @@ async function handleLaunchCommand(input) {
             } else {
                 shouldFocusWindow = false;
             }
-            const url = new URL(`avatars/${encodeURIComponent(avatarId)}/select`, endpoint.replace(/\/?$/, '/'));
+            const url = new URL(
+                `avatars/${encodeURIComponent(avatarId)}/select`,
+                endpoint.replace(/\/?$/, '/')
+            );
             const response = await webRepository.execute({
                 url: url.toString(),
                 method: 'PUT',
@@ -269,7 +287,9 @@ export async function handleIpcEvent(payload) {
         case 'OnOperationRequest':
         case 'VRCEvent':
         case 'Event7List':
-            useRuntimeStore.getState().recordTransportMessage(data.type, JSON.stringify(data).length);
+            useRuntimeStore
+                .getState()
+                .recordTransportMessage(data.type, JSON.stringify(data).length);
             break;
         default:
             console.log('IPC:', data);

@@ -1,19 +1,19 @@
 {
-  "identifier": "default",
-  "description": "Default permissions for the main window",
-  "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "core:webview:allow-set-webview-zoom",
-    "core:window:allow-start-dragging",
-    "core:window:allow-minimize",
-    "core:window:allow-toggle-maximize",
-    "core:window:allow-close",
-    "opener:default",
-    "dialog:default",
-    "notification:default",
-    "autostart:allow-enable",
-    "autostart:allow-disable",
-    "autostart:allow-is-enabled"
-  ]
+    "identifier": "default",
+    "description": "Default permissions for the main window",
+    "windows": ["main"],
+    "permissions": [
+        "core:default",
+        "core:webview:allow-set-webview-zoom",
+        "core:window:allow-start-dragging",
+        "core:window:allow-minimize",
+        "core:window:allow-toggle-maximize",
+        "core:window:allow-close",
+        "opener:default",
+        "dialog:default",
+        "notification:default",
+        "autostart:allow-enable",
+        "autostart:allow-disable",
+        "autostart:allow-is-enabled"
+    ]
 }

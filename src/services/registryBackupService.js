@@ -32,7 +32,10 @@ async function listVrcRegistryBackups() {
 }
 
 async function saveVrcRegistryBackups(backups) {
-    await configRepository.setString('VRChatRegistryBackups', JSON.stringify(backups));
+    await configRepository.setString(
+        'VRChatRegistryBackups',
+        JSON.stringify(backups)
+    );
 }
 
 async function backupVrcRegistry(name = 'Manual Backup') {
@@ -61,9 +64,14 @@ async function restoreVrcRegistryBackup(key) {
     }
 
     await backend.app.SetVRChatRegistry(
-        typeof backup.data === 'string' ? backup.data : JSON.stringify(backup.data || {})
+        typeof backup.data === 'string'
+            ? backup.data
+            : JSON.stringify(backup.data || {})
     );
-    await configRepository.setString('VRChatRegistryLastRestoreCheck', backup.date || new Date().toJSON());
+    await configRepository.setString(
+        'VRChatRegistryLastRestoreCheck',
+        backup.date || new Date().toJSON()
+    );
     return backup;
 }
 
@@ -109,7 +117,10 @@ async function restoreVrcRegistryBackupFromFile() {
     }
 
     await backend.app.SetVRChatRegistry(json);
-    await configRepository.setString('VRChatRegistryLastRestoreCheck', new Date().toJSON());
+    await configRepository.setString(
+        'VRChatRegistryLastRestoreCheck',
+        new Date().toJSON()
+    );
     return true;
 }
 

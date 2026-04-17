@@ -1,9 +1,5 @@
-import {
-    buildUserTableName,
-    normalizeUserTablePrefix
-} from './userTables.js';
-
 import sqliteService from '../../repositories/sqliteRepository.js';
+import { buildUserTableName, normalizeUserTablePrefix } from './userTables.js';
 
 const ACTIVITY_VIEW_KIND = {
     ACTIVITY: 'activity',
@@ -12,7 +8,9 @@ const ACTIVITY_VIEW_KIND = {
 
 function normalizeActivityUserTablePrefix(userId, label = 'userId') {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
         throw new Error(`Activity V2 requires ${label}`);
     }
@@ -66,7 +64,13 @@ function parseJson(value, fallback) {
 const activityV2 = {
     ACTIVITY_VIEW_KIND,
 
-    async getActivitySourceSliceV2({ userId, ownerUserId = '', isSelf, fromDays, toDays = 0 }) {
+    async getActivitySourceSliceV2({
+        userId,
+        ownerUserId = '',
+        isSelf,
+        fromDays,
+        toDays = 0
+    }) {
         const fromDateIso = new Date(
             Date.now() - fromDays * 86400000
         ).toISOString();
@@ -76,7 +80,12 @@ const activityV2 = {
                 : '';
         return isSelf
             ? this.getCurrentUserLocationSliceV2(fromDateIso, toDateIso)
-            : this.getFriendPresenceSliceV2(userId, fromDateIso, toDateIso, ownerUserId);
+            : this.getFriendPresenceSliceV2(
+                  userId,
+                  fromDateIso,
+                  toDateIso,
+                  ownerUserId
+              );
     },
 
     async getActivitySourceAfterV2({
@@ -88,10 +97,19 @@ const activityV2 = {
     }) {
         return isSelf
             ? this.getCurrentUserLocationAfterV2(afterCreatedAt, inclusive)
-            : this.getFriendPresenceAfterV2(userId, afterCreatedAt, ownerUserId);
+            : this.getFriendPresenceAfterV2(
+                  userId,
+                  afterCreatedAt,
+                  ownerUserId
+              );
     },
 
-    async getFriendPresenceSliceV2(userId, fromDateIso, toDateIso = '', ownerUserId = '') {
+    async getFriendPresenceSliceV2(
+        userId,
+        fromDateIso,
+        toDateIso = '',
+        ownerUserId = ''
+    ) {
         const rows = [];
         const tableName = feedOnlineOfflineTableForOwner(ownerUserId);
         await sqliteService.execute(
@@ -394,11 +412,14 @@ const activityV2 = {
                 '@builtAt': entry.builtAt || ''
             }
         );
-    },
-
+    }
 };
 
-async function insertSessions(userId, sessions = [], tableName = sessionsTableForUser(userId)) {
+async function insertSessions(
+    userId,
+    sessions = [],
+    tableName = sessionsTableForUser(userId)
+) {
     if (sessions.length === 0) {
         return;
     }

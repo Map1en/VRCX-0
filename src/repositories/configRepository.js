@@ -1,6 +1,11 @@
-import sqliteRepository from './sqliteRepository.js';
-import { asString, safeJsonParse, safeJsonStringify } from './baseRepository.js';
 import { ConfigKeys } from '@/services/configKeys.js';
+
+import {
+    asString,
+    safeJsonParse,
+    safeJsonStringify
+} from './baseRepository.js';
+import sqliteRepository from './sqliteRepository.js';
 
 class ConfigRepository {
     #cache = new Map();
@@ -29,7 +34,9 @@ class ConfigRepository {
             'CREATE TABLE IF NOT EXISTS configs (`key` TEXT PRIMARY KEY, `value` TEXT)'
         );
 
-        const rows = await sqliteRepository.query('SELECT key, value FROM configs');
+        const rows = await sqliteRepository.query(
+            'SELECT key, value FROM configs'
+        );
         if (Array.isArray(rows)) {
             for (const row of rows) {
                 if (Array.isArray(row) && row[0] != null && row[1] != null) {
@@ -207,9 +214,12 @@ class ConfigRepository {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
         this.#cache.delete(dbKey);
-        return sqliteRepository.executeNonQuery('DELETE FROM configs WHERE key = @key', {
-            '@key': dbKey
-        });
+        return sqliteRepository.executeNonQuery(
+            'DELETE FROM configs WHERE key = @key',
+            {
+                '@key': dbKey
+            }
+        );
     }
 
     async has(key) {

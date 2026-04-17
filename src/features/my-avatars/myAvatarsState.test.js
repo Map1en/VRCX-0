@@ -92,7 +92,9 @@ describe('myAvatarsState', () => {
             }
         };
         expect(readPersistedMyAvatarsState()).toEqual({});
-        expect(() => writePersistedMyAvatarsState({ pageSize: 10 })).not.toThrow();
+        expect(() =>
+            writePersistedMyAvatarsState({ pageSize: 10 })
+        ).not.toThrow();
     });
 
     it('keeps supported sorting columns and migrates old column ids', () => {
@@ -118,9 +120,9 @@ describe('myAvatarsState', () => {
     });
 
     it('normalizes page-size and grid-density preferences for the avatar inventory', () => {
-        expect(sanitizeMyAvatarsPageSizes(['50', 10, 25, 10, 0, 'bad'])).toEqual(
-            [10, 25, 50]
-        );
+        expect(
+            sanitizeMyAvatarsPageSizes(['50', 10, 25, 10, 0, 'bad'])
+        ).toEqual([10, 25, 50]);
         expect(sanitizeMyAvatarsPageSizes(['bad'])).toBe(
             MY_AVATARS_DEFAULT_PAGE_SIZES
         );
@@ -155,15 +157,15 @@ describe('myAvatarsState', () => {
             actions: true
         });
 
-        expect(sanitizeMyAvatarsColumnOrder(['action', 'name', 'name'])).toEqual(
-            [
-                'actions',
-                'name',
-                ...MY_AVATARS_COLUMN_IDS.filter(
-                    (columnId) => columnId !== 'actions' && columnId !== 'name'
-                )
-            ]
-        );
+        expect(
+            sanitizeMyAvatarsColumnOrder(['action', 'name', 'name'])
+        ).toEqual([
+            'actions',
+            'name',
+            ...MY_AVATARS_COLUMN_IDS.filter(
+                (columnId) => columnId !== 'actions' && columnId !== 'name'
+            )
+        ]);
 
         expect(
             sanitizeMyAvatarsColumnSizing({

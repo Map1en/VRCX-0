@@ -2,7 +2,8 @@ import { bytesToBase64 } from './binary';
 
 const UPLOAD_TIMEOUT_MS = 30_000;
 const DEFAULT_MAX_IMAGE_UPLOAD_BYTES = 20_000_000;
-export const IMAGE_UPLOAD_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/bmp';
+export const IMAGE_UPLOAD_ACCEPT =
+    'image/png,image/jpeg,image/webp,image/gif,image/bmp';
 
 const SAFE_RASTER_IMAGE_TYPES = new Set([
     'image/png',
@@ -41,7 +42,10 @@ export async function readFileAsBase64(blob) {
     return bytesToBase64(await readBlobAsBytes(blob));
 }
 
-export function validateImageUploadFile(file, { maxSize = DEFAULT_MAX_IMAGE_UPLOAD_BYTES } = {}) {
+export function validateImageUploadFile(
+    file,
+    { maxSize = DEFAULT_MAX_IMAGE_UPLOAD_BYTES } = {}
+) {
     if (!file) {
         return { ok: false, reason: 'missing' };
     }
@@ -71,7 +75,12 @@ export async function cropImageFileToAspect(file, aspectRatio, options = {}) {
 
     const image = await createImageBitmap(file);
     try {
-        const crop = computeAspectCrop(image.width, image.height, aspectRatio, options);
+        const crop = computeAspectCrop(
+            image.width,
+            image.height,
+            aspectRatio,
+            options
+        );
 
         const canvas = document.createElement('canvas');
         canvas.width = crop.width;
@@ -92,16 +101,13 @@ export async function cropImageFileToAspect(file, aspectRatio, options = {}) {
             crop.height
         );
         return await new Promise((resolve, reject) => {
-            canvas.toBlob(
-                (blob) => {
-                    if (blob) {
-                        resolve(blob);
-                    } else {
-                        reject(new Error('Failed to crop image.'));
-                    }
-                },
-                'image/png'
-            );
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    resolve(blob);
+                } else {
+                    reject(new Error('Failed to crop image.'));
+                }
+            }, 'image/png');
         });
     } finally {
         image.close();

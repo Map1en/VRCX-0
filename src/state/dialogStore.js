@@ -45,29 +45,51 @@ export const useDialogStore = create((set) => ({
             breadcrumbs: Array.isArray(breadcrumbs) ? breadcrumbs : []
         });
     },
-    updateEntityDialogMetadata({ kind, entityId, title = '', description = '' } = {}) {
+    updateEntityDialogMetadata({
+        kind,
+        entityId,
+        title = '',
+        description = ''
+    } = {}) {
         const normalizedKind = String(kind || '').trim();
         const normalizedEntityId = String(entityId ?? '').trim();
         const normalizedTitle = String(title || '').trim();
         const normalizedDescription = String(description || '').trim();
-        if (!normalizedKind || !normalizedEntityId || (!normalizedTitle && !normalizedDescription)) {
+        if (
+            !normalizedKind ||
+            !normalizedEntityId ||
+            (!normalizedTitle && !normalizedDescription)
+        ) {
             return;
         }
         set((state) => ({
-            activeDialog: isSameEntity(state.activeDialog, normalizedKind, normalizedEntityId)
+            activeDialog: isSameEntity(
+                state.activeDialog,
+                normalizedKind,
+                normalizedEntityId
+            )
                 ? {
-                    ...state.activeDialog,
-                    ...(normalizedTitle ? { title: normalizedTitle } : {}),
-                    ...(normalizedDescription ? { description: normalizedDescription } : {})
-                }
+                      ...state.activeDialog,
+                      ...(normalizedTitle ? { title: normalizedTitle } : {}),
+                      ...(normalizedDescription
+                          ? { description: normalizedDescription }
+                          : {})
+                  }
                 : state.activeDialog,
             breadcrumbs: state.breadcrumbs.map((crumb) =>
                 isSameEntity(crumb, normalizedKind, normalizedEntityId)
                     ? {
-                        ...crumb,
-                        ...(normalizedTitle ? { label: normalizedTitle, title: normalizedTitle } : {}),
-                        ...(normalizedDescription ? { description: normalizedDescription } : {})
-                    }
+                          ...crumb,
+                          ...(normalizedTitle
+                              ? {
+                                    label: normalizedTitle,
+                                    title: normalizedTitle
+                                }
+                              : {}),
+                          ...(normalizedDescription
+                              ? { description: normalizedDescription }
+                              : {})
+                      }
                     : crumb
             )
         }));
@@ -86,7 +108,8 @@ export const useDialogStore = create((set) => ({
     popToBreadcrumb(index) {
         set((state) => ({
             activeDialog:
-                dialogFromBreadcrumb(state.breadcrumbs[index]) ?? state.activeDialog,
+                dialogFromBreadcrumb(state.breadcrumbs[index]) ??
+                state.activeDialog,
             breadcrumbs: state.breadcrumbs.slice(0, index + 1)
         }));
     },

@@ -2,6 +2,7 @@ import { backend } from '@/platform/index.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
+
 import { ingestBackendGameLogEvent } from './gameLogIngestService.js';
 import { handleGameRunningUpdate } from './gameStateService.js';
 import { handleIpcEvent } from './ipcEventService.js';
@@ -68,9 +69,12 @@ export async function bindBackendEvents() {
 
     try {
         for (const name of events) {
-            const unsubscribe = await backend.events.subscribe(name, (payload) => {
-                handleBackendEvent(name, payload);
-            });
+            const unsubscribe = await backend.events.subscribe(
+                name,
+                (payload) => {
+                    handleBackendEvent(name, payload);
+                }
+            );
             unsubscribers.push(unsubscribe);
         }
     } catch (error) {

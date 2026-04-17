@@ -52,8 +52,8 @@ export function syncStartupServicesTask(baseParts = []) {
         hasActivityError || currentStartupStatus === 'error'
             ? 'error'
             : completed
-                ? 'completed'
-                : 'pending',
+              ? 'completed'
+              : 'pending',
         detail
     );
     return {

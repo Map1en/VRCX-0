@@ -44,7 +44,8 @@ export const APP_FONT_CONFIG = Object.freeze({
     },
     fantasque_sans_mono: {
         cssName: "'Fantasque Sans Mono'",
-        cssImport: "@import url('https://fonts.cdnfonts.com/css/fantasque-sans-mono');"
+        cssImport:
+            "@import url('https://fonts.cdnfonts.com/css/fantasque-sans-mono');"
     },
     system_ui: {
         cssName: 'system-ui',
@@ -76,7 +77,11 @@ export const APP_CJK_FONT_PACK_CONFIG = Object.freeze({
         ].join('\n')
     },
     puhuiti: {
-        cssNames: Object.freeze(["'Alibaba PuHuiTi 3.0'", "'Alibaba PuHuiTi 2.0'", "'Alibaba PuHuiTi'"]),
+        cssNames: Object.freeze([
+            "'Alibaba PuHuiTi 3.0'",
+            "'Alibaba PuHuiTi 2.0'",
+            "'Alibaba PuHuiTi'"
+        ]),
         cssImport: null
     },
     system: {
@@ -86,7 +91,9 @@ export const APP_CJK_FONT_PACK_CONFIG = Object.freeze({
 });
 
 export const APP_FONT_FAMILIES = Object.freeze(Object.keys(APP_FONT_CONFIG));
-export const APP_CJK_FONT_PACKS = Object.freeze(Object.keys(APP_CJK_FONT_PACK_CONFIG));
+export const APP_CJK_FONT_PACKS = Object.freeze(
+    Object.keys(APP_CJK_FONT_PACK_CONFIG)
+);
 
 export function resolveThemeMode(value) {
     if (value === 'midnight') {
@@ -103,7 +110,9 @@ export function resolveThemeMode(value) {
 export function getResolvedThemeMode(themeMode) {
     const normalized = resolveThemeMode(themeMode);
     if (normalized === 'system') {
-        return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        return window.matchMedia?.('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
     }
 
     return normalized;
@@ -115,7 +124,10 @@ export function normalizeZoomLevel(value, fallback = DEFAULT_ZOOM_LEVEL) {
         return fallback;
     }
 
-    return Math.min(MAX_ZOOM_LEVEL, Math.max(MIN_ZOOM_LEVEL, Math.trunc(numericZoom)));
+    return Math.min(
+        MAX_ZOOM_LEVEL,
+        Math.max(MIN_ZOOM_LEVEL, Math.trunc(numericZoom))
+    );
 }
 
 export function formatZoomPercentage(value) {
@@ -133,7 +145,10 @@ function ensureDynamicStyle(attrName, styleKey, cssText) {
         }
     });
 
-    if (!cssText || document.querySelector(`style[${attrName}="${styleKey}"]`)) {
+    if (
+        !cssText ||
+        document.querySelector(`style[${attrName}="${styleKey}"]`)
+    ) {
         return;
     }
 
@@ -144,13 +159,19 @@ function ensureDynamicStyle(attrName, styleKey, cssText) {
 }
 
 export function normalizeAppFontFamily(value) {
-    const normalized = String(value || '').trim().toLowerCase();
+    const normalized = String(value || '')
+        .trim()
+        .toLowerCase();
     return APP_FONT_CONFIG[normalized] ? normalized : APP_FONT_DEFAULT_KEY;
 }
 
 export function normalizeAppCjkFontPack(value) {
-    const normalized = String(value || '').trim().toLowerCase();
-    return APP_CJK_FONT_PACK_CONFIG[normalized] ? normalized : APP_CJK_FONT_PACK_DEFAULT_KEY;
+    const normalized = String(value || '')
+        .trim()
+        .toLowerCase();
+    return APP_CJK_FONT_PACK_CONFIG[normalized]
+        ? normalized
+        : APP_CJK_FONT_PACK_DEFAULT_KEY;
 }
 
 export function applyAppFontPreferences({
@@ -164,12 +185,23 @@ export function applyAppFontPreferences({
     const cjkConfig = APP_CJK_FONT_PACK_CONFIG[normalizedCjk];
     const westernFont =
         normalizedFont === 'custom'
-            ? String(customFontFamily || '').trim() || APP_FONT_CONFIG[APP_FONT_DEFAULT_KEY].cssName
+            ? String(customFontFamily || '').trim() ||
+              APP_FONT_CONFIG[APP_FONT_DEFAULT_KEY].cssName
             : fontConfig.cssName;
-    const cjkFonts = Array.isArray(cjkConfig.cssNames) ? cjkConfig.cssNames : [];
+    const cjkFonts = Array.isArray(cjkConfig.cssNames)
+        ? cjkConfig.cssNames
+        : [];
 
-    ensureDynamicStyle(APP_FONT_STYLE_ATTR, normalizedFont, fontConfig.cssImport);
-    ensureDynamicStyle(APP_CJK_FONT_STYLE_ATTR, normalizedCjk, cjkConfig.cssImport);
+    ensureDynamicStyle(
+        APP_FONT_STYLE_ATTR,
+        normalizedFont,
+        fontConfig.cssImport
+    );
+    ensureDynamicStyle(
+        APP_CJK_FONT_STYLE_ATTR,
+        normalizedCjk,
+        cjkConfig.cssImport
+    );
 
     document.documentElement.style.setProperty(
         '--vrcx-app-font-family',

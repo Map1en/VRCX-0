@@ -5,11 +5,15 @@ export function normalizeFavoriteSearchValue(value) {
 }
 
 export function normalizeFavoriteEntityId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 export function resolveCurrentInviteLocation(gameState, currentUserSnapshot) {
-    const currentLocation = normalizeFavoriteEntityId(gameState?.currentLocation);
+    const currentLocation = normalizeFavoriteEntityId(
+        gameState?.currentLocation
+    );
     if (currentLocation === 'traveling') {
         return normalizeFavoriteEntityId(gameState?.currentDestination);
     }
@@ -17,14 +21,17 @@ export function resolveCurrentInviteLocation(gameState, currentUserSnapshot) {
     return (
         currentLocation ||
         normalizeFavoriteEntityId(gameState?.currentDestination) ||
-        normalizeFavoriteEntityId(currentUserSnapshot?.$locationTag || currentUserSnapshot?.location)
+        normalizeFavoriteEntityId(
+            currentUserSnapshot?.$locationTag || currentUserSnapshot?.location
+        )
     );
 }
 
 export function sortFavoriteItems(items, sortValue) {
     return [...items].sort((left, right) => {
         if (sortValue === 'players') {
-            const playerDelta = (right.playerCount || 0) - (left.playerCount || 0);
+            const playerDelta =
+                (right.playerCount || 0) - (left.playerCount || 0);
             if (playerDelta !== 0) {
                 return playerDelta;
             }
@@ -40,9 +47,13 @@ export function sortFavoriteItems(items, sortValue) {
             }
         }
 
-        const titleDelta = String(left.title || '').localeCompare(String(right.title || ''), undefined, {
-            sensitivity: 'base'
-        });
+        const titleDelta = String(left.title || '').localeCompare(
+            String(right.title || ''),
+            undefined,
+            {
+                sensitivity: 'base'
+            }
+        );
         if (titleDelta !== 0) {
             return titleDelta;
         }
@@ -56,7 +67,9 @@ export function shrinkFavoriteImage(url) {
     if (typeof normalized !== 'string' || !normalized) {
         return '';
     }
-    return normalized.includes('/256') ? normalized.replace('/256', '/128') : normalized;
+    return normalized.includes('/256')
+        ? normalized.replace('/256', '/128')
+        : normalized;
 }
 
 export function favoriteGroupType(kind, group) {

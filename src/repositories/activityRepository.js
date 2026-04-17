@@ -17,7 +17,7 @@ function normalizeActivitySyncStateRow(row, fallbackUserId) {
             isSelf: Boolean(row[2]),
             sourceLastCreatedAt: row[3] || '',
             pendingSessionStartAt:
-                typeof row[4] === 'number' ? row[4] : row[4] ?? null,
+                typeof row[4] === 'number' ? row[4] : (row[4] ?? null),
             cachedRangeDays: Number.parseInt(row[5] ?? 0, 10) || 0
         };
     }
@@ -30,11 +30,15 @@ function normalizeActivitySyncStateRow(row, fallbackUserId) {
         userId: row.user_id ?? row.userId ?? fallbackUserId,
         updatedAt: row.updated_at ?? row.updatedAt ?? '',
         isSelf: Boolean(row.is_self ?? row.isSelf),
-        sourceLastCreatedAt: row.source_last_created_at ?? row.sourceLastCreatedAt ?? '',
+        sourceLastCreatedAt:
+            row.source_last_created_at ?? row.sourceLastCreatedAt ?? '',
         pendingSessionStartAt:
             row.pending_session_start_at ?? row.pendingSessionStartAt ?? null,
         cachedRangeDays:
-            Number.parseInt(row.cached_range_days ?? row.cachedRangeDays ?? 0, 10) || 0
+            Number.parseInt(
+                row.cached_range_days ?? row.cachedRangeDays ?? 0,
+                10
+            ) || 0
     };
 }
 
@@ -84,14 +88,20 @@ async function insertSessions(tx, userId, tableName, sessions = []) {
     }
 
     const chunkSize = 250;
-    for (let chunkStart = 0; chunkStart < sessions.length; chunkStart += chunkSize) {
+    for (
+        let chunkStart = 0;
+        chunkStart < sessions.length;
+        chunkStart += chunkSize
+    ) {
         const chunk = sessions.slice(chunkStart, chunkStart + chunkSize);
         const args = {};
         const values = chunk.map((session, index) => {
             const suffix = `${chunkStart + index}`;
             args[`@userId_${suffix}`] = userId;
-            args[`@startAt_${suffix}`] = Number.parseInt(session?.start ?? 0, 10) || 0;
-            args[`@endAt_${suffix}`] = Number.parseInt(session?.end ?? 0, 10) || 0;
+            args[`@startAt_${suffix}`] =
+                Number.parseInt(session?.start ?? 0, 10) || 0;
+            args[`@endAt_${suffix}`] =
+                Number.parseInt(session?.end ?? 0, 10) || 0;
             args[`@isOpenTail_${suffix}`] = session?.isOpenTail ? 1 : 0;
             args[`@sourceRevision_${suffix}`] = session?.sourceRevision || '';
             return `(@userId_${suffix}, @startAt_${suffix}, @endAt_${suffix}, @isOpenTail_${suffix}, @sourceRevision_${suffix})`;
@@ -107,9 +117,13 @@ async function insertSessions(tx, userId, tableName, sessions = []) {
 }
 
 async function getSelfActivitySourceSlice({ fromDays, toDays = 0 }) {
-    const fromDateIso = new Date(Date.now() - fromDays * 86400000).toISOString();
+    const fromDateIso = new Date(
+        Date.now() - fromDays * 86400000
+    ).toISOString();
     const toDateIso =
-        toDays > 0 ? new Date(Date.now() - toDays * 86400000).toISOString() : '';
+        toDays > 0
+            ? new Date(Date.now() - toDays * 86400000).toISOString()
+            : '';
 
     const rows = await sqliteRepository.query(
         `
@@ -159,7 +173,10 @@ async function getSelfActivitySourceSlice({ fromDays, toDays = 0 }) {
         .filter((row) => typeof row?.created_at === 'string' && row.created_at);
 }
 
-async function getSelfActivitySourceAfter({ afterCreatedAt, inclusive = false }) {
+async function getSelfActivitySourceAfter({
+    afterCreatedAt,
+    inclusive = false
+}) {
     const operator = inclusive ? '>=' : '>';
     const rows = await sqliteRepository.query(
         `SELECT created_at, time
@@ -182,7 +199,9 @@ async function getSelfActivitySourceAfter({ afterCreatedAt, inclusive = false })
 
 async function getActivitySyncState(userId) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
         return null;
     }
@@ -210,7 +229,9 @@ async function upsertActivitySyncState(entry) {
             ? entry.userId.trim()
             : String(entry?.userId ?? '').trim();
     if (!normalizedUserId) {
-        throw new Error('ActivityRepository.upsertActivitySyncState requires a user id.');
+        throw new Error(
+            'ActivityRepository.upsertActivitySyncState requires a user id.'
+        );
     }
 
     await sqliteRepository.executeNonQuery(
@@ -223,14 +244,17 @@ async function upsertActivitySyncState(entry) {
             '@isSelf': entry.isSelf ? 1 : 0,
             '@sourceLastCreatedAt': entry.sourceLastCreatedAt || '',
             '@pendingSessionStartAt': entry.pendingSessionStartAt ?? null,
-            '@cachedRangeDays': Number.parseInt(entry.cachedRangeDays ?? 0, 10) || 0
+            '@cachedRangeDays':
+                Number.parseInt(entry.cachedRangeDays ?? 0, 10) || 0
         }
     );
 }
 
 async function getActivitySessions(userId) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
         return [];
     }
@@ -251,18 +275,25 @@ async function getActivitySessions(userId) {
 
     return rows
         .map(normalizeActivitySessionRow)
-        .filter((row) => Number.isFinite(row?.start) && Number.isFinite(row?.end));
+        .filter(
+            (row) => Number.isFinite(row?.start) && Number.isFinite(row?.end)
+        );
 }
 
 async function replaceActivitySessions(userId, sessions = []) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     const tableName = getSessionsTable(normalizedUserId);
 
     await sqliteRepository.transaction(async (tx) => {
-        await tx.executeNonQuery(`DELETE FROM ${tableName} WHERE user_id = @userId`, {
-            '@userId': normalizedUserId
-        });
+        await tx.executeNonQuery(
+            `DELETE FROM ${tableName} WHERE user_id = @userId`,
+            {
+                '@userId': normalizedUserId
+            }
+        );
         await insertSessions(tx, normalizedUserId, tableName, sessions);
     });
 }
@@ -273,7 +304,9 @@ async function appendActivitySessions({
     replaceFromStartAt = null
 }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     const tableName = getSessionsTable(normalizedUserId);
 
     await sqliteRepository.transaction(async (tx) => {

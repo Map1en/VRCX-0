@@ -4,12 +4,18 @@ const localizedStrings = import.meta.glob('./*.json', {
 });
 
 async function getLocalizedStrings(code) {
-    return localizedStrings[`./${code}.json`] || localizedStrings['./en.json'] || {};
+    return (
+        localizedStrings[`./${code}.json`] ||
+        localizedStrings['./en.json'] ||
+        {}
+    );
 }
 
 function getLanguageName(code) {
-    return String(localizedStrings[`./${code}.json`]?.language ?? code)
-        .replace(/\s+\([^)]+\)$/, '');
+    return String(localizedStrings[`./${code}.json`]?.language ?? code).replace(
+        /\s+\([^)]+\)$/,
+        ''
+    );
 }
 
 /**

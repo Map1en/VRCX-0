@@ -1,13 +1,27 @@
 import { useMemo } from 'react';
 
 import {
+    openAvatarDialog,
+    openUserDialog,
+    openWorldDialog
+} from '@/services/dialogService.js';
+import {
+    cancelFavoriteImport,
+    clearFavoriteImportRows,
+    getFavoriteImportTypeConfig,
+    importFavoriteImportRows,
+    processFavoriteImportList
+} from '@/services/favoriteImportService.js';
+import { useFavoriteImportStore } from '@/state/favoriteImportStore.js';
+import { useFavoriteStore } from '@/state/favoriteStore.js';
+import { Button } from '@/ui/shadcn/button';
+import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Button } from '@/ui/shadcn/button';
 import {
     Select,
     SelectContent,
@@ -25,20 +39,6 @@ import {
     TableRow
 } from '@/ui/shadcn/table';
 import { Textarea } from '@/ui/shadcn/textarea';
-import { useFavoriteStore } from '@/state/favoriteStore.js';
-import { useFavoriteImportStore } from '@/state/favoriteImportStore.js';
-import {
-    cancelFavoriteImport,
-    clearFavoriteImportRows,
-    getFavoriteImportTypeConfig,
-    importFavoriteImportRows,
-    processFavoriteImportList
-} from '@/services/favoriteImportService.js';
-import {
-    openAvatarDialog,
-    openUserDialog,
-    openWorldDialog
-} from '@/services/dialogService.js';
 
 function getRowName(type, row) {
     if (type === 'friend') {
@@ -83,85 +83,116 @@ export function FavoriteImportHost() {
     const rows = useFavoriteImportStore((state) => state.rows);
     const loading = useFavoriteImportStore((state) => state.loading);
     const progress = useFavoriteImportStore((state) => state.progress);
-    const progressTotal = useFavoriteImportStore((state) => state.progressTotal);
-    const importProgress = useFavoriteImportStore((state) => state.importProgress);
-    const importProgressTotal = useFavoriteImportStore((state) => state.importProgressTotal);
+    const progressTotal = useFavoriteImportStore(
+        (state) => state.progressTotal
+    );
+    const importProgress = useFavoriteImportStore(
+        (state) => state.importProgress
+    );
+    const importProgressTotal = useFavoriteImportStore(
+        (state) => state.importProgressTotal
+    );
     const errors = useFavoriteImportStore((state) => state.errors);
-    const remoteGroupName = useFavoriteImportStore((state) => state.remoteGroupName);
-    const localGroupName = useFavoriteImportStore((state) => state.localGroupName);
+    const remoteGroupName = useFavoriteImportStore(
+        (state) => state.remoteGroupName
+    );
+    const localGroupName = useFavoriteImportStore(
+        (state) => state.localGroupName
+    );
     const closeDialog = useFavoriteImportStore((state) => state.closeDialog);
     const setInput = useFavoriteImportStore((state) => state.setInput);
-    const setRemoteGroupName = useFavoriteImportStore((state) => state.setRemoteGroupName);
-    const setLocalGroupName = useFavoriteImportStore((state) => state.setLocalGroupName);
+    const setRemoteGroupName = useFavoriteImportStore(
+        (state) => state.setRemoteGroupName
+    );
+    const setLocalGroupName = useFavoriteImportStore(
+        (state) => state.setLocalGroupName
+    );
     const removeRow = useFavoriteImportStore((state) => state.removeRow);
     const setErrors = useFavoriteImportStore((state) => state.setErrors);
     const config = getFavoriteImportTypeConfig(type);
-    const favoriteAvatarGroups = useFavoriteStore((state) => state.favoriteAvatarGroups);
-    const favoriteWorldGroups = useFavoriteStore((state) => state.favoriteWorldGroups);
-    const favoriteFriendGroups = useFavoriteStore((state) => state.favoriteFriendGroups);
-    const localAvatarFavoriteGroups = useFavoriteStore((state) => state.localAvatarFavoriteGroups);
-    const localWorldFavoriteGroups = useFavoriteStore((state) => state.localWorldFavoriteGroups);
-    const localFriendFavoriteGroups = useFavoriteStore((state) => state.localFriendFavoriteGroups);
-    const { remoteGroups, localGroups } = useMemo(
-        () => {
-            if (type === 'avatar') {
-                return {
-                    remoteGroups: favoriteAvatarGroups,
-                    localGroups: localAvatarFavoriteGroups
-                };
-            }
-            if (type === 'world') {
-                return {
-                    remoteGroups: favoriteWorldGroups,
-                    localGroups: localWorldFavoriteGroups
-                };
-            }
-            return {
-                remoteGroups: favoriteFriendGroups,
-                localGroups: localFriendFavoriteGroups
-            };
-        },
-        [
-            favoriteAvatarGroups,
-            favoriteFriendGroups,
-            favoriteWorldGroups,
-            localAvatarFavoriteGroups,
-            localFriendFavoriteGroups,
-            localWorldFavoriteGroups,
-            type
-        ]
+    const favoriteAvatarGroups = useFavoriteStore(
+        (state) => state.favoriteAvatarGroups
     );
+    const favoriteWorldGroups = useFavoriteStore(
+        (state) => state.favoriteWorldGroups
+    );
+    const favoriteFriendGroups = useFavoriteStore(
+        (state) => state.favoriteFriendGroups
+    );
+    const localAvatarFavoriteGroups = useFavoriteStore(
+        (state) => state.localAvatarFavoriteGroups
+    );
+    const localWorldFavoriteGroups = useFavoriteStore(
+        (state) => state.localWorldFavoriteGroups
+    );
+    const localFriendFavoriteGroups = useFavoriteStore(
+        (state) => state.localFriendFavoriteGroups
+    );
+    const { remoteGroups, localGroups } = useMemo(() => {
+        if (type === 'avatar') {
+            return {
+                remoteGroups: favoriteAvatarGroups,
+                localGroups: localAvatarFavoriteGroups
+            };
+        }
+        if (type === 'world') {
+            return {
+                remoteGroups: favoriteWorldGroups,
+                localGroups: localWorldFavoriteGroups
+            };
+        }
+        return {
+            remoteGroups: favoriteFriendGroups,
+            localGroups: localFriendFavoriteGroups
+        };
+    }, [
+        favoriteAvatarGroups,
+        favoriteFriendGroups,
+        favoriteWorldGroups,
+        localAvatarFavoriteGroups,
+        localFriendFavoriteGroups,
+        localWorldFavoriteGroups,
+        type
+    ]);
     const label = config?.label || 'Favorite';
 
     return (
-        <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && closeDialog()}>
+        <Dialog
+            open={open}
+            onOpenChange={(nextOpen) => !nextOpen && closeDialog()}
+        >
             <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{label} import</DialogTitle>
                     <DialogDescription>
-                        Paste exported IDs, process the list, then import to a VRChat favorite
-                        group or a local favorite group.
+                        Paste exported IDs, process the list, then import to a
+                        VRChat favorite group or a local favorite group.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-muted-foreground text-sm">
                         {progressTotal > 0
                             ? `Processing ${progress} / ${progressTotal}`
                             : importProgressTotal > 0
-                                ? `Importing ${importProgress} / ${importProgressTotal}`
-                                : `${rows.length} parsed item(s)`}
+                              ? `Importing ${importProgress} / ${importProgressTotal}`
+                              : `${rows.length} parsed item(s)`}
                     </div>
                     <div className="flex items-center gap-2">
                         {loading ? (
-                            <Button size="sm" variant="secondary" onClick={cancelFavoriteImport}>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={cancelFavoriteImport}
+                            >
                                 Cancel
                             </Button>
                         ) : (
                             <Button
                                 size="sm"
                                 disabled={!input.trim()}
-                                onClick={() => void processFavoriteImportList()}>
+                                onClick={() => void processFavoriteImportList()}
+                            >
                                 Process list
                             </Button>
                         )}
@@ -179,7 +210,8 @@ export function FavoriteImportHost() {
                     <div className="flex flex-wrap items-center gap-2">
                         <Select
                             value={remoteGroupName}
-                            onValueChange={(value) => setRemoteGroupName(value)}>
+                            onValueChange={(value) => setRemoteGroupName(value)}
+                        >
                             <SelectTrigger size="sm" className="min-w-48">
                                 <SelectValue placeholder="VRChat group" />
                             </SelectTrigger>
@@ -189,9 +221,12 @@ export function FavoriteImportHost() {
                                         <SelectItem
                                             key={`${group.type}:${group.name}`}
                                             value={group.name}
-                                            disabled={group.count >= group.capacity}>
-                                            {group.displayName || group.name} ({group.count}/
-                                            {group.capacity})
+                                            disabled={
+                                                group.count >= group.capacity
+                                            }
+                                        >
+                                            {group.displayName || group.name} (
+                                            {group.count}/{group.capacity})
                                         </SelectItem>
                                     ))}
                                 </SelectGroup>
@@ -200,7 +235,8 @@ export function FavoriteImportHost() {
 
                         <Select
                             value={localGroupName}
-                            onValueChange={(value) => setLocalGroupName(value)}>
+                            onValueChange={(value) => setLocalGroupName(value)}
+                        >
                             <SelectTrigger size="sm" className="min-w-48">
                                 <SelectValue placeholder="Local group" />
                             </SelectTrigger>
@@ -221,7 +257,8 @@ export function FavoriteImportHost() {
                             size="sm"
                             variant="secondary"
                             disabled={rows.length === 0}
-                            onClick={clearFavoriteImportRows}>
+                            onClick={clearFavoriteImportRows}
+                        >
                             Clear table
                         </Button>
                         <Button
@@ -231,7 +268,8 @@ export function FavoriteImportHost() {
                                 loading ||
                                 (!remoteGroupName && !localGroupName)
                             }
-                            onClick={() => void importFavoriteImportRows()}>
+                            onClick={() => void importFavoriteImportRows()}
+                        >
                             Import
                         </Button>
                     </div>
@@ -239,10 +277,14 @@ export function FavoriteImportHost() {
 
                 {errors ? (
                     <div className="flex flex-col gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => setErrors('')}>
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setErrors('')}
+                        >
                             Clear errors
                         </Button>
-                        <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-xs">
+                        <pre className="bg-muted/30 max-h-40 overflow-auto rounded-md border p-3 text-xs whitespace-pre-wrap">
                             {errors}
                         </pre>
                     </div>
@@ -256,7 +298,9 @@ export function FavoriteImportHost() {
                                 <TableHead>Name</TableHead>
                                 <TableHead>Detail</TableHead>
                                 <TableHead>ID</TableHead>
-                                <TableHead className="w-36 text-right">Actions</TableHead>
+                                <TableHead className="w-36 text-right">
+                                    Actions
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -271,26 +315,36 @@ export function FavoriteImportHost() {
                                                     className="size-10 rounded object-cover"
                                                 />
                                             ) : (
-                                                <div className="size-10 rounded bg-muted" />
+                                                <div className="bg-muted size-10 rounded" />
                                             )}
                                         </TableCell>
-                                        <TableCell>{getRowName(type, row)}</TableCell>
+                                        <TableCell>
+                                            {getRowName(type, row)}
+                                        </TableCell>
                                         <TableCell className="max-w-72 truncate">
                                             {getRowDetail(type, row)}
                                         </TableCell>
-                                        <TableCell className="font-mono text-xs">{row.id}</TableCell>
+                                        <TableCell className="font-mono text-xs">
+                                            {row.id}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
                                                 <Button
                                                     size="xs"
                                                     variant="secondary"
-                                                    onClick={() => openRowDialog(type, row)}>
+                                                    onClick={() =>
+                                                        openRowDialog(type, row)
+                                                    }
+                                                >
                                                     Open
                                                 </Button>
                                                 <Button
                                                     size="xs"
                                                     variant="ghost"
-                                                    onClick={() => removeRow(row.id)}>
+                                                    onClick={() =>
+                                                        removeRow(row.id)
+                                                    }
+                                                >
                                                     Delete
                                                 </Button>
                                             </div>
@@ -301,8 +355,10 @@ export function FavoriteImportHost() {
                                 <TableRow>
                                     <TableCell
                                         colSpan={5}
-                                        className="h-24 text-center text-muted-foreground">
-                                        No parsed {label.toLowerCase()} rows yet.
+                                        className="text-muted-foreground h-24 text-center"
+                                    >
+                                        No parsed {label.toLowerCase()} rows
+                                        yet.
                                     </TableCell>
                                 </TableRow>
                             )}

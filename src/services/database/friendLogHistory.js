@@ -1,7 +1,6 @@
+import sqliteService from '../../repositories/sqliteRepository.js';
 import { dbVars } from '../database';
 import { buildInClause, buildValuesList } from './sqlHelpers.js';
-
-import sqliteService from '../../repositories/sqliteRepository.js';
 
 function stringOrNull(value) {
     return typeof value === 'string' ? value : null;
@@ -53,9 +52,15 @@ const friendLogHistory = {
         const { valuesSql, args } = buildValuesList(
             inputData,
             [
-                { column: 'created_at', value: (line) => stringOrNull(line.created_at) },
+                {
+                    column: 'created_at',
+                    value: (line) => stringOrNull(line.created_at)
+                },
                 { column: 'type', value: (line) => stringOrNull(line.type) },
-                { column: 'user_id', value: (line) => stringOrNull(line.userId) },
+                {
+                    column: 'user_id',
+                    value: (line) => stringOrNull(line.userId)
+                },
                 {
                     column: 'display_name',
                     value: (line) => stringOrNull(line.displayName)
@@ -90,8 +95,14 @@ const friendLogHistory = {
 
     async getFriendLogHistoryForUserId(userId, types) {
         const friendLogHistory = [];
-        const typeInClause = buildInClause('type', types, 'friend_history_type');
-        const typeFilter = typeInClause.clause ? ` AND ${typeInClause.clause}` : '';
+        const typeInClause = buildInClause(
+            'type',
+            types,
+            'friend_history_type'
+        );
+        const typeFilter = typeInClause.clause
+            ? ` AND ${typeInClause.clause}`
+            : '';
         await sqliteService.execute(
             (dbRow) => {
                 const row = {

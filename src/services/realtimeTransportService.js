@@ -121,7 +121,10 @@ function scheduleReconnect() {
     clearReconnectTimer();
     reconnectTimer = window.setTimeout(() => {
         reconnectTimer = null;
-        connectRealtimeTransport({ announceIpc: false, preserveMetrics: true }).catch((error) => {
+        connectRealtimeTransport({
+            announceIpc: false,
+            preserveMetrics: true
+        }).catch((error) => {
             handleTransportFailure(error, { reconnecting: true });
         });
     }, 5000);
@@ -133,9 +136,11 @@ function handleTransportFailure(error, { reconnecting = false } = {}) {
     }
 
     const message = error instanceof Error ? error.message : String(error);
-    useSessionStore.getState().setTransportStatus(
-        reconnecting ? 'pipeline-reconnecting' : 'pipeline-error'
-    );
+    useSessionStore
+        .getState()
+        .setTransportStatus(
+            reconnecting ? 'pipeline-reconnecting' : 'pipeline-error'
+        );
     updateTransportStartupDetail(
         [`Realtime transport bootstrap failed: ${message}.`].join(' ')
     );
@@ -160,7 +165,11 @@ function refreshBaselineAfterReconnect() {
     });
 }
 
-function attachSocketHandlers(socket, context, { refreshBaselineOnOpen = false } = {}) {
+function attachSocketHandlers(
+    socket,
+    context,
+    { refreshBaselineOnOpen = false } = {}
+) {
     socket.onopen = () => {
         if (socket !== activeSocket || !isCurrentTransportTarget(context)) {
             try {
@@ -178,7 +187,9 @@ function attachSocketHandlers(socket, context, { refreshBaselineOnOpen = false }
         });
         useSessionStore.getState().setTransportStatus('pipeline-connected');
         updateTransportStartupDetail(
-            ['Friend roster baseline, IPC announce, and websocket transport are active.'].join(' ')
+            [
+                'Friend roster baseline, IPC announce, and websocket transport are active.'
+            ].join(' ')
         );
         if (refreshBaselineOnOpen) {
             refreshBaselineAfterReconnect();
@@ -200,14 +211,20 @@ function attachSocketHandlers(socket, context, { refreshBaselineOnOpen = false }
         const parsedMessage = parseTransportMessage(data);
         useRuntimeStore
             .getState()
-            .recordTransportMessage(parsedMessage.messageType, getByteLength(data));
+            .recordTransportMessage(
+                parsedMessage.messageType,
+                getByteLength(data)
+            );
 
         if (parsedMessage.json) {
-            Promise.resolve(handleRealtimePresenceEvent(parsedMessage.json)).catch((error) => {
+            Promise.resolve(
+                handleRealtimePresenceEvent(parsedMessage.json)
+            ).catch((error) => {
                 useNotificationStore.getState().pushNotification({
                     level: 'warning',
                     title: 'Realtime event failed',
-                    message: error instanceof Error ? error.message : String(error)
+                    message:
+                        error instanceof Error ? error.message : String(error)
                 });
             });
         }
@@ -277,7 +294,8 @@ async function connectRealtimeTransport({ announceIpc, preserveMetrics }) {
                 lastIpcAnnouncedAt: new Date().toISOString()
             });
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
+            const message =
+                error instanceof Error ? error.message : String(error);
             useNotificationStore.getState().pushNotification({
                 level: 'warning',
                 title: 'IPC announce failed',
@@ -296,7 +314,9 @@ async function connectRealtimeTransport({ announceIpc, preserveMetrics }) {
     });
 
     if (!authSession?.json?.ok || !authSession?.json?.token) {
-        throw new Error('The auth transport bootstrap did not return a websocket token.');
+        throw new Error(
+            'The auth transport bootstrap did not return a websocket token.'
+        );
     }
 
     if (!isCurrentTransportTarget(context)) {
@@ -319,9 +339,17 @@ export async function startRealtimeTransport({
     currentUserSnapshot
 }) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
-    if (!normalizedUserId || !currentUserSnapshot || typeof currentUserSnapshot !== 'object') {
-        throw new Error('Realtime transport bootstrap requires an authenticated user context.');
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
+    if (
+        !normalizedUserId ||
+        !currentUserSnapshot ||
+        typeof currentUserSnapshot !== 'object'
+    ) {
+        throw new Error(
+            'Realtime transport bootstrap requires an authenticated user context.'
+        );
     }
 
     if (

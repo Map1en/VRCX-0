@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { compareUnityVersion, getPlatformInfo, parseAvatarUrl, storeAvatarImage } from './avatar.js';
+import {
+    compareUnityVersion,
+    getPlatformInfo,
+    parseAvatarUrl,
+    storeAvatarImage
+} from './avatar.js';
 
 describe('avatar utils', () => {
     afterEach(() => {
@@ -8,8 +13,12 @@ describe('avatar utils', () => {
     });
 
     it('parses avatar ids from VRChat avatar URLs', () => {
-        expect(parseAvatarUrl('https://vrchat.com/home/avatar/avtr_123')).toBe('avtr_123');
-        expect(parseAvatarUrl('https://vrchat.com/home/world/wrld_123')).toBeNull();
+        expect(parseAvatarUrl('https://vrchat.com/home/avatar/avtr_123')).toBe(
+            'avtr_123'
+        );
+        expect(
+            parseAvatarUrl('https://vrchat.com/home/world/wrld_123')
+        ).toBeNull();
     });
 
     it('compares legacy unity sort numbers against SDK unity versions', () => {
@@ -19,7 +28,9 @@ describe('avatar utils', () => {
     });
 
     it('returns false for missing or invalid SDK unity versions', () => {
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const errorSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {});
 
         expect(compareUnityVersion('20220306000', '')).toBe(false);
         expect(compareUnityVersion('20220306000', '2022.3')).toBe(false);
@@ -48,7 +59,9 @@ describe('avatar utils', () => {
             variant: 'impostor'
         };
 
-        expect(getPlatformInfo([pcGood, pcNone, android, iosUnsupported])).toEqual({
+        expect(
+            getPlatformInfo([pcGood, pcNone, android, iosUnsupported])
+        ).toEqual({
             pc: pcGood,
             android,
             ios: {}

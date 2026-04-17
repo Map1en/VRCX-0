@@ -1,4 +1,9 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    getCoreRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable
+} from '@tanstack/react-table';
 import {
     ArrowDownIcon,
     ArrowUpDownIcon,
@@ -18,31 +23,31 @@ import {
     TagIcon,
     UserIcon
 } from 'lucide-react';
-import {
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable
-} from '@tanstack/react-table';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
-import {
-    ResizableTableCell
-} from '@/components/data-table/ResizableTableParts.jsx';
 import {
     DataTableHeader,
     DataTablePagination,
     DataTableScrollArea,
     DataTableSurface
 } from '@/components/data-table/DataTableView.jsx';
-import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
+import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
+import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import { getAvailablePlatforms } from '@/lib/avatarPlatform.js';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import { cn } from '@/lib/utils.js';
-import { avatarProfileRepository, configRepository, mediaRepository, myAvatarRepository } from '@/repositories/index.js';
+import {
+    avatarProfileRepository,
+    configRepository,
+    mediaRepository,
+    myAvatarRepository
+} from '@/repositories/index.js';
+import { openAvatarDialog } from '@/services/dialogService.js';
+import { getTablePageSizesPreference } from '@/services/preferencesService.js';
 import { getTagColor } from '@/shared/constants/tags.js';
 import {
     IMAGE_UPLOAD_ACCEPT,
@@ -50,7 +55,6 @@ import {
     validateImageUploadFile,
     withUploadTimeout
 } from '@/shared/utils/imageUpload.js';
-import { getTablePageSizesPreference } from '@/services/preferencesService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -74,19 +78,11 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger
-} from '@/ui/shadcn/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Slider } from '@/ui/shadcn/slider';
-import {
-    Table,
-    TableBody,
-    TableRow
-} from '@/ui/shadcn/table';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { openAvatarDialog } from '@/services/dialogService.js';
+import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+
 import { AvatarStylesDialog } from './AvatarStylesDialog.jsx';
 import { ManageAvatarTagsDialog } from './ManageAvatarTagsDialog.jsx';
 import {
@@ -131,14 +127,15 @@ function SortButton({ column, label, descFirst = false }) {
         <Button
             type="button"
             variant="link"
-            className="h-auto gap-1 p-0 text-left text-xs uppercase tracking-wide text-muted-foreground"
+            className="text-muted-foreground h-auto gap-1 p-0 text-left text-xs tracking-wide uppercase"
             onClick={() => {
                 if (!direction && descFirst) {
                     column.toggleSorting(true);
                     return;
                 }
                 column.toggleSorting(direction === 'asc');
-            }}>
+            }}
+        >
             <span>{label}</span>
             {direction === 'asc' ? (
                 <ArrowUpIcon data-icon="inline-end" />
@@ -177,7 +174,9 @@ function MyAvatarsEmptyState({ title, description }) {
 
 function openAvatarDetails(avatar) {
     const avatarId =
-        typeof avatar?.id === 'string' ? avatar.id.trim() : String(avatar?.id ?? '').trim();
+        typeof avatar?.id === 'string'
+            ? avatar.id.trim()
+            : String(avatar?.id ?? '').trim();
     if (!avatarId) {
         return;
     }
@@ -198,7 +197,8 @@ function AvatarActionMenuItems({
     Separator,
     onAction
 }) {
-    const releaseAction = avatar?.releaseStatus === 'public' ? 'makePrivate' : 'makePublic';
+    const releaseAction =
+        avatar?.releaseStatus === 'public' ? 'makePrivate' : 'makePublic';
 
     const handleAction = (action) => {
         onAction(action, avatar);
@@ -213,45 +213,72 @@ function AvatarActionMenuItems({
                 </Item>
                 <Item
                     disabled={disabled || isActive}
-                    onSelect={() => handleAction('wear')}>
+                    onSelect={() => handleAction('wear')}
+                >
                     <CheckIcon />
                     Select avatar
                 </Item>
             </Group>
             <Separator />
             <Group>
-                <Item disabled={disabled} onSelect={() => handleAction('manageTags')}>
+                <Item
+                    disabled={disabled}
+                    onSelect={() => handleAction('manageTags')}
+                >
                     <TagIcon />
                     Manage tags
                 </Item>
             </Group>
             <Separator />
             <Group>
-                <Item disabled={disabled} onSelect={() => handleAction(releaseAction)}>
+                <Item
+                    disabled={disabled}
+                    onSelect={() => handleAction(releaseAction)}
+                >
                     <UserIcon />
-                    {avatar?.releaseStatus === 'public' ? 'Make private' : 'Make public'}
+                    {avatar?.releaseStatus === 'public'
+                        ? 'Make private'
+                        : 'Make public'}
                 </Item>
-                <Item disabled={disabled} onSelect={() => handleAction('rename')}>
+                <Item
+                    disabled={disabled}
+                    onSelect={() => handleAction('rename')}
+                >
                     <PencilIcon />
                     Rename
                 </Item>
-                <Item disabled={disabled} onSelect={() => handleAction('changeDescription')}>
+                <Item
+                    disabled={disabled}
+                    onSelect={() => handleAction('changeDescription')}
+                >
                     <PencilIcon />
                     Change description
                 </Item>
-                <Item disabled={disabled} onSelect={() => handleAction('changeTags')}>
+                <Item
+                    disabled={disabled}
+                    onSelect={() => handleAction('changeTags')}
+                >
                     <PencilIcon />
                     Change content tags
                 </Item>
-                <Item disabled={disabled} onSelect={() => handleAction('changeStyles')}>
+                <Item
+                    disabled={disabled}
+                    onSelect={() => handleAction('changeStyles')}
+                >
                     <PencilIcon />
                     Change styles/author tags
                 </Item>
-                <Item disabled={disabled} onSelect={() => handleAction('changeImage')}>
+                <Item
+                    disabled={disabled}
+                    onSelect={() => handleAction('changeImage')}
+                >
                     <ImageIcon />
                     Change image
                 </Item>
-                <Item disabled={disabled} onSelect={() => handleAction('createImpostor')}>
+                <Item
+                    disabled={disabled}
+                    onSelect={() => handleAction('createImpostor')}
+                >
                     <RefreshCwIcon />
                     Create impostor
                 </Item>
@@ -260,12 +287,7 @@ function AvatarActionMenuItems({
     );
 }
 
-function AvatarActionsDropdown({
-    avatar,
-    isActive,
-    isUpdating,
-    onAction
-}) {
+function AvatarActionsDropdown({ avatar, isActive, isUpdating, onAction }) {
     const disabled = resolveMyAvatarActionDisabled(avatar, isUpdating);
 
     return (
@@ -277,7 +299,8 @@ function AvatarActionsDropdown({
                     size="icon-xs"
                     aria-label="Open avatar actions"
                     disabled={isUpdating}
-                    onClick={(event) => event.stopPropagation()}>
+                    onClick={(event) => event.stopPropagation()}
+                >
                     {isUpdating ? (
                         <Spinner data-icon="inline-start" />
                     ) : (
@@ -325,64 +348,99 @@ function MyAvatarFilterPopover({
             <PopoverContent align="start" className="w-80 p-3">
                 <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1.5">
-                        <div className="text-xs font-medium text-muted-foreground">Visibility</div>
+                        <div className="text-muted-foreground text-xs font-medium">
+                            Visibility
+                        </div>
                         <div className="flex flex-wrap gap-1">
                             {MY_AVATARS_RELEASE_STATUS_OPTIONS.map((option) => (
                                 <Button
                                     key={option}
                                     type="button"
                                     size="sm"
-                                    variant={releaseStatusFilter === option ? 'default' : 'outline'}
-                                    onClick={() => onReleaseStatusChange(option)}>
-                                    {option === 'all' ? 'All' : option === 'public' ? 'Public' : 'Private'}
+                                    variant={
+                                        releaseStatusFilter === option
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    onClick={() =>
+                                        onReleaseStatusChange(option)
+                                    }
+                                >
+                                    {option === 'all'
+                                        ? 'All'
+                                        : option === 'public'
+                                          ? 'Public'
+                                          : 'Private'}
                                 </Button>
                             ))}
                         </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                        <div className="text-xs font-medium text-muted-foreground">Platform</div>
+                        <div className="text-muted-foreground text-xs font-medium">
+                            Platform
+                        </div>
                         <div className="flex flex-wrap gap-1">
                             {MY_AVATARS_PLATFORM_OPTIONS.map((option) => (
                                 <Button
                                     key={option}
                                     type="button"
                                     size="sm"
-                                    variant={platformFilter === option ? 'default' : 'outline'}
-                                    onClick={() => onPlatformChange(option)}>
+                                    variant={
+                                        platformFilter === option
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    onClick={() => onPlatformChange(option)}
+                                >
                                     {option === 'all'
                                         ? 'All'
                                         : option === 'pc'
-                                            ? 'PC'
-                                            : option === 'android'
-                                                ? 'Android'
-                                                : 'iOS'}
+                                          ? 'PC'
+                                          : option === 'android'
+                                            ? 'Android'
+                                            : 'iOS'}
                                 </Button>
                             ))}
                         </div>
                     </div>
                     {allTags.length ? (
                         <div className="flex flex-col gap-1.5">
-                            <div className="text-xs font-medium text-muted-foreground">Tags</div>
+                            <div className="text-muted-foreground text-xs font-medium">
+                                Tags
+                            </div>
                             <div className="flex max-h-40 flex-wrap gap-1 overflow-y-auto">
                                 {allTags.map((tag) => {
                                     const color = getTagColor(tag);
                                     return (
                                         <Badge
                                             key={tag}
-                                            variant={tagFilters.has(tag) ? 'default' : 'outline'}
+                                            variant={
+                                                tagFilters.has(tag)
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
                                             className="cursor-pointer select-none"
                                             style={
                                                 tagFilters.has(tag)
                                                     ? {
-                                                        backgroundColor: color.bg,
-                                                        color: color.text
-                                                    }
+                                                          backgroundColor:
+                                                              color.bg,
+                                                          color: color.text
+                                                      }
                                                     : {
-                                                        borderColor: color.bg,
-                                                        color: color.text
-                                                    }
+                                                          borderColor: color.bg,
+                                                          color: color.text
+                                                      }
                                             }
-                                            onClick={() => onTagFiltersChange((current) => toggleMyAvatarsTagFilter(current, tag))}>
+                                            onClick={() =>
+                                                onTagFiltersChange((current) =>
+                                                    toggleMyAvatarsTagFilter(
+                                                        current,
+                                                        tag
+                                                    )
+                                                )
+                                            }
+                                        >
                                             {tag}
                                         </Badge>
                                     );
@@ -391,7 +449,12 @@ function MyAvatarFilterPopover({
                         </div>
                     ) : null}
                     {activeFilterCount ? (
-                        <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onClearFilters}
+                        >
                             Clear filters
                         </Button>
                     ) : null}
@@ -418,7 +481,10 @@ function GridSettingsMenu({
 
     const commitCardScale = (value) => {
         const nextValue = updateCardScale(value);
-        void configRepository.setString('VRCX_MyAvatarsCardScale', String(nextValue));
+        void configRepository.setString(
+            'VRCX_MyAvatarsCardScale',
+            String(nextValue)
+        );
     };
 
     const updateCardSpacing = (value) => {
@@ -429,13 +495,21 @@ function GridSettingsMenu({
 
     const commitCardSpacing = (value) => {
         const nextValue = updateCardSpacing(value);
-        void configRepository.setString('VRCX_MyAvatarsCardSpacing', String(nextValue));
+        void configRepository.setString(
+            'VRCX_MyAvatarsCardSpacing',
+            String(nextValue)
+        );
     };
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" size="icon-sm" variant="ghost" aria-label="Grid settings">
+                <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label="Grid settings"
+                >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
             </DropdownMenuTrigger>
@@ -459,7 +533,9 @@ function GridSettingsMenu({
                     <Field>
                         <div className="flex items-center justify-between text-sm font-medium">
                             <FieldLabel>Spacing</FieldLabel>
-                            <span className="text-xs">{cardSpacingPercent}%</span>
+                            <span className="text-xs">
+                                {cardSpacingPercent}%
+                            </span>
                         </div>
                         <Slider
                             value={[cardSpacing]}
@@ -467,8 +543,12 @@ function GridSettingsMenu({
                             max={2}
                             step={0.05}
                             aria-label="Avatar card spacing"
-                            onValueChange={(value) => updateCardSpacing(value[0])}
-                            onValueCommit={(value) => commitCardSpacing(value[0])}
+                            onValueChange={(value) =>
+                                updateCardSpacing(value[0])
+                            }
+                            onValueCommit={(value) =>
+                                commitCardSpacing(value[0])
+                            }
                         />
                     </Field>
                 </FieldGroup>
@@ -497,7 +577,7 @@ function MyAvatarGridCard({
                     className={cn(
                         'h-auto min-w-0 flex-col items-stretch overflow-hidden p-0 text-left font-normal whitespace-normal',
                         disabled && 'cursor-not-allowed opacity-60',
-                        isActive && 'ring-2 ring-primary'
+                        isActive && 'ring-primary ring-2'
                     )}
                     aria-disabled={disabled}
                     tabIndex={disabled ? -1 : undefined}
@@ -506,8 +586,9 @@ function MyAvatarGridCard({
                             return;
                         }
                         onAction('wear', avatar);
-                    }}>
-                    <div className="relative aspect-[5/2] w-full overflow-hidden bg-muted">
+                    }}
+                >
+                    <div className="bg-muted relative aspect-[5/2] w-full overflow-hidden">
                         {avatar?.thumbnailImageUrl ? (
                             <img
                                 src={avatar.thumbnailImageUrl}
@@ -516,28 +597,39 @@ function MyAvatarGridCard({
                                 loading="lazy"
                             />
                         ) : (
-                            <div className="grid h-full w-full place-items-center text-muted-foreground">
-                                <ImageIcon data-icon="inline-start" className="size-6" />
+                            <div className="text-muted-foreground grid h-full w-full place-items-center">
+                                <ImageIcon
+                                    data-icon="inline-start"
+                                    className="size-6"
+                                />
                             </div>
                         )}
                         {platforms?.isQuest || platforms?.isIos ? (
                             <div className="absolute top-1 right-1 flex gap-0.5">
-                                {platforms?.isPC ? <span className="size-2.5 rounded-full border bg-muted-foreground/70" /> : null}
-                                {platforms?.isQuest ? <span className="size-2.5 rounded-full border bg-muted-foreground/50" /> : null}
-                                {platforms?.isIos ? <span className="size-2.5 rounded-full border bg-muted-foreground/30" /> : null}
+                                {platforms?.isPC ? (
+                                    <span className="bg-muted-foreground/70 size-2.5 rounded-full border" />
+                                ) : null}
+                                {platforms?.isQuest ? (
+                                    <span className="bg-muted-foreground/50 size-2.5 rounded-full border" />
+                                ) : null}
+                                {platforms?.isIos ? (
+                                    <span className="bg-muted-foreground/30 size-2.5 rounded-full border" />
+                                ) : null}
                             </div>
                         ) : null}
                     </div>
                     <div
-                        className="min-h-0 flex flex-col gap-0.5"
+                        className="flex min-h-0 flex-col gap-0.5"
                         style={{
                             padding: `${Math.round(6 * cardScale)}px ${Math.round(8 * cardScale)}px`
-                        }}>
+                        }}
+                    >
                         <span
                             className="line-clamp-2 block min-h-[2.75em] overflow-hidden leading-snug"
                             style={{
                                 fontSize: `${Math.max(9, Math.round(18 * cardScale))}px`
-                            }}>
+                            }}
+                        >
                             {avatar?.name || 'Untitled avatar'}
                         </span>
                         {(avatar?.$tags || []).length ? (
@@ -545,7 +637,8 @@ function MyAvatarGridCard({
                                 className="flex flex-nowrap gap-0.5 overflow-hidden"
                                 style={{
                                     maxHeight: `${Math.max(14, Math.round(22 * cardScale))}px`
-                                }}>
+                                }}
+                            >
                                 {avatar.$tags.map((entry) => {
                                     const color = getTagColor(entry.tag);
                                     return (
@@ -557,7 +650,8 @@ function MyAvatarGridCard({
                                                 fontSize: `${Math.max(8, Math.round(14 * cardScale))}px`,
                                                 borderColor: color.bg,
                                                 color: color.text
-                                            }}>
+                                            }}
+                                        >
                                             {entry.tag}
                                         </Badge>
                                     );
@@ -593,13 +687,18 @@ function isRuntimeAuthTarget(authTarget) {
 export function MyAvatarsPage({ embedded = false } = {}) {
     const { t } = useI18n();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
 
     const currentAvatarId = currentUserSnapshot?.currentAvatar || '';
-    const previousAvatarSwapTime = Number(currentUserSnapshot?.$previousAvatarSwapTime) || 0;
+    const previousAvatarSwapTime =
+        Number(currentUserSnapshot?.$previousAvatarSwapTime) || 0;
 
     const persistedState = useMemo(() => readPersistedMyAvatarsState(), []);
     const hasWrittenSortingRef = useRef(false);
@@ -610,8 +709,12 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     const imageUploadAvatarRef = useRef(null);
     const imageUploadAuthTargetRef = useRef(null);
     const gridScrollRef = useRef(null);
-    const preferencesHydrated = usePreferencesStore((state) => state.preferencesHydrated);
-    const tablePageSizesPreference = usePreferencesStore((state) => state.tablePageSizes);
+    const preferencesHydrated = usePreferencesStore(
+        (state) => state.preferencesHydrated
+    );
+    const tablePageSizesPreference = usePreferencesStore(
+        (state) => state.tablePageSizes
+    );
 
     const [avatars, setAvatars] = useState([]);
     const [loadStatus, setLoadStatus] = useState('idle');
@@ -622,7 +725,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     const [platformFilter, setPlatformFilter] = useState('all');
     const [tagFilters, setTagFilters] = useState(() => new Set());
     const [cardScale, setCardScale] = useState(MY_AVATARS_DEFAULT_CARD_SCALE);
-    const [cardSpacing, setCardSpacing] = useState(MY_AVATARS_DEFAULT_CARD_SPACING);
+    const [cardSpacing, setCardSpacing] = useState(
+        MY_AVATARS_DEFAULT_CARD_SPACING
+    );
     const [pageSizes, setPageSizes] = useState(MY_AVATARS_DEFAULT_PAGE_SIZES);
     const [refreshToken, setRefreshToken] = useState(0);
     const [manageTagsAvatar, setManageTagsAvatar] = useState(null);
@@ -631,7 +736,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     const [savingTagsAvatarId, setSavingTagsAvatarId] = useState('');
     const [updatingAvatarId, setUpdatingAvatarId] = useState('');
     const [uploadingImageAvatarId, setUploadingImageAvatarId] = useState('');
-    const [sorting, setSorting] = useState(() => sanitizeMyAvatarsSorting(persistedState.sorting));
+    const [sorting, setSorting] = useState(() =>
+        sanitizeMyAvatarsSorting(persistedState.sorting)
+    );
     const [columnVisibility, setColumnVisibility] = useState(() =>
         sanitizeMyAvatarsColumnVisibility(persistedState.columnVisibility)
     );
@@ -675,16 +782,20 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 currentAvatars.map((entry) =>
                     entry.id === avatarId
                         ? {
-                            ...entry,
-                            $tags: nextTags
-                        }
+                              ...entry,
+                              $tags: nextTags
+                          }
                         : entry
                 )
             );
             setManageTagsAvatar(null);
             setDetail(`Updated local tags for ${avatar?.name || avatarId}.`);
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : 'Failed to update avatar tags.');
+            setDetail(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update avatar tags.'
+            );
         } finally {
             setSavingTagsAvatarId('');
         }
@@ -699,11 +810,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             currentAvatars.map((entry) =>
                 entry.id === nextAvatar.id
                     ? {
-                        ...entry,
-                        ...nextAvatar,
-                        $tags: entry.$tags || [],
-                        $timeSpent: entry.$timeSpent || 0
-                    }
+                          ...entry,
+                          ...nextAvatar,
+                          $tags: entry.$tags || [],
+                          $timeSpent: entry.$timeSpent || 0
+                      }
                     : entry
             )
         );
@@ -744,11 +855,16 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 return;
             }
 
-            const message = error instanceof Error ? error.message : 'Failed to update avatar.';
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update avatar.';
             setDetail(message);
             toast.error(message);
         } finally {
-            setUpdatingAvatarId((current) => (current === avatarId ? '' : current));
+            setUpdatingAvatarId((current) =>
+                current === avatarId ? '' : current
+            );
         }
     }
 
@@ -802,7 +918,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             return;
         }
 
-        const shouldConfirm = await configRepository.getBool('showConfirmationOnSwitchAvatar', true);
+        const shouldConfirm = await configRepository.getBool(
+            'showConfirmationOnSwitchAvatar',
+            true
+        );
         if (shouldConfirm) {
             const result = await confirm({
                 title: 'Confirm',
@@ -836,24 +955,31 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             toast.success('Avatar selected.');
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                const message = error instanceof Error ? error.message : 'Failed to select avatar.';
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to select avatar.';
                 setDetail(message);
                 toast.error(message);
             }
         } finally {
-            setUpdatingAvatarId((current) => (current === avatarId ? '' : current));
+            setUpdatingAvatarId((current) =>
+                current === avatarId ? '' : current
+            );
         }
     }
 
     async function toggleAvatarReleaseStatus(avatar) {
-        const nextReleaseStatus = avatar?.releaseStatus === 'public' ? 'private' : 'public';
+        const nextReleaseStatus =
+            avatar?.releaseStatus === 'public' ? 'private' : 'public';
         const result = await confirm({
             title:
                 nextReleaseStatus === 'public'
                     ? 'Make avatar public?'
                     : 'Make avatar private?',
             description: avatar?.name || avatar?.id || '',
-            confirmText: nextReleaseStatus === 'public' ? 'Make Public' : 'Make Private',
+            confirmText:
+                nextReleaseStatus === 'public' ? 'Make Public' : 'Make Private',
             cancelText: 'Cancel'
         });
         if (!result.ok) {
@@ -920,11 +1046,16 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
             }
-            const message = error instanceof Error ? error.message : 'Failed to create impostor.';
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to create impostor.';
             setDetail(message);
             toast.error(message);
         } finally {
-            setUpdatingAvatarId((current) => (current === avatarId ? '' : current));
+            setUpdatingAvatarId((current) =>
+                current === avatarId ? '' : current
+            );
         }
     }
 
@@ -1018,7 +1149,12 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         const avatar = request?.avatar;
         const avatarId = typeof avatar?.id === 'string' ? avatar.id.trim() : '';
         const authTarget = request?.authTarget;
-        if (!blob || !avatarId || !authTarget || !isRuntimeAuthTarget(authTarget)) {
+        if (
+            !blob ||
+            !avatarId ||
+            !authTarget ||
+            !isRuntimeAuthTarget(authTarget)
+        ) {
             return;
         }
 
@@ -1030,7 +1166,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 return;
             }
 
-            const base64File = await mediaRepository.resizeImageToFitLimits(base64Body);
+            const base64File =
+                await mediaRepository.resizeImageToFitLimits(base64Body);
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
             }
@@ -1053,7 +1190,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             toast.success('Avatar image updated.');
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                const message = error instanceof Error ? error.message : 'Failed to upload avatar image.';
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to upload avatar image.';
                 setDetail(message);
                 toast.error(message);
             }
@@ -1061,7 +1201,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             imageUploadAvatarRef.current = null;
             imageUploadAuthTargetRef.current = null;
             setImageCropRequest(null);
-            setUploadingImageAvatarId((current) => (current === avatarId ? '' : current));
+            setUploadingImageAvatarId((current) =>
+                current === avatarId ? '' : current
+            );
         }
     }
 
@@ -1070,57 +1212,79 @@ export function MyAvatarsPage({ embedded = false } = {}) {
 
         Promise.all([
             getTablePageSizesPreference(MY_AVATARS_DEFAULT_PAGE_SIZES),
-            configRepository.getInt('tablePageSize', MY_AVATARS_DEFAULT_PAGE_SIZES[1]),
+            configRepository.getInt(
+                'tablePageSize',
+                MY_AVATARS_DEFAULT_PAGE_SIZES[1]
+            ),
             configRepository.getString('MyAvatarsViewMode', 'grid'),
-            configRepository.getString('VRCX_MyAvatarsCardScale', String(MY_AVATARS_DEFAULT_CARD_SCALE)),
-            configRepository.getString('VRCX_MyAvatarsCardSpacing', String(MY_AVATARS_DEFAULT_CARD_SPACING))
+            configRepository.getString(
+                'VRCX_MyAvatarsCardScale',
+                String(MY_AVATARS_DEFAULT_CARD_SCALE)
+            ),
+            configRepository.getString(
+                'VRCX_MyAvatarsCardSpacing',
+                String(MY_AVATARS_DEFAULT_CARD_SPACING)
+            )
         ])
-            .then(([
-                nextPageSizes,
-                nextPageSize,
-                nextViewMode,
-                nextCardScale,
-                nextCardSpacing
-            ]) => {
-                if (!active) {
-                    return;
-                }
-
-                const resolvedPageSizes = sanitizeMyAvatarsPageSizes(nextPageSizes);
-                const parsedPersistedPageSize = Number.parseInt(persistedState.pageSize, 10);
-                const hasPersistedPageSize =
-                    Number.isFinite(parsedPersistedPageSize) && parsedPersistedPageSize > 0;
-                const resolvedConfiguredPageSize = resolveMyAvatarsPageSize(
+            .then(
+                ([
+                    nextPageSizes,
                     nextPageSize,
-                    resolvedPageSizes,
-                    MY_AVATARS_DEFAULT_PAGE_SIZES[1]
-                );
-                const resolvedActivePageSize = hasPersistedPageSize
-                    ? resolveMyAvatarsPageSize(
-                        parsedPersistedPageSize,
+                    nextViewMode,
+                    nextCardScale,
+                    nextCardSpacing
+                ]) => {
+                    if (!active) {
+                        return;
+                    }
+
+                    const resolvedPageSizes =
+                        sanitizeMyAvatarsPageSizes(nextPageSizes);
+                    const parsedPersistedPageSize = Number.parseInt(
+                        persistedState.pageSize,
+                        10
+                    );
+                    const hasPersistedPageSize =
+                        Number.isFinite(parsedPersistedPageSize) &&
+                        parsedPersistedPageSize > 0;
+                    const resolvedConfiguredPageSize = resolveMyAvatarsPageSize(
+                        nextPageSize,
                         resolvedPageSizes,
-                        resolvedConfiguredPageSize
-                    )
-                    : resolvedConfiguredPageSize;
+                        MY_AVATARS_DEFAULT_PAGE_SIZES[1]
+                    );
+                    const resolvedActivePageSize = hasPersistedPageSize
+                        ? resolveMyAvatarsPageSize(
+                              parsedPersistedPageSize,
+                              resolvedPageSizes,
+                              resolvedConfiguredPageSize
+                          )
+                        : resolvedConfiguredPageSize;
 
-                setPageSizes((current) =>
-                    sanitizeMyAvatarsPageSizes([
+                    setPageSizes((current) =>
+                        sanitizeMyAvatarsPageSizes([
+                            ...current,
+                            ...resolvedPageSizes,
+                            resolvedConfiguredPageSize,
+                            resolvedActivePageSize
+                        ])
+                    );
+
+                    setPagination((current) => ({
                         ...current,
-                        ...resolvedPageSizes,
-                        resolvedConfiguredPageSize,
-                        resolvedActivePageSize
-                    ])
-                );
+                        pageSize: resolvedActivePageSize
+                    }));
 
-                setPagination((current) => ({
-                    ...current,
-                    pageSize: resolvedActivePageSize
-                }));
-
-                setViewMode(MY_AVATARS_VIEW_MODES.includes(nextViewMode) ? nextViewMode : 'grid');
-                setCardScale(sanitizeMyAvatarsCardScale(nextCardScale));
-                setCardSpacing(sanitizeMyAvatarsCardSpacing(nextCardSpacing));
-            })
+                    setViewMode(
+                        MY_AVATARS_VIEW_MODES.includes(nextViewMode)
+                            ? nextViewMode
+                            : 'grid'
+                    );
+                    setCardScale(sanitizeMyAvatarsCardScale(nextCardScale));
+                    setCardSpacing(
+                        sanitizeMyAvatarsCardSpacing(nextCardSpacing)
+                    );
+                }
+            )
             .catch(() => {});
 
         return () => {
@@ -1132,12 +1296,17 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         if (!preferencesHydrated) {
             return;
         }
-        const resolvedPageSizes = sanitizeMyAvatarsPageSizes(tablePageSizesPreference);
+        const resolvedPageSizes = sanitizeMyAvatarsPageSizes(
+            tablePageSizesPreference
+        );
         setPageSizes(resolvedPageSizes);
         setPagination((current) => ({
             ...current,
             pageIndex: 0,
-            pageSize: resolveMyAvatarsPageSize(current.pageSize, resolvedPageSizes)
+            pageSize: resolveMyAvatarsPageSize(
+                current.pageSize,
+                resolvedPageSizes
+            )
         }));
     }, [preferencesHydrated, tablePageSizesPreference]);
 
@@ -1170,7 +1339,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         }
 
         writePersistedMyAvatarsState({
-            columnVisibility: sanitizeMyAvatarsColumnVisibility(columnVisibility),
+            columnVisibility:
+                sanitizeMyAvatarsColumnVisibility(columnVisibility),
             columnOrder: sanitizeMyAvatarsColumnOrder(columnOrder),
             columnSizing: sanitizeMyAvatarsColumnSizing(columnSizing),
             columnOrderLocked
@@ -1182,7 +1352,13 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             ...current,
             pageIndex: 0
         }));
-    }, [deferredSearchQuery, platformFilter, releaseStatusFilter, tagFilters, viewMode]);
+    }, [
+        deferredSearchQuery,
+        platformFilter,
+        releaseStatusFilter,
+        tagFilters,
+        viewMode
+    ]);
 
     useEffect(() => {
         const requestId = requestIdRef.current + 1;
@@ -1191,7 +1367,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         if (!currentUserId) {
             setAvatars([]);
             setLoadStatus('idle');
-            setDetail('No authenticated user is available for the avatar inventory.');
+            setDetail(
+                'No authenticated user is available for the avatar inventory.'
+            );
             return;
         }
 
@@ -1221,7 +1399,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 setAvatars([]);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error ? error.message : 'Failed to load the avatar inventory.'
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load the avatar inventory.'
                 );
             });
     }, [
@@ -1242,7 +1422,13 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             releaseStatusFilter,
             tagFilters
         });
-    }, [avatars, deferredSearchQuery, platformFilter, releaseStatusFilter, tagFilters]);
+    }, [
+        avatars,
+        deferredSearchQuery,
+        platformFilter,
+        releaseStatusFilter,
+        tagFilters
+    ]);
 
     useEffect(() => {
         if (viewMode !== 'grid') {
@@ -1276,7 +1462,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         }
 
         updateGridScrollMetrics();
-        node.addEventListener('scroll', updateGridScrollMetrics, { passive: true });
+        node.addEventListener('scroll', updateGridScrollMetrics, {
+            passive: true
+        });
 
         const observer =
             typeof ResizeObserver === 'function'
@@ -1318,7 +1506,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     ]);
 
     useEffect(() => {
-        const maxPageIndex = Math.max(0, Math.ceil(filteredAvatars.length / pagination.pageSize) - 1);
+        const maxPageIndex = Math.max(
+            0,
+            Math.ceil(filteredAvatars.length / pagination.pageSize) - 1
+        );
         if (pagination.pageIndex > maxPageIndex) {
             setPagination((current) => ({
                 ...current,
@@ -1335,7 +1526,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 header: () => null,
                 cell: ({ row }) =>
                     row.original?.id === currentAvatarId ? (
-                        <CheckIcon className="size-4 text-primary" />
+                        <CheckIcon className="text-primary size-4" />
                     ) : (
                         <span className="block size-4" />
                     )
@@ -1351,7 +1542,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                             type="button"
                             variant="ghost"
                             className="h-auto p-0"
-                            onClick={() => openAvatarDetails(row.original)}>
+                            onClick={() => openAvatarDetails(row.original)}
+                        >
                             <img
                                 src={row.original.thumbnailImageUrl}
                                 alt={row.original?.name || 'Avatar thumbnail'}
@@ -1363,8 +1555,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-10 w-16 p-0 text-muted-foreground"
-                            onClick={() => openAvatarDetails(row.original)}>
+                            className="text-muted-foreground h-10 w-16 p-0"
+                            onClick={() => openAvatarDetails(row.original)}
+                        >
                             <ImageIcon data-icon="inline-start" />
                         </Button>
                     )
@@ -1373,22 +1566,34 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 id: 'name',
                 accessorFn: (row) => row?.name || '',
                 meta: { label: t('dialog.avatar.info.name') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.name')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.name')}
+                    />
+                ),
                 cell: ({ row }) => (
                     <Button
                         type="button"
                         variant="link"
                         className="h-auto p-0 text-left font-medium"
-                        onClick={() => openAvatarDetails(row.original)}>
+                        onClick={() => openAvatarDetails(row.original)}
+                    >
                         {row.original?.name || ''}
                     </Button>
                 )
             },
             {
                 id: 'customTags',
-                accessorFn: (row) => (row?.$tags || []).map((entry) => entry.tag).join(', '),
+                accessorFn: (row) =>
+                    (row?.$tags || []).map((entry) => entry.tag).join(', '),
                 meta: { label: t('dialog.avatar.info.tags') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.tags')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.tags')}
+                    />
+                ),
                 cell: ({ row }) =>
                     (row.original?.$tags || []).length ? (
                         <div className="flex flex-wrap gap-1">
@@ -1396,32 +1601,40 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                 <Badge
                                     key={`${row.original.id}:${entry.tag}`}
                                     variant="secondary"
-                                    style={resolveMyAvatarTagBadgeStyle(entry)}>
+                                    style={resolveMyAvatarTagBadgeStyle(entry)}
+                                >
                                     {entry.tag}
                                 </Badge>
                             ))}
                         </div>
-                    ) : (
-                        null
-                    )
+                    ) : null
             },
             {
                 id: 'platforms',
                 accessorFn: (row) => (row?.unityPackages?.length ? 1 : 0),
                 meta: { label: t('dialog.avatar.info.platform') },
                 header: () => (
-                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                         {t('dialog.avatar.info.platform')}
                     </span>
                 ),
                 enableSorting: false,
-                cell: ({ row }) => <PlatformBadges unityPackages={row.original?.unityPackages} />
+                cell: ({ row }) => (
+                    <PlatformBadges
+                        unityPackages={row.original?.unityPackages}
+                    />
+                )
             },
             {
                 id: 'visibility',
                 accessorFn: (row) => row?.releaseStatus || '',
                 meta: { label: t('dialog.avatar.info.visibility') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.visibility')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.visibility')}
+                    />
+                ),
                 cell: ({ row }) => (
                     <Badge variant="outline">
                         {row.original?.releaseStatus === 'public'
@@ -1434,65 +1647,137 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 id: 'timeSpent',
                 accessorFn: (row) => Number(row?.$timeSpent) || 0,
                 meta: { label: t('dialog.avatar.info.time_spent') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.time_spent')} descFirst />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.time_spent')}
+                        descFirst
+                    />
+                ),
                 cell: ({ row }) => (
-                    <span>{row.original?.$timeSpent ? timeToText(row.original.$timeSpent) : '-'}</span>
+                    <span>
+                        {row.original?.$timeSpent
+                            ? timeToText(row.original.$timeSpent)
+                            : '-'}
+                    </span>
                 )
             },
             {
                 id: 'version',
                 accessorFn: (row) => Number(row?.version) || 0,
                 meta: { label: t('dialog.avatar.info.version') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.version')} descFirst />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.version')}
+                        descFirst
+                    />
+                ),
                 cell: ({ row }) => <span>{row.original?.version ?? '-'}</span>
             },
             {
                 id: 'pcPerf',
-                accessorFn: (row) => getMyAvatarPlatformInfo(row)?.pc?.performanceRating || '',
+                accessorFn: (row) =>
+                    getMyAvatarPlatformInfo(row)?.pc?.performanceRating || '',
                 meta: { label: t('dialog.avatar.info.pc_performance') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.pc_performance')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.pc_performance')}
+                    />
+                ),
                 cell: ({ row }) => {
                     const platformInfo = getMyAvatarPlatformInfo(row.original);
-                    return <span>{resolveMyAvatarPerformanceLabel(platformInfo?.pc?.performanceRating)}</span>;
+                    return (
+                        <span>
+                            {resolveMyAvatarPerformanceLabel(
+                                platformInfo?.pc?.performanceRating
+                            )}
+                        </span>
+                    );
                 }
             },
             {
                 id: 'androidPerf',
                 accessorFn: (row) =>
-                    getMyAvatarPlatformInfo(row)?.android?.performanceRating || '',
+                    getMyAvatarPlatformInfo(row)?.android?.performanceRating ||
+                    '',
                 meta: { label: t('dialog.avatar.info.android_performance') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.android_performance')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.android_performance')}
+                    />
+                ),
                 cell: ({ row }) => {
                     const platformInfo = getMyAvatarPlatformInfo(row.original);
-                    return <span>{resolveMyAvatarPerformanceLabel(platformInfo?.android?.performanceRating)}</span>;
+                    return (
+                        <span>
+                            {resolveMyAvatarPerformanceLabel(
+                                platformInfo?.android?.performanceRating
+                            )}
+                        </span>
+                    );
                 }
             },
             {
                 id: 'iosPerf',
-                accessorFn: (row) => getMyAvatarPlatformInfo(row)?.ios?.performanceRating || '',
+                accessorFn: (row) =>
+                    getMyAvatarPlatformInfo(row)?.ios?.performanceRating || '',
                 meta: { label: t('dialog.avatar.info.ios_performance') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.ios_performance')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.ios_performance')}
+                    />
+                ),
                 cell: ({ row }) => {
                     const platformInfo = getMyAvatarPlatformInfo(row.original);
-                    return <span>{resolveMyAvatarPerformanceLabel(platformInfo?.ios?.performanceRating)}</span>;
+                    return (
+                        <span>
+                            {resolveMyAvatarPerformanceLabel(
+                                platformInfo?.ios?.performanceRating
+                            )}
+                        </span>
+                    );
                 }
             },
             {
                 id: 'updated_at',
                 accessorFn: (row) => row?.updated_at || '',
                 meta: { label: t('dialog.avatar.info.last_updated') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.last_updated')} descFirst />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.last_updated')}
+                        descFirst
+                    />
+                ),
                 cell: ({ row }) => (
-                    <span>{row.original?.updated_at ? formatDateFilter(row.original.updated_at, 'long') : '-'}</span>
+                    <span>
+                        {row.original?.updated_at
+                            ? formatDateFilter(row.original.updated_at, 'long')
+                            : '-'}
+                    </span>
                 )
             },
             {
                 id: 'created_at',
                 accessorFn: (row) => row?.created_at || '',
                 meta: { label: t('dialog.avatar.info.created_at') },
-                header: ({ column }) => <SortButton column={column} label={t('dialog.avatar.info.created_at')} descFirst />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.created_at')}
+                        descFirst
+                    />
+                ),
                 cell: ({ row }) => (
-                    <span>{row.original?.created_at ? formatDateFilter(row.original.created_at, 'long') : '-'}</span>
+                    <span>
+                        {row.original?.created_at
+                            ? formatDateFilter(row.original.created_at, 'long')
+                            : '-'}
+                    </span>
                 )
             },
             {
@@ -1510,7 +1795,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                             avatar={row.original}
                             isActive={row.original?.id === currentAvatarId}
                             isUpdating={isUpdating}
-                            onAction={(action, avatar) => void handleAvatarAction(action, avatar)}
+                            onAction={(action, avatar) =>
+                                void handleAvatarAction(action, avatar)
+                            }
                         />
                     );
                 }
@@ -1552,16 +1839,12 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         }
     });
 
-    const {
-        gridGap,
-        gridMinWidth,
-        gridColumnCount,
-        gridRowHeight
-    } = getMyAvatarsGridMetrics({
-        cardScale,
-        cardSpacing,
-        width: gridScrollMetrics.width
-    });
+    const { gridGap, gridMinWidth, gridColumnCount, gridRowHeight } =
+        getMyAvatarsGridMetrics({
+            cardScale,
+            cardSpacing,
+            width: gridScrollMetrics.width
+        });
     const gridRows = useMemo(
         () =>
             buildMyAvatarsGridRows({
@@ -1579,7 +1862,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 scrollTop: gridScrollMetrics.scrollTop,
                 viewportHeight: gridScrollMetrics.viewportHeight
             }),
-        [gridRows, gridScrollMetrics.scrollTop, gridScrollMetrics.viewportHeight]
+        [
+            gridRows,
+            gridScrollMetrics.scrollTop,
+            gridScrollMetrics.viewportHeight
+        ]
     );
     const isLoading = loadStatus === 'running' && avatars.length === 0;
     const isError = loadStatus === 'error' && avatars.length === 0;
@@ -1594,7 +1881,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             className={cn(
                 'flex h-full min-h-0 flex-col p-3',
                 !embedded && 'x-container overflow-hidden'
-            )}>
+            )}
+        >
             <Input
                 ref={imageUploadInputRef}
                 type="file"
@@ -1608,23 +1896,35 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                         <Button
                             type="button"
                             size="icon-sm"
-                            variant={viewMode === 'grid' ? 'default' : 'outline'}
+                            variant={
+                                viewMode === 'grid' ? 'default' : 'outline'
+                            }
                             aria-label="Show avatar grid"
                             onClick={() => {
                                 setViewMode('grid');
-                                void configRepository.setString('MyAvatarsViewMode', 'grid');
-                            }}>
+                                void configRepository.setString(
+                                    'MyAvatarsViewMode',
+                                    'grid'
+                                );
+                            }}
+                        >
                             <LayoutGridIcon data-icon="inline-start" />
                         </Button>
                         <Button
                             type="button"
                             size="icon-sm"
-                            variant={viewMode === 'table' ? 'default' : 'outline'}
+                            variant={
+                                viewMode === 'table' ? 'default' : 'outline'
+                            }
                             aria-label="Show avatar table"
                             onClick={() => {
                                 setViewMode('table');
-                                void configRepository.setString('MyAvatarsViewMode', 'table');
-                            }}>
+                                void configRepository.setString(
+                                    'MyAvatarsViewMode',
+                                    'table'
+                                );
+                            }}
+                        >
                             <ListIcon data-icon="inline-start" />
                         </Button>
                     </div>
@@ -1648,7 +1948,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     <div className="flex-1" />
 
                     {loadStatus === 'running' ? (
-                        <span className="text-sm text-muted-foreground">Loading</span>
+                        <span className="text-muted-foreground text-sm">
+                            Loading
+                        </span>
                     ) : null}
                     <Input
                         value={searchQuery}
@@ -1664,14 +1966,17 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                             onCardSpacingChange={setCardSpacing}
                         />
                     ) : null}
-                    {viewMode === 'table' ? <TableColumnVisibilityMenu table={table} /> : null}
+                    {viewMode === 'table' ? (
+                        <TableColumnVisibilityMenu table={table} />
+                    ) : null}
                     <Button
                         type="button"
                         variant="ghost"
                         size="icon-sm"
                         aria-label="Refresh avatar inventory"
                         disabled={!currentUserId || loadStatus === 'running'}
-                        onClick={() => setRefreshToken((value) => value + 1)}>
+                        onClick={() => setRefreshToken((value) => value + 1)}
+                    >
                         {loadStatus === 'running' ? (
                             <Spinner data-icon="inline-start" />
                         ) : (
@@ -1680,137 +1985,237 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     </Button>
                 </div>
 
-                {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
+                {detail ? (
+                    <div className="text-muted-foreground text-sm">
+                        {detail}
+                    </div>
+                ) : null}
 
-                    {isLoading ? (
-                        <LoadingState label="Loading the avatar inventory" />
-                    ) : isError ? (
-                        <MyAvatarsEmptyState
-                            title="Avatar inventory failed to load"
-                            description={detail || 'The avatar request did not complete.'}
-                        />
-                    ) : hasRows ? (
-                        viewMode === 'table' ? (
-                            <>
-                                <DataTableSurface>
-                                    <DataTableScrollArea>
-                                        <Table className="app-data-table table-fixed">
-                                            <DataTableHeader table={table} />
-                                            <TableBody>
-                                            {table.getRowModel().rows.map((row) => (
-                                                <ContextMenu key={row.original?.id || row.id}>
-                                                    <ContextMenuTrigger asChild>
-                                                        <TableRow
-                                                            className={cn(
-                                                                'cursor-pointer',
-                                                                row.original?.id === currentAvatarId && 'bg-primary/10'
-                                                            )}
-                                                            tabIndex={0}
-                                                            aria-label={`Open ${row.original?.name || row.original?.id || 'avatar'}`}
-                                                            onKeyDown={(event) => {
-                                                                if (event.key !== 'Enter' && event.key !== ' ') {
-                                                                    return;
+                {isLoading ? (
+                    <LoadingState label="Loading the avatar inventory" />
+                ) : isError ? (
+                    <MyAvatarsEmptyState
+                        title="Avatar inventory failed to load"
+                        description={
+                            detail || 'The avatar request did not complete.'
+                        }
+                    />
+                ) : hasRows ? (
+                    viewMode === 'table' ? (
+                        <>
+                            <DataTableSurface>
+                                <DataTableScrollArea>
+                                    <Table className="app-data-table table-fixed">
+                                        <DataTableHeader table={table} />
+                                        <TableBody>
+                                            {table
+                                                .getRowModel()
+                                                .rows.map((row) => (
+                                                    <ContextMenu
+                                                        key={
+                                                            row.original?.id ||
+                                                            row.id
+                                                        }
+                                                    >
+                                                        <ContextMenuTrigger
+                                                            asChild
+                                                        >
+                                                            <TableRow
+                                                                className={cn(
+                                                                    'cursor-pointer',
+                                                                    row.original
+                                                                        ?.id ===
+                                                                        currentAvatarId &&
+                                                                        'bg-primary/10'
+                                                                )}
+                                                                tabIndex={0}
+                                                                aria-label={`Open ${row.original?.name || row.original?.id || 'avatar'}`}
+                                                                onKeyDown={(
+                                                                    event
+                                                                ) => {
+                                                                    if (
+                                                                        event.key !==
+                                                                            'Enter' &&
+                                                                        event.key !==
+                                                                            ' '
+                                                                    ) {
+                                                                        return;
+                                                                    }
+                                                                    event.preventDefault();
+                                                                    openAvatarDetails(
+                                                                        row.original
+                                                                    );
+                                                                }}
+                                                                onClick={() =>
+                                                                    openAvatarDetails(
+                                                                        row.original
+                                                                    )
                                                                 }
-                                                                event.preventDefault();
-                                                                openAvatarDetails(row.original);
-                                                            }}
-                                                            onClick={() => openAvatarDetails(row.original)}>
-                                                            {row.getVisibleCells().map((cell) => (
-                                                                <ResizableTableCell key={cell.id} cell={cell} />
-                                                            ))}
-                                                        </TableRow>
-                                                    </ContextMenuTrigger>
-                                                    <ContextMenuContent>
-                                                        <AvatarActionMenuItems
-                                                            avatar={row.original}
-                                                            isActive={row.original?.id === currentAvatarId}
-                                                            disabled={
-                                                                updatingAvatarId === row.original?.id ||
-                                                                savingTagsAvatarId === row.original?.id ||
-                                                                uploadingImageAvatarId === row.original?.id
-                                                            }
-                                                            Item={ContextMenuItem}
-                                                            Group={ContextMenuGroup}
-                                                            Separator={ContextMenuSeparator}
-                                                            onAction={(action, avatar) => void handleAvatarAction(action, avatar)}
-                                                        />
-                                                    </ContextMenuContent>
-                                                </ContextMenu>
-                                            ))}
-                                            </TableBody>
-                                        </Table>
-                                    </DataTableScrollArea>
-                                </DataTableSurface>
-                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                    <div className="text-sm text-muted-foreground">
-                                        Showing{' '}
-                                        <span className="font-medium text-foreground">
-                                            {table.getRowModel().rows.length}
-                                        </span>{' '}
-                                        of{' '}
-                                        <span className="font-medium text-foreground">
-                                            {filteredAvatars.length}
-                                        </span>{' '}
-                                        avatar{filteredAvatars.length === 1 ? '' : 's'}
-                                    </div>
-                                    <DataTablePagination
-                                        table={table}
-                                        pageIndex={pagination.pageIndex}
-                                        pageSize={pagination.pageSize}
-                                        pageSizes={pageSizes}
-                                        pageSizeLabel={t('table.pagination.rows_per_page')}
-                                        onPageSizeChange={(value) => {
-                                            const nextPageSize = resolveMyAvatarsPageSize(value, pageSizes, pagination.pageSize);
-                                            setPagination({
-                                                pageIndex: 0,
-                                                pageSize: nextPageSize
-                                            });
-                                        }}
-                                    />
+                                                            >
+                                                                {row
+                                                                    .getVisibleCells()
+                                                                    .map(
+                                                                        (
+                                                                            cell
+                                                                        ) => (
+                                                                            <ResizableTableCell
+                                                                                key={
+                                                                                    cell.id
+                                                                                }
+                                                                                cell={
+                                                                                    cell
+                                                                                }
+                                                                            />
+                                                                        )
+                                                                    )}
+                                                            </TableRow>
+                                                        </ContextMenuTrigger>
+                                                        <ContextMenuContent>
+                                                            <AvatarActionMenuItems
+                                                                avatar={
+                                                                    row.original
+                                                                }
+                                                                isActive={
+                                                                    row.original
+                                                                        ?.id ===
+                                                                    currentAvatarId
+                                                                }
+                                                                disabled={
+                                                                    updatingAvatarId ===
+                                                                        row
+                                                                            .original
+                                                                            ?.id ||
+                                                                    savingTagsAvatarId ===
+                                                                        row
+                                                                            .original
+                                                                            ?.id ||
+                                                                    uploadingImageAvatarId ===
+                                                                        row
+                                                                            .original
+                                                                            ?.id
+                                                                }
+                                                                Item={
+                                                                    ContextMenuItem
+                                                                }
+                                                                Group={
+                                                                    ContextMenuGroup
+                                                                }
+                                                                Separator={
+                                                                    ContextMenuSeparator
+                                                                }
+                                                                onAction={(
+                                                                    action,
+                                                                    avatar
+                                                                ) =>
+                                                                    void handleAvatarAction(
+                                                                        action,
+                                                                        avatar
+                                                                    )
+                                                                }
+                                                            />
+                                                        </ContextMenuContent>
+                                                    </ContextMenu>
+                                                ))}
+                                        </TableBody>
+                                    </Table>
+                                </DataTableScrollArea>
+                            </DataTableSurface>
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <div className="text-muted-foreground text-sm">
+                                    Showing{' '}
+                                    <span className="text-foreground font-medium">
+                                        {table.getRowModel().rows.length}
+                                    </span>{' '}
+                                    of{' '}
+                                    <span className="text-foreground font-medium">
+                                        {filteredAvatars.length}
+                                    </span>{' '}
+                                    avatar
+                                    {filteredAvatars.length === 1 ? '' : 's'}
                                 </div>
-                            </>
-                        ) : (
-                            <div ref={gridScrollRef} className="min-h-0 flex-1 overflow-auto py-2">
-                                <div
-                                    className="relative p-1"
-                                    style={{
-                                        height: `${gridTotalHeight}px`
-                                    }}>
-                                    {visibleGridRows.map((row) => (
-                                        <div
-                                            key={row.key}
-                                            className="absolute right-1 left-1 grid overflow-hidden"
-                                            style={{
-                                                height: `${row.height}px`,
-                                                gap: `${gridGap}px`,
-                                                gridTemplateColumns: `repeat(${gridColumnCount}, minmax(${gridMinWidth}px, 1fr))`,
-                                                transform: `translateY(${row.top}px)`
-                                            }}>
-                                            {row.avatars.map((avatar) => (
-                                                <MyAvatarGridCard
-                                                    key={avatar.id}
-                                                    avatar={avatar}
-                                                    currentAvatarId={currentAvatarId}
-                                                    cardScale={cardScale}
-                                                    isUpdating={
-                                                        savingTagsAvatarId === avatar.id ||
-                                                        updatingAvatarId === avatar.id ||
-                                                        uploadingImageAvatarId === avatar.id
-                                                    }
-                                                    onAction={(action, nextAvatar) => void handleAvatarAction(action, nextAvatar)}
-                                                />
-                                            ))}
-                                        </div>
-                                    ))}
-                                </div>
+                                <DataTablePagination
+                                    table={table}
+                                    pageIndex={pagination.pageIndex}
+                                    pageSize={pagination.pageSize}
+                                    pageSizes={pageSizes}
+                                    pageSizeLabel={t(
+                                        'table.pagination.rows_per_page'
+                                    )}
+                                    onPageSizeChange={(value) => {
+                                        const nextPageSize =
+                                            resolveMyAvatarsPageSize(
+                                                value,
+                                                pageSizes,
+                                                pagination.pageSize
+                                            );
+                                        setPagination({
+                                            pageIndex: 0,
+                                            pageSize: nextPageSize
+                                        });
+                                    }}
+                                />
                             </div>
-                        )
+                        </>
                     ) : (
-                        <MyAvatarsEmptyState
-                            title="No avatars match the current filters"
-                            description="Broaden the filters or search query to see more avatars."
-                        />
-                    )}
+                        <div
+                            ref={gridScrollRef}
+                            className="min-h-0 flex-1 overflow-auto py-2"
+                        >
+                            <div
+                                className="relative p-1"
+                                style={{
+                                    height: `${gridTotalHeight}px`
+                                }}
+                            >
+                                {visibleGridRows.map((row) => (
+                                    <div
+                                        key={row.key}
+                                        className="absolute right-1 left-1 grid overflow-hidden"
+                                        style={{
+                                            height: `${row.height}px`,
+                                            gap: `${gridGap}px`,
+                                            gridTemplateColumns: `repeat(${gridColumnCount}, minmax(${gridMinWidth}px, 1fr))`,
+                                            transform: `translateY(${row.top}px)`
+                                        }}
+                                    >
+                                        {row.avatars.map((avatar) => (
+                                            <MyAvatarGridCard
+                                                key={avatar.id}
+                                                avatar={avatar}
+                                                currentAvatarId={
+                                                    currentAvatarId
+                                                }
+                                                cardScale={cardScale}
+                                                isUpdating={
+                                                    savingTagsAvatarId ===
+                                                        avatar.id ||
+                                                    updatingAvatarId ===
+                                                        avatar.id ||
+                                                    uploadingImageAvatarId ===
+                                                        avatar.id
+                                                }
+                                                onAction={(
+                                                    action,
+                                                    nextAvatar
+                                                ) =>
+                                                    void handleAvatarAction(
+                                                        action,
+                                                        nextAvatar
+                                                    )
+                                                }
+                                            />
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                ) : (
+                    <MyAvatarsEmptyState
+                        title="No avatars match the current filters"
+                        description="Broaden the filters or search query to see more avatars."
+                    />
+                )}
             </div>
             <ImageCropDialog
                 open={Boolean(imageCropRequest)}

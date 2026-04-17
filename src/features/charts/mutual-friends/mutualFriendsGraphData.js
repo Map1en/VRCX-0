@@ -3,21 +3,35 @@ import {
     normalizeMutualFriendId
 } from './mutualFriendsSettings.js';
 
-export function buildMutualFriendsBaseGraph(snapshot, meta, friendsById, excludedFriendIds = []) {
+export function buildMutualFriendsBaseGraph(
+    snapshot,
+    meta,
+    friendsById,
+    excludedFriendIds = []
+) {
     const nodeMap = new Map();
     const edgeMap = new Map();
     const metaMap = meta instanceof Map ? meta : new Map();
-    const friends = friendsById && typeof friendsById === 'object' ? friendsById : {};
-    const excluded = new Set((excludedFriendIds || []).map(normalizeMutualFriendId).filter(Boolean));
+    const friends =
+        friendsById && typeof friendsById === 'object' ? friendsById : {};
+    const excluded = new Set(
+        (excludedFriendIds || []).map(normalizeMutualFriendId).filter(Boolean)
+    );
 
     function ensureNode(id) {
         const normalizedId = normalizeMutualFriendId(id);
-        if (!isValidMutualFriendId(normalizedId) || excluded.has(normalizedId)) {
+        if (
+            !isValidMutualFriendId(normalizedId) ||
+            excluded.has(normalizedId)
+        ) {
             return null;
         }
         if (!nodeMap.has(normalizedId)) {
             const friend = friends[normalizedId];
-            const metadata = metaMap.get(normalizedId) || { lastFetchedAt: null, optedOut: false };
+            const metadata = metaMap.get(normalizedId) || {
+                lastFetchedAt: null,
+                optedOut: false
+            };
             nodeMap.set(normalizedId, {
                 id: normalizedId,
                 label: friend?.displayName || friend?.username || normalizedId,
@@ -56,13 +70,17 @@ export function buildMutualFriendsBaseGraph(snapshot, meta, friendsById, exclude
     }
 
     return {
-        nodes: Array.from(nodeMap.values()).sort((left, right) => right.degree - left.degree),
+        nodes: Array.from(nodeMap.values()).sort(
+            (left, right) => right.degree - left.degree
+        ),
         links: Array.from(edgeMap.values())
     };
 }
 
 export function filterMutualFriendsGraph(baseGraph, searchQuery) {
-    const query = String(searchQuery || '').trim().toLowerCase();
+    const query = String(searchQuery || '')
+        .trim()
+        .toLowerCase();
     if (!query) {
         return baseGraph;
     }

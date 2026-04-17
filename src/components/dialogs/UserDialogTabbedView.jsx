@@ -1,4 +1,3 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
     ArrowDownIcon,
     ArrowUpIcon,
@@ -28,6 +27,7 @@ import {
     VolumeXIcon,
     XIcon
 } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -36,10 +36,15 @@ import { InstanceActionBar } from '@/components/instances/InstanceActionBar.jsx'
 import { Location } from '@/components/Location.jsx';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { timeToText } from '@/lib/dateTime.js';
-import { convertFileUrlToImageUrl, copyTextToClipboard, openExternalLink, userImage } from '@/lib/entityMedia.js';
-import { cn } from '@/lib/utils.js';
+import {
+    convertFileUrlToImageUrl,
+    copyTextToClipboard,
+    openExternalLink,
+    userImage
+} from '@/lib/entityMedia.js';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import { userStatusDotClassName } from '@/lib/userStatus.js';
+import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/tauri/backend.js';
 import {
     AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS,
@@ -51,14 +56,25 @@ import {
     vrchatFavoriteRepository,
     worldProfileRepository
 } from '@/repositories/index.js';
-import { openAvatarDialog, openGroupDialog, openUserDialog, openWorldDialog } from '@/services/dialogService.js';
+import {
+    openAvatarDialog,
+    openGroupDialog,
+    openUserDialog,
+    openWorldDialog
+} from '@/services/dialogService.js';
 import { isActionRecent } from '@/services/recentActionService.js';
-import { getTranslationConfig, translateText } from '@/services/translationService.js';
-import { userDialogGroupSortingOptions, userDialogMutualFriendSortingOptions } from '@/shared/constants/user.js';
-import { getFaviconUrl } from '@/shared/utils/urlUtils.js';
+import {
+    getTranslationConfig,
+    translateText
+} from '@/services/translationService.js';
+import {
+    userDialogGroupSortingOptions,
+    userDialogMutualFriendSortingOptions
+} from '@/shared/constants/user.js';
 import { parseLocation } from '@/shared/utils/location.js';
-import { useModalStore } from '@/state/modalStore.js';
+import { getFaviconUrl } from '@/shared/utils/urlUtils.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
+import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -84,6 +100,7 @@ import {
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+
 import {
     EntityActionDropdown,
     EntityActionItem,
@@ -98,7 +115,6 @@ import {
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
 import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
-import { UserActivityPanel } from './UserActivityPanel.jsx';
 import {
     firstNonGroupIdText,
     formatDate,
@@ -118,15 +134,16 @@ import {
     worldOccupantSubtitle
 } from './user-dialog/userDialogRows.js';
 import {
-    buildUserDialogListViewData,
-    buildUserDialogProfileSummary
-} from './user-dialog/userDialogViewData.js';
-import {
     isUserDialogDataTab,
     loadUserDialogTabData,
     userDialogDataKeyForTab
 } from './user-dialog/userDialogTabService.js';
+import {
+    buildUserDialogListViewData,
+    buildUserDialogProfileSummary
+} from './user-dialog/userDialogViewData.js';
 import { languageOptionLabel } from './user-dialog/userProfileFields.js';
+import { UserActivityPanel } from './UserActivityPanel.jsx';
 
 const userDialogTabServiceRepositories = Object.freeze({
     avatarProfileRepository,
@@ -145,7 +162,9 @@ function UserTitleLanguages({ languages }) {
     return (
         <span className="inline-flex shrink-0 flex-wrap items-center gap-1">
             {languages.map((language) => {
-                const key = String(language?.key || language?.value || '').trim();
+                const key = String(
+                    language?.key || language?.value || ''
+                ).trim();
                 const label = languageOptionLabel(language);
                 return (
                     <Badge
@@ -163,7 +182,9 @@ function UserTitleLanguages({ languages }) {
 }
 
 function downloadJsonFile(filename, value) {
-    const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json;charset=utf-8' });
+    const blob = new Blob([JSON.stringify(value, null, 2)], {
+        type: 'application/json;charset=utf-8'
+    });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -182,7 +203,11 @@ function rowImage(row, kind) {
         return userImage(row, true, '64');
     }
     return convertFileUrlToImageUrl(
-        row.thumbnailImageUrl || row.imageUrl || row.iconUrl || row.userIcon || row.currentAvatarImageUrl,
+        row.thumbnailImageUrl ||
+            row.imageUrl ||
+            row.iconUrl ||
+            row.userIcon ||
+            row.currentAvatarImageUrl,
         128
     );
 }
@@ -199,7 +224,9 @@ function UserGroupCard({
     onSelectionChange
 }) {
     const groupId = groupIdForRow(group);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const [profile, setProfile] = useState(null);
 
     useEffect(() => {
@@ -213,7 +240,11 @@ function UserGroupCard({
         }
 
         groupProfileRepository
-            .getGroupProfile({ groupId, endpoint: currentEndpoint, includeRoles: false })
+            .getGroupProfile({
+                groupId,
+                endpoint: currentEndpoint,
+                includeRoles: false
+            })
             .then((groupProfile) => {
                 if (active) {
                     setProfile(groupProfile);
@@ -230,35 +261,69 @@ function UserGroupCard({
     const image = rowImage(displayGroup, 'group');
     const label = groupDisplayName(displayGroup);
     const visibility = groupMemberVisibility(group);
-    const memberCount = Number(group?.memberCount ?? group?.member_count ?? group?.membershipCount ?? group?.membership_count ?? 0) || 0;
+    const memberCount =
+        Number(
+            group?.memberCount ??
+                group?.member_count ??
+                group?.membershipCount ??
+                group?.membership_count ??
+                0
+        ) || 0;
     return (
-        <div className={cn('flex items-center gap-1 p-1 text-sm', editable ? 'w-56' : 'w-44')}>
+        <div
+            className={cn(
+                'flex items-center gap-1 p-1 text-sm',
+                editable ? 'w-56' : 'w-44'
+            )}
+        >
             {selectable ? (
                 <Checkbox
                     checked={selected}
                     disabled={busy}
                     aria-label={`Select ${label || 'group'}`}
                     className="shrink-0"
-                    onCheckedChange={(checked) => onSelectionChange?.(group, checked === true)}
+                    onCheckedChange={(checked) =>
+                        onSelectionChange?.(group, checked === true)
+                    }
                 />
             ) : null}
             <Button
                 type="button"
                 variant="ghost"
                 className="h-auto min-w-0 flex-1 justify-start gap-2 px-1.5 py-1.5 text-left font-normal"
-                onClick={() => openRow(displayGroup, 'group')}>
+                onClick={() => openRow(displayGroup, 'group')}
+            >
                 {image ? (
-                    <img src={image} alt="" className="size-9 shrink-0 rounded-full object-cover" />
+                    <img
+                        src={image}
+                        alt=""
+                        className="size-9 shrink-0 rounded-full object-cover"
+                    />
                 ) : (
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                        <UsersIcon data-icon="inline-start" className="size-4 text-muted-foreground" />
+                    <span className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-full">
+                        <UsersIcon
+                            data-icon="inline-start"
+                            className="text-muted-foreground size-4"
+                        />
                     </span>
                 )}
                 <span className="min-w-0 flex-1 overflow-hidden">
-                    <span className="block truncate font-medium leading-snug">{label || '—'}</span>
-                    <span className="inline-flex max-w-full items-center truncate text-xs text-muted-foreground">
-                        {group?.isRepresenting || group?.is_representing ? <TagIcon className="mr-1.5 size-3.5 shrink-0" aria-label="Representing" /> : null}
-                        {visibility !== 'visible' ? <EyeIcon className="mr-1.5 size-3.5 shrink-0" aria-label={`Visibility ${visibility}`} /> : null}
+                    <span className="block truncate leading-snug font-medium">
+                        {label || '—'}
+                    </span>
+                    <span className="text-muted-foreground inline-flex max-w-full items-center truncate text-xs">
+                        {group?.isRepresenting || group?.is_representing ? (
+                            <TagIcon
+                                className="mr-1.5 size-3.5 shrink-0"
+                                aria-label="Representing"
+                            />
+                        ) : null}
+                        {visibility !== 'visible' ? (
+                            <EyeIcon
+                                className="mr-1.5 size-3.5 shrink-0"
+                                aria-label={`Visibility ${visibility}`}
+                            />
+                        ) : null}
                         <span className="truncate">({memberCount})</span>
                     </span>
                 </span>
@@ -266,7 +331,15 @@ function UserGroupCard({
             {editable ? (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button type="button" size="icon-sm" variant="ghost" className="ml-1 shrink-0" disabled={busy} title="Manage group membership" aria-label="Manage group membership">
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            className="ml-1 shrink-0"
+                            disabled={busy}
+                            title="Manage group membership"
+                            aria-label="Manage group membership"
+                        >
                             <SettingsIcon data-icon="inline-start" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -274,19 +347,35 @@ function UserGroupCard({
                         {onMove ? (
                             <>
                                 <DropdownMenuGroup>
-                                    <DropdownMenuItem onSelect={() => void onMove(group, 'top')}>
+                                    <DropdownMenuItem
+                                        onSelect={() =>
+                                            void onMove(group, 'top')
+                                        }
+                                    >
                                         <DownloadIcon className="rotate-180" />
                                         Move Top
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => void onMove(group, 'up')}>
+                                    <DropdownMenuItem
+                                        onSelect={() =>
+                                            void onMove(group, 'up')
+                                        }
+                                    >
                                         <ArrowUpIcon />
                                         Move Up
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => void onMove(group, 'down')}>
+                                    <DropdownMenuItem
+                                        onSelect={() =>
+                                            void onMove(group, 'down')
+                                        }
+                                    >
                                         <ArrowDownIcon />
                                         Move Down
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => void onMove(group, 'bottom')}>
+                                    <DropdownMenuItem
+                                        onSelect={() =>
+                                            void onMove(group, 'bottom')
+                                        }
+                                    >
                                         <DownloadIcon />
                                         Move Bottom
                                     </DropdownMenuItem>
@@ -295,16 +384,31 @@ function UserGroupCard({
                             </>
                         ) : null}
                         <DropdownMenuGroup>
-                            <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'visible')}>
+                            <DropdownMenuItem
+                                onSelect={() =>
+                                    onVisibilityChange?.(group, 'visible')
+                                }
+                            >
                                 Visibility: Everyone
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'friends')}>
+                            <DropdownMenuItem
+                                onSelect={() =>
+                                    onVisibilityChange?.(group, 'friends')
+                                }
+                            >
                                 Visibility: Friends
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onVisibilityChange?.(group, 'hidden')}>
+                            <DropdownMenuItem
+                                onSelect={() =>
+                                    onVisibilityChange?.(group, 'hidden')
+                                }
+                            >
                                 Visibility: Hidden
                             </DropdownMenuItem>
-                            <DropdownMenuItem variant="destructive" onSelect={() => onLeave?.(group)}>
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => onLeave?.(group)}
+                            >
                                 <LogOutIcon />
                                 Leave Group
                             </DropdownMenuItem>
@@ -317,24 +421,51 @@ function UserGroupCard({
 }
 
 function openRow(row, kind) {
-    const id = typeof row === 'string' ? row : row?.id || row?.userId || row?.worldId || row?.avatarId || row?.groupId;
+    const id =
+        typeof row === 'string'
+            ? row
+            : row?.id ||
+              row?.userId ||
+              row?.worldId ||
+              row?.avatarId ||
+              row?.groupId;
     if (!id) {
         return;
     }
     if (kind === 'user' || String(id).startsWith('usr_')) {
-        openUserDialog({ userId: id, title: row?.displayName || row?.username || undefined, seedData: typeof row === 'object' ? row : null });
+        openUserDialog({
+            userId: id,
+            title: row?.displayName || row?.username || undefined,
+            seedData: typeof row === 'object' ? row : null
+        });
         return;
     }
-    if (kind === 'world' || String(id).startsWith('wrld_') || String(id).startsWith('wld_')) {
-        openWorldDialog({ worldId: id, title: row?.name || undefined, seedData: typeof row === 'object' ? row : null });
+    if (
+        kind === 'world' ||
+        String(id).startsWith('wrld_') ||
+        String(id).startsWith('wld_')
+    ) {
+        openWorldDialog({
+            worldId: id,
+            title: row?.name || undefined,
+            seedData: typeof row === 'object' ? row : null
+        });
         return;
     }
     if (kind === 'avatar' || String(id).startsWith('avtr_')) {
-        openAvatarDialog({ avatarId: id, title: row?.name || undefined, seedData: typeof row === 'object' ? row : null });
+        openAvatarDialog({
+            avatarId: id,
+            title: row?.name || undefined,
+            seedData: typeof row === 'object' ? row : null
+        });
         return;
     }
     if (kind === 'group' || String(id).startsWith('grp_')) {
-        openGroupDialog({ groupId: id, title: row?.name || undefined, seedData: typeof row === 'object' ? row : null });
+        openGroupDialog({
+            groupId: id,
+            title: row?.name || undefined,
+            seedData: typeof row === 'object' ? row : null
+        });
     }
 }
 
@@ -374,7 +505,11 @@ function EntityList({
                             editable={editableGroups}
                             selectable={selectableGroups}
                             selected={Boolean(selectedGroupIds?.has(groupId))}
-                            busy={Boolean(groupActionId && (groupActionId === groupId || groupActionId === '__bulk_groups__'))}
+                            busy={Boolean(
+                                groupActionId &&
+                                (groupActionId === groupId ||
+                                    groupActionId === '__bulk_groups__')
+                            )}
                             onVisibilityChange={onGroupVisibilityChange}
                             onLeave={onGroupLeave}
                             onMove={onGroupMove}
@@ -383,41 +518,82 @@ function EntityList({
                     );
                 }
                 const image = rowImage(row, kind);
-                const label = kind === 'user'
-                    ? row?.displayName || row?.username || ''
-                    : summarizeEntityRow(row);
-                const subtitle = kind === 'user'
-                    ? userRowSubtitle(row, nowMs)
-                    : kind === 'world'
-                        ? worldOccupantSubtitle(row)
-                        : row?.authorName || row?.description || row?.shortCode || row?.username || '';
-                const travelingTimestamp = kind === 'user' ? userTravelingTimestamp(row) : 0;
-                const dotClassName = kind === 'user' ? userStatusDotClassName(row) : '';
+                const label =
+                    kind === 'user'
+                        ? row?.displayName || row?.username || ''
+                        : summarizeEntityRow(row);
+                const subtitle =
+                    kind === 'user'
+                        ? userRowSubtitle(row, nowMs)
+                        : kind === 'world'
+                          ? worldOccupantSubtitle(row)
+                          : row?.authorName ||
+                            row?.description ||
+                            row?.shortCode ||
+                            row?.username ||
+                            '';
+                const travelingTimestamp =
+                    kind === 'user' ? userTravelingTimestamp(row) : 0;
+                const dotClassName =
+                    kind === 'user' ? userStatusDotClassName(row) : '';
                 return (
                     <Button
                         key={`${row?.id || row?.userId || label}:${index}`}
                         type="button"
                         variant="ghost"
                         className="h-auto w-44 justify-start gap-2 px-1.5 py-1.5 text-left font-normal"
-                        onClick={() => openRow(row, kind)}>
+                        onClick={() => openRow(row, kind)}
+                    >
                         <span className="relative size-9 shrink-0">
                             {image ? (
-                                <img src={image} alt="" className="size-9 rounded-full object-cover" />
+                                <img
+                                    src={image}
+                                    alt=""
+                                    className="size-9 rounded-full object-cover"
+                                />
                             ) : (
-                                <span className="flex size-9 items-center justify-center rounded-full bg-muted">
-                                    <UserIcon data-icon="inline-start" className="size-4 text-muted-foreground" />
+                                <span className="bg-muted flex size-9 items-center justify-center rounded-full">
+                                    <UserIcon
+                                        data-icon="inline-start"
+                                        className="text-muted-foreground size-4"
+                                    />
                                 </span>
                             )}
-                            {dotClassName ? <span className={cn('absolute bottom-0 right-0 z-10 size-2.5 rounded-full border border-background', dotClassName)} /> : null}
+                            {dotClassName ? (
+                                <span
+                                    className={cn(
+                                        'border-background absolute right-0 bottom-0 z-10 size-2.5 rounded-full border',
+                                        dotClassName
+                                    )}
+                                />
+                            ) : null}
                         </span>
                         <span className="min-w-0 flex-1 overflow-hidden">
-                            <span className="block truncate font-medium leading-snug" style={kind === 'user' && row?.$userColour ? { color: row.$userColour } : undefined}>{label || '—'}</span>
+                            <span
+                                className="block truncate leading-snug font-medium"
+                                style={
+                                    kind === 'user' && row?.$userColour
+                                        ? { color: row.$userColour }
+                                        : undefined
+                                }
+                            >
+                                {label || '—'}
+                            </span>
                             {travelingTimestamp ? (
-                                <span className="block truncate text-xs text-muted-foreground">
-                                    <Spinner data-icon="inline-start" className="mr-1 inline-block" />
-                                    {timeToText(Date.now() - travelingTimestamp)}
+                                <span className="text-muted-foreground block truncate text-xs">
+                                    <Spinner
+                                        data-icon="inline-start"
+                                        className="mr-1 inline-block"
+                                    />
+                                    {timeToText(
+                                        Date.now() - travelingTimestamp
+                                    )}
                                 </span>
-                            ) : subtitle ? <span className="block truncate text-xs text-muted-foreground">{subtitle}</span> : null}
+                            ) : subtitle ? (
+                                <span className="text-muted-foreground block truncate text-xs">
+                                    {subtitle}
+                                </span>
+                            ) : null}
                         </span>
                     </Button>
                 );
@@ -447,7 +623,9 @@ function UserGroupSection({
         <section className="flex flex-col gap-2">
             <div className="flex items-baseline gap-1.5">
                 <span className="text-base font-bold">{title}</span>
-                <span className="text-xs text-muted-foreground">{countText || rows.length}</span>
+                <span className="text-muted-foreground text-xs">
+                    {countText || rows.length}
+                </span>
             </div>
             <EntityList
                 rows={rows}
@@ -465,52 +643,104 @@ function UserGroupSection({
     );
 }
 
-function FavoriteWorldGroups({ groups, rows, search, filteredRows, loading, error }) {
+function FavoriteWorldGroups({
+    groups,
+    rows,
+    search,
+    filteredRows,
+    loading,
+    error
+}) {
     const groupedRows = groups.length
         ? groups.map((group) => ({
-            key: group.name,
-            label: group.displayName || group.name,
-            visibility: group.visibility || '',
-            rows: rows.filter((world) => world.$favoriteGroupKey === group.name || world.$favoriteGroup === (group.displayName || group.name))
-        }))
+              key: group.name,
+              label: group.displayName || group.name,
+              visibility: group.visibility || '',
+              rows: rows.filter(
+                  (world) =>
+                      world.$favoriteGroupKey === group.name ||
+                      world.$favoriteGroup === (group.displayName || group.name)
+              )
+          }))
         : Array.from(
-            rows.reduce((map, world) => {
-                const key = world.$favoriteGroup || 'Favorites';
-                if (!map.has(key)) {
-                    map.set(key, { key, label: key, visibility: '', rows: [] });
-                }
-                map.get(key).rows.push(world);
-                return map;
-            }, new Map()).values()
-        );
+              rows
+                  .reduce((map, world) => {
+                      const key = world.$favoriteGroup || 'Favorites';
+                      if (!map.has(key)) {
+                          map.set(key, {
+                              key,
+                              label: key,
+                              visibility: '',
+                              rows: []
+                          });
+                      }
+                      map.get(key).rows.push(world);
+                      return map;
+                  }, new Map())
+                  .values()
+          );
     const [activeGroup, setActiveGroup] = useState(groupedRows[0]?.key || '');
 
     useEffect(() => {
-        if (groupedRows.length && !groupedRows.some((group) => group.key === activeGroup)) {
+        if (
+            groupedRows.length &&
+            !groupedRows.some((group) => group.key === activeGroup)
+        ) {
             setActiveGroup(groupedRows[0].key);
         }
     }, [activeGroup, groupedRows]);
 
     if (search.trim()) {
-        return <EntityList rows={filteredRows} kind="world" loading={loading} error={error} />;
+        return (
+            <EntityList
+                rows={filteredRows}
+                kind="world"
+                loading={loading}
+                error={error}
+            />
+        );
     }
     if (loading || error || !groupedRows.length) {
-        return <EntityList rows={rows} kind="world" loading={loading} error={error} />;
+        return (
+            <EntityList
+                rows={rows}
+                kind="world"
+                loading={loading}
+                error={error}
+            />
+        );
     }
 
     return (
-        <Tabs value={activeGroup} onValueChange={setActiveGroup} className="gap-2">
-            <TabsList variant="line" className="h-auto w-full justify-start overflow-x-auto rounded-none border-b px-0 pb-1">
+        <Tabs
+            value={activeGroup}
+            onValueChange={setActiveGroup}
+            className="gap-2"
+        >
+            <TabsList
+                variant="line"
+                className="h-auto w-full justify-start overflow-x-auto rounded-none border-b px-0 pb-1"
+            >
                 {groupedRows.map((group) => (
-                    <TabsTrigger key={group.key} value={group.key} className="flex-none rounded-none px-3">
+                    <TabsTrigger
+                        key={group.key}
+                        value={group.key}
+                        className="flex-none rounded-none px-3"
+                    >
                         <span>{group.label}</span>
-                        <span className="ml-1.5 text-xs text-muted-foreground">{group.rows.length}</span>
+                        <span className="text-muted-foreground ml-1.5 text-xs">
+                            {group.rows.length}
+                        </span>
                     </TabsTrigger>
                 ))}
             </TabsList>
             {groupedRows.map((group) => (
                 <TabsContent key={group.key} value={group.key} className="m-0">
-                    {group.visibility ? <div className="px-1 py-1 text-xs text-muted-foreground">{group.visibility}</div> : null}
+                    {group.visibility ? (
+                        <div className="text-muted-foreground px-1 py-1 text-xs">
+                            {group.visibility}
+                        </div>
+                    ) : null}
                     <EntityList rows={group.rows} kind="world" />
                 </TabsContent>
             ))}
@@ -585,10 +815,16 @@ export function UserDialogTabbedView({
     onToggleBadgeShowcased
 }) {
     const { t } = useI18n();
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
-    const inGameGroupOrder = useRuntimeStore((state) => state.groupInstances.groupOrder);
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
+    const inGameGroupOrder = useRuntimeStore(
+        (state) => state.groupInstances.groupOrder
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const prompt = useModalStore((state) => state.prompt);
@@ -617,15 +853,26 @@ export function UserDialogTabbedView({
     const [avatarSort, setAvatarSort] = useState('name');
     const [avatarReleaseStatus, setAvatarReleaseStatus] = useState('all');
     const [mutualSort, setMutualSort] = useState('alphabetical');
-    const [groupSort, setGroupSort] = useState(isCurrentUser ? 'inGame' : 'alphabetical');
+    const [groupSort, setGroupSort] = useState(
+        isCurrentUser ? 'inGame' : 'alphabetical'
+    );
     const [vrchatConfigConstants, setVrchatConfigConstants] = useState(null);
-    const [bioTranslation, setBioTranslation] = useState({ userId: '', source: '', text: '' });
+    const [bioTranslation, setBioTranslation] = useState({
+        userId: '',
+        source: '',
+        text: ''
+    });
     const [bioTranslationLoading, setBioTranslationLoading] = useState(false);
     const [groupActionId, setGroupActionId] = useState('');
     const [groupEditMode, setGroupEditMode] = useState(false);
     const [selectedGroupIds, setSelectedGroupIds] = useState(() => new Set());
-    const effectiveAvatarReleaseStatus = profile.id === currentUserId ? avatarReleaseStatus : 'all';
-    const loadContextRef = useRef({ endpoint: currentEndpoint, userId: profile.id, reloadToken });
+    const effectiveAvatarReleaseStatus =
+        profile.id === currentUserId ? avatarReleaseStatus : 'all';
+    const loadContextRef = useRef({
+        endpoint: currentEndpoint,
+        userId: profile.id,
+        reloadToken
+    });
     const handledReloadTokenRef = useRef(reloadToken);
     const {
         profileGroups,
@@ -663,7 +910,9 @@ export function UserDialogTabbedView({
     const isRecentDialogAction = (actionType) =>
         recentActionVersion >= 0 && isActionRecent(profile.id, actionType);
     const recentDialogShortcut = (actionType) =>
-        isRecentDialogAction(actionType) ? <ClockIcon className="size-3.5 text-muted-foreground" /> : null;
+        isRecentDialogAction(actionType) ? (
+            <ClockIcon className="text-muted-foreground size-3.5" />
+        ) : null;
     useEffect(() => {
         loadContextRef.current = {
             endpoint: currentEndpoint,
@@ -684,7 +933,13 @@ export function UserDialogTabbedView({
         });
         setRemoteStatus({});
         setRemoteErrors({});
-        setSearch({ mutual: '', groups: '', worlds: '', favoriteWorlds: '', avatars: '' });
+        setSearch({
+            mutual: '',
+            groups: '',
+            worlds: '',
+            favoriteWorlds: '',
+            avatars: ''
+        });
         const nextTab = resolveTabValue(tabs, lastUserDialogTab);
         lastUserDialogTab = nextTab;
         setActiveTab(nextTab);
@@ -707,14 +962,22 @@ export function UserDialogTabbedView({
             loadContextRef.current.userId === context.userId &&
             loadContextRef.current.reloadToken === context.reloadToken &&
             (context.tab !== 'worlds' ||
-                (context.worldSort === worldSort && context.worldOrder === worldOrder)) &&
+                (context.worldSort === worldSort &&
+                    context.worldOrder === worldOrder)) &&
             (context.tab !== 'avatars' ||
-                (context.avatarSort === avatarSort && context.avatarReleaseStatus === effectiveAvatarReleaseStatus))
+                (context.avatarSort === avatarSort &&
+                    context.avatarReleaseStatus ===
+                        effectiveAvatarReleaseStatus))
         );
     }
 
     async function loadTab(tab, { force = false } = {}) {
-        if (!profile.id || (!force && (remoteStatus[tab] === 'running' || remoteStatus[tab] === 'ready'))) {
+        if (
+            !profile.id ||
+            (!force &&
+                (remoteStatus[tab] === 'running' ||
+                    remoteStatus[tab] === 'ready'))
+        ) {
             return;
         }
         if (!isUserDialogDataTab(tab)) {
@@ -763,7 +1026,10 @@ export function UserDialogTabbedView({
             setRemoteStatus((current) => ({ ...current, [tab]: 'error' }));
             setRemoteErrors((current) => ({
                 ...current,
-                [tab]: error instanceof Error ? error.message : 'Failed to load tab data.'
+                [tab]:
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load tab data.'
             }));
         }
     }
@@ -774,19 +1040,28 @@ export function UserDialogTabbedView({
     }
 
     function changeWorldSort(value) {
-        loadContextRef.current = { ...loadContextRef.current, worldSort: value };
+        loadContextRef.current = {
+            ...loadContextRef.current,
+            worldSort: value
+        };
         setWorldSort(value);
         setRemoteStatus((current) => ({ ...current, worlds: '' }));
     }
 
     function changeWorldOrder(value) {
-        loadContextRef.current = { ...loadContextRef.current, worldOrder: value };
+        loadContextRef.current = {
+            ...loadContextRef.current,
+            worldOrder: value
+        };
         setWorldOrder(value);
         setRemoteStatus((current) => ({ ...current, worlds: '' }));
     }
 
     function changeAvatarSort(value) {
-        loadContextRef.current = { ...loadContextRef.current, avatarSort: value };
+        loadContextRef.current = {
+            ...loadContextRef.current,
+            avatarSort: value
+        };
         setAvatarSort(value);
         if (profile.id === currentUserId) {
             setRemoteStatus((current) => ({ ...current, avatars: '' }));
@@ -794,7 +1069,10 @@ export function UserDialogTabbedView({
     }
 
     function changeAvatarReleaseStatus(value) {
-        loadContextRef.current = { ...loadContextRef.current, avatarReleaseStatus: value };
+        loadContextRef.current = {
+            ...loadContextRef.current,
+            avatarReleaseStatus: value
+        };
         setAvatarReleaseStatus(value);
         if (profile.id === currentUserId) {
             setRemoteStatus((current) => ({ ...current, avatars: '' }));
@@ -802,7 +1080,8 @@ export function UserDialogTabbedView({
     }
 
     useEffect(() => {
-        const shouldForceReload = reloadToken > 0 && handledReloadTokenRef.current !== reloadToken;
+        const shouldForceReload =
+            reloadToken > 0 && handledReloadTokenRef.current !== reloadToken;
         if (shouldForceReload) {
             handledReloadTokenRef.current = reloadToken;
         }
@@ -840,20 +1119,35 @@ export function UserDialogTabbedView({
         }
     }, [avatarReleaseStatus, avatarSort]);
 
-    useEffect(() => onPreferenceChanged(AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS, () => {
-        if (profile.id === currentUserId) {
-            return;
-        }
-        setRemoteData((current) => ({ ...current, avatars: [] }));
-        setRemoteStatus((current) => ({ ...current, avatars: '' }));
-        setRemoteErrors((current) => ({ ...current, avatars: '' }));
-        if (activeTab === 'avatars') {
-            void loadTab('avatars', { force: true });
-        }
-    }), [activeTab, avatarReleaseStatus, avatarSort, currentEndpoint, currentUserId, profile.id]);
+    useEffect(
+        () =>
+            onPreferenceChanged(AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS, () => {
+                if (profile.id === currentUserId) {
+                    return;
+                }
+                setRemoteData((current) => ({ ...current, avatars: [] }));
+                setRemoteStatus((current) => ({ ...current, avatars: '' }));
+                setRemoteErrors((current) => ({ ...current, avatars: '' }));
+                if (activeTab === 'avatars') {
+                    void loadTab('avatars', { force: true });
+                }
+            }),
+        [
+            activeTab,
+            avatarReleaseStatus,
+            avatarSort,
+            currentEndpoint,
+            currentUserId,
+            profile.id
+        ]
+    );
 
     useEffect(() => {
-        setBioTranslation({ userId: profile.id || '', source: profile.bio || '', text: '' });
+        setBioTranslation({
+            userId: profile.id || '',
+            source: profile.bio || '',
+            text: ''
+        });
         setBioTranslationLoading(false);
     }, [profile.id, profile.bio]);
 
@@ -864,10 +1158,17 @@ export function UserDialogTabbedView({
         setGroupSort(isCurrentUser ? 'inGame' : 'alphabetical');
     }, [currentUserId, profile.id]);
 
-    const userUrl = profile.id ? `https://vrchat.com/home/user/${profile.id}` : '';
-    const username = profile.username && profile.username !== profile.id ? profile.username : '';
+    const userUrl = profile.id
+        ? `https://vrchat.com/home/user/${profile.id}`
+        : '';
+    const username =
+        profile.username && profile.username !== profile.id
+            ? profile.username
+            : '';
     const userSubtitle = username;
-    const pronounsText = Array.isArray(profile.pronouns) ? profile.pronouns.join(', ') : profile.pronouns;
+    const pronounsText = Array.isArray(profile.pronouns)
+        ? profile.pronouns.join(', ')
+        : profile.pronouns;
     const {
         previousDisplayNames,
         previousDisplayNamesTitle,
@@ -892,27 +1193,41 @@ export function UserDialogTabbedView({
         vrchatConfigConstants,
         currentUserSnapshot
     });
-    const currentAvatarDisplayName = String(profile.currentAvatarName || profile.avatarName || '').trim();
+    const currentAvatarDisplayName = String(
+        profile.currentAvatarName || profile.avatarName || ''
+    ).trim();
     const currentAvatarDialogArgs = {
         avatarId: currentAvatarTarget,
-        ...(currentAvatarDisplayName ? {
-            title: currentAvatarDisplayName,
-            seedData: {
-                id: currentAvatarTarget,
-                name: currentAvatarDisplayName,
-                imageUrl: profile.currentAvatarImageUrl || '',
-                thumbnailImageUrl: profile.currentAvatarThumbnailImageUrl || ''
-            }
-        } : {})
+        ...(currentAvatarDisplayName
+            ? {
+                  title: currentAvatarDisplayName,
+                  seedData: {
+                      id: currentAvatarTarget,
+                      name: currentAvatarDisplayName,
+                      imageUrl: profile.currentAvatarImageUrl || '',
+                      thumbnailImageUrl:
+                          profile.currentAvatarThumbnailImageUrl || ''
+                  }
+              }
+            : {})
     };
-    const fallbackAvatarTarget = typeof profile.fallbackAvatar === 'string' ? profile.fallbackAvatar.trim() : '';
+    const fallbackAvatarTarget =
+        typeof profile.fallbackAvatar === 'string'
+            ? profile.fallbackAvatar.trim()
+            : '';
     const fallbackAvatarDialogArgs = {
         avatarId: fallbackAvatarTarget,
         title: 'Fallback Avatar'
     };
-    const visibleHomeLocationTarget = isOfflineLikeValue(homeLocationTarget) ? '' : homeLocationTarget;
-    const visiblePresenceLocation = isOfflineLikeValue(presenceLocation) ? '' : presenceLocation;
-    const visiblePresenceParsedLocation = visiblePresenceLocation ? parseLocation(visiblePresenceLocation) : null;
+    const visibleHomeLocationTarget = isOfflineLikeValue(homeLocationTarget)
+        ? ''
+        : homeLocationTarget;
+    const visiblePresenceLocation = isOfflineLikeValue(presenceLocation)
+        ? ''
+        : presenceLocation;
+    const visiblePresenceParsedLocation = visiblePresenceLocation
+        ? parseLocation(visiblePresenceLocation)
+        : null;
     const locationWorldTitle = normalizedText(
         profile.worldName ||
             profile.$worldName ||
@@ -920,8 +1235,14 @@ export function UserDialogTabbedView({
             profile.$location?.name ||
             profile.$location?.world?.name
     );
-    const translatedBioActive = Boolean(bioTranslation.userId === profile.id && bioTranslation.source === (profile.bio || '') && bioTranslation.text);
-    const visibleBio = translatedBioActive ? bioTranslation.text : profile.bio || '—';
+    const translatedBioActive = Boolean(
+        bioTranslation.userId === profile.id &&
+        bioTranslation.source === (profile.bio || '') &&
+        bioTranslation.text
+    );
+    const visibleBio = translatedBioActive
+        ? bioTranslation.text
+        : profile.bio || '—';
     const locationUsers = [];
     const locationUserRowsByKey = new Map();
 
@@ -929,12 +1250,19 @@ export function UserDialogTabbedView({
         if (!user) {
             return;
         }
-        const source = typeof user === 'string'
-            ? { id: user, userId: user, displayName: user }
-            : user;
-        const userId = normalizedText(source.id || source.userId || source.targetUserId);
-        const displayName = normalizedText(source.displayName || source.username || source.name || userId);
-        const key = userId || `display:${displayName.toLowerCase()}:${locationUsers.length}`;
+        const source =
+            typeof user === 'string'
+                ? { id: user, userId: user, displayName: user }
+                : user;
+        const userId = normalizedText(
+            source.id || source.userId || source.targetUserId
+        );
+        const displayName = normalizedText(
+            source.displayName || source.username || source.name || userId
+        );
+        const key =
+            userId ||
+            `display:${displayName.toLowerCase()}:${locationUsers.length}`;
         if (!key) {
             return;
         }
@@ -965,7 +1293,10 @@ export function UserDialogTabbedView({
     for (const user of sameInstanceUsers) {
         addLocationUser(user);
     }
-    if (visiblePresenceParsedLocation?.isRealInstance && !sameInstanceUsers.length) {
+    if (
+        visiblePresenceParsedLocation?.isRealInstance &&
+        !sameInstanceUsers.length
+    ) {
         addLocationUser(profile);
     }
     const locationOwnerFallbackId = normalizedText(
@@ -985,51 +1316,58 @@ export function UserDialogTabbedView({
     const locationOwnerGroupId = groupIdForRow(locationOwnerGroup);
     const locationOwnerIsGroup = Boolean(
         locationOwnerGroupId ||
-            isGroupId(locationOwnerFallbackId) ||
-            isGroupId(locationOwnerUserId)
+        isGroupId(locationOwnerFallbackId) ||
+        isGroupId(locationOwnerUserId)
     );
-    const locationOwnerId = locationOwnerGroupId ||
-        (locationOwnerIsGroup ? locationOwnerFallbackId || locationOwnerUserId : locationOwnerUserId) ||
+    const locationOwnerId =
+        locationOwnerGroupId ||
+        (locationOwnerIsGroup
+            ? locationOwnerFallbackId || locationOwnerUserId
+            : locationOwnerUserId) ||
         locationOwnerFallbackId;
     const locationOwnerName = locationOwnerIsGroup
         ? firstNonGroupIdText(
-            locationOwnerGroup?.name,
-            locationOwnerGroup?.displayName,
-            locationOwnerGroup?.display_name,
-            locationOwnerGroup?.shortCode,
-            locationInstance?.groupName,
-            locationInstance?.group_name,
-            locationInstance?.group?.name,
-            profile?.$location?.groupName,
-            profile?.$location?.group_name,
-            profile?.$location?.group?.name,
-            locationOwnerUser?.displayName,
-            locationOwnerUser?.username,
-            locationOwnerUser?.name,
-            locationOwnerId
-        )
+              locationOwnerGroup?.name,
+              locationOwnerGroup?.displayName,
+              locationOwnerGroup?.display_name,
+              locationOwnerGroup?.shortCode,
+              locationInstance?.groupName,
+              locationInstance?.group_name,
+              locationInstance?.group?.name,
+              profile?.$location?.groupName,
+              profile?.$location?.group_name,
+              profile?.$location?.group?.name,
+              locationOwnerUser?.displayName,
+              locationOwnerUser?.username,
+              locationOwnerUser?.name,
+              locationOwnerId
+          )
         : normalizedText(
-            locationOwnerUser?.displayName ||
-                locationOwnerUser?.username ||
-                locationOwnerUser?.name ||
-                locationOwnerId
-        );
-    const locationOwnerRow = !locationOwnerIsGroup && locationOwnerUser
-        ? {
-            ...locationOwnerUser,
-            $subtitle: t('dialog.user.info.instance_creator')
-        }
-        : !locationOwnerIsGroup && locationOwnerId
+              locationOwnerUser?.displayName ||
+                  locationOwnerUser?.username ||
+                  locationOwnerUser?.name ||
+                  locationOwnerId
+          );
+    const locationOwnerRow =
+        !locationOwnerIsGroup && locationOwnerUser
             ? {
-                id: locationOwnerId,
-                userId: locationOwnerId,
-                displayName: locationOwnerName,
-                $subtitle: t('dialog.user.info.instance_creator')
-            }
-        : null;
-    const locationPlayerUsers = locationOwnerId && !locationOwnerIsGroup
-        ? locationUsers.filter((user) => userIdForRow(user) !== locationOwnerId)
-        : locationUsers;
+                  ...locationOwnerUser,
+                  $subtitle: t('dialog.user.info.instance_creator')
+              }
+            : !locationOwnerIsGroup && locationOwnerId
+              ? {
+                    id: locationOwnerId,
+                    userId: locationOwnerId,
+                    displayName: locationOwnerName,
+                    $subtitle: t('dialog.user.info.instance_creator')
+                }
+              : null;
+    const locationPlayerUsers =
+        locationOwnerId && !locationOwnerIsGroup
+            ? locationUsers.filter(
+                  (user) => userIdForRow(user) !== locationOwnerId
+              )
+            : locationUsers;
 
     async function copyUserText(text, label) {
         await copyTextToClipboard(text);
@@ -1040,7 +1378,11 @@ export function UserDialogTabbedView({
         try {
             await backend.discord.OpenDiscordProfile(discordId);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to open Discord profile.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to open Discord profile.'
+            );
         }
     }
 
@@ -1049,20 +1391,34 @@ export function UserDialogTabbedView({
             return;
         }
         if (translatedBioActive) {
-            setBioTranslation({ userId: profile.id || '', source: profile.bio || '', text: '' });
+            setBioTranslation({
+                userId: profile.id || '',
+                source: profile.bio || '',
+                text: ''
+            });
             return;
         }
 
         setBioTranslationLoading(true);
         try {
             const config = await getTranslationConfig();
-            const translated = await translateText(profile.bio, config.bioLanguage, config);
+            const translated = await translateText(
+                profile.bio,
+                config.bioLanguage,
+                config
+            );
             if (!translated) {
                 throw new Error('No translation returned.');
             }
-            setBioTranslation({ userId: profile.id || '', source: profile.bio || '', text: translated });
+            setBioTranslation({
+                userId: profile.id || '',
+                source: profile.bio || '',
+                text: translated
+            });
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Translation failed.');
+            toast.error(
+                error instanceof Error ? error.message : 'Translation failed.'
+            );
         } finally {
             setBioTranslationLoading(false);
         }
@@ -1078,12 +1434,19 @@ export function UserDialogTabbedView({
                 endpoint: currentEndpoint
             });
             if (avatar.authorId) {
-                openUserDialog({ userId: avatar.authorId, title: avatar.authorName || undefined });
+                openUserDialog({
+                    userId: avatar.authorId,
+                    title: avatar.authorName || undefined
+                });
                 return;
             }
             toast.error('Avatar author unavailable.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to load avatar author.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load avatar author.'
+            );
         }
     }
 
@@ -1109,7 +1472,11 @@ export function UserDialogTabbedView({
             });
             toast.success('Group invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send group invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send group invite.'
+            );
         }
     }
 
@@ -1135,7 +1502,11 @@ export function UserDialogTabbedView({
             toast.success('Group visibility updated.');
             await refreshGroupsAfterMembershipChange();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update group visibility.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update group visibility.'
+            );
         } finally {
             setGroupActionId('');
         }
@@ -1159,11 +1530,18 @@ export function UserDialogTabbedView({
 
         setGroupActionId(groupId);
         try {
-            await groupProfileRepository.leaveGroup({ groupId, endpoint: currentEndpoint });
+            await groupProfileRepository.leaveGroup({
+                groupId,
+                endpoint: currentEndpoint
+            });
             toast.success('Left group.');
             await refreshGroupsAfterMembershipChange();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to leave group.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to leave group.'
+            );
         } finally {
             setGroupActionId('');
         }
@@ -1208,7 +1586,10 @@ export function UserDialogTabbedView({
             toast.error('No groups to export.');
             return;
         }
-        const filenameUser = normalizedText(profile.username || profile.displayName || profile.id).replace(/[^a-z0-9_-]+/gi, '_') || 'user';
+        const filenameUser =
+            normalizedText(
+                profile.username || profile.displayName || profile.id
+            ).replace(/[^a-z0-9_-]+/gi, '_') || 'user';
         downloadJsonFile(`vrcx-${filenameUser}-groups.json`, groups);
         toast.success(`Exported ${groups.length} groups.`);
     }
@@ -1219,15 +1600,19 @@ export function UserDialogTabbedView({
         }
         setGroupActionId('__bulk_groups__');
         try {
-            const results = await Promise.allSettled(selectedUserGroups.map((group) =>
-                groupProfileRepository.setGroupMemberProps({
-                    groupId: groupIdForRow(group),
-                    userId: currentUserId,
-                    endpoint: currentEndpoint,
-                    params: { visibility }
-                })
-            ));
-            const failed = results.filter((result) => result.status === 'rejected').length;
+            const results = await Promise.allSettled(
+                selectedUserGroups.map((group) =>
+                    groupProfileRepository.setGroupMemberProps({
+                        groupId: groupIdForRow(group),
+                        userId: currentUserId,
+                        endpoint: currentEndpoint,
+                        params: { visibility }
+                    })
+                )
+            );
+            const failed = results.filter(
+                (result) => result.status === 'rejected'
+            ).length;
             if (failed) {
                 toast.error(`Failed to update ${failed} groups.`);
             } else {
@@ -1255,10 +1640,17 @@ export function UserDialogTabbedView({
         }
         setGroupActionId('__bulk_groups__');
         try {
-            const results = await Promise.allSettled(selectedUserGroups.map((group) =>
-                groupProfileRepository.leaveGroup({ groupId: groupIdForRow(group), endpoint: currentEndpoint })
-            ));
-            const failed = results.filter((entry) => entry.status === 'rejected').length;
+            const results = await Promise.allSettled(
+                selectedUserGroups.map((group) =>
+                    groupProfileRepository.leaveGroup({
+                        groupId: groupIdForRow(group),
+                        endpoint: currentEndpoint
+                    })
+                )
+            );
+            const failed = results.filter(
+                (entry) => entry.status === 'rejected'
+            ).length;
             if (failed) {
                 toast.error(`Failed to leave ${failed} groups.`);
             } else {
@@ -1318,32 +1710,64 @@ export function UserDialogTabbedView({
             return;
         }
         setGroupActionId(groupId);
-        useRuntimeStore.getState().setGroupInstancesState({ groupOrder: nextOrder });
+        useRuntimeStore
+            .getState()
+            .setGroupInstancesState({ groupOrder: nextOrder });
         setGroupSort('inGame');
         try {
-            await backend.app.SetVRChatRegistryKey(`VRC_GROUP_ORDER_${currentUserId}`, JSON.stringify(nextOrder), 3);
+            await backend.app.SetVRChatRegistryKey(
+                `VRC_GROUP_ORDER_${currentUserId}`,
+                JSON.stringify(nextOrder),
+                3
+            );
             toast.success('Group order updated.');
         } catch (error) {
-            useRuntimeStore.getState().setGroupInstancesState({ groupOrder: previousOrder });
-            toast.error(error instanceof Error ? error.message : 'Failed to update group order.');
+            useRuntimeStore
+                .getState()
+                .setGroupInstancesState({ groupOrder: previousOrder });
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update group order.'
+            );
         } finally {
             setGroupActionId('');
         }
     }
 
-    function SearchHeader({ searchKey, tab, rows, filteredRows, placeholder, children }) {
+    function SearchHeader({
+        searchKey,
+        tab,
+        rows,
+        filteredRows,
+        placeholder,
+        children
+    }) {
         return (
             <div className="flex flex-wrap items-center gap-2">
-                <div className="text-sm text-muted-foreground">{filteredRows.length}/{rows.length}</div>
+                <div className="text-muted-foreground text-sm">
+                    {filteredRows.length}/{rows.length}
+                </div>
                 {tab ? (
-                    <Button type="button" size="sm" variant="outline" disabled={remoteStatus[tab] === 'running'} onClick={() => void loadTab(tab, { force: true })}>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={remoteStatus[tab] === 'running'}
+                        onClick={() => void loadTab(tab, { force: true })}
+                    >
                         Refresh
                     </Button>
                 ) : null}
                 {children}
                 <Input
                     value={search[searchKey]}
-                    onChange={(event) => setSearch((current) => ({ ...current, [searchKey]: event.target.value }))}
+                    onChange={(event) =>
+                        setSearch((current) => ({
+                            ...current,
+                            [searchKey]: event.target.value
+                        }))
+                    }
                     placeholder={placeholder}
                     className="ml-auto h-8 max-w-64"
                 />
@@ -1357,32 +1781,72 @@ export function UserDialogTabbedView({
                 imageUrl={imageUrl}
                 imageAlt={profile.displayName || profile.id || 'User'}
                 imageClassName="aspect-[4/3] w-40"
-                onImageClick={imageUrl ? () => openImagePreview({ url: imageUrl, title: profile.displayName || profile.username || 'User' }) : null}
-                imagePlaceholder={<UsersIcon className="size-8 text-muted-foreground" />}
+                onImageClick={
+                    imageUrl
+                        ? () =>
+                              openImagePreview({
+                                  url: imageUrl,
+                                  title:
+                                      profile.displayName ||
+                                      profile.username ||
+                                      'User'
+                              })
+                        : null
+                }
+                imagePlaceholder={
+                    <UsersIcon className="text-muted-foreground size-8" />
+                }
                 title={profile.displayName || profile.username || 'User'}
-                onTitleClick={profile.displayName || profile.username ? () => void copyUserText(profile.displayName || profile.username, 'Display name') : undefined}
+                onTitleClick={
+                    profile.displayName || profile.username
+                        ? () =>
+                              void copyUserText(
+                                  profile.displayName || profile.username,
+                                  'Display name'
+                              )
+                        : undefined
+                }
                 titleMeta={
                     <>
                         <UserTitleLanguages languages={profileLanguages} />
                         {previousDisplayNames.length ? (
-                            <Badge variant="outline" className="shrink-0 text-xs" title={previousDisplayNamesTitle}>
+                            <Badge
+                                variant="outline"
+                                className="shrink-0 text-xs"
+                                title={previousDisplayNamesTitle}
+                            >
                                 Names {previousDisplayNames.length}
                             </Badge>
                         ) : null}
                     </>
                 }
                 subtitle={userSubtitle}
-                onSubtitleClick={username ? () => void copyUserText(username, 'Username') : undefined}
+                onSubtitleClick={
+                    username
+                        ? () => void copyUserText(username, 'Username')
+                        : undefined
+                }
                 description={profile.statusDescription}
                 detail={detail}
                 badges={
                     <>
-                        {statusStateText ? <Badge variant="outline" title={statusStateText}>{statusStateText}</Badge> : null}
-                        {pronounsText ? <Badge variant="outline">{pronounsText}</Badge> : null}
-                        {isFriend ? <Badge variant="secondary">Friend</Badge> : null}
+                        {statusStateText ? (
+                            <Badge variant="outline" title={statusStateText}>
+                                {statusStateText}
+                            </Badge>
+                        ) : null}
+                        {pronounsText ? (
+                            <Badge variant="outline">{pronounsText}</Badge>
+                        ) : null}
+                        {isFriend ? (
+                            <Badge variant="secondary">Friend</Badge>
+                        ) : null}
                         {isFavorite ? (
                             <Badge>
-                                <HeartIcon data-icon="inline-start" className="fill-current" />
+                                <HeartIcon
+                                    data-icon="inline-start"
+                                    className="fill-current"
+                                />
                                 Favorite
                             </Badge>
                         ) : null}
@@ -1392,26 +1856,54 @@ export function UserDialogTabbedView({
                                 Moderator
                             </Badge>
                         ) : null}
-                        {profile.$isTroll ? <Badge variant="destructive">Nuisance</Badge> : null}
-                        {profile.$isProbableTroll ? <Badge variant="outline">Almost Nuisance</Badge> : null}
+                        {profile.$isTroll ? (
+                            <Badge variant="destructive">Nuisance</Badge>
+                        ) : null}
+                        {profile.$isProbableTroll ? (
+                            <Badge variant="outline">Almost Nuisance</Badge>
+                        ) : null}
                         {profile.$customTag ? (
                             <Badge
                                 variant="outline"
-                                style={profile.$customTagColour ? {
-                                    color: profile.$customTagColour,
-                                    borderColor: profile.$customTagColour
-                                } : undefined}>
+                                style={
+                                    profile.$customTagColour
+                                        ? {
+                                              color: profile.$customTagColour,
+                                              borderColor:
+                                                  profile.$customTagColour
+                                          }
+                                        : undefined
+                                }
+                            >
                                 {profile.$customTag}
                             </Badge>
                         ) : null}
-                        {profile.ageVerified ? <Badge variant="outline">18+</Badge> : null}
-                        {friendNumber ? <Badge variant="outline">Friend #{friendNumber}</Badge> : null}
-                        {mutualFriendCount ? <Badge variant="outline">{mutualFriendCount} mutual</Badge> : null}
-                        {moderationState.block ? <Badge variant="destructive">Blocked</Badge> : null}
-                        {moderationState.mute ? <Badge variant="destructive">Muted</Badge> : null}
-                        <Badge variant="outline">{profile.$trustLevel || 'Visitor'}</Badge>
+                        {profile.ageVerified ? (
+                            <Badge variant="outline">18+</Badge>
+                        ) : null}
+                        {friendNumber ? (
+                            <Badge variant="outline">
+                                Friend #{friendNumber}
+                            </Badge>
+                        ) : null}
+                        {mutualFriendCount ? (
+                            <Badge variant="outline">
+                                {mutualFriendCount} mutual
+                            </Badge>
+                        ) : null}
+                        {moderationState.block ? (
+                            <Badge variant="destructive">Blocked</Badge>
+                        ) : null}
+                        {moderationState.mute ? (
+                            <Badge variant="destructive">Muted</Badge>
+                        ) : null}
                         <Badge variant="outline">
-                            {PlatformIcon ? <PlatformIcon data-icon="inline-start" /> : null}
+                            {profile.$trustLevel || 'Visitor'}
+                        </Badge>
+                        <Badge variant="outline">
+                            {PlatformIcon ? (
+                                <PlatformIcon data-icon="inline-start" />
+                            ) : null}
                             {platform.label}
                         </Badge>
                         {profile.discordId ? (
@@ -1420,7 +1912,10 @@ export function UserDialogTabbedView({
                                 variant="outline"
                                 size="xs"
                                 className="h-5 rounded-4xl px-2 py-0.5 text-xs"
-                                onClick={() => void openDiscordProfile(profile.discordId)}>
+                                onClick={() =>
+                                    void openDiscordProfile(profile.discordId)
+                                }
+                            >
                                 Discord
                             </Button>
                         ) : null}
@@ -1429,137 +1924,370 @@ export function UserDialogTabbedView({
                 mediaBadges={
                     <>
                         {profile.userIcon ? (
-                            <Button type="button" variant="ghost" size="icon" className="size-8 overflow-hidden p-0" onClick={() => openImagePreview({ url: convertFileUrlToImageUrl(profile.userIcon, 512), title: profile.displayName || profile.username || 'User' })}>
-                                <img src={convertFileUrlToImageUrl(profile.userIcon, 64)} alt="" className="size-8 rounded-md object-cover" />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 overflow-hidden p-0"
+                                onClick={() =>
+                                    openImagePreview({
+                                        url: convertFileUrlToImageUrl(
+                                            profile.userIcon,
+                                            512
+                                        ),
+                                        title:
+                                            profile.displayName ||
+                                            profile.username ||
+                                            'User'
+                                    })
+                                }
+                            >
+                                <img
+                                    src={convertFileUrlToImageUrl(
+                                        profile.userIcon,
+                                        64
+                                    )}
+                                    alt=""
+                                    className="size-8 rounded-md object-cover"
+                                />
                             </Button>
                         ) : null}
-                        {Array.isArray(profile.badges) ? profile.badges.filter((badge) => badge?.badgeImageUrl).map((badge) => (
-                            <Popover key={badge.badgeId || badge.id || badge.badgeName}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        title={`${badge.badgeName || 'Badge'}${badge.hidden ? ' (Hidden)' : ''}`}
-                                        className="size-8 rounded-sm p-0"
-                                        onClick={(event) => event.stopPropagation()}>
-                                        <img
-                                            src={badge.badgeImageUrl}
-                                            alt={badge.badgeName || ''}
-                                            className={cn('size-8 rounded-sm object-cover', badge.hidden && 'grayscale')}
-                                        />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent side="bottom" className="flex w-72 flex-col gap-3">
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="h-auto w-full p-0"
-                                        onClick={() => badge.badgeImageUrl && openImagePreview({ url: badge.badgeImageUrl, title: badge.badgeName || profile.displayName || profile.username || 'Badge' })}>
-                                        <img src={badge.badgeImageUrl} alt={badge.badgeName || ''} className="max-h-56 w-full rounded-md object-contain" />
-                                    </Button>
-                                    <div className="flex flex-col gap-1 text-sm">
-                                        <div className="font-medium">
-                                            {badge.badgeName || 'Badge'}
-                                            {badge.hidden ? <span className="ml-1 text-xs text-muted-foreground">(Hidden)</span> : null}
-                                        </div>
-                                        {badge.badgeDescription ? <div className="text-xs text-muted-foreground">{badge.badgeDescription}</div> : null}
-                                        {badge.assignedAt ? <div className="text-xs font-mono text-muted-foreground">Assigned: {formatStatsDate(badge.assignedAt)}</div> : null}
-                                    </div>
-                                    {isCurrentUser ? (
-                                        <FieldGroup data-slot="checkbox-group" className="border-t pt-3 text-sm">
-                                            <Field orientation="horizontal">
-                                                <Checkbox
-                                                    checked={Boolean(badge.hidden)}
-                                                    disabled={actionStatus !== 'idle' || !onToggleBadgeVisibility}
-                                                    aria-label="Hidden"
-                                                    onCheckedChange={(checked) => onToggleBadgeVisibility?.(badge, Boolean(checked))}
-                                                />
-                                                <FieldLabel>Hidden</FieldLabel>
-                                            </Field>
-                                            <Field orientation="horizontal">
-                                                <Checkbox
-                                                    checked={Boolean(badge.showcased)}
-                                                    disabled={actionStatus !== 'idle' || !onToggleBadgeShowcased}
-                                                    aria-label="Showcased"
-                                                    onCheckedChange={(checked) => onToggleBadgeShowcased?.(badge, Boolean(checked))}
-                                                />
-                                                <FieldLabel>Showcased</FieldLabel>
-                                            </Field>
-                                        </FieldGroup>
-                                    ) : null}
-                                </PopoverContent>
-                            </Popover>
-                        )) : null}
+                        {Array.isArray(profile.badges)
+                            ? profile.badges
+                                  .filter((badge) => badge?.badgeImageUrl)
+                                  .map((badge) => (
+                                      <Popover
+                                          key={
+                                              badge.badgeId ||
+                                              badge.id ||
+                                              badge.badgeName
+                                          }
+                                      >
+                                          <PopoverTrigger asChild>
+                                              <Button
+                                                  type="button"
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  title={`${badge.badgeName || 'Badge'}${badge.hidden ? ' (Hidden)' : ''}`}
+                                                  className="size-8 rounded-sm p-0"
+                                                  onClick={(event) =>
+                                                      event.stopPropagation()
+                                                  }
+                                              >
+                                                  <img
+                                                      src={badge.badgeImageUrl}
+                                                      alt={
+                                                          badge.badgeName || ''
+                                                      }
+                                                      className={cn(
+                                                          'size-8 rounded-sm object-cover',
+                                                          badge.hidden &&
+                                                              'grayscale'
+                                                      )}
+                                                  />
+                                              </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent
+                                              side="bottom"
+                                              className="flex w-72 flex-col gap-3"
+                                          >
+                                              <Button
+                                                  type="button"
+                                                  variant="ghost"
+                                                  className="h-auto w-full p-0"
+                                                  onClick={() =>
+                                                      badge.badgeImageUrl &&
+                                                      openImagePreview({
+                                                          url: badge.badgeImageUrl,
+                                                          title:
+                                                              badge.badgeName ||
+                                                              profile.displayName ||
+                                                              profile.username ||
+                                                              'Badge'
+                                                      })
+                                                  }
+                                              >
+                                                  <img
+                                                      src={badge.badgeImageUrl}
+                                                      alt={
+                                                          badge.badgeName || ''
+                                                      }
+                                                      className="max-h-56 w-full rounded-md object-contain"
+                                                  />
+                                              </Button>
+                                              <div className="flex flex-col gap-1 text-sm">
+                                                  <div className="font-medium">
+                                                      {badge.badgeName ||
+                                                          'Badge'}
+                                                      {badge.hidden ? (
+                                                          <span className="text-muted-foreground ml-1 text-xs">
+                                                              (Hidden)
+                                                          </span>
+                                                      ) : null}
+                                                  </div>
+                                                  {badge.badgeDescription ? (
+                                                      <div className="text-muted-foreground text-xs">
+                                                          {
+                                                              badge.badgeDescription
+                                                          }
+                                                      </div>
+                                                  ) : null}
+                                                  {badge.assignedAt ? (
+                                                      <div className="text-muted-foreground font-mono text-xs">
+                                                          Assigned:{' '}
+                                                          {formatStatsDate(
+                                                              badge.assignedAt
+                                                          )}
+                                                      </div>
+                                                  ) : null}
+                                              </div>
+                                              {isCurrentUser ? (
+                                                  <FieldGroup
+                                                      data-slot="checkbox-group"
+                                                      className="border-t pt-3 text-sm"
+                                                  >
+                                                      <Field orientation="horizontal">
+                                                          <Checkbox
+                                                              checked={Boolean(
+                                                                  badge.hidden
+                                                              )}
+                                                              disabled={
+                                                                  actionStatus !==
+                                                                      'idle' ||
+                                                                  !onToggleBadgeVisibility
+                                                              }
+                                                              aria-label="Hidden"
+                                                              onCheckedChange={(
+                                                                  checked
+                                                              ) =>
+                                                                  onToggleBadgeVisibility?.(
+                                                                      badge,
+                                                                      Boolean(
+                                                                          checked
+                                                                      )
+                                                                  )
+                                                              }
+                                                          />
+                                                          <FieldLabel>
+                                                              Hidden
+                                                          </FieldLabel>
+                                                      </Field>
+                                                      <Field orientation="horizontal">
+                                                          <Checkbox
+                                                              checked={Boolean(
+                                                                  badge.showcased
+                                                              )}
+                                                              disabled={
+                                                                  actionStatus !==
+                                                                      'idle' ||
+                                                                  !onToggleBadgeShowcased
+                                                              }
+                                                              aria-label="Showcased"
+                                                              onCheckedChange={(
+                                                                  checked
+                                                              ) =>
+                                                                  onToggleBadgeShowcased?.(
+                                                                      badge,
+                                                                      Boolean(
+                                                                          checked
+                                                                      )
+                                                                  )
+                                                              }
+                                                          />
+                                                          <FieldLabel>
+                                                              Showcased
+                                                          </FieldLabel>
+                                                      </Field>
+                                                  </FieldGroup>
+                                              ) : null}
+                                          </PopoverContent>
+                                      </Popover>
+                                  ))
+                            : null}
                     </>
                 }
                 actions={
                     <>
-                        {!isCurrentUser ? <FavoriteActionMenu kind="friend" entityId={profile.id} entity={profile} /> : null}
+                        {!isCurrentUser ? (
+                            <FavoriteActionMenu
+                                kind="friend"
+                                entityId={profile.id}
+                                entity={profile}
+                            />
+                        ) : null}
                         <EntityActionDropdown
-                            busy={loadStatus === 'running' || actionStatus !== 'idle'}
-                            dangerous={moderationState.block || moderationState.mute}
-                            indicator={friendRequestState.incoming || friendRequestState.outgoing}>
-                            <EntityActionItem icon={RefreshCwIcon} disabled={loadStatus === 'running'} onSelect={onRefresh}>
+                            busy={
+                                loadStatus === 'running' ||
+                                actionStatus !== 'idle'
+                            }
+                            dangerous={
+                                moderationState.block || moderationState.mute
+                            }
+                            indicator={
+                                friendRequestState.incoming ||
+                                friendRequestState.outgoing
+                            }
+                        >
+                            <EntityActionItem
+                                icon={RefreshCwIcon}
+                                disabled={loadStatus === 'running'}
+                                onSelect={onRefresh}
+                            >
                                 Refresh
                             </EntityActionItem>
                             {userUrl ? (
                                 <>
-                                    <EntityActionItem icon={Share2Icon} onSelect={() => void copyUserText(userUrl, 'User URL')}>
+                                    <EntityActionItem
+                                        icon={Share2Icon}
+                                        onSelect={() =>
+                                            void copyUserText(
+                                                userUrl,
+                                                'User URL'
+                                            )
+                                        }
+                                    >
                                         Share / Copy URL
                                     </EntityActionItem>
-                                    <EntityActionItem icon={ExternalLinkIcon} onSelect={() => openExternalLink(userUrl)}>
+                                    <EntityActionItem
+                                        icon={ExternalLinkIcon}
+                                        onSelect={() =>
+                                            openExternalLink(userUrl)
+                                        }
+                                    >
                                         Open VRChat Page
                                     </EntityActionItem>
-                                    <EntityActionItem icon={CopyIcon} onSelect={() => void copyUserText(profile.id, 'User ID')}>
+                                    <EntityActionItem
+                                        icon={CopyIcon}
+                                        onSelect={() =>
+                                            void copyUserText(
+                                                profile.id,
+                                                'User ID'
+                                            )
+                                        }
+                                    >
                                         Copy User ID
                                     </EntityActionItem>
                                     <EntityActionSeparator />
                                 </>
                             ) : null}
-                            <EntityActionItem icon={UserIcon} onSelect={onEditMemo}>Edit Note Memo</EntityActionItem>
+                            <EntityActionItem
+                                icon={UserIcon}
+                                onSelect={onEditMemo}
+                            >
+                                Edit Note Memo
+                            </EntityActionItem>
                             {currentAvatarTarget ? (
-                                <EntityActionItem icon={UserIcon} onSelect={() => void showAvatarAuthor()}>
+                                <EntityActionItem
+                                    icon={UserIcon}
+                                    onSelect={() => void showAvatarAuthor()}
+                                >
                                     Show Avatar Author
                                 </EntityActionItem>
                             ) : null}
                             {fallbackAvatarTarget ? (
-                                <EntityActionItem icon={UserIcon} onSelect={() => openAvatarDialog(fallbackAvatarDialogArgs)}>
+                                <EntityActionItem
+                                    icon={UserIcon}
+                                    onSelect={() =>
+                                        openAvatarDialog(
+                                            fallbackAvatarDialogArgs
+                                        )
+                                    }
+                                >
                                     Show Fallback Avatar Details
                                 </EntityActionItem>
                             ) : null}
                             {isCurrentUser ? (
                                 <>
                                     <EntityActionSeparator />
-                                    <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfStatus}>Edit Social Status</EntityActionItem>
-                                    <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfLanguages}>Edit Language</EntityActionItem>
-                                    <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfBio}>Edit Bio</EntityActionItem>
-                                    <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfBioLinks}>Edit Bio Links</EntityActionItem>
-                                    <EntityActionItem icon={PencilIcon} disabled={actionStatus !== 'idle'} onSelect={onEditSelfPronouns}>Edit Pronouns</EntityActionItem>
+                                    <EntityActionItem
+                                        icon={PencilIcon}
+                                        disabled={actionStatus !== 'idle'}
+                                        onSelect={onEditSelfStatus}
+                                    >
+                                        Edit Social Status
+                                    </EntityActionItem>
+                                    <EntityActionItem
+                                        icon={PencilIcon}
+                                        disabled={actionStatus !== 'idle'}
+                                        onSelect={onEditSelfLanguages}
+                                    >
+                                        Edit Language
+                                    </EntityActionItem>
+                                    <EntityActionItem
+                                        icon={PencilIcon}
+                                        disabled={actionStatus !== 'idle'}
+                                        onSelect={onEditSelfBio}
+                                    >
+                                        Edit Bio
+                                    </EntityActionItem>
+                                    <EntityActionItem
+                                        icon={PencilIcon}
+                                        disabled={actionStatus !== 'idle'}
+                                        onSelect={onEditSelfBioLinks}
+                                    >
+                                        Edit Bio Links
+                                    </EntityActionItem>
+                                    <EntityActionItem
+                                        icon={PencilIcon}
+                                        disabled={actionStatus !== 'idle'}
+                                        onSelect={onEditSelfPronouns}
+                                    >
+                                        Edit Pronouns
+                                    </EntityActionItem>
                                 </>
                             ) : null}
                             {!isCurrentUser ? (
                                 <>
                                     <EntityActionSeparator />
-                                    {!isFriend && friendRequestState.incoming ? (
+                                    {!isFriend &&
+                                    friendRequestState.incoming ? (
                                         <>
-                                            <EntityActionItem icon={CheckIcon} disabled={actionStatus !== 'idle'} onSelect={() => onFriendRequest('accept')}>
+                                            <EntityActionItem
+                                                icon={CheckIcon}
+                                                disabled={
+                                                    actionStatus !== 'idle'
+                                                }
+                                                onSelect={() =>
+                                                    onFriendRequest('accept')
+                                                }
+                                            >
                                                 Accept Friend Request
                                             </EntityActionItem>
-                                            <EntityActionItem icon={XIcon} destructive disabled={actionStatus !== 'idle'} onSelect={() => onFriendRequest('decline')}>
+                                            <EntityActionItem
+                                                icon={XIcon}
+                                                destructive
+                                                disabled={
+                                                    actionStatus !== 'idle'
+                                                }
+                                                onSelect={() =>
+                                                    onFriendRequest('decline')
+                                                }
+                                            >
                                                 Decline Friend Request
                                             </EntityActionItem>
                                         </>
-                                    ) : !isFriend && friendRequestState.outgoing ? (
-                                        <EntityActionItem icon={XIcon} disabled={actionStatus !== 'idle'} onSelect={() => onFriendRequest('cancel')}>
+                                    ) : !isFriend &&
+                                      friendRequestState.outgoing ? (
+                                        <EntityActionItem
+                                            icon={XIcon}
+                                            disabled={actionStatus !== 'idle'}
+                                            onSelect={() =>
+                                                onFriendRequest('cancel')
+                                            }
+                                        >
                                             Cancel Friend Request
                                         </EntityActionItem>
                                     ) : !isFriend ? (
                                         <EntityActionItem
                                             icon={UserIcon}
-                                            shortcut={recentDialogShortcut('Send Friend Request')}
+                                            shortcut={recentDialogShortcut(
+                                                'Send Friend Request'
+                                            )}
                                             disabled={actionStatus !== 'idle'}
-                                            onSelect={() => onFriendRequest('send')}>
+                                            onSelect={() =>
+                                                onFriendRequest('send')
+                                            }
+                                        >
                                             Send Friend Request
                                         </EntityActionItem>
                                     ) : null}
@@ -1567,93 +2295,208 @@ export function UserDialogTabbedView({
                                         <>
                                             <EntityActionItem
                                                 icon={MessageSquareIcon}
-                                                shortcut={recentDialogShortcut('Invite')}
-                                                disabled={actionStatus !== 'idle' || !canInviteFromCurrentLocation}
-                                                onSelect={onInvite}>
+                                                shortcut={recentDialogShortcut(
+                                                    'Invite'
+                                                )}
+                                                disabled={
+                                                    actionStatus !== 'idle' ||
+                                                    !canInviteFromCurrentLocation
+                                                }
+                                                onSelect={onInvite}
+                                            >
                                                 Invite
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MessageSquareIcon}
-                                                shortcut={recentDialogShortcut('Invite Message')}
-                                                disabled={actionStatus !== 'idle' || !canInviteFromCurrentLocation}
-                                                onSelect={onInviteMessage}>
+                                                shortcut={recentDialogShortcut(
+                                                    'Invite Message'
+                                                )}
+                                                disabled={
+                                                    actionStatus !== 'idle' ||
+                                                    !canInviteFromCurrentLocation
+                                                }
+                                                onSelect={onInviteMessage}
+                                            >
                                                 Invite Message
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MailIcon}
-                                                shortcut={recentDialogShortcut('Request Invite')}
-                                                disabled={actionStatus !== 'idle'}
-                                                onSelect={onInviteRequest}>
+                                                shortcut={recentDialogShortcut(
+                                                    'Request Invite'
+                                                )}
+                                                disabled={
+                                                    actionStatus !== 'idle'
+                                                }
+                                                onSelect={onInviteRequest}
+                                            >
                                                 Request Invite
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MailIcon}
-                                                shortcut={recentDialogShortcut('Request Invite Message')}
-                                                disabled={actionStatus !== 'idle'}
-                                                onSelect={onInviteRequestMessage}>
+                                                shortcut={recentDialogShortcut(
+                                                    'Request Invite Message'
+                                                )}
+                                                disabled={
+                                                    actionStatus !== 'idle'
+                                                }
+                                                onSelect={
+                                                    onInviteRequestMessage
+                                                }
+                                            >
                                                 Request Invite Message
                                             </EntityActionItem>
-                                            <EntityActionItem icon={MousePointerIcon} disabled={actionStatus !== 'idle' || !currentUserBoopingEnabled} onSelect={onBoop}>
+                                            <EntityActionItem
+                                                icon={MousePointerIcon}
+                                                disabled={
+                                                    actionStatus !== 'idle' ||
+                                                    !currentUserBoopingEnabled
+                                                }
+                                                onSelect={onBoop}
+                                            >
                                                 Boop
                                             </EntityActionItem>
-                                            <EntityActionItem icon={UserMinusIcon} destructive disabled={actionStatus !== 'idle'} onSelect={onUnfriend}>
+                                            <EntityActionItem
+                                                icon={UserMinusIcon}
+                                                destructive
+                                                disabled={
+                                                    actionStatus !== 'idle'
+                                                }
+                                                onSelect={onUnfriend}
+                                            >
                                                 Unfriend
                                             </EntityActionItem>
                                         </>
                                     ) : null}
-                                    <EntityActionItem icon={UsersIcon} disabled={actionStatus !== 'idle'} onSelect={() => void inviteToGroup()}>
+                                    <EntityActionItem
+                                        icon={UsersIcon}
+                                        disabled={actionStatus !== 'idle'}
+                                        onSelect={() => void inviteToGroup()}
+                                    >
                                         Invite To Group
                                     </EntityActionItem>
-                                    <EntityActionItem icon={SettingsIcon} disabled={actionStatus !== 'idle'} onSelect={onGroupModeration}>
+                                    <EntityActionItem
+                                        icon={SettingsIcon}
+                                        disabled={actionStatus !== 'idle'}
+                                        onSelect={onGroupModeration}
+                                    >
                                         Group Moderation
                                     </EntityActionItem>
                                     <EntityActionSeparator />
-                                    <EntityActionItem icon={MapPinIcon} disabled={!previousInstances.length} onSelect={() => setPreviousInstancesOpen(true)}>
+                                    <EntityActionItem
+                                        icon={MapPinIcon}
+                                        disabled={!previousInstances.length}
+                                        onSelect={() =>
+                                            setPreviousInstancesOpen(true)
+                                        }
+                                    >
                                         Previous Instances
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={BanIcon}
                                         destructive={moderationState.block}
-                                        disabled={actionStatus !== 'idle' || (!moderationState.block && Boolean(profile.$isModerator))}
-                                        onSelect={() => onModeration('block', !moderationState.block)}>
-                                        {moderationState.block ? 'Unblock' : 'Block'}
+                                        disabled={
+                                            actionStatus !== 'idle' ||
+                                            (!moderationState.block &&
+                                                Boolean(profile.$isModerator))
+                                        }
+                                        onSelect={() =>
+                                            onModeration(
+                                                'block',
+                                                !moderationState.block
+                                            )
+                                        }
+                                    >
+                                        {moderationState.block
+                                            ? 'Unblock'
+                                            : 'Block'}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={VolumeXIcon}
                                         destructive={moderationState.mute}
-                                        disabled={actionStatus !== 'idle' || (!moderationState.mute && Boolean(profile.$isModerator))}
-                                        onSelect={() => onModeration('mute', !moderationState.mute)}>
-                                        {moderationState.mute ? 'Unmute' : 'Mute'}
+                                        disabled={
+                                            actionStatus !== 'idle' ||
+                                            (!moderationState.mute &&
+                                                Boolean(profile.$isModerator))
+                                        }
+                                        onSelect={() =>
+                                            onModeration(
+                                                'mute',
+                                                !moderationState.mute
+                                            )
+                                        }
+                                    >
+                                        {moderationState.mute
+                                            ? 'Unmute'
+                                            : 'Mute'}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={UserIcon}
-                                        destructive={avatarOverrideState.hideAvatar}
+                                        destructive={
+                                            avatarOverrideState.hideAvatar
+                                        }
                                         disabled={actionStatus !== 'idle'}
-                                        onSelect={() => onAvatarOverride?.('hideAvatar')}>
-                                        {avatarOverrideState.hideAvatar ? 'Reset Hidden Avatar' : 'Hide Avatar'}
+                                        onSelect={() =>
+                                            onAvatarOverride?.('hideAvatar')
+                                        }
+                                    >
+                                        {avatarOverrideState.hideAvatar
+                                            ? 'Reset Hidden Avatar'
+                                            : 'Hide Avatar'}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={UserIcon}
-                                        destructive={avatarOverrideState.showAvatar}
+                                        destructive={
+                                            avatarOverrideState.showAvatar
+                                        }
                                         disabled={actionStatus !== 'idle'}
-                                        onSelect={() => onAvatarOverride?.('showAvatar')}>
-                                        {avatarOverrideState.showAvatar ? 'Reset Shown Avatar' : 'Show Avatar'}
+                                        onSelect={() =>
+                                            onAvatarOverride?.('showAvatar')
+                                        }
+                                    >
+                                        {avatarOverrideState.showAvatar
+                                            ? 'Reset Shown Avatar'
+                                            : 'Show Avatar'}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={BanIcon}
-                                        destructive={extendedModerationState.interactOff}
+                                        destructive={
+                                            extendedModerationState.interactOff
+                                        }
                                         disabled={actionStatus !== 'idle'}
-                                        onSelect={() => onExtendedModeration?.('interactOff', !extendedModerationState.interactOff)}>
-                                        {extendedModerationState.interactOff ? 'Enable Avatar Interaction' : 'Disable Avatar Interaction'}
+                                        onSelect={() =>
+                                            onExtendedModeration?.(
+                                                'interactOff',
+                                                !extendedModerationState.interactOff
+                                            )
+                                        }
+                                    >
+                                        {extendedModerationState.interactOff
+                                            ? 'Enable Avatar Interaction'
+                                            : 'Disable Avatar Interaction'}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={VolumeXIcon}
-                                        destructive={extendedModerationState.muteChat}
+                                        destructive={
+                                            extendedModerationState.muteChat
+                                        }
                                         disabled={actionStatus !== 'idle'}
-                                        onSelect={() => onExtendedModeration?.('muteChat', !extendedModerationState.muteChat)}>
-                                        {extendedModerationState.muteChat ? 'Enable Chatbox' : 'Disable Chatbox'}
+                                        onSelect={() =>
+                                            onExtendedModeration?.(
+                                                'muteChat',
+                                                !extendedModerationState.muteChat
+                                            )
+                                        }
+                                    >
+                                        {extendedModerationState.muteChat
+                                            ? 'Enable Chatbox'
+                                            : 'Disable Chatbox'}
                                     </EntityActionItem>
-                                    <EntityActionItem icon={BanIcon} destructive disabled={actionStatus !== 'idle'} onSelect={onReportHacking}>
+                                    <EntityActionItem
+                                        icon={BanIcon}
+                                        destructive
+                                        disabled={actionStatus !== 'idle'}
+                                        onSelect={onReportHacking}
+                                    >
                                         Report Hacking
                                     </EntityActionItem>
                                 </>
@@ -1662,26 +2505,41 @@ export function UserDialogTabbedView({
                     </>
                 }
             />
-            <EntityDialogTabs value={activeTab} onValueChange={changeTab} tabs={tabs}>
+            <EntityDialogTabs
+                value={activeTab}
+                onValueChange={changeTab}
+                tabs={tabs}
+            >
                 <EntityDialogTabContent value="info">
                     {visiblePresenceLocation ? (
-                        <div className="mb-2 flex flex-col gap-2 border-b border-border pb-2">
+                        <div className="border-border mb-2 flex flex-col gap-2 border-b pb-2">
                             <div className="flex flex-col gap-1 text-sm">
                                 {visiblePresenceLocation.includes(':') ? (
                                     <InstanceActionBar
                                         location={visiblePresenceLocation}
                                         launchLocation={visiblePresenceLocation}
                                         inviteLocation={visiblePresenceLocation}
-                                        instanceLocation={visiblePresenceLocation}
+                                        instanceLocation={
+                                            visiblePresenceLocation
+                                        }
                                         instance={locationInstance}
                                         worldName={locationWorldTitle}
                                         friendCount={locationFriendCount}
                                         playerCount={locationPlayerCount}
-                                        capacity={locationInstance?.capacity ?? locationInstance?.recommendedCapacity}
-                                        refreshTooltip={t('dialog.user.info.refresh_instance_info')}
-                                        showHistory={Boolean(previousInstances.length)}
+                                        capacity={
+                                            locationInstance?.capacity ??
+                                            locationInstance?.recommendedCapacity
+                                        }
+                                        refreshTooltip={t(
+                                            'dialog.user.info.refresh_instance_info'
+                                        )}
+                                        showHistory={Boolean(
+                                            previousInstances.length
+                                        )}
                                         onRefresh={onRefreshLocation}
-                                        onHistory={() => setPreviousInstancesOpen(true)}
+                                        onHistory={() =>
+                                            setPreviousInstancesOpen(true)
+                                        }
                                     />
                                 ) : null}
                                 {visiblePresenceLocation.includes(':') ? (
@@ -1692,14 +2550,31 @@ export function UserDialogTabbedView({
                                             location: visiblePresenceLocation,
                                             userId: locationOwnerId,
                                             playerCount: locationPlayerCount,
-                                            capacity: locationInstance?.capacity ?? locationInstance?.recommendedCapacity
+                                            capacity:
+                                                locationInstance?.capacity ??
+                                                locationInstance?.recommendedCapacity
                                         }}
                                         currentUserId={currentUserId}
-                                        grouphint={locationInstance?.groupName || profile.$location?.groupName || ''}
-                                        instanceOwner={locationOwnerIsGroup ? '' : locationOwnerId}
-                                        instanceOwnerName={locationOwnerIsGroup ? '' : locationOwnerName}
+                                        grouphint={
+                                            locationInstance?.groupName ||
+                                            profile.$location?.groupName ||
+                                            ''
+                                        }
+                                        instanceOwner={
+                                            locationOwnerIsGroup
+                                                ? ''
+                                                : locationOwnerId
+                                        }
+                                        instanceOwnerName={
+                                            locationOwnerIsGroup
+                                                ? ''
+                                                : locationOwnerName
+                                        }
                                         playerCount={locationPlayerCount}
-                                        capacity={locationInstance?.capacity ?? locationInstance?.recommendedCapacity}
+                                        capacity={
+                                            locationInstance?.capacity ??
+                                            locationInstance?.recommendedCapacity
+                                        }
                                         endpoint={currentEndpoint}
                                         hint={locationWorldTitle}
                                         instanceClickAction="world"
@@ -1717,18 +2592,29 @@ export function UserDialogTabbedView({
                                 <div className="flex max-h-36 flex-col gap-2 overflow-auto">
                                     {locationOwnerRow ? (
                                         <div className="flex flex-col gap-1">
-                                            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                                {t('dialog.user.info.instance_creator')}
+                                            <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                                {t(
+                                                    'dialog.user.info.instance_creator'
+                                                )}
                                             </div>
-                                            <EntityList rows={[locationOwnerRow]} kind="user" />
+                                            <EntityList
+                                                rows={[locationOwnerRow]}
+                                                kind="user"
+                                            />
                                         </div>
                                     ) : null}
                                     {locationPlayerUsers.length ? (
                                         <div className="flex flex-col gap-1">
-                                            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                                {t('dialog.user.info.instance_users')} {locationPlayerUsers.length}
+                                            <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                                {t(
+                                                    'dialog.user.info.instance_users'
+                                                )}{' '}
+                                                {locationPlayerUsers.length}
                                             </div>
-                                            <EntityList rows={locationPlayerUsers} kind="user" />
+                                            <EntityList
+                                                rows={locationPlayerUsers}
+                                                kind="user"
+                                            />
                                         </div>
                                     ) : null}
                                 </div>
@@ -1737,72 +2623,129 @@ export function UserDialogTabbedView({
                     ) : null}
                     <EntityInfoGrid>
                         {profile.note && !hideUserNotes ? (
-                            <EntityInfoBlock label="Note" full onClick={onEditMemo}>
-                                <pre className="max-h-52 whitespace-pre-wrap text-xs font-sans text-muted-foreground">{profile.note}</pre>
+                            <EntityInfoBlock
+                                label="Note"
+                                full
+                                onClick={onEditMemo}
+                            >
+                                <pre className="text-muted-foreground max-h-52 font-sans text-xs whitespace-pre-wrap">
+                                    {profile.note}
+                                </pre>
                             </EntityInfoBlock>
                         ) : null}
                         {memo && !hideUserMemos ? (
-                            <EntityInfoBlock label="Memo" full onClick={onEditMemo}>
-                                <pre className="max-h-52 whitespace-pre-wrap text-xs font-sans text-muted-foreground">{memo}</pre>
+                            <EntityInfoBlock
+                                label="Memo"
+                                full
+                                onClick={onEditMemo}
+                            >
+                                <pre className="text-muted-foreground max-h-52 font-sans text-xs whitespace-pre-wrap">
+                                    {memo}
+                                </pre>
                             </EntityInfoBlock>
                         ) : null}
                         <EntityInfoBlock label="Avatar Info" full>
                             {currentAvatarTarget ? (
-                                <Button type="button" variant="link" className="h-auto justify-start p-0 text-left text-xs" onClick={() => openAvatarDialog(currentAvatarDialogArgs)}>
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    className="h-auto justify-start p-0 text-left text-xs"
+                                    onClick={() =>
+                                        openAvatarDialog(
+                                            currentAvatarDialogArgs
+                                        )
+                                    }
+                                >
                                     <UserIcon data-icon="inline-start" />
                                     {currentAvatarDisplayName || 'Avatar'}
                                 </Button>
-                            ) : <span className="block truncate text-xs">—</span>}
+                            ) : (
+                                <span className="block truncate text-xs">
+                                    —
+                                </span>
+                            )}
                         </EntityInfoBlock>
                         <EntityInfoBlock label="Represented Group" full>
                             {representedGroupStatus === 'running' ? (
-                                <span className="block text-xs text-muted-foreground">Loading...</span>
+                                <span className="text-muted-foreground block text-xs">
+                                    Loading...
+                                </span>
                             ) : representedGroup?.isRepresenting ? (
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     className="h-auto max-w-full justify-start gap-2 p-0 text-left text-xs font-normal whitespace-normal hover:bg-transparent hover:underline"
-                                    onClick={() => openGroupDialog({
-                                        groupId: representedGroup.groupId,
-                                        title: representedGroup.name || undefined,
-                                        seedData: {
-                                            ...representedGroup,
-                                            $memberId: representedGroup.id,
-                                            id: representedGroup.groupId,
-                                            myMember: {
-                                                ...(representedGroup.myMember || {}),
-                                                id: representedGroup.id,
-                                                groupId: representedGroup.groupId,
-                                                isRepresenting: Boolean(representedGroup.isRepresenting),
-                                                isSubscribedToAnnouncements: Boolean(representedGroup.isSubscribedToAnnouncements),
-                                                visibility: representedGroup.visibility || representedGroup.memberVisibility || 'visible',
-                                                membershipStatus: representedGroup.membershipStatus || ''
+                                    onClick={() =>
+                                        openGroupDialog({
+                                            groupId: representedGroup.groupId,
+                                            title:
+                                                representedGroup.name ||
+                                                undefined,
+                                            seedData: {
+                                                ...representedGroup,
+                                                $memberId: representedGroup.id,
+                                                id: representedGroup.groupId,
+                                                myMember: {
+                                                    ...(representedGroup.myMember ||
+                                                        {}),
+                                                    id: representedGroup.id,
+                                                    groupId:
+                                                        representedGroup.groupId,
+                                                    isRepresenting: Boolean(
+                                                        representedGroup.isRepresenting
+                                                    ),
+                                                    isSubscribedToAnnouncements:
+                                                        Boolean(
+                                                            representedGroup.isSubscribedToAnnouncements
+                                                        ),
+                                                    visibility:
+                                                        representedGroup.visibility ||
+                                                        representedGroup.memberVisibility ||
+                                                        'visible',
+                                                    membershipStatus:
+                                                        representedGroup.membershipStatus ||
+                                                        ''
+                                                }
                                             }
-                                        }
-                                    })}>
+                                        })
+                                    }
+                                >
                                     {representedGroup.iconUrl ? (
                                         <img
-                                            src={convertFileUrlToImageUrl(representedGroup.iconUrl, 128)}
+                                            src={convertFileUrlToImageUrl(
+                                                representedGroup.iconUrl,
+                                                128
+                                            )}
                                             alt=""
                                             className="size-10 shrink-0 rounded-md object-cover"
                                         />
                                     ) : null}
                                     <span className="min-w-0">
                                         <span className="block truncate">
-                                            {representedGroup.ownerId === profile.id ? 'Owner - ' : ''}{representedGroup.name || 'Group'}
+                                            {representedGroup.ownerId ===
+                                            profile.id
+                                                ? 'Owner - '
+                                                : ''}
+                                            {representedGroup.name || 'Group'}
                                         </span>
-                                        <span className="block truncate text-muted-foreground">
-                                            {representedGroup.memberCount ? `${representedGroup.memberCount} members` : ''}
+                                        <span className="text-muted-foreground block truncate">
+                                            {representedGroup.memberCount
+                                                ? `${representedGroup.memberCount} members`
+                                                : ''}
                                         </span>
                                     </span>
                                 </Button>
                             ) : (
-                                <span className="block text-xs text-muted-foreground">—</span>
+                                <span className="text-muted-foreground block text-xs">
+                                    —
+                                </span>
                             )}
                         </EntityInfoBlock>
                         <EntityInfoBlock label="Bio" full>
                             <div className="flex items-start gap-2">
-                                <pre className="max-h-52 min-w-0 flex-1 overflow-auto whitespace-pre-wrap text-xs font-sans text-muted-foreground">{visibleBio}</pre>
+                                <pre className="text-muted-foreground max-h-52 min-w-0 flex-1 overflow-auto font-sans text-xs whitespace-pre-wrap">
+                                    {visibleBio}
+                                </pre>
                                 {profile.bio ? (
                                     <Button
                                         type="button"
@@ -1810,10 +2753,25 @@ export function UserDialogTabbedView({
                                         variant="ghost"
                                         className="shrink-0"
                                         disabled={bioTranslationLoading}
-                                        title={translatedBioActive ? 'Show original bio' : 'Translate bio'}
-                                        aria-label={translatedBioActive ? 'Show original bio' : 'Translate bio'}
-                                        onClick={() => void toggleBioTranslation()}>
-                                        {bioTranslationLoading ? <Spinner data-icon="inline-start" /> : <LanguagesIcon data-icon="inline-start" />}
+                                        title={
+                                            translatedBioActive
+                                                ? 'Show original bio'
+                                                : 'Translate bio'
+                                        }
+                                        aria-label={
+                                            translatedBioActive
+                                                ? 'Show original bio'
+                                                : 'Translate bio'
+                                        }
+                                        onClick={() =>
+                                            void toggleBioTranslation()
+                                        }
+                                    >
+                                        {bioTranslationLoading ? (
+                                            <Spinner data-icon="inline-start" />
+                                        ) : (
+                                            <LanguagesIcon data-icon="inline-start" />
+                                        )}
                                     </Button>
                                 ) : null}
                             </div>
@@ -1827,9 +2785,16 @@ export function UserDialogTabbedView({
                                             size="icon-xs"
                                             title={link}
                                             aria-label={`Open ${link}`}
-                                            onClick={() => openExternalLink(link)}>
+                                            onClick={() =>
+                                                openExternalLink(link)
+                                            }
+                                        >
                                             {getFaviconUrl(link) ? (
-                                                <img src={getFaviconUrl(link)} alt="" className="size-4" />
+                                                <img
+                                                    src={getFaviconUrl(link)}
+                                                    alt=""
+                                                    className="size-4"
+                                                />
                                             ) : (
                                                 <ExternalLinkIcon data-icon="inline-start" />
                                             )}
@@ -1838,53 +2803,130 @@ export function UserDialogTabbedView({
                                 </div>
                             ) : null}
                         </EntityInfoBlock>
-                        <EntityInfoBlock label="Status" value={profile.status || profile.state} />
-                        <EntityInfoBlock label="Last Platform" value={platform.label} />
-                        {!isCurrentUser ? <EntityInfoBlock label="Last Seen" value={formatStatsDate(lastSeen)} /> : null}
-                        <EntityInfoBlock label="Last Login" value={formatDate(profile.last_login || profile.last_activity)} />
-                        <EntityInfoBlock label="Last Activity" value={formatDate(profile.last_activity)} />
-                        <EntityInfoBlock label="Date Joined" value={profile.date_joined} />
+                        <EntityInfoBlock
+                            label="Status"
+                            value={profile.status || profile.state}
+                        />
+                        <EntityInfoBlock
+                            label="Last Platform"
+                            value={platform.label}
+                        />
+                        {!isCurrentUser ? (
+                            <EntityInfoBlock
+                                label="Last Seen"
+                                value={formatStatsDate(lastSeen)}
+                            />
+                        ) : null}
+                        <EntityInfoBlock
+                            label="Last Login"
+                            value={formatDate(
+                                profile.last_login || profile.last_activity
+                            )}
+                        />
+                        <EntityInfoBlock
+                            label="Last Activity"
+                            value={formatDate(profile.last_activity)}
+                        />
+                        <EntityInfoBlock
+                            label="Date Joined"
+                            value={profile.date_joined}
+                        />
                         {isCurrentUser ? (
                             <EntityInfoBlock
                                 label="Play Time"
                                 value={formatStatsDuration(userTimeSpent)}
-                                onClick={previousInstances.length ? () => setPreviousInstancesOpen(true) : undefined}
+                                onClick={
+                                    previousInstances.length
+                                        ? () => setPreviousInstancesOpen(true)
+                                        : undefined
+                                }
                             />
                         ) : (
                             <>
                                 <EntityInfoBlock
                                     label="Join Count"
-                                    value={userJoinCount ? String(userJoinCount) : '—'}
-                                    onClick={previousInstances.length ? () => setPreviousInstancesOpen(true) : undefined}
+                                    value={
+                                        userJoinCount
+                                            ? String(userJoinCount)
+                                            : '—'
+                                    }
+                                    onClick={
+                                        previousInstances.length
+                                            ? () =>
+                                                  setPreviousInstancesOpen(true)
+                                            : undefined
+                                    }
                                 />
-                                <EntityInfoBlock label="Time Together" value={formatStatsDuration(userTimeSpent)} />
+                                <EntityInfoBlock
+                                    label="Time Together"
+                                    value={formatStatsDuration(userTimeSpent)}
+                                />
                             </>
                         )}
                         {isCurrentUser ? (
                             <>
                                 <EntityInfoBlock
                                     label="Avatar Cloning"
-                                    value={profile.allowAvatarCopying ? 'Allow' : 'Deny'}
-                                    onClick={actionStatus === 'idle' ? onToggleSelfAvatarCopying : undefined}
+                                    value={
+                                        profile.allowAvatarCopying
+                                            ? 'Allow'
+                                            : 'Deny'
+                                    }
+                                    onClick={
+                                        actionStatus === 'idle'
+                                            ? onToggleSelfAvatarCopying
+                                            : undefined
+                                    }
                                 />
                                 <EntityInfoBlock
                                     label="Booping"
-                                    value={profile.isBoopingEnabled === false ? 'Deny' : 'Allow'}
-                                    onClick={actionStatus === 'idle' ? onToggleSelfBooping : undefined}
+                                    value={
+                                        profile.isBoopingEnabled === false
+                                            ? 'Deny'
+                                            : 'Allow'
+                                    }
+                                    onClick={
+                                        actionStatus === 'idle'
+                                            ? onToggleSelfBooping
+                                            : undefined
+                                    }
                                 />
                                 <EntityInfoBlock
                                     label="Show Mutual Friends"
-                                    value={profile.hasSharedConnectionsOptOut ? 'Deny' : 'Allow'}
-                                    onClick={actionStatus === 'idle' ? onToggleSelfSharedConnections : undefined}
+                                    value={
+                                        profile.hasSharedConnectionsOptOut
+                                            ? 'Deny'
+                                            : 'Allow'
+                                    }
+                                    onClick={
+                                        actionStatus === 'idle'
+                                            ? onToggleSelfSharedConnections
+                                            : undefined
+                                    }
                                 />
                                 <EntityInfoBlock
                                     label="Show Discord Connections"
-                                    value={profile.hasDiscordFriendsOptOut ? 'Deny' : 'Allow'}
-                                    onClick={actionStatus === 'idle' ? onToggleSelfDiscordConnections : undefined}
+                                    value={
+                                        profile.hasDiscordFriendsOptOut
+                                            ? 'Deny'
+                                            : 'Allow'
+                                    }
+                                    onClick={
+                                        actionStatus === 'idle'
+                                            ? onToggleSelfDiscordConnections
+                                            : undefined
+                                    }
                                 />
                             </>
                         ) : (
-                            <EntityInfoBlock label="Avatar Cloning" value={profile.allowAvatarCopying ? 'Allow' : 'Deny'} />
+                            <EntityInfoBlock
+                                label="Avatar Cloning"
+                                value={
+                                    profile.allowAvatarCopying
+                                        ? 'Allow'
+                                        : 'Deny'
+                                }
+                            />
                         )}
                         {visibleHomeLocationTarget ? (
                             <EntityInfoBlock label="Home Location" full>
@@ -1895,11 +2937,8 @@ export function UserDialogTabbedView({
                                 />
                             </EntityInfoBlock>
                         ) : null}
-                        <EntityInfoBlock
-                            label="User ID"
-                            mono
-                            full>
-                            <span className="block truncate text-xs font-mono">
+                        <EntityInfoBlock label="User ID" mono full>
+                            <span className="block truncate font-mono text-xs">
                                 {profile.id || '—'}
                                 {profile.id ? (
                                     <DropdownMenu>
@@ -1911,22 +2950,46 @@ export function UserDialogTabbedView({
                                                 className="ml-1"
                                                 size="icon-xs"
                                                 variant="ghost"
-                                                onClick={(event) => event.stopPropagation()}>
+                                                onClick={(event) =>
+                                                    event.stopPropagation()
+                                                }
+                                            >
                                                 <CopyIcon data-icon="inline-start" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="start">
                                             <DropdownMenuGroup>
-                                                <DropdownMenuItem onSelect={() => void copyUserText(profile.id, 'User ID')}>
+                                                <DropdownMenuItem
+                                                    onSelect={() =>
+                                                        void copyUserText(
+                                                            profile.id,
+                                                            'User ID'
+                                                        )
+                                                    }
+                                                >
                                                     Copy User ID
                                                 </DropdownMenuItem>
                                                 {userUrl ? (
-                                                    <DropdownMenuItem onSelect={() => void copyUserText(userUrl, 'User URL')}>
+                                                    <DropdownMenuItem
+                                                        onSelect={() =>
+                                                            void copyUserText(
+                                                                userUrl,
+                                                                'User URL'
+                                                            )
+                                                        }
+                                                    >
                                                         Copy User URL
                                                     </DropdownMenuItem>
                                                 ) : null}
                                                 {profile.displayName ? (
-                                                    <DropdownMenuItem onSelect={() => void copyUserText(profile.displayName, 'Display name')}>
+                                                    <DropdownMenuItem
+                                                        onSelect={() =>
+                                                            void copyUserText(
+                                                                profile.displayName,
+                                                                'Display name'
+                                                            )
+                                                        }
+                                                    >
                                                         Copy Display Name
                                                     </DropdownMenuItem>
                                                 ) : null}
@@ -1942,20 +3005,44 @@ export function UserDialogTabbedView({
                                 value={userUrl}
                                 mono
                                 full
-                                onClick={() => void copyUserText(userUrl, 'User URL')}
+                                onClick={() =>
+                                    void copyUserText(userUrl, 'User URL')
+                                }
                             />
                         ) : null}
                     </EntityInfoGrid>
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="mutual" className="flex flex-col gap-2">
-                    <SearchHeader searchKey="mutual" tab="mutual" rows={mutualFriends} filteredRows={filteredMutualFriends} placeholder="Search mutual friends">
-                        <span className="text-sm text-muted-foreground">Sort By</span>
-                        <Select value={mutualSort} onValueChange={setMutualSort} disabled={remoteStatus.mutual === 'running'}>
-                            <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
+                <EntityDialogTabContent
+                    value="mutual"
+                    className="flex flex-col gap-2"
+                >
+                    <SearchHeader
+                        searchKey="mutual"
+                        tab="mutual"
+                        rows={mutualFriends}
+                        filteredRows={filteredMutualFriends}
+                        placeholder="Search mutual friends"
+                    >
+                        <span className="text-muted-foreground text-sm">
+                            Sort By
+                        </span>
+                        <Select
+                            value={mutualSort}
+                            onValueChange={setMutualSort}
+                            disabled={remoteStatus.mutual === 'running'}
+                        >
+                            <SelectTrigger size="sm" className="w-36">
+                                <SelectValue />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    {Object.entries(userDialogMutualFriendSortingOptions).map(([key, option]) => (
-                                        <SelectItem key={key} value={option.value}>
+                                    {Object.entries(
+                                        userDialogMutualFriendSortingOptions
+                                    ).map(([key, option]) => (
+                                        <SelectItem
+                                            key={key}
+                                            value={option.value}
+                                        >
                                             {t(option.name)}
                                         </SelectItem>
                                     ))}
@@ -1963,19 +3050,51 @@ export function UserDialogTabbedView({
                             </SelectContent>
                         </Select>
                     </SearchHeader>
-                    <EntityList rows={visibleMutualFriends} kind="user" loading={remoteStatus.mutual === 'running'} error={remoteErrors.mutual} />
+                    <EntityList
+                        rows={visibleMutualFriends}
+                        kind="user"
+                        loading={remoteStatus.mutual === 'running'}
+                        error={remoteErrors.mutual}
+                    />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="groups" className="flex flex-col gap-2">
-                    <SearchHeader searchKey="groups" tab="groups" rows={profileGroups} filteredRows={filteredProfileGroups} placeholder="Search groups">
+                <EntityDialogTabContent
+                    value="groups"
+                    className="flex flex-col gap-2"
+                >
+                    <SearchHeader
+                        searchKey="groups"
+                        tab="groups"
+                        rows={profileGroups}
+                        filteredRows={filteredProfileGroups}
+                        placeholder="Search groups"
+                    >
                         {!groupEditMode ? (
                             <>
-                                <span className="text-sm text-muted-foreground">Sort By</span>
-                                <Select value={effectiveGroupSort} onValueChange={setGroupSort} disabled={remoteStatus.groups === 'running'}>
-                                    <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
+                                <span className="text-muted-foreground text-sm">
+                                    Sort By
+                                </span>
+                                <Select
+                                    value={effectiveGroupSort}
+                                    onValueChange={setGroupSort}
+                                    disabled={remoteStatus.groups === 'running'}
+                                >
+                                    <SelectTrigger size="sm" className="w-36">
+                                        <SelectValue />
+                                    </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {Object.entries(userDialogGroupSortingOptions).map(([key, option]) => (
-                                                <SelectItem key={key} value={option.value} disabled={option.value === 'inGame' && !isCurrentUser}>
+                                            {Object.entries(
+                                                userDialogGroupSortingOptions
+                                            ).map(([key, option]) => (
+                                                <SelectItem
+                                                    key={key}
+                                                    value={option.value}
+                                                    disabled={
+                                                        option.value ===
+                                                            'inGame' &&
+                                                        !isCurrentUser
+                                                    }
+                                                >
                                                     {t(option.name)}
                                                 </SelectItem>
                                             ))}
@@ -1989,16 +3108,22 @@ export function UserDialogTabbedView({
                                 <Button
                                     type="button"
                                     size="sm"
-                                    variant={groupEditMode ? 'secondary' : 'outline'}
-                                    disabled={groupActionId === '__bulk_groups__'}
+                                    variant={
+                                        groupEditMode ? 'secondary' : 'outline'
+                                    }
+                                    disabled={
+                                        groupActionId === '__bulk_groups__'
+                                    }
                                     onClick={() => {
-                                        const nextGroupEditMode = !groupEditMode;
+                                        const nextGroupEditMode =
+                                            !groupEditMode;
                                         setGroupEditMode(nextGroupEditMode);
                                         if (nextGroupEditMode) {
                                             setGroupSort('inGame');
                                         }
                                         clearSelectedGroups();
-                                    }}>
+                                    }}
+                                >
                                     {groupEditMode ? 'Done' : 'Edit'}
                                 </Button>
                                 {groupEditMode ? (
@@ -2007,45 +3132,118 @@ export function UserDialogTabbedView({
                                             type="button"
                                             size="sm"
                                             variant="outline"
-                                            disabled={groupActionId === '__bulk_groups__' || !filteredProfileGroups.length}
-                                            onClick={() => selectVisibleGroups(filteredProfileGroups)}>
+                                            disabled={
+                                                groupActionId ===
+                                                    '__bulk_groups__' ||
+                                                !filteredProfileGroups.length
+                                            }
+                                            onClick={() =>
+                                                selectVisibleGroups(
+                                                    filteredProfileGroups
+                                                )
+                                            }
+                                        >
                                             Select Visible
                                         </Button>
                                         <Button
                                             type="button"
                                             size="sm"
                                             variant="outline"
-                                            disabled={groupActionId === '__bulk_groups__' || !selectedGroupCount}
-                                            onClick={clearSelectedGroups}>
+                                            disabled={
+                                                groupActionId ===
+                                                    '__bulk_groups__' ||
+                                                !selectedGroupCount
+                                            }
+                                            onClick={clearSelectedGroups}
+                                        >
                                             Clear Selected
                                         </Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button type="button" size="sm" variant="outline" disabled={groupActionId === '__bulk_groups__'}>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    disabled={
+                                                        groupActionId ===
+                                                        '__bulk_groups__'
+                                                    }
+                                                >
                                                     <SettingsIcon data-icon="inline-start" />
                                                     Bulk Actions
-                                                    {selectedGroupCount ? <span className="text-xs text-muted-foreground">({selectedGroupCount})</span> : null}
+                                                    {selectedGroupCount ? (
+                                                        <span className="text-muted-foreground text-xs">
+                                                            (
+                                                            {selectedGroupCount}
+                                                            )
+                                                        </span>
+                                                    ) : null}
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="start">
                                                 <DropdownMenuGroup>
-                                                    <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('visible')}>
+                                                    <DropdownMenuItem
+                                                        disabled={
+                                                            !selectedGroupCount
+                                                        }
+                                                        onSelect={() =>
+                                                            void changeSelectedGroupsVisibility(
+                                                                'visible'
+                                                            )
+                                                        }
+                                                    >
                                                         <EyeIcon />
                                                         Set Selected Visible
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('hidden')}>
+                                                    <DropdownMenuItem
+                                                        disabled={
+                                                            !selectedGroupCount
+                                                        }
+                                                        onSelect={() =>
+                                                            void changeSelectedGroupsVisibility(
+                                                                'hidden'
+                                                            )
+                                                        }
+                                                    >
                                                         <EyeIcon />
                                                         Set Selected Hidden
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem disabled={!selectedGroupCount} onSelect={() => void changeSelectedGroupsVisibility('friends')}>
+                                                    <DropdownMenuItem
+                                                        disabled={
+                                                            !selectedGroupCount
+                                                        }
+                                                        onSelect={() =>
+                                                            void changeSelectedGroupsVisibility(
+                                                                'friends'
+                                                            )
+                                                        }
+                                                    >
                                                         <UsersIcon />
                                                         Set Selected Friends
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => exportUserGroups(selectedUserGroups)}>
+                                                    <DropdownMenuItem
+                                                        onSelect={() =>
+                                                            exportUserGroups(
+                                                                selectedUserGroups
+                                                            )
+                                                        }
+                                                    >
                                                         <DownloadIcon />
-                                                        Export {selectedGroupCount ? 'Selected' : 'All'} Groups
+                                                        Export{' '}
+                                                        {selectedGroupCount
+                                                            ? 'Selected'
+                                                            : 'All'}{' '}
+                                                        Groups
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem variant="destructive" disabled={!selectedGroupCount} onSelect={() => void leaveSelectedGroups()}>
+                                                    <DropdownMenuItem
+                                                        variant="destructive"
+                                                        disabled={
+                                                            !selectedGroupCount
+                                                        }
+                                                        onSelect={() =>
+                                                            void leaveSelectedGroups()
+                                                        }
+                                                    >
                                                         <LogOutIcon />
                                                         Leave Selected
                                                     </DropdownMenuItem>
@@ -2057,8 +3255,14 @@ export function UserDialogTabbedView({
                             </>
                         ) : null}
                     </SearchHeader>
-                    {remoteStatus.groups === 'running' || remoteErrors.groups ? (
-                        <EntityList rows={filteredProfileGroups} kind="group" loading={remoteStatus.groups === 'running'} error={remoteErrors.groups} />
+                    {remoteStatus.groups === 'running' ||
+                    remoteErrors.groups ? (
+                        <EntityList
+                            rows={filteredProfileGroups}
+                            kind="group"
+                            loading={remoteStatus.groups === 'running'}
+                            error={remoteErrors.groups}
+                        />
                     ) : groupSearchActive ? (
                         <EntityList
                             rows={filteredProfileGroups}
@@ -2067,12 +3271,24 @@ export function UserDialogTabbedView({
                             selectableGroups={groupEditMode}
                             selectedGroupIds={selectedGroupIds}
                             groupActionId={groupActionId}
-                            onGroupVisibilityChange={(group, visibility) => void changeGroupVisibility(group, visibility)}
+                            onGroupVisibilityChange={(group, visibility) =>
+                                void changeGroupVisibility(group, visibility)
+                            }
                             onGroupLeave={(group) => void leaveUserGroup(group)}
-                            onGroupMove={groupEditMode ? (group, direction) => void moveGroupInGameOrder(group, direction) : undefined}
+                            onGroupMove={
+                                groupEditMode
+                                    ? (group, direction) =>
+                                          void moveGroupInGameOrder(
+                                              group,
+                                              direction
+                                          )
+                                    : undefined
+                            }
                             onGroupSelectionChange={setGroupSelected}
                         />
-                    ) : userGroupSections.ownGroups.length || userGroupSections.mutualGroups.length || userGroupSections.remainingGroups.length ? (
+                    ) : userGroupSections.ownGroups.length ||
+                      userGroupSections.mutualGroups.length ||
+                      userGroupSections.remainingGroups.length ? (
                         <div className="flex flex-col gap-4">
                             <UserGroupSection
                                 title={t('dialog.user.groups.own_groups')}
@@ -2082,9 +3298,24 @@ export function UserDialogTabbedView({
                                 selectableGroups={groupEditMode}
                                 selectedGroupIds={selectedGroupIds}
                                 groupActionId={groupActionId}
-                                onGroupVisibilityChange={(group, visibility) => void changeGroupVisibility(group, visibility)}
-                                onGroupLeave={(group) => void leaveUserGroup(group)}
-                                onGroupMove={groupEditMode ? (group, direction) => void moveGroupInGameOrder(group, direction) : undefined}
+                                onGroupVisibilityChange={(group, visibility) =>
+                                    void changeGroupVisibility(
+                                        group,
+                                        visibility
+                                    )
+                                }
+                                onGroupLeave={(group) =>
+                                    void leaveUserGroup(group)
+                                }
+                                onGroupMove={
+                                    groupEditMode
+                                        ? (group, direction) =>
+                                              void moveGroupInGameOrder(
+                                                  group,
+                                                  direction
+                                              )
+                                        : undefined
+                                }
                                 onGroupSelectionChange={setGroupSelected}
                             />
                             <UserGroupSection
@@ -2094,9 +3325,24 @@ export function UserDialogTabbedView({
                                 selectableGroups={groupEditMode}
                                 selectedGroupIds={selectedGroupIds}
                                 groupActionId={groupActionId}
-                                onGroupVisibilityChange={(group, visibility) => void changeGroupVisibility(group, visibility)}
-                                onGroupLeave={(group) => void leaveUserGroup(group)}
-                                onGroupMove={groupEditMode ? (group, direction) => void moveGroupInGameOrder(group, direction) : undefined}
+                                onGroupVisibilityChange={(group, visibility) =>
+                                    void changeGroupVisibility(
+                                        group,
+                                        visibility
+                                    )
+                                }
+                                onGroupLeave={(group) =>
+                                    void leaveUserGroup(group)
+                                }
+                                onGroupMove={
+                                    groupEditMode
+                                        ? (group, direction) =>
+                                              void moveGroupInGameOrder(
+                                                  group,
+                                                  direction
+                                              )
+                                        : undefined
+                                }
                                 onGroupSelectionChange={setGroupSelected}
                             />
                             <UserGroupSection
@@ -2107,9 +3353,24 @@ export function UserDialogTabbedView({
                                 selectableGroups={groupEditMode}
                                 selectedGroupIds={selectedGroupIds}
                                 groupActionId={groupActionId}
-                                onGroupVisibilityChange={(group, visibility) => void changeGroupVisibility(group, visibility)}
-                                onGroupLeave={(group) => void leaveUserGroup(group)}
-                                onGroupMove={groupEditMode ? (group, direction) => void moveGroupInGameOrder(group, direction) : undefined}
+                                onGroupVisibilityChange={(group, visibility) =>
+                                    void changeGroupVisibility(
+                                        group,
+                                        visibility
+                                    )
+                                }
+                                onGroupLeave={(group) =>
+                                    void leaveUserGroup(group)
+                                }
+                                onGroupMove={
+                                    groupEditMode
+                                        ? (group, direction) =>
+                                              void moveGroupInGameOrder(
+                                                  group,
+                                                  direction
+                                              )
+                                        : undefined
+                                }
                                 onGroupSelectionChange={setGroupSelected}
                             />
                         </div>
@@ -2117,48 +3378,111 @@ export function UserDialogTabbedView({
                         <EntityBlank />
                     )}
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="worlds" className="flex flex-col gap-4">
+                <EntityDialogTabContent
+                    value="worlds"
+                    className="flex flex-col gap-4"
+                >
                     <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap items-center gap-2">
-                            <div className="text-sm text-muted-foreground">{filteredProfileWorlds.length}/{profileWorlds.length}</div>
-                            <Button type="button" size="sm" variant="outline" disabled={remoteStatus.worlds === 'running'} onClick={() => void loadTab('worlds', { force: true })}>
+                            <div className="text-muted-foreground text-sm">
+                                {filteredProfileWorlds.length}/
+                                {profileWorlds.length}
+                            </div>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={remoteStatus.worlds === 'running'}
+                                onClick={() =>
+                                    void loadTab('worlds', { force: true })
+                                }
+                            >
                                 Refresh
                             </Button>
                             <Input
                                 value={search.worlds}
-                                onChange={(event) => setSearch((current) => ({ ...current, worlds: event.target.value }))}
+                                onChange={(event) =>
+                                    setSearch((current) => ({
+                                        ...current,
+                                        worlds: event.target.value
+                                    }))
+                                }
                                 placeholder="Search worlds"
                                 className="ml-auto h-8 w-40"
                             />
-                            <span className="text-sm text-muted-foreground">Sort By</span>
-                            <Select value={worldSort} onValueChange={changeWorldSort} disabled={remoteStatus.worlds === 'running'}>
-                                <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
+                            <span className="text-muted-foreground text-sm">
+                                Sort By
+                            </span>
+                            <Select
+                                value={worldSort}
+                                onValueChange={changeWorldSort}
+                                disabled={remoteStatus.worlds === 'running'}
+                            >
+                                <SelectTrigger size="sm" className="w-32">
+                                    <SelectValue />
+                                </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
-                                        <SelectItem value="name">Name</SelectItem>
-                                        <SelectItem value="updated">Updated</SelectItem>
-                                        <SelectItem value="created">Created</SelectItem>
-                                        <SelectItem value="favorites">Favorites</SelectItem>
-                                        <SelectItem value="popularity">Popularity</SelectItem>
+                                        <SelectItem value="name">
+                                            Name
+                                        </SelectItem>
+                                        <SelectItem value="updated">
+                                            Updated
+                                        </SelectItem>
+                                        <SelectItem value="created">
+                                            Created
+                                        </SelectItem>
+                                        <SelectItem value="favorites">
+                                            Favorites
+                                        </SelectItem>
+                                        <SelectItem value="popularity">
+                                            Popularity
+                                        </SelectItem>
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
-                            <span className="text-sm text-muted-foreground">Order By</span>
-                            <Select value={worldOrder} onValueChange={changeWorldOrder} disabled={remoteStatus.worlds === 'running'}>
-                                <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
+                            <span className="text-muted-foreground text-sm">
+                                Order By
+                            </span>
+                            <Select
+                                value={worldOrder}
+                                onValueChange={changeWorldOrder}
+                                disabled={remoteStatus.worlds === 'running'}
+                            >
+                                <SelectTrigger size="sm" className="w-36">
+                                    <SelectValue />
+                                </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
-                                        <SelectItem value="descending">Descending</SelectItem>
-                                        <SelectItem value="ascending">Ascending</SelectItem>
+                                        <SelectItem value="descending">
+                                            Descending
+                                        </SelectItem>
+                                        <SelectItem value="ascending">
+                                            Ascending
+                                        </SelectItem>
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
-                        <EntityList rows={filteredProfileWorlds} kind="world" loading={remoteStatus.worlds === 'running'} error={remoteErrors.worlds} />
+                        <EntityList
+                            rows={filteredProfileWorlds}
+                            kind="world"
+                            loading={remoteStatus.worlds === 'running'}
+                            error={remoteErrors.worlds}
+                        />
                     </div>
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="favorite-worlds" className="flex flex-col gap-2">
-                    <SearchHeader searchKey="favoriteWorlds" tab="favorite-worlds" rows={favoriteWorlds} filteredRows={filteredFavoriteWorlds} placeholder="Search favorite worlds" />
+                <EntityDialogTabContent
+                    value="favorite-worlds"
+                    className="flex flex-col gap-2"
+                >
+                    <SearchHeader
+                        searchKey="favoriteWorlds"
+                        tab="favorite-worlds"
+                        rows={favoriteWorlds}
+                        filteredRows={filteredFavoriteWorlds}
+                        placeholder="Search favorite worlds"
+                    />
                     <FavoriteWorldGroups
                         groups={remoteData.favoriteWorldGroups}
                         rows={favoriteWorlds}
@@ -2168,57 +3492,138 @@ export function UserDialogTabbedView({
                         error={remoteErrors['favorite-worlds']}
                     />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="avatars" className="flex flex-col gap-2">
+                <EntityDialogTabContent
+                    value="avatars"
+                    className="flex flex-col gap-2"
+                >
                     {currentAvatarTarget ? (
-                        <Button type="button" variant="link" className="h-auto justify-start p-0 text-left" onClick={() => openAvatarDialog(currentAvatarDialogArgs)}>
+                        <Button
+                            type="button"
+                            variant="link"
+                            className="h-auto justify-start p-0 text-left"
+                            onClick={() =>
+                                openAvatarDialog(currentAvatarDialogArgs)
+                            }
+                        >
                             <UserIcon data-icon="inline-start" />
-                            Current Avatar: {currentAvatarDisplayName || 'Avatar'}
+                            Current Avatar:{' '}
+                            {currentAvatarDisplayName || 'Avatar'}
                         </Button>
                     ) : null}
                     <div className="flex flex-wrap items-center gap-2">
-                        <div className="text-sm text-muted-foreground">{visibleProfileAvatars.length}/{profileAvatars.length}</div>
-                        <Button type="button" size="sm" variant="outline" disabled={remoteStatus.avatars === 'running'} onClick={() => void loadTab('avatars', { force: true })}>
+                        <div className="text-muted-foreground text-sm">
+                            {visibleProfileAvatars.length}/
+                            {profileAvatars.length}
+                        </div>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={remoteStatus.avatars === 'running'}
+                            onClick={() =>
+                                void loadTab('avatars', { force: true })
+                            }
+                        >
                             Refresh
                         </Button>
                         <Input
                             value={search.avatars}
-                            onChange={(event) => setSearch((current) => ({ ...current, avatars: event.target.value }))}
+                            onChange={(event) =>
+                                setSearch((current) => ({
+                                    ...current,
+                                    avatars: event.target.value
+                                }))
+                            }
                             placeholder="Search avatars"
                             className="ml-auto h-8 w-40"
                         />
                         {profile.id === currentUserId ? (
                             <>
-                                <span className="text-sm text-muted-foreground">Sort By</span>
-                                <Select value={avatarSort} onValueChange={changeAvatarSort} disabled={remoteStatus.avatars === 'running'}>
-                                    <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
+                                <span className="text-muted-foreground text-sm">
+                                    Sort By
+                                </span>
+                                <Select
+                                    value={avatarSort}
+                                    onValueChange={changeAvatarSort}
+                                    disabled={
+                                        remoteStatus.avatars === 'running'
+                                    }
+                                >
+                                    <SelectTrigger size="sm" className="w-36">
+                                        <SelectValue />
+                                    </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            <SelectItem value="name">Name</SelectItem>
-                                            <SelectItem value="update">Updated</SelectItem>
-                                            <SelectItem value="createdAt">Uploaded</SelectItem>
+                                            <SelectItem value="name">
+                                                Name
+                                            </SelectItem>
+                                            <SelectItem value="update">
+                                                Updated
+                                            </SelectItem>
+                                            <SelectItem value="createdAt">
+                                                Uploaded
+                                            </SelectItem>
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                                <span className="text-sm text-muted-foreground">Group By</span>
-                                <Select value={avatarReleaseStatus} onValueChange={changeAvatarReleaseStatus} disabled={remoteStatus.avatars === 'running'}>
-                                    <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
+                                <span className="text-muted-foreground text-sm">
+                                    Group By
+                                </span>
+                                <Select
+                                    value={avatarReleaseStatus}
+                                    onValueChange={changeAvatarReleaseStatus}
+                                    disabled={
+                                        remoteStatus.avatars === 'running'
+                                    }
+                                >
+                                    <SelectTrigger size="sm" className="w-32">
+                                        <SelectValue />
+                                    </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            <SelectItem value="all">All</SelectItem>
-                                            <SelectItem value="public">Public</SelectItem>
-                                            <SelectItem value="private">Private</SelectItem>
+                                            <SelectItem value="all">
+                                                All
+                                            </SelectItem>
+                                            <SelectItem value="public">
+                                                Public
+                                            </SelectItem>
+                                            <SelectItem value="private">
+                                                Private
+                                            </SelectItem>
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </>
                         ) : null}
                     </div>
-                    <EntityList rows={visibleProfileAvatars} kind="avatar" loading={remoteStatus.avatars === 'running'} error={remoteErrors.avatars} />
+                    <EntityList
+                        rows={visibleProfileAvatars}
+                        kind="avatar"
+                        loading={remoteStatus.avatars === 'running'}
+                        error={remoteErrors.avatars}
+                    />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="activity" className="flex flex-col gap-4">
-                    <UserActivityPanel profile={profile} isCurrentUser={isCurrentUser} active={activeTab === 'activity'} />
+                <EntityDialogTabContent
+                    value="activity"
+                    className="flex flex-col gap-4"
+                >
+                    <UserActivityPanel
+                        profile={profile}
+                        isCurrentUser={isCurrentUser}
+                        active={activeTab === 'activity'}
+                    />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="json"><EntityRawJson value={{ profile, memo, moderationState, isFriend, isFavorite }} /></EntityDialogTabContent>
+                <EntityDialogTabContent value="json">
+                    <EntityRawJson
+                        value={{
+                            profile,
+                            memo,
+                            moderationState,
+                            isFriend,
+                            isFavorite
+                        }}
+                    />
+                </EntityDialogTabContent>
             </EntityDialogTabs>
             <PreviousInstancesTableDialog
                 open={previousInstancesOpen}

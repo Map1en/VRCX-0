@@ -1,4 +1,3 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
     AppleIcon,
     BookmarkIcon,
@@ -8,10 +7,12 @@ import {
     SmartphoneIcon,
     XIcon
 } from 'lucide-react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
+import { backend } from '@/platform/index.js';
 import {
     configRepository,
     groupProfileRepository,
@@ -26,23 +27,20 @@ import {
     vrchatModerationRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
+import { database } from '@/services/database/index.js';
 import { openGroupDialog } from '@/services/dialogService.js';
+import friendRelationshipService from '@/services/friendRelationshipService.js';
 import {
     recordRecentAction,
     subscribeRecentActions
 } from '@/services/recentActionService.js';
-import { UserDialogTabbedView } from './UserDialogTabbedView.jsx';
-import { UserInviteMessageDialog } from './UserInviteMessageDialog.jsx';
-import { database } from '@/services/database/index.js';
-import friendRelationshipService from '@/services/friendRelationshipService.js';
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import {
     parseLocation,
     resolveFriendPresenceLocation
 } from '@/shared/utils/location.js';
-import { backend } from '@/platform/index.js';
-import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useDialogStore } from '@/state/dialogStore.js';
+import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
@@ -76,6 +74,14 @@ import {
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+
+import {
+    cachePreviousInstances,
+    cacheUserStats,
+    dialogTargetKey,
+    readCachedPreviousInstances,
+    readCachedUserStats
+} from './user-dialog/userDialogCache.js';
 import {
     buildFavoriteIdSet,
     fallbackLanguageOptions,
@@ -90,13 +96,8 @@ import {
     selfStatusBaseOptions,
     statusPresetsConfigKey
 } from './user-dialog/userProfileFields.js';
-import {
-    cachePreviousInstances,
-    cacheUserStats,
-    dialogTargetKey,
-    readCachedPreviousInstances,
-    readCachedUserStats
-} from './user-dialog/userDialogCache.js';
+import { UserDialogTabbedView } from './UserDialogTabbedView.jsx';
+import { UserInviteMessageDialog } from './UserInviteMessageDialog.jsx';
 
 function isGroupId(value) {
     return normalizeUserId(value).startsWith('grp_');
@@ -467,15 +468,15 @@ function resolveFriendRequestState(profile) {
 
 function UserDialogEmptyState({ title, description, loading = false }) {
     return (
-        <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
+        <div className="bg-muted/20 flex min-h-56 items-center justify-center rounded-xl border border-dashed p-6 text-center">
             <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <Spinner className="size-5 text-muted-foreground" />
+                        <Spinner className="text-muted-foreground size-5" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                     {description}
                 </div>
             </div>
@@ -3448,7 +3449,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-muted-foreground text-xs">
                                 {socialStatusDraft.statusDescription.length}/32
                             </div>
                         </Field>
@@ -3655,7 +3656,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                     </Badge>
                                 ))
                             ) : (
-                                <div className="text-sm text-muted-foreground">
+                                <div className="text-muted-foreground text-sm">
                                     No languages selected.
                                 </div>
                             )}
@@ -3702,7 +3703,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                             </SelectContent>
                         </Select>
                         {languageOptionsStatus === 'error' ? (
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-muted-foreground text-xs">
                                 VRChat language list unavailable, using local
                                 language codes.
                             </div>

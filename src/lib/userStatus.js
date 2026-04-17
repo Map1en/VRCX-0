@@ -1,5 +1,7 @@
 function normalizePresenceText(value) {
-    const normalized = String(value ?? '').trim().toLowerCase();
+    const normalized = String(value ?? '')
+        .trim()
+        .toLowerCase();
     if (normalized === 'joinme') {
         return 'join me';
     }
@@ -22,13 +24,25 @@ function normalizeUserStatus(value) {
     if (typeof value === 'string') {
         return normalizePresenceText(value);
     }
-    const source = value?.ref && typeof value.ref === 'object' ? value.ref : value;
+    const source =
+        value?.ref && typeof value.ref === 'object' ? value.ref : value;
     if (value?.pendingOffline || source?.pendingOffline) {
         return 'offline';
     }
-    const lastLocation = value?.lastLocation || value?.last_location || value?.$lastLocation || source?.lastLocation || source?.last_location || source?.$lastLocation;
+    const lastLocation =
+        value?.lastLocation ||
+        value?.last_location ||
+        value?.$lastLocation ||
+        source?.lastLocation ||
+        source?.last_location ||
+        source?.$lastLocation;
     const status = normalizePresenceText(value?.status || source?.status);
-    const state = normalizePresenceText(value?.stateBucket || value?.state || source?.stateBucket || source?.state);
+    const state = normalizePresenceText(
+        value?.stateBucket ||
+            value?.state ||
+            source?.stateBucket ||
+            source?.state
+    );
     const location = normalizePresenceText(
         value?.location ||
             value?.$location?.tag ||
@@ -36,12 +50,20 @@ function normalizeUserStatus(value) {
             source?.location ||
             source?.$location?.tag ||
             source?.$locationTag ||
-            (typeof lastLocation === 'string' ? lastLocation : lastLocation?.location || lastLocation?.tag || lastLocation?.$location?.tag)
+            (typeof lastLocation === 'string'
+                ? lastLocation
+                : lastLocation?.location ||
+                  lastLocation?.tag ||
+                  lastLocation?.$location?.tag)
     );
     if (state === 'offline' || status === 'offline' || location === 'offline') {
         return 'offline';
     }
-    if (!status && !state && (location === 'private' || location === 'traveling')) {
+    if (
+        !status &&
+        !state &&
+        (location === 'private' || location === 'traveling')
+    ) {
         return location;
     }
     if (status === 'join me') {
@@ -91,7 +113,10 @@ function userStatusDotClassName(value) {
     return '';
 }
 
-function userStatusIndicatorClassName(value, { showOffline = false, className = '' } = {}) {
+function userStatusIndicatorClassName(
+    value,
+    { showOffline = false, className = '' } = {}
+) {
     const status = normalizeUserStatus(value);
     const classes = ['x-user-status'];
 
@@ -144,4 +169,9 @@ function userStatusSortRank(value) {
     return 4;
 }
 
-export { normalizeUserStatus, userStatusDotClassName, userStatusIndicatorClassName, userStatusSortRank };
+export {
+    normalizeUserStatus,
+    userStatusDotClassName,
+    userStatusIndicatorClassName,
+    userStatusSortRank
+};

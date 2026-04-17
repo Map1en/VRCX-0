@@ -160,7 +160,9 @@ describe('favoriteStore', () => {
                 }
             ]
         });
-        expect(useFavoriteStore.getState().getRemoteFavoriteByObjectId('usr_a')).toMatchObject({
+        expect(
+            useFavoriteStore.getState().getRemoteFavoriteByObjectId('usr_a')
+        ).toMatchObject({
             id: 'fvrt_record_1'
         });
 

@@ -103,12 +103,18 @@ export const entityQueryPolicies = Object.freeze({
 });
 
 function normalizeEndpointKey(endpoint) {
-    return (typeof endpoint === 'string' ? endpoint.trim() : String(endpoint ?? '').trim()).replace(/\/+$/, '');
+    return (
+        typeof endpoint === 'string'
+            ? endpoint.trim()
+            : String(endpoint ?? '').trim()
+    ).replace(/\/+$/, '');
 }
 
 function withEndpoint(queryKey, endpoint = '') {
     const normalizedEndpoint = normalizeEndpointKey(endpoint);
-    return normalizedEndpoint ? [...queryKey, { endpoint: normalizedEndpoint }] : queryKey;
+    return normalizedEndpoint
+        ? [...queryKey, { endpoint: normalizedEndpoint }]
+        : queryKey;
 }
 
 function stableParams(params = {}) {
@@ -129,32 +135,56 @@ export const queryKeys = Object.freeze({
         withEndpoint(['instance', worldId, instanceId], endpoint),
     instanceShortName: (worldId, instanceId, endpoint = '') =>
         withEndpoint(['instance', worldId, instanceId, 'shortName'], endpoint),
-    avatar: (avatarId, endpoint = '') => withEndpoint(['avatar', avatarId], endpoint),
-    world: (worldId, endpoint = '') => withEndpoint(['world', worldId], endpoint),
+    avatar: (avatarId, endpoint = '') =>
+        withEndpoint(['avatar', avatarId], endpoint),
+    world: (worldId, endpoint = '') =>
+        withEndpoint(['world', worldId], endpoint),
     group: (groupId, includeRoles = false, endpoint = '') =>
         withEndpoint(['group', groupId, Boolean(includeRoles)], endpoint),
     worldsByUser: (params = {}, endpoint = '') =>
-        withEndpoint(['worlds', 'user', params.userId, stableParams(params)], endpoint),
+        withEndpoint(
+            ['worlds', 'user', params.userId, stableParams(params)],
+            endpoint
+        ),
     groupMembers: (params = {}, endpoint = '') =>
-        withEndpoint(['group', params.groupId, 'members', stableParams(params)], endpoint),
+        withEndpoint(
+            ['group', params.groupId, 'members', stableParams(params)],
+            endpoint
+        ),
     groupGallery: (params = {}, endpoint = '') =>
-        withEndpoint(['group', params.groupId, 'gallery', params.galleryId, stableParams(params)], endpoint),
+        withEndpoint(
+            [
+                'group',
+                params.groupId,
+                'gallery',
+                params.galleryId,
+                stableParams(params)
+            ],
+            endpoint
+        ),
     groupCalendarList: (kind = 'all', params = {}, endpoint = '') =>
         withEndpoint(['calendar', kind, stableParams(params)], endpoint),
     groupCalendarEvent: ({ groupId = '', eventId = '' } = {}, endpoint = '') =>
         withEndpoint(['calendar', groupId, eventId], endpoint),
     avatarGallery: (avatarId, endpoint = '') =>
         withEndpoint(['avatar', avatarId, 'gallery'], endpoint),
-    favoriteLimits: (endpoint = '') => withEndpoint(['favorite', 'limits'], endpoint),
-    userInventoryItem: ({ inventoryId = '', userId = '' } = {}, endpoint = '') =>
-        withEndpoint(['inventory', 'item', userId, inventoryId], endpoint),
-    fileAnalysis: ({ fileId = '', version = 0, variant = '' } = {}, endpoint = '') =>
+    favoriteLimits: (endpoint = '') =>
+        withEndpoint(['favorite', 'limits'], endpoint),
+    userInventoryItem: (
+        { inventoryId = '', userId = '' } = {},
+        endpoint = ''
+    ) => withEndpoint(['inventory', 'item', userId, inventoryId], endpoint),
+    fileAnalysis: (
+        { fileId = '', version = 0, variant = '' } = {},
+        endpoint = ''
+    ) =>
         withEndpoint(
             ['analysis', fileId, Number(version), String(variant || '')],
             endpoint
         ),
     file: (fileId, endpoint = '') => withEndpoint(['file', fileId], endpoint),
-    avatarStyles: (endpoint = '') => withEndpoint(['avatar', 'styles'], endpoint),
+    avatarStyles: (endpoint = '') =>
+        withEndpoint(['avatar', 'styles'], endpoint),
     representedGroup: (userId, endpoint = '') =>
         withEndpoint(['user', userId, 'representedGroup'], endpoint),
     worldPersistData: ({ userId = '', worldId = '' } = {}, endpoint = '') =>

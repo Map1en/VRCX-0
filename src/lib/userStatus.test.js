@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-    normalizeUserStatus,
-    userStatusSortRank
-} from './userStatus.js';
+import { normalizeUserStatus, userStatusSortRank } from './userStatus.js';
 
 describe('userStatus', () => {
     it('normalizes legacy compact status strings', () => {
@@ -15,15 +12,29 @@ describe('userStatus', () => {
     });
 
     it('treats pending offline and offline fields as offline', () => {
-        expect(normalizeUserStatus({ pendingOffline: true, status: 'join me' })).toBe('offline');
-        expect(normalizeUserStatus({ state: 'active', location: 'offline' })).toBe('offline');
-        expect(normalizeUserStatus({ ref: { state: 'online', location: 'offline:offline' } })).toBe('offline');
+        expect(
+            normalizeUserStatus({ pendingOffline: true, status: 'join me' })
+        ).toBe('offline');
+        expect(
+            normalizeUserStatus({ state: 'active', location: 'offline' })
+        ).toBe('offline');
+        expect(
+            normalizeUserStatus({
+                ref: { state: 'online', location: 'offline:offline' }
+            })
+        ).toBe('offline');
     });
 
     it('prioritizes explicit social status before active location', () => {
-        expect(normalizeUserStatus({ status: 'join me', location: 'wrld_123:1' })).toBe('join me');
-        expect(normalizeUserStatus({ status: 'ask me', location: 'wrld_123:1' })).toBe('ask me');
-        expect(normalizeUserStatus({ status: 'busy', location: 'wrld_123:1' })).toBe('busy');
+        expect(
+            normalizeUserStatus({ status: 'join me', location: 'wrld_123:1' })
+        ).toBe('join me');
+        expect(
+            normalizeUserStatus({ status: 'ask me', location: 'wrld_123:1' })
+        ).toBe('ask me');
+        expect(
+            normalizeUserStatus({ status: 'busy', location: 'wrld_123:1' })
+        ).toBe('busy');
         expect(normalizeUserStatus({ location: 'wrld_123:1' })).toBe('active');
     });
 

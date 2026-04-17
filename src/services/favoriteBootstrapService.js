@@ -10,12 +10,15 @@ import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
+
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
 const activeHydrations = new WeakMap();
 
 function normalizeUserId(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function getDisplayName(user) {
@@ -47,13 +50,15 @@ function mergeFavoriteLimits(limits) {
     return {
         maxFavoriteGroups: {
             ...createDefaultFavoriteLimits().maxFavoriteGroups,
-            ...(limits?.maxFavoriteGroups && typeof limits.maxFavoriteGroups === 'object'
+            ...(limits?.maxFavoriteGroups &&
+            typeof limits.maxFavoriteGroups === 'object'
                 ? limits.maxFavoriteGroups
                 : {})
         },
         maxFavoritesPerGroup: {
             ...createDefaultFavoriteLimits().maxFavoritesPerGroup,
-            ...(limits?.maxFavoritesPerGroup && typeof limits.maxFavoritesPerGroup === 'object'
+            ...(limits?.maxFavoritesPerGroup &&
+            typeof limits.maxFavoritesPerGroup === 'object'
                 ? limits.maxFavoritesPerGroup
                 : {})
         }
@@ -65,7 +70,11 @@ function buildFavoriteGroupsFromLimits(favoriteLimits) {
     const worldGroups = [];
     const avatarGroups = [];
 
-    for (let index = 0; index < favoriteLimits.maxFavoriteGroups.friend; index += 1) {
+    for (
+        let index = 0;
+        index < favoriteLimits.maxFavoriteGroups.friend;
+        index += 1
+    ) {
         friendGroups.push({
             assign: false,
             key: `friend:group_${index}`,
@@ -78,7 +87,11 @@ function buildFavoriteGroupsFromLimits(favoriteLimits) {
         });
     }
 
-    for (let index = 0; index < favoriteLimits.maxFavoriteGroups.world; index += 1) {
+    for (
+        let index = 0;
+        index < favoriteLimits.maxFavoriteGroups.world;
+        index += 1
+    ) {
         worldGroups.push({
             assign: false,
             key: `world:worlds${index + 1}`,
@@ -91,7 +104,11 @@ function buildFavoriteGroupsFromLimits(favoriteLimits) {
         });
     }
 
-    for (let index = 0; index < favoriteLimits.maxFavoriteGroups.vrcPlusWorld; index += 1) {
+    for (
+        let index = 0;
+        index < favoriteLimits.maxFavoriteGroups.vrcPlusWorld;
+        index += 1
+    ) {
         worldGroups.push({
             assign: false,
             key: `vrcPlusWorld:vrcPlusWorlds${index + 1}`,
@@ -104,7 +121,11 @@ function buildFavoriteGroupsFromLimits(favoriteLimits) {
         });
     }
 
-    for (let index = 0; index < favoriteLimits.maxFavoriteGroups.avatar; index += 1) {
+    for (
+        let index = 0;
+        index < favoriteLimits.maxFavoriteGroups.avatar;
+        index += 1
+    ) {
         avatarGroups.push({
             assign: false,
             key: `avatar:avatars${index + 1}`,
@@ -233,7 +254,10 @@ function buildRemoteFavoriteSnapshot(remoteFavorites, friendRosterById) {
             );
         } else if (favorite.type === 'avatar') {
             favoriteAvatarIds.push(favorite.favoriteId);
-        } else if (favorite.type === 'world' || favorite.type === 'vrcPlusWorld') {
+        } else if (
+            favorite.type === 'world' ||
+            favorite.type === 'vrcPlusWorld'
+        ) {
             favoriteWorldIds.push(favorite.favoriteId);
         }
     }
@@ -249,7 +273,12 @@ function buildRemoteFavoriteSnapshot(remoteFavorites, friendRosterById) {
     };
 }
 
-function buildLocalGroupedIds(rows, idField, explicitGroups = [], fallbackGroup = 'Favorites') {
+function buildLocalGroupedIds(
+    rows,
+    idField,
+    explicitGroups = [],
+    fallbackGroup = 'Favorites'
+) {
     const groups = Object.create(null);
     const list = [];
 
@@ -295,7 +324,9 @@ function buildDetailsById(rows) {
     const detailsById = {};
     for (const row of rows) {
         const objectId =
-            typeof row?.id === 'string' ? row.id.trim() : String(row?.id ?? '').trim();
+            typeof row?.id === 'string'
+                ? row.id.trim()
+                : String(row?.id ?? '').trim();
         if (!objectId) {
             continue;
         }
@@ -335,25 +366,35 @@ function isCurrentFavoriteBootstrapTarget(userId, currentUserSnapshot) {
     );
 }
 
-async function runFavoriteBootstrap({ userId, endpoint = '', currentUserSnapshot }) {
+async function runFavoriteBootstrap({
+    userId,
+    endpoint = '',
+    currentUserSnapshot
+}) {
     const normalizedUserId = normalizeUserId(userId || currentUserSnapshot?.id);
     if (!normalizedUserId) {
-        throw new Error('Favorites hydration requires an authenticated user id.');
+        throw new Error(
+            'Favorites hydration requires an authenticated user id.'
+        );
     }
 
     const displayName = getDisplayName(currentUserSnapshot) || normalizedUserId;
     const friendRosterById = useFriendRosterStore.getState().friendsById;
 
-    useFavoriteStore.getState().setFavoritesLoading(
-        normalizedUserId,
-        `Loading favorites baseline for ${displayName}.`
-    );
+    useFavoriteStore
+        .getState()
+        .setFavoritesLoading(
+            normalizedUserId,
+            `Loading favorites baseline for ${displayName}.`
+        );
     useSessionStore.getState().setFavoritesLoaded(false);
-    useRuntimeStore.getState().setStartupTask(
-        'services',
-        'running',
-        `Loading favorites baseline for ${displayName}.`
-    );
+    useRuntimeStore
+        .getState()
+        .setStartupTask(
+            'services',
+            'running',
+            `Loading favorites baseline for ${displayName}.`
+        );
 
     const [
         favoriteLimitsResponse,
@@ -394,7 +435,10 @@ async function runFavoriteBootstrap({ userId, endpoint = '', currentUserSnapshot
     const favoriteGroups = buildFavoriteGroupsFromLimits(favoriteLimits);
     assignFavoriteGroupMetadata(favoriteGroups, cachedFavoriteGroupsById);
 
-    const remoteSnapshot = buildRemoteFavoriteSnapshot(remoteFavorites, friendRosterById);
+    const remoteSnapshot = buildRemoteFavoriteSnapshot(
+        remoteFavorites,
+        friendRosterById
+    );
     const favoriteGroupIndex = buildFavoriteGroupIndex(favoriteGroups);
     countFavoriteGroups(favoriteGroupIndex, remoteSnapshot.remoteFavoritesById);
 
@@ -456,7 +500,9 @@ async function runFavoriteBootstrap({ userId, endpoint = '', currentUserSnapshot
         })
     };
 
-    if (!isCurrentFavoriteBootstrapTarget(normalizedUserId, currentUserSnapshot)) {
+    if (
+        !isCurrentFavoriteBootstrapTarget(normalizedUserId, currentUserSnapshot)
+    ) {
         return {
             userId: normalizedUserId,
             stale: true,
@@ -476,9 +522,12 @@ async function runFavoriteBootstrap({ userId, endpoint = '', currentUserSnapshot
 }
 
 export function bootstrapFavorites(options) {
-    const normalizedUserId = normalizeUserId(options?.userId || options?.currentUserSnapshot?.id);
+    const normalizedUserId = normalizeUserId(
+        options?.userId || options?.currentUserSnapshot?.id
+    );
     const currentUserSnapshot =
-        options?.currentUserSnapshot && typeof options.currentUserSnapshot === 'object'
+        options?.currentUserSnapshot &&
+        typeof options.currentUserSnapshot === 'object'
             ? options.currentUserSnapshot
             : null;
 
@@ -494,15 +543,24 @@ export function bootstrapFavorites(options) {
 
     const promise = runFavoriteBootstrap(options)
         .catch((error) => {
-            if (isCurrentFavoriteBootstrapTarget(normalizedUserId, currentUserSnapshot)) {
-                useRuntimeStore.getState().setStartupTask(
-                    'services',
-                    'error',
-                    error instanceof Error ? error.message : String(error)
-                );
-                useFavoriteStore.getState().setFavoritesError(
-                    error instanceof Error ? error.message : String(error)
-                );
+            if (
+                isCurrentFavoriteBootstrapTarget(
+                    normalizedUserId,
+                    currentUserSnapshot
+                )
+            ) {
+                useRuntimeStore
+                    .getState()
+                    .setStartupTask(
+                        'services',
+                        'error',
+                        error instanceof Error ? error.message : String(error)
+                    );
+                useFavoriteStore
+                    .getState()
+                    .setFavoritesError(
+                        error instanceof Error ? error.message : String(error)
+                    );
                 useSessionStore.getState().setFavoritesLoaded(false);
             }
 

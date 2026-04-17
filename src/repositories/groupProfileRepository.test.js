@@ -6,12 +6,12 @@ vi.mock('./webRepository.js', () => ({
     }
 }));
 
-import webRepository from './webRepository.js';
 import {
     executeGet,
     executePost,
     normalize
 } from './groupProfileRepository.js';
+import webRepository from './webRepository.js';
 
 describe('GroupProfileRepository', () => {
     beforeEach(() => {

@@ -37,12 +37,18 @@ function normalizeLocationTag(tag) {
         return String(tag || '');
     }
 
-    const rawTag = normalizeLocationTag(tag.tag || tag.location || tag.$location?.tag);
+    const rawTag = normalizeLocationTag(
+        tag.tag || tag.location || tag.$location?.tag
+    );
     if (rawTag) {
         return rawTag;
     }
-    const worldId = normalizeLocationTag(tag.worldId || tag.world_id || tag.$location?.worldId);
-    const instanceId = normalizeLocationTag(tag.instanceId || tag.instance_id || tag.id || tag.$location?.instanceId);
+    const worldId = normalizeLocationTag(
+        tag.worldId || tag.world_id || tag.$location?.worldId
+    );
+    const instanceId = normalizeLocationTag(
+        tag.instanceId || tag.instance_id || tag.id || tag.$location?.instanceId
+    );
     if (worldId && instanceId) {
         return `${worldId}:${instanceId}`;
     }

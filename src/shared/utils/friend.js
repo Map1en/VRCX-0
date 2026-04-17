@@ -29,7 +29,10 @@ function getFriendsSortFunction(sortMethods) {
                 break;
             case 'Sort by Time in Instance':
                 sorts.push((a, b) => {
-                    if (typeof a.ref === 'undefined' || typeof b.ref === 'undefined') {
+                    if (
+                        typeof a.ref === 'undefined' ||
+                        typeof b.ref === 'undefined'
+                    ) {
                         return 0;
                     }
                     if (a.pendingOffline && !b.pendingOffline) {

@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
 import { UserIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
-import { avatarProfileRepository } from '@/repositories/index.js';
 import { cn } from '@/lib/utils.js';
-import { Checkbox } from '@/ui/shadcn/checkbox';
+import { avatarProfileRepository } from '@/repositories/index.js';
 import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -87,32 +87,52 @@ function mergeAvatars(currentAvatar, rows) {
 }
 
 function AvatarOwnerRow({ avatar, selected, onToggle }) {
-    const imageUrl = convertFileUrlToImageUrl(avatar.thumbnailImageUrl || avatar.imageUrl, 128);
-    const tagText = contentTagsCsv(Array.isArray(avatar.tags) ? avatar.tags : []);
+    const imageUrl = convertFileUrlToImageUrl(
+        avatar.thumbnailImageUrl || avatar.imageUrl,
+        128
+    );
+    const tagText = contentTagsCsv(
+        Array.isArray(avatar.tags) ? avatar.tags : []
+    );
     return (
         <div
             className={cn(
                 'flex w-80 items-center rounded-md text-sm',
                 selected && 'bg-muted/40'
-            )}>
+            )}
+        >
             <Button
                 type="button"
                 variant="ghost"
                 className="h-auto min-w-0 flex-1 justify-start p-1.5 text-left"
                 aria-pressed={selected}
-                onClick={onToggle}>
-            {imageUrl ? (
-                <img src={imageUrl} alt="" className="mr-2.5 size-9 shrink-0 rounded-full object-cover" />
-            ) : (
-                <div className="mr-2.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <UserIcon data-icon="inline-start" className="text-muted-foreground" />
-                </div>
-            )}
-            <span className="min-w-0 flex-1 overflow-hidden">
-                <span className="block truncate font-medium leading-5">{avatar.name || avatar.id}</span>
-                <span className="block truncate text-xs text-muted-foreground">{avatar.releaseStatus || 'unknown'}</span>
-                <span className="block truncate text-xs text-muted-foreground">{tagText || '—'}</span>
-            </span>
+                onClick={onToggle}
+            >
+                {imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt=""
+                        className="mr-2.5 size-9 shrink-0 rounded-full object-cover"
+                    />
+                ) : (
+                    <div className="bg-muted mr-2.5 flex size-9 shrink-0 items-center justify-center rounded-full">
+                        <UserIcon
+                            data-icon="inline-start"
+                            className="text-muted-foreground"
+                        />
+                    </div>
+                )}
+                <span className="min-w-0 flex-1 overflow-hidden">
+                    <span className="block truncate leading-5 font-medium">
+                        {avatar.name || avatar.id}
+                    </span>
+                    <span className="text-muted-foreground block truncate text-xs">
+                        {avatar.releaseStatus || 'unknown'}
+                    </span>
+                    <span className="text-muted-foreground block truncate text-xs">
+                        {tagText || '—'}
+                    </span>
+                </span>
             </Button>
             <Checkbox
                 checked={selected}
@@ -137,8 +157,14 @@ export function AvatarContentTagsDialog({
     const [ownAvatars, setOwnAvatars] = useState([]);
     const [selectedAvatarIds, setSelectedAvatarIds] = useState([]);
     const [selectedTagsCsv, setSelectedTagsCsv] = useState('');
-    const selectedTags = useMemo(() => contentTagsFromCsv(selectedTagsCsv), [selectedTagsCsv]);
-    const selectedTagsSet = useMemo(() => new Set(selectedTags), [selectedTags]);
+    const selectedTags = useMemo(
+        () => contentTagsFromCsv(selectedTagsCsv),
+        [selectedTagsCsv]
+    );
+    const selectedTagsSet = useMemo(
+        () => new Set(selectedTags),
+        [selectedTags]
+    );
 
     useEffect(() => {
         let active = true;
@@ -149,14 +175,17 @@ export function AvatarContentTagsDialog({
         }
 
         setSelectedAvatarIds([avatar.id]);
-        setSelectedTagsCsv(contentTagsCsv(Array.isArray(avatar.tags) ? avatar.tags : []));
+        setSelectedTagsCsv(
+            contentTagsCsv(Array.isArray(avatar.tags) ? avatar.tags : [])
+        );
         setLoading(true);
-        avatarProfileRepository.getAllAvatarsByUser({
-            userId: currentUserId,
-            user: 'me',
-            endpoint,
-            releaseStatus: 'all'
-        })
+        avatarProfileRepository
+            .getAllAvatarsByUser({
+                userId: currentUserId,
+                user: 'me',
+                endpoint,
+                releaseStatus: 'all'
+            })
             .then((rows) => {
                 if (active) {
                     setOwnAvatars(mergeAvatars(avatar, rows));
@@ -165,7 +194,11 @@ export function AvatarContentTagsDialog({
             .catch((error) => {
                 if (active) {
                     setOwnAvatars([avatar]);
-                    toast.error(error instanceof Error ? error.message : 'Failed to load own avatars.');
+                    toast.error(
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to load own avatars.'
+                    );
                 }
             })
             .finally(() => {
@@ -199,7 +232,9 @@ export function AvatarContentTagsDialog({
 
     function toggleAllAvatars() {
         setSelectedAvatarIds((current) =>
-            current.length === ownAvatars.length ? [] : ownAvatars.map((entry) => entry.id)
+            current.length === ownAvatars.length
+                ? []
+                : ownAvatars.map((entry) => entry.id)
         );
     }
 
@@ -208,7 +243,9 @@ export function AvatarContentTagsDialog({
             return;
         }
 
-        const avatarsById = new Map(ownAvatars.map((entry) => [entry.id, entry]));
+        const avatarsById = new Map(
+            ownAvatars.map((entry) => [entry.id, entry])
+        );
         const originalTagsById = new Map();
         const savedAvatarIds = [];
         setSaving(true);
@@ -218,10 +255,14 @@ export function AvatarContentTagsDialog({
                 if (!targetAvatar) {
                     continue;
                 }
-                const originalTags = Array.isArray(targetAvatar.tags) ? targetAvatar.tags.slice() : [];
+                const originalTags = Array.isArray(targetAvatar.tags)
+                    ? targetAvatar.tags.slice()
+                    : [];
                 originalTagsById.set(avatarId, originalTags);
                 const remainingTags = Array.isArray(targetAvatar.tags)
-                    ? targetAvatar.tags.filter((tag) => !tag.startsWith('content_'))
+                    ? targetAvatar.tags.filter(
+                          (tag) => !tag.startsWith('content_')
+                      )
                     : [];
                 const nextTags = [...remainingTags, ...selectedTags];
                 const response = await avatarProfileRepository.saveAvatar({
@@ -234,16 +275,22 @@ export function AvatarContentTagsDialog({
                 });
                 savedAvatarIds.push(avatarId);
                 if (avatarId === avatar.id) {
-                    onSavedCurrentAvatar?.(response.json && typeof response.json === 'object'
-                        ? response.json
-                        : { ...targetAvatar, tags: nextTags });
+                    onSavedCurrentAvatar?.(
+                        response.json && typeof response.json === 'object'
+                            ? response.json
+                            : { ...targetAvatar, tags: nextTags }
+                    );
                 }
             }
             toast.success('Avatar content tags updated.');
             onOpenChange(false);
         } catch (error) {
             const rollbackFailures = [];
-            for (let index = savedAvatarIds.length - 1; index >= 0; index -= 1) {
+            for (
+                let index = savedAvatarIds.length - 1;
+                index >= 0;
+                index -= 1
+            ) {
                 const avatarId = savedAvatarIds[index];
                 const targetAvatar = avatarsById.get(avatarId);
                 const originalTags = originalTagsById.get(avatarId) || [];
@@ -257,19 +304,28 @@ export function AvatarContentTagsDialog({
                         }
                     });
                     if (avatarId === avatar.id) {
-                        onSavedCurrentAvatar?.(response.json && typeof response.json === 'object'
-                            ? response.json
-                            : { ...targetAvatar, tags: originalTags });
+                        onSavedCurrentAvatar?.(
+                            response.json && typeof response.json === 'object'
+                                ? response.json
+                                : { ...targetAvatar, tags: originalTags }
+                        );
                     }
                 } catch {
                     rollbackFailures.push(avatarId);
                 }
             }
-            const baseMessage = error instanceof Error ? error.message : 'Failed to update avatar content tags.';
+            const baseMessage =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update avatar content tags.';
             if (savedAvatarIds.length && rollbackFailures.length) {
-                toast.error(`${baseMessage} Rolled back ${savedAvatarIds.length - rollbackFailures.length} avatar(s), but ${rollbackFailures.length} rollback(s) failed.`);
+                toast.error(
+                    `${baseMessage} Rolled back ${savedAvatarIds.length - rollbackFailures.length} avatar(s), but ${rollbackFailures.length} rollback(s) failed.`
+                );
             } else if (savedAvatarIds.length) {
-                toast.error(`${baseMessage} Rolled back ${savedAvatarIds.length} avatar(s).`);
+                toast.error(
+                    `${baseMessage} Rolled back ${savedAvatarIds.length} avatar(s).`
+                );
             } else {
                 toast.error(baseMessage);
             }
@@ -288,8 +344,18 @@ export function AvatarContentTagsDialog({
                     <div className="grid gap-2 sm:grid-cols-2">
                         {contentTagOptions.map((option) => (
                             <Field key={option.value} orientation="horizontal">
-                                <Checkbox id={`avatar-content-tag-${option.value}`} checked={selectedTagsSet.has(option.value)} onCheckedChange={() => toggleBuiltInTag(option.value)} />
-                                <FieldLabel htmlFor={`avatar-content-tag-${option.value}`}>{option.label}</FieldLabel>
+                                <Checkbox
+                                    id={`avatar-content-tag-${option.value}`}
+                                    checked={selectedTagsSet.has(option.value)}
+                                    onCheckedChange={() =>
+                                        toggleBuiltInTag(option.value)
+                                    }
+                                />
+                                <FieldLabel
+                                    htmlFor={`avatar-content-tag-${option.value}`}
+                                >
+                                    {option.label}
+                                </FieldLabel>
                             </Field>
                         ))}
                     </div>
@@ -299,15 +365,28 @@ export function AvatarContentTagsDialog({
                             value={selectedTagsCsv}
                             className="resize-none"
                             placeholder="horror,gore,violence,adult,sex"
-                            onChange={(event) => setSelectedTagsCsv(event.target.value)}
+                            onChange={(event) =>
+                                setSelectedTagsCsv(event.target.value)
+                            }
                         />
                     </Field>
                     <div className="flex items-center gap-2">
-                        <Button type="button" size="sm" variant="outline" onClick={toggleAllAvatars}>
-                            {ownAvatars.length === selectedAvatarIds.length ? 'Select None' : 'Select All'}
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={toggleAllAvatars}
+                        >
+                            {ownAvatars.length === selectedAvatarIds.length
+                                ? 'Select None'
+                                : 'Select All'}
                         </Button>
-                        <span className="text-sm text-muted-foreground">{selectedAvatarIds.length} / {ownAvatars.length}</span>
-                        {loading ? <Spinner className="text-muted-foreground" /> : null}
+                        <span className="text-muted-foreground text-sm">
+                            {selectedAvatarIds.length} / {ownAvatars.length}
+                        </span>
+                        {loading ? (
+                            <Spinner className="text-muted-foreground" />
+                        ) : null}
                     </div>
                     <div className="flex max-h-72 min-h-16 flex-wrap items-start overflow-auto">
                         {ownAvatars.map((entry) => (
@@ -321,8 +400,23 @@ export function AvatarContentTagsDialog({
                     </div>
                 </FieldGroup>
                 <DialogFooter>
-                    <Button type="button" variant="secondary" disabled={saving} onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button type="button" disabled={saving || loading || !selectedAvatarIds.length} onClick={() => void save()}>Save</Button>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={saving}
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        disabled={
+                            saving || loading || !selectedAvatarIds.length
+                        }
+                        onClick={() => void save()}
+                    >
+                        Save
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -343,7 +437,12 @@ export function AvatarStylesDialog({
     const [secondaryStyle, setSecondaryStyle] = useState('');
     const [authorTags, setAuthorTags] = useState('');
     const stylesByName = useMemo(
-        () => new Map(styles.filter((style) => style?.styleName && style?.id).map((style) => [style.styleName, style.id])),
+        () =>
+            new Map(
+                styles
+                    .filter((style) => style?.styleName && style?.id)
+                    .map((style) => [style.styleName, style.id])
+            ),
         [styles]
     );
 
@@ -364,7 +463,8 @@ export function AvatarStylesDialog({
                 .join(',')
         );
         setLoading(true);
-        avatarProfileRepository.getAvatarStyles({ endpoint })
+        avatarProfileRepository
+            .getAvatarStyles({ endpoint })
             .then((rows) => {
                 if (active) {
                     setStyles(rows);
@@ -373,7 +473,11 @@ export function AvatarStylesDialog({
             .catch((error) => {
                 if (active) {
                     setStyles([]);
-                    toast.error(error instanceof Error ? error.message : 'Failed to load avatar styles.');
+                    toast.error(
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to load avatar styles.'
+                    );
                 }
             })
             .finally(() => {
@@ -396,8 +500,12 @@ export function AvatarStylesDialog({
             ? avatar.tags.filter((tag) => !tag.startsWith('author_tag_'))
             : [];
         const nextAuthorTags = authorTagsFromCsv(authorTags);
-        const primaryStyleId = primaryStyle ? stylesByName.get(primaryStyle) || primaryStyle : '';
-        const secondaryStyleId = secondaryStyle ? stylesByName.get(secondaryStyle) || secondaryStyle : '';
+        const primaryStyleId = primaryStyle
+            ? stylesByName.get(primaryStyle) || primaryStyle
+            : '';
+        const secondaryStyleId = secondaryStyle
+            ? stylesByName.get(secondaryStyle) || secondaryStyle
+            : '';
 
         setSaving(true);
         try {
@@ -411,17 +519,26 @@ export function AvatarStylesDialog({
                     tags: [...remainingTags, ...nextAuthorTags]
                 }
             });
-            onSavedCurrentAvatar?.(response.json && typeof response.json === 'object'
-                ? response.json
-                : {
-                    ...avatar,
-                    styles: { primary: primaryStyle, secondary: secondaryStyle },
-                    tags: [...remainingTags, ...nextAuthorTags]
-                });
+            onSavedCurrentAvatar?.(
+                response.json && typeof response.json === 'object'
+                    ? response.json
+                    : {
+                          ...avatar,
+                          styles: {
+                              primary: primaryStyle,
+                              secondary: secondaryStyle
+                          },
+                          tags: [...remainingTags, ...nextAuthorTags]
+                      }
+            );
             toast.success('Avatar styles and author tags updated.');
             onOpenChange(false);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update avatar styles and author tags.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update avatar styles and author tags.'
+            );
         } finally {
             setSaving(false);
         }
@@ -436,15 +553,30 @@ export function AvatarStylesDialog({
                 <FieldGroup>
                     <Field>
                         <FieldLabel>Primary Style</FieldLabel>
-                        <Select value={primaryStyle || noneValue} disabled={loading} onValueChange={(value) => setPrimaryStyle(value === noneValue ? '' : value)}>
+                        <Select
+                            value={primaryStyle || noneValue}
+                            disabled={loading}
+                            onValueChange={(value) =>
+                                setPrimaryStyle(
+                                    value === noneValue ? '' : value
+                                )
+                            }
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select style" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value={noneValue}>None</SelectItem>
+                                    <SelectItem value={noneValue}>
+                                        None
+                                    </SelectItem>
                                     {styles.map((style) => (
-                                        <SelectItem key={style.id || style.styleName} value={style.styleName}>{style.styleName}</SelectItem>
+                                        <SelectItem
+                                            key={style.id || style.styleName}
+                                            value={style.styleName}
+                                        >
+                                            {style.styleName}
+                                        </SelectItem>
                                     ))}
                                 </SelectGroup>
                             </SelectContent>
@@ -452,15 +584,30 @@ export function AvatarStylesDialog({
                     </Field>
                     <Field>
                         <FieldLabel>Secondary Style</FieldLabel>
-                        <Select value={secondaryStyle || noneValue} disabled={loading} onValueChange={(value) => setSecondaryStyle(value === noneValue ? '' : value)}>
+                        <Select
+                            value={secondaryStyle || noneValue}
+                            disabled={loading}
+                            onValueChange={(value) =>
+                                setSecondaryStyle(
+                                    value === noneValue ? '' : value
+                                )
+                            }
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select style" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value={noneValue}>None</SelectItem>
+                                    <SelectItem value={noneValue}>
+                                        None
+                                    </SelectItem>
                                     {styles.map((style) => (
-                                        <SelectItem key={style.id || style.styleName} value={style.styleName}>{style.styleName}</SelectItem>
+                                        <SelectItem
+                                            key={style.id || style.styleName}
+                                            value={style.styleName}
+                                        >
+                                            {style.styleName}
+                                        </SelectItem>
                                     ))}
                                 </SelectGroup>
                             </SelectContent>
@@ -468,12 +615,32 @@ export function AvatarStylesDialog({
                     </Field>
                     <Field>
                         <FieldLabel>Author Tags</FieldLabel>
-                        <Textarea rows={2} className="resize-none" value={authorTags} onChange={(event) => setAuthorTags(event.target.value)} />
+                        <Textarea
+                            rows={2}
+                            className="resize-none"
+                            value={authorTags}
+                            onChange={(event) =>
+                                setAuthorTags(event.target.value)
+                            }
+                        />
                     </Field>
                 </FieldGroup>
                 <DialogFooter>
-                    <Button type="button" variant="secondary" disabled={saving} onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button type="button" disabled={saving || loading} onClick={() => void save()}>Save</Button>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={saving}
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        disabled={saving || loading}
+                        onClick={() => void save()}
+                    >
+                        Save
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

@@ -15,12 +15,32 @@
         "dev": "vite",
         "tauri:dev": "tauri dev --features devtools",
         "tauri:build": "tauri build",
+        "format": "oxfmt .",
+        "format:check": "oxfmt --check .",
         "lint": "npm run lint:oxlint",
         "lint:oxlint": "oxlint .",
         "test": "vitest run --config vitest.config.js",
         "test:watch": "vitest --config vitest.config.js",
         "build:licenses": "node ./build-scripts/generate-third-party-licenses.js",
         "build": "vite build && npm run build:licenses"
+    },
+    "dependencies": {
+        "@dnd-kit/core": "^6.3.1",
+        "@dnd-kit/sortable": "^10.0.0",
+        "@dnd-kit/utilities": "^3.2.2",
+        "@fontsource-variable/geist": "^5.2.8",
+        "@fontsource-variable/inter": "^5.2.8",
+        "@sigma/edge-curve": "^3.1.0",
+        "@sigma/node-border": "^3.0.0",
+        "@tauri-apps/api": "^2.10.1",
+        "date-fns": "^4.1.0",
+        "graphology": "^0.26.0",
+        "graphology-communities-louvain": "^2.0.2",
+        "graphology-layout-forceatlas2": "^0.10.1",
+        "graphology-layout-noverlap": "^0.4.2",
+        "next-themes": "^0.4.6",
+        "shadcn": "^4.3.0",
+        "sigma": "^3.0.2"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.2.2",
@@ -59,23 +79,5 @@
     "engines": {
         "node": ">=24.10.0",
         "npm": ">=11.5.0"
-    },
-    "dependencies": {
-        "@dnd-kit/core": "^6.3.1",
-        "@dnd-kit/sortable": "^10.0.0",
-        "@dnd-kit/utilities": "^3.2.2",
-        "@fontsource-variable/geist": "^5.2.8",
-        "@fontsource-variable/inter": "^5.2.8",
-        "@sigma/edge-curve": "^3.1.0",
-        "@sigma/node-border": "^3.0.0",
-        "@tauri-apps/api": "^2.10.1",
-        "date-fns": "^4.1.0",
-        "graphology": "^0.26.0",
-        "graphology-communities-louvain": "^2.0.2",
-        "graphology-layout-forceatlas2": "^0.10.1",
-        "graphology-layout-noverlap": "^0.4.2",
-        "next-themes": "^0.4.6",
-        "shadcn": "^4.3.0",
-        "sigma": "^3.0.2"
     }
 }

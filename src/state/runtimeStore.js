@@ -214,7 +214,9 @@ export const useRuntimeStore = create((set) => ({
             transport: {
                 ...state.transport,
                 messageCount: state.transport.messageCount + 1,
-                bytesReceived: state.transport.bytesReceived + Math.max(0, Number(byteLength) || 0),
+                bytesReceived:
+                    state.transport.bytesReceived +
+                    Math.max(0, Number(byteLength) || 0),
                 lastMessageType: messageType || '',
                 lastMessageAt: new Date().toISOString()
             }
@@ -230,7 +232,8 @@ export const useRuntimeStore = create((set) => ({
     },
     recordBackendEvent(name, payload) {
         set((state) => {
-            const current = state.backendEvents[name] ?? createBackendEventState();
+            const current =
+                state.backendEvents[name] ?? createBackendEventState();
             return {
                 backendEvents: {
                     ...state.backendEvents,

@@ -1,3 +1,4 @@
+import sqliteService from '../../repositories/sqliteRepository.js';
 import { activityV2 } from './activityV2.js';
 import { avatarFavorites } from './avatarFavorites.js';
 import { avatarTags } from './avatarTags.js';
@@ -18,8 +19,6 @@ import {
     normalizeUserTablePrefix
 } from './userTables.js';
 import { worldFavorites } from './worldFavorites.js';
-
-import sqliteService from '../../repositories/sqliteRepository.js';
 
 const dbVars = {
     userId: '',
@@ -56,7 +55,9 @@ const database = {
 
     async initUserTables(userId) {
         dbVars.userId =
-            typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim();
         dbVars.userPrefix = normalizeUserTablePrefix(dbVars.userId);
         for (const sql of buildInitUserTableStatements(dbVars.userPrefix)) {
             await sqliteService.executeNonQuery(sql);

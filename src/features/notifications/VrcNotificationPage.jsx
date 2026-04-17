@@ -1,5 +1,9 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+    getCoreRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable
+} from '@tanstack/react-table';
 import {
     ArrowDownIcon,
     ArrowUpDownIcon,
@@ -17,27 +21,24 @@ import {
     Trash2Icon,
     XIcon
 } from 'lucide-react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import {
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable
-} from '@tanstack/react-table';
 
-import { convertFileUrlToImageUrl, openExternalLink } from '@/lib/entityMedia.js';
-import { formatDateFilter } from '@/lib/dateTime.js';
-import { cn } from '@/lib/utils.js';
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import {
-    ResizableTableCell
-} from '@/components/data-table/ResizableTableParts.jsx';
 import {
     DataTableHeader,
     DataTablePagination
 } from '@/components/data-table/DataTableView.jsx';
-import { Location } from '@/components/Location.jsx';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
+import { Location } from '@/components/Location.jsx';
+import { formatDateFilter } from '@/lib/dateTime.js';
+import {
+    convertFileUrlToImageUrl,
+    openExternalLink
+} from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
 import {
     configRepository,
     mediaRepository,
@@ -52,19 +53,27 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService.js';
-import { checkCanInvite } from '@/shared/utils/invite.js';
 import {
     IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
     validateImageUploadFile,
     withUploadTimeout
 } from '@/shared/utils/imageUpload.js';
+import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/ui/shadcn/dialog';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -74,29 +83,16 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/shadcn/table';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/ui/shadcn/dialog';
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from '@/ui/shadcn/table';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-import {
-    NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES as DEFAULT_PAGE_SIZES,
-    readPersistedNotificationTableState as readPersistedState,
-    resolveNotificationPageSize as resolvePageSize,
-    safeJsonParse,
-    sanitizeNotificationColumnOrder as sanitizeColumnOrder,
-    sanitizeNotificationColumnSizing as sanitizeColumnSizing,
-    sanitizeNotificationColumnVisibility as sanitizeColumnVisibility,
-    sanitizeNotificationFilters,
-    sanitizeNotificationSorting as sanitizeSorting,
-    writePersistedNotificationTableState as writePersistedState
-} from './notificationTableState.js';
 import {
     buildCachedInstanceMap,
     canDeclineNotification,
@@ -111,6 +107,18 @@ import {
     normalizeWorldTarget,
     resolveCurrentInviteLocation
 } from './notificationRows.js';
+import {
+    NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES as DEFAULT_PAGE_SIZES,
+    readPersistedNotificationTableState as readPersistedState,
+    resolveNotificationPageSize as resolvePageSize,
+    safeJsonParse,
+    sanitizeNotificationColumnOrder as sanitizeColumnOrder,
+    sanitizeNotificationColumnSizing as sanitizeColumnSizing,
+    sanitizeNotificationColumnVisibility as sanitizeColumnVisibility,
+    sanitizeNotificationFilters,
+    sanitizeNotificationSorting as sanitizeSorting,
+    writePersistedNotificationTableState as writePersistedState
+} from './notificationTableState.js';
 
 function getResponseIcon(response, notificationType) {
     if (response?.type === 'link') {
@@ -140,7 +148,8 @@ function SortButton({ column, label }) {
             variant="ghost"
             size="sm"
             className="h-auto justify-start px-1 py-0 text-left"
-            onClick={() => column.toggleSorting(direction === 'asc')}>
+            onClick={() => column.toggleSorting(direction === 'asc')}
+        >
             <span>{label}</span>
             {direction === 'asc' ? (
                 <ArrowUpIcon data-icon="inline-end" />
@@ -153,20 +162,33 @@ function SortButton({ column, label }) {
     );
 }
 
-function NotificationLocationLink({ location, worldName = '', groupName = '' }) {
+function NotificationLocationLink({
+    location,
+    worldName = '',
+    groupName = ''
+}) {
     const value = String(location || '').trim();
     if (!value) {
         return null;
     }
 
     return (
-        <div className="max-w-xl text-xs text-muted-foreground">
-            <Location location={value} hint={worldName} grouphint={groupName} asButton={false} />
+        <div className="text-muted-foreground max-w-xl text-xs">
+            <Location
+                location={value}
+                hint={worldName}
+                grouphint={groupName}
+                asButton={false}
+            />
         </div>
     );
 }
 
-function NotificationTypeFilterDropdown({ value, onChange, getTypeLabel = (type) => type }) {
+function NotificationTypeFilterDropdown({
+    value,
+    onChange,
+    getTypeLabel = (type) => type
+}) {
     const activeTypes = Array.isArray(value) ? value : [];
     const label = activeTypes.length
         ? `${activeTypes.length} notification filters`
@@ -175,11 +197,18 @@ function NotificationTypeFilterDropdown({ value, onChange, getTypeLabel = (type)
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="h-9 min-w-0 flex-1 basis-64 justify-start truncate">
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 min-w-0 flex-1 basis-64 justify-start truncate"
+                >
                     {label}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="max-h-96 w-80 overflow-y-auto">
+            <DropdownMenuContent
+                align="start"
+                className="max-h-96 w-80 overflow-y-auto"
+            >
                 <DropdownMenuGroup>
                     {NOTIFICATION_TYPES.map((type) => (
                         <DropdownMenuCheckboxItem
@@ -188,10 +217,18 @@ function NotificationTypeFilterDropdown({ value, onChange, getTypeLabel = (type)
                             onCheckedChange={(checked) => {
                                 const nextTypes = checked
                                     ? [...activeTypes, type]
-                                    : activeTypes.filter((entry) => entry !== type);
-                                onChange(sanitizeNotificationFilters(nextTypes, NOTIFICATION_TYPES));
+                                    : activeTypes.filter(
+                                          (entry) => entry !== type
+                                      );
+                                onChange(
+                                    sanitizeNotificationFilters(
+                                        nextTypes,
+                                        NOTIFICATION_TYPES
+                                    )
+                                );
                             }}
-                            onSelect={(event) => event.preventDefault()}>
+                            onSelect={(event) => event.preventDefault()}
+                        >
                             {getTypeLabel(type)}
                         </DropdownMenuCheckboxItem>
                     ))}
@@ -245,7 +282,11 @@ function InviteResponseMessageDialog({
                 return;
             }
             setRows([]);
-            setError(nextError instanceof Error ? nextError.message : 'Failed to load invite response messages.');
+            setError(
+                nextError instanceof Error
+                    ? nextError.message
+                    : 'Failed to load invite response messages.'
+            );
         } finally {
             if (requestIdRef.current === requestId) {
                 setLoading(false);
@@ -278,7 +319,11 @@ function InviteResponseMessageDialog({
         }
         const validation = validateImageUploadFile(file);
         if (!validation.ok) {
-            setError(validation.reason === 'too_large' ? 'Selected image is too large.' : 'Selected file is not an image.');
+            setError(
+                validation.reason === 'too_large'
+                    ? 'Selected image is too large.'
+                    : 'Selected file is not an image.'
+            );
             return;
         }
         try {
@@ -286,7 +331,11 @@ function InviteResponseMessageDialog({
             setImageName(file.name || 'image');
             setError('');
         } catch (nextError) {
-            setError(nextError instanceof Error ? nextError.message : 'Failed to read image.');
+            setError(
+                nextError instanceof Error
+                    ? nextError.message
+                    : 'Failed to read image.'
+            );
         }
     }
 
@@ -306,7 +355,11 @@ function InviteResponseMessageDialog({
             });
             onOpenChange(false);
         } catch (nextError) {
-            setError(nextError instanceof Error ? nextError.message : 'Failed to send invite response.');
+            setError(
+                nextError instanceof Error
+                    ? nextError.message
+                    : 'Failed to send invite response.'
+            );
         } finally {
             setSending(false);
         }
@@ -318,9 +371,10 @@ function InviteResponseMessageDialog({
         setEditMessage(row?.message || '');
     }
 
-    const title = messageType === 'requestResponse'
-        ? 'Invite request response message'
-        : 'Invite response message';
+    const title =
+        messageType === 'requestResponse'
+            ? 'Invite request response message'
+            : 'Invite response message';
     const inviteCooldownNowMs = Date.now();
 
     return (
@@ -329,7 +383,8 @@ function InviteResponseMessageDialog({
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>
-                        Select a message slot, optionally edit it, then confirm the response.
+                        Select a message slot, optionally edit it, then confirm
+                        the response.
                     </DialogDescription>
                 </DialogHeader>
                 {isLocalUserVrcPlusSupporter ? (
@@ -342,77 +397,113 @@ function InviteResponseMessageDialog({
                             onChange={(event) => void handleImageChange(event)}
                         />
                         {imageName ? (
-                            <Button type="button" variant="outline" size="sm" disabled={sending} onClick={() => {
-                                setImageData('');
-                                setImageName('');
-                            }}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={sending}
+                                onClick={() => {
+                                    setImageData('');
+                                    setImageName('');
+                                }}
+                            >
                                 Clear image: {imageName}
                             </Button>
                         ) : null}
                     </div>
                 ) : null}
-                {error ? <div className="text-sm text-destructive">{error}</div> : null}
+                {error ? (
+                    <div className="text-destructive text-sm">{error}</div>
+                ) : null}
                 <div className="min-h-0 flex-1 overflow-auto rounded-md border">
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-20">Slot</TableHead>
                                 <TableHead>Message</TableHead>
-                                <TableHead className="w-32 text-right">Cool down</TableHead>
-                                <TableHead className="w-24 text-right">Action</TableHead>
+                                <TableHead className="w-32 text-right">
+                                    Cool down
+                                </TableHead>
+                                <TableHead className="w-24 text-right">
+                                    Action
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                    <TableCell
+                                        colSpan={4}
+                                        className="text-muted-foreground h-24 text-center"
+                                    >
                                         <div className="inline-flex items-center gap-2">
                                             <Spinner className="size-4" />
                                             Loading invite messages.
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ) : rows.length ? rows.map((row) => (
-                                <TableRow
-                                    key={`${messageType}:${row.slot}`}
-                                    className={cn('cursor-pointer', confirmRow?.slot === row.slot && 'bg-muted/70')}
-                                    tabIndex={0}
-                                    aria-label={`Select invite message slot ${row.slot}`}
-                                    onKeyDown={(event) => {
-                                        if (event.key !== 'Enter' && event.key !== ' ') {
-                                            return;
-                                        }
-                                        event.preventDefault();
-                                        setEditingRow(null);
-                                        setConfirmRow(row);
-                                    }}
-                                    onClick={() => {
-                                        setEditingRow(null);
-                                        setConfirmRow(row);
-                                    }}>
-                                    <TableCell className="font-mono text-xs">{row.slot}</TableCell>
-                                    <TableCell className="whitespace-normal">{row.message || '—'}</TableCell>
-                                    <TableCell className="text-right text-xs text-muted-foreground">
-                                        {getInviteCooldownLabel(row.updatedAt, inviteCooldownNowMs)}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={`Edit slot ${row.slot}`}
-                                            disabled={sending}
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                beginEdit(row);
-                                            }}>
-                                            <PencilIcon data-icon="inline-start" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
+                            ) : rows.length ? (
+                                rows.map((row) => (
+                                    <TableRow
+                                        key={`${messageType}:${row.slot}`}
+                                        className={cn(
+                                            'cursor-pointer',
+                                            confirmRow?.slot === row.slot &&
+                                                'bg-muted/70'
+                                        )}
+                                        tabIndex={0}
+                                        aria-label={`Select invite message slot ${row.slot}`}
+                                        onKeyDown={(event) => {
+                                            if (
+                                                event.key !== 'Enter' &&
+                                                event.key !== ' '
+                                            ) {
+                                                return;
+                                            }
+                                            event.preventDefault();
+                                            setEditingRow(null);
+                                            setConfirmRow(row);
+                                        }}
+                                        onClick={() => {
+                                            setEditingRow(null);
+                                            setConfirmRow(row);
+                                        }}
+                                    >
+                                        <TableCell className="font-mono text-xs">
+                                            {row.slot}
+                                        </TableCell>
+                                        <TableCell className="whitespace-normal">
+                                            {row.message || '—'}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground text-right text-xs">
+                                            {getInviteCooldownLabel(
+                                                row.updatedAt,
+                                                inviteCooldownNowMs
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                aria-label={`Edit slot ${row.slot}`}
+                                                disabled={sending}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    beginEdit(row);
+                                                }}
+                                            >
+                                                <PencilIcon data-icon="inline-start" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                    <TableCell
+                                        colSpan={4}
+                                        className="text-muted-foreground h-24 text-center"
+                                    >
                                         No invite response messages.
                                     </TableCell>
                                 </TableRow>
@@ -422,26 +513,48 @@ function InviteResponseMessageDialog({
                 </div>
                 {editingRow ? (
                     <div className="flex flex-col gap-2 rounded-md border p-3">
-                        <div className="text-sm font-medium">Edit and send slot {editingRow.slot}</div>
+                        <div className="text-sm font-medium">
+                            Edit and send slot {editingRow.slot}
+                        </div>
                         <Textarea
                             value={editMessage}
                             maxLength={64}
                             rows={2}
                             disabled={sending}
-                            onChange={(event) => setEditMessage(event.target.value)}
+                            onChange={(event) =>
+                                setEditMessage(event.target.value)
+                            }
                         />
                         <div className="flex items-center justify-between gap-3">
-                            <span className="text-xs text-muted-foreground">{editMessage.length}/64</span>
+                            <span className="text-muted-foreground text-xs">
+                                {editMessage.length}/64
+                            </span>
                             <div className="flex gap-2">
-                                <Button type="button" variant="outline" size="sm" disabled={sending} onClick={() => setEditingRow(null)}>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={sending}
+                                    onClick={() => setEditingRow(null)}
+                                >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="button"
                                     size="sm"
                                     disabled={sending || !editMessage.trim()}
-                                    onClick={() => void sendRow(editingRow, editMessage.trim())}>
-                                    {sending ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
+                                    onClick={() =>
+                                        void sendRow(
+                                            editingRow,
+                                            editMessage.trim()
+                                        )
+                                    }
+                                >
+                                    {sending ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : (
+                                        <SendIcon data-icon="inline-start" />
+                                    )}
                                     Send
                                 </Button>
                             </div>
@@ -450,26 +563,56 @@ function InviteResponseMessageDialog({
                 ) : confirmRow ? (
                     <div className="flex flex-col gap-2 rounded-md border p-3 md:flex-row md:items-center md:justify-between">
                         <div className="min-w-0 text-sm">
-                            Send slot <span className="font-mono">{confirmRow.slot}</span>
-                            {confirmRow.message ? <span className="ml-2 text-muted-foreground">{confirmRow.message}</span> : null}
+                            Send slot{' '}
+                            <span className="font-mono">{confirmRow.slot}</span>
+                            {confirmRow.message ? (
+                                <span className="text-muted-foreground ml-2">
+                                    {confirmRow.message}
+                                </span>
+                            ) : null}
                         </div>
                         <div className="flex gap-2">
-                            <Button type="button" variant="outline" size="sm" disabled={sending} onClick={() => setConfirmRow(null)}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={sending}
+                                onClick={() => setConfirmRow(null)}
+                            >
                                 Cancel
                             </Button>
-                            <Button type="button" size="sm" disabled={sending} onClick={() => void sendRow(confirmRow)}>
-                                {sending ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
+                            <Button
+                                type="button"
+                                size="sm"
+                                disabled={sending}
+                                onClick={() => void sendRow(confirmRow)}
+                            >
+                                {sending ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <SendIcon data-icon="inline-start" />
+                                )}
                                 Confirm
                             </Button>
                         </div>
                     </div>
                 ) : null}
                 <DialogFooter>
-                    <Button type="button" variant="outline" disabled={loading || sending} onClick={() => void loadRows()}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loading || sending}
+                        onClick={() => void loadRows()}
+                    >
                         <RefreshCcwIcon data-icon="inline-start" />
                         Refresh
                     </Button>
-                    <Button type="button" variant="secondary" disabled={sending} onClick={() => onOpenChange(false)}>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={sending}
+                        onClick={() => onOpenChange(false)}
+                    >
                         Close
                     </Button>
                 </DialogFooter>
@@ -518,7 +661,11 @@ function BoopReplyDialog({
                 return;
             }
             setEmojiRows([]);
-            setError(nextError instanceof Error ? nextError.message : 'Failed to load emojis.');
+            setError(
+                nextError instanceof Error
+                    ? nextError.message
+                    : 'Failed to load emojis.'
+            );
         } finally {
             if (requestIdRef.current === requestId) {
                 setLoading(false);
@@ -551,7 +698,11 @@ function BoopReplyDialog({
             await onSend(notification, emojiId);
             onOpenChange(false);
         } catch (nextError) {
-            setError(nextError instanceof Error ? nextError.message : 'Failed to send boop.');
+            setError(
+                nextError instanceof Error
+                    ? nextError.message
+                    : 'Failed to send boop.'
+            );
         } finally {
             setSending(false);
         }
@@ -564,8 +715,11 @@ function BoopReplyDialog({
             return emojiRows;
         }
         return emojiRows.filter((emoji) =>
-            [emoji?.name, emoji?.id]
-                .some((value) => String(value || '').toLowerCase().includes(query))
+            [emoji?.name, emoji?.id].some((value) =>
+                String(value || '')
+                    .toLowerCase()
+                    .includes(query)
+            )
         );
     }, [emojiRows, emojiSearch]);
 
@@ -578,8 +732,9 @@ function BoopReplyDialog({
                 </DialogHeader>
                 <div className="flex flex-col gap-3">
                     {!emojiId ? (
-                        <div className="rounded-md border p-3 text-sm text-muted-foreground">
-                            No custom emoji selected. The default boop will be sent.
+                        <div className="text-muted-foreground rounded-md border p-3 text-sm">
+                            No custom emoji selected. The default boop will be
+                            sent.
                         </div>
                     ) : null}
                     {isLocalUserVrcPlusSupporter ? (
@@ -590,53 +745,81 @@ function BoopReplyDialog({
                                     placeholder="Search emoji"
                                     disabled={sending}
                                     className="h-9 min-w-48 flex-1"
-                                    onChange={(event) => setEmojiSearch(event.target.value)}
+                                    onChange={(event) =>
+                                        setEmojiSearch(event.target.value)
+                                    }
                                 />
-                                <Button type="button" variant="outline" size="sm" disabled={sending || !emojiId} onClick={() => setEmojiId('')}>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={sending || !emojiId}
+                                    onClick={() => setEmojiId('')}
+                                >
                                     Clear selection
                                 </Button>
                             </div>
-                        <div className="min-h-0 max-h-[48vh] overflow-y-auto rounded-md border p-2">
-                            {loading ? (
-                                <div className="flex h-28 items-center justify-center gap-2 text-sm text-muted-foreground">
-                                    <Spinner className="size-4" />
-                                    Loading emojis.
-                                </div>
-                            ) : filteredEmojiRows.length ? (
-                                <div className="grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-2">
-                                    {filteredEmojiRows.map((emoji) => {
-                                        const imageUrl = getFileImageUrl(emoji);
-                                        if (!imageUrl || !emoji?.id) {
-                                            return null;
-                                        }
-                                        const selected = emojiId === emoji.id;
-                                        return (
-                                            <Button
-                                                key={emoji.id}
-                                                type="button"
-                                                variant={selected ? 'secondary' : 'outline'}
-                                                className="h-auto w-full flex-col p-2"
-                                                aria-pressed={selected}
-                                                disabled={sending}
-                                                onClick={() => setEmojiId(selected ? '' : emoji.id)}>
-                                                <img
-                                                    src={imageUrl}
-                                                    alt={emoji.name || emoji.id}
-                                                    className="mx-auto size-20 object-contain"
-                                                />
-                                            </Button>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="flex h-28 items-center justify-center text-sm text-muted-foreground">
-                                    {emojiRows.length ? 'No custom emojis match the search.' : 'No custom emojis.'}
-                                </div>
-                            )}
-                        </div>
+                            <div className="max-h-[48vh] min-h-0 overflow-y-auto rounded-md border p-2">
+                                {loading ? (
+                                    <div className="text-muted-foreground flex h-28 items-center justify-center gap-2 text-sm">
+                                        <Spinner className="size-4" />
+                                        Loading emojis.
+                                    </div>
+                                ) : filteredEmojiRows.length ? (
+                                    <div className="grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-2">
+                                        {filteredEmojiRows.map((emoji) => {
+                                            const imageUrl =
+                                                getFileImageUrl(emoji);
+                                            if (!imageUrl || !emoji?.id) {
+                                                return null;
+                                            }
+                                            const selected =
+                                                emojiId === emoji.id;
+                                            return (
+                                                <Button
+                                                    key={emoji.id}
+                                                    type="button"
+                                                    variant={
+                                                        selected
+                                                            ? 'secondary'
+                                                            : 'outline'
+                                                    }
+                                                    className="h-auto w-full flex-col p-2"
+                                                    aria-pressed={selected}
+                                                    disabled={sending}
+                                                    onClick={() =>
+                                                        setEmojiId(
+                                                            selected
+                                                                ? ''
+                                                                : emoji.id
+                                                        )
+                                                    }
+                                                >
+                                                    <img
+                                                        src={imageUrl}
+                                                        alt={
+                                                            emoji.name ||
+                                                            emoji.id
+                                                        }
+                                                        className="mx-auto size-20 object-contain"
+                                                    />
+                                                </Button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="text-muted-foreground flex h-28 items-center justify-center text-sm">
+                                        {emojiRows.length
+                                            ? 'No custom emojis match the search.'
+                                            : 'No custom emojis.'}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     ) : null}
-                    {error ? <div className="text-sm text-destructive">{error}</div> : null}
+                    {error ? (
+                        <div className="text-destructive text-sm">{error}</div>
+                    ) : null}
                 </div>
                 <DialogFooter>
                     <Button
@@ -646,22 +829,37 @@ function BoopReplyDialog({
                         onClick={() => {
                             onOpenChange(false);
                             navigate('/tools/gallery');
-                        }}>
+                        }}
+                    >
                         Emoji manager
                     </Button>
                     <Button
                         type="button"
                         variant="outline"
                         disabled={loading || sending}
-                        onClick={() => void loadEmojiRows()}>
+                        onClick={() => void loadEmojiRows()}
+                    >
                         <RefreshCcwIcon data-icon="inline-start" />
                         Refresh
                     </Button>
-                    <Button type="button" variant="secondary" disabled={sending} onClick={() => onOpenChange(false)}>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={sending}
+                        onClick={() => onOpenChange(false)}
+                    >
                         Cancel
                     </Button>
-                    <Button type="button" disabled={sending || !notification?.senderUserId} onClick={() => void handleSend()}>
-                        {sending ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
+                    <Button
+                        type="button"
+                        disabled={sending || !notification?.senderUserId}
+                        onClick={() => void handleSend()}
+                    >
+                        {sending ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <SendIcon data-icon="inline-start" />
+                        )}
                         Send
                     </Button>
                 </DialogFooter>
@@ -676,18 +874,27 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     const gameState = useRuntimeStore((state) => state.gameState);
     const modalStore = useModalStore();
     const notificationRows = useVrcNotificationStore((state) => state.rows);
-    const notificationLoadStatus = useVrcNotificationStore((state) => state.loadStatus);
+    const notificationLoadStatus = useVrcNotificationStore(
+        (state) => state.loadStatus
+    );
     const notificationDetail = useVrcNotificationStore((state) => state.detail);
-    const loadNotificationsForCurrentUser = useVrcNotificationStore((state) => state.loadForCurrentUser);
-    const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
+    const loadNotificationsForCurrentUser = useVrcNotificationStore(
+        (state) => state.loadForCurrentUser
+    );
+    const groupInstancesState = useRuntimeStore(
+        (state) => state.groupInstances
+    );
     const currentUserId = runtimeAuth.currentUserId;
     const endpoint = runtimeAuth.currentUserEndpoint;
-    const groupInstanceRows = groupInstancesState.endpoint === endpoint ? groupInstancesState.instances : [];
+    const groupInstanceRows =
+        groupInstancesState.endpoint === endpoint
+            ? groupInstancesState.instances
+            : [];
     const currentUserSnapshot = runtimeAuth.currentUserSnapshot;
     const isLocalUserVrcPlusSupporter = Boolean(
         currentUserSnapshot?.$isVRCPlus ||
-            currentUserSnapshot?.tags?.includes?.('system_supporter') ||
-            globalThis?.$debug?.debugVrcPlus
+        currentUserSnapshot?.tags?.includes?.('system_supporter') ||
+        globalThis?.$debug?.debugVrcPlus
     );
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUserSnapshot),
@@ -726,7 +933,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     const [activeTypes, setActiveTypes] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [preferencesReady, setPreferencesReady] = useState(false);
-    const [sorting, setSorting] = useState(() => sanitizeSorting(persistedState.sorting));
+    const [sorting, setSorting] = useState(() =>
+        sanitizeSorting(persistedState.sorting)
+    );
     const [columnVisibility, setColumnVisibility] = useState(() =>
         sanitizeColumnVisibility(persistedState.columnVisibility)
     );
@@ -785,7 +994,12 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     return;
                 }
 
-                setActiveTypes(sanitizeNotificationFilters(safeJsonParse(savedFilters), NOTIFICATION_TYPES));
+                setActiveTypes(
+                    sanitizeNotificationFilters(
+                        safeJsonParse(savedFilters),
+                        NOTIFICATION_TYPES
+                    )
+                );
                 setPreferencesReady(true);
             })
             .catch(() => {
@@ -873,25 +1087,37 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             };
         }
 
-        loadNotificationsForCurrentUser()
-            .catch((error) => {
-                if (!active) {
-                    return;
-                }
-                toast.error(error instanceof Error ? error.message : 'Failed to load notifications.');
-            });
+        loadNotificationsForCurrentUser().catch((error) => {
+            if (!active) {
+                return;
+            }
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load notifications.'
+            );
+        });
 
         return () => {
             active = false;
         };
-    }, [currentUserId, loadNotificationsForCurrentUser, preferencesReady, reloadToken]);
+    }, [
+        currentUserId,
+        loadNotificationsForCurrentUser,
+        preferencesReady,
+        reloadToken
+    ]);
 
     useEffect(() => {
         if (!preferencesReady || !currentUserId) {
             return;
         }
 
-        const nextRows = filterNotificationRows(notificationRows, activeTypes, deferredSearchQuery);
+        const nextRows = filterNotificationRows(
+            notificationRows,
+            activeTypes,
+            deferredSearchQuery
+        );
         setRows(nextRows);
         setLoadStatus(notificationLoadStatus);
         setDetail(notificationDetail || '');
@@ -947,12 +1173,16 @@ export function VrcNotificationPage({ embedded = false } = {}) {
 
     function openNotificationTypeTarget(notification) {
         if (
-            (notification.type === 'group.queueReady' || notification.type === 'instance.closed') &&
+            (notification.type === 'group.queueReady' ||
+                notification.type === 'instance.closed') &&
             notification.location
         ) {
             openWorldDialog({
                 worldId: notification.location,
-                title: notification.worldName || notification.details?.worldName || undefined
+                title:
+                    notification.worldName ||
+                    notification.details?.worldName ||
+                    undefined
             });
             return;
         }
@@ -964,21 +1194,25 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     function notificationTypeIsClickable(notification) {
         return Boolean(
             notification.link ||
-            (
-                (notification.type === 'group.queueReady' || notification.type === 'instance.closed') &&
-                notification.location
-            )
+            ((notification.type === 'group.queueReady' ||
+                notification.type === 'instance.closed') &&
+                notification.location)
         );
     }
 
     function openNotificationImagePreview(notification) {
-        const imageUrl = notification.details?.imageUrl || notification.imageUrl || '';
+        const imageUrl =
+            notification.details?.imageUrl || notification.imageUrl || '';
         if (!imageUrl || imageUrl.startsWith('default_')) {
             return;
         }
         modalStore.openImagePreview({
             url: convertFileUrlToImageUrl(imageUrl, 1024),
-            title: notification.title || notification.message || notification.type || 'Notification image'
+            title:
+                notification.title ||
+                notification.message ||
+                notification.type ||
+                'Notification image'
         });
     }
 
@@ -992,11 +1226,18 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             });
             setReloadToken((value) => value + 1);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to mark notification as seen.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to mark notification as seen.'
+            );
         }
     }
 
-    async function deleteNotification(notification, { skipConfirm = false } = {}) {
+    async function deleteNotification(
+        notification,
+        { skipConfirm = false } = {}
+    ) {
         try {
             if (!skipConfirm) {
                 const result = await modalStore.confirm({
@@ -1017,7 +1258,11 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             setReloadToken((value) => value + 1);
             toast.success('Notification log entry deleted.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete notification.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete notification.'
+            );
         }
     }
 
@@ -1049,11 +1294,18 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 await expireNotificationLocally(notification);
                 return;
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to accept friend request.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to accept friend request.'
+            );
         }
     }
 
-    async function hideNotification(notification, { skipConfirm = false } = {}) {
+    async function hideNotification(
+        notification,
+        { skipConfirm = false } = {}
+    ) {
         try {
             if (!skipConfirm) {
                 const result = await modalStore.confirm({
@@ -1076,14 +1328,20 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             await expireNotificationLocally(notification);
             toast.success('Notification declined.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to decline notification.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to decline notification.'
+            );
         }
     }
 
     async function acceptRequestInvite(notification) {
         try {
             if (!currentInviteLocation) {
-                toast.error('Cannot invite: no current VRChat location is available.');
+                toast.error(
+                    'Cannot invite: no current VRChat location is available.'
+                );
                 return;
             }
             if (!canInviteFromCurrentLocation) {
@@ -1092,7 +1350,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             }
             const parsedLocation = parseLocation(currentInviteLocation);
             if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-                toast.error('Cannot invite: current location is not a concrete instance.');
+                toast.error(
+                    'Cannot invite: current location is not a concrete instance.'
+                );
                 return;
             }
             const result = await modalStore.confirm({
@@ -1103,14 +1363,19 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 return;
             }
 
-            const worldResponse = await vrchatSearchRepository.getWorlds({}, parsedLocation.worldId, { endpoint });
+            const worldResponse = await vrchatSearchRepository.getWorlds(
+                {},
+                parsedLocation.worldId,
+                { endpoint }
+            );
             await notificationRepository.sendInvite({
                 receiverUserId: notification.senderUserId,
                 endpoint,
                 params: {
                     instanceId: currentInviteLocation,
                     worldId: parsedLocation.worldId,
-                    worldName: worldResponse.json?.name || parsedLocation.worldId,
+                    worldName:
+                        worldResponse.json?.name || parsedLocation.worldId,
                     rsvp: true
                 }
             });
@@ -1124,13 +1389,19 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             await expireNotificationLocally(notification);
             toast.success('Invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send invite.'
+            );
         }
     }
 
     function sendInviteResponseWithMessage(notification, messageType) {
         if (!currentUserId) {
-            toast.error('Cannot send invite response: no current user session is available.');
+            toast.error(
+                'Cannot send invite response: no current user session is available.'
+            );
             return;
         }
         setInviteResponseRequest({
@@ -1147,7 +1418,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         imageData
     }) {
         if (!currentUserId) {
-            throw new Error('Cannot send invite response: no current user session is available.');
+            throw new Error(
+                'Cannot send invite response: no current user session is available.'
+            );
         }
 
         const responseSlot = Number.parseInt(row?.slot, 10);
@@ -1196,23 +1469,28 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             endpoint
         });
         await expireNotificationLocally(notification);
-        toast.success(imageData ? 'Invite response photo sent.' : 'Invite response sent.');
+        toast.success(
+            imageData ? 'Invite response photo sent.' : 'Invite response sent.'
+        );
     }
 
     async function dismissBoopNotifications(senderUserId) {
         if (!currentUserId || !senderUserId) {
             return;
         }
-        const matchingRows = await notificationRepository.queryNotifications({
-            userId: currentUserId,
-            filters: ['boop']
-        }).then((items) =>
-            (Array.isArray(items) ? items : []).filter((item) =>
-                item?.type === 'boop' &&
-                !item.expired &&
-                item.link === `user:${senderUserId}`
-            )
-        );
+        const matchingRows = await notificationRepository
+            .queryNotifications({
+                userId: currentUserId,
+                filters: ['boop']
+            })
+            .then((items) =>
+                (Array.isArray(items) ? items : []).filter(
+                    (item) =>
+                        item?.type === 'boop' &&
+                        !item.expired &&
+                        item.link === `user:${senderUserId}`
+                )
+            );
 
         await Promise.allSettled(
             matchingRows.map(async (item) => {
@@ -1236,7 +1514,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
 
     async function sendBoopReply(notification, emojiId = '') {
         if (!notification?.senderUserId) {
-            throw new Error('Cannot send boop: no sender user id is available.');
+            throw new Error(
+                'Cannot send boop: no sender user id is available.'
+            );
         }
         await dismissBoopNotifications(notification.senderUserId);
         await notificationRepository.sendBoop({
@@ -1244,13 +1524,15 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             emojiId,
             endpoint
         });
-        await notificationRepository.hideRemoteNotification({
-            id: notification.id,
-            version: notification.version,
-            type: notification.type,
-            senderUserId: notification.senderUserId,
-            endpoint
-        }).catch(() => {});
+        await notificationRepository
+            .hideRemoteNotification({
+                id: notification.id,
+                version: notification.version,
+                type: notification.type,
+                senderUserId: notification.senderUserId,
+                endpoint
+            })
+            .catch(() => {});
         await expireNotificationLocally(notification);
         toast.success('Boop sent.');
     }
@@ -1264,7 +1546,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             }
             if (
                 notification.type === 'boop' &&
-                (responseType === 'reply' || responseType === 'boop' || response?.icon === 'reply')
+                (responseType === 'reply' ||
+                    responseType === 'boop' ||
+                    response?.icon === 'reply')
             ) {
                 setBoopReplyRequest(notification);
                 return;
@@ -1281,7 +1565,11 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             if (notification.version >= 2) {
                 await expireNotificationLocally(notification);
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to send notification response.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send notification response.'
+            );
         }
     }
 
@@ -1289,15 +1577,24 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         () => [
             {
                 id: 'created_at',
-                accessorFn: (row) => new Date(getNotificationCreatedAt(row) || 0).valueOf() || 0,
+                accessorFn: (row) =>
+                    new Date(getNotificationCreatedAt(row) || 0).valueOf() || 0,
                 meta: { label: t('table.notification.date') },
-                header: ({ column }) => <SortButton column={column} label={t('table.notification.date')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.notification.date')}
+                    />
+                ),
                 cell: ({ row }) => {
                     const createdAt = getNotificationCreatedAt(row.original);
                     const shortText = formatDateFilter(createdAt, 'short');
                     const longText = formatDateFilter(createdAt, 'long');
                     return (
-                        <div className="min-w-32 text-sm text-muted-foreground" title={longText}>
+                        <div
+                            className="text-muted-foreground min-w-32 text-sm"
+                            title={longText}
+                        >
                             {shortText}
                         </div>
                     );
@@ -1307,46 +1604,112 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 id: 'type',
                 accessorFn: (row) => String(row?.type || ''),
                 meta: { label: t('table.notification.type') },
-                header: ({ column }) => <SortButton column={column} label={t('table.notification.type')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.notification.type')}
+                    />
+                ),
                 cell: ({ row }) => {
                     const notification = row.original;
                     const label = notificationTypeLabel(notification.type);
                     const badge = (
-                        <Badge variant={notification.expired ? 'secondary' : 'outline'}>
+                        <Badge
+                            variant={
+                                notification.expired ? 'secondary' : 'outline'
+                            }
+                        >
                             {label}
                         </Badge>
                     );
                     return notificationTypeIsClickable(notification) ? (
-                        <Button type="button" variant="ghost" size="sm" className="h-auto p-0" onClick={() => openNotificationTypeTarget(notification)}>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto p-0"
+                            onClick={() =>
+                                openNotificationTypeTarget(notification)
+                            }
+                        >
                             {badge}
                         </Button>
-                    ) : badge;
+                    ) : (
+                        badge
+                    );
                 }
             },
             {
                 id: 'senderUsername',
-                accessorFn: (row) => String(row?.senderUsername || row?.senderUserId || ''),
+                accessorFn: (row) =>
+                    String(row?.senderUsername || row?.senderUserId || ''),
                 meta: { label: t('table.notification.user') },
-                header: ({ column }) => <SortButton column={column} label={t('table.notification.user')} />,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.notification.user')}
+                    />
+                ),
                 cell: ({ row }) => {
                     const notification = row.original;
-                    if (notification.senderUserId && !notification.senderUserId.startsWith('grp_')) {
+                    if (
+                        notification.senderUserId &&
+                        !notification.senderUserId.startsWith('grp_')
+                    ) {
                         return (
-                            <Button type="button" variant="link" className="h-auto max-w-48 justify-start p-0 text-left font-normal" onClick={() => openUserDialog({ userId: notification.senderUserId, title: notification.senderUsername || undefined })}>
-                                <span className="truncate">{notification.senderUsername || 'User'}</span>
+                            <Button
+                                type="button"
+                                variant="link"
+                                className="h-auto max-w-48 justify-start p-0 text-left font-normal"
+                                onClick={() =>
+                                    openUserDialog({
+                                        userId: notification.senderUserId,
+                                        title:
+                                            notification.senderUsername ||
+                                            undefined
+                                    })
+                                }
+                            >
+                                <span className="truncate">
+                                    {notification.senderUsername || 'User'}
+                                </span>
                             </Button>
                         );
                     }
                     if (notification.link?.startsWith('user:')) {
                         const userId = notification.link.slice('user:'.length);
                         return (
-                            <Button type="button" variant="link" className="h-auto max-w-48 justify-start p-0 text-left font-normal" onClick={() => openUserDialog({ userId, title: notification.linkText || notification.senderUsername || undefined })}>
-                                <span className="truncate">{notification.linkText || notification.senderUsername || 'User'}</span>
+                            <Button
+                                type="button"
+                                variant="link"
+                                className="h-auto max-w-48 justify-start p-0 text-left font-normal"
+                                onClick={() =>
+                                    openUserDialog({
+                                        userId,
+                                        title:
+                                            notification.linkText ||
+                                            notification.senderUsername ||
+                                            undefined
+                                    })
+                                }
+                            >
+                                <span className="truncate">
+                                    {notification.linkText ||
+                                        notification.senderUsername ||
+                                        'User'}
+                                </span>
                             </Button>
                         );
                     }
-                    if (notification.senderUsername && !notification.senderUserId?.startsWith('grp_')) {
-                        return <div className="max-w-48 truncate text-sm">{notification.senderUsername}</div>;
+                    if (
+                        notification.senderUsername &&
+                        !notification.senderUserId?.startsWith('grp_')
+                    ) {
+                        return (
+                            <div className="max-w-48 truncate text-sm">
+                                {notification.senderUsername}
+                            </div>
+                        );
                     }
                     return null;
                 }
@@ -1359,16 +1722,27 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 cell: ({ row }) => {
                     const notification = row.original;
                     const label = getNotificationGroupColumnLabel(notification);
-                    const groupId = notification.senderUserId?.startsWith('grp_')
+                    const groupId = notification.senderUserId?.startsWith(
+                        'grp_'
+                    )
                         ? notification.senderUserId
                         : notification.link?.startsWith('group:')
-                            ? notification.link.slice('group:'.length)
-                            : notification.link?.startsWith('event:')
-                                ? notification.link.slice('event:'.length).split(',')[0]
-                                : '';
+                          ? notification.link.slice('group:'.length)
+                          : notification.link?.startsWith('event:')
+                            ? notification.link
+                                  .slice('event:'.length)
+                                  .split(',')[0]
+                            : '';
                     if (!label) return null;
                     return groupId ? (
-                        <Button type="button" variant="link" className="h-auto max-w-48 justify-start p-0 text-left font-normal" onClick={() => openGroupDialog({ groupId, title: label })}>
+                        <Button
+                            type="button"
+                            variant="link"
+                            className="h-auto max-w-48 justify-start p-0 text-left font-normal"
+                            onClick={() =>
+                                openGroupDialog({ groupId, title: label })
+                            }
+                        >
                             <span className="truncate">{label}</span>
                         </Button>
                     ) : (
@@ -1382,16 +1756,25 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 meta: { label: t('table.notification.photo') },
                 header: t('table.notification.photo'),
                 cell: ({ row }) => {
-                    const imageUrl = row.original.details?.imageUrl || row.original.imageUrl || '';
-                    if (!imageUrl || imageUrl.startsWith('default_')) return null;
-                    const previewLabel = getNotificationMessage(row.original) || t('table.notification.photo');
+                    const imageUrl =
+                        row.original.details?.imageUrl ||
+                        row.original.imageUrl ||
+                        '';
+                    if (!imageUrl || imageUrl.startsWith('default_'))
+                        return null;
+                    const previewLabel =
+                        getNotificationMessage(row.original) ||
+                        t('table.notification.photo');
                     return (
                         <Button
                             type="button"
                             variant="ghost"
                             className="h-auto p-1"
                             aria-label={`Preview notification image: ${previewLabel}`}
-                            onClick={() => openNotificationImagePreview(row.original)}>
+                            onClick={() =>
+                                openNotificationImagePreview(row.original)
+                            }
+                        >
                             <img
                                 src={convertFileUrlToImageUrl(imageUrl, 64)}
                                 alt={previewLabel}
@@ -1412,21 +1795,49 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 cell: ({ row }) => {
                     const notification = row.original;
                     const message = getNotificationMessage(notification);
-                    const worldId = notification.details?.worldId || notification.data?.worldId || notification.location || '';
+                    const worldId =
+                        notification.details?.worldId ||
+                        notification.data?.worldId ||
+                        notification.location ||
+                        '';
                     return (
                         <div className="flex min-w-0 flex-col gap-1">
-                            {message ? <div className="max-w-xl truncate text-sm">{message}</div> : null}
+                            {message ? (
+                                <div className="max-w-xl truncate text-sm">
+                                    {message}
+                                </div>
+                            ) : null}
                             {worldId ? (
                                 <NotificationLocationLink
                                     location={worldId}
-                                    worldName={notification.details?.worldName || notification.worldName || ''}
-                                    groupName={notification.details?.groupName || notification.groupName || notification.data?.groupName || ''}
+                                    worldName={
+                                        notification.details?.worldName ||
+                                        notification.worldName ||
+                                        ''
+                                    }
+                                    groupName={
+                                        notification.details?.groupName ||
+                                        notification.groupName ||
+                                        notification.data?.groupName ||
+                                        ''
+                                    }
                                 />
                             ) : null}
                             {notification.link ? (
-                                <Button type="button" variant="link" size="sm" className="h-auto max-w-xl justify-start p-0 text-left font-normal" onClick={() => openNotificationLink(notification.link)}>
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    size="sm"
+                                    className="h-auto max-w-xl justify-start p-0 text-left font-normal"
+                                    onClick={() =>
+                                        openNotificationLink(notification.link)
+                                    }
+                                >
                                     <ExternalLinkIcon data-icon="inline-start" />
-                                    <span className="truncate">{notification.linkText || notification.link}</span>
+                                    <span className="truncate">
+                                        {notification.linkText ||
+                                            notification.link}
+                                    </span>
                                 </Button>
                             ) : null}
                         </div>
@@ -1441,64 +1852,168 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 cell: ({ row }) => {
                     const notification = row.original;
                     const remoteActionsVisible =
-                        notification.senderUserId !== currentUserId && !notification.expired;
-                    const responses = Array.isArray(notification.responses) ? notification.responses : [];
+                        notification.senderUserId !== currentUserId &&
+                        !notification.expired;
+                    const responses = Array.isArray(notification.responses)
+                        ? notification.responses
+                        : [];
                     const localDeleteVisible =
                         notification.type !== 'friendRequest' &&
                         notification.type !== 'ignoredFriendRequest';
                     return (
                         <div className="flex flex-wrap items-center justify-end gap-2">
-                            {remoteActionsVisible && notification.type === 'friendRequest' ? (
-                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Accept friend request" title="Accept" onClick={() => void acceptFriendRequest(notification)}>
+                            {remoteActionsVisible &&
+                            notification.type === 'friendRequest' ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label="Accept friend request"
+                                    title="Accept"
+                                    onClick={() =>
+                                        void acceptFriendRequest(notification)
+                                    }
+                                >
                                     <CheckIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
-                            {remoteActionsVisible && notification.type === 'requestInvite' && canInviteFromCurrentLocation ? (
-                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Send invite" title="Invite" onClick={() => void acceptRequestInvite(notification)}>
+                            {remoteActionsVisible &&
+                            notification.type === 'requestInvite' &&
+                            canInviteFromCurrentLocation ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label="Send invite"
+                                    title="Invite"
+                                    onClick={() =>
+                                        void acceptRequestInvite(notification)
+                                    }
+                                >
                                     <SendIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
-                            {remoteActionsVisible && notification.type === 'invite' ? (
-                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Decline with message" title="Decline with message" onClick={() => void sendInviteResponseWithMessage(notification, 'response')}>
+                            {remoteActionsVisible &&
+                            notification.type === 'invite' ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label="Decline with message"
+                                    title="Decline with message"
+                                    onClick={() =>
+                                        void sendInviteResponseWithMessage(
+                                            notification,
+                                            'response'
+                                        )
+                                    }
+                                >
                                     <SendIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
-                            {remoteActionsVisible && notification.type === 'requestInvite' ? (
-                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Decline with message" title="Decline with message" onClick={() => void sendInviteResponseWithMessage(notification, 'requestResponse')}>
+                            {remoteActionsVisible &&
+                            notification.type === 'requestInvite' ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label="Decline with message"
+                                    title="Decline with message"
+                                    onClick={() =>
+                                        void sendInviteResponseWithMessage(
+                                            notification,
+                                            'requestResponse'
+                                        )
+                                    }
+                                >
                                     <SendIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
                             {remoteActionsVisible
                                 ? responses.map((response) => {
-                                    const label = getResponseLabel(response);
-                                    const ResponseIcon = getResponseIcon(response, notification.type);
-                                    return (
-                                        <Button
-                                            key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={label}
-                                            title={label}
-                                            onClick={() => void sendNotificationResponse(notification, response)}>
-                                            <ResponseIcon data-icon="inline-start" />
-                                        </Button>
-                                    );
-                                })
+                                      const label = getResponseLabel(response);
+                                      const ResponseIcon = getResponseIcon(
+                                          response,
+                                          notification.type
+                                      );
+                                      return (
+                                          <Button
+                                              key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
+                                              type="button"
+                                              variant="ghost"
+                                              size="icon-xs"
+                                              aria-label={label}
+                                              title={label}
+                                              onClick={() =>
+                                                  void sendNotificationResponse(
+                                                      notification,
+                                                      response
+                                                  )
+                                              }
+                                          >
+                                              <ResponseIcon data-icon="inline-start" />
+                                          </Button>
+                                      );
+                                  })
                                 : null}
-                            {remoteActionsVisible && canDeclineNotification(notification) ? (
-                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Decline notification" title="Decline" onClick={(event) => void hideNotification(notification, { skipConfirm: shiftHeld || event.shiftKey })}>
-                                    <XIcon data-icon="inline-start" className={cn(shiftHeld && 'text-destructive')} />
+                            {remoteActionsVisible &&
+                            canDeclineNotification(notification) ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label="Decline notification"
+                                    title="Decline"
+                                    onClick={(event) =>
+                                        void hideNotification(notification, {
+                                            skipConfirm:
+                                                shiftHeld || event.shiftKey
+                                        })
+                                    }
+                                >
+                                    <XIcon
+                                        data-icon="inline-start"
+                                        className={cn(
+                                            shiftHeld && 'text-destructive'
+                                        )}
+                                    />
                                 </Button>
                             ) : null}
-                            {notification.version === 2 && !notification.seen ? (
-                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Mark notification seen" title="Seen" onClick={() => void markSeen(notification)}>
+                            {notification.version === 2 &&
+                            !notification.seen ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label="Mark notification seen"
+                                    title="Seen"
+                                    onClick={() => void markSeen(notification)}
+                                >
                                     <CheckIcon data-icon="inline-start" />
                                 </Button>
                             ) : null}
                             {localDeleteVisible ? (
-                                <Button type="button" variant="ghost" size="icon-xs" aria-label="Delete notification log" title="Delete log" onClick={(event) => void deleteNotification(notification, { skipConfirm: shiftHeld || event.shiftKey })}>
-                                    {shiftHeld ? <XIcon data-icon="inline-start" className="text-destructive" /> : <Trash2Icon data-icon="inline-start" />}
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label="Delete notification log"
+                                    title="Delete log"
+                                    onClick={(event) =>
+                                        void deleteNotification(notification, {
+                                            skipConfirm:
+                                                shiftHeld || event.shiftKey
+                                        })
+                                    }
+                                >
+                                    {shiftHeld ? (
+                                        <XIcon
+                                            data-icon="inline-start"
+                                            className="text-destructive"
+                                        />
+                                    ) : (
+                                        <Trash2Icon data-icon="inline-start" />
+                                    )}
                                 </Button>
                             ) : null}
                         </div>
@@ -1514,13 +2029,27 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 size: 5
             }
         ],
-        [canInviteFromCurrentLocation, currentInviteLocation, currentUserId, endpoint, notificationTypeLabel, shiftHeld, t]
+        [
+            canInviteFromCurrentLocation,
+            currentInviteLocation,
+            currentUserId,
+            endpoint,
+            notificationTypeLabel,
+            shiftHeld,
+            t
+        ]
     );
 
     const table = useReactTable({
         data: rows,
         columns,
-        state: { columnVisibility, columnOrder, columnSizing, sorting, pagination },
+        state: {
+            columnVisibility,
+            columnOrder,
+            columnSizing,
+            sorting,
+            pagination
+        },
         onSortingChange: setSorting,
         onColumnVisibilityChange: setColumnVisibility,
         onColumnOrderChange: setColumnOrder,
@@ -1539,106 +2068,140 @@ export function VrcNotificationPage({ embedded = false } = {}) {
 
     return (
         <>
-        <div
-            className={cn(
-                'flex h-full min-h-0 flex-col gap-3',
-                embedded ? 'p-3' : 'x-container x-container--auto-height p-4 pb-0'
-            )}>
-            <div className="flex flex-wrap items-center gap-2">
-                <NotificationTypeFilterDropdown
-                    value={activeTypes}
-                    onChange={setActiveTypes}
-                    getTypeLabel={notificationTypeLabel}
-                />
-                <Input
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search"
-                    className="h-9 min-w-36 flex-1 sm:max-w-52"
-                />
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Refresh notifications"
-                    className="rounded-full"
-                    disabled={loadStatus === 'running'}
-                    onClick={() => setReloadToken((value) => value + 1)}>
-                    {loadStatus === 'running' ? <Spinner data-icon="inline-start" /> : <RefreshCcwIcon data-icon="inline-start" />}
-                </Button>
-                <TableColumnVisibilityMenu table={table} />
-                {activeTypes.length ? (
-                    <Button type="button" variant="outline" size="sm" onClick={() => setActiveTypes([])}>
-                        Clear
+            <div
+                className={cn(
+                    'flex h-full min-h-0 flex-col gap-3',
+                    embedded
+                        ? 'p-3'
+                        : 'x-container x-container--auto-height p-4 pb-0'
+                )}
+            >
+                <div className="flex flex-wrap items-center gap-2">
+                    <NotificationTypeFilterDropdown
+                        value={activeTypes}
+                        onChange={setActiveTypes}
+                        getTypeLabel={notificationTypeLabel}
+                    />
+                    <Input
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder="Search"
+                        className="h-9 min-w-36 flex-1 sm:max-w-52"
+                    />
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Refresh notifications"
+                        className="rounded-full"
+                        disabled={loadStatus === 'running'}
+                        onClick={() => setReloadToken((value) => value + 1)}
+                    >
+                        {loadStatus === 'running' ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <RefreshCcwIcon data-icon="inline-start" />
+                        )}
                     </Button>
+                    <TableColumnVisibilityMenu table={table} />
+                    {activeTypes.length ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setActiveTypes([])}
+                        >
+                            Clear
+                        </Button>
+                    ) : null}
+                </div>
+
+                {detail ? (
+                    <div className="text-muted-foreground text-sm">
+                        {detail}
+                    </div>
                 ) : null}
-            </div>
 
-            {detail ? <div className="text-sm text-muted-foreground">{detail}</div> : null}
-
-            <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
-                <div className="h-full overflow-auto">
-                    <Table className="app-data-table table-fixed">
-                        <DataTableHeader table={table} />
-                        <TableBody>
-                            {table.getRowModel().rows.length > 0 ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow key={row.id}>
-                                        {row.getVisibleCells().map((cell) => (
-                                            <ResizableTableCell key={cell.id} cell={cell} />
-                                        ))}
+                <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
+                    <div className="h-full overflow-auto">
+                        <Table className="app-data-table table-fixed">
+                            <DataTableHeader table={table} />
+                            <TableBody>
+                                {table.getRowModel().rows.length > 0 ? (
+                                    table.getRowModel().rows.map((row) => (
+                                        <TableRow key={row.id}>
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell) => (
+                                                    <ResizableTableCell
+                                                        key={cell.id}
+                                                        cell={cell}
+                                                    />
+                                                ))}
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="text-muted-foreground h-24 text-center"
+                                        >
+                                            {loadStatus === 'running'
+                                                ? 'Loading notifications...'
+                                                : 'No VRChat notifications match the current view.'}
+                                        </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                                        {loadStatus === 'running' ? 'Loading notifications...' : 'No VRChat notifications match the current view.'}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="text-muted-foreground text-sm">
+                        {rows.length} notifications in view
+                    </div>
+                    <DataTablePagination
+                        table={table}
+                        pageIndex={pagination.pageIndex}
+                        pageCount={table.getPageCount() || 1}
+                        pageSize={pagination.pageSize}
+                        pageSizes={DEFAULT_PAGE_SIZES}
+                        pageSizeLabel={t('table.pagination.rows_per_page')}
+                        previousLabel={t('table.pagination.previous')}
+                        nextLabel={t('table.pagination.next')}
+                        onPageSizeChange={(value) =>
+                            setPagination({
+                                pageIndex: 0,
+                                pageSize: resolvePageSize(value)
+                            })
+                        }
+                    />
                 </div>
             </div>
-
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="text-sm text-muted-foreground">{rows.length} notifications in view</div>
-                <DataTablePagination
-                    table={table}
-                    pageIndex={pagination.pageIndex}
-                    pageCount={table.getPageCount() || 1}
-                    pageSize={pagination.pageSize}
-                    pageSizes={DEFAULT_PAGE_SIZES}
-                    pageSizeLabel={t('table.pagination.rows_per_page')}
-                    previousLabel={t('table.pagination.previous')}
-                    nextLabel={t('table.pagination.next')}
-                    onPageSizeChange={(value) => setPagination({ pageIndex: 0, pageSize: resolvePageSize(value) })}
-                />
-            </div>
-        </div>
-        <InviteResponseMessageDialog
-            request={inviteResponseRequest}
-            currentUserId={currentUserId}
-            endpoint={endpoint}
-            isLocalUserVrcPlusSupporter={isLocalUserVrcPlusSupporter}
-            onOpenChange={(open) => {
-                if (!open) {
-                    setInviteResponseRequest(null);
-                }
-            }}
-            onSend={sendInviteResponseSlot}
-        />
-        <BoopReplyDialog
-            request={boopReplyRequest}
-            endpoint={endpoint}
-            isLocalUserVrcPlusSupporter={isLocalUserVrcPlusSupporter}
-            onOpenChange={(open) => {
-                if (!open) {
-                    setBoopReplyRequest(null);
-                }
-            }}
-            onSend={sendBoopReply}
-        />
+            <InviteResponseMessageDialog
+                request={inviteResponseRequest}
+                currentUserId={currentUserId}
+                endpoint={endpoint}
+                isLocalUserVrcPlusSupporter={isLocalUserVrcPlusSupporter}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setInviteResponseRequest(null);
+                    }
+                }}
+                onSend={sendInviteResponseSlot}
+            />
+            <BoopReplyDialog
+                request={boopReplyRequest}
+                endpoint={endpoint}
+                isLocalUserVrcPlusSupporter={isLocalUserVrcPlusSupporter}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setBoopReplyRequest(null);
+                    }
+                }}
+                onSend={sendBoopReply}
+            />
         </>
     );
 }

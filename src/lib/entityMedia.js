@@ -14,7 +14,11 @@ import { useShellStore } from '@/state/shellStore.js';
 
 const DEFAULT_ENDPOINT_DOMAIN = 'https://api.vrchat.cloud/api/1';
 
-export function convertFileUrlToImageUrl(url, resolution = 128, endpointDomain = null) {
+export function convertFileUrlToImageUrl(
+    url,
+    resolution = 128,
+    endpointDomain = null
+) {
     if (!url) {
         return '';
     }
@@ -109,7 +113,8 @@ export function userImage(
         return '';
     }
     const shouldDisplayVrcPlusIcon =
-        displayVRCPlusIconsAsAvatar ?? useShellStore.getState().displayVRCPlusIconsAsAvatar;
+        displayVRCPlusIconsAsAvatar ??
+        useShellStore.getState().displayVRCPlusIconsAsAvatar;
     if (
         (isUserDialogIcon && user.userIcon) ||
         (shouldDisplayVrcPlusIcon && user.userIcon)
@@ -122,7 +127,10 @@ export function userImage(
 
     if (user.profilePicOverrideThumbnail) {
         if (isIcon) {
-            return user.profilePicOverrideThumbnail.replace('/256', `/${resolution}`);
+            return user.profilePicOverrideThumbnail.replace(
+                '/256',
+                `/${resolution}`
+            );
         }
         return user.profilePicOverrideThumbnail;
     }
@@ -134,7 +142,10 @@ export function userImage(
     }
     if (user.currentAvatarThumbnailImageUrl) {
         if (isIcon) {
-            return user.currentAvatarThumbnailImageUrl.replace('/256', `/${resolution}`);
+            return user.currentAvatarThumbnailImageUrl.replace(
+                '/256',
+                `/${resolution}`
+            );
         }
         return user.currentAvatarThumbnailImageUrl;
     }
@@ -148,7 +159,9 @@ export function userImage(
 }
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 async function openGroupShortCode(shortCode) {
@@ -162,7 +175,9 @@ async function openGroupShortCode(shortCode) {
             query: normalizedShortCode
         });
         const group = (Array.isArray(response.json) ? response.json : []).find(
-            (entry) => `${entry?.shortCode}.${entry?.discriminator}` === normalizedShortCode
+            (entry) =>
+                `${entry?.shortCode}.${entry?.discriminator}` ===
+                normalizedShortCode
         );
         if (group?.id) {
             openGroupDialog({
@@ -292,11 +307,17 @@ async function openDirectAccessTarget(input) {
         openGroupDialog({ groupId: value });
         return true;
     }
-    if (value.startsWith('wrld_') || value.startsWith('wld_') || value.startsWith('o_')) {
+    if (
+        value.startsWith('wrld_') ||
+        value.startsWith('wld_') ||
+        value.startsWith('o_')
+    ) {
         if (value.includes('&instanceId=')) {
             const [worldId, params] = value.split('&', 2);
             const instanceId = new URLSearchParams(params).get('instanceId');
-            openWorldDialog({ worldId: instanceId ? `${worldId}:${instanceId}` : worldId });
+            openWorldDialog({
+                worldId: instanceId ? `${worldId}:${instanceId}` : worldId
+            });
             return true;
         }
         openWorldDialog({ worldId: value });

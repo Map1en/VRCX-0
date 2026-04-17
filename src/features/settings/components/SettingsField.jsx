@@ -1,4 +1,5 @@
 import { Children, cloneElement, isValidElement, useId } from 'react';
+
 import { cn } from '@/lib/utils.js';
 import {
     Field as ShadcnField,
@@ -57,7 +58,10 @@ export function Field({
     const isInvalid = invalid || Boolean(error);
     const generatedControlId = useId();
     const attachableControl = getAttachableControl(children);
-    const labelControlId = controlId || attachableControl?.props.id || (attachableControl ? generatedControlId : undefined);
+    const labelControlId =
+        controlId ||
+        attachableControl?.props.id ||
+        (attachableControl ? generatedControlId : undefined);
 
     return (
         <ShadcnField
@@ -66,13 +70,21 @@ export function Field({
             className={cn(
                 'grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
                 className
-            )}>
+            )}
+        >
             <FieldContent className={contentClassName}>
                 <FieldLabel htmlFor={labelControlId}>{label}</FieldLabel>
-                {description ? <FieldDescription>{description}</FieldDescription> : null}
+                {description ? (
+                    <FieldDescription>{description}</FieldDescription>
+                ) : null}
                 {error ? <FieldError>{error}</FieldError> : null}
             </FieldContent>
-            <div className={cn('justify-self-start lg:justify-self-end', controlClassName)}>
+            <div
+                className={cn(
+                    'justify-self-start lg:justify-self-end',
+                    controlClassName
+                )}
+            >
                 {applyControlProps(children, labelControlId, isInvalid)}
             </div>
         </ShadcnField>
@@ -81,9 +93,11 @@ export function Field({
 
 export function SettingsSectionHeading({ title, description }) {
     return (
-        <div className="flex flex-col gap-1 border-b pb-2 pt-2 first:pt-0">
+        <div className="flex flex-col gap-1 border-b pt-2 pb-2 first:pt-0">
             <FieldTitle>{title}</FieldTitle>
-            {description ? <FieldDescription>{description}</FieldDescription> : null}
+            {description ? (
+                <FieldDescription>{description}</FieldDescription>
+            ) : null}
         </div>
     );
 }
@@ -101,12 +115,14 @@ export function SegmentedPreference({ options, value, onChange }) {
                 if (nextValue) {
                     onChange?.(nextValue);
                 }
-            }}>
+            }}
+        >
             {options.map((option) => (
                 <ToggleGroupItem
                     key={option.value}
                     value={option.value}
-                    aria-label={option.label}>
+                    aria-label={option.label}
+                >
                     {option.label}
                 </ToggleGroupItem>
             ))}
@@ -118,7 +134,9 @@ export function JsonTreeView({ data, name = '', depth = 0 }) {
     if (data === null || typeof data !== 'object') {
         return (
             <div className="flex gap-2 font-mono text-xs">
-                {name ? <span className="text-muted-foreground">{name}:</span> : null}
+                {name ? (
+                    <span className="text-muted-foreground">{name}:</span>
+                ) : null}
                 <span>{JSON.stringify(data)}</span>
             </div>
         );
@@ -131,10 +149,17 @@ export function JsonTreeView({ data, name = '', depth = 0 }) {
 
     return (
         <details open={depth < 2} className="font-mono text-xs">
-            <summary className="cursor-pointer select-none text-muted-foreground">{summary}</summary>
+            <summary className="text-muted-foreground cursor-pointer select-none">
+                {summary}
+            </summary>
             <div className="ml-4 border-l pl-3">
                 {entries.map(([key, value]) => (
-                    <JsonTreeView key={key} name={key} data={value} depth={depth + 1} />
+                    <JsonTreeView
+                        key={key}
+                        name={key}
+                        data={value}
+                        depth={depth + 1}
+                    />
                 ))}
             </div>
         </details>

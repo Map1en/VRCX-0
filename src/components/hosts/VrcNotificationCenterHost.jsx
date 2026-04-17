@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from 'react';
 import {
     BellIcon,
     CheckIcon,
@@ -11,10 +10,14 @@ import {
     UsersIcon,
     XIcon
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { convertFileUrlToImageUrl, openExternalLink } from '@/lib/entityMedia.js';
+import {
+    convertFileUrlToImageUrl,
+    openExternalLink
+} from '@/lib/entityMedia.js';
 import {
     notificationRepository,
     toolsRepository,
@@ -29,6 +32,9 @@ import {
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { getNotificationTs } from '@/shared/utils/notificationCategory.js';
+import { useModalStore } from '@/state/modalStore.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
@@ -40,14 +46,12 @@ import {
 } from '@/ui/shadcn/sheet';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
-import { useModalStore } from '@/state/modalStore.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
 
 const categoryOrder = ['friend', 'group', 'other'];
 
 function normalizeWorldTarget(value) {
-    const text = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    const text =
+        typeof value === 'string' ? value.trim() : String(value ?? '').trim();
     const parsed = parseLocation(text);
     if (parsed.isRealInstance && parsed.tag) {
         return parsed.tag;
@@ -82,7 +86,12 @@ function getSenderName(notification) {
 }
 
 function getImageUrl(notification) {
-    return notification?.details?.imageUrl || notification?.imageUrl || notification?.senderUserIcon || '';
+    return (
+        notification?.details?.imageUrl ||
+        notification?.imageUrl ||
+        notification?.senderUserIcon ||
+        ''
+    );
 }
 
 function formatNotificationTime(notification) {
@@ -142,7 +151,11 @@ function resolveCurrentInviteLocation(gameState, currentUserSnapshot) {
     return (
         currentLocation ||
         String(gameState?.currentDestination || '').trim() ||
-        String(currentUserSnapshot?.$locationTag || currentUserSnapshot?.location || '').trim()
+        String(
+            currentUserSnapshot?.$locationTag ||
+                currentUserSnapshot?.location ||
+                ''
+        ).trim()
     );
 }
 
@@ -184,15 +197,26 @@ function openNotificationLink(link) {
 
 function openSender(notification) {
     const userId = String(notification?.senderUserId || '').trim();
-    if (userId.startsWith('grp_') || notification?.type?.startsWith('group.') || notification?.type === 'groupChange') {
-        const groupId = userId.startsWith('grp_') ? userId : notification?.data?.groupId || notification?.details?.groupId || '';
+    if (
+        userId.startsWith('grp_') ||
+        notification?.type?.startsWith('group.') ||
+        notification?.type === 'groupChange'
+    ) {
+        const groupId = userId.startsWith('grp_')
+            ? userId
+            : notification?.data?.groupId ||
+              notification?.details?.groupId ||
+              '';
         if (groupId) {
             openGroupDialog({ groupId, title: getSenderName(notification) });
             return;
         }
     }
     if (userId) {
-        openUserDialog({ userId, title: notification?.senderUsername || undefined });
+        openUserDialog({
+            userId,
+            title: notification?.senderUsername || undefined
+        });
         return;
     }
     if (!openNotificationLink(notification?.link)) {
@@ -202,7 +226,9 @@ function openSender(notification) {
 
 function NotificationAvatar({ notification }) {
     const imageUrl = getImageUrl(notification);
-    const isGroup = String(notification?.senderUserId || '').startsWith('grp_') || notification?.type?.startsWith('group.');
+    const isGroup =
+        String(notification?.senderUserId || '').startsWith('grp_') ||
+        notification?.type?.startsWith('group.');
     const Icon = isGroup ? UsersIcon : UserIcon;
 
     if (imageUrl && !imageUrl.startsWith('default_')) {
@@ -216,7 +242,7 @@ function NotificationAvatar({ notification }) {
     }
 
     return (
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+        <div className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-md border">
             <Icon className="size-4" />
         </div>
     );
@@ -238,18 +264,22 @@ function NotificationRow({
     const message = getNotificationMessage(notification);
     const timeLabel = formatNotificationTime(notification);
     const hasLink = Boolean(notification?.link);
-    const responses = Array.isArray(notification?.responses) ? notification.responses : [];
+    const responses = Array.isArray(notification?.responses)
+        ? notification.responses
+        : [];
     const remoteActionsVisible =
-        notification?.senderUserId !== currentUserId && !isNotificationExpired(notification);
+        notification?.senderUserId !== currentUserId &&
+        !isNotificationExpired(notification);
 
     return (
-        <div className="mb-1.5 flex gap-2 rounded-md border bg-card p-2 text-card-foreground">
+        <div className="bg-card text-card-foreground mb-1.5 flex gap-2 rounded-md border p-2">
             <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 className="size-9 shrink-0 p-0"
-                onClick={() => openSender(notification)}>
+                onClick={() => openSender(notification)}
+            >
                 <NotificationAvatar notification={notification} />
             </Button>
             <div className="min-w-0 flex-1">
@@ -258,43 +288,65 @@ function NotificationRow({
                         type="button"
                         variant="ghost"
                         className="h-auto min-w-0 flex-1 justify-start p-0 text-left text-sm font-medium hover:bg-transparent"
-                        onClick={() => openSender(notification)}>
-                        <span className="truncate">{getSenderName(notification)}</span>
+                        onClick={() => openSender(notification)}
+                    >
+                        <span className="truncate">
+                            {getSenderName(notification)}
+                        </span>
                     </Button>
                     <Badge variant="secondary" className="shrink-0 text-xs">
                         {notification?.type || 'unknown'}
                     </Badge>
-                    {isUnseen ? <span className="size-2 shrink-0 rounded-full bg-primary" /> : null}
+                    {isUnseen ? (
+                        <span className="bg-primary size-2 shrink-0 rounded-full" />
+                    ) : null}
                 </div>
                 {message ? (
-                    <div className="mt-1 truncate text-xs text-muted-foreground">{message}</div>
+                    <div className="text-muted-foreground mt-1 truncate text-xs">
+                        {message}
+                    </div>
                 ) : null}
                 {notification?.details?.worldName ? (
-                    <div className="truncate text-xs text-muted-foreground">{notification.details.worldName}</div>
+                    <div className="text-muted-foreground truncate text-xs">
+                        {notification.details.worldName}
+                    </div>
                 ) : null}
             </div>
             <div className="flex shrink-0 flex-col items-end justify-between gap-1">
-                {timeLabel ? <span className="text-xs text-muted-foreground">{timeLabel}</span> : null}
+                {timeLabel ? (
+                    <span className="text-muted-foreground text-xs">
+                        {timeLabel}
+                    </span>
+                ) : null}
                 <div className="flex items-center gap-1">
-                    {remoteActionsVisible && notification.type === 'friendRequest' ? (
+                    {remoteActionsVisible &&
+                    notification.type === 'friendRequest' ? (
                         <Button
                             type="button"
                             variant="ghost"
                             size="icon-xs"
                             aria-label="Accept"
                             title="Accept"
-                            onClick={() => void onAcceptFriendRequest(notification)}>
+                            onClick={() =>
+                                void onAcceptFriendRequest(notification)
+                            }
+                        >
                             <CheckIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
-                    {remoteActionsVisible && notification.type === 'requestInvite' && canInviteFromCurrentLocation ? (
+                    {remoteActionsVisible &&
+                    notification.type === 'requestInvite' &&
+                    canInviteFromCurrentLocation ? (
                         <Button
                             type="button"
                             variant="ghost"
                             size="icon-xs"
                             aria-label="Invite"
                             title="Invite"
-                            onClick={() => void onAcceptRequestInvite(notification)}>
+                            onClick={() =>
+                                void onAcceptRequestInvite(notification)
+                            }
+                        >
                             <SendIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
@@ -305,47 +357,70 @@ function NotificationRow({
                             size="icon-xs"
                             aria-label="Decline with message"
                             title="Decline with message"
-                            onClick={() => void onSendInviteResponseWithMessage(notification, 'response')}>
+                            onClick={() =>
+                                void onSendInviteResponseWithMessage(
+                                    notification,
+                                    'response'
+                                )
+                            }
+                        >
                             <MessageCircleIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
-                    {remoteActionsVisible && notification.type === 'requestInvite' ? (
+                    {remoteActionsVisible &&
+                    notification.type === 'requestInvite' ? (
                         <Button
                             type="button"
                             variant="ghost"
                             size="icon-xs"
                             aria-label="Decline with message"
                             title="Decline with message"
-                            onClick={() => void onSendInviteResponseWithMessage(notification, 'requestResponse')}>
+                            onClick={() =>
+                                void onSendInviteResponseWithMessage(
+                                    notification,
+                                    'requestResponse'
+                                )
+                            }
+                        >
                             <MessageCircleIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
                     {remoteActionsVisible
                         ? responses.map((response) => (
-                            <Button
-                                key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
-                                type="button"
-                                variant="ghost"
-                                size="icon-xs"
-                                aria-label={getResponseLabel(response)}
-                                title={getResponseLabel(response)}
-                                onClick={() => void onSendNotificationResponse(notification, response)}>
-                                {response?.type === 'link' ? (
-                                    <ExternalLinkIcon data-icon="inline-start" />
-                                ) : (
-                                    <CheckIcon data-icon="inline-start" />
-                                )}
-                            </Button>
-                        ))
+                              <Button
+                                  key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  aria-label={getResponseLabel(response)}
+                                  title={getResponseLabel(response)}
+                                  onClick={() =>
+                                      void onSendNotificationResponse(
+                                          notification,
+                                          response
+                                      )
+                                  }
+                              >
+                                  {response?.type === 'link' ? (
+                                      <ExternalLinkIcon data-icon="inline-start" />
+                                  ) : (
+                                      <CheckIcon data-icon="inline-start" />
+                                  )}
+                              </Button>
+                          ))
                         : null}
-                    {remoteActionsVisible && canDeclineNotification(notification) ? (
+                    {remoteActionsVisible &&
+                    canDeclineNotification(notification) ? (
                         <Button
                             type="button"
                             variant="ghost"
                             size="icon-xs"
                             aria-label="Decline"
                             title="Decline"
-                            onClick={() => void onHideNotification(notification)}>
+                            onClick={() =>
+                                void onHideNotification(notification)
+                            }
+                        >
                             <XIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
@@ -355,7 +430,10 @@ function NotificationRow({
                             variant="ghost"
                             size="icon-xs"
                             aria-label="Open notification link"
-                            onClick={() => openNotificationLink(notification.link)}>
+                            onClick={() =>
+                                openNotificationLink(notification.link)
+                            }
+                        >
                             <ExternalLinkIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
@@ -367,7 +445,8 @@ function NotificationRow({
                             aria-label="Mark seen"
                             onClick={() => {
                                 void onMarkSeen(notification);
-                            }}>
+                            }}
+                        >
                             <CheckIcon data-icon="inline-start" />
                         </Button>
                     ) : null}
@@ -378,7 +457,10 @@ function NotificationRow({
                             size="icon-xs"
                             aria-label="Delete log"
                             title="Delete log"
-                            onClick={() => void onDeleteNotification(notification)}>
+                            onClick={() =>
+                                void onDeleteNotification(notification)
+                            }
+                        >
                             <Trash2Icon data-icon="inline-start" />
                         </Button>
                     ) : null}
@@ -410,9 +492,7 @@ function NotificationList({
                 notification,
                 isUnseen: true
             })),
-            ...(recent.length
-                ? [{ key: 'recent-header', section: true }]
-                : []),
+            ...(recent.length ? [{ key: 'recent-header', section: true }] : []),
             ...recent.map((notification) => ({
                 key: `recent:${notification.id}`,
                 notification,
@@ -428,10 +508,15 @@ function NotificationList({
                 {rows.length ? (
                     rows.map((row) =>
                         row.section ? (
-                            <div key={row.key} className="flex items-center gap-2 px-2 py-2">
+                            <div
+                                key={row.key}
+                                className="flex items-center gap-2 px-2 py-2"
+                            >
                                 <Separator className="flex-1" />
-                                <span className="shrink-0 text-xs uppercase tracking-wider text-muted-foreground">
-                                    {t('side_panel.notification_center.past_notifications')}
+                                <span className="text-muted-foreground shrink-0 text-xs tracking-wider uppercase">
+                                    {t(
+                                        'side_panel.notification_center.past_notifications'
+                                    )}
                                 </span>
                                 <Separator className="flex-1" />
                             </div>
@@ -441,11 +526,17 @@ function NotificationList({
                                 notification={row.notification}
                                 isUnseen={row.isUnseen}
                                 currentUserId={currentUserId}
-                                canInviteFromCurrentLocation={canInviteFromCurrentLocation}
+                                canInviteFromCurrentLocation={
+                                    canInviteFromCurrentLocation
+                                }
                                 onAcceptFriendRequest={onAcceptFriendRequest}
                                 onAcceptRequestInvite={onAcceptRequestInvite}
-                                onSendInviteResponseWithMessage={onSendInviteResponseWithMessage}
-                                onSendNotificationResponse={onSendNotificationResponse}
+                                onSendInviteResponseWithMessage={
+                                    onSendInviteResponseWithMessage
+                                }
+                                onSendNotificationResponse={
+                                    onSendNotificationResponse
+                                }
                                 onHideNotification={onHideNotification}
                                 onDeleteNotification={onDeleteNotification}
                                 onMarkSeen={onMarkSeen}
@@ -453,13 +544,20 @@ function NotificationList({
                         )
                     )
                 ) : (
-                    <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
-                        {t('side_panel.notification_center.no_new_notifications')}
+                    <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">
+                        {t(
+                            'side_panel.notification_center.no_new_notifications'
+                        )}
                     </div>
                 )}
             </div>
             <div className="flex justify-center border-t p-3">
-                <Button type="button" variant="secondary" size="sm" onClick={onNavigateToTable}>
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={onNavigateToTable}
+                >
                     {t('side_panel.notification_center.view_more')}
                 </Button>
             </div>
@@ -477,15 +575,25 @@ export function VrcNotificationCenterHost() {
     const unseenCount = useVrcNotificationStore((state) => state.unseenCount);
     const loadStatus = useVrcNotificationStore((state) => state.loadStatus);
     const detail = useVrcNotificationStore((state) => state.detail);
-    const setCenterOpen = useVrcNotificationStore((state) => state.setCenterOpen);
-    const loadForCurrentUser = useVrcNotificationStore((state) => state.loadForCurrentUser);
-    const markNotificationSeen = useVrcNotificationStore((state) => state.markNotificationSeen);
+    const setCenterOpen = useVrcNotificationStore(
+        (state) => state.setCenterOpen
+    );
+    const loadForCurrentUser = useVrcNotificationStore(
+        (state) => state.loadForCurrentUser
+    );
+    const markNotificationSeen = useVrcNotificationStore(
+        (state) => state.markNotificationSeen
+    );
     const markAllSeen = useVrcNotificationStore((state) => state.markAllSeen);
     const [activeTab, setActiveTab] = useState('friend');
     const currentUserId = runtimeAuth.currentUserId;
     const endpoint = runtimeAuth.currentUserEndpoint;
     const currentInviteLocation = useMemo(
-        () => resolveCurrentInviteLocation(gameState, runtimeAuth.currentUserSnapshot),
+        () =>
+            resolveCurrentInviteLocation(
+                gameState,
+                runtimeAuth.currentUserSnapshot
+            ),
         [gameState, runtimeAuth.currentUserSnapshot]
     );
     const canInviteFromCurrentLocation = useMemo(
@@ -516,7 +624,11 @@ export function VrcNotificationCenterHost() {
             return;
         }
         void markAllSeen().catch((error) => {
-            toast.error(error instanceof Error ? error.message : 'Failed to mark notifications as seen.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to mark notifications as seen.'
+            );
         });
     }
 
@@ -564,7 +676,11 @@ export function VrcNotificationCenterHost() {
                 await expireNotificationLocally(notification);
                 return;
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to accept friend request.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to accept friend request.'
+            );
         }
     }
 
@@ -589,14 +705,20 @@ export function VrcNotificationCenterHost() {
             await expireNotificationLocally(notification);
             toast.success('Notification declined.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to decline notification.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to decline notification.'
+            );
         }
     }
 
     async function acceptRequestInvite(notification) {
         try {
             if (!currentInviteLocation) {
-                toast.error('Cannot invite: no current VRChat location is available.');
+                toast.error(
+                    'Cannot invite: no current VRChat location is available.'
+                );
                 return;
             }
             if (!canInviteFromCurrentLocation) {
@@ -605,7 +727,9 @@ export function VrcNotificationCenterHost() {
             }
             const parsedLocation = parseLocation(currentInviteLocation);
             if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-                toast.error('Cannot invite: current location is not a concrete instance.');
+                toast.error(
+                    'Cannot invite: current location is not a concrete instance.'
+                );
                 return;
             }
             const result = await modalStore.confirm({
@@ -616,14 +740,19 @@ export function VrcNotificationCenterHost() {
                 return;
             }
 
-            const worldResponse = await vrchatSearchRepository.getWorlds({}, parsedLocation.worldId, { endpoint });
+            const worldResponse = await vrchatSearchRepository.getWorlds(
+                {},
+                parsedLocation.worldId,
+                { endpoint }
+            );
             await notificationRepository.sendInvite({
                 receiverUserId: notification.senderUserId,
                 endpoint,
                 params: {
                     instanceId: currentInviteLocation,
                     worldId: parsedLocation.worldId,
-                    worldName: worldResponse.json?.name || parsedLocation.worldId,
+                    worldName:
+                        worldResponse.json?.name || parsedLocation.worldId,
                     rsvp: true
                 }
             });
@@ -637,14 +766,20 @@ export function VrcNotificationCenterHost() {
             await expireNotificationLocally(notification);
             toast.success('Invite sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send invite.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send invite.'
+            );
         }
     }
 
     async function sendInviteResponseWithMessage(notification, messageType) {
         try {
             if (!currentUserId) {
-                toast.error('Cannot send invite response: no current user session is available.');
+                toast.error(
+                    'Cannot send invite response: no current user session is available.'
+                );
                 return;
             }
             const rows = await toolsRepository.getInviteMessages(
@@ -693,7 +828,11 @@ export function VrcNotificationCenterHost() {
             await expireNotificationLocally(notification);
             toast.success('Invite response sent.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to send invite response.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send invite response.'
+            );
         }
     }
 
@@ -704,18 +843,23 @@ export function VrcNotificationCenterHost() {
                 openNotificationLink(response.data);
                 return;
             }
-            if (notification.type === 'boop' && (responseType === 'reply' || responseType === 'boop')) {
+            if (
+                notification.type === 'boop' &&
+                (responseType === 'reply' || responseType === 'boop')
+            ) {
                 await notificationRepository.sendBoop({
                     userId: notification.senderUserId,
                     endpoint
                 });
-                await notificationRepository.hideRemoteNotification({
-                    id: notification.id,
-                    version: notification.version,
-                    type: notification.type,
-                    senderUserId: notification.senderUserId,
-                    endpoint
-                }).catch(() => {});
+                await notificationRepository
+                    .hideRemoteNotification({
+                        id: notification.id,
+                        version: notification.version,
+                        type: notification.type,
+                        senderUserId: notification.senderUserId,
+                        endpoint
+                    })
+                    .catch(() => {});
                 await expireNotificationLocally(notification);
                 toast.success('Boop sent.');
                 return;
@@ -732,7 +876,11 @@ export function VrcNotificationCenterHost() {
             if (notification.version >= 2) {
                 await expireNotificationLocally(notification);
             }
-            toast.error(error instanceof Error ? error.message : 'Failed to send notification response.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to send notification response.'
+            );
         }
     }
 
@@ -755,13 +903,20 @@ export function VrcNotificationCenterHost() {
             await refreshCenter();
             toast.success('Notification log entry deleted.');
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete notification.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete notification.'
+            );
         }
     }
 
     return (
         <Sheet open={isCenterOpen} onOpenChange={handleOpenChange}>
-            <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+            <SheetContent
+                side="right"
+                className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
+            >
                 <SheetHeader className="border-b px-4 pt-4 pb-3">
                     <div className="flex items-center justify-between gap-3 pr-8">
                         <SheetTitle className="flex items-center gap-2">
@@ -769,7 +924,11 @@ export function VrcNotificationCenterHost() {
                             {t('side_panel.notification_center.title')}
                         </SheetTitle>
                         <div className="flex items-center gap-2">
-                            <Badge variant={unseenCount ? 'default' : 'outline'}>{unseenCount}</Badge>
+                            <Badge
+                                variant={unseenCount ? 'default' : 'outline'}
+                            >
+                                {unseenCount}
+                            </Badge>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -778,9 +937,14 @@ export function VrcNotificationCenterHost() {
                                 disabled={loadStatus === 'running'}
                                 onClick={() => {
                                     void loadForCurrentUser().catch((error) => {
-                                        toast.error(error instanceof Error ? error.message : 'Failed to refresh notifications.');
+                                        toast.error(
+                                            error instanceof Error
+                                                ? error.message
+                                                : 'Failed to refresh notifications.'
+                                        );
                                     });
-                                }}>
+                                }}
+                            >
                                 {loadStatus === 'running' ? (
                                     <Spinner data-icon="inline-start" />
                                 ) : (
@@ -789,15 +953,25 @@ export function VrcNotificationCenterHost() {
                             </Button>
                         </div>
                     </div>
-                    {detail ? <div className="text-xs text-muted-foreground">{detail}</div> : null}
+                    {detail ? (
+                        <div className="text-muted-foreground text-xs">
+                            {detail}
+                        </div>
+                    ) : null}
                 </SheetHeader>
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={setActiveTab}
+                    className="flex min-h-0 flex-1 flex-col"
+                >
                     <TabsList className="mx-2 mt-2 grid grid-cols-3">
                         {categoryOrder.map((category) => (
                             <TabsTrigger key={category} value={category}>
-                                {t(`side_panel.notification_center.tab_${category}`)}
+                                {t(
+                                    `side_panel.notification_center.tab_${category}`
+                                )}
                                 {categories[category]?.unseen?.length ? (
-                                    <span className="ml-1 text-xs text-muted-foreground">
+                                    <span className="text-muted-foreground ml-1 text-xs">
                                         ({categories[category].unseen.length})
                                     </span>
                                 ) : null}
@@ -805,16 +979,26 @@ export function VrcNotificationCenterHost() {
                         ))}
                     </TabsList>
                     {categoryOrder.map((category) => (
-                        <TabsContent key={category} value={category} className="mt-0 min-h-0 flex-1 overflow-hidden">
+                        <TabsContent
+                            key={category}
+                            value={category}
+                            className="mt-0 min-h-0 flex-1 overflow-hidden"
+                        >
                             <NotificationList
                                 unseen={categories[category]?.unseen || []}
                                 recent={categories[category]?.recent || []}
                                 currentUserId={currentUserId}
-                                canInviteFromCurrentLocation={canInviteFromCurrentLocation}
+                                canInviteFromCurrentLocation={
+                                    canInviteFromCurrentLocation
+                                }
                                 onAcceptFriendRequest={acceptFriendRequest}
                                 onAcceptRequestInvite={acceptRequestInvite}
-                                onSendInviteResponseWithMessage={sendInviteResponseWithMessage}
-                                onSendNotificationResponse={sendNotificationResponse}
+                                onSendInviteResponseWithMessage={
+                                    sendInviteResponseWithMessage
+                                }
+                                onSendNotificationResponse={
+                                    sendNotificationResponse
+                                }
                                 onHideNotification={hideNotification}
                                 onDeleteNotification={deleteNotification}
                                 onMarkSeen={markNotificationSeen}

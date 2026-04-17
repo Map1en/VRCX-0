@@ -40,9 +40,9 @@ export const useLaunchStore = create((set) => ({
         set((state) => ({
             launchDialog: open
                 ? {
-                    ...state.launchDialog,
-                    open: true
-                }
+                      ...state.launchDialog,
+                      open: true
+                  }
                 : emptyLaunchDialog
         }));
     }

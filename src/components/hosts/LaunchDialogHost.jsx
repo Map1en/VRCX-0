@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
 import { CopyIcon, InfoIcon, MoreHorizontalIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { InstanceInviteDialog } from '@/components/dialogs/InstanceInviteDialog.jsx';
 import { copyTextToClipboard } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { configRepository } from '@/repositories/index.js';
@@ -11,13 +12,12 @@ import {
     resolveLaunchDialogDetails,
     selfInviteToInstance
 } from '@/services/launchService.js';
+import { checkCanInvite } from '@/shared/utils/invite.js';
+import { parseLocation } from '@/shared/utils/location.js';
 import { useLaunchStore } from '@/state/launchStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { checkCanInvite } from '@/shared/utils/invite.js';
-import { parseLocation } from '@/shared/utils/location.js';
 import { Button } from '@/ui/shadcn/button';
-import { InstanceInviteDialog } from '@/components/dialogs/InstanceInviteDialog.jsx';
 import {
     Dialog,
     DialogContent,
@@ -33,10 +33,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-import {
-    Field,
-    FieldLabel
-} from '@/ui/shadcn/field';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 
 const emptyDetails = {
@@ -50,25 +47,38 @@ const emptyDetails = {
     secureOrShortName: '',
     worldName: ''
 };
-const closeAfterAction = new Set(['attach', 'launch', 'launch-vr', 'launch-desktop']);
+const closeAfterAction = new Set([
+    'attach',
+    'launch',
+    'launch-vr',
+    'launch-desktop'
+]);
 
 function normalizeInstanceLocation(instance) {
-    return String(instance?.location || instance?.instance?.location || instance?.tag || instance?.$location?.tag || '').trim();
+    return String(
+        instance?.location ||
+            instance?.instance?.location ||
+            instance?.tag ||
+            instance?.$location?.tag ||
+            ''
+    ).trim();
 }
 
 function normalizeInstanceLaunchToken(instance) {
     return normalizeString(
         instance?.launchToken ||
-        instance?.instance?.launchToken ||
-        instance?.secureOrShortName ||
-        instance?.instance?.secureOrShortName ||
-        instance?.shortName ||
-        instance?.instance?.shortName
+            instance?.instance?.launchToken ||
+            instance?.secureOrShortName ||
+            instance?.instance?.secureOrShortName ||
+            instance?.shortName ||
+            instance?.instance?.shortName
     );
 }
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function canInviteCreatedInstance(instance, currentUserId) {
@@ -80,7 +90,11 @@ function canInviteCreatedInstance(instance, currentUserId) {
     if (!parsed.worldId || !parsed.instanceId) {
         return false;
     }
-    const accessType = normalizeString(instance?.accessType || instance?.instance?.accessType || parsed.accessType);
+    const accessType = normalizeString(
+        instance?.accessType ||
+            instance?.instance?.accessType ||
+            parsed.accessType
+    );
     const ownerId =
         normalizeString(instance?.ownerId) ||
         normalizeString(instance?.instance?.ownerId) ||
@@ -111,7 +125,12 @@ function LaunchField({ label, value, notice = '', onCopy }) {
         <Field>
             <div className="flex items-center gap-1.5 text-sm font-medium">
                 <FieldLabel>{label}</FieldLabel>
-                {notice ? <InfoIcon className="text-muted-foreground" title={notice} /> : null}
+                {notice ? (
+                    <InfoIcon
+                        className="text-muted-foreground"
+                        title={notice}
+                    />
+                ) : null}
             </div>
             <div className="flex items-center gap-2">
                 <Input
@@ -127,7 +146,8 @@ function LaunchField({ label, value, notice = '', onCopy }) {
                     className="shrink-0 rounded-full"
                     aria-label={`Copy ${label}`}
                     disabled={!value}
-                    onClick={onCopy}>
+                    onClick={onCopy}
+                >
                     <CopyIcon data-icon="inline-start" />
                 </Button>
             </div>
@@ -137,25 +157,40 @@ function LaunchField({ label, value, notice = '', onCopy }) {
 
 export function LaunchDialogHost() {
     const launchDialog = useLaunchStore((state) => state.launchDialog);
-    const setLaunchDialogOpen = useLaunchStore((state) => state.setLaunchDialogOpen);
-    const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentUserLocation = useRuntimeStore((state) =>
-        state.gameState.currentLocation ||
-        state.auth.currentUserSnapshot?.$locationTag ||
-        state.auth.currentUserSnapshot?.location ||
-        ''
+    const setLaunchDialogOpen = useLaunchStore(
+        (state) => state.setLaunchDialogOpen
     );
-    const isGameRunning = useRuntimeStore((state) => Boolean(state.gameState.isGameRunning));
-    const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
-    const groupInstances = groupInstancesState.endpoint === currentEndpoint ? groupInstancesState.instances : [];
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const currentUserLocation = useRuntimeStore(
+        (state) =>
+            state.gameState.currentLocation ||
+            state.auth.currentUserSnapshot?.$locationTag ||
+            state.auth.currentUserSnapshot?.location ||
+            ''
+    );
+    const isGameRunning = useRuntimeStore((state) =>
+        Boolean(state.gameState.isGameRunning)
+    );
+    const groupInstancesState = useRuntimeStore(
+        (state) => state.groupInstances
+    );
+    const groupInstances =
+        groupInstancesState.endpoint === currentEndpoint
+            ? groupInstancesState.instances
+            : [];
     const confirm = useModalStore((state) => state.confirm);
     const [details, setDetails] = useState(emptyDetails);
     const [loading, setLoading] = useState(false);
     const [busy, setBusy] = useState('');
     const [desktopMode, setDesktopMode] = useState(false);
     const [inviteOpen, setInviteOpen] = useState(false);
-    const cachedInstances = useMemo(() => buildCachedInstanceMap(groupInstances), [groupInstances]);
+    const cachedInstances = useMemo(
+        () => buildCachedInstanceMap(groupInstances),
+        [groupInstances]
+    );
 
     useEffect(() => {
         let active = true;
@@ -184,7 +219,12 @@ export function LaunchDialogHost() {
         }
 
         setLoading(true);
-        resolveLaunchDialogDetails(launchDialog.tag, launchDialog.shortName, launchDialog.launchToken, currentEndpoint)
+        resolveLaunchDialogDetails(
+            launchDialog.tag,
+            launchDialog.shortName,
+            launchDialog.launchToken,
+            currentEndpoint
+        )
             .then((nextDetails) => {
                 if (active) {
                     setDetails(nextDetails);
@@ -197,7 +237,11 @@ export function LaunchDialogHost() {
                         tag: launchDialog.tag,
                         location: launchDialog.tag
                     });
-                    toast.error(error instanceof Error ? error.message : 'Failed to resolve launch details.');
+                    toast.error(
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to resolve launch details.'
+                    );
                 }
             })
             .finally(() => {
@@ -209,7 +253,13 @@ export function LaunchDialogHost() {
         return () => {
             active = false;
         };
-    }, [currentEndpoint, launchDialog.launchToken, launchDialog.open, launchDialog.shortName, launchDialog.tag]);
+    }, [
+        currentEndpoint,
+        launchDialog.launchToken,
+        launchDialog.open,
+        launchDialog.shortName,
+        launchDialog.tag
+    ]);
 
     async function copyField(value, label) {
         if (!value) {
@@ -230,7 +280,9 @@ export function LaunchDialogHost() {
                 setLaunchDialogOpen(false);
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Launch action failed.');
+            toast.error(
+                error instanceof Error ? error.message : 'Launch action failed.'
+            );
         } finally {
             setBusy('');
         }
@@ -240,7 +292,8 @@ export function LaunchDialogHost() {
         if (isGameRunning) {
             const result = await confirm({
                 title: 'Launch VRChat',
-                description: 'VRChat is already running. Continue launching this instance?',
+                description:
+                    'VRChat is already running. Continue launching this instance?',
                 confirmText: 'Launch',
                 cancelText: 'Cancel'
             });
@@ -248,7 +301,12 @@ export function LaunchDialogHost() {
                 return false;
             }
         }
-        await launchVrchat(actionTag, actionLaunchToken, nextDesktopMode, currentEndpoint);
+        await launchVrchat(
+            actionTag,
+            actionLaunchToken,
+            nextDesktopMode,
+            currentEndpoint
+        );
         return true;
     }
 
@@ -258,7 +316,8 @@ export function LaunchDialogHost() {
         return launchWithMode(nextDesktopMode);
     }
 
-    const actionTag = details.tag || normalizeInstanceLocation(launchDialog.createdInstance);
+    const actionTag =
+        details.tag || normalizeInstanceLocation(launchDialog.createdInstance);
     const actionLaunchToken =
         details.launchToken ||
         details.shortName ||
@@ -266,42 +325,68 @@ export function LaunchDialogHost() {
         launchDialog.launchToken ||
         launchDialog.shortName ||
         '';
-    const canInviteResolvedInstance = Boolean(actionTag) && (checkCanInvite(actionTag, {
-        currentUserId,
-        lastLocationStr: currentUserLocation,
-        cachedInstances
-    }) || canInviteCreatedInstance(launchDialog.createdInstance, currentUserId));
+    const canInviteResolvedInstance =
+        Boolean(actionTag) &&
+        (checkCanInvite(actionTag, {
+            currentUserId,
+            lastLocationStr: currentUserLocation,
+            cachedInstances
+        }) ||
+            canInviteCreatedInstance(
+                launchDialog.createdInstance,
+                currentUserId
+            ));
     const canUseResolvedInstance = Boolean(actionTag);
     const canOpenInstanceInGame = Boolean(isGameRunning);
     const primaryLabel = desktopMode ? 'Start as Desktop' : 'Launch';
 
     return (
         <>
-            <Dialog open={Boolean(launchDialog.open)} onOpenChange={setLaunchDialogOpen}>
+            <Dialog
+                open={Boolean(launchDialog.open)}
+                onOpenChange={setLaunchDialogOpen}
+            >
                 <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
                         <DialogTitle>Launch</DialogTitle>
-                        <DialogDescription>Open, copy, invite, or self-invite to this VRChat instance.</DialogDescription>
+                        <DialogDescription>
+                            Open, copy, invite, or self-invite to this VRChat
+                            instance.
+                        </DialogDescription>
                     </DialogHeader>
 
-                    <div className={cn('flex flex-col gap-4', loading ? 'opacity-60' : '')}>
+                    <div
+                        className={cn(
+                            'flex flex-col gap-4',
+                            loading ? 'opacity-60' : ''
+                        )}
+                    >
                         <LaunchField
                             label="URL"
                             value={details.url}
-                            onCopy={() => void copyField(details.url, 'Launch URL')}
+                            onCopy={() =>
+                                void copyField(details.url, 'Launch URL')
+                            }
                         />
                         {details.shortUrl ? (
                             <LaunchField
                                 label="Short URL"
                                 value={details.shortUrl}
                                 notice="Only available when VRChat returned a short name for this instance."
-                                onCopy={() => void copyField(details.shortUrl, 'Short URL')}
+                                onCopy={() =>
+                                    void copyField(
+                                        details.shortUrl,
+                                        'Short URL'
+                                    )
+                                }
                             />
                         ) : null}
                         <LaunchField
                             label="Location"
                             value={details.location}
-                            onCopy={() => void copyField(details.location, 'Location')}
+                            onCopy={() =>
+                                void copyField(details.location, 'Location')
+                            }
                         />
                     </div>
 
@@ -310,52 +395,108 @@ export function LaunchDialogHost() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={!canInviteResolvedInstance || Boolean(busy)}
-                                onClick={() => setInviteOpen(true)}>
+                                disabled={
+                                    !canInviteResolvedInstance || Boolean(busy)
+                                }
+                                onClick={() => setInviteOpen(true)}
+                            >
                                 Invite
                             </Button>
                             {canOpenInstanceInGame ? (
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    disabled={!canUseResolvedInstance || Boolean(busy)}
-                                    onClick={() => void runAction('attach', () => attachRunningVrchat(actionTag, actionLaunchToken, currentEndpoint))}>
+                                    disabled={
+                                        !canUseResolvedInstance || Boolean(busy)
+                                    }
+                                    onClick={() =>
+                                        void runAction('attach', () =>
+                                            attachRunningVrchat(
+                                                actionTag,
+                                                actionLaunchToken,
+                                                currentEndpoint
+                                            )
+                                        )
+                                    }
+                                >
                                     Open In-Game
                                 </Button>
                             ) : null}
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={!canUseResolvedInstance || Boolean(busy)}
-                                onClick={() => void runAction('self-invite', () => selfInviteToInstance(actionTag, actionLaunchToken, currentEndpoint))}>
+                                disabled={
+                                    !canUseResolvedInstance || Boolean(busy)
+                                }
+                                onClick={() =>
+                                    void runAction('self-invite', () =>
+                                        selfInviteToInstance(
+                                            actionTag,
+                                            actionLaunchToken,
+                                            currentEndpoint
+                                        )
+                                    )
+                                }
+                            >
                                 Self Invite
                             </Button>
                         </div>
                         <div className="flex">
                             <Button
                                 type="button"
-                                disabled={!canUseResolvedInstance || Boolean(busy)}
+                                disabled={
+                                    !canUseResolvedInstance || Boolean(busy)
+                                }
                                 className="rounded-r-none"
-                                onClick={() => void runAction('launch', () => launchWithMode(desktopMode))}>
-                                {busy === 'launch' ? 'Launching...' : primaryLabel}
+                                onClick={() =>
+                                    void runAction('launch', () =>
+                                        launchWithMode(desktopMode)
+                                    )
+                                }
+                            >
+                                {busy === 'launch'
+                                    ? 'Launching...'
+                                    : primaryLabel}
                             </Button>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         type="button"
                                         size="icon"
-                                        disabled={!canUseResolvedInstance || Boolean(busy)}
-                                        className="rounded-l-none border-l border-primary-foreground/25"
-                                        aria-label="More launch options">
+                                        disabled={
+                                            !canUseResolvedInstance ||
+                                            Boolean(busy)
+                                        }
+                                        className="border-primary-foreground/25 rounded-l-none border-l"
+                                        aria-label="More launch options"
+                                    >
                                         <MoreHorizontalIcon data-icon="inline-start" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="w-48"
+                                >
                                     <DropdownMenuGroup>
-                                        <DropdownMenuItem onSelect={() => void runAction('launch-vr', () => selectLaunchMode(false))}>
+                                        <DropdownMenuItem
+                                            onSelect={() =>
+                                                void runAction(
+                                                    'launch-vr',
+                                                    () =>
+                                                        selectLaunchMode(false)
+                                                )
+                                            }
+                                        >
                                             Launch
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => void runAction('launch-desktop', () => selectLaunchMode(true))}>
+                                        <DropdownMenuItem
+                                            onSelect={() =>
+                                                void runAction(
+                                                    'launch-desktop',
+                                                    () => selectLaunchMode(true)
+                                                )
+                                            }
+                                        >
                                             Start as Desktop
                                         </DropdownMenuItem>
                                     </DropdownMenuGroup>

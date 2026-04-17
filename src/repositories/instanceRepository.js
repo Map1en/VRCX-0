@@ -1,18 +1,25 @@
-import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
-import webRepository from './webRepository.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/services/entityQueryCacheService.js';
 
+import { safeJsonParse } from './baseRepository.js';
+import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import webRepository from './webRepository.js';
+
 function normalizeEndpoint(endpoint = '') {
-    return (typeof endpoint === 'string' && endpoint.trim() ? endpoint.trim() : DEFAULT_ENDPOINT_DOMAIN).replace(/\/?$/, '/');
+    return (
+        typeof endpoint === 'string' && endpoint.trim()
+            ? endpoint.trim()
+            : DEFAULT_ENDPOINT_DOMAIN
+    ).replace(/\/?$/, '/');
 }
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function appendParams(url, params = {}) {
@@ -82,21 +89,27 @@ function toRegionCode(region) {
     return 'us';
 }
 
-async function execute(path, { method = 'GET', params = {}, endpoint = '' } = {}) {
+async function execute(
+    path,
+    { method = 'GET', params = {}, endpoint = '' } = {}
+) {
     const response = await webRepository.execute({
         url: buildUrl(path, method === 'GET' ? params : {}, endpoint),
         method,
         ...(method === 'GET'
             ? {}
             : {
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                },
-                body: JSON.stringify(params ?? {})
-            })
+                  headers: {
+                      'Content-Type': 'application/json;charset=utf-8'
+                  },
+                  body: JSON.stringify(params ?? {})
+              })
     });
     const json = parseResponse(response.data);
-    if (response.status >= 400 || (json && typeof json === 'object' && 'error' in json)) {
+    if (
+        response.status >= 400 ||
+        (json && typeof json === 'object' && 'error' in json)
+    ) {
         throw new Error(unwrapErrorMessage(json, response.status));
     }
     return {
@@ -123,7 +136,9 @@ async function createInstance({
     const normalizedWorldId = normalizeString(worldId);
     const normalizedOwnerId = normalizeString(ownerId);
     if (!normalizedWorldId) {
-        throw new Error('InstanceRepository.createInstance requires a world id.');
+        throw new Error(
+            'InstanceRepository.createInstance requires a world id.'
+        );
     }
 
     const type = toApiAccessType(accessType);
@@ -131,12 +146,15 @@ async function createInstance({
         type,
         canRequestInvite: accessType === 'invite+',
         worldId: normalizedWorldId,
-        ownerId: type === 'group' ? normalizeString(groupId) : normalizedOwnerId,
+        ownerId:
+            type === 'group' ? normalizeString(groupId) : normalizedOwnerId,
         region: toRegionCode(region)
     };
 
     if (!params.ownerId && type !== 'public') {
-        throw new Error('InstanceRepository.createInstance requires an owner id for private instances.');
+        throw new Error(
+            'InstanceRepository.createInstance requires an owner id for private instances.'
+        );
     }
 
     if (type === 'group') {
@@ -161,15 +179,29 @@ async function createInstance({
     });
 }
 
-async function getInstance({ worldId, instanceId, endpoint = '', force = false } = {}) {
+async function getInstance({
+    worldId,
+    instanceId,
+    endpoint = '',
+    force = false
+} = {}) {
     const normalizedWorldId = normalizeString(worldId);
     const normalizedInstanceId = normalizeString(instanceId);
     if (!normalizedWorldId || !normalizedInstanceId) {
-        throw new Error('InstanceRepository.getInstance requires world and instance ids.');
+        throw new Error(
+            'InstanceRepository.getInstance requires world and instance ids.'
+        );
     }
-    const params = { worldId: normalizedWorldId, instanceId: normalizedInstanceId };
+    const params = {
+        worldId: normalizedWorldId,
+        instanceId: normalizedInstanceId
+    };
     const response = await fetchCachedData({
-        queryKey: queryKeys.instance(normalizedWorldId, normalizedInstanceId, normalizeEndpoint(endpoint)),
+        queryKey: queryKeys.instance(
+            normalizedWorldId,
+            normalizedInstanceId,
+            normalizeEndpoint(endpoint)
+        ),
         policy: entityQueryPolicies.instance,
         force,
         queryFn: async () => {
@@ -186,11 +218,19 @@ async function getInstance({ worldId, instanceId, endpoint = '', force = false }
     return response;
 }
 
-async function getInstanceShortName({ worldId, instanceId, shortName = '', endpoint = '', force = false } = {}) {
+async function getInstanceShortName({
+    worldId,
+    instanceId,
+    shortName = '',
+    endpoint = '',
+    force = false
+} = {}) {
     const normalizedWorldId = normalizeString(worldId);
     const normalizedInstanceId = normalizeString(instanceId);
     if (!normalizedWorldId || !normalizedInstanceId) {
-        throw new Error('InstanceRepository.getInstanceShortName requires world and instance ids.');
+        throw new Error(
+            'InstanceRepository.getInstanceShortName requires world and instance ids.'
+        );
     }
     const params = shortName ? { shortName: normalizeString(shortName) } : {};
     const instance = {
@@ -198,7 +238,11 @@ async function getInstanceShortName({ worldId, instanceId, shortName = '', endpo
         instanceId: normalizedInstanceId
     };
     return fetchCachedData({
-        queryKey: queryKeys.instanceShortName(normalizedWorldId, normalizedInstanceId, normalizeEndpoint(endpoint)),
+        queryKey: queryKeys.instanceShortName(
+            normalizedWorldId,
+            normalizedInstanceId,
+            normalizeEndpoint(endpoint)
+        ),
         policy: entityQueryPolicies.instance,
         force,
         queryFn: async () => {
@@ -218,11 +262,18 @@ async function getInstanceShortName({ worldId, instanceId, shortName = '', endpo
     });
 }
 
-async function selfInvite({ worldId, instanceId, shortName = '', endpoint = '' } = {}) {
+async function selfInvite({
+    worldId,
+    instanceId,
+    shortName = '',
+    endpoint = ''
+} = {}) {
     const normalizedWorldId = normalizeString(worldId);
     const normalizedInstanceId = normalizeString(instanceId);
     if (!normalizedWorldId || !normalizedInstanceId) {
-        throw new Error('InstanceRepository.selfInvite requires world and instance ids.');
+        throw new Error(
+            'InstanceRepository.selfInvite requires world and instance ids.'
+        );
     }
     const locationPath = `${encodeURIComponent(normalizedWorldId)}:${encodeURIComponent(normalizedInstanceId)}`;
     return execute(`invite/myself/to/${locationPath}`, {
@@ -232,10 +283,16 @@ async function selfInvite({ worldId, instanceId, shortName = '', endpoint = '' }
     });
 }
 
-async function closeInstance({ location, hardClose = false, endpoint = '' } = {}) {
+async function closeInstance({
+    location,
+    hardClose = false,
+    endpoint = ''
+} = {}) {
     const normalizedLocation = normalizeString(location);
     if (!normalizedLocation) {
-        throw new Error('InstanceRepository.closeInstance requires a location.');
+        throw new Error(
+            'InstanceRepository.closeInstance requires a location.'
+        );
     }
     return execute(`instances/${normalizedLocation}`, {
         endpoint,

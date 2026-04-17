@@ -15,7 +15,9 @@ import {
 } from './feedTableState.js';
 
 function installLocalStorage(initial = {}) {
-    const values = new Map(Object.entries(initial).map(([key, value]) => [key, String(value)]));
+    const values = new Map(
+        Object.entries(initial).map(([key, value]) => [key, String(value)])
+    );
     const localStorage = {
         getItem: vi.fn((key) => values.get(key) ?? null),
         setItem: vi.fn((key, value) => {
@@ -51,7 +53,10 @@ describe('feed table state helpers', () => {
 
         writePersistedFeedTableState({ columnOrder: ['type'] });
 
-        expect(localStorage.setItem).toHaveBeenCalledWith('vrcx:table:feed', expect.any(String));
+        expect(localStorage.setItem).toHaveBeenCalledWith(
+            'vrcx:table:feed',
+            expect.any(String)
+        );
         expect(JSON.parse(values.get('vrcx:table:feed'))).toEqual({
             pageSize: 25,
             columnOrder: ['type'],
@@ -75,36 +80,45 @@ describe('feed table state helpers', () => {
         });
 
         expect(readPersistedFeedTableState()).toEqual({});
-        expect(() => writePersistedFeedTableState({ pageSize: 10 })).not.toThrow();
+        expect(() =>
+            writePersistedFeedTableState({ pageSize: 10 })
+        ).not.toThrow();
     });
 
     it('sanitizes sorting, page sizes, columns, and page size selection', () => {
-        expect(sanitizeFeedSorting([{ id: 'type', desc: false }, { id: 'bad', desc: true }])).toEqual([
-            { id: 'type', desc: false }
-        ]);
-        expect(sanitizeFeedSorting([{ id: 'bad', desc: true }])).toBe(FEED_TABLE_DEFAULT_SORTING);
+        expect(
+            sanitizeFeedSorting([
+                { id: 'type', desc: false },
+                { id: 'bad', desc: true }
+            ])
+        ).toEqual([{ id: 'type', desc: false }]);
+        expect(sanitizeFeedSorting([{ id: 'bad', desc: true }])).toBe(
+            FEED_TABLE_DEFAULT_SORTING
+        );
         expect(sanitizeFeedPageSizes(['50', 10, 'bad', 10])).toEqual([10, 50]);
         expect(sanitizeFeedPageSizes(null)).toBe(FEED_TABLE_DEFAULT_PAGE_SIZES);
-        expect(sanitizeFeedColumnVisibility({
-            type: false,
-            displayName: true,
-            bad: false,
-            detail: 'yes'
-        })).toEqual({
+        expect(
+            sanitizeFeedColumnVisibility({
+                type: false,
+                displayName: true,
+                bad: false,
+                detail: 'yes'
+            })
+        ).toEqual({
             type: false,
             displayName: true
         });
-        expect(sanitizeFeedColumnOrder(['expander', 'detail', 'bad', 'type'])).toEqual([
-            'expander',
-            'detail',
-            'type'
-        ]);
-        expect(sanitizeFeedColumnSizing({
-            expander: 40,
-            detail: '320',
-            bad: 50,
-            type: -1
-        })).toEqual({
+        expect(
+            sanitizeFeedColumnOrder(['expander', 'detail', 'bad', 'type'])
+        ).toEqual(['expander', 'detail', 'type']);
+        expect(
+            sanitizeFeedColumnSizing({
+                expander: 40,
+                detail: '320',
+                bad: 50,
+                type: -1
+            })
+        ).toEqual({
             expander: 40,
             detail: 320
         });

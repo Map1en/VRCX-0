@@ -1,10 +1,20 @@
-import { ExternalLinkIcon, GlobeIcon, MapPinIcon, PencilIcon, UserIcon, UsersIcon } from 'lucide-react';
+import {
+    ExternalLinkIcon,
+    GlobeIcon,
+    MapPinIcon,
+    PencilIcon,
+    UserIcon,
+    UsersIcon
+} from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Location } from '@/components/Location.jsx';
 import { copyTextToClipboard, userImage } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
-import { Location } from '@/components/Location.jsx';
-import { normalizeLocationValue, parseLocation } from '@/shared/utils/location.js';
+import {
+    normalizeLocationValue,
+    parseLocation
+} from '@/shared/utils/location.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Card, CardContent } from '@/ui/shadcn/card';
 import {
@@ -31,7 +41,12 @@ function getInitials(value) {
 }
 
 function normalizeStatusText(value) {
-    const status = typeof value === 'string' ? value.trim().toLowerCase() : String(value ?? '').trim().toLowerCase();
+    const status =
+        typeof value === 'string'
+            ? value.trim().toLowerCase()
+            : String(value ?? '')
+                  .trim()
+                  .toLowerCase();
     if (status === 'joinme') {
         return 'join me';
     }
@@ -64,12 +79,19 @@ function isLiveBucketState(value) {
 }
 
 function isStaleOfflineLocationForLiveState(location, state) {
-    return isLiveBucketState(state) && normalizeLocationStatus(location) === 'offline';
+    return (
+        isLiveBucketState(state) &&
+        normalizeLocationStatus(location) === 'offline'
+    );
 }
 
 function resolveRawCardLocation(rawLocation, friend) {
     const source = readFriendRef(friend);
-    return normalizeLocationValue(source?.location) || (hasFriendRef(friend) ? '' : normalizeLocationValue(rawLocation)) || '';
+    return (
+        normalizeLocationValue(source?.location) ||
+        (hasFriendRef(friend) ? '' : normalizeLocationValue(rawLocation)) ||
+        ''
+    );
 }
 
 function resolveCardLocation(rawLocation, friend) {
@@ -119,8 +141,12 @@ function resolveFriendLocationStatus(friend, currentUser) {
     const friendStatus = normalizeStatusText(source.status);
     const state = normalizeStatusText(source.stateBucket || source.state);
     const location = normalizeLocationStatus(source.location);
-    const isOnlineByCurrentSnapshot = (currentUser?.onlineFriends || []).includes(userId);
-    const isActiveByCurrentSnapshot = (currentUser?.activeFriends || []).includes(userId);
+    const isOnlineByCurrentSnapshot = (
+        currentUser?.onlineFriends || []
+    ).includes(userId);
+    const isActiveByCurrentSnapshot = (
+        currentUser?.activeFriends || []
+    ).includes(userId);
 
     if (friend?.pendingOffline || source?.pendingOffline) {
         return 'offline';
@@ -169,38 +195,48 @@ function resolveStatusTone(friend, currentUser) {
 
     if (status === 'join me') {
         return {
-            dotClassName: 'bg-[var(--status-joinme)] shadow-[0_0_8px_var(--status-joinme)]',
+            dotClassName:
+                'bg-[var(--status-joinme)] shadow-[0_0_8px_var(--status-joinme)]',
             label: 'Join Me'
         };
     }
 
     if (status === 'ask me') {
         return {
-            dotClassName: 'bg-[var(--status-askme)] shadow-[0_0_8px_var(--status-askme)]',
+            dotClassName:
+                'bg-[var(--status-askme)] shadow-[0_0_8px_var(--status-askme)]',
             label: 'Ask Me'
         };
     }
 
     if (status === 'busy') {
         return {
-            dotClassName: 'bg-[var(--status-busy)] shadow-[0_0_8px_var(--status-busy)]',
+            dotClassName:
+                'bg-[var(--status-busy)] shadow-[0_0_8px_var(--status-busy)]',
             label: 'Busy'
         };
     }
 
     if (status === 'online') {
         return {
-            dotClassName: 'bg-[var(--status-online)] shadow-[0_0_8px_var(--status-online)]',
+            dotClassName:
+                'bg-[var(--status-online)] shadow-[0_0_8px_var(--status-online)]',
             label: 'Online'
         };
     }
 
-    if (status === 'active-state' || status === 'active-join' || status === 'active-ask' || status === 'active-busy') {
-        const colorClassName = status === 'active-join'
-            ? 'border-[var(--status-joinme)] shadow-[0_0_8px_var(--status-joinme)]'
-            : status === 'active-ask'
-                ? 'border-[var(--status-askme)] shadow-[0_0_8px_var(--status-askme)]'
-                : status === 'active-busy'
+    if (
+        status === 'active-state' ||
+        status === 'active-join' ||
+        status === 'active-ask' ||
+        status === 'active-busy'
+    ) {
+        const colorClassName =
+            status === 'active-join'
+                ? 'border-[var(--status-joinme)] shadow-[0_0_8px_var(--status-joinme)]'
+                : status === 'active-ask'
+                  ? 'border-[var(--status-askme)] shadow-[0_0_8px_var(--status-askme)]'
+                  : status === 'active-busy'
                     ? 'border-[var(--status-busy)] shadow-[0_0_8px_var(--status-busy)]'
                     : 'border-[var(--status-online)] shadow-[0_0_8px_var(--status-online)]';
         return {
@@ -210,7 +246,8 @@ function resolveStatusTone(friend, currentUser) {
     }
 
     return {
-        dotClassName: status === 'offline' ? 'bg-[var(--status-offline-card)]' : 'hidden',
+        dotClassName:
+            status === 'offline' ? 'bg-[var(--status-offline-card)]' : 'hidden',
         label: 'Offline'
     };
 }
@@ -240,7 +277,9 @@ export function FriendLocationCard({
     worldActionLabel = 'World',
     groupActionLabel = 'Group'
 }) {
-    const currentUserSnapshot = useRuntimeStore((state) => state.auth.currentUserSnapshot);
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const avatarUrl = userImage(friend, true);
     const tone = resolveStatusTone(friend, currentUserSnapshot);
     const canOpenUser = typeof onOpenUser === 'function';
@@ -249,15 +288,29 @@ export function FriendLocationCard({
     const cardLocation = resolveCardLocation(rawLocation, friend);
     const source = readFriendRef(friend);
     const hasRef = hasFriendRef(friend);
-    const sourceState = normalizeStatusText(source?.stateBucket || source?.state);
+    const sourceState = normalizeStatusText(
+        source?.stateBucket || source?.state
+    );
     const rawSourceLocation = resolveRawCardLocation(rawLocation, friend);
-    const sourceLocation = isStaleOfflineLocationForLiveState(rawSourceLocation, sourceState) ? '' : rawSourceLocation;
-    const sourceTravelingLocation = normalizeLocationValue(source?.travelingToLocation || source?.$travelingToLocation) ||
+    const sourceLocation = isStaleOfflineLocationForLiveState(
+        rawSourceLocation,
+        sourceState
+    )
+        ? ''
+        : rawSourceLocation;
+    const sourceTravelingLocation =
+        normalizeLocationValue(
+            source?.travelingToLocation || source?.$travelingToLocation
+        ) ||
         (hasRef ? '' : normalizeLocationValue(travelingLocation)) ||
         '';
-    const isCardTraveling = normalizeLocationStatus(sourceLocation) === 'traveling' || (!hasRef && Boolean(isTraveling));
+    const isCardTraveling =
+        normalizeLocationStatus(sourceLocation) === 'traveling' ||
+        (!hasRef && Boolean(isTraveling));
     const locationValue = isCardTraveling ? 'traveling' : cardLocation;
-    const travelingValue = isCardTraveling ? sourceTravelingLocation || undefined : undefined;
+    const travelingValue = isCardTraveling
+        ? sourceTravelingLocation || undefined
+        : undefined;
 
     async function copyCardText(value, label) {
         const text = String(value || '').trim();
@@ -272,18 +325,23 @@ export function FriendLocationCard({
         <ContextMenu>
             <ContextMenuTrigger asChild>
                 <Card
-                    className="h-full overflow-hidden cursor-pointer border-border/70 bg-card/80 backdrop-blur hover:bg-muted/40"
+                    className="border-border/70 bg-card/80 hover:bg-muted/40 h-full cursor-pointer overflow-hidden backdrop-blur"
                     onClick={onOpenUser}
                     style={{
                         padding: `${12 * spacingScale}px`
-                    }}>
+                    }}
+                >
                     <CardContent className="flex h-full min-h-0 flex-col gap-3 overflow-hidden p-0">
                         <div className="flex items-start gap-3">
                             <div className="relative shrink-0">
                                 {avatarUrl ? (
                                     <img
                                         src={avatarUrl}
-                                        alt={friend?.displayName || friend?.id || 'Friend avatar'}
+                                        alt={
+                                            friend?.displayName ||
+                                            friend?.id ||
+                                            'Friend avatar'
+                                        }
                                         loading="lazy"
                                         className="rounded-2xl object-cover"
                                         style={{
@@ -293,19 +351,23 @@ export function FriendLocationCard({
                                     />
                                 ) : (
                                     <div
-                                        className="flex items-center justify-center rounded-2xl bg-muted text-muted-foreground"
+                                        className="bg-muted text-muted-foreground flex items-center justify-center rounded-2xl"
                                         style={{
                                             width: `${52 * cardScale}px`,
                                             height: `${52 * cardScale}px`
-                                        }}>
+                                        }}
+                                    >
                                         <span className="text-sm font-semibold">
-                                            {getInitials(friend?.displayName || friend?.id)}
+                                            {getInitials(
+                                                friend?.displayName ||
+                                                    friend?.id
+                                            )}
                                         </span>
                                     </div>
                                 )}
                                 <span
                                     className={cn(
-                                        'absolute right-0 bottom-0 z-10 block rounded-full border-2 border-background',
+                                        'border-background absolute right-0 bottom-0 z-10 block rounded-full border-2',
                                         tone.dotClassName
                                     )}
                                     style={{
@@ -318,7 +380,8 @@ export function FriendLocationCard({
                             <div className="flex min-w-0 flex-1 flex-col gap-1">
                                 <div
                                     className="truncate font-semibold"
-                                    style={{ fontSize: `${16 * cardScale}px` }}>
+                                    style={{ fontSize: `${16 * cardScale}px` }}
+                                >
                                     {friend?.displayName || ''}
                                 </div>
                             </div>
@@ -327,10 +390,11 @@ export function FriendLocationCard({
                         <div className="flex min-h-0 flex-col gap-2 overflow-hidden text-sm">
                             {displayInstanceInfo ? (
                                 <div
-                                    className="flex w-full min-w-0 items-start gap-2 text-left text-muted-foreground"
-                                    onClick={(event) => event.stopPropagation()}>
+                                    className="text-muted-foreground flex w-full min-w-0 items-start gap-2 text-left"
+                                    onClick={(event) => event.stopPropagation()}
+                                >
                                     <MapPinIcon className="mt-0.5 size-4 shrink-0" />
-                                    <span className="line-clamp-2 min-w-0 break-words text-foreground">
+                                    <span className="text-foreground line-clamp-2 min-w-0 break-words">
                                         {locationValue ? (
                                             <Location
                                                 location={locationValue}
@@ -348,9 +412,11 @@ export function FriendLocationCard({
                                 </div>
                             ) : null}
 
-                            <div className="flex items-start gap-2 text-muted-foreground">
-                                {friend?.statusDescription ? <PencilIcon className="mt-0.5 size-4 shrink-0" /> : null}
-                                <div className="line-clamp-2 min-w-0 break-words text-xs leading-5 text-muted-foreground">
+                            <div className="text-muted-foreground flex items-start gap-2">
+                                {friend?.statusDescription ? (
+                                    <PencilIcon className="mt-0.5 size-4 shrink-0" />
+                                ) : null}
+                                <div className="text-muted-foreground line-clamp-2 min-w-0 text-xs leading-5 break-words">
                                     {friend?.statusDescription || '\u00a0'}
                                 </div>
                             </div>
@@ -360,48 +426,82 @@ export function FriendLocationCard({
             </ContextMenuTrigger>
             <ContextMenuContent className="w-56">
                 <ContextMenuGroup>
-                    <ContextMenuItem disabled={!canOpenUser} onSelect={onOpenUser}>
+                    <ContextMenuItem
+                        disabled={!canOpenUser}
+                        onSelect={onOpenUser}
+                    >
                         <UserIcon />
                         User
                     </ContextMenuItem>
-                    <ContextMenuItem disabled={!canOpenWorld} onSelect={onOpenWorld}>
+                    <ContextMenuItem
+                        disabled={!canOpenWorld}
+                        onSelect={onOpenWorld}
+                    >
                         <GlobeIcon />
                         {worldActionLabel}
                     </ContextMenuItem>
-                    <ContextMenuItem disabled={!canOpenGroup} onSelect={onOpenGroup}>
+                    <ContextMenuItem
+                        disabled={!canOpenGroup}
+                        onSelect={onOpenGroup}
+                    >
                         <UsersIcon />
                         {groupActionLabel}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
                 <ContextMenuGroup>
-                    <ContextMenuItem disabled={!canUseFriendLocation} onSelect={() => void onLaunchLocation?.()}>
+                    <ContextMenuItem
+                        disabled={!canUseFriendLocation}
+                        onSelect={() => void onLaunchLocation?.()}
+                    >
                         <ExternalLinkIcon />
                         Launch in VRChat
                     </ContextMenuItem>
-                    <ContextMenuItem disabled={!canUseFriendLocation} onSelect={() => void onSelfInviteLocation?.()}>
+                    <ContextMenuItem
+                        disabled={!canUseFriendLocation}
+                        onSelect={() => void onSelfInviteLocation?.()}
+                    >
                         <ExternalLinkIcon />
                         Self invite
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
                 <ContextMenuGroup>
-                    <ContextMenuItem disabled={!canSendInvite} onSelect={() => void onSendInvite?.()}>
+                    <ContextMenuItem
+                        disabled={!canSendInvite}
+                        onSelect={() => void onSendInvite?.()}
+                    >
                         Send invite
                     </ContextMenuItem>
-                    <ContextMenuItem disabled={!canRequestInvite} onSelect={() => void onRequestInvite?.()}>
+                    <ContextMenuItem
+                        disabled={!canRequestInvite}
+                        onSelect={() => void onRequestInvite?.()}
+                    >
                         Request invite
                     </ContextMenuItem>
-                    <ContextMenuItem disabled={!canBoop} onSelect={() => void onSendBoop?.()}>
+                    <ContextMenuItem
+                        disabled={!canBoop}
+                        onSelect={() => void onSendBoop?.()}
+                    >
                         Send boop
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
                 <ContextMenuGroup>
-                    <ContextMenuItem disabled={!friend?.id} onSelect={() => void copyCardText(friend?.id, 'User ID')}>
+                    <ContextMenuItem
+                        disabled={!friend?.id}
+                        onSelect={() =>
+                            void copyCardText(friend?.id, 'User ID')
+                        }
+                    >
                         Copy user ID
                     </ContextMenuItem>
-                    <ContextMenuItem disabled={!rawLocation} onSelect={() => void copyCardText(rawLocation, 'Location')}>
+                    <ContextMenuItem
+                        disabled={!rawLocation}
+                        onSelect={() =>
+                            void copyCardText(rawLocation, 'Location')
+                        }
+                    >
                         Copy location
                     </ContextMenuItem>
                 </ContextMenuGroup>

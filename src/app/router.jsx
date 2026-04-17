@@ -1,4 +1,11 @@
-import { HashRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import {
+    HashRouter,
+    Navigate,
+    Outlet,
+    Route,
+    Routes,
+    useLocation
+} from 'react-router-dom';
 
 import { GlobalHosts } from '@/components/hosts/GlobalHosts.jsx';
 import { AppShellLayout } from '@/components/layout/AppShellLayout.jsx';
@@ -8,7 +15,11 @@ import { useSessionStore } from '@/state/sessionStore.js';
 import { protectedRoutes, publicRoutes } from './routes.jsx';
 
 function sanitizeRedirectTarget(value) {
-    if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('/login')) {
+    if (
+        typeof value !== 'string' ||
+        !value.startsWith('/') ||
+        value.startsWith('/login')
+    ) {
         return '/feed';
     }
 
@@ -16,7 +27,9 @@ function sanitizeRedirectTarget(value) {
 }
 
 function RequireAuth() {
-    const isSessionReady = useSessionStore((state) => state.sessionPhase === 'ready');
+    const isSessionReady = useSessionStore(
+        (state) => state.sessionPhase === 'ready'
+    );
     const location = useLocation();
 
     if (!isSessionReady) {
@@ -34,11 +47,15 @@ function RequireAuth() {
 }
 
 function RedirectIfAuthenticated() {
-    const isSessionReady = useSessionStore((state) => state.sessionPhase === 'ready');
+    const isSessionReady = useSessionStore(
+        (state) => state.sessionPhase === 'ready'
+    );
     const location = useLocation();
 
     if (isSessionReady) {
-        const redirectQuery = new URLSearchParams(location.search).get('redirect');
+        const redirectQuery = new URLSearchParams(location.search).get(
+            'redirect'
+        );
         const redirectTo = sanitizeRedirectTarget(
             location.state?.redirectTo ?? redirectQuery ?? '/feed'
         );
@@ -50,23 +67,37 @@ function RedirectIfAuthenticated() {
 
 function AppRouterContent() {
     return (
-        <div className="flex h-screen min-h-0 w-full flex-col overflow-hidden bg-background">
+        <div className="bg-background flex h-screen min-h-0 w-full flex-col overflow-hidden">
             <AppTitleBar />
             <div className="min-h-0 flex-1 overflow-hidden">
                 <Routes>
                     <Route element={<RedirectIfAuthenticated />}>
                         {publicRoutes.map((route) => (
-                            <Route key={route.path} path={route.path} element={route.element} />
+                            <Route
+                                key={route.path}
+                                path={route.path}
+                                element={route.element}
+                            />
                         ))}
                     </Route>
 
                     <Route element={<RequireAuth />}>
                         <Route element={<AppShellLayout />}>
-                            <Route index element={<Navigate to="/feed" replace />} />
+                            <Route
+                                index
+                                element={<Navigate to="/feed" replace />}
+                            />
                             {protectedRoutes.map((route) => (
-                                <Route key={route.path} path={route.path} element={route.element} />
+                                <Route
+                                    key={route.path}
+                                    path={route.path}
+                                    element={route.element}
+                                />
                             ))}
-                            <Route path="*" element={<Navigate to="/feed" replace />} />
+                            <Route
+                                path="*"
+                                element={<Navigate to="/feed" replace />}
+                            />
                         </Route>
                     </Route>
                 </Routes>

@@ -14,7 +14,12 @@ function normalizeLoginParams(entry) {
 }
 
 function normalizeSavedCredentialRecord(key, entry) {
-    if (!entry || typeof entry !== 'object' || !entry.user || typeof entry.user !== 'object') {
+    if (
+        !entry ||
+        typeof entry !== 'object' ||
+        !entry.user ||
+        typeof entry.user !== 'object'
+    ) {
         return { edited: false, normalizedKey: null, value: null };
     }
 
@@ -28,7 +33,11 @@ function normalizeSavedCredentialRecord(key, entry) {
         loginParams: normalizeLoginParams(entry)
     };
 
-    if (entry.cookies !== undefined && entry.cookies !== null && entry.cookies !== '') {
+    if (
+        entry.cookies !== undefined &&
+        entry.cookies !== null &&
+        entry.cookies !== ''
+    ) {
         normalizedValue.cookies = entry.cookies;
     }
 
@@ -62,8 +71,14 @@ function sortSavedCredentials(savedCredentials, lastUserLoggedIn) {
             return leftIsLast ? -1 : 1;
         }
 
-        const leftName = asString(left.user?.displayName || left.user?.username, '').toLowerCase();
-        const rightName = asString(right.user?.displayName || right.user?.username, '').toLowerCase();
+        const leftName = asString(
+            left.user?.displayName || left.user?.username,
+            ''
+        ).toLowerCase();
+        const rightName = asString(
+            right.user?.displayName || right.user?.username,
+            ''
+        ).toLowerCase();
         return leftName.localeCompare(rightName);
     });
 }
@@ -89,7 +104,10 @@ function resolveAutoLoginStatus({
         };
     }
 
-    if (!savedCredential.loginParams.username || !savedCredential.loginParams.password) {
+    if (
+        !savedCredential.loginParams.username ||
+        !savedCredential.loginParams.password
+    ) {
         return {
             status: 'missing-credentials',
             reason: 'The saved account is missing username or password data.'
@@ -110,7 +128,10 @@ function resolveAutoLoginStatus({
 }
 
 async function getSavedCredentialsMap() {
-    const rawSavedCredentials = await configRepository.getObject('savedCredentials', {});
+    const rawSavedCredentials = await configRepository.getObject(
+        'savedCredentials',
+        {}
+    );
     const source =
         rawSavedCredentials && typeof rawSavedCredentials === 'object'
             ? rawSavedCredentials
@@ -151,7 +172,10 @@ async function deleteSavedCredential(userId) {
     delete savedCredentials[userId];
     await configRepository.setObject('savedCredentials', savedCredentials);
 
-    const lastUserLoggedIn = await configRepository.getString('lastUserLoggedIn', null);
+    const lastUserLoggedIn = await configRepository.getString(
+        'lastUserLoggedIn',
+        null
+    );
     if (lastUserLoggedIn === userId) {
         await configRepository.remove('lastUserLoggedIn');
     }
@@ -206,9 +230,7 @@ async function recordLoginSuccess({
 
 async function recordLogout(userOrUserId, options = {}) {
     const user =
-        userOrUserId && typeof userOrUserId === 'object'
-            ? userOrUserId
-            : null;
+        userOrUserId && typeof userOrUserId === 'object' ? userOrUserId : null;
     const userId = asString(user?.id ?? userOrUserId, '').trim();
     const clearLastUserLoggedIn =
         options.clearLastUserLoggedIn !== undefined
@@ -234,7 +256,10 @@ async function recordLogout(userOrUserId, options = {}) {
                 delete savedCredentials[userId].cookies;
             }
 
-            await configRepository.setObject('savedCredentials', savedCredentials);
+            await configRepository.setObject(
+                'savedCredentials',
+                savedCredentials
+            );
         }
     }
 
@@ -264,9 +289,7 @@ async function getSavedAuthSnapshot() {
     if (legacyPrimaryPasswordEnabled) {
         savedCredentials = {};
         lastUserLoggedIn = null;
-        await configRepository.setMany([
-            ['savedCredentials', '{}']
-        ]);
+        await configRepository.setMany([['savedCredentials', '{}']]);
         await configRepository.remove('enablePrimaryPassword');
         await configRepository.remove('lastUserLoggedIn');
     }
@@ -282,7 +305,10 @@ async function getSavedAuthSnapshot() {
         lastUserLoggedIn,
         savedCredentialCount: Object.keys(savedCredentials).length,
         savedCredentials,
-        savedCredentialsList: sortSavedCredentials(savedCredentials, lastUserLoggedIn),
+        savedCredentialsList: sortSavedCredentials(
+            savedCredentials,
+            lastUserLoggedIn
+        ),
         enableCustomEndpoint: Boolean(enableCustomEndpoint),
         autoLoginDelayEnabled: Boolean(autoLoginDelayEnabled),
         autoLoginDelaySeconds: Number.isFinite(autoLoginDelaySeconds)

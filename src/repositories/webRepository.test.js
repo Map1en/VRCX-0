@@ -25,7 +25,12 @@ describe('WebRepository', () => {
             Item2: '{"ok":true}'
         });
 
-        await expect(webRepository.execute({ url: 'https://example.test', method: 'GET' })).resolves.toEqual({
+        await expect(
+            webRepository.execute({
+                url: 'https://example.test',
+                method: 'GET'
+            })
+        ).resolves.toEqual({
             status: 201,
             data: '{"ok":true}',
             raw: {
@@ -43,11 +48,15 @@ describe('WebRepository', () => {
             })
             .mockResolvedValueOnce('plain text');
 
-        await expect(webRepository.execute({ url: 'https://example.test/empty' })).resolves.toMatchObject({
+        await expect(
+            webRepository.execute({ url: 'https://example.test/empty' })
+        ).resolves.toMatchObject({
             status: 204,
             data: ''
         });
-        await expect(webRepository.execute({ url: 'https://example.test/text' })).resolves.toEqual({
+        await expect(
+            webRepository.execute({ url: 'https://example.test/text' })
+        ).resolves.toEqual({
             status: 0,
             data: 'plain text',
             raw: 'plain text'
@@ -60,13 +69,17 @@ describe('WebRepository', () => {
             Item2: 'network denied'
         });
 
-        await expect(webRepository.execute({ url: 'https://example.test' })).rejects.toMatchObject({
+        await expect(
+            webRepository.execute({ url: 'https://example.test' })
+        ).rejects.toMatchObject({
             message: 'Web API execution failed: network denied'
         });
     });
 
     it('requires an options object before invoking the backend', async () => {
-        await expect(webRepository.execute()).rejects.toThrow('WebRepository.execute requires an options object');
+        await expect(webRepository.execute()).rejects.toThrow(
+            'WebRepository.execute requires an options object'
+        );
         expect(backend.web.execute).not.toHaveBeenCalled();
     });
 });

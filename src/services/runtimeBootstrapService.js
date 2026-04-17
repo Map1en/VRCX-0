@@ -1,18 +1,22 @@
-import { bindBackendEvents } from './backendEventService.js';
-import { bootstrapActivityCache } from './activityCacheService.js';
-import { bootstrapFavorites } from './favoriteBootstrapService.js';
-import { bootstrapFriendRoster } from './friendBootstrapService.js';
-import { refreshPlayerModerations } from './backgroundMaintenanceService.js';
-import { startRealtimeTransport, stopRealtimeTransport } from './realtimeTransportService.js';
-import { initializeReactRuntime } from './startupService.js';
-import { applyThemeMode } from './themeService.js';
-import { startRuntimeUpdateLoop } from './updateLoopService.js';
-import { startVrcStatusPolling } from './vrcStatusService.js';
-import { stopGameStateService } from './gameStateService.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { useShellStore } from '@/state/shellStore.js';
+
+import { bootstrapActivityCache } from './activityCacheService.js';
+import { bindBackendEvents } from './backendEventService.js';
+import { refreshPlayerModerations } from './backgroundMaintenanceService.js';
+import { bootstrapFavorites } from './favoriteBootstrapService.js';
+import { bootstrapFriendRoster } from './friendBootstrapService.js';
+import { stopGameStateService } from './gameStateService.js';
+import {
+    startRealtimeTransport,
+    stopRealtimeTransport
+} from './realtimeTransportService.js';
+import { initializeReactRuntime } from './startupService.js';
+import { applyThemeMode } from './themeService.js';
+import { startRuntimeUpdateLoop } from './updateLoopService.js';
+import { startVrcStatusPolling } from './vrcStatusService.js';
 
 const BOOTSTRAP_RETRY_DELAYS_MS = [5_000, 15_000, 30_000, 60_000];
 
@@ -34,10 +38,7 @@ function isSameAuthenticatedContext(left, right) {
 }
 
 function isSameAuthenticatedIdentity(left, right) {
-    return (
-        left?.userId === right?.userId &&
-        left?.endpoint === right?.endpoint
-    );
+    return left?.userId === right?.userId && left?.endpoint === right?.endpoint;
 }
 
 function getAuthenticatedRuntimeContext() {
@@ -61,7 +62,10 @@ function getAuthenticatedRuntimeContext() {
 }
 
 function isCurrentAuthenticatedContext(context) {
-    return isSameAuthenticatedContext(context, getAuthenticatedRuntimeContext());
+    return isSameAuthenticatedContext(
+        context,
+        getAuthenticatedRuntimeContext()
+    );
 }
 
 let reactRuntimeConsumerCount = 0;
@@ -146,11 +150,13 @@ export function startThemeModeSync() {
 
     syncThemeMode(useShellStore.getState().themeMode, 'Theme sync failed');
 
-    const unsubscribeThemeMode = useShellStore.subscribe((state, previousState) => {
-        if (state.themeMode !== previousState.themeMode) {
-            syncThemeMode(state.themeMode, 'Theme sync failed');
+    const unsubscribeThemeMode = useShellStore.subscribe(
+        (state, previousState) => {
+            if (state.themeMode !== previousState.themeMode) {
+                syncThemeMode(state.themeMode, 'Theme sync failed');
+            }
         }
-    });
+    );
 
     if (!window.matchMedia) {
         return unsubscribeThemeMode;
@@ -227,17 +233,15 @@ export function startAuthenticatedRuntimeServices() {
         moderationRefreshStarted = false;
     };
 
-    const isActiveRun = (runId, context) => (
+    const isActiveRun = (runId, context) =>
         !disposed &&
         activeRunId === runId &&
-        isCurrentAuthenticatedContext(context)
-    );
+        isCurrentAuthenticatedContext(context);
 
-    const isActiveModerationRun = (runId, target) => (
+    const isActiveModerationRun = (runId, target) =>
         !disposed &&
         activeModerationRunId === runId &&
-        isSameAuthenticatedIdentity(target, getAuthenticatedRuntimeContext())
-    );
+        isSameAuthenticatedIdentity(target, getAuthenticatedRuntimeContext());
 
     const scheduleBootstrapRetry = (key, runId, context) => {
         const state = bootstrapRetryState[key];
@@ -245,9 +249,10 @@ export function startAuthenticatedRuntimeServices() {
             return;
         }
 
-        const delay = BOOTSTRAP_RETRY_DELAYS_MS[
-            Math.min(state.attempt, BOOTSTRAP_RETRY_DELAYS_MS.length - 1)
-        ];
+        const delay =
+            BOOTSTRAP_RETRY_DELAYS_MS[
+                Math.min(state.attempt, BOOTSTRAP_RETRY_DELAYS_MS.length - 1)
+            ];
         state.attempt += 1;
         state.timer = window.setTimeout(() => {
             state.timer = null;
@@ -263,23 +268,25 @@ export function startAuthenticatedRuntimeServices() {
             userId: context.userId,
             endpoint: context.endpoint,
             currentUserSnapshot: context.currentUserSnapshot
-        }).then(() => {
-            if (isActiveRun(runId, context)) {
-                clearBootstrapRetry('friends');
-            }
-        }).catch((error) => {
-            if (!isActiveRun(runId, context)) {
-                return;
-            }
+        })
+            .then(() => {
+                if (isActiveRun(runId, context)) {
+                    clearBootstrapRetry('friends');
+                }
+            })
+            .catch((error) => {
+                if (!isActiveRun(runId, context)) {
+                    return;
+                }
 
-            friendBootstrapStarted = false;
-            scheduleBootstrapRetry('friends', runId, context);
-            pushRuntimeNotification({
-                level: 'warning',
-                title: 'Friend bootstrap failed',
-                error
+                friendBootstrapStarted = false;
+                scheduleBootstrapRetry('friends', runId, context);
+                pushRuntimeNotification({
+                    level: 'warning',
+                    title: 'Friend bootstrap failed',
+                    error
+                });
             });
-        });
     };
 
     const runFavoritesBootstrap = (context, runId) => {
@@ -288,23 +295,25 @@ export function startAuthenticatedRuntimeServices() {
             userId: context.userId,
             endpoint: context.endpoint,
             currentUserSnapshot: context.currentUserSnapshot
-        }).then(() => {
-            if (isActiveRun(runId, context)) {
-                clearBootstrapRetry('favorites');
-            }
-        }).catch((error) => {
-            if (!isActiveRun(runId, context)) {
-                return;
-            }
+        })
+            .then(() => {
+                if (isActiveRun(runId, context)) {
+                    clearBootstrapRetry('favorites');
+                }
+            })
+            .catch((error) => {
+                if (!isActiveRun(runId, context)) {
+                    return;
+                }
 
-            favoritesBootstrapStarted = false;
-            scheduleBootstrapRetry('favorites', runId, context);
-            pushRuntimeNotification({
-                level: 'warning',
-                title: 'Favorites hydration failed',
-                error
+                favoritesBootstrapStarted = false;
+                scheduleBootstrapRetry('favorites', runId, context);
+                pushRuntimeNotification({
+                    level: 'warning',
+                    title: 'Favorites hydration failed',
+                    error
+                });
             });
-        });
     };
 
     const runModerationRefresh = (context, runId) => {
@@ -411,10 +420,8 @@ export function startAuthenticatedRuntimeServices() {
 
         if (
             !activityBootstrapStarted &&
-            (
-                runtimeState.activity.currentUserId !== context.userId ||
-                runtimeState.activity.status === 'idle'
-            )
+            (runtimeState.activity.currentUserId !== context.userId ||
+                runtimeState.activity.status === 'idle')
         ) {
             runActivityBootstrap(context, runId);
         }

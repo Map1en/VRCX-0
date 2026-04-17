@@ -40,7 +40,10 @@ async function fetchSummary() {
     const data = await getJson('summary.json');
     const components = Array.isArray(data?.components) ? data.components : [];
     return components
-        .filter((component) => component?.status && component.status !== 'operational')
+        .filter(
+            (component) =>
+                component?.status && component.status !== 'operational'
+        )
         .map((component) => component.name)
         .filter(Boolean)
         .join(', ');
@@ -93,7 +96,10 @@ export async function refreshVrcStatus() {
 export function handleBrowserFocus() {
     const { vrcStatus } = useRuntimeStore.getState();
     const lastFetchedAt = Date.parse(vrcStatus.lastFetchedAt || '');
-    if (Number.isFinite(lastFetchedAt) && Date.now() - lastFetchedAt < FOCUS_REFRESH_MS) {
+    if (
+        Number.isFinite(lastFetchedAt) &&
+        Date.now() - lastFetchedAt < FOCUS_REFRESH_MS
+    ) {
         return Promise.resolve();
     }
 
@@ -120,8 +126,13 @@ export function startVrcStatusPolling() {
             return;
         }
 
-        const interval = useRuntimeStore.getState().vrcStatus.pollingIntervalMs || OK_POLL_MS;
-        pollingTimer = window.setTimeout(tick, Math.max(FOCUS_REFRESH_MS, interval));
+        const interval =
+            useRuntimeStore.getState().vrcStatus.pollingIntervalMs ||
+            OK_POLL_MS;
+        pollingTimer = window.setTimeout(
+            tick,
+            Math.max(FOCUS_REFRESH_MS, interval)
+        );
     };
 
     tick();

@@ -11,12 +11,12 @@ import {
 
 describe('friendListRows', () => {
     it('combines remote and local favorite ids for the favorites-only filter', () => {
-        expect(
-            [...buildFriendListFavoriteIdSet([' usr_remote ', ''], {
+        expect([
+            ...buildFriendListFavoriteIdSet([' usr_remote ', ''], {
                 groupA: ['usr_local'],
                 ignored: 'not-an-array'
-            })]
-        ).toEqual(['usr_remote', 'usr_local']);
+            })
+        ]).toEqual(['usr_remote', 'usr_local']);
     });
 
     it('aggregates game-log stats by friend id and keeps the most recent last seen time', () => {
@@ -76,29 +76,77 @@ describe('friendListRows', () => {
         const memos = new Map([['usr_friend', 'raid buddy']]);
         const notes = new Map([['usr_friend', 'met at event']]);
 
-        expect(matchesFriendListSearch(friend, 'AliceStar', new Set(), memos, notes)).toBe(
-            true
-        );
         expect(
-            matchesFriendListSearch(friend, 'alice_user', new Set(['username']), memos, notes)
+            matchesFriendListSearch(
+                friend,
+                'AliceStar',
+                new Set(),
+                memos,
+                notes
+            )
         ).toBe(true);
         expect(
-            matchesFriendListSearch(friend, 'trusted', new Set(['rank']), memos, notes)
+            matchesFriendListSearch(
+                friend,
+                'alice_user',
+                new Set(['username']),
+                memos,
+                notes
+            )
         ).toBe(true);
         expect(
-            matchesFriendListSearch(friend, 'avatars', new Set(['status']), memos, notes)
+            matchesFriendListSearch(
+                friend,
+                'trusted',
+                new Set(['rank']),
+                memos,
+                notes
+            )
         ).toBe(true);
         expect(
-            matchesFriendListSearch(friend, 'dancer', new Set(['bio']), memos, notes)
+            matchesFriendListSearch(
+                friend,
+                'avatars',
+                new Set(['status']),
+                memos,
+                notes
+            )
         ).toBe(true);
         expect(
-            matchesFriendListSearch(friend, 'event', new Set(['note']), memos, notes)
+            matchesFriendListSearch(
+                friend,
+                'dancer',
+                new Set(['bio']),
+                memos,
+                notes
+            )
         ).toBe(true);
         expect(
-            matchesFriendListSearch(friend, 'raid', new Set(['memo']), memos, notes)
+            matchesFriendListSearch(
+                friend,
+                'event',
+                new Set(['note']),
+                memos,
+                notes
+            )
         ).toBe(true);
         expect(
-            matchesFriendListSearch(friend, 'missing', new Set(['displayName']), memos, notes)
+            matchesFriendListSearch(
+                friend,
+                'raid',
+                new Set(['memo']),
+                memos,
+                notes
+            )
+        ).toBe(true);
+        expect(
+            matchesFriendListSearch(
+                friend,
+                'missing',
+                new Set(['displayName']),
+                memos,
+                notes
+            )
         ).toBe(false);
     });
 

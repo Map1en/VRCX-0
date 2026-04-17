@@ -19,11 +19,19 @@ describe('authAutoLoginState', () => {
 
         expect(canAttemptReactAutoLogin(' user@example.com ', now)).toBe(true);
         expect(recordReactAutoLoginAttempt(' user@example.com ', now)).toBe(1);
-        expect(recordReactAutoLoginAttempt('user@example.com', now + 1)).toBe(2);
-        expect(recordReactAutoLoginAttempt('user@example.com', now + 2)).toBe(AUTO_LOGIN_MAX_ATTEMPTS);
+        expect(recordReactAutoLoginAttempt('user@example.com', now + 1)).toBe(
+            2
+        );
+        expect(recordReactAutoLoginAttempt('user@example.com', now + 2)).toBe(
+            AUTO_LOGIN_MAX_ATTEMPTS
+        );
 
-        expect(canAttemptReactAutoLogin('user@example.com', now + 3)).toBe(false);
-        expect(getReactAutoLoginAttemptCount('user@example.com', now + 3)).toBe(AUTO_LOGIN_MAX_ATTEMPTS);
+        expect(canAttemptReactAutoLogin('user@example.com', now + 3)).toBe(
+            false
+        );
+        expect(getReactAutoLoginAttemptCount('user@example.com', now + 3)).toBe(
+            AUTO_LOGIN_MAX_ATTEMPTS
+        );
     });
 
     it('keeps account buckets isolated', () => {
@@ -43,9 +51,24 @@ describe('authAutoLoginState', () => {
         recordReactAutoLoginAttempt('account-a', now);
         recordReactAutoLoginAttempt('account-a', now + 1);
 
-        expect(getReactAutoLoginAttemptCount('account-a', now + AUTO_LOGIN_WINDOW_MS)).toBe(1);
-        expect(getReactAutoLoginAttemptCount('account-a', now + AUTO_LOGIN_WINDOW_MS + 1)).toBe(0);
-        expect(canAttemptReactAutoLogin('account-a', now + AUTO_LOGIN_WINDOW_MS + 1)).toBe(true);
+        expect(
+            getReactAutoLoginAttemptCount(
+                'account-a',
+                now + AUTO_LOGIN_WINDOW_MS
+            )
+        ).toBe(1);
+        expect(
+            getReactAutoLoginAttemptCount(
+                'account-a',
+                now + AUTO_LOGIN_WINDOW_MS + 1
+            )
+        ).toBe(0);
+        expect(
+            canAttemptReactAutoLogin(
+                'account-a',
+                now + AUTO_LOGIN_WINDOW_MS + 1
+            )
+        ).toBe(true);
     });
 
     it('uses a shared global bucket for blank account keys', () => {

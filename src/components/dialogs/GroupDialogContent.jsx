@@ -5,30 +5,31 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/lib/entityMedia.js';
-import { GroupDialogTabbedView } from './GroupDialogTabbedView.jsx';
 import { groupProfileRepository } from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
-import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useDialogStore } from '@/state/dialogStore.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Spinner } from '@/ui/shadcn/spinner';
+
 import {
     mergeGroupInstances,
     normalizeEntityId
 } from './group-dialog/groupInstances.js';
+import { GroupDialogTabbedView } from './GroupDialogTabbedView.jsx';
 
 function GroupDialogEmptyState({ title, description, loading = false }) {
     return (
-        <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
+        <div className="bg-muted/20 flex min-h-56 items-center justify-center rounded-xl border border-dashed p-6 text-center">
             <div className="flex max-w-sm flex-col gap-2">
                 {loading ? (
                     <div className="flex justify-center">
-                        <Spinner className="size-5 text-muted-foreground" />
+                        <Spinner className="text-muted-foreground size-5" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">{title}</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                     {description}
                 </div>
             </div>

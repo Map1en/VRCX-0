@@ -1,13 +1,14 @@
-import webRepository from './webRepository.js';
-import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
-import { createDefaultGroupRef } from '@/shared/utils/groupTransforms.js';
-import { replaceBioSymbols } from '@/shared/utils/base/string.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/services/entityQueryCacheService.js';
+import { replaceBioSymbols } from '@/shared/utils/base/string.js';
+import { createDefaultGroupRef } from '@/shared/utils/groupTransforms.js';
+
+import { safeJsonParse } from './baseRepository.js';
+import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import webRepository from './webRepository.js';
 
 function normalizeEndpointDomain(endpointDomain) {
     if (typeof endpointDomain === 'string' && endpointDomain.trim()) {

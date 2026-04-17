@@ -1,7 +1,9 @@
 export const GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS = 7;
 
 function normalizeDateInput(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 export function parseGameLogDateInput(value) {
@@ -57,7 +59,11 @@ export function toGameLogIsoRangeEnd(value) {
 }
 
 function addCalendarDays(date, days) {
-    const nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const nextDate = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+    );
     nextDate.setDate(nextDate.getDate() + days);
     return nextDate;
 }

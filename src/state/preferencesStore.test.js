@@ -11,40 +11,58 @@ import {
 
 describe('preferencesStore normalizers', () => {
     it('normalizes table page sizes into a positive sorted unique list', () => {
-        expect(normalizeTablePageSizes(['50', 10, 'bad', 10, 0, 1001, 25])).toEqual([10, 25, 50]);
-        expect(normalizeTablePageSizes([])).toEqual(DEFAULT_PREFERENCES.tablePageSizes);
-        expect(normalizeTablePageSizes('not an array')).toEqual(DEFAULT_PREFERENCES.tablePageSizes);
+        expect(
+            normalizeTablePageSizes(['50', 10, 'bad', 10, 0, 1001, 25])
+        ).toEqual([10, 25, 50]);
+        expect(normalizeTablePageSizes([])).toEqual(
+            DEFAULT_PREFERENCES.tablePageSizes
+        );
+        expect(normalizeTablePageSizes('not an array')).toEqual(
+            DEFAULT_PREFERENCES.tablePageSizes
+        );
     });
 
     it('clamps table limits to supported bounds with defaults for invalid values', () => {
-        expect(normalizeTableLimits({
-            maxTableSize: 50,
-            searchLimit: 200000
-        })).toEqual({
+        expect(
+            normalizeTableLimits({
+                maxTableSize: 50,
+                searchLimit: 200000
+            })
+        ).toEqual({
             maxTableSize: 100,
             searchLimit: 100000
         });
 
-        expect(normalizeTableLimits({
-            maxTableSize: 'bad',
-            searchLimit: null
-        })).toEqual(DEFAULT_PREFERENCES.tableLimits);
+        expect(
+            normalizeTableLimits({
+                maxTableSize: 'bad',
+                searchLimit: null
+            })
+        ).toEqual(DEFAULT_PREFERENCES.tableLimits);
     });
 
     it('merges shared feed filters from objects and JSON strings', () => {
-        expect(normalizeSharedFeedFilters({
-            noty: {
-                GPS: 'Friends'
-            }
-        }).noty.GPS).toBe('Friends');
+        expect(
+            normalizeSharedFeedFilters({
+                noty: {
+                    GPS: 'Friends'
+                }
+            }).noty.GPS
+        ).toBe('Friends');
 
-        expect(parseSharedFeedFilters(JSON.stringify({
-            wrist: {
-                AvatarChange: 'VIP'
-            }
-        })).wrist.AvatarChange).toBe('VIP');
+        expect(
+            parseSharedFeedFilters(
+                JSON.stringify({
+                    wrist: {
+                        AvatarChange: 'VIP'
+                    }
+                })
+            ).wrist.AvatarChange
+        ).toBe('VIP');
 
-        expect(parseSharedFeedFilters('{bad json')).toEqual(DEFAULT_PREFERENCES.sharedFeedFilters);
+        expect(parseSharedFeedFilters('{bad json')).toEqual(
+            DEFAULT_PREFERENCES.sharedFeedFilters
+        );
     });
 
     it('coerces persisted preference snapshots into safe runtime values', () => {
@@ -98,6 +116,8 @@ describe('preferencesStore normalizers', () => {
         });
         expect(snapshot.sharedFeedFilters.noty.Online).toBe('Friends');
         expect(snapshot.trustColor.basic).toBe('#ABCDEF');
-        expect(snapshot.trustColor.known).toBe(DEFAULT_PREFERENCES.trustColor.known);
+        expect(snapshot.trustColor.known).toBe(
+            DEFAULT_PREFERENCES.trustColor.known
+        );
     });
 });

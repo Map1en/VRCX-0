@@ -1,9 +1,13 @@
-import { backend } from '../platform/tauri/index.js';
-import { normalizePlatformError } from '../platform/tauri/errors.js';
 import { useModalStore } from '@/state/modalStore.js';
 
+import { normalizePlatformError } from '../platform/tauri/errors.js';
+import { backend } from '../platform/tauri/index.js';
+
 function showSQLiteErrorModal(error) {
-    const message = typeof error?.message === 'string' ? error.message : String(error ?? '');
+    const message =
+        typeof error?.message === 'string'
+            ? error.message
+            : String(error ?? '');
     if (!message) {
         return;
     }
@@ -29,14 +33,16 @@ function showSQLiteErrorModal(error) {
         message.includes('attempt to write a readonly database')
     ) {
         void modalStore.alert({
-            description: 'Please close other applications that might be using the database file.',
+            description:
+                'Please close other applications that might be using the database file.',
             title: 'Database is locked'
         });
         return;
     }
     if (message.includes('disk I/O error')) {
         void modalStore.alert({
-            description: 'A disk I/O error occurred while accessing the database.',
+            description:
+                'A disk I/O error occurred while accessing the database.',
             title: 'Disk I/O error'
         });
     }

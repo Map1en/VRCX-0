@@ -2,12 +2,18 @@ import { toast } from 'sonner';
 
 import { backend } from '@/platform/index.js';
 import { configRepository, instanceRepository } from '@/repositories/index.js';
-import { resolveInstanceLaunchToken, resolveVrcLaunchUrl, tryOpenLaunchLocation } from '@/services/directAccessService.js';
+import {
+    resolveInstanceLaunchToken,
+    resolveVrcLaunchUrl,
+    tryOpenLaunchLocation
+} from '@/services/directAccessService.js';
 import { getLaunchURL, isRealInstance } from '@/shared/utils/instance.js';
 import { parseLocation } from '@/shared/utils/location.js';
 
 function normalizeString(value) {
-    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function resolveLaunchLocation(location) {
@@ -21,10 +27,19 @@ function resolveLaunchLocation(location) {
     return parsed.worldId;
 }
 
-export async function resolveLaunchDialogDetails(tag, shortName = '', launchToken = '', endpoint = '') {
+export async function resolveLaunchDialogDetails(
+    tag,
+    shortName = '',
+    launchToken = '',
+    endpoint = ''
+) {
     const normalizedTag = normalizeString(tag);
     const parsed = parseLocation(normalizedTag);
-    if (!isRealInstance(normalizedTag) || !parsed.worldId || !parsed.instanceId) {
+    if (
+        !isRealInstance(normalizedTag) ||
+        !parsed.worldId ||
+        !parsed.instanceId
+    ) {
         return {
             tag: normalizedTag,
             location: normalizedTag,
@@ -49,7 +64,8 @@ export async function resolveLaunchDialogDetails(tag, shortName = '', launchToke
             endpoint
         });
         nextShortName = normalizeString(response.json?.shortName);
-        secureOrShortName = nextShortName || normalizeString(response.json?.secureName);
+        secureOrShortName =
+            nextShortName || normalizeString(response.json?.secureName);
     }
 
     const launchParsed = {
@@ -61,7 +77,11 @@ export async function resolveLaunchDialogDetails(tag, shortName = '', launchToke
         tag: normalizedTag,
         location: resolveLaunchLocation(normalizedTag),
         url: getLaunchURL(launchParsed),
-        vrcUrl: await resolveVrcLaunchUrl(normalizedTag, secureOrShortName, endpoint),
+        vrcUrl: await resolveVrcLaunchUrl(
+            normalizedTag,
+            secureOrShortName,
+            endpoint
+        ),
         shortName: nextShortName,
         launchToken: secureOrShortName,
         shortUrl: nextShortName ? `https://vrch.at/${nextShortName}` : '',
@@ -71,14 +91,24 @@ export async function resolveLaunchDialogDetails(tag, shortName = '', launchToke
     };
 }
 
-export async function attachRunningVrchat(location, shortName = '', endpoint = '') {
-    if (!await tryOpenLaunchLocation(location, shortName, endpoint)) {
+export async function attachRunningVrchat(
+    location,
+    shortName = '',
+    endpoint = ''
+) {
+    if (!(await tryOpenLaunchLocation(location, shortName, endpoint))) {
         const parsed = parseLocation(location);
         if (!parsed.worldId || !parsed.instanceId) {
             throw new Error('Unable to open this instance in VRChat.');
         }
-        toast.warning('Failed open instance in VRChat, falling back to self invite.');
-        const launchToken = await resolveInstanceLaunchToken(location, shortName, endpoint);
+        toast.warning(
+            'Failed open instance in VRChat, falling back to self invite.'
+        );
+        const launchToken = await resolveInstanceLaunchToken(
+            location,
+            shortName,
+            endpoint
+        );
         await instanceRepository.selfInvite({
             worldId: parsed.worldId,
             instanceId: parsed.instanceId,
@@ -89,12 +119,22 @@ export async function attachRunningVrchat(location, shortName = '', endpoint = '
     }
 }
 
-export async function selfInviteToInstance(location, shortName = '', endpoint = '') {
+export async function selfInviteToInstance(
+    location,
+    shortName = '',
+    endpoint = ''
+) {
     const parsed = parseLocation(location);
     if (!parsed.worldId || !parsed.instanceId) {
-        throw new Error('Cannot self invite: location is not a concrete instance.');
+        throw new Error(
+            'Cannot self invite: location is not a concrete instance.'
+        );
     }
-    const launchToken = await resolveInstanceLaunchToken(location, shortName, endpoint);
+    const launchToken = await resolveInstanceLaunchToken(
+        location,
+        shortName,
+        endpoint
+    );
     await instanceRepository.selfInvite({
         worldId: parsed.worldId,
         instanceId: parsed.instanceId,
@@ -103,11 +143,20 @@ export async function selfInviteToInstance(location, shortName = '', endpoint = 
     });
 }
 
-export async function launchVrchat(location, shortName = '', desktopMode = false, endpoint = '') {
+export async function launchVrchat(
+    location,
+    shortName = '',
+    desktopMode = false,
+    endpoint = ''
+) {
     const launchUrl = await resolveVrcLaunchUrl(location, shortName, endpoint);
     const args = [launchUrl];
-    const launchArguments = normalizeString(await configRepository.getString('launchArguments', ''));
-    const launchPathOverride = normalizeString(await configRepository.getString('vrcLaunchPathOverride', ''));
+    const launchArguments = normalizeString(
+        await configRepository.getString('launchArguments', '')
+    );
+    const launchPathOverride = normalizeString(
+        await configRepository.getString('vrcLaunchPathOverride', '')
+    );
 
     if (launchArguments) {
         args.push(launchArguments);
@@ -118,7 +167,10 @@ export async function launchVrchat(location, shortName = '', desktopMode = false
 
     const argumentString = args.join(' ');
     const launched = launchPathOverride
-        ? await backend.app.StartGameFromPath(launchPathOverride, argumentString)
+        ? await backend.app.StartGameFromPath(
+              launchPathOverride,
+              argumentString
+          )
         : await backend.app.StartGame(argumentString);
     if (!launched) {
         throw new Error(

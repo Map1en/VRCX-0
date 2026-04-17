@@ -19,9 +19,14 @@ export function resolveUserLanguages(user) {
 }
 
 export function languageFlagLabel(languageKey) {
-    const countryCode = languageMappings[String(languageKey || '').toLowerCase()];
+    const countryCode =
+        languageMappings[String(languageKey || '').toLowerCase()];
     if (!countryCode || !/^[a-z]{2}$/i.test(countryCode)) {
-        return String(languageKey || '?').slice(0, 3).toUpperCase() || '?';
+        return (
+            String(languageKey || '?')
+                .slice(0, 3)
+                .toUpperCase() || '?'
+        );
     }
 
     return String.fromCodePoint(

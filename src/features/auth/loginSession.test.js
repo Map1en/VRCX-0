@@ -8,10 +8,16 @@ import {
 describe('login session helpers', () => {
     it('keeps safe in-app redirect targets and falls back for login or external targets', () => {
         expect(sanitizeLoginRedirectTarget('/feed')).toBe('/feed');
-        expect(sanitizeLoginRedirectTarget('/settings/profile')).toBe('/settings/profile');
+        expect(sanitizeLoginRedirectTarget('/settings/profile')).toBe(
+            '/settings/profile'
+        );
         expect(sanitizeLoginRedirectTarget('/login')).toBe('/feed');
-        expect(sanitizeLoginRedirectTarget('/login?redirect=/settings')).toBe('/feed');
-        expect(sanitizeLoginRedirectTarget('https://example.test')).toBe('/feed');
+        expect(sanitizeLoginRedirectTarget('/login?redirect=/settings')).toBe(
+            '/feed'
+        );
+        expect(sanitizeLoginRedirectTarget('https://example.test')).toBe(
+            '/feed'
+        );
         expect(sanitizeLoginRedirectTarget(null)).toBe('/feed');
     });
 
@@ -23,7 +29,9 @@ describe('login session helpers', () => {
                     usr_1: { loginParams: { username: 'first' } },
                     usr_2: { loginParams: { username: 'last' } }
                 },
-                savedCredentialsList: [{ loginParams: { username: 'fallback' } }]
+                savedCredentialsList: [
+                    { loginParams: { username: 'fallback' } }
+                ]
             })
         ).toEqual({ username: 'last' });
     });
@@ -40,6 +48,8 @@ describe('login session helpers', () => {
 
     it('returns an empty params object when no saved credential exists', () => {
         expect(getSnapshotLoginParams(null)).toEqual({});
-        expect(getSnapshotLoginParams({ savedCredentialsList: [] })).toEqual({});
+        expect(getSnapshotLoginParams({ savedCredentialsList: [] })).toEqual(
+            {}
+        );
     });
 });

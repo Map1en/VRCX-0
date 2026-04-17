@@ -1,5 +1,5 @@
-import { backend } from '@/platform/index.js';
 import { clearFavoriteRemoteDetailsCache } from '@/features/favorites/useFavoriteRemoteDetails.js';
+import { backend } from '@/platform/index.js';
 import {
     configRepository,
     groupProfileRepository,
@@ -8,19 +8,6 @@ import {
     vrchatAuthRepository,
     vrchatModerationRepository
 } from '@/repositories/index.js';
-import { parseLocation } from '@/shared/utils/locationParser.js';
-import { useFavoriteStore } from '@/state/favoriteStore.js';
-import { useFriendRosterStore } from '@/state/friendRosterStore.js';
-import { useModalStore } from '@/state/modalStore.js';
-import { useNotificationStore } from '@/state/notificationStore.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { useSessionStore } from '@/state/sessionStore.js';
-import { bootstrapFavorites } from './favoriteBootstrapService.js';
-import {
-    bootstrapFriendRoster,
-    syncFriendRosterStateFromCurrentUserSnapshot
-} from './friendBootstrapService.js';
-import { refreshDiscordPresence as updateDiscordPresence } from './discordPresenceService.js';
 import { database } from '@/services/database/index.js';
 import {
     defaultBranchForVersion,
@@ -30,6 +17,20 @@ import {
     hasUpdateForBranch,
     sanitizeBranch
 } from '@/services/updateService.js';
+import { parseLocation } from '@/shared/utils/locationParser.js';
+import { useFavoriteStore } from '@/state/favoriteStore.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
+import { useModalStore } from '@/state/modalStore.js';
+import { useNotificationStore } from '@/state/notificationStore.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { useSessionStore } from '@/state/sessionStore.js';
+
+import { refreshDiscordPresence as updateDiscordPresence } from './discordPresenceService.js';
+import { bootstrapFavorites } from './favoriteBootstrapService.js';
+import {
+    bootstrapFriendRoster,
+    syncFriendRosterStateFromCurrentUserSnapshot
+} from './friendBootstrapService.js';
 
 const timers = {
     currentUserRefresh: 300,
@@ -45,7 +46,9 @@ const timers = {
 const groupInstanceProfileCache = new Map();
 
 function groupInstanceProfileCacheKey(endpoint, groupId) {
-    const normalizedEndpoint = String(endpoint || '').trim().replace(/\/+$/, '');
+    const normalizedEndpoint = String(endpoint || '')
+        .trim()
+        .replace(/\/+$/, '');
     return normalizedEndpoint ? `${normalizedEndpoint}:${groupId}` : groupId;
 }
 
@@ -137,7 +140,9 @@ function parseInGameGroupOrder(value) {
         return [];
     }
     const recoveredParsed = safeJsonParse(recovered, null);
-    return Array.isArray(recoveredParsed) ? recoveredParsed.filter(Boolean) : [];
+    return Array.isArray(recoveredParsed)
+        ? recoveredParsed.filter(Boolean)
+        : [];
 }
 
 function normalizeGroupInstanceGroupId(instance) {
@@ -146,12 +151,17 @@ function normalizeGroupInstanceGroupId(instance) {
         instance?.group?.id ||
         instance?.instance?.group?.groupId ||
         instance?.instance?.group?.id;
-    if (typeof explicitGroupId === 'string' && explicitGroupId.startsWith('grp_')) {
+    if (
+        typeof explicitGroupId === 'string' &&
+        explicitGroupId.startsWith('grp_')
+    ) {
         return explicitGroupId;
     }
 
     const ownerId = instance?.ownerId || instance?.instance?.ownerId;
-    return typeof ownerId === 'string' && ownerId.startsWith('grp_') ? ownerId : '';
+    return typeof ownerId === 'string' && ownerId.startsWith('grp_')
+        ? ownerId
+        : '';
 }
 
 function getGroupInstanceGroup(instance) {
@@ -178,8 +188,16 @@ function mergeGroupInstanceGroup(existingGroup, fetchedGroup) {
     return {
         ...fetchedGroup,
         ...existingGroup,
-        id: existingGroup.id || existingGroup.groupId || fetchedGroup.id || fetchedGroup.groupId,
-        groupId: existingGroup.groupId || existingGroup.id || fetchedGroup.groupId || fetchedGroup.id,
+        id:
+            existingGroup.id ||
+            existingGroup.groupId ||
+            fetchedGroup.id ||
+            fetchedGroup.groupId,
+        groupId:
+            existingGroup.groupId ||
+            existingGroup.id ||
+            fetchedGroup.groupId ||
+            fetchedGroup.id,
         name: existingGroup.name || fetchedGroup.name,
         iconUrl: existingGroup.iconUrl || fetchedGroup.iconUrl,
         icon: existingGroup.icon || fetchedGroup.icon,
@@ -189,19 +207,26 @@ function mergeGroupInstanceGroup(existingGroup, fetchedGroup) {
 }
 
 async function hydrateGroupInstances(instances, endpoint) {
-    const groupIds = Array.from(new Set(
-        (instances || [])
-            .filter((instance) => !hasCompleteGroupInstanceGroup(instance))
-            .map((instance) => normalizeGroupInstanceGroupId(instance))
-            .filter(Boolean)
-    ));
+    const groupIds = Array.from(
+        new Set(
+            (instances || [])
+                .filter((instance) => !hasCompleteGroupInstanceGroup(instance))
+                .map((instance) => normalizeGroupInstanceGroupId(instance))
+                .filter(Boolean)
+        )
+    );
     if (!groupIds.length) {
         return instances || [];
     }
 
     const results = await Promise.allSettled(
         groupIds
-            .filter((groupId) => !groupInstanceProfileCache.has(groupInstanceProfileCacheKey(endpoint, groupId)))
+            .filter(
+                (groupId) =>
+                    !groupInstanceProfileCache.has(
+                        groupInstanceProfileCacheKey(endpoint, groupId)
+                    )
+            )
             .map(async (groupId) => [
                 groupId,
                 await groupProfileRepository.getGroupProfile({
@@ -220,7 +245,10 @@ async function hydrateGroupInstances(instances, endpoint) {
     }
     for (const result of results) {
         if (result.status === 'fulfilled') {
-            groupInstanceProfileCache.set(groupInstanceProfileCacheKey(endpoint, result.value[0]), result.value[1]);
+            groupInstanceProfileCache.set(
+                groupInstanceProfileCacheKey(endpoint, result.value[0]),
+                result.value[1]
+            );
             groupsById.set(result.value[0], result.value[1]);
         }
     }
@@ -342,8 +370,8 @@ async function refreshGroupUserInstances() {
         const instances = Array.isArray(response.json)
             ? response.json
             : Array.isArray(response.json?.instances)
-                ? response.json.instances
-                : [];
+              ? response.json.instances
+              : [];
         const hydratedInstances = await hydrateGroupInstances(
             instances,
             auth.currentUserEndpoint
@@ -391,7 +419,10 @@ async function runClearVrcxCacheIfDue() {
         return;
     }
 
-    const frequency = await configRepository.getInt('clearVRCXCacheFrequency', 172800);
+    const frequency = await configRepository.getInt(
+        'clearVRCXCacheFrequency',
+        172800
+    );
     if (!frequency || frequency <= 0) {
         timers.clearVRCXCacheCheck = 3600;
         return;
@@ -411,7 +442,9 @@ async function refreshDiscordPresence() {
 
 function isLiveLocation(location) {
     const normalized = typeof location === 'string' ? location.trim() : '';
-    return Boolean(normalized && normalized !== 'traveling' && normalized !== 'offline');
+    return Boolean(
+        normalized && normalized !== 'traveling' && normalized !== 'offline'
+    );
 }
 
 function hasSelectedFriendInInstance(players, selectedGroups) {
@@ -421,20 +454,24 @@ function hasSelectedFriendInInstance(players, selectedGroups) {
     for (const groupKey of selectedGroups) {
         if (groupKey.startsWith('local:')) {
             const groupName = groupKey.slice(6);
-            const localIds = favoriteState.localFriendFavorites[groupName] || [];
+            const localIds =
+                favoriteState.localFriendFavorites[groupName] || [];
             for (const userId of localIds) {
                 friendIds.add(userId);
             }
             continue;
         }
 
-        const remoteIds = favoriteState.groupedFavoriteFriendIdsByGroupKey[groupKey] || [];
+        const remoteIds =
+            favoriteState.groupedFavoriteFriendIdsByGroupKey[groupKey] || [];
         for (const userId of remoteIds) {
             friendIds.add(userId);
         }
     }
 
-    return players.some((player) => player.userId && friendIds.has(player.userId));
+    return players.some(
+        (player) => player.userId && friendIds.has(player.userId)
+    );
 }
 
 async function updateAutoStateChange() {
@@ -445,7 +482,8 @@ async function updateAutoStateChange() {
     const runtimeState = useRuntimeStore.getState();
     const auth = getRuntimeAuth();
     const currentUser = auth.currentUserSnapshot;
-    const currentLocation = runtimeState.gameState.currentLocation || currentUser?.location || '';
+    const currentLocation =
+        runtimeState.gameState.currentLocation || currentUser?.location || '';
 
     if (
         !runtimeState.gameState.isGameRunning ||
@@ -491,25 +529,54 @@ async function updateAutoStateChange() {
             []
         );
         if (Array.isArray(selectedGroups) && selectedGroups.length > 0) {
-            withCompany = hasSelectedFriendInInstance(snapshot.players, selectedGroups);
+            withCompany = hasSelectedFriendInInstance(
+                snapshot.players,
+                selectedGroups
+            );
         } else {
             const friendsById = useFriendRosterStore.getState().friendsById;
-            withCompany = snapshot.players.some((player) => player.userId && friendsById[player.userId]);
+            withCompany = snapshot.players.some(
+                (player) => player.userId && friendsById[player.userId]
+            );
         }
     }
 
     const nextStatus = withCompany
-        ? await configRepository.getString('autoStateChangeCompanyStatus', 'busy')
-        : await configRepository.getString('autoStateChangeAloneStatus', 'join me');
+        ? await configRepository.getString(
+              'autoStateChangeCompanyStatus',
+              'busy'
+          )
+        : await configRepository.getString(
+              'autoStateChangeAloneStatus',
+              'join me'
+          );
     if (!nextStatus || currentUser.status === nextStatus) {
         return;
     }
 
     const params = { status: nextStatus };
-    if (withCompany && (await configRepository.getBool('autoStateChangeCompanyDescEnabled', false))) {
-        params.statusDescription = await configRepository.getString('autoStateChangeCompanyDesc', '');
-    } else if (!withCompany && (await configRepository.getBool('autoStateChangeAloneDescEnabled', false))) {
-        params.statusDescription = await configRepository.getString('autoStateChangeAloneDesc', '');
+    if (
+        withCompany &&
+        (await configRepository.getBool(
+            'autoStateChangeCompanyDescEnabled',
+            false
+        ))
+    ) {
+        params.statusDescription = await configRepository.getString(
+            'autoStateChangeCompanyDesc',
+            ''
+        );
+    } else if (
+        !withCompany &&
+        (await configRepository.getBool(
+            'autoStateChangeAloneDescEnabled',
+            false
+        ))
+    ) {
+        params.statusDescription = await configRepository.getString(
+            'autoStateChangeAloneDesc',
+            ''
+        );
     }
 
     const updatedUser = await userProfileRepository.updateCurrentUser({
@@ -538,7 +605,11 @@ async function backupVrcRegistry(name) {
         console.warn('Failed to get VRChat registry for backup:', error);
         return false;
     }
-    if (!regJson || typeof regJson !== 'object' || Object.keys(regJson).length === 0) {
+    if (
+        !regJson ||
+        typeof regJson !== 'object' ||
+        Object.keys(regJson).length === 0
+    ) {
         return false;
     }
 
@@ -552,7 +623,10 @@ async function backupVrcRegistry(name) {
         []
     );
     backups.push(backup);
-    await configRepository.setString('VRChatRegistryBackups', JSON.stringify(backups));
+    await configRepository.setString(
+        'VRChatRegistryBackups',
+        JSON.stringify(backups)
+    );
     return true;
 }
 
@@ -563,9 +637,14 @@ async function tryAutoBackupVrcRegistry() {
 
     let hasRegistryFolder = false;
     try {
-        hasRegistryFolder = Boolean(await backend.app.HasVRChatRegistryFolder());
+        hasRegistryFolder = Boolean(
+            await backend.app.HasVRChatRegistryFolder()
+        );
     } catch (error) {
-        console.warn('Failed to check VRChat registry folder before backup:', error);
+        console.warn(
+            'Failed to check VRChat registry folder before backup:',
+            error
+        );
         return;
     }
     if (!hasRegistryFolder) {
@@ -573,10 +652,16 @@ async function tryAutoBackupVrcRegistry() {
     }
 
     const now = new Date();
-    const lastBackupDate = await configRepository.getString('VRChatRegistryLastBackupDate', '');
+    const lastBackupDate = await configRepository.getString(
+        'VRChatRegistryLastBackupDate',
+        ''
+    );
     if (lastBackupDate) {
         const lastBackup = Date.parse(lastBackupDate);
-        if (Number.isFinite(lastBackup) && now.getTime() - lastBackup < 3 * 24 * 60 * 60 * 1000) {
+        if (
+            Number.isFinite(lastBackup) &&
+            now.getTime() - lastBackup < 3 * 24 * 60 * 60 * 1000
+        ) {
             return;
         }
     }
@@ -590,11 +675,20 @@ async function tryAutoBackupVrcRegistry() {
             return true;
         }
         const backupDate = Date.parse(backup.date || '');
-        return Number.isFinite(backupDate) && backupDate >= now.getTime() - 14 * 24 * 60 * 60 * 1000;
+        return (
+            Number.isFinite(backupDate) &&
+            backupDate >= now.getTime() - 14 * 24 * 60 * 60 * 1000
+        );
     });
-    await configRepository.setString('VRChatRegistryBackups', JSON.stringify(freshBackups));
+    await configRepository.setString(
+        'VRChatRegistryBackups',
+        JSON.stringify(freshBackups)
+    );
     if (await backupVrcRegistry('Auto Backup')) {
-        await configRepository.setString('VRChatRegistryLastBackupDate', now.toJSON());
+        await configRepository.setString(
+            'VRChatRegistryLastBackupDate',
+            now.toJSON()
+        );
     }
 }
 
@@ -610,7 +704,9 @@ async function checkAutoBackupRestoreVrcRegistry() {
 
     let hasRegistryFolder = true;
     try {
-        hasRegistryFolder = Boolean(await backend.app.HasVRChatRegistryFolder());
+        hasRegistryFolder = Boolean(
+            await backend.app.HasVRChatRegistryFolder()
+        );
     } catch (error) {
         console.warn('Failed to check VRChat registry folder:', error);
     }
@@ -620,8 +716,14 @@ async function checkAutoBackupRestoreVrcRegistry() {
         return;
     }
 
-    const lastBackupDate = await configRepository.getString('VRChatRegistryLastBackupDate', '');
-    const lastRestoreCheck = await configRepository.getString('VRChatRegistryLastRestoreCheck', '');
+    const lastBackupDate = await configRepository.getString(
+        'VRChatRegistryLastBackupDate',
+        ''
+    );
+    const lastRestoreCheck = await configRepository.getString(
+        'VRChatRegistryLastRestoreCheck',
+        ''
+    );
     if (!lastBackupDate || lastRestoreCheck === lastBackupDate) {
         return;
     }
@@ -633,18 +735,26 @@ async function checkAutoBackupRestoreVrcRegistry() {
     });
     useRuntimeStore.getState().setSystemHostOpen('registryBackupOpen', true);
     await backend.app.FocusWindow().catch(() => {});
-    await configRepository.setString('VRChatRegistryLastRestoreCheck', lastBackupDate);
+    await configRepository.setString(
+        'VRChatRegistryLastRestoreCheck',
+        lastBackupDate
+    );
 }
 
 async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
-    let autoUpdateMode = await configRepository.getString('autoUpdateVRCX', 'Auto Download');
+    let autoUpdateMode = await configRepository.getString(
+        'autoUpdateVRCX',
+        'Auto Download'
+    );
     if (autoUpdateMode === 'Auto Install') {
         autoUpdateMode = 'Auto Download';
         await configRepository.setString('autoUpdateVRCX', autoUpdateMode);
     }
 
     if (autoUpdateMode !== 'Off') {
-        const available = await backend.app.CheckForUpdateExe().catch(() => false);
+        const available = await backend.app
+            .CheckForUpdateExe()
+            .catch(() => false);
         if (available) {
             useNotificationStore.getState().pushNotification({
                 level: 'info',
@@ -654,8 +764,13 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
             useRuntimeStore.getState().setSystemHostOpen('updaterOpen', true);
         } else {
             try {
-                const savedBranch = await configRepository.getString('branch', '');
-                const branch = sanitizeBranch(savedBranch || defaultBranchForVersion(VERSION || ''));
+                const savedBranch = await configRepository.getString(
+                    'branch',
+                    ''
+                );
+                const branch = sanitizeBranch(
+                    savedBranch || defaultBranchForVersion(VERSION || '')
+                );
                 if (branch !== savedBranch) {
                     await configRepository.setString('branch', branch);
                 }
@@ -663,9 +778,15 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                 const latestRelease = await fetchLatestBranchRelease(branch);
                 if (
                     latestRelease &&
-                    hasUpdateForBranch(branch, VERSION || '', latestRelease.canonicalVersion)
+                    hasUpdateForBranch(
+                        branch,
+                        VERSION || '',
+                        latestRelease.canonicalVersion
+                    )
                 ) {
-                    const displayVersion = formatReleaseDisplayVersion(latestRelease.canonicalVersion);
+                    const displayVersion = formatReleaseDisplayVersion(
+                        latestRelease.canonicalVersion
+                    );
                     useNotificationStore.getState().pushNotification({
                         level: 'info',
                         title: 'VRCX update available',
@@ -680,7 +801,8 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                         await downloadUpdateAndWait(latestRelease, {
                             onProgress: (progress) => {
                                 useRuntimeStore.getState().setUpdateLoopState({
-                                    lastUpdaterCheckAt: new Date().toISOString(),
+                                    lastUpdaterCheckAt:
+                                        new Date().toISOString(),
                                     lastUpdaterCheckDetail: `Downloading ${displayVersion}: ${progress}%`
                                 });
                             }
@@ -690,14 +812,17 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                             title: 'VRCX update downloaded',
                             message: `Version ${displayVersion} is ready to install.`
                         });
-                        useRuntimeStore.getState().setSystemHostOpen('updaterOpen', true);
+                        useRuntimeStore
+                            .getState()
+                            .setSystemHostOpen('updaterOpen', true);
                     }
                 }
             } catch (error) {
                 console.warn('Failed to check for VRCX updates:', error);
                 useRuntimeStore.getState().setUpdateLoopState({
                     lastUpdaterCheckAt: new Date().toISOString(),
-                    lastUpdaterCheckDetail: error instanceof Error ? error.message : String(error)
+                    lastUpdaterCheckDetail:
+                        error instanceof Error ? error.message : String(error)
                 });
             }
         }

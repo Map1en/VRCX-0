@@ -14,21 +14,14 @@ describe('favorite export helpers', () => {
     });
 
     it('returns friend export fields for friends and entity fields for worlds or avatars', () => {
-        expect(getFavoriteExportFieldOptions('friend').map((option) => option.value)).toEqual([
-            'id',
-            'name',
-            'status',
-            'group',
-            'source'
-        ]);
-        expect(getFavoriteExportFieldOptions('world').map((option) => option.value)).toEqual([
-            'id',
-            'name',
-            'author',
-            'thumbnail',
-            'group',
-            'source'
-        ]);
+        expect(
+            getFavoriteExportFieldOptions('friend').map(
+                (option) => option.value
+            )
+        ).toEqual(['id', 'name', 'status', 'group', 'source']);
+        expect(
+            getFavoriteExportFieldOptions('world').map((option) => option.value)
+        ).toEqual(['id', 'name', 'author', 'thumbnail', 'group', 'source']);
     });
 
     it('exports favorite friends with user-facing labels and CSV escaping', () => {

@@ -67,7 +67,9 @@ describe('gameLogRows', () => {
                 location: 'wrld_direct:456'
             })
         ).toBe('wrld_direct:456');
-        expect(resolveGameLogWorldId({ worldId: 'wrld_only' })).toBe('wrld_only');
+        expect(resolveGameLogWorldId({ worldId: 'wrld_only' })).toBe(
+            'wrld_only'
+        );
         expect(
             getGameLogLocationTarget({
                 type: 'PortalSpawn',
@@ -75,12 +77,12 @@ describe('gameLogRows', () => {
                 location: 'wrld_fallback:456'
             })
         ).toBe('wrld_portal:123');
-        expect(shouldLinkGameLogPrimaryDetailToWorld({ type: 'Location' })).toBe(
-            true
-        );
-        expect(shouldLinkGameLogPrimaryDetailToWorld({ type: 'VideoPlay' })).toBe(
-            false
-        );
+        expect(
+            shouldLinkGameLogPrimaryDetailToWorld({ type: 'Location' })
+        ).toBe(true);
+        expect(
+            shouldLinkGameLogPrimaryDetailToWorld({ type: 'VideoPlay' })
+        ).toBe(false);
     });
 
     it('chooses copy and external-link targets that match the row action menu', () => {
@@ -105,18 +107,18 @@ describe('gameLogRows', () => {
             })
         ).toBe('https://cdn.example.test/image.png');
 
-        expect(getGameLogCopyTarget({ type: 'Event', data: 'Joined lobby' })).toBe(
-            'Joined lobby'
-        );
+        expect(
+            getGameLogCopyTarget({ type: 'Event', data: 'Joined lobby' })
+        ).toBe('Joined lobby');
         expect(
             getGameLogCopyTarget({
                 type: 'VideoPlay',
                 videoName: 'Fallback video'
             })
         ).toBe('Fallback video');
-        expect(getGameLogCopyTarget({ type: 'OnPlayerLeft', message: 'left' })).toBe(
-            ''
-        );
+        expect(
+            getGameLogCopyTarget({ type: 'OnPlayerLeft', message: 'left' })
+        ).toBe('');
     });
 
     it('keeps only actionable rows deletable and gives rows stable keys', () => {
@@ -165,7 +167,12 @@ describe('gameLogRows', () => {
 
         expect(annotated.isFriend).toBe(true);
         expect(annotated.isFavorite).toBe(false);
-        expect(annotated.members.map((member) => [member.isFavorite, member.isFriend])).toEqual([
+        expect(
+            annotated.members.map((member) => [
+                member.isFavorite,
+                member.isFriend
+            ])
+        ).toEqual([
             [true, false],
             [false, true],
             [false, false]
@@ -184,14 +191,13 @@ describe('gameLogRows', () => {
         ).toBe(3);
         expect(
             countGameLogSessionEvent(
-                [
-                    { type: 'LeftGroup', count: 3 },
-                    { type: 'OnPlayerLeft' }
-                ],
+                [{ type: 'LeftGroup', count: 3 }, { type: 'OnPlayerLeft' }],
                 'OnPlayerLeft'
             )
         ).toBe(4);
-        expect(resolveGameLogSessionDuration({ duration: 120000 })).toBe(120000);
+        expect(resolveGameLogSessionDuration({ duration: 120000 })).toBe(
+            120000
+        );
         expect(resolveGameLogSessionDuration({ duration: -1 })).toBe(0);
     });
 });

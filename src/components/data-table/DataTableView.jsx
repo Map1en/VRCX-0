@@ -1,9 +1,4 @@
 import {
-    flexRender,
-    getCoreRowModel,
-    useReactTable
-} from '@tanstack/react-table';
-import {
     DndContext,
     KeyboardSensor,
     PointerSensor,
@@ -17,16 +12,14 @@ import {
     horizontalListSortingStrategy,
     sortableKeyboardCoordinates
 } from '@dnd-kit/sortable';
+import {
+    flexRender,
+    getCoreRowModel,
+    useReactTable
+} from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils.js';
-import { ResizableTableHead } from './ResizableTableParts.jsx';
-import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu.jsx';
-import {
-    getColumnOrder,
-    getColumnOrderLocked,
-    getReorderableColumnIds
-} from './tableColumnLayout.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -49,6 +42,14 @@ import {
     TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
+
+import { ResizableTableHead } from './ResizableTableParts.jsx';
+import {
+    getColumnOrder,
+    getColumnOrderLocked,
+    getReorderableColumnIds
+} from './tableColumnLayout.js';
+import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu.jsx';
 
 function moveColumnByDrag(table, activeId, overId) {
     if (!activeId || !overId || activeId === overId) {
@@ -75,7 +76,10 @@ export function DataTableHeader({
 }) {
     const columnOrderLocked = getColumnOrderLocked(table);
     const reorderableColumnIds = getReorderableColumnIds(table);
-    const canReorder = enableColumnReorder && !columnOrderLocked && reorderableColumnIds.length > 1;
+    const canReorder =
+        enableColumnReorder &&
+        !columnOrderLocked &&
+        reorderableColumnIds.length > 1;
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -105,7 +109,10 @@ export function DataTableHeader({
     );
 
     const headerWithMenu = (
-        <TableColumnHeaderContextMenu table={table} onResetLayout={onResetLayout}>
+        <TableColumnHeaderContextMenu
+            table={table}
+            onResetLayout={onResetLayout}
+        >
             {tableHeader}
         </TableColumnHeaderContextMenu>
     );
@@ -125,10 +132,12 @@ export function DataTableHeader({
             collisionDetection={closestCenter}
             onDragEnd={(event) => {
                 moveColumnByDrag(table, event.active?.id, event.over?.id);
-            }}>
+            }}
+        >
             <SortableContext
                 items={reorderableColumnIds}
-                strategy={horizontalListSortingStrategy}>
+                strategy={horizontalListSortingStrategy}
+            >
                 {headerWithMenu}
             </SortableContext>
         </DndContext>
@@ -139,9 +148,10 @@ export function DataTableSurface({ className = '', children }) {
     return (
         <div
             className={cn(
-                'app-data-table min-h-0 min-w-0 flex-1 overflow-hidden rounded-md border bg-background',
+                'app-data-table bg-background min-h-0 min-w-0 flex-1 overflow-hidden rounded-md border',
                 className
-            )}>
+            )}
+        >
             {children}
         </div>
     );
@@ -160,7 +170,11 @@ export function DataTableEmptyRow({ colSpan = 1, className = '', children }) {
         <TableRow>
             <TableCell
                 colSpan={colSpan}
-                className={cn('h-24 text-center text-muted-foreground', className)}>
+                className={cn(
+                    'text-muted-foreground h-24 text-center',
+                    className
+                )}
+            >
                 {children}
             </TableCell>
         </TableRow>
@@ -182,7 +196,7 @@ export function DataTablePagination({
 }) {
     const resolvedPageIndex = Number.isFinite(pageIndex)
         ? pageIndex
-        : table?.getState?.().pagination?.pageIndex ?? 0;
+        : (table?.getState?.().pagination?.pageIndex ?? 0);
     const resolvedPageCount = Math.max(
         1,
         Number.isFinite(pageCount) ? pageCount : table?.getPageCount?.() || 1
@@ -205,8 +219,13 @@ export function DataTablePagination({
         <div className={cn('flex flex-wrap items-center gap-2', className)}>
             {pageSizeSelectVisible ? (
                 <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">{pageSizeLabel}</span>
-                    <Select value={String(resolvedPageSize)} onValueChange={onPageSizeChange}>
+                    <span className="text-muted-foreground text-sm">
+                        {pageSizeLabel}
+                    </span>
+                    <Select
+                        value={String(resolvedPageSize)}
+                        onValueChange={onPageSizeChange}
+                    >
                         <SelectTrigger size="sm" className="w-20">
                             <SelectValue placeholder={pageSizeLabel} />
                         </SelectTrigger>
@@ -231,7 +250,8 @@ export function DataTablePagination({
                             size="sm"
                             aria-label={previousLabel}
                             disabled={!table?.getCanPreviousPage?.()}
-                            onClick={() => table?.previousPage?.()}>
+                            onClick={() => table?.previousPage?.()}
+                        >
                             <ChevronLeftIcon data-icon="inline-start" />
                             {previousLabel}
                         </Button>
@@ -248,7 +268,8 @@ export function DataTablePagination({
                             size="sm"
                             aria-label={nextLabel}
                             disabled={!table?.getCanNextPage?.()}
-                            onClick={() => table?.nextPage?.()}>
+                            onClick={() => table?.nextPage?.()}
+                        >
                             {nextLabel}
                             <ChevronRightIcon data-icon="inline-end" />
                         </Button>
@@ -260,7 +281,11 @@ export function DataTablePagination({
     );
 }
 
-export function DataTableView({ columns = [], data = [], emptyLabel = 'No rows yet.' }) {
+export function DataTableView({
+    columns = [],
+    data = [],
+    emptyLabel = 'No rows yet.'
+}) {
     const table = useReactTable({
         columns,
         data,
@@ -286,7 +311,9 @@ export function DataTableView({ columns = [], data = [], emptyLabel = 'No rows y
                             </TableRow>
                         ))
                     ) : (
-                        <DataTableEmptyRow colSpan={table.getVisibleLeafColumns().length || 1}>
+                        <DataTableEmptyRow
+                            colSpan={table.getVisibleLeafColumns().length || 1}
+                        >
                             {emptyLabel}
                         </DataTableEmptyRow>
                     )}

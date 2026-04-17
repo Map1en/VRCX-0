@@ -87,13 +87,13 @@ function resolveTrayIconNotify(state) {
     if (state.notificationLayout === 'notification-center') {
         return Boolean(
             hasUnreadVrcNotifications ||
-                state.notifiedMenus.includes('friend-log')
+            state.notifiedMenus.includes('friend-log')
         );
     }
     return Boolean(
         hasUnreadVrcNotifications ||
-            state.notifiedMenus.includes('notification') ||
-            state.notifiedMenus.includes('friend-log')
+        state.notifiedMenus.includes('notification') ||
+        state.notifiedMenus.includes('friend-log')
     );
 }
 
@@ -134,7 +134,10 @@ export const useShellStore = create((set, get) => ({
         set({ notificationIconDot: Boolean(notificationIconDot) });
         get().updateTrayIconNotification(true);
     },
-    setAppearancePreferences({ displayVRCPlusIconsAsAvatar, hideNicknames } = {}) {
+    setAppearancePreferences({
+        displayVRCPlusIconsAsAvatar,
+        hideNicknames
+    } = {}) {
         set((state) => ({
             displayVRCPlusIconsAsAvatar:
                 displayVRCPlusIconsAsAvatar === undefined
@@ -167,7 +170,9 @@ export const useShellStore = create((set, get) => ({
     setVrcUnseenNotificationCount(unseenCount) {
         const nextCount = Number.parseInt(unseenCount, 10);
         set({
-            vrcUnseenNotificationCount: Number.isFinite(nextCount) ? nextCount : 0
+            vrcUnseenNotificationCount: Number.isFinite(nextCount)
+                ? nextCount
+                : 0
         });
         get().updateTrayIconNotification();
     },
@@ -177,19 +182,21 @@ export const useShellStore = create((set, get) => ({
             return;
         }
         set({ trayIconNotify: nextTrayIconNotify });
-        void backend.app.SetTrayIconNotification(nextTrayIconNotify).catch(() => {});
+        void backend.app
+            .SetTrayIconNotification(nextTrayIconNotify)
+            .catch(() => {});
     },
     notifyMenu(index) {
         if (!index) {
             return;
         }
-        set((state) => (
+        set((state) =>
             isCurrentMenuRoute(index) || state.notifiedMenus.includes(index)
                 ? {}
                 : {
                       notifiedMenus: [...state.notifiedMenus, index]
                   }
-        ));
+        );
         get().updateTrayIconNotification();
     },
     removeNotify(index) {

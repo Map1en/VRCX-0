@@ -1,6 +1,8 @@
 function normalizeUserTablePrefix(userId) {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     if (!normalizedUserId) {
         throw new Error('User table prefix requires a user id.');
     }
@@ -21,9 +23,10 @@ function buildUserTableName(userIdOrPrefix, suffix) {
         typeof userIdOrPrefix === 'string'
             ? userIdOrPrefix.trim()
             : String(userIdOrPrefix ?? '').trim();
-    const tablePrefix = /^[A-Za-z][A-Za-z0-9]*$/.test(value) || /^_[A-Za-z0-9]+$/.test(value)
-        ? value
-        : normalizeUserTablePrefix(value);
+    const tablePrefix =
+        /^[A-Za-z][A-Za-z0-9]*$/.test(value) || /^_[A-Za-z0-9]+$/.test(value)
+            ? value
+            : normalizeUserTablePrefix(value);
     if (!/^[A-Za-z_][A-Za-z0-9]*$/.test(tablePrefix)) {
         throw new Error('User table prefix contains invalid characters.');
     }
