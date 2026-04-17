@@ -1,18 +1,11 @@
 import { cloneElement, isValidElement, useEffect, useMemo, useState } from 'react';
-import { ArrowDownIcon, ArrowUpIcon, BellIcon, ChevronDownIcon, RefreshCwIcon, SearchIcon, SettingsIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, RefreshCwIcon, SettingsIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
-import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuGroup,
-    ContextMenuItem,
-    ContextMenuTrigger
-} from '@/ui/shadcn/context-menu';
 import {
     Dialog,
     DialogContent,
@@ -36,15 +29,10 @@ import { bootstrapFavorites } from '@/services/favoriteBootstrapService.js';
 import { bootstrapFriendRoster } from '@/services/friendBootstrapService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
-import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { useSessionStore } from '@/state/sessionStore.js';
-import { useShellStore } from '@/state/shellStore.js';
-import { usePreferencesStore } from '@/state/preferencesStore.js';
 
 import { FriendsSidebar } from './FriendsSidebar.jsx';
 import { GroupsSidebar } from './GroupsSidebar.jsx';
-import { QuickSearchDialog } from './QuickSearchDialog.jsx';
 
 const sortOptions = [
     ['Sort Alphabetically', 'view.settings.appearance.side_panel.sorting.alphabetical'],
@@ -147,31 +135,15 @@ export function SidePanel({ className = '', style = undefined }) {
     const favoriteFriendGroups = useFavoriteStore((state) => state.favoriteFriendGroups);
     const localFriendFavoriteGroups = useFavoriteStore((state) => state.localFriendFavoriteGroups);
     const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
-    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
     const groupInstances = groupInstancesState.endpoint === currentEndpoint ? groupInstancesState.instances : [];
-    const sessionPhase = useSessionStore((state) => state.sessionPhase);
-    const vrcUnseenNotificationCount = useVrcNotificationStore((state) => state.unseenCount);
-    const openVrcNotificationCenter = useVrcNotificationStore((state) => state.openCenter);
-    const markAllVrcNotificationsSeen = useVrcNotificationStore((state) => state.markAllSeen);
-    const loadVrcNotifications = useVrcNotificationStore((state) => state.loadForCurrentUser);
-    const removeNavNotification = useShellStore((state) => state.removeNotify);
-    const notificationLayout = usePreferencesStore((state) => state.notificationLayout);
     const [activeTab, setActiveTab] = useState('friends');
     const [prefs, setPrefs] = useState(defaultPrefs);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [favoriteGroupOrderDialogOpen, setFavoriteGroupOrderDialogOpen] = useState(false);
     const [favoriteGroupOrderDraft, setFavoriteGroupOrderDraft] = useState([]);
-    const [quickSearchOpen, setQuickSearchOpen] = useState(false);
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const totalFriendCount = Object.keys(friendsById || {}).length;
-
-    useEffect(() => {
-        if (sessionPhase !== 'ready' || !currentUserId) {
-            return;
-        }
-        void loadVrcNotifications().catch(() => {});
-    }, [currentUserId, loadVrcNotifications, sessionPhase]);
 
     useEffect(() => {
         let active = true;
@@ -218,18 +190,6 @@ export function SidePanel({ className = '', style = undefined }) {
         return () => {
             active = false;
         };
-    }, []);
-
-    useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') {
-                return;
-            }
-            event.preventDefault();
-            setQuickSearchOpen(true);
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     const tabItems = useMemo(
@@ -392,19 +352,7 @@ export function SidePanel({ className = '', style = undefined }) {
 
     return (
         <aside className={cn('flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l bg-background', className)} style={style}>
-            <div className="flex shrink-0 items-center gap-1 px-2 py-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 min-w-0 flex-1 justify-start gap-2 px-3 text-left font-normal"
-                    onClick={() => setQuickSearchOpen(true)}>
-                    <SearchIcon data-icon="inline-start" className="opacity-50" />
-                    <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                        {t('side_panel.search_placeholder')}
-                    </span>
-                    <span className="rounded border px-1 text-xs text-muted-foreground">Ctrl</span>
-                    <span className="rounded border px-1 text-xs text-muted-foreground">K</span>
-                </Button>
+            <div className="flex shrink-0 items-center justify-end gap-1 px-2 py-2">
                 <Button
                     type="button"
                     variant="ghost"
@@ -417,56 +365,6 @@ export function SidePanel({ className = '', style = undefined }) {
                     title={t('side_panel.refresh_tooltip')}>
                     {isRefreshing ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
                 </Button>
-                {notificationLayout !== 'table' ? (
-                    vrcUnseenNotificationCount ? (
-                        <ContextMenu>
-                            <ContextMenuTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="relative"
-                                    aria-label={t('side_panel.notification_center.title')}
-                                    onClick={() => openVrcNotificationCenter()}
-                                    title={t('side_panel.notification_center.title')}>
-                                    <BellIcon data-icon="inline-start" />
-                                    <span className="absolute right-2 top-2 size-1.5 rounded-full bg-destructive" />
-                                </Button>
-                            </ContextMenuTrigger>
-                            <ContextMenuContent className="w-48">
-                                <ContextMenuGroup>
-                                    <ContextMenuItem
-                                        onSelect={() => {
-                                            void markAllVrcNotificationsSeen()
-                                                .then(() => {
-                                                    removeNavNotification('notification');
-                                                })
-                                                .catch((error) => {
-                                                    toast.error(error instanceof Error ? error.message : 'Failed to mark notifications as seen.');
-                                                });
-                                        }}>
-                                        {t('nav_menu.mark_all_read')}
-                                    </ContextMenuItem>
-                                </ContextMenuGroup>
-                            </ContextMenuContent>
-                        </ContextMenu>
-                    ) : (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="relative size-8 rounded-full"
-                            aria-label={t('side_panel.notification_center.title')}
-                            onClick={() => openVrcNotificationCenter()}
-                            onContextMenu={(event) => {
-                                event.preventDefault();
-                                toast.info(t('side_panel.notification_center.no_unseen_notifications'));
-                            }}
-                            title={t('side_panel.notification_center.title')}>
-                            <BellIcon data-icon="inline-start" />
-                        </Button>
-                    )
-                ) : null}
                 <Popover>
                     <PopoverTrigger asChild>
                         <Button type="button" variant="ghost" size="icon" className="size-8 rounded-full" aria-label="Side panel settings">
@@ -647,7 +545,6 @@ export function SidePanel({ className = '', style = undefined }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            <QuickSearchDialog open={quickSearchOpen} onOpenChange={setQuickSearchOpen} />
         </aside>
     );
 }
