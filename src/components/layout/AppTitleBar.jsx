@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     BellIcon,
+    CopyIcon,
     MinusIcon,
     PanelRightCloseIcon,
     PanelRightOpenIcon,
     SearchIcon,
     SquareIcon,
-    SquareStackIcon,
     XIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -47,7 +47,7 @@ function TitleBarButton({ label, className, children, onClick, ...props }) {
         <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
+            size="icon-xs"
             aria-label={label}
             title={label}
             className={cn('h-7 w-9 rounded-none border-0', className)}
@@ -142,7 +142,7 @@ export function AppTitleBar() {
         void runWindowAction(backend.webview.toggleMaximizeWindow);
     }
 
-    const MaximizeIcon = isMaximized ? SquareStackIcon : SquareIcon;
+    const MaximizeIcon = isMaximized ? CopyIcon : SquareIcon;
     const maximizeLabel = isMaximized ? 'Restore window' : 'Maximize window';
     const titleBarActionsVisible = isSessionReady;
     const notificationActionVisible = titleBarActionsVisible && notificationLayout !== 'table';
