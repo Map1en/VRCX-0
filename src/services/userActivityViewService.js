@@ -5,6 +5,25 @@ import { runActivityWorkerTask } from '@/workers/activityWorkerRunner.js';
 const snapshotMap = new Map();
 const inFlightJobs = new Map();
 const FULL_CACHE_MAX_DAYS = 3650;
+const MAX_SNAPSHOT_ENTRIES = 12;
+let deferredWriteQueue = Promise.resolve();
+
+function deferWrite(task) {
+    const run = () => {
+        deferredWriteQueue = deferredWriteQueue
+            .catch(() => {})
+            .then(task)
+            .catch((error) => {
+                console.error('[Activity] deferred write failed:', error);
+            });
+        return deferredWriteQueue;
+    };
+    if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(run);
+        return;
+    }
+    setTimeout(run, 0);
+}
 
 function snapshotKey(userId, isSelf, ownerUserId = '') {
     return `${String(ownerUserId || '').trim()}:${isSelf ? 'self' : 'friend'}:${String(userId || '').trim()}`;
@@ -23,7 +42,9 @@ function createSnapshot(userId, isSelf) {
             cachedRangeDays: 0,
             ownerUserId: ''
         },
-        sessions: []
+        sessions: [],
+        activityViews: new Map(),
+        overlapViews: new Map()
     };
 }
 
@@ -39,7 +60,58 @@ function getSnapshot(userId, isSelf, ownerUserId = '') {
         snapshot.sync.isSelf = isSelf;
     }
     snapshot.sync.ownerUserId = String(ownerUserId || '').trim();
+    touchSnapshot(key, snapshot);
+    pruneSnapshots();
     return snapshot;
+}
+
+function touchSnapshot(key, snapshot) {
+    snapshotMap.delete(key);
+    snapshotMap.set(key, snapshot);
+}
+
+function isSnapshotInFlight(key) {
+    const [ownerUserId, role, userId] = key.split(':');
+    const isSelf = role === 'self';
+    const jobPrefix = `${ownerUserId || ''}:${userId || ''}:${isSelf}:`;
+    for (const jobKey of inFlightJobs.keys()) {
+        if (jobKey.startsWith(jobPrefix)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function pruneSnapshots() {
+    if (snapshotMap.size <= MAX_SNAPSHOT_ENTRIES) {
+        return;
+    }
+
+    for (const [key] of snapshotMap) {
+        if (isSnapshotInFlight(key)) {
+            continue;
+        }
+        snapshotMap.delete(key);
+        if (snapshotMap.size <= MAX_SNAPSHOT_ENTRIES) {
+            break;
+        }
+    }
+}
+
+function clearDerivedViews(snapshot) {
+    snapshot.activityViews.clear();
+    snapshot.overlapViews.clear();
+}
+
+function overlapExcludeKey(excludeHours) {
+    if (!excludeHours?.enabled) {
+        return '';
+    }
+    return `${excludeHours.startHour}-${excludeHours.endHour}`;
+}
+
+function pairCursor(leftCursor, rightCursor) {
+    return `${leftCursor || ''}|${rightCursor || ''}`;
 }
 
 async function hydrateSnapshot(userId, isSelf, ownerUserId = '') {
@@ -102,6 +174,7 @@ async function fullRefresh(snapshot, rangeDays) {
         pendingSessionStartAt: result.pendingSessionStartAt,
         cachedRangeDays: rangeDays
     };
+    clearDerivedViews(snapshot);
 
     if (snapshot.isSelf) {
         await database.replaceActivitySessionsV2(snapshot.userId, snapshot.sessions);
@@ -151,6 +224,7 @@ async function incrementalRefresh(snapshot) {
         sourceLastCreatedAt,
         pendingSessionStartAt: result.pendingSessionStartAt
     };
+    clearDerivedViews(snapshot);
 
     if (snapshot.isSelf) {
         await database.appendActivitySessionsV2({
@@ -195,6 +269,7 @@ async function expandRange(snapshot, rangeDays) {
     }
     snapshot.sync.cachedRangeDays = rangeDays;
     snapshot.sync.updatedAt = new Date().toISOString();
+    clearDerivedViews(snapshot);
     if (snapshot.isSelf) {
         await database.upsertActivitySyncStateV2(snapshot.sync);
     }
@@ -270,12 +345,81 @@ async function getCache(userId, isSelf = false, ownerUserId = '') {
 
 async function loadActivityView({ userId, ownerUserId = '', isSelf = false, rangeDays = 30, dayLabels, forceRefresh = false }) {
     const snapshot = await ensureSnapshot(userId, { isSelf, rangeDays, forceRefresh, ownerUserId });
-    const view = await runActivityWorkerTask('computeActivityView', {
+    const cacheOwnerUserId = ownerUserId || userId;
+    const cacheTargetUserId = isSelf ? '' : userId;
+    const cacheKey = String(rangeDays);
+    const currentCursor = snapshot.sync.sourceLastCreatedAt || '';
+    let view = snapshot.activityViews.get(cacheKey);
+
+    if (!forceRefresh && view?.builtFromCursor === currentCursor) {
+        return {
+            hasAnyData: snapshot.sessions.length > 0,
+            filteredEventCount: view.filteredEventCount,
+            peakDay: view.peakDay,
+            peakTime: view.peakTime,
+            rawBuckets: view.rawBuckets,
+            normalizedBuckets: view.normalizedBuckets
+        };
+    }
+
+    if (!forceRefresh && cacheOwnerUserId) {
+        const persisted = await database.getActivityBucketCacheV2({
+            ownerUserId: cacheOwnerUserId,
+            targetUserId: cacheTargetUserId,
+            rangeDays,
+            viewKind: database.ACTIVITY_VIEW_KIND.ACTIVITY
+        });
+        if (persisted?.builtFromCursor === currentCursor) {
+            view = {
+                ...persisted.summary,
+                rawBuckets: persisted.rawBuckets,
+                normalizedBuckets: persisted.normalizedBuckets,
+                builtFromCursor: persisted.builtFromCursor,
+                builtAt: persisted.builtAt
+            };
+            snapshot.activityViews.set(cacheKey, view);
+            return {
+                hasAnyData: snapshot.sessions.length > 0,
+                filteredEventCount: view.filteredEventCount,
+                peakDay: view.peakDay,
+                peakTime: view.peakTime,
+                rawBuckets: view.rawBuckets,
+                normalizedBuckets: view.normalizedBuckets
+            };
+        }
+    }
+
+    const computed = await runActivityWorkerTask('computeActivityView', {
         sessions: snapshot.sessions,
         dayLabels,
         rangeDays,
         normalizeConfig: pickActivityNormalizeConfig(isSelf, rangeDays)
     });
+    view = {
+        ...computed,
+        builtFromCursor: currentCursor,
+        builtAt: new Date().toISOString()
+    };
+    snapshot.activityViews.set(cacheKey, view);
+    if (cacheOwnerUserId) {
+        deferWrite(() =>
+            database.upsertActivityBucketCacheV2({
+                ownerUserId: cacheOwnerUserId,
+                targetUserId: cacheTargetUserId,
+                rangeDays,
+                viewKind: database.ACTIVITY_VIEW_KIND.ACTIVITY,
+                builtFromCursor: currentCursor,
+                rawBuckets: view.rawBuckets,
+                normalizedBuckets: view.normalizedBuckets,
+                summary: {
+                    peakDay: view.peakDay,
+                    peakTime: view.peakTime,
+                    filteredEventCount: view.filteredEventCount
+                },
+                builtAt: view.builtAt
+            })
+        );
+    }
 
     return {
         hasAnyData: snapshot.sessions.length > 0,
@@ -300,7 +444,52 @@ async function loadOverlapView({
         ensureSnapshot(currentUserId, { isSelf: true, rangeDays, forceRefresh, ownerUserId }),
         ensureSnapshot(targetUserId, { isSelf: false, rangeDays, forceRefresh, ownerUserId })
     ]);
-    const view = await runActivityWorkerTask('computeOverlapView', {
+    const excludeKey = overlapExcludeKey(excludeHours);
+    const cacheKey = `${targetUserId}:${rangeDays}:${excludeKey}`;
+    const cursor = pairCursor(
+        selfSnapshot.sync.sourceLastCreatedAt,
+        targetSnapshot.sync.sourceLastCreatedAt
+    );
+    let view = targetSnapshot.overlapViews.get(cacheKey);
+
+    if (!forceRefresh && view?.builtFromCursor === cursor) {
+        return {
+            hasOverlapData: view.rawBuckets.some((value) => value > 0),
+            overlapPercent: view.overlapPercent,
+            bestOverlapTime: view.bestOverlapTime,
+            rawBuckets: view.rawBuckets,
+            normalizedBuckets: view.normalizedBuckets
+        };
+    }
+
+    if (!forceRefresh && ownerUserId) {
+        const persisted = await database.getActivityBucketCacheV2({
+            ownerUserId,
+            targetUserId,
+            rangeDays,
+            viewKind: database.ACTIVITY_VIEW_KIND.OVERLAP,
+            excludeKey
+        });
+        if (persisted?.builtFromCursor === cursor) {
+            view = {
+                ...persisted.summary,
+                rawBuckets: persisted.rawBuckets,
+                normalizedBuckets: persisted.normalizedBuckets,
+                builtFromCursor: persisted.builtFromCursor,
+                builtAt: persisted.builtAt
+            };
+            targetSnapshot.overlapViews.set(cacheKey, view);
+            return {
+                hasOverlapData: view.rawBuckets.some((value) => value > 0),
+                overlapPercent: view.overlapPercent,
+                bestOverlapTime: view.bestOverlapTime,
+                rawBuckets: view.rawBuckets,
+                normalizedBuckets: view.normalizedBuckets
+            };
+        }
+    }
+
+    view = await runActivityWorkerTask('computeOverlapView', {
         selfSessions: selfSnapshot.sessions,
         targetSessions: targetSnapshot.sessions,
         dayLabels,
@@ -308,6 +497,31 @@ async function loadOverlapView({
         excludeHours: excludeHours?.enabled ? excludeHours : null,
         normalizeConfig: pickOverlapNormalizeConfig(rangeDays)
     });
+    view = {
+        ...view,
+        builtFromCursor: cursor,
+        builtAt: new Date().toISOString()
+    };
+    targetSnapshot.overlapViews.set(cacheKey, view);
+    if (ownerUserId) {
+        deferWrite(() =>
+            database.upsertActivityBucketCacheV2({
+                ownerUserId,
+                targetUserId,
+                rangeDays,
+                viewKind: database.ACTIVITY_VIEW_KIND.OVERLAP,
+                excludeKey,
+                builtFromCursor: cursor,
+                rawBuckets: view.rawBuckets,
+                normalizedBuckets: view.normalizedBuckets,
+                summary: {
+                    overlapPercent: view.overlapPercent,
+                    bestOverlapTime: view.bestOverlapTime
+                },
+                builtAt: view.builtAt
+            })
+        );
+    }
 
     return {
         hasOverlapData: view.rawBuckets.some((value) => value > 0),

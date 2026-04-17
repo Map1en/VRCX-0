@@ -111,6 +111,7 @@ export function LocationWorld({
     endpoint = '',
     hint = '',
     interactive = true,
+    instanceClickAction = 'launch',
     className = ''
 }) {
     const { t } = useI18n();
@@ -173,13 +174,16 @@ export function LocationWorld({
             return;
         }
         const launchTag = launchTagForLocationObject(locObj);
-        if (locObj.isRealInstance && launchTag) {
+        if (locObj.isRealInstance && launchTag && instanceClickAction === 'launch') {
             showLaunchDialog(launchTag, locObj.shortName || '', locObj.launchToken || locObj.shortName || '', {
                 worldName
             });
             return;
         }
-        openWorldDialog({ worldId: dialogTarget, title: worldName || undefined });
+        openWorldDialog({
+            worldId: locObj.isRealInstance && launchTag ? launchTag : dialogTarget,
+            title: worldName || undefined
+        });
     }
 
     if (locObj.isOffline || locObj.isPrivate || (locObj.isTraveling && !locObj.worldId)) {

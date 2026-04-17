@@ -1712,6 +1712,7 @@ export function UserDialogTabbedView({
                                         capacity={locationInstance?.capacity ?? locationInstance?.recommendedCapacity}
                                         endpoint={currentEndpoint}
                                         hint={locationWorldTitle}
+                                        instanceClickAction="world"
                                     />
                                 ) : (
                                     <Location
