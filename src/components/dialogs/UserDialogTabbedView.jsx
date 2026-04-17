@@ -1389,7 +1389,6 @@ export function UserDialogTabbedView({
                     <>
                         {statusStateText ? <Badge variant="outline" title={statusStateText}>{statusStateText}</Badge> : null}
                         {pronounsText ? <Badge variant="outline">{pronounsText}</Badge> : null}
-                        {isCurrentUser ? <Badge>Current</Badge> : null}
                         {isFriend ? <Badge variant="secondary">Friend</Badge> : null}
                         {isFavorite ? (
                             <Badge>

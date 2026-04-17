@@ -969,9 +969,6 @@ export function PlayerListPage({ embedded = false } = {}) {
                         {row.original.isModerator ? (
                             <span title="Moderator">⚔️</span>
                         ) : null}
-                        {row.original.isCurrentUser ? (
-                            <span title="Current user">👤</span>
-                        ) : null}
                         {row.original.isFavorite ? (
                             <span title="Favorite">⭐</span>
                         ) : null}
