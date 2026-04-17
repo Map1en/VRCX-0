@@ -96,7 +96,7 @@ export function AppMenuBar({
             <Menubar className="h-7 border-0 bg-transparent p-0 shadow-none">
                 <MenubarMenu>
                     <MenubarTrigger className="h-7 rounded px-2 py-0 text-xs">
-                        {t('app_menu.vrcx')}
+                        {t('app_menu.app')}
                     </MenubarTrigger>
                     <MenubarContent align="start">
                         <MenubarGroup>

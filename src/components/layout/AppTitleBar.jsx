@@ -32,6 +32,16 @@ import { cn } from '@/lib/utils.js';
 import { AppMenuBar } from './AppMenuBar.jsx';
 import { shouldShowSidePanel } from './sidePanelRoutes.js';
 
+const TITLE_BAR_INTERACTIVE_SELECTOR = [
+    'button',
+    'a',
+    'input',
+    'textarea',
+    'select',
+    '[role="button"]',
+    '[data-titlebar-interactive="true"]'
+].join(',');
+
 function TitleBarButton({ label, className, children, onClick, ...props }) {
     return (
         <Button
@@ -106,6 +116,32 @@ export function AppTitleBar() {
         }
     }
 
+    function isTitleBarDragTarget(event) {
+        if (event.defaultPrevented || event.button !== 0) {
+            return false;
+        }
+
+        return !event.target.closest(TITLE_BAR_INTERACTIVE_SELECTOR);
+    }
+
+    function handleTitleBarMouseDown(event) {
+        if (!isTitleBarDragTarget(event) || event.detail > 1) {
+            return;
+        }
+
+        void backend.webview.startDraggingWindow().catch((error) => {
+            console.warn('Window drag action failed:', error);
+        });
+    }
+
+    function handleTitleBarDoubleClick(event) {
+        if (!isTitleBarDragTarget(event)) {
+            return;
+        }
+
+        void runWindowAction(backend.webview.toggleMaximizeWindow);
+    }
+
     const MaximizeIcon = isMaximized ? SquareStackIcon : SquareIcon;
     const maximizeLabel = isMaximized ? 'Restore window' : 'Maximize window';
     const titleBarActionsVisible = isSessionReady;
@@ -147,26 +183,25 @@ export function AppTitleBar() {
         <>
             <header
                 className="relative z-[60] flex h-8 shrink-0 select-none items-center border-b bg-background text-foreground">
-                <div className="flex min-w-0 flex-1 items-center gap-2 px-3">
+                <div
+                    className="flex h-full min-w-0 flex-1 items-center gap-2 px-3"
+                    onMouseDown={handleTitleBarMouseDown}
+                    onDoubleClick={handleTitleBarDoubleClick}>
+                    <span className="shrink-0 text-xs font-semibold text-foreground">
+                        VRCX-0
+                    </span>
                     {titleBarActionsVisible ? (
-                        <AppMenuBar
-                            rightSidebarVisible={rightSidebarActionVisible}
-                            rightSidebarOpen={rightSidebarOpen}
-                            onOpenQuickSearch={() => setQuickSearchOpen(true)}
-                            onOpenNotificationCenter={() => openVrcNotificationCenter()}
-                            onToggleRightSidebar={() => toggleRightSidebar()}
-                        />
-                    ) : (
-                        <span
-                            data-tauri-drag-region
-                            className="shrink-0 text-xs font-semibold text-foreground">
-                            VRCX
-                        </span>
-                    )}
-                    <div
-                        data-tauri-drag-region
-                        className="h-full min-w-0 flex-1"
-                    />
+                        <div data-titlebar-interactive="true" className="shrink-0">
+                            <AppMenuBar
+                                rightSidebarVisible={rightSidebarActionVisible}
+                                rightSidebarOpen={rightSidebarOpen}
+                                onOpenQuickSearch={() => setQuickSearchOpen(true)}
+                                onOpenNotificationCenter={() => openVrcNotificationCenter()}
+                                onToggleRightSidebar={() => toggleRightSidebar()}
+                            />
+                        </div>
+                    ) : null}
+                    <div className="h-full min-w-0 flex-1" />
                 </div>
                 {titleBarActionsVisible ? (
                     <div className="flex h-full shrink-0 items-center border-l">

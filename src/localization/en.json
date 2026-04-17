@@ -164,7 +164,7 @@
         }
     },
     "app_menu": {
-        "vrcx": "VRCX-0",
+        "app": "App",
         "view": "View",
         "tools": "Tools",
         "help": "Help",
