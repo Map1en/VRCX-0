@@ -28,6 +28,12 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
+    worldBasic: Object.freeze({
+        staleTime: 5 * MINUTE,
+        gcTime: 10 * MINUTE,
+        retry: 1,
+        refetchOnWindowFocus: false
+    }),
     group: Object.freeze({
         staleTime: 5 * MINUTE,
         gcTime: 30 * MINUTE,
@@ -139,6 +145,8 @@ export const queryKeys = Object.freeze({
         withEndpoint(['avatar', avatarId], endpoint),
     world: (worldId, endpoint = '') =>
         withEndpoint(['world', worldId], endpoint),
+    worldBasic: (worldId, endpoint = '') =>
+        withEndpoint(['world', worldId, 'basic'], endpoint),
     group: (groupId, includeRoles = false, endpoint = '') =>
         withEndpoint(['group', groupId, Boolean(includeRoles)], endpoint),
     worldsByUser: (params = {}, endpoint = '') =>

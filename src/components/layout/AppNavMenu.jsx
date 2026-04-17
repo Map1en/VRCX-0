@@ -132,6 +132,7 @@ const toolIconByKey = {
     'screenshot-metadata': ImageIcon
 };
 const themeModeOptions = ['system', 'light', 'dark'];
+const UPDATE_EXE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const tableDensityOptions = [
     {
         value: 'standard',
@@ -783,7 +784,20 @@ export function AppNavMenu({ isCollapsed }) {
 
     useEffect(() => {
         let active = true;
-        const refreshPendingUpdate = () => {
+        let checking = false;
+        let lastPendingUpdateCheckAt = 0;
+        const refreshPendingUpdate = ({ force = false } = {}) => {
+            const now = Date.now();
+            if (
+                checking ||
+                (!force &&
+                    now - lastPendingUpdateCheckAt <
+                        UPDATE_EXE_CHECK_INTERVAL_MS)
+            ) {
+                return;
+            }
+            checking = true;
+            lastPendingUpdateCheckAt = now;
             backend.app
                 .CheckForUpdateExe()
                 .then((value) => {
@@ -791,10 +805,16 @@ export function AppNavMenu({ isCollapsed }) {
                         setHasPendingUpdate(Boolean(value));
                     }
                 })
-                .catch(() => {});
+                .catch(() => {})
+                .finally(() => {
+                    checking = false;
+                });
         };
-        refreshPendingUpdate();
-        const intervalId = window.setInterval(refreshPendingUpdate, 60_000);
+        refreshPendingUpdate({ force: true });
+        const intervalId = window.setInterval(
+            refreshPendingUpdate,
+            UPDATE_EXE_CHECK_INTERVAL_MS
+        );
         window.addEventListener('focus', refreshPendingUpdate);
         return () => {
             active = false;

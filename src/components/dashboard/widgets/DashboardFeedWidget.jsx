@@ -97,6 +97,20 @@ function getFeedRowId(row) {
     return `${type}:${createdAt}:${userId}:${location}:${message}`;
 }
 
+function getFeedRowKey(row) {
+    return [
+        getFeedRowId(row),
+        row?.type ?? '',
+        row?.created_at ?? row?.createdAt ?? '',
+        row?.userId ?? row?.senderUserId ?? '',
+        row?.location ?? row?.details?.location ?? '',
+        row?.status ?? '',
+        row?.avatarName ?? '',
+        row?.bio ?? '',
+        row?.message ?? ''
+    ].join(':');
+}
+
 function collectMatchingLiveFeedEntries(entries, minSequence, context) {
     const unseenEntries = (Array.isArray(entries) ? entries : []).filter(
         (item) => item.sequence > minSequence
@@ -536,10 +550,8 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
             <div className="min-h-0 flex-1 overflow-auto">
                 <Table className="app-data-table table-fixed">
                     <TableBody>
-                        {annotatedRows.map((row, index) => (
-                            <TableRow
-                                key={`${row.type || 'feed'}-${row.created_at || index}-${index}`}
-                            >
+                        {annotatedRows.map((row) => (
+                            <TableRow key={getFeedRowKey(row)}>
                                 <TableCell
                                     className="text-muted-foreground w-24 align-top text-xs tabular-nums"
                                     title={formatWidgetExactTime(

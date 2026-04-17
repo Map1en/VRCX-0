@@ -34,6 +34,7 @@ const ingestState = {
     initialized: false,
     initializing: null,
     syncing: false,
+    tailCaughtUp: false,
     currentLocation: '',
     currentWorldName: '',
     currentLocationStartedAt: '',
@@ -1191,6 +1192,7 @@ export async function initializeGameLogIngest() {
         await database.initTables();
         const dateTill = await database.getLastDateGameLogDatabase();
         await backend.logWatcher.SetDateTill(dateTill);
+        ingestState.tailCaughtUp = false;
         ingestState.initialized = true;
     })();
 
@@ -1301,6 +1303,13 @@ export async function syncGameLogTail() {
         return { processed: 0, skipped: true };
     }
 
+    if (
+        ingestState.tailCaughtUp &&
+        useRuntimeStore.getState().gameState.isGameRunning === false
+    ) {
+        return { processed: 0, skipped: true, caughtUp: true };
+    }
+
     ingestState.syncing = true;
     let processed = 0;
 
@@ -1314,9 +1323,11 @@ export async function syncGameLogTail() {
         for (let i = 0; i < GAME_LOG_BATCH_LIMIT; i += 1) {
             const rows = await backend.logWatcher.Get();
             if (!Array.isArray(rows) || rows.length === 0) {
+                ingestState.tailCaughtUp = true;
                 break;
             }
 
+            ingestState.tailCaughtUp = false;
             for (const row of rows) {
                 await persistGameLog(parseRawRow(row), {
                     copyScreenshotToClipboard: false

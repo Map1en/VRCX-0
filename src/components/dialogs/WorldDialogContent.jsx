@@ -780,7 +780,8 @@ export function WorldDialogContent({
         worldProfileRepository
             .getWorldProfile({
                 worldId: profileWorldId,
-                endpoint: currentEndpoint
+                endpoint: currentEndpoint,
+                force: true
             })
             .then((nextWorld) => {
                 if (!active) {

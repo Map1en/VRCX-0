@@ -229,17 +229,18 @@ export function useLocationMetadata({
         refetchOnWindowFocus: entityQueryPolicies.group.refetchOnWindowFocus
     });
     const worldProfileQuery = useQuery({
-        queryKey: queryKeys.world(worldId, currentEndpoint),
+        queryKey: queryKeys.worldBasic(worldId, currentEndpoint),
         queryFn: () =>
             worldProfileRepository.fetchWorldProfile({
                 worldId,
                 endpoint: currentEndpoint
             }),
         enabled: Boolean(worldId),
-        staleTime: entityQueryPolicies.world.staleTime,
-        gcTime: entityQueryPolicies.world.gcTime,
-        retry: entityQueryPolicies.world.retry,
-        refetchOnWindowFocus: entityQueryPolicies.world.refetchOnWindowFocus
+        staleTime: entityQueryPolicies.worldBasic.staleTime,
+        gcTime: entityQueryPolicies.worldBasic.gcTime,
+        retry: entityQueryPolicies.worldBasic.retry,
+        refetchOnWindowFocus:
+            entityQueryPolicies.worldBasic.refetchOnWindowFocus
     });
 
     const groupName = useMemo(
