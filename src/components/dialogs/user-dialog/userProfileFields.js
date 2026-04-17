@@ -74,11 +74,16 @@ export function languageFlagClassName(languageKey) {
     return languageMappings[key] || key || 'unknown';
 }
 
-export function languageOptionLabel(option) {
+export function languageDisplayName(option) {
     const key = normalizeLanguageKey(option?.key || option?.value);
-    const value = normalizeUserId(
+    return normalizeUserId(
         option?.value || option?.label || option?.name || key.toUpperCase()
     );
+}
+
+export function languageOptionLabel(option) {
+    const key = normalizeLanguageKey(option?.key || option?.value);
+    const value = languageDisplayName(option);
     return key ? `${value || key.toUpperCase()} (${key.toUpperCase()})` : value;
 }
 

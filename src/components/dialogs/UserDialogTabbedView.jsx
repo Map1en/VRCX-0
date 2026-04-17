@@ -54,7 +54,6 @@ import {
 import { openAvatarDialog, openGroupDialog, openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { isActionRecent } from '@/services/recentActionService.js';
 import { getTranslationConfig, translateText } from '@/services/translationService.js';
-import { languageMappings } from '@/shared/constants/language.js';
 import { userDialogGroupSortingOptions, userDialogMutualFriendSortingOptions } from '@/shared/constants/user.js';
 import { getFaviconUrl } from '@/shared/utils/urlUtils.js';
 import { parseLocation } from '@/shared/utils/location.js';
@@ -127,6 +126,7 @@ import {
     loadUserDialogTabData,
     userDialogDataKeyForTab
 } from './user-dialog/userDialogTabService.js';
+import { languageOptionLabel } from './user-dialog/userProfileFields.js';
 
 const userDialogTabServiceRepositories = Object.freeze({
     avatarProfileRepository,
@@ -137,35 +137,25 @@ const userDialogTabServiceRepositories = Object.freeze({
     worldProfileRepository
 });
 
-function languageFlagClassName(languageKey) {
-    const key = String(languageKey || '').trim().toLowerCase();
-    return languageMappings[key] || key || 'unknown';
-}
-
-function languageTooltipLabel(language) {
-    const key = String(language?.key || '').trim();
-    const value = String(language?.value || '').trim();
-    return value && key ? `${value} (${key})` : value || key;
-}
-
-function UserTitleLanguageFlags({ languages }) {
+function UserTitleLanguages({ languages }) {
     if (!languages.length) {
         return null;
     }
 
     return (
-        <span className="inline-flex shrink-0 items-center gap-1">
+        <span className="inline-flex shrink-0 flex-wrap items-center gap-1">
             {languages.map((language) => {
                 const key = String(language?.key || language?.value || '').trim();
-                const flagClassName = languageFlagClassName(key);
-                const tooltip = languageTooltipLabel(language);
+                const label = languageOptionLabel(language);
                 return (
-                    <span
+                    <Badge
                         key={`${key}:${language?.value || ''}`}
-                        className={cn('flags inline-block', flagClassName)}
-                        title={tooltip}
-                        aria-label={tooltip}
-                    />
+                        variant="outline"
+                        className="shrink-0 text-xs"
+                        title={label}
+                    >
+                        {label}
+                    </Badge>
                 );
             })}
         </span>
@@ -1373,7 +1363,7 @@ export function UserDialogTabbedView({
                 onTitleClick={profile.displayName || profile.username ? () => void copyUserText(profile.displayName || profile.username, 'Display name') : undefined}
                 titleMeta={
                     <>
-                        <UserTitleLanguageFlags languages={profileLanguages} />
+                        <UserTitleLanguages languages={profileLanguages} />
                         {previousDisplayNames.length ? (
                             <Badge variant="outline" className="shrink-0 text-xs" title={previousDisplayNamesTitle}>
                                 Names {previousDisplayNames.length}

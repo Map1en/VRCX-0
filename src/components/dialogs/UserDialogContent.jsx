@@ -11,7 +11,6 @@ import {
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
-import { cn } from '@/lib/utils.js';
 import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
 import {
     configRepository,
@@ -80,7 +79,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 import {
     buildFavoriteIdSet,
     fallbackLanguageOptions,
-    languageFlagClassName,
     languageOptionLabel,
     maxStatusPresets,
     normalizeLanguageKey,
@@ -3637,14 +3635,6 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                         className="gap-1.5 pr-1"
                                         title={languageOptionLabel(language)}
                                     >
-                                        <span
-                                            className={cn(
-                                                'flags inline-block shrink-0',
-                                                languageFlagClassName(
-                                                    language.key
-                                                )
-                                            )}
-                                        />
                                         <span>
                                             {languageOptionLabel(language)}
                                         </span>
@@ -3705,14 +3695,6 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                                 option
                                             )}
                                         >
-                                            <span
-                                                className={cn(
-                                                    'flags mr-1.5 inline-block shrink-0',
-                                                    languageFlagClassName(
-                                                        option.key
-                                                    )
-                                                )}
-                                            />
                                             {languageOptionLabel(option)}
                                         </SelectItem>
                                     ))}

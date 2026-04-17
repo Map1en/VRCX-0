@@ -5,7 +5,6 @@ import {
     formatStatsDate,
     groupIdForRow,
     hydrateMutualFriendRows,
-    normalizeLanguageRows,
     normalizePreviousDisplayNames,
     normalizeUserGroupMembershipRows,
     normalizedText,
@@ -15,6 +14,10 @@ import {
     sortUserGroupRows,
     splitUserGroups
 } from './userDialogRows.js';
+import {
+    normalizeLanguageOptionsFromConfig,
+    normalizeProfileLanguageRows
+} from './userProfileFields.js';
 
 export function buildUserDialogTabs({
     isCurrentUser,
@@ -199,9 +202,15 @@ export function buildUserDialogProfileSummary({
             userStats.joinCount ?? profile.joinCount ?? profile.$joinCount ?? 0
         ) || 0;
     const lastSeen = userStats.lastSeen || profile.lastSeen || '';
-    const profileLanguages = normalizeLanguageRows(
-        firstArray(profile.$languages, profile.languages),
-        profile.tags
+    const languageOptions = normalizeLanguageOptionsFromConfig(
+        { constants: vrchatConfigConstants }
+    );
+    const languageOptionsMap = new Map(
+        languageOptions.map((option) => [option.key, option])
+    );
+    const profileLanguages = normalizeProfileLanguageRows(
+        profile,
+        languageOptionsMap
     );
     const mutualFriendCount =
         Number(
