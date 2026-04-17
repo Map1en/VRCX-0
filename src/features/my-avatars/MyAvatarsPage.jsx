@@ -79,14 +79,6 @@ import {
     PopoverContent,
     PopoverTrigger
 } from '@/ui/shadcn/popover';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
 import { Slider } from '@/ui/shadcn/slider';
 import {
     Table,
@@ -1666,30 +1658,6 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                         />
                     ) : null}
                     {viewMode === 'table' ? <TableColumnVisibilityMenu table={table} /> : null}
-                    {viewMode === 'table' ? (
-                        <Select
-                            value={String(pagination.pageSize)}
-                            onValueChange={(value) => {
-                                const nextPageSize = resolveMyAvatarsPageSize(value, pageSizes, pagination.pageSize);
-                                setPagination({
-                                    pageIndex: 0,
-                                    pageSize: nextPageSize
-                                });
-                            }}>
-                            <SelectTrigger className="w-24">
-                                <SelectValue placeholder="Page size" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {pageSizes.map((size) => (
-                                        <SelectItem key={size} value={String(size)}>
-                                            {size}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    ) : null}
                     <Button
                         type="button"
                         variant="ghost"
@@ -1786,7 +1754,20 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                                         </span>{' '}
                                         avatar{filteredAvatars.length === 1 ? '' : 's'}
                                     </div>
-                                    <DataTablePagination table={table} pageIndex={pagination.pageIndex} />
+                                    <DataTablePagination
+                                        table={table}
+                                        pageIndex={pagination.pageIndex}
+                                        pageSize={pagination.pageSize}
+                                        pageSizes={pageSizes}
+                                        pageSizeLabel={t('table.pagination.rows_per_page')}
+                                        onPageSizeChange={(value) => {
+                                            const nextPageSize = resolveMyAvatarsPageSize(value, pageSizes, pagination.pageSize);
+                                            setPagination({
+                                                pageIndex: 0,
+                                                pageSize: nextPageSize
+                                            });
+                                        }}
+                                    />
                                 </div>
                             </>
                         ) : (

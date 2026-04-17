@@ -85,14 +85,6 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import {
     TableBody,
@@ -1894,31 +1886,6 @@ export function GameLogPage({ embedded = false } = {}) {
                     )}
                 </Button>
                 {savedViewMode === 'table' ? <TableColumnVisibilityMenu table={table} /> : null}
-                {savedViewMode === 'table' ? (
-                    <Select
-                        value={String(pagination.pageSize)}
-                        onValueChange={(value) => {
-                            const nextPageSize = resolveGameLogPageSize(value, pageSizes, pagination.pageSize);
-                            setPagination({
-                                pageIndex: 0,
-                                pageSize: nextPageSize
-                            });
-                            setSessionLimit(nextPageSize);
-                        }}>
-                        <SelectTrigger className="w-24">
-                            <SelectValue placeholder="Page size" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                {pageSizes.map((size) => (
-                                    <SelectItem key={size} value={String(size)}>
-                                        {size}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                ) : null}
             </div>
         );
     }
@@ -2057,6 +2024,17 @@ export function GameLogPage({ embedded = false } = {}) {
                                     table={table}
                                     pageIndex={pagination.pageIndex}
                                     pageCount={pageCount}
+                                    pageSize={pagination.pageSize}
+                                    pageSizes={pageSizes}
+                                    pageSizeLabel={t('table.pagination.rows_per_page')}
+                                    onPageSizeChange={(value) => {
+                                        const nextPageSize = resolveGameLogPageSize(value, pageSizes, pagination.pageSize);
+                                        setPagination({
+                                            pageIndex: 0,
+                                            pageSize: nextPageSize
+                                        });
+                                        setSessionLimit(nextPageSize);
+                                    }}
                                 />
                             </PageFooter>
                         </div>

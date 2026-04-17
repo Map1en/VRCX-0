@@ -76,14 +76,6 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
@@ -1297,28 +1289,6 @@ export function FriendListPage({ embedded = false } = {}) {
                         table={table}
                         onResetLayout={resetFriendListTableLayout}
                     />
-                    <Select
-                        value={String(pagination.pageSize)}
-                        onValueChange={(value) => {
-                            const nextPageSize = resolvePageSize(value, pageSizes, pagination.pageSize);
-                            setPagination({
-                                pageIndex: 0,
-                                pageSize: nextPageSize
-                            });
-                        }}>
-                        <SelectTrigger className="h-9 w-24">
-                            <SelectValue placeholder="Page size" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                {pageSizes.map((size) => (
-                                    <SelectItem key={size} value={String(size)}>
-                                        {size}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
                 </div>
                 </PageToolbarRow>
 
@@ -1402,6 +1372,16 @@ export function FriendListPage({ embedded = false } = {}) {
                             table={table}
                             pageIndex={pagination.pageIndex}
                             pageCount={pageCount}
+                            pageSize={pagination.pageSize}
+                            pageSizes={pageSizes}
+                            pageSizeLabel={t('table.pagination.rows_per_page')}
+                            onPageSizeChange={(value) => {
+                                const nextPageSize = resolvePageSize(value, pageSizes, pagination.pageSize);
+                                setPagination({
+                                    pageIndex: 0,
+                                    pageSize: nextPageSize
+                                });
+                            }}
                         />
                     </PageFooter>
                 </>

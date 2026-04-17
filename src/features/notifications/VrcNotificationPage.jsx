@@ -6,8 +6,6 @@ import {
     ArrowUpIcon,
     BanIcon,
     BellOffIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
     CheckIcon,
     ExternalLinkIcon,
     MessageCircleIcon,
@@ -35,6 +33,7 @@ import {
     ResizableTableCell,
     ResizableTableHead
 } from '@/components/data-table/ResizableTableParts.jsx';
+import { DataTablePagination } from '@/components/data-table/DataTableView.jsx';
 import { Location } from '@/components/Location.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import {
@@ -72,7 +71,6 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/shadcn/table';
 import {
@@ -1559,22 +1557,6 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     {loadStatus === 'running' ? <Spinner data-icon="inline-start" /> : <RefreshCcwIcon data-icon="inline-start" />}
                 </Button>
                 <TableColumnVisibilityMenu table={table} />
-                <Select
-                    value={String(pagination.pageSize)}
-                    onValueChange={(value) => setPagination({ pageIndex: 0, pageSize: resolvePageSize(value) })}>
-                    <SelectTrigger className="h-9 w-24">
-                        <SelectValue placeholder="Rows" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {DEFAULT_PAGE_SIZES.map((value) => (
-                                <SelectItem key={value} value={String(value)}>
-                                    {value}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
                 {activeTypes.length ? (
                     <Button type="button" variant="outline" size="sm" onClick={() => setActiveTypes([])}>
                         Clear
@@ -1619,17 +1601,17 @@ export function VrcNotificationPage({ embedded = false } = {}) {
 
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="text-sm text-muted-foreground">{rows.length} notifications in view</div>
-                <div className="flex items-center gap-2">
-                    <Button type="button" variant="outline" size="icon" aria-label="Previous notification page" disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()}>
-                        <ChevronLeftIcon data-icon="inline-start" />
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                        Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
-                    </span>
-                    <Button type="button" variant="outline" size="icon" aria-label="Next notification page" disabled={!table.getCanNextPage()} onClick={() => table.nextPage()}>
-                        <ChevronRightIcon data-icon="inline-start" />
-                    </Button>
-                </div>
+                <DataTablePagination
+                    table={table}
+                    pageIndex={pagination.pageIndex}
+                    pageCount={table.getPageCount() || 1}
+                    pageSize={pagination.pageSize}
+                    pageSizes={DEFAULT_PAGE_SIZES}
+                    pageSizeLabel={t('table.pagination.rows_per_page')}
+                    previousLabel={t('table.pagination.previous')}
+                    nextLabel={t('table.pagination.next')}
+                    onPageSizeChange={(value) => setPagination({ pageIndex: 0, pageSize: resolvePageSize(value) })}
+                />
             </div>
         </div>
         <InviteResponseMessageDialog

@@ -86,14 +86,6 @@ import {
 } from '@/ui/shadcn/context-menu';
 import { Input } from '@/ui/shadcn/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import {
     Table,
@@ -1972,27 +1964,6 @@ export function FeedPage({ embedded = false } = {}) {
 
                             <div className="flex items-center gap-2">
                                 <TableColumnVisibilityMenu table={table} />
-                                <Select
-                                    value={String(pagination.pageSize)}
-                                    onValueChange={(value) =>
-                                        setPagination({
-                                            pageIndex: 0,
-                                            pageSize: resolvePageSize(value, pageSizes, pagination.pageSize)
-                                        })
-                                    }>
-                                    <SelectTrigger className="w-28">
-                                        <SelectValue placeholder="Rows" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {pageSizes.map((size) => (
-                                                <SelectItem key={size} value={String(size)}>
-                                                    {size} rows
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -2077,6 +2048,15 @@ export function FeedPage({ embedded = false } = {}) {
                         table={table}
                         pageIndex={table.getState().pagination.pageIndex}
                         pageCount={table.getPageCount() || 1}
+                        pageSize={pagination.pageSize}
+                        pageSizes={pageSizes}
+                        pageSizeLabel={t('table.pagination.rows_per_page')}
+                        onPageSizeChange={(value) =>
+                            setPagination({
+                                pageIndex: 0,
+                                pageSize: resolvePageSize(value, pageSizes, pagination.pageSize)
+                            })
+                        }
                     />
                 </PageFooter>
             </PageBody>

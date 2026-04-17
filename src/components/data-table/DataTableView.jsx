@@ -14,6 +14,14 @@ import {
     PaginationItem
 } from '@/ui/shadcn/pagination';
 import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
+import {
     Table,
     TableBody,
     TableCell,
@@ -59,6 +67,10 @@ export function DataTablePagination({
     summary,
     pageIndex,
     pageCount,
+    pageSize,
+    pageSizes = [],
+    pageSizeLabel = 'Rows per page',
+    onPageSizeChange,
     previousLabel = 'Previous',
     nextLabel = 'Next',
     className = ''
@@ -70,9 +82,41 @@ export function DataTablePagination({
         1,
         Number.isFinite(pageCount) ? pageCount : table?.getPageCount?.() || 1
     );
+    const resolvedPageSize = Number.isFinite(pageSize)
+        ? pageSize
+        : table?.getState?.().pagination?.pageSize;
+    const pageSizeOptions = Array.isArray(pageSizes)
+        ? pageSizes
+              .map((value) => Number.parseInt(value, 10))
+              .filter((value) => Number.isFinite(value) && value > 0)
+        : [];
+    const pageSizeSelectVisible = Boolean(
+        pageSizeOptions.length &&
+        Number.isFinite(resolvedPageSize) &&
+        typeof onPageSizeChange === 'function'
+    );
 
     return (
-        <div className={className}>
+        <div className={cn('flex flex-wrap items-center gap-2', className)}>
+            {pageSizeSelectVisible ? (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{pageSizeLabel}</span>
+                    <Select value={String(resolvedPageSize)} onValueChange={onPageSizeChange}>
+                        <SelectTrigger size="sm" className="w-20">
+                            <SelectValue placeholder={pageSizeLabel} />
+                        </SelectTrigger>
+                        <SelectContent align="end">
+                            <SelectGroup>
+                                {pageSizeOptions.map((size) => (
+                                    <SelectItem key={size} value={String(size)}>
+                                        {size}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </div>
+            ) : null}
             <Pagination className="mx-0 w-auto justify-start">
                 <PaginationContent>
                     <PaginationItem>
