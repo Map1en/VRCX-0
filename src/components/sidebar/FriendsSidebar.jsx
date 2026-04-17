@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
+import { timeToText } from '@/lib/dateTime.js';
 import { cn } from '@/lib/utils.js';
 import { getTrustColor, TRUST_COLOR_DEFAULTS } from '@/lib/trustColors.js';
 import {
@@ -23,6 +24,7 @@ import {
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
 import { Button } from '@/ui/shadcn/button';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { configRepository, notificationRepository, userProfileRepository, vrchatSearchRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
@@ -111,6 +113,18 @@ function readFriendRefLocation(friend) {
 function readFriendRefTravelingLocation(friend) {
     const source = readFriendStatusSource(friend);
     return normalizeId(source?.travelingToLocation || source?.$travelingToLocation);
+}
+
+function timestampMsFromValue(value) {
+    if (value === null || value === undefined || value === '') {
+        return 0;
+    }
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue) && numberValue > 0) {
+        return numberValue;
+    }
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function clearStaleOfflineLocation(location, state) {
@@ -503,9 +517,30 @@ function statusPresetLabel(preset, t) {
     return option ? t(option.labelKey) : preset?.status || '';
 }
 
+function FriendInstanceTimer({ epoch, traveling = false }) {
+    const [now, setNow] = useState(() => Date.now());
+    const normalizedEpoch = timestampMsFromValue(epoch);
+    const text = normalizedEpoch ? timeToText(now - normalizedEpoch) : '-';
+
+    useEffect(() => {
+        const intervalId = window.setInterval(() => {
+            setNow(Date.now());
+        }, 15000);
+        return () => window.clearInterval(intervalId);
+    }, []);
+
+    return (
+        <span className="inline-flex min-w-0 items-center">
+            {traveling ? <Spinner className="mr-1 size-3 shrink-0" /> : null}
+            <span className="truncate">{text}</span>
+        </span>
+    );
+}
+
 function FriendRow({
     friend,
     isCurrentUser,
+    isGroupByInstance = false,
     statusPresets = [],
     canSendInvite,
     canRequestInvite,
@@ -536,9 +571,14 @@ function FriendRow({
     const displayLocation = isTraveling ? 'traveling' : friendLocation;
     const displayTraveling = isTraveling ? readFriendRefTravelingLocation(friend) || undefined : undefined;
     const isActiveOrOffline = friendState === 'active' || friendState === 'offline' || friendStateBucket === 'active' || friendStateBucket === 'offline';
+    const groupByInstanceTimerVisible = Boolean(isGroupByInstance && !isActiveOrOffline && !statusSource?.pendingOffline);
+    const groupByInstanceEpoch = isTraveling
+        ? statusSource?.$travelingToTime || statusSource?.travelingToTime || statusSource?.traveling_to_time
+        : statusSource?.$location_at || statusSource?.locationAt || statusSource?.location_at;
     const showLocationSubline = Boolean(
         displayLocation &&
             !statusSource?.pendingOffline &&
+            !groupByInstanceTimerVisible &&
             (!isActiveOrOffline || parsedFriendLocation.isRealInstance || isTraveling)
     );
     const canUseFriendLocation = Boolean(
@@ -579,7 +619,9 @@ function FriendRow({
                         <span className="min-w-0 flex-1">
                             <span className="block truncate font-medium leading-5" style={nameStyle}>{displayName}</span>
                             <span className="block truncate text-xs text-muted-foreground">
-                                {showLocationSubline ? (
+                                {groupByInstanceTimerVisible ? (
+                                    <FriendInstanceTimer epoch={groupByInstanceEpoch} traveling={isTraveling} />
+                                ) : showLocationSubline ? (
                                     <Location
                                         location={displayLocation}
                                         traveling={displayTraveling}
@@ -1394,7 +1436,7 @@ export function FriendsSidebar({ prefs }) {
         totalSize
     } = useVirtualSidebarRows(virtualRows, estimateFriendSidebarRowSize);
 
-    function renderFriendVirtualRow(friend, isCurrentUser = false) {
+    function renderFriendVirtualRow(friend, isCurrentUser = false, isGroupByInstance = false) {
         const source = readFriendStatusSource(friend);
         const state = normalizeLocationStatus(source?.stateBucket || source?.state);
         const isOnlineFriend = onlineIdSet.has(friend.id) || state === 'online';
@@ -1402,6 +1444,7 @@ export function FriendsSidebar({ prefs }) {
             <FriendRow
                 friend={friend}
                 isCurrentUser={isCurrentUser}
+                isGroupByInstance={isGroupByInstance}
                 canSendInvite={Boolean(gameState.isGameRunning && currentInviteLocation && canInviteFromCurrentLocation)}
                 canRequestInvite={isOnlineFriend}
                 canBoop={Boolean(currentUser?.isBoopingEnabled)}
@@ -1458,7 +1501,7 @@ export function FriendsSidebar({ prefs }) {
                 return <div className="h-4" />;
             case 'friend':
             default:
-                return renderFriendVirtualRow(row.friend, row.isCurrentUser);
+                return renderFriendVirtualRow(row.friend, row.isCurrentUser, row.isGroupByInstance);
         }
     }
 
