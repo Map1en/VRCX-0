@@ -156,8 +156,33 @@
         margin: 0;
         min-height: 100vh;
     }
-  html {
-    @apply font-sans;
+    html {
+        @apply font-sans;
+    }
+
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+    }
+
+    *::-webkit-scrollbar {
+        width: 0.625rem;
+        height: 0.625rem;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        border: 1px solid transparent;
+        border-radius: 9999px;
+        background-color: var(--border);
+        background-clip: content-box;
+    }
+
+    *::-webkit-scrollbar-corner {
+        background: transparent;
     }
 }
 
