@@ -868,6 +868,10 @@ async function copyImageToClipboard(path) {
     return invokeApp('CopyImageToClipboard', path);
 }
 
+async function saveImageFile(defaultName, base64Data) {
+    return invokeApp('SaveImageFile', defaultName, base64Data);
+}
+
 async function savePrintToFile(url, ugcFolderPath, monthFolder, fileName) {
     return invokeApp(
         'SavePrintToFile',
@@ -944,6 +948,7 @@ const mediaRepository = Object.freeze({
     openFileSelectorDialog,
     openFolderAndSelectItem,
     copyImageToClipboard,
+    saveImageFile,
     savePrintToFile,
     saveStickerToFile,
     saveEmojiToFile,
@@ -989,6 +994,7 @@ export {
     openFileSelectorDialog,
     openFolderAndSelectItem,
     copyImageToClipboard,
+    saveImageFile,
     savePrintToFile,
     saveStickerToFile,
     saveEmojiToFile,

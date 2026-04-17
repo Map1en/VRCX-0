@@ -2785,7 +2785,21 @@
         },
         "image": {
             "downloading": "Downloading image...",
-            "copied_to_clipboard": "Image copied to clipboard"
+            "copied_to_clipboard": "Image copied to clipboard",
+            "preview_title": "Image Preview",
+            "loading": "Loading image...",
+            "load_failed": "Failed to load image",
+            "copy": "Copy image",
+            "download": "Download image",
+            "downloaded": "Image saved",
+            "zoom_out": "Zoom out",
+            "zoom_in": "Zoom in",
+            "rotate_clockwise": "Rotate clockwise",
+            "rotate_counterclockwise": "Rotate counterclockwise",
+            "reset": "Reset",
+            "close": "Close",
+            "copy_failed": "Failed to copy image",
+            "download_failed": "Failed to download image"
         },
         "registry": {
             "restored": "VRChat registry settings restored",

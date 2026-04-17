@@ -288,6 +288,7 @@ pub fn run() {
             api::app::app__try_open_instance_in_vrc,
             api::app::app__open_calendar_file,
             api::app::app__save_calendar_file,
+            api::app::app__save_image_file,
             api::app::app__get_image,
             api::app::app__resize_image_to_fit_limits,
             api::app::app__sign_file,

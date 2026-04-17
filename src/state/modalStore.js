@@ -38,7 +38,9 @@ const createOtpDialogState = () => ({
 const createImageDialogState = () => ({
     open: false,
     url: '',
-    title: ''
+    title: '',
+    fileName: '',
+    sourcePath: ''
 });
 
 function createResult(ok, reason, value) {

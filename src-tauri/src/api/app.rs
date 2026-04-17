@@ -19,6 +19,7 @@ use crate::state::AppState;
 
 const TRAY_ICON_DEFAULT: &[u8] = include_bytes!("../../icons/icon.png");
 const TRAY_ICON_NOTIFY: &[u8] = include_bytes!("../../icons/icon_notify.png");
+const MAX_IMAGE_SAVE_BYTES: usize = 100 * 1024 * 1024;
 
 #[allow(dead_code)]
 fn spawn_current_exe(args: &[&str]) -> Result<(), AppError> {
@@ -847,6 +848,56 @@ pub async fn app__save_calendar_file(
 }
 
 #[tauri::command]
+pub async fn app__save_image_file(
+    app_handle: AppHandle,
+    default_name: String,
+    base64_data: String,
+) -> Result<String, AppError> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let file_name = normalize_image_save_file_name(&default_name)?;
+    let bytes = B64
+        .decode(base64_data.trim())
+        .map_err(|e| AppError::Custom(format!("image base64 decode: {e}")))?;
+
+    if bytes.is_empty() {
+        return Err(AppError::Custom("image data is empty".into()));
+    }
+
+    if bytes.len() > MAX_IMAGE_SAVE_BYTES {
+        return Err(AppError::Custom("image data is too large".into()));
+    }
+
+    let result = app_handle
+        .dialog()
+        .file()
+        .set_file_name(&file_name)
+        .add_filter("Image Files", &["png", "jpg", "jpeg", "gif", "webp", "bmp"])
+        .blocking_save_file();
+
+    match result {
+        Some(file_path) => {
+            let mut path = match file_path {
+                tauri_plugin_dialog::FilePath::Path(p) => p,
+                other => PathBuf::from(other.to_string()),
+            };
+
+            if path.extension().is_none() {
+                path.set_extension(default_image_extension(&file_name));
+            }
+
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+
+            std::fs::write(&path, bytes)?;
+            Ok(path.to_string_lossy().to_string())
+        }
+        None => Ok(String::new()),
+    }
+}
+
+#[tauri::command]
 pub async fn app__get_image(
     state: State<'_, AppState>,
     url: String,
@@ -1206,6 +1257,36 @@ fn is_windows_reserved_name(value: &str) -> bool {
             | "COM1" | "COM2" | "COM3" | "COM4" | "COM5" | "COM6" | "COM7" | "COM8" | "COM9"
             | "LPT1" | "LPT2" | "LPT3" | "LPT4" | "LPT5" | "LPT6" | "LPT7" | "LPT8" | "LPT9"
     )
+}
+
+fn normalize_image_save_file_name(default_name: &str) -> Result<String, AppError> {
+    let candidate = if default_name.trim().is_empty() {
+        "image.png"
+    } else {
+        default_name.trim()
+    };
+    let mut file_name = sanitize_ugc_component(candidate, "file_name")?;
+    if Path::new(&file_name).extension().is_none() {
+        file_name.push_str(".png");
+    }
+    Ok(file_name)
+}
+
+fn default_image_extension(file_name: &str) -> &str {
+    match Path::new(file_name)
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "jpg" => "jpg",
+        "jpeg" => "jpeg",
+        "gif" => "gif",
+        "webp" => "webp",
+        "bmp" => "bmp",
+        _ => "png",
+    }
 }
 
 fn build_ugc_image_path(

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { FullscreenImageViewer } from '@/components/media/FullscreenImageViewer.jsx';
 import { useModalStore } from '@/state/modalStore.js';
 import {
     AlertDialog,
@@ -205,29 +206,14 @@ export function ModalHost() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog
+            <FullscreenImageViewer
                 open={imageDialog.open}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        closeImagePreview();
-                    }
-                }}
-            >
-                <DialogContent className="gpu-sensitive-blur max-w-[90vw]">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {imageDialog.title || 'Image Preview'}
-                        </DialogTitle>
-                    </DialogHeader>
-                    {imageDialog.url ? (
-                        <img
-                            src={imageDialog.url}
-                            alt={imageDialog.title || ''}
-                            className="max-h-[80vh] w-full object-contain"
-                        />
-                    ) : null}
-                </DialogContent>
-            </Dialog>
+                url={imageDialog.url}
+                title={imageDialog.title}
+                fileName={imageDialog.fileName}
+                sourcePath={imageDialog.sourcePath}
+                onClose={closeImagePreview}
+            />
         </>
     );
 }

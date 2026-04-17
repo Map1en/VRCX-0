@@ -78,6 +78,7 @@ const commandArgs = {
     app__try_open_instance_in_vrc: ['launchUrl'],
     app__open_calendar_file: ['icsContent'],
     app__save_calendar_file: ['defaultName', 'icsContent'],
+    app__save_image_file: ['defaultName', 'base64Data'],
     app__focus_window: [],
     app__flash_window: [],
     app__check_for_update_exe: [],

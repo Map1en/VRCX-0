@@ -996,7 +996,9 @@ export function ScreenshotMetadataPage() {
                                             url: imageUrl,
                                             title:
                                                 metadata?.fileName ||
-                                                'Screenshot preview'
+                                                'Screenshot preview',
+                                            fileName: metadata?.fileName || '',
+                                            sourcePath: metadata?.filePath || ''
                                         })
                                     }
                                 >
