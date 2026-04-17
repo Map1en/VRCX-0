@@ -17,6 +17,7 @@ import {
     normalizeString,
     useLocationMetadata
 } from '@/components/location/useLocationMetadata.js';
+import { RegionCodeBadge } from '@/components/location/RegionCodeBadge.jsx';
 import { cn } from '@/lib/utils.js';
 import { copyTextToClipboard } from '@/lib/entityMedia.js';
 import { gameLogRepository } from '@/repositories/index.js';
@@ -336,7 +337,7 @@ export function Location({
                 </LocationTooltip>
             ) : (
                 <>
-                    {region ? <span className={cn('flags mr-1.5 shrink-0', region)} /> : null}
+                    <RegionCodeBadge region={region} />
                     <LocationTooltip
                         disabled={disableTooltip || !tooltipContent || shouldShowInstanceIdInLocation}
                         content={tooltipContent}>

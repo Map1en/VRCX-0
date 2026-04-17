@@ -94,6 +94,13 @@ export function languageClassName(languageKey) {
     return getLanguageFlagLabel(languageKey) || 'unknown';
 }
 
+export function languageCodeLabel(languageKey) {
+    const key = normalizeString(languageKey)
+        .toLowerCase()
+        .replace(/^language_/, '');
+    return key ? key.toUpperCase() : '';
+}
+
 export function getHomeWorldId(homeLocation) {
     if (!homeLocation) {
         return '';

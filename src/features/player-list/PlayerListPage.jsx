@@ -53,7 +53,7 @@ import {
     formatCount,
     getHomeWorldId,
     getWorldImage,
-    languageClassName,
+    languageCodeLabel,
     resolvePlatformBadge,
     resolvePlatformMeta,
     resolvePlatformMode,
@@ -1032,16 +1032,20 @@ export function PlayerListPage({ embedded = false } = {}) {
                         {row.original.languages.length ? (
                             row.original.languages.map((entry) => {
                                 const key = entry?.key || entry?.value || '';
-                                const flagClassName = languageClassName(key);
-                                const tooltip = `${entry?.value || key}${key ? ` (${key})` : ''}`;
+                                const code = languageCodeLabel(key);
+                                if (!code) {
+                                    return null;
+                                }
                                 return (
                                     <Tooltip
                                         key={`${key}:${entry?.value || ''}`}
                                     >
                                         <TooltipTrigger asChild>
-                                            <span className={cn('flags mr-1 inline-block', flagClassName)} />
+                                            <span className="inline-flex h-5 min-w-8 items-center justify-center rounded border border-border/70 bg-muted/70 px-1 font-mono text-[10px] font-semibold leading-none text-muted-foreground">
+                                                {code}
+                                            </span>
                                         </TooltipTrigger>
-                                        <TooltipContent>{tooltip}</TooltipContent>
+                                        <TooltipContent>{code}</TooltipContent>
                                     </Tooltip>
                                 );
                             })

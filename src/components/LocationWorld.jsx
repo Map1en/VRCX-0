@@ -6,6 +6,7 @@ import {
     normalizeString,
     useLocationMetadata
 } from '@/components/location/useLocationMetadata.js';
+import { RegionCodeBadge } from '@/components/location/RegionCodeBadge.jsx';
 import { cn } from '@/lib/utils.js';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService.js';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
@@ -201,7 +202,7 @@ export function LocationWorld({
 
     return (
         <span className={cn('x-location-world inline-flex min-w-0 items-center', className)}>
-            {region ? <span className={cn('flags mr-1.5 inline-block shrink-0', region)} /> : null}
+            <RegionCodeBadge region={region} />
             <span
                 role={interactive ? 'button' : undefined}
                 tabIndex={interactive ? 0 : undefined}
