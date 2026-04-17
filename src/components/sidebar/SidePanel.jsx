@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, useEffect, useMemo, useState } from 'react';
-import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, RefreshCwIcon, SettingsIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, MoreHorizontalIcon, RefreshCwIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -341,15 +341,23 @@ export function SidePanel({ className = '', style = undefined }) {
 
     return (
         <aside className={cn('flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l bg-background', className)} style={style}>
-            <div className="flex shrink-0 items-center justify-end gap-1 px-2 py-2">
-                <Popover open={settingsPopoverOpen} onOpenChange={setSettingsPopoverOpen}>
-                    <PopoverTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon" className="size-8 rounded-full" aria-label="Side panel settings">
-                            {isRefreshing ? <Spinner data-icon="inline-start" /> : <SettingsIcon data-icon="inline-start" />}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent side="bottom" align="end" className="w-72 p-3">
-                        <div className="flex flex-col gap-2.5">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
+                <div className="flex shrink-0 items-center gap-2">
+                    <TabsList>
+                        {tabItems.map((item) => (
+                            <TabsTrigger key={item.value} value={item.value}>
+                                {item.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <Popover open={settingsPopoverOpen} onOpenChange={setSettingsPopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <Button type="button" variant="ghost" size="icon" className="ml-auto" aria-label={t('side_panel.settings.display')}>
+                                {isRefreshing ? <Spinner data-icon="inline-start" /> : <MoreHorizontalIcon data-icon="inline-start" />}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="end" className="w-72 p-3">
+                            <div className="flex flex-col gap-2.5">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -478,18 +486,10 @@ export function SidePanel({ className = '', style = undefined }) {
                                     ) : null}
                                 </div>
                             ) : null}
-                        </div>
-                    </PopoverContent>
-                </Popover>
-            </div>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-2">
-                <TabsList variant="line" className="grid w-full shrink-0 grid-cols-2">
-                    {tabItems.map((item) => (
-                        <TabsTrigger key={item.value} value={item.value} className="flex-none">
-                            {item.label}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                </div>
                 <TabsContent value="friends" className="mt-2 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
                     <FriendsSidebar prefs={prefs} />
                 </TabsContent>
