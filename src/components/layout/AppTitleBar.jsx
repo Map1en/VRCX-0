@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
-    AppWindowIcon,
     BellIcon,
     MinusIcon,
+    PanelRightCloseIcon,
+    PanelRightOpenIcon,
     SearchIcon,
     SquareIcon,
     SquareStackIcon,
@@ -27,6 +29,7 @@ import {
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
 import { cn } from '@/lib/utils.js';
+import { shouldShowSidePanel } from './sidePanelRoutes.js';
 
 function TitleBarButton({ label, className, children, onClick, ...props }) {
     return (
@@ -44,8 +47,9 @@ function TitleBarButton({ label, className, children, onClick, ...props }) {
     );
 }
 
-export function AppTitleBar({ title = '' }) {
+export function AppTitleBar() {
     const { t } = useI18n();
+    const location = useLocation();
     const [isMaximized, setIsMaximized] = useState(false);
     const [quickSearchOpen, setQuickSearchOpen] = useState(false);
     const isSessionReady = useSessionStore((state) => state.sessionPhase === 'ready');
@@ -54,6 +58,8 @@ export function AppTitleBar({ title = '' }) {
     const openVrcNotificationCenter = useVrcNotificationStore((state) => state.openCenter);
     const markAllVrcNotificationsSeen = useVrcNotificationStore((state) => state.markAllSeen);
     const removeNavNotification = useShellStore((state) => state.removeNotify);
+    const rightSidebarOpen = useShellStore((state) => state.rightSidebarOpen);
+    const toggleRightSidebar = useShellStore((state) => state.toggleRightSidebar);
 
     async function syncMaximizedState() {
         try {
@@ -101,9 +107,11 @@ export function AppTitleBar({ title = '' }) {
 
     const MaximizeIcon = isMaximized ? SquareStackIcon : SquareIcon;
     const maximizeLabel = isMaximized ? 'Restore window' : 'Maximize window';
-    const detailTitle = title && title !== 'VRCX' ? title : '';
     const titleBarActionsVisible = isSessionReady;
     const notificationActionVisible = titleBarActionsVisible && notificationLayout !== 'table';
+    const rightSidebarActionVisible = titleBarActionsVisible && shouldShowSidePanel(location.pathname);
+    const RightSidebarIcon = rightSidebarOpen ? PanelRightCloseIcon : PanelRightOpenIcon;
+    const rightSidebarLabel = rightSidebarOpen ? 'Collapse right sidebar' : 'Expand right sidebar';
 
     async function markAllNotificationsRead() {
         const store = useVrcNotificationStore.getState();
@@ -143,21 +151,9 @@ export function AppTitleBar({ title = '' }) {
                     className="flex min-w-0 flex-1 items-center gap-2 px-3">
                     <span
                         data-tauri-drag-region
-                        className="flex size-5 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
-                        <AppWindowIcon className="pointer-events-none size-3.5" aria-hidden="true" />
-                    </span>
-                    <span
-                        data-tauri-drag-region
                         className="shrink-0 text-xs font-semibold text-foreground">
                         VRCX
                     </span>
-                    {detailTitle ? (
-                        <span
-                            data-tauri-drag-region
-                            className="min-w-0 truncate text-xs text-muted-foreground">
-                            {detailTitle}
-                        </span>
-                    ) : null}
                 </div>
                 {titleBarActionsVisible ? (
                     <div className="flex h-full shrink-0 items-center border-l">
@@ -192,6 +188,13 @@ export function AppTitleBar({ title = '' }) {
                                     {notificationButton}
                                 </div>
                             )
+                        ) : null}
+                        {rightSidebarActionVisible ? (
+                            <TitleBarButton
+                                label={rightSidebarLabel}
+                                onClick={() => toggleRightSidebar()}>
+                                <RightSidebarIcon data-icon="inline-start" />
+                            </TitleBarButton>
                         ) : null}
                     </div>
                 ) : null}

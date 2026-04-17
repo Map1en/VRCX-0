@@ -15,6 +15,7 @@ const MAX_NAV_WIDTH = 480;
 
 const initialState = {
     sidebarOpen: true,
+    rightSidebarOpen: true,
     navWidth: 240,
     locale: 'en',
     themeMode: 'system',
@@ -106,6 +107,12 @@ export const useShellStore = create((set, get) => ({
     },
     toggleSidebar() {
         set((state) => ({ sidebarOpen: !state.sidebarOpen }));
+    },
+    setRightSidebarOpen(rightSidebarOpen) {
+        set({ rightSidebarOpen: Boolean(rightSidebarOpen) });
+    },
+    toggleRightSidebar() {
+        set((state) => ({ rightSidebarOpen: !state.rightSidebarOpen }));
     },
     setLocale(locale) {
         set({ locale: locale || 'en' });

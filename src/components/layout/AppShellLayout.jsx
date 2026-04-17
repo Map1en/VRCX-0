@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 import { SidePanel } from '@/components/sidebar/SidePanel.jsx';
+import { useShellStore } from '@/state/shellStore.js';
 
 import { AppSidebar } from './AppSidebar.jsx';
 import { AppStatusBar } from './AppStatusBar.jsx';
+import { shouldShowSidePanel } from './sidePanelRoutes.js';
 
 const sidePanelStorageKey = 'vrcx-main-layout-right-sidebar-width';
-const sidePanelHiddenPaths = ['/friends-locations', '/social/friend-list', '/charts/instance', '/charts/mutual'];
 
 function clampSidePanelWidth(value) {
     const width = Number.parseInt(value, 10);
@@ -28,15 +29,13 @@ function loadSidePanelWidth() {
     }
 }
 
-function shouldShowSidePanel(pathname) {
-    return !sidePanelHiddenPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-}
-
 export function AppShellLayout() {
     const location = useLocation();
+    const rightSidebarOpen = useShellStore((state) => state.rightSidebarOpen);
     const [sidePanelWidth, setSidePanelWidth] = useState(loadSidePanelWidth);
     const resizeCleanupRef = useRef(null);
     const showSidePanel = shouldShowSidePanel(location.pathname);
+    const sidePanelVisible = showSidePanel && rightSidebarOpen;
 
     useEffect(() => {
         try {
@@ -53,10 +52,10 @@ export function AppShellLayout() {
     }, []);
 
     useEffect(() => {
-        if (!showSidePanel) {
+        if (!sidePanelVisible) {
             resizeCleanupRef.current?.();
         }
-    }, [showSidePanel]);
+    }, [sidePanelVisible]);
 
     function startSidePanelResize(event) {
         event.preventDefault();
@@ -112,7 +111,7 @@ export function AppShellLayout() {
                     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                         <Outlet />
                     </div>
-                    {showSidePanel ? (
+                    {sidePanelVisible ? (
                         <>
                             <div
                                 className="z-20 w-1 shrink-0 cursor-ew-resize select-none bg-transparent hover:bg-border"
