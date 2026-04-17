@@ -5,6 +5,7 @@ import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 
+import { refreshCurrentUserFriendsAndFavorites } from './backgroundMaintenanceService.js';
 import { handleRealtimePresenceEvent } from './realtimePresenceService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
@@ -149,7 +150,17 @@ function handleTransportFailure(error, { reconnecting = false } = {}) {
     scheduleReconnect();
 }
 
-function attachSocketHandlers(socket, context) {
+function refreshBaselineAfterReconnect() {
+    void refreshCurrentUserFriendsAndFavorites().catch((error) => {
+        useNotificationStore.getState().pushNotification({
+            level: 'warning',
+            title: 'Realtime baseline refresh failed',
+            message: error instanceof Error ? error.message : String(error)
+        });
+    });
+}
+
+function attachSocketHandlers(socket, context, { refreshBaselineOnOpen = false } = {}) {
     socket.onopen = () => {
         if (socket !== activeSocket || !isCurrentTransportTarget(context)) {
             try {
@@ -169,6 +180,9 @@ function attachSocketHandlers(socket, context) {
         updateTransportStartupDetail(
             ['Friend roster baseline, IPC announce, and websocket transport are active.'].join(' ')
         );
+        if (refreshBaselineOnOpen) {
+            refreshBaselineAfterReconnect();
+        }
     };
 
     socket.onmessage = ({ data }) => {
@@ -293,7 +307,9 @@ async function connectRealtimeTransport({ announceIpc, preserveMetrics }) {
         getTransportUrl(context.websocket, authSession.json.token)
     );
     activeSocket = socket;
-    attachSocketHandlers(socket, context);
+    attachSocketHandlers(socket, context, {
+        refreshBaselineOnOpen: Boolean(preserveMetrics)
+    });
 }
 
 export async function startRealtimeTransport({

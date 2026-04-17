@@ -14,6 +14,8 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 
+const BOOTSTRAP_RETRY_DELAYS_MS = [5_000, 15_000, 30_000, 60_000];
+
 function pushRuntimeNotification({ level, title, error }) {
     useNotificationStore.getState().pushNotification({
         level,
@@ -180,6 +182,28 @@ export function startAuthenticatedRuntimeServices() {
     let moderationRefreshStarted = false;
     let activityBootstrapStarted = false;
     let realtimeTransportStarted = false;
+    const bootstrapRetryState = {
+        friends: { timer: null, attempt: 0 },
+        favorites: { timer: null, attempt: 0 }
+    };
+    let requestBootstrapUpdate = () => {};
+
+    const clearBootstrapRetry = (key) => {
+        const state = bootstrapRetryState[key];
+        if (!state) {
+            return;
+        }
+        if (state.timer !== null) {
+            window.clearTimeout(state.timer);
+            state.timer = null;
+        }
+        state.attempt = 0;
+    };
+
+    const clearBootstrapRetries = () => {
+        clearBootstrapRetry('friends');
+        clearBootstrapRetry('favorites');
+    };
 
     const resetContext = (context) => {
         activeContext = context;
@@ -188,6 +212,7 @@ export function startAuthenticatedRuntimeServices() {
         favoritesBootstrapStarted = false;
         activityBootstrapStarted = false;
         realtimeTransportStarted = false;
+        clearBootstrapRetries();
         stopRealtimeTransport({ updateStatus: false });
     };
 
@@ -214,17 +239,41 @@ export function startAuthenticatedRuntimeServices() {
         isSameAuthenticatedIdentity(target, getAuthenticatedRuntimeContext())
     );
 
+    const scheduleBootstrapRetry = (key, runId, context) => {
+        const state = bootstrapRetryState[key];
+        if (!state || state.timer !== null || !isActiveRun(runId, context)) {
+            return;
+        }
+
+        const delay = BOOTSTRAP_RETRY_DELAYS_MS[
+            Math.min(state.attempt, BOOTSTRAP_RETRY_DELAYS_MS.length - 1)
+        ];
+        state.attempt += 1;
+        state.timer = window.setTimeout(() => {
+            state.timer = null;
+            if (isActiveRun(runId, context)) {
+                requestBootstrapUpdate();
+            }
+        }, delay);
+    };
+
     const runFriendBootstrap = (context, runId) => {
         friendBootstrapStarted = true;
         bootstrapFriendRoster({
             userId: context.userId,
             endpoint: context.endpoint,
             currentUserSnapshot: context.currentUserSnapshot
+        }).then(() => {
+            if (isActiveRun(runId, context)) {
+                clearBootstrapRetry('friends');
+            }
         }).catch((error) => {
             if (!isActiveRun(runId, context)) {
                 return;
             }
 
+            friendBootstrapStarted = false;
+            scheduleBootstrapRetry('friends', runId, context);
             pushRuntimeNotification({
                 level: 'warning',
                 title: 'Friend bootstrap failed',
@@ -239,11 +288,17 @@ export function startAuthenticatedRuntimeServices() {
             userId: context.userId,
             endpoint: context.endpoint,
             currentUserSnapshot: context.currentUserSnapshot
+        }).then(() => {
+            if (isActiveRun(runId, context)) {
+                clearBootstrapRetry('favorites');
+            }
         }).catch((error) => {
             if (!isActiveRun(runId, context)) {
                 return;
             }
 
+            favoritesBootstrapStarted = false;
+            scheduleBootstrapRetry('favorites', runId, context);
             pushRuntimeNotification({
                 level: 'warning',
                 title: 'Favorites hydration failed',
@@ -334,11 +389,19 @@ export function startAuthenticatedRuntimeServices() {
         const sessionState = useSessionStore.getState();
         const runtimeState = useRuntimeStore.getState();
 
-        if (!sessionState.isFriendsLoaded && !friendBootstrapStarted) {
+        if (
+            !sessionState.isFriendsLoaded &&
+            !friendBootstrapStarted &&
+            bootstrapRetryState.friends.timer === null
+        ) {
             runFriendBootstrap(context, runId);
         }
 
-        if (!sessionState.isFavoritesLoaded && !favoritesBootstrapStarted) {
+        if (
+            !sessionState.isFavoritesLoaded &&
+            !favoritesBootstrapStarted &&
+            bootstrapRetryState.favorites.timer === null
+        ) {
             runFavoritesBootstrap(context, runId);
         }
 
@@ -372,6 +435,7 @@ export function startAuthenticatedRuntimeServices() {
     const unsubscribeSession = useSessionStore.subscribe(update);
     const unsubscribeRuntime = useRuntimeStore.subscribe(update);
 
+    requestBootstrapUpdate = update;
     update();
 
     return () => {
@@ -380,6 +444,7 @@ export function startAuthenticatedRuntimeServices() {
         unsubscribeRuntime();
         activeContext = null;
         activeRunId += 1;
+        clearBootstrapRetries();
         stopRealtimeTransport();
     };
 }

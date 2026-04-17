@@ -25,8 +25,7 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { configRepository } from '@/repositories/index.js';
-import { bootstrapFavorites } from '@/services/favoriteBootstrapService.js';
-import { bootstrapFriendRoster } from '@/services/friendBootstrapService.js';
+import { refreshCurrentUserFriendsAndFavorites } from '@/services/backgroundMaintenanceService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -140,6 +139,7 @@ export function SidePanel({ className = '', style = undefined }) {
     const [activeTab, setActiveTab] = useState('friends');
     const [prefs, setPrefs] = useState(defaultPrefs);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
     const [favoriteGroupOrderDialogOpen, setFavoriteGroupOrderDialogOpen] = useState(false);
     const [favoriteGroupOrderDraft, setFavoriteGroupOrderDraft] = useState([]);
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -330,18 +330,7 @@ export function SidePanel({ className = '', style = undefined }) {
         }
         setIsRefreshing(true);
         try {
-            await Promise.all([
-                bootstrapFriendRoster({
-                    userId: auth.currentUserId,
-                    endpoint: auth.currentUserEndpoint,
-                    currentUserSnapshot: auth.currentUserSnapshot
-                }),
-                bootstrapFavorites({
-                    userId: auth.currentUserId,
-                    endpoint: auth.currentUserEndpoint,
-                    currentUserSnapshot: auth.currentUserSnapshot
-                })
-            ]);
+            await refreshCurrentUserFriendsAndFavorites();
             toast.success('Friend and favorite snapshots refreshed.');
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to refresh friends.');
@@ -353,26 +342,29 @@ export function SidePanel({ className = '', style = undefined }) {
     return (
         <aside className={cn('flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l bg-background', className)} style={style}>
             <div className="flex shrink-0 items-center justify-end gap-1 px-2 py-2">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={t('side_panel.refresh_tooltip')}
-                    disabled={isRefreshing}
-                    onClick={() => {
-                        void refreshFriends();
-                    }}
-                    title={t('side_panel.refresh_tooltip')}>
-                    {isRefreshing ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
-                </Button>
-                <Popover>
+                <Popover open={settingsPopoverOpen} onOpenChange={setSettingsPopoverOpen}>
                     <PopoverTrigger asChild>
                         <Button type="button" variant="ghost" size="icon" className="size-8 rounded-full" aria-label="Side panel settings">
-                            <SettingsIcon data-icon="inline-start" />
+                            {isRefreshing ? <Spinner data-icon="inline-start" /> : <SettingsIcon data-icon="inline-start" />}
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent side="bottom" align="end" className="w-72 p-3">
                         <div className="flex flex-col gap-2.5">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full justify-start"
+                                aria-label={t('side_panel.refresh_tooltip')}
+                                disabled={isRefreshing}
+                                onClick={() => {
+                                    setSettingsPopoverOpen(false);
+                                    void refreshFriends();
+                                }}>
+                                {isRefreshing ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
+                                {t('side_panel.refresh_tooltip')}
+                            </Button>
+                            <Separator />
                             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                 {t('side_panel.settings.display')}
                             </span>

@@ -16,7 +16,10 @@ import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { bootstrapFavorites } from './favoriteBootstrapService.js';
-import { bootstrapFriendRoster } from './friendBootstrapService.js';
+import {
+    bootstrapFriendRoster,
+    syncFriendRosterStateFromCurrentUserSnapshot
+} from './friendBootstrapService.js';
 import { refreshDiscordPresence as updateDiscordPresence } from './discordPresenceService.js';
 import { database } from '@/services/database/index.js';
 import {
@@ -249,7 +252,7 @@ function getRuntimeAuth() {
     };
 }
 
-async function refreshCurrentUser() {
+export async function refreshCurrentUser() {
     const { currentUserEndpoint, currentUserWebsocket } = getRuntimeAuth();
     const response = await vrchatAuthRepository.getCurrentUser({
         endpoint: currentUserEndpoint
@@ -266,6 +269,10 @@ async function refreshCurrentUser() {
         currentUserWebsocket,
         currentUserSnapshot: user
     });
+    syncFriendRosterStateFromCurrentUserSnapshot(
+        user,
+        `Friend roster states refreshed for ${user.displayName || user.username || user.id}.`
+    );
 }
 
 async function refreshFriendsAndFavorites() {
@@ -286,6 +293,11 @@ async function refreshFriendsAndFavorites() {
             currentUserSnapshot: auth.currentUserSnapshot
         })
     ]);
+}
+
+export async function refreshCurrentUserFriendsAndFavorites() {
+    await refreshCurrentUser();
+    await refreshFriendsAndFavorites();
 }
 
 export async function refreshPlayerModerations({ isCurrent = null } = {}) {

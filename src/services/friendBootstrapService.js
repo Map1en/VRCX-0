@@ -53,6 +53,26 @@ function buildFriendStateMap(currentUserSnapshot) {
     return stateById;
 }
 
+export function syncFriendRosterStateFromCurrentUserSnapshot(currentUserSnapshot, detail = '') {
+    const stateById = buildFriendStateMap(currentUserSnapshot);
+    if (!stateById.size) {
+        return false;
+    }
+
+    useFriendRosterStore.getState().applyFriendPatches(
+        Array.from(stateById.entries()).map(([userId, stateBucket]) => ({
+            userId,
+            stateBucket,
+            patch: {
+                id: userId,
+                state: stateBucket
+            }
+        })),
+        detail
+    );
+    return true;
+}
+
 function createFallbackFriendUser(userId, existingRow) {
     return {
         id: userId,
