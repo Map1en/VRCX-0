@@ -145,8 +145,6 @@ export const queryKeys = Object.freeze({
         withEndpoint(['avatar', avatarId], endpoint),
     world: (worldId, endpoint = '') =>
         withEndpoint(['world', worldId], endpoint),
-    worldBasic: (worldId, endpoint = '') =>
-        withEndpoint(['world', worldId, 'basic'], endpoint),
     group: (groupId, includeRoles = false, endpoint = '') =>
         withEndpoint(['group', groupId, Boolean(includeRoles)], endpoint),
     worldsByUser: (params = {}, endpoint = '') =>

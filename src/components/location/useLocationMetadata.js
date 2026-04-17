@@ -229,7 +229,7 @@ export function useLocationMetadata({
         refetchOnWindowFocus: entityQueryPolicies.group.refetchOnWindowFocus
     });
     const worldProfileQuery = useQuery({
-        queryKey: queryKeys.worldBasic(worldId, currentEndpoint),
+        queryKey: queryKeys.world(worldId, currentEndpoint),
         queryFn: () =>
             worldProfileRepository.fetchWorldProfile({
                 worldId,
