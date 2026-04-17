@@ -163,6 +163,36 @@
             "delete_description": "Are you sure you want to delete this dashboard? This action cannot be undone."
         }
     },
+    "app_menu": {
+        "vrcx": "VRCX-0",
+        "view": "View",
+        "tools": "Tools",
+        "help": "Help",
+        "settings": "Settings...",
+        "check_updates": "Check for Updates",
+        "logout": "Log Out",
+        "quit": "Quit VRCX-0",
+        "quick_search": "Quick Search",
+        "notification_center": "Notification Center",
+        "expand_friends_sidebar": "Show Friends Sidebar",
+        "collapse_friends_sidebar": "Hide Friends Sidebar",
+        "zoom_in": "Zoom In",
+        "zoom_out": "Zoom Out",
+        "reset_zoom": "Reset Zoom",
+        "all_tools": "All Tools...",
+        "github": "GitHub",
+        "report_issue": "Report Issue",
+        "open_source_licenses": "Open Source Licenses",
+        "about": "About VRCX-0",
+        "about_title": "About VRCX-0",
+        "about_description": "Desktop companion for VRChat.",
+        "version": "Version",
+        "close": "Close",
+        "messages": {
+            "zoom_failed": "Failed to apply zoom.",
+            "logout_failed": "Failed to sign out of VRCX-0."
+        }
+    },
     "side_panel": {
         "search_placeholder": "Quick Search...",
         "search_no_results": "No results found",

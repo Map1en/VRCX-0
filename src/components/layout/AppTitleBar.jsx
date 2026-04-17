@@ -29,6 +29,7 @@ import {
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
 import { cn } from '@/lib/utils.js';
+import { AppMenuBar } from './AppMenuBar.jsx';
 import { shouldShowSidePanel } from './sidePanelRoutes.js';
 
 function TitleBarButton({ label, className, children, onClick, ...props }) {
@@ -146,14 +147,26 @@ export function AppTitleBar() {
         <>
             <header
                 className="relative z-[60] flex h-8 shrink-0 select-none items-center border-b bg-background text-foreground">
-                <div
-                    data-tauri-drag-region
-                    className="flex min-w-0 flex-1 items-center gap-2 px-3">
-                    <span
+                <div className="flex min-w-0 flex-1 items-center gap-2 px-3">
+                    {titleBarActionsVisible ? (
+                        <AppMenuBar
+                            rightSidebarVisible={rightSidebarActionVisible}
+                            rightSidebarOpen={rightSidebarOpen}
+                            onOpenQuickSearch={() => setQuickSearchOpen(true)}
+                            onOpenNotificationCenter={() => openVrcNotificationCenter()}
+                            onToggleRightSidebar={() => toggleRightSidebar()}
+                        />
+                    ) : (
+                        <span
+                            data-tauri-drag-region
+                            className="shrink-0 text-xs font-semibold text-foreground">
+                            VRCX
+                        </span>
+                    )}
+                    <div
                         data-tauri-drag-region
-                        className="shrink-0 text-xs font-semibold text-foreground">
-                        VRCX
-                    </span>
+                        className="h-full min-w-0 flex-1"
+                    />
                 </div>
                 {titleBarActionsVisible ? (
                     <div className="flex h-full shrink-0 items-center border-l">
