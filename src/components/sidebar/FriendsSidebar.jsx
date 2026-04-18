@@ -835,6 +835,7 @@ function FriendRow({
                                         link={false}
                                         stopPropagation
                                         asButton={false}
+                                        showGroupLink={false}
                                     />
                                 ) : (
                                     subline
