@@ -1,5 +1,6 @@
 import {
     BellIcon,
+    CompassIcon,
     CopyIcon,
     MinusIcon,
     PanelRightCloseIcon,
@@ -32,6 +33,7 @@ import {
 
 import { AppMenuBar } from './AppMenuBar.jsx';
 import { shouldShowSidePanel } from './sidePanelRoutes.js';
+import { useDirectAccessAction } from './useDirectAccessAction.js';
 
 const TITLE_BAR_INTERACTIVE_SELECTOR = [
     'button',
@@ -60,11 +62,20 @@ function TitleBarButton({ label, className, children, onClick, ...props }) {
     );
 }
 
+function TitleBarShortcutKey({ children }) {
+    return (
+        <kbd className="text-muted-foreground rounded border px-1 font-sans text-[10px] leading-4">
+            {children}
+        </kbd>
+    );
+}
+
 export function AppTitleBar() {
     const { t } = useI18n();
     const location = useLocation();
     const [isMaximized, setIsMaximized] = useState(false);
     const [quickSearchOpen, setQuickSearchOpen] = useState(false);
+    const { openDirectAccessFromClipboard } = useDirectAccessAction();
     const isSessionReady = useSessionStore(
         (state) => state.sessionPhase === 'ready'
     );
@@ -108,19 +119,25 @@ export function AppTitleBar() {
         }
 
         const handleKeyDown = (event) => {
-            if (
-                !(event.ctrlKey || event.metaKey) ||
-                event.key.toLowerCase() !== 'k'
-            ) {
+            if (!(event.ctrlKey || event.metaKey)) {
                 return;
             }
-            event.preventDefault();
-            setQuickSearchOpen(true);
+
+            const key = event.key.toLowerCase();
+            if (key === 'k') {
+                event.preventDefault();
+                setQuickSearchOpen(true);
+                return;
+            }
+            if (key === 'd') {
+                event.preventDefault();
+                void openDirectAccessFromClipboard();
+            }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isSessionReady]);
+    }, [isSessionReady, openDirectAccessFromClipboard]);
 
     async function runWindowAction(action, shouldSync = true) {
         try {
@@ -250,12 +267,17 @@ export function AppTitleBar() {
                             onClick={() => setQuickSearchOpen(true)}
                         >
                             <SearchIcon data-icon="inline-start" />
-                            <span className="text-muted-foreground rounded border px-1 text-[10px] leading-4">
-                                Ctrl
-                            </span>
-                            <span className="text-muted-foreground rounded border px-1 text-[10px] leading-4">
-                                K
-                            </span>
+                            <TitleBarShortcutKey>Ctrl</TitleBarShortcutKey>
+                            <TitleBarShortcutKey>K</TitleBarShortcutKey>
+                        </TitleBarButton>
+                        <TitleBarButton
+                            label={`${t('prompt.direct_access_omni.header')} Ctrl+D`}
+                            className="w-auto gap-1.5 px-2"
+                            onClick={() => void openDirectAccessFromClipboard()}
+                        >
+                            <CompassIcon data-icon="inline-start" />
+                            <TitleBarShortcutKey>Ctrl</TitleBarShortcutKey>
+                            <TitleBarShortcutKey>D</TitleBarShortcutKey>
                         </TitleBarButton>
                         {notificationActionVisible ? (
                             vrcUnseenNotificationCount > 0 ? (

@@ -113,13 +113,6 @@ const navDefinitions = [
         labelKey: 'nav_tooltip.tools',
         routeName: 'tools'
     },
-    {
-        key: 'direct-access',
-        icon: 'ri-compass-3-line',
-        tooltip: 'prompt.direct_access_omni.header',
-        labelKey: 'prompt.direct_access_omni.header',
-        action: 'direct-access'
-    },
     ...toolNavDefinitions
 ];
 

@@ -3,7 +3,6 @@ import {
     BellIcon,
     BookOpenIcon,
     ChevronRightIcon,
-    CompassIcon,
     ContactIcon,
     FolderIcon,
     Gamepad2Icon,
@@ -32,7 +31,7 @@ import {
     UsersIcon,
     WrenchIcon
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -41,7 +40,6 @@ import { openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/index.js';
 import { logoutFromReactShell } from '@/services/authExecutionService.js';
-import { directAccessParse } from '@/services/directAccessService.js';
 import {
     setSidebarCollapsedPreference,
     setTableDensityPreference,
@@ -121,7 +119,6 @@ const iconByKey = {
     'charts-instance': BarChart3Icon,
     'charts-mutual': UsersIcon,
     tools: WrenchIcon,
-    'direct-access': CompassIcon,
     'default-folder-favorites': StarIcon,
     'default-folder-social': UsersIcon,
     'default-folder-charts': BarChart3Icon
@@ -727,14 +724,10 @@ export function AppNavMenu({ isCollapsed }) {
     const setEditingDashboardId = useDashboardStore(
         (state) => state.setEditingDashboardId
     );
-    const prompt = useModalStore((state) => state.prompt);
     const confirm = useModalStore((state) => state.confirm);
     const isLoggedIn = useSessionStore((state) => state.isLoggedIn);
     const sessionPhase = useSessionStore((state) => state.sessionPhase);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
     const vrcUnseenNotificationCount = useVrcNotificationStore(
         (state) => state.unseenCount
     );
@@ -761,7 +754,6 @@ export function AppNavMenu({ isCollapsed }) {
     );
     const [isCreatingDashboard, setIsCreatingDashboard] = useState(false);
     const [hasPendingUpdate, setHasPendingUpdate] = useState(false);
-    const directAccessBusyRef = useRef(false);
     const appVersion = typeof VERSION === 'string' && VERSION ? VERSION : '-';
     const notifiedKeys = useMemo(() => {
         const keys = new Set(notifiedMenus);
@@ -925,73 +917,8 @@ export function AppNavMenu({ isCollapsed }) {
         }
     }
 
-    async function handleDirectAccessPrompt(inputValue = '') {
-        const result = await prompt({
-            title: t('prompt.direct_access_omni.header'),
-            description:
-                'Open a VRChat user, avatar, world, group, launch URL, short link, or group shortcode.',
-            confirmText: 'Open',
-            cancelText: 'Cancel',
-            inputValue,
-            pattern: /\S+/
-        });
-
-        if (!result.ok) {
-            return;
-        }
-
-        try {
-            if (await directAccessParse(result.value, currentEndpoint)) {
-                toast.success('Opened direct access target.');
-                return;
-            }
-            toast.error('Could not parse that VRChat ID or URL.');
-        } catch (error) {
-            toast.error(
-                error instanceof Error ? error.message : 'Direct access failed.'
-            );
-        }
-    }
-
-    async function handleDirectAccessFromClipboard() {
-        if (directAccessBusyRef.current) {
-            return;
-        }
-
-        directAccessBusyRef.current = true;
-        try {
-            const clipboardText = await backend.app
-                .GetClipboard()
-                .catch(() => '');
-            const input =
-                typeof clipboardText === 'string' ? clipboardText.trim() : '';
-            if (input) {
-                try {
-                    if (await directAccessParse(input, currentEndpoint)) {
-                        toast.success('Opened from clipboard.');
-                        return;
-                    }
-                } catch (error) {
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : 'Direct access failed.'
-                    );
-                    return;
-                }
-            }
-            await handleDirectAccessPrompt(input);
-        } finally {
-            directAccessBusyRef.current = false;
-        }
-    }
-
     async function handleSelectEntry(entry) {
         if (!entry) {
-            return;
-        }
-        if (entry.action === 'direct-access') {
-            await handleDirectAccessFromClipboard();
             return;
         }
         if (entry.action?.type === 'tool') {
@@ -1122,24 +1049,6 @@ export function AppNavMenu({ isCollapsed }) {
             );
         }
     }
-
-    useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (
-                !(event.ctrlKey || event.metaKey) ||
-                event.key.toLowerCase() !== 'd'
-            ) {
-                return;
-            }
-            event.preventDefault();
-            void handleDirectAccessFromClipboard();
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [prompt]);
 
     return (
         <>
@@ -1276,13 +1185,6 @@ export function AppNavMenu({ isCollapsed }) {
                                                                     t
                                                                 )}
                                                             </span>
-                                                            {item.action ===
-                                                                'direct-access' &&
-                                                            !isCollapsed ? (
-                                                                <span className="text-muted-foreground ml-auto text-xs">
-                                                                    Ctrl D
-                                                                </span>
-                                                            ) : null}
                                                         </NavLink>
                                                     ) : (
                                                         <>
@@ -1299,13 +1201,6 @@ export function AppNavMenu({ isCollapsed }) {
                                                                     t
                                                                 )}
                                                             </span>
-                                                            {item.action ===
-                                                                'direct-access' &&
-                                                            !isCollapsed ? (
-                                                                <span className="text-muted-foreground ml-auto text-xs">
-                                                                    Ctrl D
-                                                                </span>
-                                                            ) : null}
                                                         </>
                                                     )}
                                                 </SidebarMenuButton>

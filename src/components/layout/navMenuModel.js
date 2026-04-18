@@ -86,8 +86,7 @@ export function createBaseDefaultNavLayout(t) {
             icon: 'ri-pie-chart-line',
             items: CHART_KEYS
         },
-        { type: 'item', key: 'tools' },
-        { type: 'item', key: 'direct-access' }
+        { type: 'item', key: 'tools' }
     ];
 }
 
@@ -115,13 +114,6 @@ export function insertDashboardEntries(
         return nextLayout;
     }
 
-    const directAccessIndex = nextLayout.findIndex(
-        (entry) => entry.type === 'item' && entry.key === 'direct-access'
-    );
-    if (directAccessIndex >= 0) {
-        nextLayout.splice(directAccessIndex, 0, ...dashboardEntries);
-        return nextLayout;
-    }
     return [...nextLayout, ...dashboardEntries];
 }
 
@@ -279,14 +271,6 @@ export function sanitizeNavLayout({
         appendItemEntry(definition.key);
     }
     appendChartsFolder();
-
-    const directAccessIndex = normalized.findIndex(
-        (entry) => entry.type === 'item' && entry.key === 'direct-access'
-    );
-    if (directAccessIndex >= 0 && directAccessIndex !== normalized.length - 1) {
-        const [directAccessEntry] = normalized.splice(directAccessIndex, 1);
-        normalized.push(directAccessEntry);
-    }
 
     return normalized;
 }
