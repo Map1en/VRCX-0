@@ -55,12 +55,6 @@ function createEmptyLocationDetails() {
     };
 }
 
-function normalizeString(value) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 function timestampSeconds(value) {
     if (!value) {
         return 0;
@@ -85,6 +79,24 @@ function createActivityTimestamps(startTime, endTime = 0) {
         timestamps.end = end;
     }
     return Object.keys(timestamps).length ? timestamps : undefined;
+}
+
+function clampGameSessionStartTime(runtimeState, startTime) {
+    if (!runtimeState.gameState.isGameRunning) {
+        return startTime;
+    }
+
+    const gameStartedAt = runtimeState.gameState.lastGameStartedAt;
+    const gameStartedAtSeconds = timestampSeconds(gameStartedAt);
+    if (!gameStartedAtSeconds) {
+        return startTime;
+    }
+
+    const startTimeSeconds = timestampSeconds(startTime);
+    if (!startTimeSeconds || startTimeSeconds < gameStartedAtSeconds) {
+        return gameStartedAt;
+    }
+    return startTime;
 }
 
 function createActivityAssets(bigIcon, poweredBy, statusImage, statusName) {
@@ -207,7 +219,10 @@ function getCurrentLocationContext(runtimeState, currentUser) {
         }
     }
 
-    return { currentLocation, startTime };
+    return {
+        currentLocation,
+        startTime: clampGameSessionStartTime(runtimeState, startTime)
+    };
 }
 
 async function setDiscordActiveState(active) {
@@ -358,8 +373,13 @@ export async function refreshDiscordPresence({ force = false } = {}) {
         invalidateDiscordPresenceCache();
     }
 
-    const config = await loadDiscordConfig();
     const runtimeState = useRuntimeStore.getState();
+    if (runtimeState.gameState.isGameRunning !== true) {
+        await setDiscordActiveState(false);
+        return;
+    }
+
+    const config = await loadDiscordConfig();
     const auth = runtimeState.auth;
     const currentUser = auth.currentUserSnapshot;
     const { currentLocation, startTime: rawStartTime } =

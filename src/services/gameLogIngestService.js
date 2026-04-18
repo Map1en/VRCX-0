@@ -1217,6 +1217,10 @@ function resetCurrentGameLogSessionState() {
     ingestState.lastResourceUrl = '';
 }
 
+export function resetGameLogIngestSessionState() {
+    resetCurrentGameLogSessionState();
+}
+
 export async function finalizeCurrentGameLogSession(
     stoppedAt = new Date().toISOString()
 ) {

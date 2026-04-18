@@ -4,6 +4,7 @@ import { database } from '@/services/database/index.js';
 import { refreshDiscordPresence } from '@/services/discordPresenceService.js';
 import {
     finalizeCurrentGameLogSession,
+    resetGameLogIngestSessionState,
     resetNowPlayingState
 } from '@/services/gameLogIngestService.js';
 import { isRealInstance } from '@/shared/utils/instance.js';
@@ -16,6 +17,12 @@ let crashRelaunchTimer = null;
 
 function normalizeBoolean(value) {
     return value === true || value === 'true' || value === 1 || value === '1';
+}
+
+function normalizeString(value) {
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
 }
 
 function scheduleDebugLoggingCheck(delayMs = 60000) {
@@ -233,6 +240,18 @@ async function handleGameStopped(previousGameState, currentUserSnapshot) {
     }
 }
 
+function buildNewGameSessionPatch(startedAt) {
+    return {
+        currentLocation: '',
+        currentWorldId: '',
+        currentWorldName: '',
+        currentDestination: '',
+        currentLocationStartedAt: null,
+        currentLocationPlayerIds: [],
+        lastGameStartedAt: startedAt
+    };
+}
+
 function clearStoppedGameLocationSnapshot(
     previousGameState,
     currentUserSnapshot
@@ -341,17 +360,24 @@ export async function handleGameRunningUpdate(payload = {}) {
     const gameRunningChanged = previousGameRunning !== nextGameRunning;
     const steamVrRunningChanged = previousSteamVrRunning !== nextSteamVrRunning;
     const changed = gameRunningChanged || steamVrRunningChanged;
+    const now = new Date().toISOString();
+    const gameStartedAt =
+        gameRunningChanged && nextGameRunning
+            ? now
+            : runtimeStore.gameState.lastGameStartedAt;
+    const newSessionPatch =
+        gameRunningChanged && nextGameRunning
+            ? buildNewGameSessionPatch(gameStartedAt)
+            : {};
 
     runtimeStore.setGameState({
         isGameRunning: nextGameRunning,
         isSteamVRRunning: nextSteamVrRunning,
         lastGameStateChangedAt: changed
-            ? new Date().toISOString()
+            ? now
             : runtimeStore.gameState.lastGameStateChangedAt,
-        lastGameStartedAt:
-            gameRunningChanged && nextGameRunning
-                ? new Date().toISOString()
-                : runtimeStore.gameState.lastGameStartedAt
+        lastGameStartedAt: gameStartedAt,
+        ...newSessionPatch
     });
 
     if (gameRunningChanged && previousGameRunning !== null) {
@@ -365,6 +391,10 @@ export async function handleGameRunningUpdate(payload = {}) {
     }
 
     if (nextGameRunning) {
+        if (gameRunningChanged) {
+            resetGameLogIngestSessionState();
+            resetNowPlayingState();
+        }
         clearCrashRelaunchTimer();
         scheduleDebugLoggingCheck(1000);
     } else if (debugLoggingTimer !== null) {
