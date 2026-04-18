@@ -1,5 +1,5 @@
 import { ChevronDownIcon, ClockIcon, UserIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -414,8 +414,54 @@ function sameInstanceLocationTag(friend, lastLocation) {
     return isRealInstance(locationTag) ? locationTag : '';
 }
 
-function buildSameInstanceGroups(rows, prefs, lastLocation) {
+function readFriendInstanceEpoch(source, isTraveling) {
+    const locationEpoch =
+        source?.$location_at || source?.locationAt || source?.location_at;
+    if (!isTraveling) {
+        return locationEpoch;
+    }
+    return (
+        source?.$travelingToTime ||
+        source?.travelingToTime ||
+        source?.traveling_to_time ||
+        locationEpoch
+    );
+}
+
+function sameInstanceFallbackKey(locationTag, friend) {
+    const friendId = normalizeId(friend?.id);
+    return `${locationTag}:${friendId || normalizeId(readFriendRef(friend)?.id)}`;
+}
+
+function withSameInstanceJoinTime(friend, locationTag, fallbackJoinTimes) {
+    const source = readFriendStatusSource(friend);
+    if (timestampMsFromValue(readFriendInstanceEpoch(source, false))) {
+        return friend;
+    }
+    const fallbackKey = sameInstanceFallbackKey(locationTag, friend);
+    if (!fallbackJoinTimes.has(fallbackKey)) {
+        fallbackJoinTimes.set(fallbackKey, Date.now());
+    }
+    const fallbackJoinTime = fallbackJoinTimes.get(fallbackKey);
+    const ref = readFriendRef(friend);
+    if (ref && ref !== friend) {
+        return {
+            ...friend,
+            ref: {
+                ...ref,
+                $location_at: fallbackJoinTime
+            }
+        };
+    }
+    return {
+        ...friend,
+        $location_at: fallbackJoinTime
+    };
+}
+
+function buildSameInstanceGroups(rows, prefs, lastLocation, fallbackJoinTimes) {
     const groupsByLocation = new Map();
+    const activeFallbackKeys = new Set();
     for (const friend of sortRows(rows, prefs)) {
         const locationTag = sameInstanceLocationTag(friend, lastLocation);
         if (!locationTag) {
@@ -424,7 +470,27 @@ function buildSameInstanceGroups(rows, prefs, lastLocation) {
         if (!groupsByLocation.has(locationTag)) {
             groupsByLocation.set(locationTag, []);
         }
-        groupsByLocation.get(locationTag).push(friend);
+        const source = readFriendStatusSource(friend);
+        const needsFallback = !timestampMsFromValue(
+            readFriendInstanceEpoch(source, false)
+        );
+        groupsByLocation
+            .get(locationTag)
+            .push(
+                withSameInstanceJoinTime(
+                    friend,
+                    locationTag,
+                    fallbackJoinTimes
+                )
+            );
+        if (needsFallback) {
+            activeFallbackKeys.add(sameInstanceFallbackKey(locationTag, friend));
+        }
+    }
+    for (const key of fallbackJoinTimes.keys()) {
+        if (!activeFallbackKeys.has(key)) {
+            fallbackJoinTimes.delete(key);
+        }
     }
     return Array.from(groupsByLocation.entries())
         .filter(([, groupRows]) => groupRows.length > 1)
@@ -664,8 +730,11 @@ function statusPresetLabel(preset, t) {
 
 function FriendInstanceTimer({ epoch, traveling = false }) {
     const [now, setNow] = useState(() => Date.now());
+    const timeUnitLabels = useShellStore((state) => state.timeUnitLabels);
     const normalizedEpoch = timestampMsFromValue(epoch);
-    const text = normalizedEpoch ? timeToText(now - normalizedEpoch) : '-';
+    const text = normalizedEpoch
+        ? timeToText(now - normalizedEpoch, false, timeUnitLabels)
+        : '-';
 
     useEffect(() => {
         const intervalId = window.setInterval(() => {
@@ -749,13 +818,10 @@ function FriendRow({
     const groupByInstanceTimerVisible = Boolean(
         isGroupByInstance && !isActiveOrOffline && !statusSource?.pendingOffline
     );
-    const groupByInstanceEpoch = isTraveling
-        ? statusSource?.$travelingToTime ||
-          statusSource?.travelingToTime ||
-          statusSource?.traveling_to_time
-        : statusSource?.$location_at ||
-          statusSource?.locationAt ||
-          statusSource?.location_at;
+    const groupByInstanceEpoch = readFriendInstanceEpoch(
+        statusSource,
+        isTraveling
+    );
     const showLocationSubline = Boolean(
         displayLocation &&
         !statusSource?.pendingOffline &&
@@ -983,6 +1049,7 @@ export function FriendsSidebar({ prefs }) {
     const [openGroups, setOpenGroups] = useState(defaultGroupState);
     const [statusPresets, setStatusPresets] = useState([]);
     const [recentActionVersion, setRecentActionVersion] = useState(0);
+    const sameInstanceFallbackJoinTimesRef = useRef(new Map());
     const isDarkMode =
         themeMode === 'dark' ||
         (typeof document !== 'undefined' &&
@@ -1156,7 +1223,12 @@ export function FriendsSidebar({ prefs }) {
         if (!prefs.sidebarGroupByInstance) {
             return [];
         }
-        return buildSameInstanceGroups(rows, prefs, currentLocationSnapshot);
+        return buildSameInstanceGroups(
+            rows,
+            prefs,
+            currentLocationSnapshot,
+            sameInstanceFallbackJoinTimesRef.current
+        );
     }, [currentLocationSnapshot, prefs, rows]);
     const sameInstanceIds = useMemo(
         () =>

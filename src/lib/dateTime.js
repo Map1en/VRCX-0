@@ -99,7 +99,7 @@ export function formatDateFilter(dateStr, format) {
     return '-';
 }
 
-export function timeToText(sec, isNeedSeconds = false) {
+export function timeToText(sec, isNeedSeconds = false, unitLabels = undefined) {
     let n = Number(sec);
     if (Number.isNaN(n)) {
         return String(sec);
@@ -112,7 +112,7 @@ export function timeToText(sec, isNeedSeconds = false) {
     }
     const labels = {
         ...DEFAULT_TIME_UNIT_LABELS,
-        ...useShellStore.getState().timeUnitLabels
+        ...(unitLabels || useShellStore.getState().timeUnitLabels)
     };
     if (n >= 31536000) {
         arr.push(`${Math.floor(n / 31536000)}${labels.y}`);
