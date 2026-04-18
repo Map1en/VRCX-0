@@ -9,6 +9,8 @@ import { useShellStore } from '@/state/shellStore.js';
 import { Toaster } from '@/ui/shadcn/sonner';
 import { Spinner } from '@/ui/shadcn/spinner';
 
+const TITLE_BAR_TOAST_OFFSET = { top: 'calc(2rem + 32px)' };
+
 function resolveSonnerTheme(themeMode) {
     if (themeMode === 'dark') {
         return 'dark';
@@ -41,6 +43,7 @@ export function AppToaster(props) {
             theme={theme}
             richColors
             position="top-center"
+            offset={TITLE_BAR_TOAST_OFFSET}
             icons={{
                 success: <CircleCheckIcon className="size-4" />,
                 info: <InfoIcon className="size-4" />,
