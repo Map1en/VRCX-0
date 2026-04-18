@@ -45,6 +45,11 @@ import {
     translateAccessType
 } from '@/shared/utils/location.js';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
+import {
+    buildCurrentUserPresenceView,
+    mergeCurrentUserPresenceFields
+} from '@/shared/utils/currentUserPresence.js';
+import { computeTrustLevel } from '@/shared/utils/userTransforms.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -205,14 +210,30 @@ function applyCurrentUserSnapshot(nextUser) {
     if (!nextUser?.id) {
         return;
     }
+    const previousUser = useRuntimeStore.getState().auth.currentUserSnapshot;
+    const mergedUser = mergeCurrentUserPresenceFields(nextUser, previousUser);
     useRuntimeStore.getState().setAuthBootstrap({
-        currentUserId: nextUser.id,
-        currentUserDisplayName: nextUser.displayName || nextUser.username || '',
-        currentUserSnapshot: nextUser
+        currentUserId: mergedUser.id,
+        currentUserDisplayName:
+            mergedUser.displayName || mergedUser.username || '',
+        currentUserSnapshot: mergedUser
     });
 }
 
 function resolveTrustNameColour(friend, trustColor) {
+    if (!friend?.$trustClass && Array.isArray(friend?.tags)) {
+        const trust = computeTrustLevel(friend.tags, friend.developerType || '');
+        return getTrustColor(
+            {
+                ...friend,
+                $trustClass: trust.trustClass,
+                $isModerator: trust.isModerator,
+                $isTroll: trust.isTroll,
+                $isProbableTroll: trust.isProbableTroll
+            },
+            trustColor
+        );
+    }
     return getTrustColor(friend, trustColor);
 }
 
@@ -2080,14 +2101,21 @@ export function FriendsSidebar({ prefs }) {
         });
         if (openGroups.me) {
             if (currentUser) {
+                const currentUserRow = buildCurrentUserPresenceView(
+                    currentUser,
+                    {
+                        gameState,
+                        gameLogDisabled: Boolean(prefs.gameLogDisabled)
+                    }
+                );
                 pushFriendRows(
                     nextRows,
                     'me',
                     [
                         {
-                            ...currentUser,
+                            ...currentUserRow,
                             stateBucket:
-                                resolveCurrentUserStateBucket(currentUser)
+                                resolveCurrentUserStateBucket(currentUserRow)
                         }
                     ],
                     { isCurrentUser: true }
@@ -2200,10 +2228,12 @@ export function FriendsSidebar({ prefs }) {
         detail,
         favoriteGroupSections,
         favoriteRows,
+        gameState,
         loadStatus,
         offlineRows,
         onlineRows,
         openGroups,
+        prefs.gameLogDisabled,
         prefs.isSameInstanceAboveFavorites,
         prefs.isSidebarDivideByFriendGroup,
         rows.length,

@@ -7,7 +7,14 @@ import {
     SmartphoneIcon,
     XIcon
 } from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
@@ -35,6 +42,10 @@ import {
     subscribeRecentActions
 } from '@/services/recentActionService.js';
 import { checkCanInvite } from '@/shared/utils/invite.js';
+import {
+    buildCurrentUserPresenceView,
+    mergeCurrentUserPresenceFields
+} from '@/shared/utils/currentUserPresence.js';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -520,13 +531,54 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     const localSnapshot = isTargetCurrentUser
         ? currentUserSnapshot
         : friendsById[normalizedUserId] || seedData || null;
+    const gameLogDisabled = usePreferencesStore(
+        (state) => state.gameLogDisabled
+    );
+    const localSnapshotRef = useRef(localSnapshot);
+    localSnapshotRef.current = localSnapshot;
+    const currentUserPresenceRef = useRef({
+        isTargetCurrentUser,
+        currentUserSnapshot,
+        gameState,
+        gameLogDisabled
+    });
+    currentUserPresenceRef.current = {
+        isTargetCurrentUser,
+        currentUserSnapshot,
+        gameState,
+        gameLogDisabled
+    };
+    const withCurrentUserPresence = useCallback(
+        (nextProfile) => {
+            const context = currentUserPresenceRef.current;
+            if (!context.isTargetCurrentUser) {
+                return nextProfile;
+            }
+            return buildCurrentUserPresenceView(nextProfile, context);
+        },
+        []
+    );
     const targetKey = useMemo(
         () => dialogTargetKey(currentEndpoint, normalizedUserId),
         [currentEndpoint, normalizedUserId]
     );
 
-    const [profile, setProfile] = useState(() =>
+    const [baseProfile, setBaseProfile] = useState(() =>
         localSnapshot ? userProfileRepository.normalize(localSnapshot) : null
+    );
+    const profile = useMemo(
+        () => withCurrentUserPresence(baseProfile),
+        [
+            baseProfile,
+            currentUserSnapshot,
+            gameState?.currentDestination,
+            gameState?.currentLocation,
+            gameState?.currentWorldId,
+            gameState?.isGameRunning,
+            gameLogDisabled,
+            isTargetCurrentUser,
+            withCurrentUserPresence
+        ]
     );
     const [memo, setMemo] = useState('');
     const [loadStatus, setLoadStatus] = useState(
@@ -743,11 +795,19 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
     useEffect(() => {
         if (localSnapshot) {
-            setProfile(userProfileRepository.normalize(localSnapshot));
+            const nextSnapshot = userProfileRepository.normalize(localSnapshot);
+            setBaseProfile((currentProfile) =>
+                isTargetCurrentUser
+                    ? mergeCurrentUserPresenceFields(
+                          nextSnapshot,
+                          currentProfile
+                      )
+                    : nextSnapshot
+            );
         } else if (!normalizedUserId) {
-            setProfile(null);
+            setBaseProfile(null);
         }
-    }, [localSnapshot, normalizedUserId]);
+    }, [isTargetCurrentUser, localSnapshot, normalizedUserId]);
 
     useEffect(() => {
         const title = normalizeUserId(
@@ -772,7 +832,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         let active = true;
 
         if (!normalizedUserId) {
-            setProfile(null);
+            setBaseProfile(null);
             setLoadStatus('error');
             setDetail('No user id was provided for this dialog.');
             return () => {
@@ -780,10 +840,14 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             };
         }
 
-        setProfile(
-            localSnapshot
-                ? userProfileRepository.normalize(localSnapshot)
-                : null
+        const snapshot = localSnapshotRef.current;
+        const nextSnapshot = snapshot
+            ? userProfileRepository.normalize(snapshot)
+            : null;
+        setBaseProfile((currentProfile) =>
+            isTargetCurrentUser && nextSnapshot
+                ? mergeCurrentUserPresenceFields(nextSnapshot, currentProfile)
+                : nextSnapshot
         );
         setMemo('');
         setPreviousInstances(readCachedPreviousInstances(targetKey));
@@ -802,7 +866,14 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                     return;
                 }
 
-                setProfile(nextProfile);
+                setBaseProfile((currentProfile) =>
+                    isTargetCurrentUser
+                        ? mergeCurrentUserPresenceFields(
+                              nextProfile,
+                              currentProfile
+                          )
+                        : nextProfile
+                );
                 setLoadStatus('ready');
             })
             .catch((error) => {
@@ -810,8 +881,18 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                     return;
                 }
 
-                if (localSnapshot) {
-                    setProfile(userProfileRepository.normalize(localSnapshot));
+                const fallbackSnapshot = localSnapshotRef.current;
+                if (fallbackSnapshot) {
+                    const nextFallback =
+                        userProfileRepository.normalize(fallbackSnapshot);
+                    setBaseProfile((currentProfile) =>
+                        isTargetCurrentUser
+                            ? mergeCurrentUserPresenceFields(
+                                  nextFallback,
+                                  currentProfile
+                              )
+                            : nextFallback
+                    );
                     setLoadStatus('ready');
                     setDetail(
                         error instanceof Error
@@ -821,7 +902,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                     return;
                 }
 
-                setProfile(null);
+                setBaseProfile(null);
                 setLoadStatus('error');
                 setDetail(
                     error instanceof Error
@@ -835,7 +916,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         };
     }, [
         currentEndpoint,
-        localSnapshot,
+        isTargetCurrentUser,
         normalizedUserId,
         reloadToken,
         targetKey
@@ -1904,7 +1985,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             const nextMemo = nextEntry.memo || '';
             const rosterUserId = targetUserId;
             setMemo(nextMemo);
-            setProfile((currentProfile) =>
+            setBaseProfile((currentProfile) =>
                 normalizeUserId(currentProfile?.id) === targetUserId
                     ? {
                           ...currentProfile,
@@ -1940,13 +2021,21 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     }
 
     function applyCurrentUserSnapshot(nextUser) {
-        setProfile(nextUser);
-        if (nextUser?.id) {
+        const displayBaseUser = mergeCurrentUserPresenceFields(
+            nextUser,
+            baseProfile
+        );
+        const storeUser = mergeCurrentUserPresenceFields(
+            nextUser,
+            useRuntimeStore.getState().auth.currentUserSnapshot
+        );
+        setBaseProfile(displayBaseUser);
+        if (storeUser?.id) {
             useRuntimeStore.getState().setAuthBootstrap({
-                currentUserId: nextUser.id,
+                currentUserId: storeUser.id,
                 currentUserDisplayName:
-                    nextUser.displayName || nextUser.username || nextUser.id,
-                currentUserSnapshot: nextUser
+                    storeUser.displayName || storeUser.username || storeUser.id,
+                currentUserSnapshot: storeUser
             });
         }
     }
@@ -2375,7 +2464,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                     'Unfriend request sent, but the active session changed before local state was updated.'
                 );
             } else {
-                setProfile((currentProfile) =>
+                setBaseProfile((currentProfile) =>
                     currentProfile
                         ? {
                               ...currentProfile,
@@ -2419,7 +2508,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             ) {
                 return false;
             }
-            setProfile((currentProfile) =>
+            setBaseProfile((currentProfile) =>
                 normalizeUserId(currentProfile?.id) === rosterUserId
                     ? { ...currentProfile, ...patch }
                     : currentProfile
