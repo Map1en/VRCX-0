@@ -134,6 +134,26 @@ function buildRosterOrdering(friendsById) {
     };
 }
 
+function friendEntryNeedsOrderingUpdate(existingEntry, nextEntry) {
+    if (!existingEntry) {
+        return true;
+    }
+    const existingBucket =
+        normalizeStateBucket(existingEntry?.stateBucket) ||
+        normalizeStateBucket(existingEntry?.state) ||
+        'offline';
+    const nextBucket =
+        normalizeStateBucket(nextEntry?.stateBucket) ||
+        normalizeStateBucket(nextEntry?.state) ||
+        'offline';
+
+    if (existingBucket !== nextBucket) {
+        return true;
+    }
+
+    return compareFriendEntries(existingEntry, nextEntry) !== 0;
+}
+
 const initialState = {
     currentUserId: null,
     loadStatus: 'idle',
@@ -224,9 +244,13 @@ export const useFriendRosterStore = create((set) => ({
                 ...state.friendsById,
                 [normalizedUserId]: normalizedEntry
             };
+            const orderingDirty = friendEntryNeedsOrderingUpdate(
+                existingEntry,
+                normalizedEntry
+            );
             return {
                 ...state,
-                ...buildRosterOrdering(friendsById),
+                ...(orderingDirty ? buildRosterOrdering(friendsById) : {}),
                 friendsById,
                 loadStatus:
                     state.loadStatus === 'idle' ? 'ready' : state.loadStatus,
@@ -242,6 +266,7 @@ export const useFriendRosterStore = create((set) => ({
             }
 
             let changed = false;
+            let orderingDirty = false;
             const friendsById = { ...state.friendsById };
 
             for (const entry of patches) {
@@ -272,7 +297,7 @@ export const useFriendRosterStore = create((set) => ({
                     ...patch,
                     id: normalizedUserId
                 };
-                friendsById[normalizedUserId] = normalizeFriendEntry(
+                const normalizedEntry = normalizeFriendEntry(
                     mergedUser,
                     nextStateBucket,
                     existingEntry ?? {
@@ -282,6 +307,15 @@ export const useFriendRosterStore = create((set) => ({
                         friendNumber: 0
                     }
                 );
+                if (
+                    friendEntryNeedsOrderingUpdate(
+                        existingEntry,
+                        normalizedEntry
+                    )
+                ) {
+                    orderingDirty = true;
+                }
+                friendsById[normalizedUserId] = normalizedEntry;
                 changed = true;
             }
 
@@ -291,7 +325,7 @@ export const useFriendRosterStore = create((set) => ({
 
             return {
                 ...state,
-                ...buildRosterOrdering(friendsById),
+                ...(orderingDirty ? buildRosterOrdering(friendsById) : {}),
                 friendsById,
                 loadStatus:
                     state.loadStatus === 'idle' ? 'ready' : state.loadStatus,

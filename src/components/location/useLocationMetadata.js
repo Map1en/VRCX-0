@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useQueries } from '@tanstack/react-query';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
     gameLogRepository,
@@ -148,15 +148,164 @@ function groupProfileName(group) {
     );
 }
 
-export function useLocationMetadata({
-    locationInfo,
-    currentLocation = '',
-    endpoint = '',
-    hint = '',
-    worldNameHint: providedWorldNameHint = '',
-    groupHint = '',
-    instanceName = ''
-}) {
+function createEmptyMetadata(currentEndpoint = '') {
+    return {
+        currentEndpoint,
+        region: '',
+        instanceName: '',
+        isClosed: false,
+        groupName: '',
+        worldName: '',
+        worldNameHint: ''
+    };
+}
+
+function normalizeMetadataEntry(entry, index) {
+    const source = entry && typeof entry === 'object' ? entry : {};
+    const locationInfo =
+        source.locationInfo && typeof source.locationInfo === 'object'
+            ? source.locationInfo
+            : {};
+    const normalizedCurrentLocation = normalizeString(
+        source.currentLocation || locationInfo?.tag
+    );
+
+    return {
+        key:
+            source.key === undefined || source.key === null
+                ? String(index)
+                : source.key,
+        locationInfo,
+        currentLocation: normalizedCurrentLocation,
+        locationTag: normalizeString(locationInfo?.tag),
+        locationValue: normalizeString(locationInfo?.location),
+        worldId: normalizeString(locationInfo?.worldId),
+        groupId: normalizeString(locationInfo?.groupId),
+        hint: normalizeString(source.hint),
+        worldNameHint: normalizeString(source.worldNameHint),
+        groupHint: normalizeString(source.groupHint),
+        instanceName: normalizeString(source.instanceName)
+    };
+}
+
+function uniqueIds(entries, fieldName) {
+    const ids = new Set();
+    for (const entry of entries) {
+        const id = normalizeString(entry?.[fieldName]);
+        if (id) {
+            ids.add(id);
+        }
+    }
+    return Array.from(ids);
+}
+
+function mapQueryResults(ids, queryResults) {
+    const map = new Map();
+    ids.forEach((id, index) => {
+        const data = queryResults[index]?.data;
+        if (data) {
+            map.set(id, data);
+        }
+    });
+    return map;
+}
+
+function resolveEntryCachedInstance(entry, cachedInstances) {
+    return findCachedInstance(cachedInstances, [
+        entry.locationTag,
+        entry.currentLocation,
+        entry.locationValue
+    ]);
+}
+
+function resolveEntryWorldNameHint(entry) {
+    return (
+        normalizeWorldNameHint(
+            entry.hint,
+            entry.locationInfo,
+            entry.currentLocation
+        ) ||
+        normalizeWorldNameHint(
+            entry.worldNameHint,
+            entry.locationInfo,
+            entry.currentLocation
+        )
+    );
+}
+
+function resolveEntryMetadata(
+    entry,
+    {
+        cachedInstances,
+        currentEndpoint,
+        groupProfilesById,
+        localWorldNamesById,
+        worldProfilesById
+    }
+) {
+    const cachedInstance = resolveEntryCachedInstance(entry, cachedInstances);
+    const worldNameHint = resolveEntryWorldNameHint(entry);
+    const cachedWorldName = normalizeWorldNameHint(
+        readInstanceWorldName(cachedInstance),
+        entry.locationInfo,
+        entry.currentLocation
+    );
+    const hintedGroupName =
+        normalizeString(entry.groupHint) ||
+        readInstanceGroupName(cachedInstance);
+    const resolvedInstanceName =
+        readInstanceDisplayName(cachedInstance) ||
+        normalizeString(entry.instanceName) ||
+        normalizeString(entry.locationInfo?.instanceName);
+    const groupName =
+        groupProfileName(groupProfilesById.get(entry.groupId)) ||
+        hintedGroupName;
+    const localWorldName = normalizeWorldNameHint(
+        localWorldNamesById.get(entry.worldId),
+        entry.locationInfo,
+        entry.currentLocation
+    );
+    const worldName =
+        normalizeWorldNameHint(
+            worldProfilesById.get(entry.worldId)?.name,
+            entry.locationInfo,
+            entry.currentLocation
+        ) ||
+        cachedWorldName ||
+        localWorldName ||
+        worldNameHint;
+
+    return {
+        currentEndpoint,
+        region: resolveRegion(entry.locationInfo || {}),
+        instanceName: resolvedInstanceName,
+        isClosed: Boolean(cachedInstance && isInstanceClosed(cachedInstance)),
+        groupName,
+        worldName,
+        worldNameHint
+    };
+}
+
+function entryHasWorldNameFromQueryOrCache(
+    entry,
+    cachedInstances,
+    worldProfilesById
+) {
+    const cachedInstance = resolveEntryCachedInstance(entry, cachedInstances);
+    const cachedWorldName = normalizeWorldNameHint(
+        readInstanceWorldName(cachedInstance),
+        entry.locationInfo,
+        entry.currentLocation
+    );
+    const queriedWorldName = normalizeWorldNameHint(
+        worldProfilesById.get(entry.worldId)?.name,
+        entry.locationInfo,
+        entry.currentLocation
+    );
+    return Boolean(cachedWorldName || queriedWorldName);
+}
+
+export function useLocationMetadataBatch(entries = [], { endpoint = '' } = {}) {
     const storeEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
@@ -178,127 +327,189 @@ export function useLocationMetadata({
         () => buildCachedInstanceMap(groupInstances),
         [groupInstances, groupInstancesRevision]
     );
-    const [localWorldName, setLocalWorldName] = useState('');
-    const normalizedCurrentLocation = normalizeString(
-        currentLocation || locationInfo?.tag
-    );
-    const locationTag = normalizeString(locationInfo?.tag);
-    const locationValue = normalizeString(locationInfo?.location);
-    const worldId = normalizeString(locationInfo?.worldId);
-    const groupId = normalizeString(locationInfo?.groupId);
-    const cachedInstance = useMemo(
+    const normalizedEntries = useMemo(
         () =>
-            findCachedInstance(cachedInstances, [
-                locationTag,
-                normalizedCurrentLocation,
-                locationValue
-            ]),
-        [cachedInstances, locationTag, normalizedCurrentLocation, locationValue]
+            (Array.isArray(entries) ? entries : []).map((entry, index) =>
+                normalizeMetadataEntry(entry, index)
+            ),
+        [entries]
     );
-    const worldNameHint =
-        normalizeWorldNameHint(hint, locationInfo, normalizedCurrentLocation) ||
-        normalizeWorldNameHint(
-            providedWorldNameHint,
-            locationInfo,
-            normalizedCurrentLocation
-        );
-    const cachedWorldName = normalizeWorldNameHint(
-        readInstanceWorldName(cachedInstance),
-        locationInfo,
-        normalizedCurrentLocation
+    const worldIds = useMemo(
+        () => uniqueIds(normalizedEntries, 'worldId'),
+        [normalizedEntries]
     );
-    const hintedGroupName =
-        normalizeString(groupHint) || readInstanceGroupName(cachedInstance);
-    const resolvedInstanceName =
-        readInstanceDisplayName(cachedInstance) ||
-        normalizeString(instanceName) ||
-        normalizeString(locationInfo?.instanceName);
-
-    const groupProfileQuery = useQuery({
-        queryKey: queryKeys.group(groupId, false, currentEndpoint),
-        queryFn: () =>
-            groupProfileRepository.getGroupProfile({
-                groupId,
-                endpoint: currentEndpoint,
-                includeRoles: false
-            }),
-        enabled: Boolean(groupId),
-        staleTime: entityQueryPolicies.group.staleTime,
-        gcTime: entityQueryPolicies.group.gcTime,
-        retry: entityQueryPolicies.group.retry,
-        refetchOnWindowFocus: entityQueryPolicies.group.refetchOnWindowFocus
+    const groupIds = useMemo(
+        () => uniqueIds(normalizedEntries, 'groupId'),
+        [normalizedEntries]
+    );
+    const worldProfilesById = useQueries({
+        queries: worldIds.map((worldId) => ({
+            queryKey: queryKeys.world(worldId, currentEndpoint),
+            queryFn: () =>
+                worldProfileRepository.fetchWorldProfile({
+                    worldId,
+                    endpoint: currentEndpoint
+                }),
+            enabled: Boolean(worldId),
+            staleTime: entityQueryPolicies.worldBasic.staleTime,
+            gcTime: entityQueryPolicies.worldBasic.gcTime,
+            retry: entityQueryPolicies.worldBasic.retry,
+            refetchOnWindowFocus:
+                entityQueryPolicies.worldBasic.refetchOnWindowFocus
+        })),
+        combine: (results) => mapQueryResults(worldIds, results)
     });
-    const worldProfileQuery = useQuery({
-        queryKey: queryKeys.world(worldId, currentEndpoint),
-        queryFn: () =>
-            worldProfileRepository.fetchWorldProfile({
-                worldId,
-                endpoint: currentEndpoint
-            }),
-        enabled: Boolean(worldId),
-        staleTime: entityQueryPolicies.worldBasic.staleTime,
-        gcTime: entityQueryPolicies.worldBasic.gcTime,
-        retry: entityQueryPolicies.worldBasic.retry,
-        refetchOnWindowFocus:
-            entityQueryPolicies.worldBasic.refetchOnWindowFocus
+    const groupProfilesById = useQueries({
+        queries: groupIds.map((groupId) => ({
+            queryKey: queryKeys.group(groupId, false, currentEndpoint),
+            queryFn: () =>
+                groupProfileRepository.getGroupProfile({
+                    groupId,
+                    endpoint: currentEndpoint,
+                    includeRoles: false
+                }),
+            enabled: Boolean(groupId),
+            staleTime: entityQueryPolicies.group.staleTime,
+            gcTime: entityQueryPolicies.group.gcTime,
+            retry: entityQueryPolicies.group.retry,
+            refetchOnWindowFocus:
+                entityQueryPolicies.group.refetchOnWindowFocus
+        })),
+        combine: (results) => mapQueryResults(groupIds, results)
     });
-
-    const groupName = useMemo(
-        () => groupProfileName(groupProfileQuery.data) || hintedGroupName,
-        [groupProfileQuery.data, hintedGroupName]
+    const [localWorldNamesById, setLocalWorldNamesById] = useState(
+        () => new Map()
     );
-    const worldName =
-        normalizeWorldNameHint(
-            worldProfileQuery.data?.name,
-            locationInfo,
-            normalizedCurrentLocation
-        ) ||
-        cachedWorldName ||
-        localWorldName ||
-        worldNameHint;
+    const localWorldNameRequestIdsRef = useRef(new Set());
+    const mountedRef = useRef(true);
+
+    useEffect(
+        () => {
+            mountedRef.current = true;
+            return () => {
+                mountedRef.current = false;
+            };
+        },
+        []
+    );
 
     useEffect(() => {
-        let active = true;
-        setLocalWorldName('');
+        const missingWorldIds = new Set();
 
-        if (!worldId || cachedWorldName) {
-            return () => {
-                active = false;
-            };
+        for (const entry of normalizedEntries) {
+            if (
+                !entry.worldId ||
+                localWorldNamesById.has(entry.worldId) ||
+                localWorldNameRequestIdsRef.current.has(entry.worldId) ||
+                entryHasWorldNameFromQueryOrCache(
+                    entry,
+                    cachedInstances,
+                    worldProfilesById
+                )
+            ) {
+                continue;
+            }
+            missingWorldIds.add(entry.worldId);
         }
 
-        gameLogRepository
-            .getWorldNameByWorldId(worldId)
-            .then((name) => {
-                const nextName = normalizeWorldNameHint(
-                    name,
-                    locationInfo,
-                    normalizedCurrentLocation
-                );
-                if (active && nextName) {
-                    setLocalWorldName(nextName);
-                }
-            })
-            .catch(() => {});
+        if (!missingWorldIds.size) {
+            return;
+        }
 
-        return () => {
-            active = false;
-        };
+        const worldIdsToLoad = Array.from(missingWorldIds);
+        for (const worldId of worldIdsToLoad) {
+            localWorldNameRequestIdsRef.current.add(worldId);
+        }
+
+        Promise.all(
+            worldIdsToLoad.map((worldId) =>
+                gameLogRepository
+                    .getWorldNameByWorldId(worldId)
+                    .then((name) => [worldId, normalizeString(name)])
+                    .catch(() => [worldId, ''])
+            )
+        ).then((results) => {
+            for (const [worldId] of results) {
+                localWorldNameRequestIdsRef.current.delete(worldId);
+            }
+            if (!mountedRef.current) {
+                return;
+            }
+            setLocalWorldNamesById((currentNames) => {
+                let changed = false;
+                const nextNames = new Map(currentNames);
+                for (const [worldId, name] of results) {
+                    if (!name || nextNames.has(worldId)) {
+                        continue;
+                    }
+                    nextNames.set(worldId, name);
+                    changed = true;
+                }
+                return changed ? nextNames : currentNames;
+            });
+        });
     }, [
-        cachedWorldName,
-        locationInfo,
-        normalizedCurrentLocation,
-        worldId,
-        worldNameHint
+        cachedInstances,
+        localWorldNamesById,
+        normalizedEntries,
+        worldProfilesById
     ]);
 
-    return {
+    return useMemo(() => {
+        const metadataByKey = new Map();
+        for (const entry of normalizedEntries) {
+            metadataByKey.set(
+                entry.key,
+                resolveEntryMetadata(entry, {
+                    cachedInstances,
+                    currentEndpoint,
+                    groupProfilesById,
+                    localWorldNamesById,
+                    worldProfilesById
+                })
+            );
+        }
+        return metadataByKey;
+    }, [
+        cachedInstances,
         currentEndpoint,
-        region: resolveRegion(locationInfo || {}),
-        instanceName: resolvedInstanceName,
-        isClosed: Boolean(cachedInstance && isInstanceClosed(cachedInstance)),
-        groupName,
-        worldName,
-        worldNameHint
-    };
+        groupProfilesById,
+        localWorldNamesById,
+        normalizedEntries,
+        worldProfilesById
+    ]);
+}
+
+export function useLocationMetadata({
+    locationInfo,
+    currentLocation = '',
+    endpoint = '',
+    hint = '',
+    worldNameHint: providedWorldNameHint = '',
+    groupHint = '',
+    instanceName = ''
+}) {
+    const entry = useMemo(
+        () => [
+            {
+                key: 'location',
+                locationInfo,
+                currentLocation,
+                hint,
+                worldNameHint: providedWorldNameHint,
+                groupHint,
+                instanceName
+            }
+        ],
+        [
+            currentLocation,
+            groupHint,
+            hint,
+            instanceName,
+            locationInfo,
+            providedWorldNameHint
+        ]
+    );
+    const metadataByKey = useLocationMetadataBatch(entry, { endpoint });
+    return metadataByKey.get('location') || createEmptyMetadata(endpoint);
 }
