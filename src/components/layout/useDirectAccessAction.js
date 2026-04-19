@@ -19,10 +19,9 @@ export function useDirectAccessAction() {
         async (inputValue = '') => {
             const result = await prompt({
                 title: t('prompt.direct_access_omni.header'),
-                description:
-                    'Open a VRChat user, avatar, world, group, launch URL, short link, or group shortcode.',
-                confirmText: 'Open',
-                cancelText: 'Cancel',
+                description: t('prompt.direct_access_omni.description'),
+                confirmText: t('prompt.direct_access_omni.ok'),
+                cancelText: t('prompt.direct_access_omni.cancel'),
                 inputValue,
                 pattern: /\S+/
             });
@@ -33,15 +32,17 @@ export function useDirectAccessAction() {
 
             try {
                 if (await directAccessParse(result.value, currentEndpoint)) {
-                    toast.success('Opened direct access target.');
+                    toast.success(
+                        t('prompt.direct_access_omni.message.opened')
+                    );
                     return;
                 }
-                toast.error('Could not parse that VRChat ID or URL.');
+                toast.error(t('prompt.direct_access_omni.message.error'));
             } catch (error) {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Direct access failed.'
+                        : t('prompt.direct_access_omni.message.failed')
                 );
             }
         },
@@ -63,14 +64,18 @@ export function useDirectAccessAction() {
             if (input) {
                 try {
                     if (await directAccessParse(input, currentEndpoint)) {
-                        toast.success('Opened from clipboard.');
+                        toast.success(
+                            t(
+                                'prompt.direct_access_omni.message.opened_from_clipboard'
+                            )
+                        );
                         return;
                     }
                 } catch (error) {
                     toast.error(
                         error instanceof Error
                             ? error.message
-                            : 'Direct access failed.'
+                            : t('prompt.direct_access_omni.message.failed')
                     );
                     return;
                 }
@@ -79,7 +84,7 @@ export function useDirectAccessAction() {
         } finally {
             busyRef.current = false;
         }
-    }, [currentEndpoint, openPrompt]);
+    }, [currentEndpoint, openPrompt, t]);
 
     return {
         openDirectAccessPrompt: openPrompt,

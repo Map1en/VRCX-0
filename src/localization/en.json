@@ -2500,6 +2500,8 @@
             "input_error": "URL/ID is required",
             "message": {
                 "error": "Invalid URL/ID",
+                "failed": "Direct access failed",
+                "opened": "Opened direct access target",
                 "opened_from_clipboard": "Opened from clipboard"
             }
         },
