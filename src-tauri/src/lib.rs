@@ -146,6 +146,26 @@ pub fn run() {
             app_state.update_manager.check_and_install_update();
             app.manage(app_state);
 
+            #[cfg(windows)]
+            if let Some(webview) = app.get_webview_window("main") {
+                if let Err(error) = webview.with_webview(|platform_webview| {
+                    // Disable WebView2's browser-provided menu while preserving DOM contextmenu events.
+                    let result = unsafe {
+                        platform_webview
+                            .controller()
+                            .CoreWebView2()
+                            .and_then(|webview| webview.Settings())
+                            .and_then(|settings| settings.SetAreDefaultContextMenusEnabled(false))
+                    };
+
+                    if let Err(error) = result {
+                        tracing::warn!(?error, "failed to disable WebView2 default context menu");
+                    }
+                }) {
+                    tracing::warn!(?error, "failed to access WebView2 instance");
+                }
+            }
+
             let state = app.state::<AppState>();
             if let Some(tray) = app.tray_by_id("main") {
                 let exit_item = MenuItem::with_id(app, "tray-exit", "Exit", true, None::<&str>)?;
