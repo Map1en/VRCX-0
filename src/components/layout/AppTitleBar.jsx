@@ -85,8 +85,14 @@ export function AppTitleBar() {
     const vrcUnseenNotificationCount = useVrcNotificationStore(
         (state) => state.unseenCount
     );
+    const isVrcNotificationCenterOpen = useVrcNotificationStore(
+        (state) => state.isCenterOpen
+    );
     const openVrcNotificationCenter = useVrcNotificationStore(
         (state) => state.openCenter
+    );
+    const setVrcNotificationCenterOpen = useVrcNotificationStore(
+        (state) => state.setCenterOpen
     );
     const markAllVrcNotificationsSeen = useVrcNotificationStore(
         (state) => state.markAllSeen
@@ -209,11 +215,15 @@ export function AppTitleBar() {
         }
     }
 
+    function toggleVrcNotificationCenter() {
+        setVrcNotificationCenterOpen(!isVrcNotificationCenterOpen);
+    }
+
     const notificationButton = (
         <TitleBarButton
             label={t('side_panel.notification_center.title')}
             className="relative rounded-none"
-            onClick={() => openVrcNotificationCenter()}
+            onClick={toggleVrcNotificationCenter}
         >
             <BellIcon data-icon="inline-start" />
             {vrcUnseenNotificationCount > 0 ? (
