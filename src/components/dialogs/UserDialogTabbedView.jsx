@@ -8,7 +8,6 @@ import {
     DownloadIcon,
     EyeIcon,
     ExternalLinkIcon,
-    HeartIcon,
     LanguagesIcon,
     LogOutIcon,
     MailIcon,
@@ -43,7 +42,10 @@ import {
     userImage
 } from '@/lib/entityMedia.js';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
-import { userStatusDotClassName } from '@/lib/userStatus.js';
+import {
+    userStatusDotClassName,
+    userStatusIndicatorClassName
+} from '@/lib/userStatus.js';
 import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/tauri/backend.js';
 import {
@@ -1193,6 +1195,9 @@ export function UserDialogTabbedView({
         vrchatConfigConstants,
         currentUserSnapshot
     });
+    const statusIndicatorClassName = userStatusIndicatorClassName(profile, {
+        showOffline: true
+    });
     const currentAvatarDisplayName = String(
         profile.currentAvatarName || profile.avatarName || ''
     ).trim();
@@ -1796,6 +1801,14 @@ export function UserDialogTabbedView({
                 imagePlaceholder={
                     <UsersIcon className="text-muted-foreground size-8" />
                 }
+                titlePrefix={
+                    statusIndicatorClassName ? (
+                        <i
+                            className={statusIndicatorClassName}
+                            title={statusStateText || undefined}
+                        />
+                    ) : null
+                }
                 title={profile.displayName || profile.username || 'User'}
                 onTitleClick={
                     profile.displayName || profile.username
@@ -1830,25 +1843,8 @@ export function UserDialogTabbedView({
                 detail={detail}
                 badges={
                     <>
-                        {statusStateText ? (
-                            <Badge variant="outline" title={statusStateText}>
-                                {statusStateText}
-                            </Badge>
-                        ) : null}
                         {pronounsText ? (
                             <Badge variant="outline">{pronounsText}</Badge>
-                        ) : null}
-                        {isFriend ? (
-                            <Badge variant="secondary">Friend</Badge>
-                        ) : null}
-                        {isFavorite ? (
-                            <Badge>
-                                <HeartIcon
-                                    data-icon="inline-start"
-                                    className="fill-current"
-                                />
-                                Favorite
-                            </Badge>
                         ) : null}
                         {profile.$isModerator ? (
                             <Badge variant="secondary">
@@ -2803,14 +2799,6 @@ export function UserDialogTabbedView({
                                 </div>
                             ) : null}
                         </EntityInfoBlock>
-                        <EntityInfoBlock
-                            label="Status"
-                            value={profile.status || profile.state}
-                        />
-                        <EntityInfoBlock
-                            label="Last Platform"
-                            value={platform.label}
-                        />
                         {!isCurrentUser ? (
                             <EntityInfoBlock
                                 label="Last Seen"
@@ -2969,18 +2957,6 @@ export function UserDialogTabbedView({
                                                 >
                                                     Copy User ID
                                                 </DropdownMenuItem>
-                                                {userUrl ? (
-                                                    <DropdownMenuItem
-                                                        onSelect={() =>
-                                                            void copyUserText(
-                                                                userUrl,
-                                                                'User URL'
-                                                            )
-                                                        }
-                                                    >
-                                                        Copy User URL
-                                                    </DropdownMenuItem>
-                                                ) : null}
                                                 {profile.displayName ? (
                                                     <DropdownMenuItem
                                                         onSelect={() =>
@@ -2999,17 +2975,6 @@ export function UserDialogTabbedView({
                                 ) : null}
                             </span>
                         </EntityInfoBlock>
-                        {userUrl ? (
-                            <EntityInfoBlock
-                                label="User URL"
-                                value={userUrl}
-                                mono
-                                full
-                                onClick={() =>
-                                    void copyUserText(userUrl, 'User URL')
-                                }
-                            />
-                        ) : null}
                     </EntityInfoGrid>
                 </EntityDialogTabContent>
                 <EntityDialogTabContent
