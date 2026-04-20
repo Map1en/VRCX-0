@@ -1,3 +1,26 @@
+import {
+    ArchiveIcon,
+    BotIcon,
+    CalendarDaysIcon,
+    CameraIcon,
+    ChevronDownIcon,
+    ContactRoundIcon,
+    DatabaseIcon,
+    DownloadIcon,
+    FileTextIcon,
+    FolderOpenIcon,
+    ImageIcon,
+    ImagesIcon,
+    MessageSquareTextIcon,
+    MoreHorizontalIcon,
+    PinIcon,
+    PinOffIcon,
+    ServerCogIcon,
+    SlidersHorizontalIcon,
+    TerminalSquareIcon,
+    UsersIcon,
+    WrenchIcon
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -30,8 +53,37 @@ const defaultCollapsedState = {
     other: false
 };
 
+const categoryIconByKey = {
+    image: ImageIcon,
+    shortcuts: FolderOpenIcon,
+    group: UsersIcon,
+    system: WrenchIcon,
+    user: DownloadIcon,
+    other: MoreHorizontalIcon
+};
+
+const toolIconByKey = {
+    'screenshot-metadata': CameraIcon,
+    gallery: ImagesIcon,
+    'vrc-photos': FolderOpenIcon,
+    'steam-screenshots': ImageIcon,
+    'vrcx-data': DatabaseIcon,
+    'vrchat-data': ServerCogIcon,
+    'crash-dumps': ArchiveIcon,
+    'vrchat-config': SlidersHorizontalIcon,
+    'launch-options': TerminalSquareIcon,
+    'registry-backup': ArchiveIcon,
+    'auto-change-status': BotIcon,
+    'group-calendar': CalendarDaysIcon,
+    'discord-names': UsersIcon,
+    'export-notes': FileTextIcon,
+    'export-friend-list': ContactRoundIcon,
+    'export-own-avatars': DownloadIcon,
+    'edit-invite-message': MessageSquareTextIcon
+};
+
 function ToolItem({
-    icon,
+    icon: Icon,
     title,
     description,
     pinLabel,
@@ -42,25 +94,22 @@ function ToolItem({
     onPin,
     onUnpin
 }) {
+    const PinStateIcon = isPinned ? PinIcon : PinOffIcon;
+
     return (
-        <div className="group hover:bg-accent/50 flex gap-3 rounded-lg border p-4 text-left transition-colors">
+        <div className="group hover:bg-accent/50 relative rounded-md border text-left transition-colors">
             <Button
                 type="button"
                 variant="ghost"
-                className="h-auto min-w-0 flex-1 items-start justify-start gap-3 p-0 text-left font-normal whitespace-normal hover:bg-transparent"
+                className="h-full w-full min-w-0 items-start justify-start gap-2.5 rounded-md p-3 pr-10 text-left font-normal whitespace-normal hover:bg-transparent"
                 onClick={onClick}
             >
-                <div className="flex size-10 flex-none items-center justify-center bg-transparent">
-                    <i
-                        className={cn(
-                            icon,
-                            'inline-flex items-center justify-center text-2xl'
-                        )}
-                    />
+                <div className="bg-muted/40 text-muted-foreground flex size-8 flex-none items-center justify-center rounded-md">
+                    <Icon aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div className="min-w-0 flex-1 font-medium">{title}</div>
-                    <div className="text-muted-foreground mt-1 text-sm">
+                    <div className="truncate text-sm font-medium">{title}</div>
+                    <div className="text-muted-foreground mt-0.5 line-clamp-2 text-xs leading-snug">
                         {description}
                     </div>
                 </div>
@@ -70,7 +119,10 @@ function ToolItem({
                     type="button"
                     size="icon-xs"
                     variant={isPinned ? 'secondary' : 'ghost'}
-                    className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                    className={cn(
+                        'absolute top-2 right-2 size-7',
+                        !isPinned && 'text-muted-foreground'
+                    )}
                     title={isPinned ? unpinLabel : pinLabel}
                     aria-label={isPinned ? unpinLabel : pinLabel}
                     onClick={() => {
@@ -81,19 +133,7 @@ function ToolItem({
                         }
                     }}
                 >
-                    <span className="relative inline-flex size-4">
-                        <i className="ri-side-bar-line inline-flex size-4 items-center justify-center text-base" />
-                        <span className="bg-background absolute -top-1 -right-1 grid size-2.5 place-items-center rounded-full shadow-sm">
-                            <i
-                                className={cn(
-                                    isPinned
-                                        ? 'ri-subtract-line'
-                                        : 'ri-add-line',
-                                    'inline-flex size-2 items-center justify-center text-xs'
-                                )}
-                            />
-                        </span>
-                    </span>
+                    <PinStateIcon data-icon="inline-start" />
                 </Button>
             ) : null}
         </div>
@@ -330,45 +370,67 @@ export function ToolsPage() {
     }
 
     return (
-        <div id="chart" className="x-container flex flex-1 flex-col p-6">
+        <div
+            id="chart"
+            className="x-container flex h-full min-h-0 flex-1 flex-col overflow-y-auto p-4"
+        >
             <div className="options-container">
                 <span className="header">
                     {translateWithFallback('view.tools.header')}
                 </span>
 
-                <div className="mt-5 px-5">
+                <div className="mt-4 px-3">
                     {categories.map((category) => (
-                        <div key={category.key} className="mb-6">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="mb-3 h-auto justify-start px-3 py-2 text-left"
-                                onClick={() =>
-                                    saveCollapsedState({
-                                        ...collapsed,
-                                        [category.key]: !collapsed[category.key]
-                                    })
-                                }
-                            >
-                                <i
-                                    className={cn(
-                                        'ri-arrow-down-s-line mr-2 text-sm transition-transform duration-300',
-                                        collapsed[category.key]
-                                            ? '-rotate-90'
-                                            : ''
-                                    )}
-                                />
-                                <span className="ml-1.5 text-base font-semibold">
-                                    {translateWithFallback(category.labelKey)}
-                                </span>
-                            </Button>
+                        <div key={category.key} className="mb-4">
+                            {(() => {
+                                const CategoryIcon =
+                                    categoryIconByKey[category.key] ||
+                                    WrenchIcon;
+
+                                return (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="mb-2 h-auto justify-start gap-2 px-2.5 py-1.5 text-left"
+                                        onClick={() =>
+                                            saveCollapsedState({
+                                                ...collapsed,
+                                                [category.key]:
+                                                    !collapsed[category.key]
+                                            })
+                                        }
+                                    >
+                                        <ChevronDownIcon
+                                            aria-hidden="true"
+                                            className={cn(
+                                                'transition-transform duration-300',
+                                                collapsed[category.key]
+                                                    ? '-rotate-90'
+                                                    : ''
+                                            )}
+                                        />
+                                        <CategoryIcon
+                                            aria-hidden="true"
+                                            className="text-muted-foreground"
+                                        />
+                                        <span className="text-sm font-semibold">
+                                            {translateWithFallback(
+                                                category.labelKey
+                                            )}
+                                        </span>
+                                    </Button>
+                                );
+                            })()}
 
                             {!collapsed[category.key] ? (
-                                <div className="ml-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                                <div className="grid grid-cols-1 gap-2.5 pl-4 lg:grid-cols-2 xl:grid-cols-3">
                                     {category.tools.map((tool) => (
                                         <ToolItem
                                             key={tool.key}
-                                            icon={tool.navIcon}
+                                            icon={
+                                                toolIconByKey[tool.key] ||
+                                                WrenchIcon
+                                            }
                                             title={translateWithFallback(
                                                 tool.titleKey
                                             )}
