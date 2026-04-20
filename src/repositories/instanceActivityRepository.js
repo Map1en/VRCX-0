@@ -1,3 +1,5 @@
+import { parseLocation } from '@/shared/utils/locationParser.js';
+
 import sqliteRepository from './sqliteRepository.js';
 
 function normalizeString(value) {
@@ -63,6 +65,14 @@ function normalizeWorldCacheRow(row) {
     };
 }
 
+function isValidActivityLocation(location) {
+    const normalizedLocation = normalizeString(location);
+    if (!normalizedLocation) {
+        return false;
+    }
+    return !parseLocation(normalizedLocation).isTraveling;
+}
+
 async function getAvailableDates(userId) {
     const normalizedUserId = normalizeString(userId);
     if (!normalizedUserId) {
@@ -110,7 +120,7 @@ async function getInstanceActivityRows(startDate, endDate) {
     return Array.isArray(rows)
         ? rows
               .map(normalizeInstanceActivityRow)
-              .filter((row) => row.location && row.location !== 'traveling')
+              .filter((row) => isValidActivityLocation(row.location))
         : [];
 }
 
@@ -147,6 +157,37 @@ async function getWorldSummariesByIds(worldIds) {
             if (world.id) {
                 map[world.id] = world;
             }
+        }
+    }
+
+    const locationRows = await sqliteRepository.query(
+        `SELECT world_id, world_name
+         FROM gamelog_location
+         WHERE world_id IN (${placeholders.join(', ')})
+           AND world_name IS NOT NULL
+           AND world_name != ''
+         ORDER BY id DESC`,
+        params
+    );
+
+    if (Array.isArray(locationRows)) {
+        for (const row of locationRows) {
+            const worldId = normalizeString(
+                Array.isArray(row) ? row[0] : (row?.world_id ?? row?.worldId)
+            );
+            const worldName = normalizeString(
+                Array.isArray(row)
+                    ? row[1]
+                    : (row?.world_name ?? row?.worldName)
+            );
+            if (!worldId || !worldName || map[worldId]?.name) {
+                continue;
+            }
+            map[worldId] = {
+                ...(map[worldId] || {}),
+                id: worldId,
+                name: worldName
+            };
         }
     }
 

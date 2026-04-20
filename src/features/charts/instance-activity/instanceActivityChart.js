@@ -26,6 +26,10 @@ export function truncateLabel(value, maxLength = 26) {
     return `${text.slice(0, Math.max(0, maxLength - 1))}\u2026`;
 }
 
+function worldNameLabel(row, t) {
+    return row?.worldName || t('dashboard.widget.unknown_world');
+}
+
 export function buildChartOption({ rows, selectedDate, barWidth, hour12, t }) {
     const { startMs } = getLocalDayBounds(selectedDate);
 
@@ -56,7 +60,7 @@ export function buildChartOption({ rows, selectedDate, barWidth, hour12, t }) {
 
                 return [
                     `<div class="min-w-44">`,
-                    `<div style="font-weight:600;margin-bottom:4px;">${row.worldName}</div>`,
+                    `<div style="font-weight:600;margin-bottom:4px;">${worldNameLabel(row, t)}</div>`,
                     locationBits.length
                         ? `<div style="margin-bottom:4px;">${locationBits.join(' ')}</div>`
                         : '',
@@ -83,7 +87,7 @@ export function buildChartOption({ rows, selectedDate, barWidth, hour12, t }) {
                     return truncateLabel(value);
                 }
             },
-            data: rows.map((row) => row.worldName)
+            data: rows.map((row) => worldNameLabel(row, t))
         },
         xAxis: {
             type: 'value',

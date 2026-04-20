@@ -19,6 +19,14 @@ export function getLocalDayBounds(dayKey) {
     };
 }
 
+export function isValidActivityLocation(location) {
+    const normalizedLocation = String(location ?? '').trim();
+    if (!normalizedLocation) {
+        return false;
+    }
+    return !parseLocation(normalizedLocation).isTraveling;
+}
+
 export function normalizeInstanceRow(
     row,
     selectedDate,
@@ -32,7 +40,7 @@ export function normalizeInstanceRow(
     const parsedLocation = parseLocation(row.location);
     const worldId = parsedLocation.worldId || '';
     const world = worldId ? worldDetailsById[worldId] : null;
-    const worldName = world?.name || worldId || row.location || '';
+    const worldName = world?.name || '';
     const visibleStartMs = Math.max(joinMs, startMs);
     const visibleEndMs = Math.min(leaveMs, endMs);
     const visibleDurationMs = Math.max(0, visibleEndMs - visibleStartMs);
@@ -78,6 +86,7 @@ export function buildChartRows(
 ) {
     return rawRows
         .filter((row) => row.user_id === currentUserId)
+        .filter((row) => isValidActivityLocation(row.location))
         .map((row) =>
             normalizeInstanceRow(
                 row,

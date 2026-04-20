@@ -14,7 +14,8 @@ import { Location } from '@/components/Location.jsx';
 import { timeToText } from '@/lib/dateTime.js';
 import {
     configRepository,
-    instanceActivityRepository
+    instanceActivityRepository,
+    worldProfileRepository
 } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { getResolvedThemeMode } from '@/services/themeService.js';
@@ -47,6 +48,40 @@ import {
 } from './instance-activity/instanceActivityRows.js';
 
 const DEFAULT_BAR_WIDTH = 25;
+
+function hasWorldName(world) {
+    return Boolean(String(world?.name || '').trim());
+}
+
+async function loadMissingWorldProfiles(worldIds, worldDetailsById, endpoint) {
+    const missingWorldIds = worldIds.filter(
+        (worldId) => !hasWorldName(worldDetailsById[worldId])
+    );
+    if (!missingWorldIds.length) {
+        return worldDetailsById;
+    }
+
+    const results = await Promise.allSettled(
+        missingWorldIds.map((worldId) =>
+            worldProfileRepository.fetchWorldProfile({ worldId, endpoint })
+        )
+    );
+    const nextWorldDetailsById = { ...worldDetailsById };
+    for (const result of results) {
+        if (result.status !== 'fulfilled' || !hasWorldName(result.value)) {
+            continue;
+        }
+        const worldId = String(result.value.id || '').trim();
+        if (!worldId) {
+            continue;
+        }
+        nextWorldDetailsById[worldId] = {
+            ...(nextWorldDetailsById[worldId] || {}),
+            ...result.value
+        };
+    }
+    return nextWorldDetailsById;
+}
 
 function getTodayKey() {
     return toLocalDayKey(new Date());
@@ -133,7 +168,7 @@ function InstanceActivityDetailChart({
     const world = parsedLocation.worldId
         ? worldDetailsById[parsedLocation.worldId]
         : null;
-    const worldName = world?.name || parsedLocation.worldId || location || '';
+    const worldName = world?.name || '';
     const currentUserEntry = group.find((entry) => entry.isCurrentUser);
 
     function openPreviousInstanceInfo() {
@@ -266,6 +301,9 @@ function InstanceActivityDetailChart({
 export function InstanceActivityPage() {
     const { t } = useI18n();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const favoriteFriendIds = useFavoriteStore(
         (state) => state.favoriteFriendIds
@@ -439,13 +477,18 @@ export function InstanceActivityPage() {
                     await instanceActivityRepository.getWorldSummariesByIds(
                         worldIds
                     );
+                const resolvedWorldDetailsById = await loadMissingWorldProfiles(
+                    worldIds,
+                    nextWorldDetailsById,
+                    currentEndpoint
+                );
 
                 if (!active) {
                     return;
                 }
 
                 setRawRows(Array.isArray(rows) ? rows : []);
-                setWorldDetailsById(nextWorldDetailsById);
+                setWorldDetailsById(resolvedWorldDetailsById);
                 setDataStatus('ready');
             })
             .catch((error) => {
@@ -466,7 +509,7 @@ export function InstanceActivityPage() {
         return () => {
             active = false;
         };
-    }, [currentUserId, selectedDate, reloadToken]);
+    }, [currentEndpoint, currentUserId, selectedDate, reloadToken]);
 
     useEffect(() => {
         return () => {
@@ -672,10 +715,10 @@ export function InstanceActivityPage() {
         if (!row?.location) {
             return;
         }
+        const titleWorldName =
+            row.worldName || t('dashboard.widget.unknown_world');
         setPreviousInstanceRows([row]);
-        setPreviousInstanceTitle(
-            `Previous Instance: ${row.worldName || row.location}`
-        );
+        setPreviousInstanceTitle(`Previous Instance: ${titleWorldName}`);
         setPreviousInstanceOpen(true);
     }
 
