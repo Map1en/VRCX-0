@@ -3,6 +3,11 @@ import {
     DASHBOARD_NAV_KEY_PREFIX,
     DEFAULT_DASHBOARD_ICON
 } from '@/shared/constants/dashboard.js';
+import {
+    DEFAULT_FOLDER_ICON,
+    DEFAULT_NAV_ICON_KEY,
+    normalizeNavIconKey
+} from '@/shared/constants/navIcons.js';
 import { isToolNavKey } from '@/shared/constants/tools.js';
 import { navDefinitions } from '@/shared/constants/ui.js';
 import {
@@ -13,7 +18,6 @@ import {
 export const NAV_CONFIG_KEY = 'VRCX_customNavMenuLayoutList';
 export { NAV_LAYOUT_UPDATED_EVENT };
 
-const DEFAULT_FOLDER_ICON = 'ri-folder-line';
 const CHART_KEYS = ['charts-instance', 'charts-mutual'];
 
 export const routePathByName = Object.freeze({
@@ -43,7 +47,10 @@ export function buildDashboardNavDefinitions(dashboards = []) {
         .filter((dashboard) => dashboard?.id)
         .map((dashboard) => ({
             key: `${DASHBOARD_NAV_KEY_PREFIX}${dashboard.id}`,
-            icon: dashboard.icon || DEFAULT_DASHBOARD_ICON,
+            icon: normalizeNavIconKey(
+                dashboard.icon,
+                DEFAULT_DASHBOARD_ICON
+            ),
             tooltip: dashboard.name || 'Dashboard',
             labelKey: dashboard.name || 'Dashboard',
             titleIsCustom: true,
@@ -65,7 +72,7 @@ export function createBaseDefaultNavLayout(t) {
             id: 'default-folder-favorites',
             nameKey: 'nav_tooltip.favorites',
             name: t('nav_tooltip.favorites'),
-            icon: 'ri-star-line',
+            icon: 'lucide:Star',
             items: ['favorite-friends', 'favorite-worlds', 'favorite-avatars']
         },
         {
@@ -73,7 +80,7 @@ export function createBaseDefaultNavLayout(t) {
             id: 'default-folder-social',
             nameKey: 'nav_tooltip.social',
             name: t('nav_tooltip.social'),
-            icon: 'ri-group-line',
+            icon: 'lucide:Users',
             items: ['friend-log', 'friend-list', 'moderation']
         },
         { type: 'item', key: 'notification' },
@@ -83,7 +90,7 @@ export function createBaseDefaultNavLayout(t) {
             id: 'default-folder-charts',
             nameKey: 'nav_tooltip.charts',
             name: t('nav_tooltip.charts'),
-            icon: 'ri-pie-chart-line',
+            icon: 'lucide:ChartBar',
             items: CHART_KEYS
         },
         { type: 'item', key: 'tools' }
@@ -134,7 +141,8 @@ function collectLayoutKeys(layout) {
         if (entry?.type === 'item' && entry.key) {
             keys.add(entry.key);
         } else if (entry?.type === 'folder' && Array.isArray(entry.items)) {
-            for (const key of entry.items) {
+            for (const item of entry.items) {
+                const key = getFolderItemKey(item);
                 if (key) {
                     keys.add(key);
                 }
@@ -142,6 +150,14 @@ function collectLayoutKeys(layout) {
         }
     }
     return keys;
+}
+
+function getFolderItemKey(item) {
+    return typeof item === 'string' ? item : item?.key;
+}
+
+function getFolderItemIcon(item) {
+    return typeof item === 'object' && item ? item.icon : undefined;
 }
 
 function normalizeHiddenKeys(hiddenKeys, definitionMap) {
@@ -191,7 +207,7 @@ export function sanitizeNavLayout({
     const usedKeys = new Set();
     const normalized = [];
 
-    const appendItemEntry = (key, target = normalized) => {
+    const appendItemEntry = (key, target = normalized, sourceEntry = null) => {
         if (
             !key ||
             usedKeys.has(key) ||
@@ -200,7 +216,17 @@ export function sanitizeNavLayout({
         ) {
             return;
         }
-        target.push({ type: 'item', key });
+        const definition = definitionMap.get(key);
+        const defaultIcon = normalizeNavIconKey(
+            definition?.icon,
+            DEFAULT_NAV_ICON_KEY
+        );
+        const icon = normalizeNavIconKey(sourceEntry?.icon, defaultIcon);
+        const entry = { type: 'item', key };
+        if (icon && icon !== defaultIcon) {
+            entry.icon = icon;
+        }
+        target.push(entry);
         usedKeys.add(key);
     };
 
@@ -217,7 +243,7 @@ export function sanitizeNavLayout({
             id: 'default-folder-charts',
             nameKey: 'nav_tooltip.charts',
             name: t('nav_tooltip.charts'),
-            icon: 'ri-pie-chart-line',
+            icon: 'lucide:ChartBar',
             items: [...CHART_KEYS]
         });
     };
@@ -228,14 +254,15 @@ export function sanitizeNavLayout({
                 if (entry.key === 'charts') {
                     appendChartsFolder();
                 } else {
-                    appendItemEntry(entry.key);
+                    appendItemEntry(entry.key, normalized, entry);
                 }
                 continue;
             }
 
             if (entry?.type === 'folder') {
                 const folderItems = [];
-                for (const key of entry.items || []) {
+                for (const item of entry.items || []) {
+                    const key = getFolderItemKey(item);
                     if (
                         !key ||
                         usedKeys.has(key) ||
@@ -244,7 +271,18 @@ export function sanitizeNavLayout({
                     ) {
                         continue;
                     }
-                    folderItems.push(key);
+                    const definition = definitionMap.get(key);
+                    const defaultIcon = normalizeNavIconKey(
+                        definition?.icon,
+                        DEFAULT_NAV_ICON_KEY
+                    );
+                    const icon = normalizeNavIconKey(
+                        getFolderItemIcon(item),
+                        defaultIcon
+                    );
+                    folderItems.push(
+                        icon && icon !== defaultIcon ? { key, icon } : key
+                    );
                     usedKeys.add(key);
                 }
                 if (folderItems.length) {
@@ -256,7 +294,10 @@ export function sanitizeNavLayout({
                             `nav-folder-${Math.random().toString(36).slice(2, 8)}`,
                         name: nameKey ? t(nameKey) : entry.name || '',
                         nameKey,
-                        icon: entry.icon || DEFAULT_FOLDER_ICON,
+                        icon: normalizeNavIconKey(
+                            entry.icon,
+                            DEFAULT_FOLDER_ICON
+                        ),
                         items: folderItems
                     });
                 }
@@ -283,6 +324,10 @@ export function buildMenuItems(layout, definitionMap, t) {
             if (definition) {
                 items.push({
                     ...definition,
+                    icon: normalizeNavIconKey(
+                        entry.icon,
+                        definition.icon || DEFAULT_NAV_ICON_KEY
+                    ),
                     index: definition.key,
                     title: definition.tooltip || definition.labelKey,
                     titleIsCustom: Boolean(
@@ -295,20 +340,33 @@ export function buildMenuItems(layout, definitionMap, t) {
 
         if (entry.type === 'folder') {
             const children = (entry.items || [])
-                .map((key) => definitionMap.get(key))
-                .filter(Boolean)
-                .map((definition) => ({
-                    ...definition,
-                    label: definition.labelKey,
-                    index: definition.key,
-                    titleIsCustom: Boolean(
-                        definition.titleIsCustom || definition.isDashboard
-                    )
-                }));
+                .map((item) => {
+                    const key = getFolderItemKey(item);
+                    const definition = definitionMap.get(key);
+                    if (!definition) {
+                        return null;
+                    }
+                    return {
+                        ...definition,
+                        icon: normalizeNavIconKey(
+                            getFolderItemIcon(item),
+                            definition.icon || DEFAULT_NAV_ICON_KEY
+                        ),
+                        label: definition.labelKey,
+                        index: definition.key,
+                        titleIsCustom: Boolean(
+                            definition.titleIsCustom || definition.isDashboard
+                        )
+                    };
+                })
+                .filter(Boolean);
             if (children.length) {
                 items.push({
                     index: entry.id,
-                    icon: entry.icon || DEFAULT_FOLDER_ICON,
+                    icon: normalizeNavIconKey(
+                        entry.icon,
+                        DEFAULT_FOLDER_ICON
+                    ),
                     title:
                         entry.name?.trim() ||
                         t('nav_menu.custom_nav.folder_name_placeholder'),

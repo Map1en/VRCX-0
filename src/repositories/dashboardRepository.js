@@ -2,6 +2,7 @@ import {
     DASHBOARD_STORAGE_KEY,
     DEFAULT_DASHBOARD_ICON
 } from '@/shared/constants/dashboard.js';
+import { normalizeNavIconKey } from '@/shared/constants/navIcons.js';
 
 import configRepository from './configRepository.js';
 
@@ -87,10 +88,7 @@ function sanitizeDashboard(dashboard, { generateMissingRowIds = true } = {}) {
         typeof dashboard.name === 'string' && dashboard.name.trim()
             ? dashboard.name.trim()
             : 'Dashboard';
-    const icon =
-        typeof dashboard.icon === 'string' && dashboard.icon.trim()
-            ? dashboard.icon.trim()
-            : DEFAULT_DASHBOARD_ICON;
+    const icon = normalizeNavIconKey(dashboard.icon, DEFAULT_DASHBOARD_ICON);
 
     return {
         id,

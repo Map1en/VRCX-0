@@ -18,6 +18,13 @@ import {
     DASHBOARD_NAV_KEY_PREFIX,
     DEFAULT_DASHBOARD_ICON
 } from '@/shared/constants/dashboard.js';
+import {
+    DEFAULT_FOLDER_ICON,
+    DEFAULT_NAV_ICON_KEY,
+    NAV_ICON_OPTIONS,
+    getNavIconComponent,
+    normalizeNavIconKey
+} from '@/shared/constants/navIcons.js';
 import { isToolNavKey } from '@/shared/constants/tools.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -29,9 +36,28 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
 import { Separator } from '@/ui/shadcn/separator';
 
-const DEFAULT_FOLDER_ICON = 'ri-folder-line';
+function getFolderItemKey(item) {
+    return typeof item === 'string' ? item : item?.key;
+}
+
+function getFolderItemIcon(item) {
+    return typeof item === 'object' && item ? item.icon : undefined;
+}
+
+function createFolderItem(key, icon = '') {
+    const normalizedIcon = normalizeNavIconKey(icon, '');
+    return normalizedIcon ? { key, icon: normalizedIcon } : key;
+}
 
 function cloneLayout(source) {
     if (!Array.isArray(source)) {
@@ -45,14 +71,31 @@ function cloneLayout(source) {
                     id: entry.id,
                     name: entry.name,
                     nameKey: entry.nameKey || null,
-                    icon: entry.icon || DEFAULT_FOLDER_ICON,
-                    items: Array.isArray(entry.items) ? [...entry.items] : []
+                    icon: normalizeNavIconKey(
+                        entry.icon,
+                        DEFAULT_FOLDER_ICON
+                    ),
+                    items: Array.isArray(entry.items)
+                        ? entry.items
+                              .map((item) => {
+                                  const key = getFolderItemKey(item);
+                                  return key
+                                      ? createFolderItem(
+                                            key,
+                                            getFolderItemIcon(item)
+                                        )
+                                      : null;
+                              })
+                              .filter(Boolean)
+                        : []
                 };
             }
             if (entry?.type === 'item') {
+                const icon = normalizeNavIconKey(entry.icon, '');
                 return {
                     type: 'item',
-                    key: entry.key
+                    key: entry.key,
+                    ...(icon ? { icon } : {})
                 };
             }
             return null;
@@ -104,7 +147,7 @@ function removeKeyFromLayout(layout, key) {
         if (entry.type === 'item') {
             if (entry.key === normalizedKey) {
                 removed = true;
-                placement = { parentId: null, index };
+                placement = { parentId: null, index, icon: entry.icon };
                 continue;
             }
             next.push(entry);
@@ -118,13 +161,18 @@ function removeKeyFromLayout(layout, key) {
                 itemIndex < (entry.items || []).length;
                 itemIndex += 1
             ) {
-                const itemKey = entry.items[itemIndex];
+                const item = entry.items[itemIndex];
+                const itemKey = getFolderItemKey(item);
                 if (itemKey === normalizedKey) {
                     removed = true;
-                    placement = { parentId: entry.id, index: itemIndex };
+                    placement = {
+                        parentId: entry.id,
+                        index: itemIndex,
+                        icon: getFolderItemIcon(item)
+                    };
                     continue;
                 }
-                items.push(itemKey);
+                items.push(item);
             }
             next.push({
                 ...entry,
@@ -141,7 +189,8 @@ function removeKeyFromLayout(layout, key) {
 }
 
 function insertKeyIntoLayout(layout, key, placement) {
-    const entry = { type: 'item', key };
+    const icon = normalizeNavIconKey(placement?.icon, '');
+    const entry = { type: 'item', key, ...(icon ? { icon } : {}) };
     const next = cloneLayout(layout);
 
     if (placement?.parentId) {
@@ -155,7 +204,7 @@ function insertKeyIntoLayout(layout, key, placement) {
                 0,
                 Math.min(placement.index, folder.items.length)
             );
-            folder.items.splice(index, 0, key);
+            folder.items.splice(index, 0, createFolderItem(key, icon));
             return next;
         }
     }
@@ -179,8 +228,48 @@ function isDashboardKey(key) {
     return String(key || '').startsWith(DASHBOARD_NAV_KEY_PREFIX);
 }
 
+function NavIconSelect({
+    value,
+    fallbackIcon,
+    ariaLabel,
+    onValueChange
+}) {
+    const normalizedIcon = normalizeNavIconKey(value, fallbackIcon);
+
+    return (
+        <Select value={normalizedIcon} onValueChange={onValueChange}>
+            <SelectTrigger
+                size="sm"
+                className="w-32"
+                aria-label={ariaLabel}
+            >
+                <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+                <SelectGroup>
+                    {NAV_ICON_OPTIONS.map((option) => {
+                        const OptionIcon = getNavIconComponent(option.key);
+                        return (
+                            <SelectItem key={option.key} value={option.key}>
+                                <span className="flex min-w-0 items-center gap-2">
+                                    <OptionIcon data-icon="inline-start" />
+                                    <span className="truncate">
+                                        {option.label}
+                                    </span>
+                                </span>
+                            </SelectItem>
+                        );
+                    })}
+                </SelectGroup>
+            </SelectContent>
+        </Select>
+    );
+}
+
 function NavItemRow({
     label,
+    icon,
+    fallbackIcon = DEFAULT_NAV_ICON_KEY,
     indent = false,
     canMoveUp,
     canMoveDown,
@@ -189,6 +278,7 @@ function NavItemRow({
     onMoveUp,
     onMoveDown,
     onHide,
+    onIconChange,
     onEditDashboard,
     onDeleteDashboard
 }) {
@@ -199,6 +289,14 @@ function NavItemRow({
                 indent && 'ml-6'
             )}
         >
+            {onIconChange ? (
+                <NavIconSelect
+                    value={icon}
+                    fallbackIcon={fallbackIcon}
+                    ariaLabel={`Icon for ${label}`}
+                    onValueChange={onIconChange}
+                />
+            ) : null}
             <span className="min-w-0 flex-1 truncate">{label}</span>
             <Button
                 type="button"
@@ -336,9 +434,39 @@ export function CustomNavDialog({
         setLocalLayout((current) => moveArrayItem(current, index, delta));
     }
 
+    function updateEntryIcon(index, icon, fallbackIcon) {
+        const normalizedIcon = normalizeNavIconKey(icon, fallbackIcon);
+        setLocalLayout((current) =>
+            current.map((entry, entryIndex) =>
+                entryIndex === index
+                    ? {
+                          ...entry,
+                          icon: normalizedIcon
+                      }
+                    : entry
+            )
+        );
+    }
+
     function moveFolderChild(folderIndex, itemIndex, delta) {
         updateFolderItems(folderIndex, (items) =>
             moveArrayItem(items, itemIndex, delta)
+        );
+    }
+
+    function updateFolderChildIcon(folderIndex, itemIndex, icon, fallbackIcon) {
+        const normalizedIcon = normalizeNavIconKey(icon, fallbackIcon);
+        updateFolderItems(folderIndex, (items) =>
+            items.map((item, index) => {
+                if (index !== itemIndex) {
+                    return item;
+                }
+                const key = getFolderItemKey(item);
+                if (!key) {
+                    return item;
+                }
+                return createFolderItem(key, normalizedIcon);
+            })
         );
     }
 
@@ -394,7 +522,7 @@ export function CustomNavDialog({
                 id: createFolderId(),
                 name: String(result.value || '').trim(),
                 nameKey: null,
-                icon: DEFAULT_FOLDER_ICON,
+                icon: normalizeNavIconKey(DEFAULT_FOLDER_ICON),
                 items: []
             }
         ]);
@@ -438,7 +566,23 @@ export function CustomNavDialog({
             next.splice(
                 folderIndex,
                 1,
-                ...(folder.items || []).map((key) => ({ type: 'item', key }))
+                ...(folder.items || [])
+                    .map((item) => {
+                        const key = getFolderItemKey(item);
+                        if (!key) {
+                            return null;
+                        }
+                        const icon = normalizeNavIconKey(
+                            getFolderItemIcon(item),
+                            ''
+                        );
+                        return {
+                            type: 'item',
+                            key,
+                            ...(icon ? { icon } : {})
+                        };
+                    })
+                    .filter(Boolean)
             );
             return next;
         });
@@ -487,7 +631,10 @@ export function CustomNavDialog({
         try {
             await updateDashboard(dashboardId, {
                 name: String(nameResult.value || '').trim(),
-                icon: dashboard.icon || DEFAULT_DASHBOARD_ICON
+                icon: normalizeNavIconKey(
+                    dashboard.icon,
+                    DEFAULT_DASHBOARD_ICON
+                )
             });
             toast.success(t('message.update_success'));
         } catch (error) {
@@ -542,13 +689,13 @@ export function CustomNavDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] gap-4 overflow-hidden sm:max-w-3xl">
+            <DialogContent className="flex max-h-[85vh] flex-col gap-4 overflow-hidden sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>
                         {t('nav_menu.custom_nav.dialog_title')}
                     </DialogTitle>
                 </DialogHeader>
-                <div className="min-h-[40vh] overflow-y-auto pr-2">
+                <div className="min-h-0 flex-1 overflow-y-auto pr-2">
                     <div className="flex flex-col gap-1">
                         {localLayout.map((entry, index) => {
                             if (entry.type === 'folder') {
@@ -558,6 +705,20 @@ export function CustomNavDialog({
                                         className="flex flex-col gap-1 rounded-lg border p-2"
                                     >
                                         <div className="flex items-center gap-2 text-sm font-medium">
+                                            <NavIconSelect
+                                                value={entry.icon}
+                                                fallbackIcon={
+                                                    DEFAULT_FOLDER_ICON
+                                                }
+                                                ariaLabel={`Icon for ${entry.name}`}
+                                                onValueChange={(icon) =>
+                                                    updateEntryIcon(
+                                                        index,
+                                                        icon,
+                                                        DEFAULT_FOLDER_ICON
+                                                    )
+                                                }
+                                            />
                                             <span className="min-w-0 flex-1 truncate">
                                                 {entry.name}
                                             </span>
@@ -614,7 +775,11 @@ export function CustomNavDialog({
                                         {entry.items?.length ? (
                                             <div className="flex flex-col gap-1">
                                                 {entry.items.map(
-                                                    (key, childIndex) => {
+                                                    (item, childIndex) => {
+                                                        const key =
+                                                            getFolderItemKey(
+                                                                item
+                                                            );
                                                         const definition =
                                                             definitionMap.get(
                                                                 key
@@ -630,6 +795,16 @@ export function CustomNavDialog({
                                                                     definition,
                                                                     t
                                                                 )}
+                                                                icon={
+                                                                    getFolderItemIcon(
+                                                                        item
+                                                                    ) ||
+                                                                    definition.icon
+                                                                }
+                                                                fallbackIcon={
+                                                                    definition.icon ||
+                                                                    DEFAULT_NAV_ICON_KEY
+                                                                }
                                                                 canMoveUp={
                                                                     childIndex >
                                                                     0
@@ -646,6 +821,17 @@ export function CustomNavDialog({
                                                                 isDashboard={isDashboardKey(
                                                                     key
                                                                 )}
+                                                                onIconChange={(
+                                                                    icon
+                                                                ) =>
+                                                                    updateFolderChildIcon(
+                                                                        index,
+                                                                        childIndex,
+                                                                        icon,
+                                                                        definition.icon ||
+                                                                            DEFAULT_NAV_ICON_KEY
+                                                                    )
+                                                                }
                                                                 onMoveUp={() =>
                                                                     moveFolderChild(
                                                                         index,
@@ -699,10 +885,22 @@ export function CustomNavDialog({
                                 <NavItemRow
                                     key={entry.key}
                                     label={definitionLabel(definition, t)}
+                                    icon={entry.icon || definition.icon}
+                                    fallbackIcon={
+                                        definition.icon || DEFAULT_NAV_ICON_KEY
+                                    }
                                     canMoveUp={index > 0}
                                     canMoveDown={index < localLayout.length - 1}
                                     isTool={isToolNavKey(entry.key)}
                                     isDashboard={isDashboardKey(entry.key)}
+                                    onIconChange={(icon) =>
+                                        updateEntryIcon(
+                                            index,
+                                            icon,
+                                            definition.icon ||
+                                                DEFAULT_NAV_ICON_KEY
+                                        )
+                                    }
                                     onMoveUp={() => moveTopLevel(index, -1)}
                                     onMoveDown={() => moveTopLevel(index, 1)}
                                     onHide={() => hideItem(entry.key)}

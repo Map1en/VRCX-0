@@ -1,34 +1,16 @@
 import {
-    BarChart3Icon,
-    BellIcon,
-    BookOpenIcon,
     ChevronRightIcon,
-    ContactIcon,
-    FolderIcon,
-    Gamepad2Icon,
-    GlobeIcon,
     HeartIcon,
-    HistoryIcon,
-    ImageIcon,
-    LayoutDashboardIcon,
     LogOutIcon,
-    MapPinIcon,
     MoonIcon,
     MoreHorizontalIcon,
     PencilIcon,
     PlusIcon,
-    RssIcon,
-    SearchIcon,
     SettingsIcon,
-    ShieldAlertIcon,
-    SmileIcon,
     PanelLeftCloseIcon,
     PanelLeftOpenIcon,
-    StarIcon,
     SunIcon,
-    Trash2Icon,
-    UsersIcon,
-    WrenchIcon
+    Trash2Icon
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -45,8 +27,16 @@ import {
     setThemeModePreference
 } from '@/services/preferencesService.js';
 import { triggerToolByKey } from '@/services/toolActionService.js';
-import { DASHBOARD_NAV_KEY_PREFIX } from '@/shared/constants/dashboard.js';
+import {
+    DASHBOARD_NAV_KEY_PREFIX,
+    DEFAULT_DASHBOARD_ICON
+} from '@/shared/constants/dashboard.js';
 import { links } from '@/shared/constants/link.js';
+import {
+    DEFAULT_FOLDER_ICON,
+    DEFAULT_NAV_ICON_KEY,
+    getNavIconComponent
+} from '@/shared/constants/navIcons.js';
 import { isToolNavKey } from '@/shared/constants/tools.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -100,32 +90,6 @@ import {
     saveNavMenuModel
 } from './navMenuModel.js';
 
-const iconByKey = {
-    feed: RssIcon,
-    'friends-locations': MapPinIcon,
-    'game-log': HistoryIcon,
-    'player-list': Gamepad2Icon,
-    search: SearchIcon,
-    'favorite-friends': HeartIcon,
-    'favorite-worlds': GlobeIcon,
-    'favorite-avatars': SmileIcon,
-    'friend-log': ContactIcon,
-    'friend-list': BookOpenIcon,
-    moderation: ShieldAlertIcon,
-    notification: BellIcon,
-    'my-avatars': ImageIcon,
-    'charts-instance': BarChart3Icon,
-    'charts-mutual': UsersIcon,
-    tools: WrenchIcon,
-    'default-folder-favorites': StarIcon,
-    'default-folder-social': UsersIcon,
-    'default-folder-charts': BarChart3Icon
-};
-
-const toolIconByKey = {
-    gallery: ImageIcon,
-    'screenshot-metadata': ImageIcon
-};
 const themeModeOptions = ['system', 'light', 'dark'];
 const UPDATE_EXE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const UPDATE_EXE_CHECK_RETRY_MS = 5 * 60 * 1000;
@@ -170,17 +134,14 @@ function themeModeLabel(themeMode, t) {
 }
 
 function NavIcon({ entry, className = undefined }) {
-    const toolKey = String(entry?.index || entry?.key || '').replace(
-        /^tool-/,
-        ''
-    );
-    const Icon =
-        iconByKey[entry?.index] ||
-        iconByKey[entry?.key] ||
-        toolIconByKey[toolKey] ||
-        (String(entry?.index || '').startsWith(DASHBOARD_NAV_KEY_PREFIX)
-            ? LayoutDashboardIcon
-            : FolderIcon);
+    const fallback = String(entry?.index || '').startsWith(
+        DASHBOARD_NAV_KEY_PREFIX
+    )
+        ? DEFAULT_DASHBOARD_ICON
+        : entry?.children
+          ? DEFAULT_FOLDER_ICON
+          : DEFAULT_NAV_ICON_KEY;
+    const Icon = getNavIconComponent(entry?.icon, fallback);
     return <Icon className={className} />;
 }
 
@@ -240,6 +201,10 @@ function isNavItemNotified(entry, notifiedKeys) {
     );
 }
 
+function getFolderItemKey(item) {
+    return typeof item === 'string' ? item : item?.key;
+}
+
 function removeNavKeyFromLayout(layout, navKey) {
     return (layout || [])
         .map((entry) => {
@@ -248,7 +213,7 @@ function removeNavKeyFromLayout(layout, navKey) {
             }
             if (entry.type === 'folder') {
                 const nextItems = (entry.items || []).filter(
-                    (key) => key !== navKey
+                    (item) => getFolderItemKey(item) !== navKey
                 );
                 return nextItems.length
                     ? {

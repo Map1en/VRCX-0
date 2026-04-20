@@ -146,7 +146,8 @@ function collectLayoutKeys(layout) {
         if (entry.type === 'item' && entry.key) {
             keys.add(entry.key);
         } else if (entry.type === 'folder') {
-            for (const key of entry.items || []) {
+            for (const item of entry.items || []) {
+                const key = typeof item === 'string' ? item : item?.key;
                 if (key) {
                     keys.add(key);
                 }
@@ -181,7 +182,9 @@ function removeToolNavItem(layout, navKey) {
             }
             if (entry.type === 'folder') {
                 const nextItems = (entry.items || []).filter(
-                    (key) => key !== navKey
+                    (item) =>
+                        (typeof item === 'string' ? item : item?.key) !==
+                        navKey
                 );
                 return nextItems.length ? { ...entry, items: nextItems } : null;
             }
