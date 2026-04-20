@@ -1,18 +1,45 @@
-const localizedStrings = import.meta.glob('./*.json', {
-    eager: true,
-    import: 'default'
-});
+import csMessages from './cs.json';
+import enMessages from './en.json';
+import esMessages from './es.json';
+import frMessages from './fr.json';
+import huMessages from './hu.json';
+import jaMessages from './ja.json';
+import koMessages from './ko.json';
+import plMessages from './pl.json';
+import ptMessages from './pt.json';
+import ruMessages from './ru.json';
+import thMessages from './th.json';
+import viMessages from './vi.json';
+import zhCnMessages from './zh-CN.json';
+import zhTwMessages from './zh-TW.json';
+
+const localizedStrings = {
+    cs: csMessages,
+    en: enMessages,
+    es: esMessages,
+    fr: frMessages,
+    hu: huMessages,
+    ja: jaMessages,
+    ko: koMessages,
+    pl: plMessages,
+    pt: ptMessages,
+    ru: ruMessages,
+    th: thMessages,
+    vi: viMessages,
+    'zh-CN': zhCnMessages,
+    'zh-TW': zhTwMessages
+};
+
+function getAllLocalizedStrings() {
+    return { ...localizedStrings };
+}
 
 async function getLocalizedStrings(code) {
-    return (
-        localizedStrings[`./${code}.json`] ||
-        localizedStrings['./en.json'] ||
-        {}
-    );
+    return localizedStrings[code] || localizedStrings.en || {};
 }
 
 function getLanguageName(code) {
-    return String(localizedStrings[`./${code}.json`]?.language ?? code).replace(
+    return String(localizedStrings[code]?.language ?? code).replace(
         /\s+\([^)]+\)$/,
         ''
     );
@@ -59,4 +86,9 @@ function resolveSystemLanguage(systemLanguage, codes) {
 }
 
 export * from './locales';
-export { getLanguageName, getLocalizedStrings, resolveSystemLanguage };
+export {
+    getAllLocalizedStrings,
+    getLanguageName,
+    getLocalizedStrings,
+    resolveSystemLanguage
+};

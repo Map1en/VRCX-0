@@ -1,19 +1,26 @@
 import { createInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import { getLocalizedStrings } from '@/localization/index.js';
+import {
+    getAllLocalizedStrings,
+    getLocalizedStrings
+} from '@/localization/index.js';
 import { useShellStore } from '@/state/shellStore.js';
 
-const localeCache = new Map();
+const allLocalizedStrings = getAllLocalizedStrings();
+const i18nResources = Object.fromEntries(
+    Object.entries(allLocalizedStrings).map(([locale, messages]) => [
+        locale,
+        { translation: messages || {} }
+    ])
+);
 export const appI18n = createInstance();
 const appI18nReady = appI18n.use(initReactI18next).init({
     lng: 'en',
     fallbackLng: 'en',
     ns: ['translation'],
     defaultNS: 'translation',
-    resources: {
-        en: { translation: {} }
-    },
+    resources: i18nResources,
     interpolation: {
         escapeValue: false,
         prefix: '{',
@@ -32,15 +39,7 @@ function resolveMessage(messages, key) {
 async function loadMessages(locale) {
     const normalizedLocale =
         typeof locale === 'string' && locale.trim() ? locale.trim() : 'en';
-
-    if (!localeCache.has(normalizedLocale)) {
-        localeCache.set(
-            normalizedLocale,
-            getLocalizedStrings(normalizedLocale).catch(() => ({}))
-        );
-    }
-
-    return localeCache.get(normalizedLocale);
+    return allLocalizedStrings[normalizedLocale] ?? getLocalizedStrings(normalizedLocale);
 }
 
 export function buildTimeUnitLabels(messages, fallbackMessages, defaultLabels) {
@@ -72,14 +71,19 @@ export async function ensureI18nLocale(locale) {
     ]);
 
     await appI18nReady;
-    appI18n.addResourceBundle(
-        'en',
-        'translation',
-        fallbackMessages ?? {},
-        true,
-        true
-    );
-    if (normalizedLocale !== 'en') {
+    if (!appI18n.hasResourceBundle('en', 'translation')) {
+        appI18n.addResourceBundle(
+            'en',
+            'translation',
+            fallbackMessages ?? {},
+            true,
+            true
+        );
+    }
+    if (
+        normalizedLocale !== 'en' &&
+        !appI18n.hasResourceBundle(normalizedLocale, 'translation')
+    ) {
         appI18n.addResourceBundle(
             normalizedLocale,
             'translation',

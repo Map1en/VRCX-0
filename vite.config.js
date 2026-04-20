@@ -7,20 +7,12 @@ import browserslist from 'browserslist';
 import { browserslistToTargets } from 'lightningcss';
 import { defineConfig } from 'vite';
 
-import { languageCodes } from './src/localization/locales';
-
 /**
  *
  * @param assetId
  */
 function getAssetLanguage(assetId) {
     if (!assetId) return null;
-
-    if (assetId.endsWith('.json')) {
-        const language = assetId.split('.json')[0];
-
-        if (languageCodes.includes(language)) return language;
-    }
 
     const language =
         // Font assets, e.g., noto-sans-jp-regular.woff2 mapped to language code.
