@@ -61,7 +61,6 @@ function ActionButton({
                         type="button"
                         size="icon-xs"
                         variant="outline"
-                        className="rounded-full"
                         aria-label={label}
                         disabled={disabled || loading}
                         onClick={onClick}
