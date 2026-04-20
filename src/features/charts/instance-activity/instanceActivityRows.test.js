@@ -36,6 +36,14 @@ describe('instanceActivityRows', () => {
                     time: 60 * 60 * 1000
                 },
                 {
+                    id: 'traveling',
+                    user_id: currentUserId,
+                    display_name: 'Self',
+                    location: 'traveling:traveling',
+                    created_at: iso(startMs + 3 * 60 * 60 * 1000),
+                    time: 60 * 60 * 1000
+                },
+                {
                     id: 'cross-midnight',
                     user_id: currentUserId,
                     display_name: 'Self',
@@ -62,7 +70,7 @@ describe('instanceActivityRows', () => {
         });
         expect(rows[1]).toMatchObject({
             worldId: 'wrld_late',
-            worldName: 'wrld_late',
+            worldName: '',
             visibleStartMs: startMs + 4 * 60 * 60 * 1000,
             visibleDurationMs: 60 * 60 * 1000
         });

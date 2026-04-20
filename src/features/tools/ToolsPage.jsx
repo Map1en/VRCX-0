@@ -1,23 +1,11 @@
 import {
-    ArchiveIcon,
-    BotIcon,
-    CalendarDaysIcon,
-    CameraIcon,
     ChevronDownIcon,
-    ContactRoundIcon,
-    DatabaseIcon,
     DownloadIcon,
-    FileTextIcon,
     FolderOpenIcon,
     ImageIcon,
-    ImagesIcon,
-    MessageSquareTextIcon,
     MoreHorizontalIcon,
     PinIcon,
     PinOffIcon,
-    ServerCogIcon,
-    SlidersHorizontalIcon,
-    TerminalSquareIcon,
     UsersIcon,
     WrenchIcon
 } from 'lucide-react';
@@ -38,6 +26,7 @@ import {
     getToolsByCategory,
     toolCategories
 } from '@/shared/constants/tools.js';
+import { getNavIconComponent } from '@/shared/constants/navIcons.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { Button } from '@/ui/shadcn/button';
@@ -60,26 +49,6 @@ const categoryIconByKey = {
     system: WrenchIcon,
     user: DownloadIcon,
     other: MoreHorizontalIcon
-};
-
-const toolIconByKey = {
-    'screenshot-metadata': CameraIcon,
-    gallery: ImagesIcon,
-    'vrc-photos': FolderOpenIcon,
-    'steam-screenshots': ImageIcon,
-    'vrcx-data': DatabaseIcon,
-    'vrchat-data': ServerCogIcon,
-    'crash-dumps': ArchiveIcon,
-    'vrchat-config': SlidersHorizontalIcon,
-    'launch-options': TerminalSquareIcon,
-    'registry-backup': ArchiveIcon,
-    'auto-change-status': BotIcon,
-    'group-calendar': CalendarDaysIcon,
-    'discord-names': UsersIcon,
-    'export-notes': FileTextIcon,
-    'export-friend-list': ContactRoundIcon,
-    'export-own-avatars': DownloadIcon,
-    'edit-invite-message': MessageSquareTextIcon
 };
 
 function ToolItem({
@@ -430,10 +399,10 @@ export function ToolsPage() {
                                     {category.tools.map((tool) => (
                                         <ToolItem
                                             key={tool.key}
-                                            icon={
-                                                toolIconByKey[tool.key] ||
-                                                WrenchIcon
-                                            }
+                                            icon={getNavIconComponent(
+                                                tool.navIcon,
+                                                'lucide:Wrench'
+                                            )}
                                             title={translateWithFallback(
                                                 tool.titleKey
                                             )}

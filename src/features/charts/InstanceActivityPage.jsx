@@ -63,7 +63,7 @@ async function loadMissingWorldProfiles(worldIds, worldDetailsById, endpoint) {
 
     const results = await Promise.allSettled(
         missingWorldIds.map((worldId) =>
-            worldProfileRepository.fetchWorldProfile({ worldId, endpoint })
+            worldProfileRepository.getWorldProfile({ worldId, endpoint })
         )
     );
     const nextWorldDetailsById = { ...worldDetailsById };

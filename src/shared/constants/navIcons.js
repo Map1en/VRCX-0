@@ -49,6 +49,7 @@ export const DEFAULT_NAV_ICON_KEY = 'lucide:Circle';
 export const DEFAULT_FOLDER_ICON = 'lucide:Folder';
 
 const navIconEntries = [
+    ['lucide:Circle', 'Circle', CircleIcon],
     ['lucide:Rss', 'RSS', RssIcon],
     ['lucide:MapPin', 'Map Pin', MapPinIcon],
     ['lucide:History', 'History', HistoryIcon],

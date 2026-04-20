@@ -161,12 +161,18 @@ async function getWorldSummariesByIds(worldIds) {
     }
 
     const locationRows = await sqliteRepository.query(
-        `SELECT world_id, world_name
-         FROM gamelog_location
-         WHERE world_id IN (${placeholders.join(', ')})
-           AND world_name IS NOT NULL
-           AND world_name != ''
-         ORDER BY id DESC`,
+        `SELECT gl.world_id, gl.world_name
+         FROM gamelog_location gl
+         INNER JOIN (
+             SELECT world_id, MAX(id) AS max_id
+             FROM gamelog_location
+             WHERE world_id IN (${placeholders.join(', ')})
+               AND world_name IS NOT NULL
+               AND world_name != ''
+             GROUP BY world_id
+         ) latest
+             ON latest.world_id = gl.world_id
+            AND latest.max_id = gl.id`,
         params
     );
 
