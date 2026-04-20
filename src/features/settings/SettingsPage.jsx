@@ -142,7 +142,7 @@ import {
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
 
 import { OpenSourceNoticeDialog } from './components/OpenSourceNoticeDialog.jsx';
@@ -295,11 +295,20 @@ const settingsTabs = [
     ['interface', 'view.settings.category.interface'],
     ['social', 'view.settings.category.social'],
     ['notifications', 'view.settings.category.notifications'],
-    ['vr', 'view.settings.category.vr'],
     ['media', 'view.settings.category.media'],
     ['integrations', 'view.settings.category.integrations'],
     ['advanced', 'view.settings.category.advanced']
 ];
+function SettingsTabContent({ value, children }) {
+    return (
+        <TabsContent
+            value={value}
+            className="m-0 min-h-0 gap-4 overflow-auto pt-3 data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col"
+        >
+            {children}
+        </TabsContent>
+    );
+}
 
 export function SettingsPage() {
     const { t } = useI18n();
@@ -663,7 +672,6 @@ export function SettingsPage() {
         };
     }, []);
 
-    const showSettingSection = (...tabs) => tabs.includes(activeSettingsTab);
     const feedFilterOptions = useMemo(() => feedFiltersOptions(), []);
     const currentSharedFeedFilterOptions =
         feedFilterMode === 'noty'
@@ -1893,7 +1901,7 @@ export function SettingsPage() {
     }
 
     return (
-        <div className="x-container flex flex-1 flex-col overflow-hidden p-6">
+        <div className="x-container flex flex-1 flex-col overflow-hidden p-4">
             <PageHeader>
                 <PageTitle>{t('view.settings.header')}</PageTitle>
             </PageHeader>
@@ -1902,23 +1910,23 @@ export function SettingsPage() {
                 onValueChange={setActiveSettingsTab}
                 className="min-h-0 flex-1"
             >
-                <TabsList className="max-w-full justify-start overflow-x-auto">
-                    {settingsTabs.map(([value, labelKey]) => (
-                        <TabsTrigger key={value} value={value}>
-                            {t(labelKey)}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
-                <div className="min-h-0 flex-1 overflow-auto pt-4">
-                    <div className="flex flex-col gap-6">
-                        <div className="flex flex-col gap-6">
-                            <Card
-                                className={
-                                    showSettingSection('system')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                <div className="max-w-full overflow-x-auto">
+                    <TabsList>
+                        {settingsTabs.map(([value, labelKey]) => (
+                            <TabsTrigger key={value} value={value}>
+                                {t(labelKey)}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </div>
+                {loading ? (
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                        <Spinner />
+                        Loading settings snapshot…
+                    </div>
+                ) : null}
+                <SettingsTabContent value="system">
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -2084,15 +2092,10 @@ export function SettingsPage() {
                                         </Button>
                                     </div>
                                 </CardContent>
-                            </Card>
-
-                            <Card
-                                className={
-                                    showSettingSection('interface')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        </Card>
+                    </SettingsTabContent>
+                    <SettingsTabContent value="interface">
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -2951,15 +2954,10 @@ export function SettingsPage() {
                                         </div>
                                     </div>
                                 </CardContent>
-                            </Card>
-
-                            <Card
-                                className={
-                                    showSettingSection('media')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        </Card>
+                    </SettingsTabContent>
+                    <SettingsTabContent value="media">
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -3322,15 +3320,10 @@ export function SettingsPage() {
                                         />
                                     </Field>
                                 </CardContent>
-                            </Card>
-
-                            <Card
-                                className={
-                                    showSettingSection('integrations')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        </Card>
+                    </SettingsTabContent>
+                    <SettingsTabContent value="integrations">
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -3530,13 +3523,7 @@ export function SettingsPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card
-                                className={
-                                    showSettingSection('integrations')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -3602,13 +3589,7 @@ export function SettingsPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card
-                                className={
-                                    showSettingSection('integrations')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -3674,13 +3655,7 @@ export function SettingsPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card
-                                className={
-                                    showSettingSection('integrations')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -3755,15 +3730,10 @@ export function SettingsPage() {
                                         </Button>
                                     </Field>
                                 </CardContent>
-                            </Card>
-
-                            <Card
-                                className={
-                                    showSettingSection('social')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        </Card>
+                    </SettingsTabContent>
+                    <SettingsTabContent value="social">
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -3971,15 +3941,10 @@ export function SettingsPage() {
                                         </DropdownMenu>
                                     </Field>
                                 </CardContent>
-                            </Card>
-
-                            <Card
-                                className={
-                                    showSettingSection('notifications')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        </Card>
+                    </SettingsTabContent>
+                    <SettingsTabContent value="notifications">
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -4323,15 +4288,10 @@ export function SettingsPage() {
                                         </div>
                                     ) : null}
                                 </CardContent>
-                            </Card>
-
-                            <Card
-                                className={
-                                    showSettingSection('advanced')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        </Card>
+                    </SettingsTabContent>
+                    <SettingsTabContent value="advanced">
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -4874,13 +4834,7 @@ export function SettingsPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card
-                                className={
-                                    showSettingSection('advanced')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -4933,13 +4887,7 @@ export function SettingsPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card
-                                className={
-                                    showSettingSection('advanced')
-                                        ? undefined
-                                        : 'hidden'
-                                }
-                            >
+                        <Card>
                                 <CardHeader>
                                     <CardTitle>
                                         {t(
@@ -5013,17 +4961,8 @@ export function SettingsPage() {
                                         </div>
                                     ) : null}
                                 </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-
-                    {loading ? (
-                        <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                            <Spinner />
-                            Loading settings snapshot…
-                        </div>
-                    ) : null}
-                </div>
+                        </Card>
+                    </SettingsTabContent>
             </Tabs>
             <Dialog
                 open={customFontDialogOpen}
@@ -5865,16 +5804,18 @@ export function SettingsPage() {
                             value={feedFilterMode}
                             onValueChange={setFeedFilterMode}
                         >
-                            <TabsList className="max-w-full justify-start overflow-x-auto">
-                                <TabsTrigger value="noty">
-                                    {t(
-                                        'dialog.shared_feed_filters.notification'
-                                    )}
-                                </TabsTrigger>
-                                <TabsTrigger value="wrist">
-                                    {t('dialog.shared_feed_filters.wrist')}
-                                </TabsTrigger>
-                            </TabsList>
+                            <div className="max-w-full overflow-x-auto">
+                                <TabsList>
+                                    <TabsTrigger value="noty">
+                                        {t(
+                                            'dialog.shared_feed_filters.notification'
+                                        )}
+                                    </TabsTrigger>
+                                    <TabsTrigger value="wrist">
+                                        {t('dialog.shared_feed_filters.wrist')}
+                                    </TabsTrigger>
+                                </TabsList>
+                            </div>
                         </Tabs>
                         <FieldGroup className="max-h-[60vh] overflow-y-auto pr-1">
                             {currentSharedFeedFilterOptions.map((setting) => (
