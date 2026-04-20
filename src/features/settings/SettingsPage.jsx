@@ -1902,10 +1902,7 @@ export function SettingsPage() {
                 onValueChange={setActiveSettingsTab}
                 className="min-h-0 flex-1"
             >
-                <TabsList
-                    variant="line"
-                    className="w-full justify-start overflow-x-auto"
-                >
+                <TabsList className="max-w-full justify-start overflow-x-auto">
                     {settingsTabs.map(([value, labelKey]) => (
                         <TabsTrigger key={value} value={value}>
                             {t(labelKey)}
@@ -1913,7 +1910,7 @@ export function SettingsPage() {
                     ))}
                 </TabsList>
                 <div className="min-h-0 flex-1 overflow-auto pt-4">
-                    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+                    <div className="flex flex-col gap-6">
                         <div className="flex flex-col gap-6">
                             <Card
                                 className={
@@ -5868,10 +5865,7 @@ export function SettingsPage() {
                             value={feedFilterMode}
                             onValueChange={setFeedFilterMode}
                         >
-                            <TabsList
-                                variant="line"
-                                className="w-full justify-start"
-                            >
+                            <TabsList className="max-w-full justify-start overflow-x-auto">
                                 <TabsTrigger value="noty">
                                     {t(
                                         'dialog.shared_feed_filters.notification'
