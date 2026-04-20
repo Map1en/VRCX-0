@@ -537,7 +537,6 @@
                     },
                     "launch_commands": {
                         "header": "คำสั่งเปิดเกม (Deep Links)",
-                        "docs": "เอกสารคำสั่งเปิดเกม",
                         "show_confirmation_on_switch_avatar_enable": "แสดงกล่องโต้ตอบยืนยันก่อนเปลี่ยนอวาตาร์",
                         "show_confirmation_on_switch_avatar_tooltip": "เมื่อปิดใช้งาน VRCX-0 จะไม่ปรากฏขึ้นมาด้านหน้าเพื่อขอการยืนยันเมื่อเปลี่ยนอวาตาร์",
                         "website_userscript": "Userscript สำหรับเว็บไซต์ VRC"

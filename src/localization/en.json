@@ -1204,7 +1204,6 @@
                     },
                     "launch_commands": {
                         "header": "Launch Commands (Deep Links)",
-                        "docs": "Launch Command Docs",
                         "show_confirmation_on_switch_avatar_enable": "Confirm Before Switching Avatars",
                         "show_confirmation_on_switch_avatar_tooltip": "When disabled, VRCX-0 will not ask for confirmation before switching avatars.",
                         "website_userscript": "VRChat Website Userscript"

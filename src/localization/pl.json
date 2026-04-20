@@ -695,7 +695,6 @@
                     },
                     "launch_commands": {
                         "header": "Komendy uruchomieniowe (Głębokie linkowanie)",
-                        "docs": "Otwórz dokumentację",
                         "show_confirmation_on_switch_avatar_enable": "Pokaż okno dialogowe potwierdzenia przed zmianą awatara",
                         "show_confirmation_on_switch_avatar_tooltip": "Gdy opcja jest wyłączona, VRCX-0 nie pojawi się na pierwszym planie podczas zmiany awatarów i nie poprosi o potwierdzenie.",
                         "website_userscript": "Skrypt dla strony VRC"

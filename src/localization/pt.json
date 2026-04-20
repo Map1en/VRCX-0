@@ -1115,7 +1115,6 @@
                     },
                     "launch_commands": {
                         "header": "Comandos de Inicialização (Deep Links)",
-                        "docs": "Documentação de Comandos de Inicialização",
                         "show_confirmation_on_switch_avatar_enable": "Mostrar Diálogo de Confirmação Antes de Trocar de Avatar",
                         "show_confirmation_on_switch_avatar_tooltip": "Quando desativado, o VRCX-0 não virá para a frente ao trocar de avatar e pedirá confirmação",
                         "website_userscript": "Userscript do Site VRC"

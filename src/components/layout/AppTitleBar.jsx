@@ -241,6 +241,12 @@ export function AppTitleBar() {
                         <div
                             data-titlebar-interactive="true"
                             className="shrink-0"
+                            onMouseDown={(event) => {
+                                event.stopPropagation();
+                            }}
+                            onDoubleClick={(event) => {
+                                event.stopPropagation();
+                            }}
                         >
                             <AppMenuBar
                                 rightSidebarVisible={rightSidebarActionVisible}

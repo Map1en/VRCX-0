@@ -1,9 +1,9 @@
 const links = {
     wiki: 'https://github.com/Map1en/VRCX-0/wiki',
-    troubleshootingAuthUserConnectionIssues:
-        'https://github.com/Map1en/VRCX-0/wiki/Troubleshooting#401-authuser--connection-issues',
     github: 'https://github.com/Map1en/VRCX-0',
-    releases: 'https://github.com/Map1en/VRCX-0/releases'
+    issues: 'https://github.com/Map1en/VRCX-0/issues',
+    releases: 'https://github.com/Map1en/VRCX-0/releases',
+    discord: 'https://discord.gg/bnEVqwSp'
 };
 
 export { links };

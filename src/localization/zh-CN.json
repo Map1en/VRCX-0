@@ -1162,7 +1162,6 @@
                     },
                     "launch_commands": {
                         "header": "启动命令 / 客户端连接",
-                        "docs": "文档",
                         "show_confirmation_on_switch_avatar_enable": "切换模型前显示确认对话框",
                         "show_confirmation_on_switch_avatar_tooltip": "禁用后，切换模型时 VRCX-0 将不会弹至前台要求确认",
                         "website_userscript": "相关脚本"

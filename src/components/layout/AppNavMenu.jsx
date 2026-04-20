@@ -8,7 +8,6 @@ import {
     Gamepad2Icon,
     GlobeIcon,
     HeartIcon,
-    HelpCircleIcon,
     HistoryIcon,
     ImageIcon,
     LayoutDashboardIcon,
@@ -71,7 +70,6 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuSub,
     DropdownMenuSubContent,
@@ -1230,61 +1228,6 @@ export function AppNavMenu({ isCollapsed }) {
             <SidebarFooter className="px-2 py-3">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton
-                                    tooltip={t('nav_tooltip.help_support')}
-                                >
-                                    <HelpCircleIcon />
-                                    <span>{t('nav_tooltip.help_support')}</span>
-                                </SidebarMenuButton>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                side="right"
-                                align="start"
-                                className="w-56"
-                            >
-                                <DropdownMenuLabel>
-                                    {t('nav_menu.resources')}
-                                </DropdownMenuLabel>
-                                <DropdownMenuGroup>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            void openExternalLink(links.wiki)
-                                        }
-                                    >
-                                        {t('nav_menu.wiki')}
-                                    </DropdownMenuItem>
-                                </DropdownMenuGroup>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel>
-                                    {t('nav_menu.get_help')}
-                                </DropdownMenuLabel>
-                                <DropdownMenuGroup>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            void openExternalLink(links.github)
-                                        }
-                                    >
-                                        {t('nav_menu.github')}
-                                    </DropdownMenuItem>
-                                    {links.discord ? (
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                void openExternalLink(
-                                                    links.discord
-                                                )
-                                            }
-                                        >
-                                            {t('nav_menu.discord')}
-                                        </DropdownMenuItem>
-                                    ) : null}
-                                </DropdownMenuGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </SidebarMenuItem>
-
-                    <SidebarMenuItem>
                         <SidebarMenuButton
                             tooltip={t('nav_tooltip.toggle_theme')}
                             onClick={() => {
@@ -1351,7 +1294,7 @@ export function AppNavMenu({ isCollapsed }) {
                                 {hasPendingUpdate ? (
                                     <DropdownMenuGroup>
                                         <DropdownMenuItem
-                                            onClick={() =>
+                                            onSelect={() =>
                                                 useRuntimeStore
                                                     .getState()
                                                     .setSystemHostOpen(
@@ -1369,7 +1312,7 @@ export function AppNavMenu({ isCollapsed }) {
                                 ) : null}
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem
-                                        onClick={() =>
+                                        onSelect={() =>
                                             navigate(routePathByName.settings)
                                         }
                                     >
@@ -1439,7 +1382,7 @@ export function AppNavMenu({ isCollapsed }) {
                                 </DropdownMenuSub>
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem
-                                        onClick={() =>
+                                        onSelect={() =>
                                             setCustomNavDialogOpen(true)
                                         }
                                     >
@@ -1451,7 +1394,7 @@ export function AppNavMenu({ isCollapsed }) {
                                     <DropdownMenuItem
                                         variant="destructive"
                                         disabled={!isLoggedIn}
-                                        onClick={() => {
+                                        onSelect={() => {
                                             void logoutFromReactShell()
                                                 .then((didLogout) => {
                                                     if (didLogout) {

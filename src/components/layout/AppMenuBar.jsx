@@ -13,6 +13,7 @@ import {
     normalizeZoomLevel
 } from '@/services/themeService.js';
 import { triggerToolByKey } from '@/services/toolActionService.js';
+import { links } from '@/shared/constants/link.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 import { Button } from '@/ui/shadcn/button';
@@ -37,8 +38,6 @@ import {
 } from '@/ui/shadcn/menubar';
 
 const ZOOM_STEP = 10;
-const PROJECT_URL = 'https://github.com/Map1en/VRCX-0';
-const PROJECT_ISSUES_URL = 'https://github.com/Map1en/VRCX-0/issues';
 
 function MenuItem({ children, onSelect, ...props }) {
     return (
@@ -297,13 +296,14 @@ export function AppMenuBar({
                     </MenubarTrigger>
                     <MenubarContent align="start">
                         <MenubarGroup>
-                            <MenuItem onSelect={() => openLink(PROJECT_URL)}>
+                            <MenuItem onSelect={() => openLink(links.github)}>
                                 {t('app_menu.github')}
                             </MenuItem>
-                            <MenuItem
-                                onSelect={() => openLink(PROJECT_ISSUES_URL)}
-                            >
+                            <MenuItem onSelect={() => openLink(links.issues)}>
                                 {t('app_menu.report_issue')}
+                            </MenuItem>
+                            <MenuItem onSelect={() => openLink(links.discord)}>
+                                {t('nav_menu.discord')}
                             </MenuItem>
                         </MenubarGroup>
                         <MenubarSeparator />

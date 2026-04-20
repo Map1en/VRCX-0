@@ -4865,19 +4865,6 @@ export function SettingsPage() {
                                             variant="outline"
                                             onClick={() =>
                                                 void openExternalLink(
-                                                    'https://github.com/Map1en/VRCX-0/wiki/Launch-parameters-&-VRCX.json'
-                                                )
-                                            }
-                                        >
-                                            {t(
-                                                'view.settings.advanced.advanced.launch_commands.docs'
-                                            )}
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() =>
-                                                void openExternalLink(
                                                     'https://github.com/Myrkie/open-in-vrcx'
                                                 )
                                             }

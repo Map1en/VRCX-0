@@ -1126,7 +1126,6 @@
                     },
                     "launch_commands": {
                         "header": "VRCX-0の起動コマンド (Deep Links)",
-                        "docs": "起動コマンドドキュメント",
                         "show_confirmation_on_switch_avatar_enable": "アバターの切り替え時に、確認ダイアログを表示",
                         "show_confirmation_on_switch_avatar_tooltip": "無効の場合、アバターの切り替え時に VRCX-0 が確認を求める事はありません。",
                         "website_userscript": "VRC Webサイト Userscript"

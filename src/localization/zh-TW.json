@@ -1139,7 +1139,6 @@
                     },
                     "launch_commands": {
                         "header": "啟動指令（Deep Links）",
-                        "docs": "啟動指令文件",
                         "show_confirmation_on_switch_avatar_enable": "切換虛擬形象前顯示確認對話框",
                         "show_confirmation_on_switch_avatar_tooltip": "停用時，切換虛擬形象時 VRCX-0 不會跳出並要求確認",
                         "website_userscript": "VRC 網站用戶腳本"
