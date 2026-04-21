@@ -53,7 +53,7 @@ function TitleBarButton({ label, className, children, onClick, ...props }) {
             size="icon-xs"
             aria-label={label}
             title={label}
-            className={cn('h-7 w-9 rounded-none border-0', className)}
+            className={cn('h-full w-9 rounded-none border-0', className)}
             onClick={onClick}
             {...props}
         >
@@ -253,7 +253,7 @@ export function AppTitleBar() {
                     {titleBarActionsVisible ? (
                         <div
                             data-titlebar-interactive="true"
-                            className="shrink-0"
+                            className="h-full shrink-0"
                             onMouseDown={(event) => {
                                 event.stopPropagation();
                             }}

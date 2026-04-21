@@ -109,9 +109,9 @@ export function AppMenuBar({
 
     return (
         <>
-            <Menubar className="h-7 border-0 bg-transparent p-0 shadow-none">
+            <Menubar className="h-full border-0 bg-transparent !p-0 shadow-none">
                 <MenubarMenu>
-                    <MenubarTrigger className="h-7 rounded px-2 py-0 text-xs">
+                    <MenubarTrigger className="h-full rounded-none px-2 !py-0 text-xs">
                         {t('app_menu.app')}
                     </MenubarTrigger>
                     <MenubarContent align="start">
@@ -145,7 +145,7 @@ export function AppMenuBar({
                 </MenubarMenu>
 
                 <MenubarMenu>
-                    <MenubarTrigger className="h-7 rounded px-2 py-0 text-xs">
+                    <MenubarTrigger className="h-full rounded-none px-2 !py-0 text-xs">
                         {t('app_menu.view')}
                     </MenubarTrigger>
                     <MenubarContent align="start">
@@ -210,7 +210,7 @@ export function AppMenuBar({
                 </MenubarMenu>
 
                 <MenubarMenu>
-                    <MenubarTrigger className="h-7 rounded px-2 py-0 text-xs">
+                    <MenubarTrigger className="h-full rounded-none px-2 !py-0 text-xs">
                         {t('app_menu.tools')}
                     </MenubarTrigger>
                     <MenubarContent align="start">
@@ -292,7 +292,7 @@ export function AppMenuBar({
                 </MenubarMenu>
 
                 <MenubarMenu>
-                    <MenubarTrigger className="h-7 rounded px-2 py-0 text-xs">
+                    <MenubarTrigger className="h-full rounded-none px-2 !py-0 text-xs">
                         {t('app_menu.help')}
                     </MenubarTrigger>
                     <MenubarContent align="start">
