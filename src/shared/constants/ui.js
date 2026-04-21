@@ -24,7 +24,7 @@ const navDefinitions = [
     },
     {
         key: 'player-list',
-        icon: 'lucide:Gamepad2',
+        icon: 'lucide:UsersRound',
         tooltip: 'nav_tooltip.player_list',
         labelKey: 'nav_tooltip.player_list',
         routeName: 'player-list'
@@ -38,21 +38,21 @@ const navDefinitions = [
     },
     {
         key: 'favorite-friends',
-        icon: 'lucide:Heart',
+        icon: 'lucide:UserStar',
         tooltip: 'nav_tooltip.favorite_friends',
         labelKey: 'nav_tooltip.favorite_friends',
         routeName: 'favorite-friends'
     },
     {
         key: 'favorite-worlds',
-        icon: 'lucide:Globe',
+        icon: 'lucide:MapPinned',
         tooltip: 'nav_tooltip.favorite_worlds',
         labelKey: 'nav_tooltip.favorite_worlds',
         routeName: 'favorite-worlds'
     },
     {
         key: 'favorite-avatars',
-        icon: 'lucide:Smile',
+        icon: 'lucide:Box',
         tooltip: 'nav_tooltip.favorite_avatars',
         labelKey: 'nav_tooltip.favorite_avatars',
         routeName: 'favorite-avatars'
@@ -73,7 +73,7 @@ const navDefinitions = [
     },
     {
         key: 'moderation',
-        icon: 'lucide:ShieldAlert',
+        icon: 'lucide:ShieldUser',
         tooltip: 'nav_tooltip.moderation',
         labelKey: 'nav_tooltip.moderation',
         routeName: 'moderation'
@@ -87,7 +87,7 @@ const navDefinitions = [
     },
     {
         key: 'my-avatars',
-        icon: 'lucide:Image',
+        icon: 'lucide:Shirt',
         tooltip: 'nav_tooltip.my_avatars',
         labelKey: 'nav_tooltip.my_avatars',
         routeName: 'my-avatars'
