@@ -1,0 +1,1889 @@
+import EdgeCurveProgram from '@sigma/edge-curve';
+import { createNodeBorderProgram } from '@sigma/node-border';
+import Graph from 'graphology';
+import louvain from 'graphology-communities-louvain';
+import {
+    CheckIcon,
+    EyeOffIcon,
+    RefreshCcwIcon,
+    Settings2Icon,
+    UserIcon
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Sigma from 'sigma';
+import { toast } from 'sonner';
+
+import { useI18n } from '@/app/hooks/use-i18n.js';
+import dayjs from '@/lib/dayjs.js';
+import { userImage } from '@/lib/entityMedia.js';
+import { cn } from '@/lib/utils.js';
+import {
+    configRepository,
+    mutualGraphRepository
+} from '@/repositories/index.js';
+import { openUserDialog } from '@/services/dialogService.js';
+import { getResolvedThemeMode } from '@/services/themeService.js';
+import { executeWithBackoff } from '@/shared/utils/retry.js';
+import { createRateLimiter } from '@/shared/utils/throttle.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
+import { useModalStore } from '@/state/modalStore.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { useShellStore } from '@/state/shellStore.js';
+import { Button } from '@/ui/shadcn/button';
+import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { ScrollArea } from '@/ui/shadcn/scroll-area';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger
+} from '@/ui/shadcn/sheet';
+import { Slider } from '@/ui/shadcn/slider';
+import { Spinner } from '@/ui/shadcn/spinner';
+
+import GraphLayoutWorker from './graphLayoutWorker.js?worker&inline';
+import {
+    buildMutualFriendsBaseGraph,
+    filterMutualFriendsGraph
+} from './mutual-friends/mutualFriendsGraphData.js';
+import {
+    buildMutualFriendExcludePickerOptions,
+    buildMutualFriendNodePickerOptions,
+    filterMutualFriendPickerOptions,
+    truncateMutualFriendLabel
+} from './mutual-friends/mutualFriendsPicker.js';
+import {
+    clampMutualGraphNumber,
+    isValidMutualFriendId,
+    MUTUAL_GRAPH_LAYOUT_DEFAULTS,
+    MUTUAL_GRAPH_LAYOUT_LIMITS,
+    normalizeExcludedMutualFriendIds,
+    normalizeMutualFriendId,
+    readExcludedMutualFriendIds,
+    writeExcludedMutualFriendIds
+} from './mutual-friends/mutualFriendsSettings.js';
+
+const COLORS_PALETTE = [
+    '#5470c6',
+    '#91cc75',
+    '#fac858',
+    '#ee6666',
+    '#73c0de',
+    '#3ba272',
+    '#fc8452',
+    '#9a60b4',
+    '#ea7ccc'
+];
+const NODE_LABEL_THRESHOLD = 10;
+const NodeBorderProgram = createNodeBorderProgram({
+    borders: [
+        { size: { value: 0.1 }, color: { value: '#f2f2f2' } },
+        { size: { fill: true }, color: { attribute: 'color' } }
+    ]
+});
+const {
+    layoutIterations: LAYOUT_ITERATIONS_LIMITS,
+    layoutSpacing: LAYOUT_SPACING_LIMITS,
+    edgeCurvature: EDGE_CURVATURE_LIMITS,
+    communitySeparation: COMMUNITY_SEPARATION_LIMITS
+} = MUTUAL_GRAPH_LAYOUT_LIMITS;
+
+async function fetchMutualFriendIds(
+    friendId,
+    { rateLimiter = null, isCancelled = () => false } = {}
+) {
+    const collected = [];
+    let offset = 0;
+
+    while (true) {
+        if (isCancelled()) {
+            break;
+        }
+        if (rateLimiter) {
+            await rateLimiter.wait();
+        }
+        if (isCancelled()) {
+            break;
+        }
+
+        const response = await executeWithBackoff(
+            () => {
+                if (isCancelled()) {
+                    throw new Error('cancelled');
+                }
+                return mutualGraphRepository.getMutualFriends({
+                    friendId,
+                    offset,
+                    n: 100
+                });
+            },
+            {
+                maxRetries: 4,
+                baseDelay: 500,
+                shouldRetry: (error) =>
+                    error?.status === 429 ||
+                    String(error?.message || '').includes('429')
+            }
+        ).catch((error) => {
+            if (String(error?.message || '') === 'cancelled') {
+                return null;
+            }
+            throw error;
+        });
+
+        if (!response || isCancelled()) {
+            break;
+        }
+
+        const page = Array.isArray(response.json) ? response.json : [];
+        collected.push(
+            ...page.map((entry) => entry?.id).filter(isValidMutualFriendId)
+        );
+
+        if (page.length < 100) {
+            break;
+        }
+        offset += page.length;
+    }
+
+    return collected;
+}
+
+function UserPickerRow({
+    option,
+    selected = false,
+    multiple = false,
+    showSelection = true
+}) {
+    const imageUrl = option?.user ? userImage(option.user, true, '64') : '';
+
+    return (
+        <span className="flex w-full items-center p-1.5 text-left text-sm">
+            <span className="bg-muted mr-2.5 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border">
+                {imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt=""
+                        loading="lazy"
+                        className="size-full object-cover"
+                    />
+                ) : (
+                    <UserIcon className="text-muted-foreground size-4" />
+                )}
+            </span>
+            <span className="min-w-0 flex-1 overflow-hidden">
+                <span className="block truncate leading-5 font-medium">
+                    {option?.label || option?.value}
+                </span>
+                {Number.isFinite(option?.degree) ? (
+                    <span className="text-muted-foreground block truncate text-xs">
+                        {option.degree} connections
+                    </span>
+                ) : null}
+            </span>
+            {showSelection ? (
+                multiple ? (
+                    <Checkbox
+                        checked={selected}
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        className="ml-auto"
+                    />
+                ) : (
+                    <CheckIcon
+                        className={cn(
+                            'ml-auto size-4',
+                            selected ? 'opacity-100' : 'opacity-0'
+                        )}
+                    />
+                )
+            ) : null}
+        </span>
+    );
+}
+
+function GraphLoadingState() {
+    return (
+        <div className="bg-muted/20 flex min-h-80 items-center justify-center rounded-xl border border-dashed">
+            <div className="text-muted-foreground flex items-center gap-3 text-sm">
+                <Spinner className="size-5" />
+                Loading mutual graph snapshot.
+            </div>
+        </div>
+    );
+}
+
+function GraphEmptyState({ title, description }) {
+    return (
+        <div className="bg-muted/20 flex min-h-80 items-center justify-center rounded-xl border border-dashed p-6 text-center">
+            <div className="flex max-w-md flex-col gap-2">
+                <div className="text-sm font-medium">{title}</div>
+                <div className="text-muted-foreground text-sm">
+                    {description}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function serializeGraph(graph) {
+    return {
+        nodes: graph.nodes().map((id) => ({
+            id,
+            attributes: graph.getNodeAttributes(id)
+        })),
+        edges: graph.edges().map((key) => {
+            const [source, target] = graph.extremities(key);
+            return {
+                key,
+                source,
+                target,
+                attributes: graph.getEdgeAttributes(key)
+            };
+        })
+    };
+}
+
+function runLayoutWorker(graph, settings) {
+    const { nodes, edges } = serializeGraph(graph);
+    return new Promise((resolve, reject) => {
+        const requestId = `${Date.now()}:${Math.random()}`;
+        const worker = new GraphLayoutWorker();
+        worker.addEventListener('message', (event) => {
+            if (event.data?.requestId !== requestId) {
+                return;
+            }
+            worker.terminate();
+            if (event.data.error) {
+                reject(new Error(event.data.error));
+                return;
+            }
+            resolve(event.data.positions || {});
+        });
+        worker.addEventListener('error', (event) => {
+            worker.terminate();
+            reject(
+                event instanceof ErrorEvent
+                    ? event.error || new Error(event.message)
+                    : new Error('Graph layout worker failed.')
+            );
+        });
+        worker.postMessage({ requestId, nodes, edges, settings });
+    });
+}
+
+function applyLayoutPositions(graph, positions) {
+    for (const [node, position] of Object.entries(positions || {})) {
+        if (graph.hasNode(node)) {
+            graph.mergeNodeAttributes(node, position);
+        }
+    }
+}
+
+function applyEdgeCurvature(graph, layoutSettings) {
+    const curvature = clampMutualGraphNumber(
+        layoutSettings.edgeCurvature,
+        EDGE_CURVATURE_LIMITS.min,
+        EDGE_CURVATURE_LIMITS.max,
+        MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature
+    );
+    const type = curvature > 0 ? 'curve' : 'line';
+    graph.forEachEdge((edge) => {
+        graph.mergeEdgeAttributes(edge, { curvature, type });
+    });
+}
+
+function assignCommunitiesAndColors(graph) {
+    const communities = louvain(graph);
+    const ids = Array.from(new Set(Object.values(communities))).sort(
+        (left, right) => String(left).localeCompare(String(right))
+    );
+    const idToIndex = new Map(ids.map((id, index) => [id, index]));
+
+    graph.forEachNode((node) => {
+        const communityId = communities[node];
+        const colorIndex = idToIndex.get(communityId) ?? 0;
+        graph.mergeNodeAttributes(node, {
+            community: communityId,
+            color: COLORS_PALETTE[colorIndex % COLORS_PALETTE.length]
+        });
+    });
+}
+
+function applyCommunitySeparation(graph, layoutSettings) {
+    const separation = clampMutualGraphNumber(
+        layoutSettings.communitySeparation,
+        COMMUNITY_SEPARATION_LIMITS.min,
+        COMMUNITY_SEPARATION_LIMITS.max,
+        MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation
+    );
+    if (separation <= 0) {
+        return;
+    }
+
+    const communities = new Map();
+    graph.forEachNode((node, attrs) => {
+        if (typeof attrs.community === 'undefined') {
+            return;
+        }
+        if (!communities.has(attrs.community)) {
+            communities.set(attrs.community, { nodes: [], cx: 0, cy: 0 });
+        }
+        communities
+            .get(attrs.community)
+            .nodes.push({ node, x: attrs.x, y: attrs.y });
+    });
+
+    let total = 0;
+    let globalX = 0;
+    let globalY = 0;
+    for (const community of communities.values()) {
+        for (const item of community.nodes) {
+            community.cx += item.x || 0;
+            community.cy += item.y || 0;
+        }
+        community.cx /= Math.max(community.nodes.length, 1);
+        community.cy /= Math.max(community.nodes.length, 1);
+        globalX += community.cx * community.nodes.length;
+        globalY += community.cy * community.nodes.length;
+        total += community.nodes.length;
+    }
+    globalX /= Math.max(total, 1);
+    globalY /= Math.max(total, 1);
+
+    for (const community of communities.values()) {
+        const dx = community.cx - globalX;
+        const dy = community.cy - globalY;
+        const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+        const pushX = (dx / distance) * separation * 80;
+        const pushY = (dy / distance) * separation * 80;
+        for (const item of community.nodes) {
+            graph.mergeNodeAttributes(item.node, {
+                x: (item.x || 0) + pushX,
+                y: (item.y || 0) + pushY
+            });
+        }
+    }
+}
+
+function buildFallbackLayout(graph) {
+    const nodes = graph.nodes();
+    const radius = Math.max(50, Math.sqrt(nodes.length || 1) * 30);
+    nodes.forEach((node, index) => {
+        const angle = (index / Math.max(nodes.length, 1)) * Math.PI * 2;
+        graph.mergeNodeAttributes(node, {
+            x: Math.cos(angle) * radius,
+            y: Math.sin(angle) * radius
+        });
+    });
+}
+
+function destroySigmaInstance(instanceRef, resizeObserverRef) {
+    resizeObserverRef.current?.disconnect();
+    instanceRef.current?.kill?.();
+    resizeObserverRef.current = null;
+    instanceRef.current = null;
+}
+
+function drawSigmaNodeHover(ctx, data, settings, t) {
+    const label = data.fullLabel || data.label;
+    if (!label) {
+        return;
+    }
+
+    const fontSize = settings.labelSize ?? 12;
+    const font = settings.labelFont ?? 'sans-serif';
+    const smallFontSize = Math.max(9, fontSize - 2);
+    const subLine = data.lastFetchedAt
+        ? `${t('view.charts.mutual_friend.context_menu.last_fetched')}: ${dayjs(data.lastFetchedAt).format('YYYY-MM-DD HH:mm')}`
+        : '';
+    const paddingX = 6;
+    const paddingY = 4;
+
+    ctx.font = `${fontSize}px ${font}`;
+    ctx.textBaseline = 'middle';
+    const labelWidth = ctx.measureText(label).width;
+    ctx.font = `${smallFontSize}px ${font}`;
+    const subWidth = subLine ? ctx.measureText(subLine).width : 0;
+    ctx.font = `${fontSize}px ${font}`;
+
+    const width = Math.max(labelWidth, subWidth) + paddingX * 2;
+    const lineHeight = fontSize + paddingY;
+    const height = lineHeight * (subLine ? 2 : 1) + paddingY;
+    const x = data.x + data.size - 5;
+    const y = data.y - height / 2;
+
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+    ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+    ctx.fillRect(x, y, width, height);
+
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = '#111827';
+    ctx.font = `${fontSize}px ${font}`;
+    ctx.fillText(label, x + paddingX, y + paddingY + fontSize / 2);
+
+    if (subLine) {
+        ctx.fillStyle = data.optedOut ? '#dc2626' : '#6b7280';
+        ctx.font = `${smallFontSize}px ${font}`;
+        ctx.fillText(
+            subLine,
+            x + paddingX,
+            y + paddingY + lineHeight + smallFontSize / 2
+        );
+    }
+}
+
+function renderSigmaGraph({
+    graph,
+    container,
+    instanceRef,
+    resizeObserverRef,
+    isDarkMode,
+    selectedNodeIdRef,
+    onSelectNode,
+    t
+}) {
+    const labelColor = isDarkMode ? '#e2e8f0' : '#111827';
+    const edgeBase = isDarkMode ? '#334155' : '#94a3b8';
+    const edgeActive = isDarkMode ? '#bac1c9' : '#0f172a';
+    let sigma = instanceRef.current;
+    let cameraState = null;
+
+    if (sigma) {
+        cameraState = sigma.getCamera?.()?.getState?.() || null;
+        sigma.setGraph(graph);
+        sigma.setSetting('labelRenderedSizeThreshold', NODE_LABEL_THRESHOLD);
+        sigma.setSetting('labelColor', { color: labelColor });
+        sigma.setSetting('defaultEdgeColor', edgeBase);
+        sigma.setSetting('zIndex', true);
+    } else {
+        sigma = new Sigma(graph, container, {
+            allowInvalidContainer: true,
+            renderLabels: true,
+            labelRenderedSizeThreshold: NODE_LABEL_THRESHOLD,
+            labelColor: { color: labelColor },
+            defaultEdgeColor: edgeBase,
+            zIndex: true,
+            defaultNodeType: 'border',
+            nodeProgramClasses: { border: NodeBorderProgram },
+            edgeProgramClasses: { curve: EdgeCurveProgram },
+            defaultDrawNodeHover: (ctx, data, settings) =>
+                drawSigmaNodeHover(ctx, data, settings, t)
+        });
+        instanceRef.current = sigma;
+        resizeObserverRef.current?.disconnect();
+        resizeObserverRef.current = new ResizeObserver(() => {
+            sigma.resize();
+            sigma.refresh();
+        });
+        resizeObserverRef.current.observe(container);
+    }
+
+    if (cameraState) {
+        sigma.getCamera?.()?.setState?.(cameraState);
+    }
+
+    let hovered = null;
+    let neighbors = new Set();
+    const rebuildNeighbors = (node) => {
+        neighbors =
+            node && graph.hasNode(node)
+                ? new Set(graph.neighbors(node))
+                : new Set();
+    };
+
+    sigma.setSetting('nodeReducer', (node, data) => {
+        const result = { ...data };
+        const isSelected = node === selectedNodeIdRef.current;
+
+        if (data.optedOut) {
+            result.borderColor = '#9ca3af';
+        }
+
+        if (!hovered) {
+            result.color = data.optedOut ? '#d1d5db' : data.color;
+            result.zIndex = isSelected ? 3 : 1;
+            if (isSelected) {
+                result.size = (data.size || 4) * 1.35;
+                result.label = `${data.label} (${data.degree ?? graph.degree(node) ?? 0})`;
+            }
+            return result;
+        }
+
+        const isHover = node === hovered;
+        const isNeighbor = neighbors.has(node);
+
+        if (isHover) {
+            result.color = '#facc15';
+            result.size = (data.size || 4) * 1.6;
+            result.label = `${data.label} (${neighbors.size})`;
+            result.labelColor = '#111827';
+            result.zIndex = 4;
+            return result;
+        }
+
+        if (isNeighbor || isSelected) {
+            result.color = data.color;
+            result.size = (data.size || 4) * (isSelected ? 1.35 : 1.2);
+            result.label = data.label;
+            result.labelColor = '#111827';
+            result.zIndex = isSelected ? 3 : 2;
+            return result;
+        }
+
+        result.color = isDarkMode
+            ? 'rgba(148,163,184,0.04)'
+            : 'rgba(100,116,139,0.06)';
+        result.size = 0.7;
+        result.label = '';
+        result.zIndex = 0;
+        return result;
+    });
+
+    sigma.setSetting('edgeReducer', (edge, data) => {
+        const result = { ...data };
+        if (!hovered) {
+            result.hidden = false;
+            result.color = edgeBase;
+            result.size = data.size || 1;
+            return result;
+        }
+
+        const [source, target] = graph.extremities(edge);
+        if (source === hovered || target === hovered) {
+            result.hidden = false;
+            result.color = edgeActive;
+            result.size = data.size || 1;
+            return result;
+        }
+
+        result.hidden = true;
+        return result;
+    });
+
+    sigma.removeAllListeners?.();
+    sigma.on('enterNode', ({ node }) => {
+        hovered = node;
+        rebuildNeighbors(node);
+        sigma.setSetting('labelRenderedSizeThreshold', 0);
+        sigma.refresh();
+    });
+    sigma.on('leaveNode', () => {
+        hovered = null;
+        rebuildNeighbors(null);
+        sigma.setSetting('labelRenderedSizeThreshold', NODE_LABEL_THRESHOLD);
+        sigma.refresh();
+    });
+    sigma.on('clickNode', ({ node }) => {
+        if (!node) {
+            return;
+        }
+        selectedNodeIdRef.current = node;
+        onSelectNode(node);
+        openUserDialog({
+            userId: node,
+            title:
+                graph.getNodeAttribute(node, 'fullLabel') ||
+                graph.getNodeAttribute(node, 'label') ||
+                undefined
+        });
+        sigma.refresh();
+    });
+    sigma.refresh();
+}
+
+async function buildSigmaGraph({
+    nodes,
+    links,
+    layoutSettings,
+    selectedNodeId
+}) {
+    const graph = new Graph({
+        type: 'undirected',
+        multi: false,
+        allowSelfLoops: false
+    });
+    const maxDegree = nodes.reduce(
+        (max, node) => Math.max(max, Number(node.degree) || 0),
+        0
+    );
+
+    for (const node of nodes) {
+        const degree = Number(node.degree) || 0;
+        const isSelected = node.id === selectedNodeId;
+        graph.addNode(node.id, {
+            label: truncateMutualFriendLabel(node.label, 20),
+            fullLabel: node.label,
+            size:
+                (4 + (maxDegree ? (degree / maxDegree) * 18 : 0)) *
+                (isSelected ? 1.35 : 1),
+            degree,
+            optedOut: Boolean(node.optedOut),
+            lastFetchedAt: node.lastFetchedAt || null,
+            type: 'border',
+            zIndex: isSelected ? 3 : 1,
+            color: node.optedOut ? '#d1d5db' : COLORS_PALETTE[0]
+        });
+    }
+
+    for (const link of links) {
+        if (!graph.hasNode(link.source) || !graph.hasNode(link.target)) {
+            continue;
+        }
+        const key = [link.source, link.target].sort().join('__');
+        if (!graph.hasEdge(key)) {
+            graph.addEdgeWithKey(key, link.source, link.target, { size: 0.75 });
+        }
+    }
+
+    if (graph.order > 1) {
+        try {
+            const positions = await runLayoutWorker(graph, {
+                layoutIterations: layoutSettings.layoutIterations,
+                layoutSpacing: layoutSettings.layoutSpacing,
+                deltaSpacing: 0,
+                reinitialize: true
+            });
+            applyLayoutPositions(graph, positions);
+        } catch (error) {
+            console.warn(
+                '[MutualFriendsPage] Graph layout worker failed, using fallback layout.',
+                error
+            );
+            buildFallbackLayout(graph);
+        }
+        assignCommunitiesAndColors(graph);
+        applyCommunitySeparation(graph, layoutSettings);
+        applyEdgeCurvature(graph, layoutSettings);
+    } else {
+        buildFallbackLayout(graph);
+    }
+
+    return graph;
+}
+
+export function MutualFriendsPage() {
+    const { t } = useI18n();
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const orderedFriendIds = useFriendRosterStore(
+        (state) => state.orderedFriendIds
+    );
+    const shellThemeMode = useShellStore((state) => state.themeMode);
+    const confirm = useModalStore((state) => state.confirm);
+    const resolvedTheme = getResolvedThemeMode(shellThemeMode);
+
+    const [status, setStatus] = useState('idle');
+    const [detail, setDetail] = useState('');
+    const [snapshotData, setSnapshotData] = useState({
+        snapshot: new Map(),
+        meta: new Map()
+    });
+    const [layoutSettings, setLayoutSettings] = useState(
+        MUTUAL_GRAPH_LAYOUT_DEFAULTS
+    );
+    const searchQuery = '';
+    const [nodePickerOpen, setNodePickerOpen] = useState(false);
+    const [nodeSearchQuery, setNodeSearchQuery] = useState('');
+    const [excludeSearchQuery, setExcludeSearchQuery] = useState('');
+    const [selectedNodeId, setSelectedNodeId] = useState('');
+    const [excludedFriendIds, setExcludedFriendIds] = useState(
+        readExcludedMutualFriendIds
+    );
+    const [fetchProgress, setFetchProgress] = useState({
+        isFetching: false,
+        processedFriends: 0,
+        totalFriends: 0,
+        cancelRequested: false
+    });
+    const [nodeRefreshId, setNodeRefreshId] = useState('');
+    const [reloadToken, setReloadToken] = useState(0);
+
+    const chartElementRef = useRef(null);
+    const chartInstanceRef = useRef(null);
+    const resizeObserverRef = useRef(null);
+    const selectedNodeIdRef = useRef('');
+    const fetchCancelRef = useRef(false);
+    const currentUserIdRef = useRef(currentUserId);
+    const pendingRenderFrameRef = useRef(0);
+    const [renderRetryToken, setRenderRetryToken] = useState(0);
+
+    useEffect(() => {
+        currentUserIdRef.current = currentUserId;
+        fetchCancelRef.current = true;
+    }, [currentUserId]);
+
+    const setGraphElementRef = useCallback((node) => {
+        if (chartElementRef.current && chartElementRef.current !== node) {
+            destroySigmaInstance(chartInstanceRef, resizeObserverRef);
+        }
+        chartElementRef.current = node;
+    }, []);
+
+    useEffect(() => {
+        let active = true;
+
+        Promise.all([
+            configRepository.getInt(
+                'MutualGraphLayoutIterations',
+                MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutIterations
+            ),
+            configRepository.getInt(
+                'MutualGraphLayoutSpacing',
+                MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutSpacing
+            ),
+            configRepository.getFloat(
+                'MutualGraphEdgeCurvature',
+                MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature
+            ),
+            configRepository.getFloat(
+                'MutualGraphCommunitySeparation',
+                MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation
+            )
+        ])
+            .then(([iterations, spacing, curvature, separation]) => {
+                if (!active) {
+                    return;
+                }
+
+                setLayoutSettings({
+                    layoutIterations: clampMutualGraphNumber(
+                        iterations,
+                        LAYOUT_ITERATIONS_LIMITS.min,
+                        LAYOUT_ITERATIONS_LIMITS.max,
+                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutIterations
+                    ),
+                    layoutSpacing: clampMutualGraphNumber(
+                        spacing,
+                        LAYOUT_SPACING_LIMITS.min,
+                        LAYOUT_SPACING_LIMITS.max,
+                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutSpacing
+                    ),
+                    edgeCurvature: clampMutualGraphNumber(
+                        curvature,
+                        EDGE_CURVATURE_LIMITS.min,
+                        EDGE_CURVATURE_LIMITS.max,
+                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature
+                    ),
+                    communitySeparation: clampMutualGraphNumber(
+                        separation,
+                        COMMUNITY_SEPARATION_LIMITS.min,
+                        COMMUNITY_SEPARATION_LIMITS.max,
+                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation
+                    )
+                });
+            })
+            .catch(() => {});
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        let active = true;
+
+        if (!currentUserId) {
+            setStatus('idle');
+            setSnapshotData({ snapshot: new Map(), meta: new Map() });
+            return () => {
+                active = false;
+            };
+        }
+
+        setStatus('running');
+        setDetail('');
+
+        mutualGraphRepository
+            .getSnapshot(currentUserId)
+            .then((result) => {
+                if (!active) {
+                    return;
+                }
+
+                setSnapshotData(result);
+                setStatus('ready');
+                setDetail(
+                    'Reading the cached mutual-friends graph from the local database.'
+                );
+            })
+            .catch((error) => {
+                if (!active) {
+                    return;
+                }
+
+                setStatus('error');
+                setSnapshotData({ snapshot: new Map(), meta: new Map() });
+                setDetail(
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load the mutual-friends graph cache.'
+                );
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [currentUserId, reloadToken]);
+
+    useEffect(() => {
+        writeExcludedMutualFriendIds(excludedFriendIds);
+    }, [excludedFriendIds]);
+
+    useEffect(() => {
+        return () => {
+            if (pendingRenderFrameRef.current) {
+                cancelAnimationFrame(pendingRenderFrameRef.current);
+                pendingRenderFrameRef.current = 0;
+            }
+            destroySigmaInstance(chartInstanceRef, resizeObserverRef);
+        };
+    }, []);
+
+    const baseGraph = useMemo(
+        () =>
+            buildMutualFriendsBaseGraph(
+                snapshotData.snapshot,
+                snapshotData.meta,
+                friendsById,
+                excludedFriendIds
+            ),
+        [
+            excludedFriendIds,
+            friendsById,
+            snapshotData.meta,
+            snapshotData.snapshot
+        ]
+    );
+
+    const filteredGraph = useMemo(
+        () => filterMutualFriendsGraph(baseGraph, searchQuery),
+        [baseGraph, searchQuery]
+    );
+
+    const nodeOptions = useMemo(
+        () => buildMutualFriendNodePickerOptions(baseGraph.nodes, friendsById),
+        [baseGraph.nodes, friendsById]
+    );
+
+    const excludePickerOptions = useMemo(
+        () =>
+            buildMutualFriendExcludePickerOptions(
+                snapshotData.snapshot,
+                friendsById,
+                currentUserId
+            ),
+        [currentUserId, friendsById, snapshotData.snapshot]
+    );
+
+    const filteredNodeOptions = useMemo(
+        () => filterMutualFriendPickerOptions(nodeOptions, nodeSearchQuery),
+        [nodeOptions, nodeSearchQuery]
+    );
+
+    const excludedFriendIdSet = useMemo(
+        () => new Set(normalizeExcludedMutualFriendIds(excludedFriendIds)),
+        [excludedFriendIds]
+    );
+
+    const filteredExcludeOptions = useMemo(
+        () =>
+            filterMutualFriendPickerOptions(
+                excludePickerOptions,
+                excludeSearchQuery
+            ),
+        [excludePickerOptions, excludeSearchQuery]
+    );
+
+    const selectedNode = useMemo(
+        () =>
+            baseGraph.nodes.find((node) => node.id === selectedNodeId) || null,
+        [baseGraph.nodes, selectedNodeId]
+    );
+
+    useEffect(() => {
+        if (!filteredGraph.nodes.length) {
+            selectedNodeIdRef.current = '';
+            setSelectedNodeId('');
+            return;
+        }
+
+        if (
+            filteredGraph.nodes.some(
+                (node) => node.id === selectedNodeIdRef.current
+            )
+        ) {
+            return;
+        }
+
+        const nextSelectedNodeId = filteredGraph.nodes[0].id;
+        selectedNodeIdRef.current = nextSelectedNodeId;
+        setSelectedNodeId(nextSelectedNodeId);
+    }, [filteredGraph.nodes]);
+
+    useEffect(() => {
+        if (!filteredGraph.nodes.length) {
+            destroySigmaInstance(chartInstanceRef, resizeObserverRef);
+            return undefined;
+        }
+
+        const container = chartElementRef.current;
+        if (!container) {
+            return undefined;
+        }
+
+        const { width, height } = container.getBoundingClientRect();
+        if (!width || !height) {
+            if (!pendingRenderFrameRef.current) {
+                pendingRenderFrameRef.current = requestAnimationFrame(() => {
+                    pendingRenderFrameRef.current = 0;
+                    setRenderRetryToken((current) => current + 1);
+                });
+            }
+            return undefined;
+        }
+
+        let active = true;
+        const isDarkMode = resolvedTheme === 'dark';
+        void buildSigmaGraph({
+            nodes: filteredGraph.nodes,
+            links: filteredGraph.links,
+            layoutSettings,
+            selectedNodeId: selectedNodeIdRef.current
+        })
+            .then((graph) => {
+                if (!active || chartElementRef.current !== container) {
+                    return;
+                }
+
+                const nextRect = container.getBoundingClientRect();
+                if (!nextRect.width || !nextRect.height) {
+                    if (!pendingRenderFrameRef.current) {
+                        pendingRenderFrameRef.current = requestAnimationFrame(
+                            () => {
+                                pendingRenderFrameRef.current = 0;
+                                setRenderRetryToken((current) => current + 1);
+                            }
+                        );
+                    }
+                    return;
+                }
+
+                renderSigmaGraph({
+                    graph,
+                    container,
+                    instanceRef: chartInstanceRef,
+                    resizeObserverRef,
+                    isDarkMode,
+                    selectedNodeIdRef,
+                    onSelectNode: setSelectedNodeId,
+                    t
+                });
+            })
+            .catch((error) => {
+                if (active) {
+                    console.warn(
+                        '[MutualFriendsPage] Failed to render mutual graph.',
+                        error
+                    );
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [
+        filteredGraph.links,
+        filteredGraph.nodes,
+        layoutSettings,
+        renderRetryToken,
+        resolvedTheme,
+        t
+    ]);
+
+    useEffect(() => {
+        selectedNodeIdRef.current = selectedNodeId;
+        chartInstanceRef.current?.refresh?.();
+    }, [selectedNodeId]);
+
+    const edgeCount = filteredGraph.links.length;
+    const nodeCount = filteredGraph.nodes.length;
+    const excludedCount = excludedFriendIds.length;
+    const progressPercent = fetchProgress.totalFriends
+        ? Math.min(
+              100,
+              Math.round(
+                  (fetchProgress.processedFriends /
+                      fetchProgress.totalFriends) *
+                      100
+              )
+          )
+        : 0;
+
+    async function reloadSnapshot(nextDetail, expectedUserId = currentUserId) {
+        if (!expectedUserId || currentUserIdRef.current !== expectedUserId) {
+            return;
+        }
+
+        setStatus('running');
+        try {
+            const result =
+                await mutualGraphRepository.getSnapshot(expectedUserId);
+            if (currentUserIdRef.current !== expectedUserId) {
+                return;
+            }
+            setSnapshotData(result);
+            setStatus('ready');
+            setDetail(
+                nextDetail ||
+                    'Reading the cached mutual-friends graph from the local database.'
+            );
+        } catch (error) {
+            setSnapshotData({ snapshot: new Map(), meta: new Map() });
+            setStatus('error');
+            setDetail(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load the mutual-friends graph cache.'
+            );
+        }
+    }
+
+    async function handleFetchGraph() {
+        if (!currentUserId || fetchProgress.isFetching) {
+            return;
+        }
+        const ownerUserId = currentUserId;
+
+        const friendSnapshot = orderedFriendIds
+            .map((friendId) => friendsById[friendId])
+            .filter((friend) => friend?.id);
+        if (!friendSnapshot.length) {
+            toast.info('No friends are available for mutual graph fetching.');
+            return;
+        }
+
+        fetchCancelRef.current = false;
+        setFetchProgress({
+            isFetching: true,
+            processedFriends: 0,
+            totalFriends: friendSnapshot.length,
+            cancelRequested: false
+        });
+        setDetail('Fetching mutual friends from VRChat.');
+
+        const rateLimiter = createRateLimiter({
+            limitPerInterval: 5,
+            intervalMs: 1000
+        });
+        const entries = new Map();
+        const metaEntries = new Map();
+        let cancelled = false;
+
+        try {
+            for (let index = 0; index < friendSnapshot.length; index += 1) {
+                const friend = friendSnapshot[index];
+                if (!friend?.id) {
+                    continue;
+                }
+
+                if (fetchCancelRef.current) {
+                    cancelled = true;
+                    break;
+                }
+
+                try {
+                    const mutualIds = await fetchMutualFriendIds(friend.id, {
+                        rateLimiter,
+                        isCancelled: () => fetchCancelRef.current
+                    });
+                    if (fetchCancelRef.current) {
+                        cancelled = true;
+                        break;
+                    }
+                    entries.set(friend.id, mutualIds);
+                    metaEntries.set(friend.id, {
+                        optedOut: false
+                    });
+                } catch (error) {
+                    if (
+                        fetchCancelRef.current ||
+                        String(error?.message || '') === 'cancelled'
+                    ) {
+                        cancelled = true;
+                        break;
+                    }
+                    if (error?.status === 403 || error?.status === 404) {
+                        metaEntries.set(friend.id, {
+                            optedOut: true
+                        });
+                    } else {
+                        console.warn(
+                            '[MutualFriendsPage] Skipping mutual graph friend fetch',
+                            friend.id,
+                            error
+                        );
+                    }
+                }
+
+                setFetchProgress({
+                    isFetching: true,
+                    processedFriends: index + 1,
+                    totalFriends: friendSnapshot.length,
+                    cancelRequested: false
+                });
+            }
+
+            if (cancelled) {
+                toast.warning(
+                    'Mutual graph fetch cancelled. The cached graph was not replaced.'
+                );
+                return;
+            }
+
+            if (currentUserIdRef.current !== ownerUserId) {
+                return;
+            }
+            await mutualGraphRepository.bulkUpsertMeta(
+                ownerUserId,
+                metaEntries
+            );
+            await mutualGraphRepository.saveSnapshot(ownerUserId, entries);
+            await reloadSnapshot(
+                'Fetched and cached the mutual-friends graph.',
+                ownerUserId
+            );
+            toast.success('Mutual-friends graph refreshed.');
+        } catch (error) {
+            setStatus('error');
+            setDetail(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to fetch mutual-friends graph.'
+            );
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to fetch mutual-friends graph.'
+            );
+        } finally {
+            fetchCancelRef.current = false;
+            setFetchProgress((current) => ({
+                ...current,
+                isFetching: false,
+                cancelRequested: false
+            }));
+        }
+    }
+
+    function handleCancelFetch() {
+        fetchCancelRef.current = true;
+        setFetchProgress((current) => ({
+            ...current,
+            cancelRequested: true
+        }));
+    }
+
+    function handleOpenSelectedNode() {
+        if (!selectedNode?.id) {
+            return;
+        }
+
+        openUserDialog({
+            userId: selectedNode.id,
+            title: selectedNode.label
+        });
+    }
+
+    function handleHideSelectedNode() {
+        if (!selectedNode?.id) {
+            return;
+        }
+
+        setExcludedFriendIds((current) =>
+            current.includes(selectedNode.id)
+                ? current
+                : [...current, selectedNode.id]
+        );
+    }
+
+    function selectNode(friendId) {
+        const nextValue = normalizeMutualFriendId(friendId);
+        selectedNodeIdRef.current = nextValue;
+        setSelectedNodeId(nextValue);
+        const sigma = chartInstanceRef.current;
+        sigma?.refresh?.();
+        if (!nextValue || !sigma?.getNodeDisplayData?.(nextValue)) {
+            return;
+        }
+        const displayData = sigma.getNodeDisplayData(nextValue);
+        sigma.getCamera?.()?.animate?.(
+            {
+                x: displayData.x,
+                y: displayData.y,
+                ratio: 0.15
+            },
+            { duration: 300 }
+        );
+    }
+
+    function toggleExcludedFriendId(friendId) {
+        const normalizedId = normalizeMutualFriendId(friendId);
+        if (!normalizedId) {
+            return;
+        }
+        setExcludedFriendIds((current) => {
+            const normalizedCurrent = normalizeExcludedMutualFriendIds(current);
+            if (normalizedCurrent.includes(normalizedId)) {
+                return normalizedCurrent.filter((id) => id !== normalizedId);
+            }
+            return [...normalizedCurrent, normalizedId];
+        });
+    }
+
+    async function handleRefreshSelectedNode() {
+        if (!currentUserId || !selectedNode?.id || nodeRefreshId) {
+            return;
+        }
+        const ownerUserId = currentUserId;
+
+        const isFriend = Boolean(friendsById[selectedNode.id]);
+        if (!isFriend) {
+            const result = await confirm({
+                title: 'Refresh non-friend mutuals',
+                description:
+                    'This node is not currently in the friend roster. Continue refreshing its mutual-friends cache?',
+                confirmText: 'Refresh',
+                cancelText: 'Cancel'
+            });
+            if (!result.ok) {
+                return;
+            }
+        }
+
+        setNodeRefreshId(selectedNode.id);
+        try {
+            const mutualIds = await fetchMutualFriendIds(selectedNode.id);
+            if (currentUserIdRef.current !== ownerUserId) {
+                return;
+            }
+            await mutualGraphRepository.updateMutualsForFriend(
+                ownerUserId,
+                selectedNode.id,
+                mutualIds
+            );
+            await mutualGraphRepository.upsertMeta(
+                ownerUserId,
+                selectedNode.id,
+                {
+                    optedOut: false
+                }
+            );
+            await reloadSnapshot(
+                `Refreshed mutuals for ${selectedNode.label}.`,
+                ownerUserId
+            );
+            toast.success(`Refreshed mutuals for ${selectedNode.label}.`);
+        } catch (error) {
+            if (error?.status === 403 || error?.status === 404) {
+                if (currentUserIdRef.current !== ownerUserId) {
+                    return;
+                }
+                await mutualGraphRepository.upsertMeta(
+                    ownerUserId,
+                    selectedNode.id,
+                    {
+                        optedOut: true
+                    }
+                );
+                await reloadSnapshot(
+                    `${selectedNode.label} has opted out of shared connections.`,
+                    ownerUserId
+                );
+                toast.warning(
+                    `${selectedNode.label} has opted out of shared connections.`
+                );
+                return;
+            }
+
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to refresh selected mutuals.'
+            );
+        } finally {
+            setNodeRefreshId('');
+        }
+    }
+
+    function handleResetLayoutAndHidden() {
+        setLayoutSettings(MUTUAL_GRAPH_LAYOUT_DEFAULTS);
+        setExcludedFriendIds([]);
+        void configRepository.setInt(
+            'MutualGraphLayoutIterations',
+            MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutIterations
+        );
+        void configRepository.setInt(
+            'MutualGraphLayoutSpacing',
+            MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutSpacing
+        );
+        void configRepository.setFloat(
+            'MutualGraphEdgeCurvature',
+            MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature
+        );
+        void configRepository.setFloat(
+            'MutualGraphCommunitySeparation',
+            MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation
+        );
+    }
+
+    return (
+        <div
+            id="chart"
+            className="x-container flex h-full min-h-0 flex-col overflow-y-auto p-6"
+        >
+            <div className="mt-0 flex min-h-0 flex-1 flex-col items-center pt-12">
+                <div className="flex w-full items-center gap-3">
+                    <div className="options-container flex items-center gap-3 bg-transparent pb-3 shadow-none">
+                        {fetchProgress.isFetching ? (
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                disabled={fetchProgress.cancelRequested}
+                                onClick={handleCancelFetch}
+                            >
+                                {fetchProgress.cancelRequested
+                                    ? 'Cancelling...'
+                                    : 'Stop fetching'}
+                            </Button>
+                        ) : (
+                            <Button
+                                type="button"
+                                disabled={
+                                    !currentUserId || !orderedFriendIds.length
+                                }
+                                onClick={handleFetchGraph}
+                            >
+                                {baseGraph.nodes.length
+                                    ? 'Fetch again'
+                                    : 'Start fetch'}
+                            </Button>
+                        )}
+                        {baseGraph.nodes.length ? (
+                            <Popover
+                                open={nodePickerOpen}
+                                onOpenChange={setNodePickerOpen}
+                            >
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="min-w-60 justify-start px-3 font-normal"
+                                    >
+                                        <span className="truncate">
+                                            {selectedNode
+                                                ? `${selectedNode.label} (${selectedNode.degree})`
+                                                : t(
+                                                      'view.charts.mutual_friend.actions.go_to_friend'
+                                                  )}
+                                        </span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    align="start"
+                                    className="w-80 p-2"
+                                >
+                                    <Input
+                                        autoFocus
+                                        value={nodeSearchQuery}
+                                        onChange={(event) =>
+                                            setNodeSearchQuery(
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder={t(
+                                            'view.charts.mutual_friend.actions.go_to_friend'
+                                        )}
+                                    />
+                                    <ScrollArea className="mt-2 h-72">
+                                        <div className="flex flex-col gap-1 pr-2">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                className="h-auto w-full justify-start p-1.5 text-left font-normal"
+                                                onClick={() => {
+                                                    selectNode('');
+                                                    setNodePickerOpen(false);
+                                                }}
+                                            >
+                                                <span className="min-w-0 flex-1 truncate">
+                                                    No selection
+                                                </span>
+                                                <CheckIcon
+                                                    data-icon="inline-end"
+                                                    className={cn(
+                                                        'ml-auto',
+                                                        selectedNodeId
+                                                            ? 'opacity-0'
+                                                            : 'opacity-100'
+                                                    )}
+                                                />
+                                            </Button>
+                                            {filteredNodeOptions.map(
+                                                (option) => (
+                                                    <Button
+                                                        key={option.value}
+                                                        type="button"
+                                                        variant="ghost"
+                                                        className="h-auto w-full justify-start p-0 text-left font-normal"
+                                                        onClick={() => {
+                                                            selectNode(
+                                                                option.value
+                                                            );
+                                                            setNodePickerOpen(
+                                                                false
+                                                            );
+                                                            setNodeSearchQuery(
+                                                                ''
+                                                            );
+                                                        }}
+                                                    >
+                                                        <UserPickerRow
+                                                            option={option}
+                                                            selected={
+                                                                option.value ===
+                                                                selectedNodeId
+                                                            }
+                                                        />
+                                                    </Button>
+                                                )
+                                            )}
+                                            {!filteredNodeOptions.length ? (
+                                                <div className="text-muted-foreground p-3 text-xs">
+                                                    No friends match this
+                                                    search.
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    </ScrollArea>
+                                </PopoverContent>
+                            </Popover>
+                        ) : null}
+                    </div>
+
+                    <div className="ml-auto flex flex-wrap items-center gap-2">
+                        {selectedNode ? (
+                            <>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleOpenSelectedNode}
+                                >
+                                    <UserIcon data-icon="inline-start" />
+                                    Open
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={nodeRefreshId === selectedNode.id}
+                                    onClick={handleRefreshSelectedNode}
+                                >
+                                    {nodeRefreshId === selectedNode.id ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : (
+                                        <RefreshCcwIcon data-icon="inline-start" />
+                                    )}
+                                    {nodeRefreshId === selectedNode.id
+                                        ? 'Refreshing...'
+                                        : 'Refresh'}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleHideSelectedNode}
+                                >
+                                    <EyeOffIcon data-icon="inline-start" />
+                                    Hide
+                                </Button>
+                            </>
+                        ) : null}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Refresh mutual graph"
+                            onClick={() => setReloadToken((value) => value + 1)}
+                            disabled={fetchProgress.isFetching}
+                        >
+                            {fetchProgress.isFetching ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <RefreshCcwIcon data-icon="inline-start" />
+                            )}
+                        </Button>
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={t(
+                                        'view.charts.mutual_friend.settings.title'
+                                    )}
+                                >
+                                    <Settings2Icon data-icon="inline-start" />
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent
+                                side="right"
+                                className="w-90 overflow-y-auto"
+                            >
+                                <SheetHeader>
+                                    <SheetTitle>
+                                        {t(
+                                            'view.charts.mutual_friend.settings.title'
+                                        )}
+                                    </SheetTitle>
+                                </SheetHeader>
+                                <div className="grid gap-5 p-4 pt-0 text-sm">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <span>
+                                                {t(
+                                                    'view.charts.mutual_friend.settings.layout_iterations'
+                                                )}
+                                            </span>
+                                            <span className="text-muted-foreground tabular-nums">
+                                                {
+                                                    layoutSettings.layoutIterations
+                                                }
+                                            </span>
+                                        </div>
+                                        <Slider
+                                            min={LAYOUT_ITERATIONS_LIMITS.min}
+                                            max={LAYOUT_ITERATIONS_LIMITS.max}
+                                            step={100}
+                                            value={[
+                                                layoutSettings.layoutIterations
+                                            ]}
+                                            onValueChange={([value]) => {
+                                                const nextValue =
+                                                    clampMutualGraphNumber(
+                                                        value,
+                                                        LAYOUT_ITERATIONS_LIMITS.min,
+                                                        LAYOUT_ITERATIONS_LIMITS.max,
+                                                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutIterations
+                                                    );
+                                                setLayoutSettings(
+                                                    (current) => ({
+                                                        ...current,
+                                                        layoutIterations:
+                                                            nextValue
+                                                    })
+                                                );
+                                                void configRepository.setInt(
+                                                    'MutualGraphLayoutIterations',
+                                                    nextValue
+                                                );
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <span>
+                                                {t(
+                                                    'view.charts.mutual_friend.settings.layout_spacing'
+                                                )}
+                                            </span>
+                                            <span className="text-muted-foreground tabular-nums">
+                                                {layoutSettings.layoutSpacing}
+                                            </span>
+                                        </div>
+                                        <Slider
+                                            min={LAYOUT_SPACING_LIMITS.min}
+                                            max={LAYOUT_SPACING_LIMITS.max}
+                                            step={1}
+                                            value={[
+                                                layoutSettings.layoutSpacing
+                                            ]}
+                                            onValueChange={([value]) => {
+                                                const nextValue =
+                                                    clampMutualGraphNumber(
+                                                        value,
+                                                        LAYOUT_SPACING_LIMITS.min,
+                                                        LAYOUT_SPACING_LIMITS.max,
+                                                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.layoutSpacing
+                                                    );
+                                                setLayoutSettings(
+                                                    (current) => ({
+                                                        ...current,
+                                                        layoutSpacing: nextValue
+                                                    })
+                                                );
+                                                void configRepository.setInt(
+                                                    'MutualGraphLayoutSpacing',
+                                                    nextValue
+                                                );
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <span>
+                                                {t(
+                                                    'view.charts.mutual_friend.settings.edge_curvature'
+                                                )}
+                                            </span>
+                                            <span className="text-muted-foreground tabular-nums">
+                                                {layoutSettings.edgeCurvature.toFixed(
+                                                    2
+                                                )}
+                                            </span>
+                                        </div>
+                                        <Slider
+                                            min={EDGE_CURVATURE_LIMITS.min}
+                                            max={EDGE_CURVATURE_LIMITS.max}
+                                            step={0.01}
+                                            value={[
+                                                layoutSettings.edgeCurvature
+                                            ]}
+                                            onValueChange={([value]) => {
+                                                const nextValue =
+                                                    clampMutualGraphNumber(
+                                                        value,
+                                                        EDGE_CURVATURE_LIMITS.min,
+                                                        EDGE_CURVATURE_LIMITS.max,
+                                                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature
+                                                    );
+                                                const rounded = Number(
+                                                    nextValue.toFixed(2)
+                                                );
+                                                setLayoutSettings(
+                                                    (current) => ({
+                                                        ...current,
+                                                        edgeCurvature: rounded
+                                                    })
+                                                );
+                                                void configRepository.setFloat(
+                                                    'MutualGraphEdgeCurvature',
+                                                    rounded
+                                                );
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <span>
+                                                {t(
+                                                    'view.charts.mutual_friend.settings.community_separation'
+                                                )}
+                                            </span>
+                                            <span className="text-muted-foreground tabular-nums">
+                                                {layoutSettings.communitySeparation.toFixed(
+                                                    1
+                                                )}
+                                            </span>
+                                        </div>
+                                        <Slider
+                                            min={
+                                                COMMUNITY_SEPARATION_LIMITS.min
+                                            }
+                                            max={
+                                                COMMUNITY_SEPARATION_LIMITS.max
+                                            }
+                                            step={0.1}
+                                            value={[
+                                                layoutSettings.communitySeparation
+                                            ]}
+                                            onValueChange={([value]) => {
+                                                const nextValue =
+                                                    clampMutualGraphNumber(
+                                                        value,
+                                                        COMMUNITY_SEPARATION_LIMITS.min,
+                                                        COMMUNITY_SEPARATION_LIMITS.max,
+                                                        MUTUAL_GRAPH_LAYOUT_DEFAULTS.communitySeparation
+                                                    );
+                                                const rounded = Number(
+                                                    nextValue.toFixed(1)
+                                                );
+                                                setLayoutSettings(
+                                                    (current) => ({
+                                                        ...current,
+                                                        communitySeparation:
+                                                            rounded
+                                                    })
+                                                );
+                                                void configRepository.setFloat(
+                                                    'MutualGraphCommunitySeparation',
+                                                    rounded
+                                                );
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <span>
+                                                {t(
+                                                    'view.charts.mutual_friend.settings.exclude_friends'
+                                                )}
+                                            </span>
+                                            <span className="text-muted-foreground tabular-nums">
+                                                {excludedCount}
+                                            </span>
+                                        </div>
+                                        <Input
+                                            value={excludeSearchQuery}
+                                            onChange={(event) =>
+                                                setExcludeSearchQuery(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder={t(
+                                                'view.charts.mutual_friend.settings.exclude_friends_placeholder'
+                                            )}
+                                        />
+                                        <ScrollArea className="h-72 rounded-md border">
+                                            <div className="flex flex-col gap-1 p-1 pr-2">
+                                                {filteredExcludeOptions.map(
+                                                    (option) => {
+                                                        const selected =
+                                                            excludedFriendIdSet.has(
+                                                                option.value
+                                                            );
+                                                        return (
+                                                            <Field
+                                                                key={
+                                                                    option.value
+                                                                }
+                                                                orientation="horizontal"
+                                                                className="hover:bg-muted gap-0 rounded-md p-0"
+                                                            >
+                                                                <Checkbox
+                                                                    id={`mutual-excluded-friend-${option.value}`}
+                                                                    checked={
+                                                                        selected
+                                                                    }
+                                                                    onCheckedChange={() =>
+                                                                        toggleExcludedFriendId(
+                                                                            option.value
+                                                                        )
+                                                                    }
+                                                                    className="ml-2"
+                                                                />
+                                                                <FieldLabel
+                                                                    htmlFor={`mutual-excluded-friend-${option.value}`}
+                                                                    className="min-w-0 flex-1 cursor-pointer font-normal"
+                                                                >
+                                                                    <UserPickerRow
+                                                                        option={
+                                                                            option
+                                                                        }
+                                                                        selected={
+                                                                            selected
+                                                                        }
+                                                                        multiple
+                                                                        showSelection={
+                                                                            false
+                                                                        }
+                                                                    />
+                                                                </FieldLabel>
+                                                            </Field>
+                                                        );
+                                                    }
+                                                )}
+                                                {!filteredExcludeOptions.length ? (
+                                                    <div className="text-muted-foreground p-3 text-xs">
+                                                        No friends match this
+                                                        search.
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </ScrollArea>
+                                        <p className="text-muted-foreground text-xs">
+                                            {t(
+                                                'view.charts.mutual_friend.settings.exclude_friends_help'
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="text-muted-foreground text-xs">
+                                        Hidden nodes: {excludedCount}. Visible
+                                        nodes: {nodeCount}. Visible links:{' '}
+                                        {edgeCount}.
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleResetLayoutAndHidden}
+                                    >
+                                        {t(
+                                            'view.charts.mutual_friend.settings.reset_defaults'
+                                        )}
+                                    </Button>
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    </div>
+                </div>
+
+                {fetchProgress.isFetching ? (
+                    <div className="grid w-70 grid-cols-[repeat(auto-fit,minmax(150px,1fr))] items-center rounded-md bg-transparent p-3">
+                        <div className="mb-1 flex justify-between text-sm">
+                            <span>{Math.round(progressPercent)}%</span>
+                            <strong>
+                                {fetchProgress.processedFriends} /{' '}
+                                {fetchProgress.totalFriends}
+                            </strong>
+                        </div>
+                        <div className="bg-muted h-3 overflow-hidden rounded-full">
+                            <div
+                                className="bg-primary h-full transition-[width]"
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
+                    </div>
+                ) : null}
+
+                <div className="mt-3 w-full flex-1">
+                    {status === 'running' ? (
+                        <GraphLoadingState />
+                    ) : status === 'error' ? (
+                        <GraphEmptyState
+                            title="Mutual graph failed to load"
+                            description={
+                                detail ||
+                                'The graph adapter could not read the cached mutual-friends tables.'
+                            }
+                        />
+                    ) : !baseGraph.nodes.length ? (
+                        <GraphEmptyState
+                            title="No cached mutual graph yet"
+                            description="The local mutual-friends snapshot is empty. Use Start fetch to build the graph cache."
+                        />
+                    ) : !filteredGraph.nodes.length ? (
+                        <GraphEmptyState
+                            title="No graph nodes match the current search"
+                            description="Try a broader search term or clear the node filter."
+                        />
+                    ) : (
+                        <div
+                            ref={setGraphElementRef}
+                            className="h-[calc(100vh-260px)] min-h-[520px] w-full flex-1 rounded-lg bg-transparent"
+                        />
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}

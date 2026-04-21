@@ -1,4 +1,3 @@
-import * as echarts from 'echarts';
 import {
     ArrowDownIcon,
     ArrowLeftIcon,
@@ -174,6 +173,7 @@ function PreviousInstanceInfoChart({ rows }) {
     const chartElementRef = useRef(null);
     const chartInstanceRef = useRef(null);
     const chartThemeRef = useRef(null);
+    const echartsRef = useRef(null);
     const resizeObserverRef = useRef(null);
 
     const favoriteIdSet = useMemo(
@@ -234,54 +234,76 @@ function PreviousInstanceInfoChart({ rows }) {
             return;
         }
 
-        const themeName = resolvedTheme === 'dark' ? 'dark' : null;
-        let chart = chartInstanceRef.current;
+        let cancelled = false;
 
-        if (!chart || chartThemeRef.current !== themeName) {
-            resizeObserverRef.current?.disconnect();
-            chart?.dispose();
-
-            chart = echarts.init(chartElement, themeName || undefined, {
-                useDirtyRect: chartRows.length > 80
-            });
-            chartInstanceRef.current = chart;
-            chartThemeRef.current = themeName;
-
-            resizeObserverRef.current = new ResizeObserver(() => {
-                chart.resize();
-            });
-            resizeObserverRef.current.observe(chartElement);
-        }
-
-        const chartRowCount =
-            chartPayload?.firstEntries.length || chartRows.length;
-        const chartHeight = Math.max(
-            220,
-            chartRowCount * (INFO_CHART_BAR_WIDTH + 10) + 200
-        );
-        chartElement.style.height = `${chartHeight}px`;
-        chart.resize({ height: chartHeight });
-        chart.off('click');
-
-        if (!chartPayload) {
-            chart.clear();
-            return;
-        }
-
-        chart.clear();
-        chart.setOption(chartPayload.option, { notMerge: true });
-        chart.on('click', (params) => {
-            if (params.componentType !== 'yAxis') {
+        async function renderChart() {
+            const echarts =
+                echartsRef.current || (await import('echarts'));
+            if (cancelled || chartElementRef.current !== chartElement) {
                 return;
             }
-            const entry = chartPayload.firstEntries[params.dataIndex];
-            if (entry?.userId) {
-                openUserDialog({
-                    userId: entry.userId,
-                    title: entry.displayName || undefined
+            echartsRef.current = echarts;
+
+            const themeName = resolvedTheme === 'dark' ? 'dark' : null;
+            let chart = chartInstanceRef.current;
+
+            if (!chart || chartThemeRef.current !== themeName) {
+                resizeObserverRef.current?.disconnect();
+                chart?.dispose();
+
+                chart = echarts.init(chartElement, themeName || undefined, {
+                    useDirtyRect: chartRows.length > 80
                 });
+                chartInstanceRef.current = chart;
+                chartThemeRef.current = themeName;
+
+                resizeObserverRef.current = new ResizeObserver(() => {
+                    chart.resize();
+                });
+                resizeObserverRef.current.observe(chartElement);
             }
+
+            const chartRowCount =
+                chartPayload?.firstEntries.length || chartRows.length;
+            const chartHeight = Math.max(
+                220,
+                chartRowCount * (INFO_CHART_BAR_WIDTH + 10) + 200
+            );
+            chartElement.style.height = `${chartHeight}px`;
+            chart.resize({ height: chartHeight });
+            chart.off('click');
+
+            if (!chartPayload) {
+                chart.clear();
+                return;
+            }
+
+            chart.clear();
+            chart.setOption(chartPayload.option, { notMerge: true });
+            chart.on('click', (params) => {
+                if (params.componentType !== 'yAxis') {
+                    return;
+                }
+                const entry = chartPayload.firstEntries[params.dataIndex];
+                if (entry?.userId) {
+                    openUserDialog({
+                        userId: entry.userId,
+                        title: entry.displayName || undefined
+                    });
+                }
+            });
+        }
+
+        renderChart().catch((error) => {
+            console.error(
+                '[PreviousInstancesTableDialog] Failed to load chart renderer.',
+                error
+            );
         });
+
+        return () => {
+            cancelled = true;
+        };
     }, [chartElement, chartPayload, chartRows.length, resolvedTheme]);
 
     if (!chartRows.length) {
