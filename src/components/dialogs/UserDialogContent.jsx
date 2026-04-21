@@ -23,6 +23,7 @@ import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
 import { backend } from '@/platform/index.js';
 import {
     configRepository,
+    gameLogRepository,
     groupProfileRepository,
     instanceRepository,
     memoRepository,
@@ -1013,7 +1014,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             };
         }
 
-        database
+        gameLogRepository
             .getPreviousInstancesByUserId({
                 id: profile.id
             })
@@ -1066,7 +1067,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             isSameLocationTag(activeLocation, currentLocation)
         );
 
-        database
+        gameLogRepository
             .getUserStats(
                 {
                     id: profile.id,

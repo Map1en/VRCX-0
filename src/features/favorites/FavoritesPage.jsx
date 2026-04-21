@@ -1591,7 +1591,7 @@ function FavoritesPage({ kind, embedded = false }) {
         }
 
         setAvatarHistoryLoading(true);
-        database
+        avatarLocalRepository
             .getAvatarHistory(currentUserId, 100)
             .then((rows) => {
                 if (active) {

@@ -7,6 +7,7 @@ import {
 } from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
+    gameLogRepository,
     groupProfileRepository,
     userProfileRepository
 } from '@/repositories/index.js';
@@ -215,7 +216,7 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             };
         }
 
-        database
+        gameLogRepository
             .getPreviousInstancesByGroupId(normalizedGroupId)
             .then((rows) => {
                 if (!active) {

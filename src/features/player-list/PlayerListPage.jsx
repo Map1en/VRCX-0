@@ -46,6 +46,7 @@ import {
     readWorldCacheInfo
 } from '@/lib/worldAssetBundle.js';
 import {
+    gameLogRepository,
     playerListRepository,
     vrchatModerationRepository,
     vrchatAuthRepository,
@@ -949,7 +950,7 @@ export function PlayerListPage({ embedded = false } = {}) {
             }
 
             const cachedUserId = normalizeString(
-                await database
+                await gameLogRepository
                     .getUserIdFromDisplayName(displayName)
                     .catch(() => '')
             );
