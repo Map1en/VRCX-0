@@ -93,6 +93,7 @@ import {
     TABLE_MAX_SIZE_MAX,
     TABLE_MAX_SIZE_MIN
 } from '@/shared/constants/settings.js';
+import { formatReleaseDisplayVersion } from '@/shared/utils/releaseVersion.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import {
@@ -1936,7 +1937,10 @@ export function SettingsPage() {
                                         {t(
                                             'view.settings.general.general.version'
                                         )}
-                                        : {VERSION || '-'}
+                                        :{' '}
+                                        {formatReleaseDisplayVersion(
+                                            VERSION || ''
+                                        ) || '-'}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex flex-col">

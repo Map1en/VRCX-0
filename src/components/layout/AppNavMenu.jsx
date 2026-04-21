@@ -38,6 +38,7 @@ import {
     getNavIconComponent
 } from '@/shared/constants/navIcons.js';
 import { isToolNavKey } from '@/shared/constants/tools.js';
+import { formatReleaseDisplayVersion } from '@/shared/utils/releaseVersion.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
@@ -717,7 +718,7 @@ export function AppNavMenu({ isCollapsed }) {
     );
     const [isCreatingDashboard, setIsCreatingDashboard] = useState(false);
     const [hasPendingUpdate, setHasPendingUpdate] = useState(false);
-    const appVersion = typeof VERSION === 'string' && VERSION ? VERSION : '-';
+    const appVersion = formatReleaseDisplayVersion(VERSION || '') || '-';
     const notifiedKeys = useMemo(() => {
         const keys = new Set(notifiedMenus);
         if (vrcUnseenNotificationCount > 0) {

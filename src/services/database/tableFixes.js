@@ -1,5 +1,4 @@
 import sqliteService from '../../repositories/sqliteRepository.js';
-import { dbVars } from '../database';
 
 const tableFixes = {
     async cleanLegendFromFriendLog() {

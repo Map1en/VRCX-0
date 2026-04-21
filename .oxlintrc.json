@@ -3,7 +3,11 @@
     "categories": {
         "correctness": "off"
     },
-    "ignorePatterns": ["build/**", "node_modules/**"],
+    "ignorePatterns": [
+        "build/**",
+        "node_modules/**",
+        "src/services/confusables.js"
+    ],
     "env": {
         "builtin": true
     },

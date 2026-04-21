@@ -92,12 +92,12 @@ function hasUpdateForBranch(branch, currentVersion, latestReleaseVersion) {
     }
 
     if (branch === 'Beta') {
-        const dateDelta =
+        const versionDelta =
             latestParsed.year - currentParsed.year ||
             latestParsed.month - currentParsed.month ||
-            latestParsed.day - currentParsed.day;
-        if (dateDelta !== 0) {
-            return dateDelta > 0;
+            latestParsed.patchNumber - currentParsed.patchNumber;
+        if (versionDelta !== 0) {
+            return versionDelta > 0;
         }
 
         if (

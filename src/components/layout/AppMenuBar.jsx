@@ -14,6 +14,7 @@ import {
 } from '@/services/themeService.js';
 import { triggerToolByKey } from '@/services/toolActionService.js';
 import { links } from '@/shared/constants/link.js';
+import { formatReleaseDisplayVersion } from '@/shared/utils/releaseVersion.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 import { Button } from '@/ui/shadcn/button';
@@ -341,7 +342,8 @@ export function AppMenuBar({
                                 {t('app_menu.version')}
                             </span>
                             <span className="font-medium">
-                                {VERSION || '-'}
+                                {formatReleaseDisplayVersion(VERSION || '') ||
+                                    '-'}
                             </span>
                         </div>
                     </div>

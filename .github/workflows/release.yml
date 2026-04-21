@@ -16,7 +16,7 @@ on:
                 type: boolean
                 default: false
             beta_number:
-                description: 'Beta suffix number'
+                description: 'Beta suffix number (1, 2, 3...)'
                 required: false
                 type: string
                 default: '1'
@@ -48,10 +48,22 @@ jobs:
                       exit 1
                   fi
 
-                  IFS='.' read -r year month day <<< "$base_version"
-                  display_version=$(printf '%04d.%02d.%02d' "$year" "$month" "$day")
+                  IFS='.' read -r year month patch <<< "$base_version"
+                  if (( month < 1 || month > 12 )); then
+                      echo "Invalid base version month: $base_version" >&2
+                      exit 1
+                  fi
+
+                  display_version=$(printf '%04d.%02d' "$year" "$month")
+                  if (( patch > 0 )); then
+                      display_version="${display_version}.${patch}"
+                  fi
 
                   if [ "$channel" = "beta" ]; then
+                      if (( patch != 0 )); then
+                          echo "Beta releases must use a base patch version of 0: $base_version" >&2
+                          exit 1
+                      fi
                       if [[ ! "$beta_number" =~ ^[1-9][0-9]*$ ]]; then
                           echo "Invalid beta_number: $beta_number" >&2
                           exit 1
@@ -96,6 +108,34 @@ jobs:
                   const tauri = JSON.parse(fs.readFileSync(tauriPath, 'utf8'));
                   tauri.version = buildVersion;
                   fs.writeFileSync(tauriPath, `${JSON.stringify(tauri, null, 2)}\n`);
+
+                  const cargoPath = './src-tauri/Cargo.toml';
+                  const cargo = fs.readFileSync(cargoPath, 'utf8');
+                  const cargoVersionPattern =
+                      /(^\[package\][\s\S]*?^version\s*=\s*)"[^"]+"/m;
+                  if (!cargoVersionPattern.test(cargo)) {
+                      throw new Error('Failed to update src-tauri/Cargo.toml package version');
+                  }
+                  const updatedCargo = cargo.replace(
+                      cargoVersionPattern,
+                      `$1"${buildVersion}"`
+                  );
+                  fs.writeFileSync(cargoPath, updatedCargo);
+
+                  const lockPath = './src-tauri/Cargo.lock';
+                  if (fs.existsSync(lockPath)) {
+                      const lock = fs.readFileSync(lockPath, 'utf8');
+                      const lockVersionPattern =
+                          /(\[\[package\]\]\r?\nname = "vrcx-0"\r?\nversion = )"[^"]+"/;
+                      if (!lockVersionPattern.test(lock)) {
+                          throw new Error('Failed to update src-tauri/Cargo.lock package version');
+                      }
+                      const updatedLock = lock.replace(
+                          lockVersionPattern,
+                          `$1"${buildVersion}"`
+                      );
+                      fs.writeFileSync(lockPath, updatedLock);
+                  }
                   NODE
               env:
                   BUILD_VERSION: ${{ steps.meta.outputs.build_version }}
