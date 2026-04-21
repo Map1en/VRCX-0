@@ -77,7 +77,7 @@ function EntityDialogHeader({
                 <div className="flex items-start gap-3">
                     <div className="flex min-w-0 flex-1 flex-col gap-2">
                         <div className="flex flex-col gap-1">
-                            <div className="flex min-w-0 items-center gap-1.5 text-lg leading-tight font-semibold break-words">
+                            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-lg leading-tight font-semibold break-words">
                                 {titlePrefix}
                                 {onTitleClick ? (
                                     <Button

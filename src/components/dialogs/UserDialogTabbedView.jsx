@@ -1824,6 +1824,14 @@ export function UserDialogTabbedView({
                 }
                 titleMeta={
                     <>
+                        {pronounsText ? (
+                            <span
+                                className="text-muted-foreground shrink-0 font-mono text-xs font-normal"
+                                title={t('dialog.user.pronouns')}
+                            >
+                                {pronounsText}
+                            </span>
+                        ) : null}
                         <UserTitleLanguages languages={profileLanguages} />
                         {previousDisplayNames.length ? (
                             <Badge
@@ -1846,9 +1854,6 @@ export function UserDialogTabbedView({
                 detail={detail}
                 badges={
                     <>
-                        {pronounsText ? (
-                            <Badge variant="outline">{pronounsText}</Badge>
-                        ) : null}
                         {profile.$isModerator ? (
                             <Badge variant="secondary">
                                 <ShieldCheckIcon data-icon="inline-start" />
@@ -1922,35 +1927,6 @@ export function UserDialogTabbedView({
                 }
                 mediaBadges={
                     <>
-                        {profile.userIcon ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="size-8 overflow-hidden p-0"
-                                onClick={() =>
-                                    openImagePreview({
-                                        url: convertFileUrlToImageUrl(
-                                            profile.userIcon,
-                                            512
-                                        ),
-                                        title:
-                                            profile.displayName ||
-                                            profile.username ||
-                                            'User'
-                                    })
-                                }
-                            >
-                                <img
-                                    src={convertFileUrlToImageUrl(
-                                        profile.userIcon,
-                                        64
-                                    )}
-                                    alt=""
-                                    className="size-8 rounded-md object-cover"
-                                />
-                            </Button>
-                        ) : null}
                         {Array.isArray(profile.badges)
                             ? profile.badges
                                   .filter((badge) => badge?.badgeImageUrl)
@@ -2107,6 +2083,31 @@ export function UserDialogTabbedView({
                 }
                 actions={
                     <>
+                        {profile.userIcon ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="bg-muted size-[120px] shrink-0 overflow-hidden rounded-md border p-0"
+                                onClick={() =>
+                                    openImagePreview({
+                                        url: convertFileUrlToImageUrl(
+                                            profile.userIcon,
+                                            512
+                                        ),
+                                        title:
+                                            profile.displayName ||
+                                            profile.username ||
+                                            'User'
+                                    })
+                                }
+                            >
+                                <img
+                                    src={userImage(profile, true, '256', true)}
+                                    alt=""
+                                    className="size-full object-cover"
+                                />
+                            </Button>
+                        ) : null}
                         {!isCurrentUser ? (
                             <FavoriteActionMenu
                                 kind="friend"
