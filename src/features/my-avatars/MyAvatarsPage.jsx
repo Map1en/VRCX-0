@@ -2011,8 +2011,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     viewMode === 'table' ? (
                         <>
                             <DataTableSurface>
-                                <DataTableScrollArea>
-                                    <Table className="app-data-table table-fixed">
+                                <DataTableScrollArea wideTable>
+                                    <Table className="w-max min-w-full">
                                         <DataTableHeader table={table} />
                                         <TableBody>
                                             {table

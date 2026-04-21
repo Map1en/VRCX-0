@@ -1044,8 +1044,8 @@ export function FriendLogPage({ embedded = false } = {}) {
                 ) : hasRows ? (
                     <>
                         <DataTableSurface>
-                            <DataTableScrollArea>
-                                <Table className="app-data-table table-fixed">
+                            <DataTableScrollArea wideTable>
+                                <Table className="w-max min-w-full">
                                     <DataTableHeader table={table} />
                                     <TableBody>
                                         {table.getRowModel().rows.map((row) => (

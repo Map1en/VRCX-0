@@ -157,9 +157,20 @@ export function DataTableSurface({ className = '', children }) {
     );
 }
 
-export function DataTableScrollArea({ className = '', children }) {
+export function DataTableScrollArea({
+    className = '',
+    wideTable = false,
+    children
+}) {
     return (
-        <div className={cn('h-full min-h-0 overflow-auto', className)}>
+        <div
+            className={cn(
+                'h-full min-h-0 min-w-0 overflow-auto',
+                wideTable &&
+                    '[&>[data-slot=table-container]]:w-max [&>[data-slot=table-container]]:min-w-full [&>[data-slot=table-container]]:overflow-visible',
+                className
+            )}
+        >
             {children}
         </div>
     );

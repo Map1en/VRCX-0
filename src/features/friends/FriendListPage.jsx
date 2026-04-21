@@ -1615,8 +1615,8 @@ export function FriendListPage({ embedded = false } = {}) {
                 ) : hasRows ? (
                     <>
                         <DataTableSurface>
-                            <DataTableScrollArea>
-                                <Table className="w-max min-w-max">
+                            <DataTableScrollArea wideTable>
+                                <Table className="w-max min-w-full">
                                     <DataTableHeader
                                         table={table}
                                         onResetLayout={
