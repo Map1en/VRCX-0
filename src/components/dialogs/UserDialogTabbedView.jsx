@@ -2303,7 +2303,7 @@ export function UserDialogTabbedView({
                                                 }
                                                 onSelect={onInvite}
                                             >
-                                                Invite
+                                                Send Invite
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MessageSquareIcon}
@@ -2316,7 +2316,7 @@ export function UserDialogTabbedView({
                                                 }
                                                 onSelect={onInviteMessage}
                                             >
-                                                Invite Message
+                                                Send With Message
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MailIcon}
@@ -2342,7 +2342,7 @@ export function UserDialogTabbedView({
                                                     onInviteRequestMessage
                                                 }
                                             >
-                                                Request Invite Message
+                                                Request With Message
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MousePointerIcon}

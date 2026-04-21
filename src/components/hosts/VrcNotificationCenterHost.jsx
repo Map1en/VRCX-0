@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog.jsx';
 import {
     convertFileUrlToImageUrl,
     openExternalLink
@@ -21,7 +22,6 @@ import {
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     notificationRepository,
-    toolsRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
 import {
@@ -587,6 +587,7 @@ export function VrcNotificationCenterHost() {
     );
     const markAllSeen = useVrcNotificationStore((state) => state.markAllSeen);
     const [activeTab, setActiveTab] = useState('friend');
+    const [inviteResponseRequest, setInviteResponseRequest] = useState(null);
     const currentUserId = runtimeAuth.currentUserId;
     const endpoint = runtimeAuth.currentUserEndpoint;
     const currentInviteLocation = useMemo(
@@ -636,6 +637,9 @@ export function VrcNotificationCenterHost() {
     function handleOpenChange(open) {
         if (!open && unseenCount > 0) {
             markAllSeenOnClose();
+        }
+        if (!open) {
+            setInviteResponseRequest(null);
         }
         setCenterOpen(open);
     }
@@ -775,66 +779,35 @@ export function VrcNotificationCenterHost() {
         }
     }
 
-    async function sendInviteResponseWithMessage(notification, messageType) {
-        try {
-            if (!currentUserId) {
-                toast.error(
-                    'Cannot send invite response: no current user session is available.'
-                );
-                return;
-            }
-            const rows = await toolsRepository.getInviteMessages(
-                { currentUserId, messageType },
-                { endpoint }
-            );
-            const slots = (Array.isArray(rows) ? rows : [])
-                .map((row) => ({
-                    slot: Number.parseInt(row?.slot, 10),
-                    message: String(row?.message || '').trim()
-                }))
-                .filter((row) => Number.isFinite(row.slot));
-            const defaultSlot = String(slots[0]?.slot ?? 0);
-            const preview = slots
-                .slice(0, 6)
-                .map((row) => `${row.slot}: ${row.message || '(empty)'}`)
-                .join('\n');
-            const result = await modalStore.prompt({
-                title: 'Decline with message',
-                description: preview
-                    ? `Choose the invite response slot to send.\n${preview}`
-                    : 'Choose the invite response slot to send.',
-                inputValue: defaultSlot,
-                confirmText: 'Send'
-            });
-            if (!result.ok) {
-                return;
-            }
-            const responseSlot = Number.parseInt(result.value, 10);
-            if (!Number.isFinite(responseSlot)) {
-                toast.error('Response slot must be a number.');
-                return;
-            }
-            await notificationRepository.sendInviteResponse({
-                id: notification.id,
-                responseSlot,
-                endpoint
-            });
-            await notificationRepository.hideRemoteNotification({
-                id: notification.id,
-                version: notification.version,
-                type: notification.type,
-                senderUserId: notification.senderUserId,
-                endpoint
-            });
-            await expireNotificationLocally(notification);
-            toast.success('Invite response sent.');
-        } catch (error) {
+    function sendInviteResponseWithMessage(notification, messageType) {
+        if (!currentUserId) {
             toast.error(
-                error instanceof Error
-                    ? error.message
-                    : 'Failed to send invite response.'
+                'Cannot send invite response: no current user session is available.'
             );
+            return;
         }
+        setInviteResponseRequest({ notification, messageType });
+    }
+
+    async function sendInviteResponseSlot({ notification, row }) {
+        const responseSlot = Number.parseInt(row?.slot, 10);
+        if (!notification || !Number.isFinite(responseSlot)) {
+            throw new Error('Response slot must be a number.');
+        }
+        await notificationRepository.sendInviteResponse({
+            id: notification.id,
+            responseSlot,
+            endpoint
+        });
+        await notificationRepository.hideRemoteNotification({
+            id: notification.id,
+            version: notification.version,
+            type: notification.type,
+            senderUserId: notification.senderUserId,
+            endpoint
+        });
+        await expireNotificationLocally(notification);
+        toast.success('Invite response sent.');
     }
 
     async function sendNotificationResponse(notification, response) {
@@ -913,11 +886,12 @@ export function VrcNotificationCenterHost() {
     }
 
     return (
-        <Sheet open={isCenterOpen} onOpenChange={handleOpenChange}>
-            <SheetContent
-                side="right"
-                className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
-            >
+        <>
+            <Sheet open={isCenterOpen} onOpenChange={handleOpenChange}>
+                <SheetContent
+                    side="right"
+                    className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
+                >
                 <SheetHeader className="border-b px-4 pt-4 pb-3">
                     <div className="flex items-center justify-between gap-3 pr-8">
                         <SheetTitle className="flex items-center gap-2">
@@ -1013,7 +987,33 @@ export function VrcNotificationCenterHost() {
                         </TabsContent>
                     ))}
                 </Tabs>
-            </SheetContent>
-        </Sheet>
+                </SheetContent>
+            </Sheet>
+            <InviteMessageDialog
+                open={Boolean(inviteResponseRequest)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setInviteResponseRequest(null);
+                    }
+                }}
+                currentUserId={currentUserId}
+                endpoint={endpoint}
+                messageType={inviteResponseRequest?.messageType || 'response'}
+                mode="respond"
+                targetLabel={
+                    inviteResponseRequest?.notification?.senderUsername ||
+                    inviteResponseRequest?.notification?.senderUserId ||
+                    'this user'
+                }
+                allowEdit
+                allowImageUpload={false}
+                onUse={(payload) =>
+                    sendInviteResponseSlot({
+                        ...payload,
+                        notification: inviteResponseRequest?.notification
+                    })
+                }
+            />
+        </>
     );
 }

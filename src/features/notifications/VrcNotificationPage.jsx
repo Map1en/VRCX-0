@@ -13,7 +13,6 @@ import {
     CheckIcon,
     ExternalLinkIcon,
     MessageCircleIcon,
-    PencilIcon,
     RefreshCcwIcon,
     ReplyIcon,
     SendIcon,
@@ -31,6 +30,7 @@ import {
     DataTablePagination
 } from '@/components/data-table/DataTableView.jsx';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
+import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { Location } from '@/components/Location.jsx';
 import { formatDateFilter } from '@/lib/dateTime.js';
@@ -45,7 +45,6 @@ import {
     mediaRepository,
     NOTIFICATION_TYPES,
     notificationRepository,
-    toolsRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
 import {
@@ -54,12 +53,7 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService.js';
-import {
-    IMAGE_UPLOAD_ACCEPT,
-    readFileAsBase64,
-    validateImageUploadFile,
-    withUploadTimeout
-} from '@/shared/utils/imageUpload.js';
+import { withUploadTimeout } from '@/shared/utils/imageUpload.js';
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -88,23 +82,18 @@ import {
     Table,
     TableBody,
     TableCell,
-    TableHead,
-    TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
-import { Textarea } from '@/ui/shadcn/textarea';
 
 import {
     buildCachedInstanceMap,
     canDeclineNotification,
     filterNotificationRows,
     getFileImageUrl,
-    getInviteCooldownLabel,
     getNotificationCreatedAt,
     getNotificationGroupColumnLabel,
     getNotificationMessage,
     getResponseLabel,
-    normalizeInviteMessageRows,
     normalizeWorldTarget,
     resolveCurrentInviteLocation
 } from './notificationRows.js';
@@ -236,389 +225,6 @@ function NotificationTypeFilterDropdown({
                 </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
-    );
-}
-
-function InviteResponseMessageDialog({
-    request,
-    currentUserId,
-    endpoint,
-    isLocalUserVrcPlusSupporter,
-    onOpenChange,
-    onSend
-}) {
-    const open = Boolean(request);
-    const messageType = request?.messageType || 'response';
-    const notification = request?.notification || null;
-    const [rows, setRows] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [sending, setSending] = useState(false);
-    const [error, setError] = useState('');
-    const [confirmRow, setConfirmRow] = useState(null);
-    const [editingRow, setEditingRow] = useState(null);
-    const [editMessage, setEditMessage] = useState('');
-    const [imageData, setImageData] = useState('');
-    const [imageName, setImageName] = useState('');
-    const requestIdRef = useRef(0);
-
-    async function loadRows() {
-        if (!open || !currentUserId) {
-            return;
-        }
-        const requestId = requestIdRef.current + 1;
-        requestIdRef.current = requestId;
-        setLoading(true);
-        setError('');
-        try {
-            const response = await toolsRepository.getInviteMessages(
-                { currentUserId, messageType },
-                { endpoint }
-            );
-            if (requestIdRef.current !== requestId) {
-                return;
-            }
-            setRows(normalizeInviteMessageRows(response, messageType));
-        } catch (nextError) {
-            if (requestIdRef.current !== requestId) {
-                return;
-            }
-            setRows([]);
-            setError(
-                nextError instanceof Error
-                    ? nextError.message
-                    : 'Failed to load invite response messages.'
-            );
-        } finally {
-            if (requestIdRef.current === requestId) {
-                setLoading(false);
-            }
-        }
-    }
-
-    useEffect(() => {
-        if (open) {
-            void loadRows();
-        } else {
-            requestIdRef.current += 1;
-            setRows([]);
-            setLoading(false);
-            setSending(false);
-            setError('');
-            setConfirmRow(null);
-            setEditingRow(null);
-            setEditMessage('');
-            setImageData('');
-            setImageName('');
-        }
-    }, [currentUserId, endpoint, messageType, open]);
-
-    async function handleImageChange(event) {
-        const file = event.target.files?.[0] || null;
-        event.target.value = '';
-        if (!file) {
-            return;
-        }
-        const validation = validateImageUploadFile(file);
-        if (!validation.ok) {
-            setError(
-                validation.reason === 'too_large'
-                    ? 'Selected image is too large.'
-                    : 'Selected file is not an image.'
-            );
-            return;
-        }
-        try {
-            setImageData(await readFileAsBase64(file));
-            setImageName(file.name || 'image');
-            setError('');
-        } catch (nextError) {
-            setError(
-                nextError instanceof Error
-                    ? nextError.message
-                    : 'Failed to read image.'
-            );
-        }
-    }
-
-    async function sendRow(row, message = row?.message || '') {
-        if (!row || !notification) {
-            return;
-        }
-        setSending(true);
-        setError('');
-        try {
-            await onSend({
-                notification,
-                row,
-                messageType,
-                message,
-                imageData
-            });
-            onOpenChange(false);
-        } catch (nextError) {
-            setError(
-                nextError instanceof Error
-                    ? nextError.message
-                    : 'Failed to send invite response.'
-            );
-        } finally {
-            setSending(false);
-        }
-    }
-
-    function beginEdit(row) {
-        setConfirmRow(null);
-        setEditingRow(row);
-        setEditMessage(row?.message || '');
-    }
-
-    const title =
-        messageType === 'requestResponse'
-            ? 'Invite request response message'
-            : 'Invite response message';
-    const inviteCooldownNowMs = Date.now();
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[90vh] max-w-[min(92vw,56rem)] flex-col">
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>
-                        Select a message slot, optionally edit it, then confirm
-                        the response.
-                    </DialogDescription>
-                </DialogHeader>
-                {isLocalUserVrcPlusSupporter ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Input
-                            type="file"
-                            accept={IMAGE_UPLOAD_ACCEPT}
-                            className="max-w-sm"
-                            disabled={sending}
-                            onChange={(event) => void handleImageChange(event)}
-                        />
-                        {imageName ? (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={sending}
-                                onClick={() => {
-                                    setImageData('');
-                                    setImageName('');
-                                }}
-                            >
-                                Clear image: {imageName}
-                            </Button>
-                        ) : null}
-                    </div>
-                ) : null}
-                {error ? (
-                    <div className="text-destructive text-sm">{error}</div>
-                ) : null}
-                <div className="min-h-0 flex-1 overflow-auto rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-20">Slot</TableHead>
-                                <TableHead>Message</TableHead>
-                                <TableHead className="w-32 text-right">
-                                    Cool down
-                                </TableHead>
-                                <TableHead className="w-24 text-right">
-                                    Action
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={4}
-                                        className="text-muted-foreground h-24 text-center"
-                                    >
-                                        <div className="inline-flex items-center gap-2">
-                                            <Spinner className="size-4" />
-                                            Loading invite messages.
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ) : rows.length ? (
-                                rows.map((row) => (
-                                    <TableRow
-                                        key={`${messageType}:${row.slot}`}
-                                        className={cn(
-                                            'cursor-pointer',
-                                            confirmRow?.slot === row.slot &&
-                                                'bg-muted/70'
-                                        )}
-                                        tabIndex={0}
-                                        aria-label={`Select invite message slot ${row.slot}`}
-                                        onKeyDown={(event) => {
-                                            if (
-                                                event.key !== 'Enter' &&
-                                                event.key !== ' '
-                                            ) {
-                                                return;
-                                            }
-                                            event.preventDefault();
-                                            setEditingRow(null);
-                                            setConfirmRow(row);
-                                        }}
-                                        onClick={() => {
-                                            setEditingRow(null);
-                                            setConfirmRow(row);
-                                        }}
-                                    >
-                                        <TableCell className="font-mono text-xs">
-                                            {row.slot}
-                                        </TableCell>
-                                        <TableCell className="whitespace-normal">
-                                            {row.message || '—'}
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground text-right text-xs">
-                                            {getInviteCooldownLabel(
-                                                row.updatedAt,
-                                                inviteCooldownNowMs
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon-xs"
-                                                aria-label={`Edit slot ${row.slot}`}
-                                                disabled={sending}
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    beginEdit(row);
-                                                }}
-                                            >
-                                                <PencilIcon data-icon="inline-start" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={4}
-                                        className="text-muted-foreground h-24 text-center"
-                                    >
-                                        No invite response messages.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-                {editingRow ? (
-                    <div className="flex flex-col gap-2 rounded-md border p-3">
-                        <div className="text-sm font-medium">
-                            Edit and send slot {editingRow.slot}
-                        </div>
-                        <Textarea
-                            value={editMessage}
-                            maxLength={64}
-                            rows={2}
-                            disabled={sending}
-                            onChange={(event) =>
-                                setEditMessage(event.target.value)
-                            }
-                        />
-                        <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground text-xs">
-                                {editMessage.length}/64
-                            </span>
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={sending}
-                                    onClick={() => setEditingRow(null)}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    disabled={sending || !editMessage.trim()}
-                                    onClick={() =>
-                                        void sendRow(
-                                            editingRow,
-                                            editMessage.trim()
-                                        )
-                                    }
-                                >
-                                    {sending ? (
-                                        <Spinner data-icon="inline-start" />
-                                    ) : (
-                                        <SendIcon data-icon="inline-start" />
-                                    )}
-                                    Send
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                ) : confirmRow ? (
-                    <div className="flex flex-col gap-2 rounded-md border p-3 md:flex-row md:items-center md:justify-between">
-                        <div className="min-w-0 text-sm">
-                            Send slot{' '}
-                            <span className="font-mono">{confirmRow.slot}</span>
-                            {confirmRow.message ? (
-                                <span className="text-muted-foreground ml-2">
-                                    {confirmRow.message}
-                                </span>
-                            ) : null}
-                        </div>
-                        <div className="flex gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={sending}
-                                onClick={() => setConfirmRow(null)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                disabled={sending}
-                                onClick={() => void sendRow(confirmRow)}
-                            >
-                                {sending ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : (
-                                    <SendIcon data-icon="inline-start" />
-                                )}
-                                Confirm
-                            </Button>
-                        </div>
-                    </div>
-                ) : null}
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        disabled={loading || sending}
-                        onClick={() => void loadRows()}
-                    >
-                        <RefreshCcwIcon data-icon="inline-start" />
-                        Refresh
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={sending}
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Close
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     );
 }
 
@@ -1414,8 +1020,6 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     async function sendInviteResponseSlot({
         notification,
         row,
-        messageType,
-        message,
         imageData
     }) {
         if (!currentUserId) {
@@ -1427,22 +1031,6 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         const responseSlot = Number.parseInt(row?.slot, 10);
         if (!Number.isFinite(responseSlot)) {
             throw new Error('Response slot must be a number.');
-        }
-
-        const nextMessage = String(message || '').trim();
-        if (nextMessage && nextMessage !== String(row?.message || '')) {
-            const json = await toolsRepository.editInviteMessage(
-                {
-                    currentUserId,
-                    messageType,
-                    slot: responseSlot,
-                    message: nextMessage
-                },
-                { endpoint }
-            );
-            if (json?.[responseSlot]?.message === row?.message) {
-                throw new Error('Invite response message update failed.');
-            }
         }
 
         if (imageData) {
@@ -2183,17 +1771,30 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     />
                 </div>
             </div>
-            <InviteResponseMessageDialog
-                request={inviteResponseRequest}
-                currentUserId={currentUserId}
-                endpoint={endpoint}
-                isLocalUserVrcPlusSupporter={isLocalUserVrcPlusSupporter}
+            <InviteMessageDialog
+                open={Boolean(inviteResponseRequest)}
                 onOpenChange={(open) => {
                     if (!open) {
                         setInviteResponseRequest(null);
                     }
                 }}
-                onSend={sendInviteResponseSlot}
+                currentUserId={currentUserId}
+                endpoint={endpoint}
+                messageType={inviteResponseRequest?.messageType || 'response'}
+                mode="respond"
+                targetLabel={
+                    inviteResponseRequest?.notification?.senderUsername ||
+                    inviteResponseRequest?.notification?.senderUserId ||
+                    'this user'
+                }
+                allowEdit
+                allowImageUpload={isLocalUserVrcPlusSupporter}
+                onUse={(payload) =>
+                    sendInviteResponseSlot({
+                        ...payload,
+                        notification: inviteResponseRequest?.notification
+                    })
+                }
             />
             <BoopReplyDialog
                 request={boopReplyRequest}

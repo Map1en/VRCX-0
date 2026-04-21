@@ -897,7 +897,7 @@
             "selected_users": "선택된 유저"
         },
         "invite_message": {
-            "header": "초대 메시지 보내기",
+            "header": "Send With Message",
             "confirmation": "정말로 보낼건가요?",
             "select_image": "Select Image",
             "clear_selected_image": "Clear Selected Image",
@@ -906,36 +906,36 @@
             "confirm": "확인"
         },
         "invite_request_message": {
-            "header": "초대 요청 메시지 보내기",
+            "header": "Request With Message",
             "cancel": "취소",
             "refresh": "새로고침"
         },
         "invite_response_message": {
-            "header": "초대 답장 메시지 보내기",
+            "header": "Invite Response",
             "confirmation": "정말로 보낼건가요?",
             "cancel": "취소",
             "refresh": "새로고침",
             "confirm": "확인"
         },
         "invite_request_response_message": {
-            "header": "초대 요청 답장 메시지 보내기",
+            "header": "Request Invite Response",
             "cancel": "취소",
             "refresh": "새로고침"
         },
         "edit_invite_message": {
-            "header": "초대 메시지 수정",
+            "header": "Edit Message Template",
             "description": "한번 바꾸면 1시간 쿨타임이 생깁니다",
             "cancel": "취소",
             "save": "저장"
         },
         "edit_send_invite_message": {
-            "header": "초대 메시지를 수정하고 보내기",
+            "header": "Edit and Send Message Template",
             "description": "한번 바꾸면 1시간 쿨타임이 생깁니다",
             "cancel": "취소",
             "send": "보내기"
         },
         "edit_send_invite_response_message": {
-            "header": "초대 답장 메시지를 수정하고 보내기",
+            "header": "Edit and Send Response",
             "description": "한번 바꾸면 1시간 쿨타임이 생깁니다",
             "cancel": "취소",
             "send": "보내기"

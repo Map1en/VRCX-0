@@ -646,8 +646,8 @@
             },
             "other": {
                 "header": "Outros",
-                "edit_invite_message": "Editar Mensagens de Convite",
-                "edit_invite_message_description": "Editar mensagens de convite e resposta de convite"
+                "edit_invite_message": "Message Templates",
+                "edit_invite_message_description": "Edit invite and request message templates"
             }
         },
         "profile": {
@@ -1819,7 +1819,7 @@
             "invite": "Convidar"
         },
         "invite_message": {
-            "header": "Enviar Mensagem de Convite",
+            "header": "Send With Message",
             "confirmation": "Tem certeza que deseja enviar?",
             "select_image": "Selecionar Imagem",
             "clear_selected_image": "Limpar Imagem Selecionada",
@@ -1828,43 +1828,43 @@
             "confirm": "Confirmar"
         },
         "invite_request_message": {
-            "header": "Enviar Mensagem de Solicitação de Convite",
+            "header": "Request With Message",
             "cancel": "Cancelar",
             "refresh": "Atualizar"
         },
         "invite_response_message": {
-            "header": "Enviar Mensagem de Resposta de Convite",
+            "header": "Invite Response",
             "confirmation": "Tem certeza que deseja enviar?",
             "cancel": "Cancelar",
             "refresh": "Atualizar",
             "confirm": "Confirmar"
         },
         "invite_request_response_message": {
-            "header": "Enviar Mensagem de Resposta de Solicitação de Convite",
+            "header": "Request Invite Response",
             "cancel": "Cancelar",
             "refresh": "Atualizar"
         },
         "edit_invite_messages": {
-            "header": "Editar Mensagens de Convite",
+            "header": "Message Templates",
             "invite_message_tab": "Convite",
-            "invite_request_tab": "Solicitação de Convite",
-            "invite_request_response_tab": "Resposta de Solicitação de Convite",
+            "invite_request_tab": "Request Invite",
+            "invite_request_response_tab": "Request Invite Response",
             "invite_response_tab": "Resposta de Convite"
         },
         "edit_invite_message": {
-            "header": "Editar Mensagem de Convite",
+            "header": "Edit Message Template",
             "description": "1 hora de cooldown para edição.",
             "cancel": "Cancelar",
             "save": "Salvar"
         },
         "edit_send_invite_message": {
-            "header": "Editar e Enviar Mensagem de Convite",
+            "header": "Edit and Send Message Template",
             "description": "1 hora de cooldown para edição.",
             "cancel": "Cancelar",
             "send": "Enviar"
         },
         "edit_send_invite_response_message": {
-            "header": "Editar e Enviar Mensagem de Resposta de Convite",
+            "header": "Edit and Send Response",
             "description": "1 hora de cooldown para edição.",
             "cancel": "Cancelar",
             "send": "Enviar"

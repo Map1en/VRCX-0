@@ -886,7 +886,7 @@
             "selected_users": "Kiválasztott felhasználók"
         },
         "invite_message": {
-            "header": "Meghívó üzenet küldése",
+            "header": "Send With Message",
             "confirmation": "Biztosan el akarod küldeni?",
             "select_image": "Kép kiválasztása",
             "clear_selected_image": "Kiválasztott kép törlése",
@@ -895,36 +895,36 @@
             "confirm": "Megerősítés"
         },
         "invite_request_message": {
-            "header": "Meghívó kérelem küldése",
+            "header": "Request With Message",
             "cancel": "Mégse",
             "refresh": "Frissítés"
         },
         "invite_response_message": {
-            "header": "Meghívó válaszüzenet küldése",
+            "header": "Invite Response",
             "confirmation": "Biztosan el akarod küldeni?",
             "cancel": "Mégse",
             "refresh": "Frissítés",
             "confirm": "Megerősítés"
         },
         "invite_request_response_message": {
-            "header": "Meghívó kérelem válaszüzenet küldése",
+            "header": "Request Invite Response",
             "cancel": "Mégse",
             "refresh": "Frissítés"
         },
         "edit_invite_message": {
-            "header": "Meghívó üzenet szerkesztése",
+            "header": "Edit Message Template",
             "description": "1 órás szerkesztési várakozási idő.",
             "cancel": "Mégse",
             "save": "Mentés"
         },
         "edit_send_invite_message": {
-            "header": "Meghívó üzenet szerkesztése és küldése",
+            "header": "Edit and Send Message Template",
             "description": "1 órás szerkesztési várakozási idő.",
             "cancel": "Mégse",
             "send": "Küldés"
         },
         "edit_send_invite_response_message": {
-            "header": "Válaszüzenet szerkesztése és küldése",
+            "header": "Edit and Send Response",
             "description": "1 órás szerkesztési várakozási idő.",
             "cancel": "Mégse",
             "send": "Küldés"

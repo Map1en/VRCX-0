@@ -1071,7 +1071,7 @@
             "selected_users": "Usuarios Seleccionados"
         },
         "invite_message": {
-            "header": "Enviar Mensaje de Invitación",
+            "header": "Send With Message",
             "confirmation": "¿Estás seguro de que quieres enviar?",
             "select_image": "Seleccionar Imagen",
             "clear_selected_image": "Limpiar Imagen Seleccionada",
@@ -1080,36 +1080,36 @@
             "confirm": "Confirmar"
         },
         "invite_request_message": {
-            "header": "Enviar Mensaje de Solicitud de Invitación",
+            "header": "Request With Message",
             "cancel": "Cancelar",
             "refresh": "Actualizar"
         },
         "invite_response_message": {
-            "header": "Enviar Mensaje de Respuesta a Invitación",
+            "header": "Invite Response",
             "confirmation": "¿Estás seguro de que quieres enviar?",
             "cancel": "Cancelar",
             "refresh": "Actualizar",
             "confirm": "Confirmar"
         },
         "invite_request_response_message": {
-            "header": "Enviar Mensaje de Respuesta a Solicitud de Invitación",
+            "header": "Request Invite Response",
             "cancel": "Cancelar",
             "refresh": "Actualizar"
         },
         "edit_invite_message": {
-            "header": "Editar Mensaje de Invitación",
+            "header": "Edit Message Template",
             "description": "Tiempo de espera de edición de 1 hora.",
             "cancel": "Cancelar",
             "save": "Guardar"
         },
         "edit_send_invite_message": {
-            "header": "Editar y Enviar Mensaje de Invitación",
+            "header": "Edit and Send Message Template",
             "description": "Tiempo de espera de edición de 1 hora.",
             "cancel": "Cancelar",
             "send": "Enviar"
         },
         "edit_send_invite_response_message": {
-            "header": "Editar y Enviar Mensaje de Respuesta a Invitación",
+            "header": "Edit and Send Response",
             "description": "Tiempo de espera de edición de 1 hora.",
             "cancel": "Cancelar",
             "send": "Enviar"

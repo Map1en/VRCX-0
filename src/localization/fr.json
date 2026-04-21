@@ -1205,7 +1205,7 @@
             "selected_users": "Utilisateurs sélectionnés"
         },
         "invite_message": {
-            "header": "Envoyer le message d'invitation",
+            "header": "Send With Message",
             "confirmation": "Êtes-vous sûr de vouloir envoyer ?",
             "select_image": "Sélectionner une image",
             "clear_selected_image": "Retirer l'image sélectionnée",
@@ -1214,36 +1214,36 @@
             "confirm": "Confirmer"
         },
         "invite_request_message": {
-            "header": "Envoyer une demande d'invitation avec un message",
+            "header": "Request With Message",
             "cancel": "Annuler",
             "refresh": "Actualiser"
         },
         "invite_response_message": {
-            "header": "Envoyer une réponse à l'invitation",
+            "header": "Invite Response",
             "confirmation": "Êtes-vous sûr de vouloir envoyer ?",
             "cancel": "Annuler",
             "refresh": "Actualiser",
             "confirm": "Confirmer"
         },
         "invite_request_response_message": {
-            "header": "Envoyer une réponse à la demande d'invitation",
+            "header": "Request Invite Response",
             "cancel": "Annuler",
             "refresh": "Actualiser"
         },
         "edit_invite_message": {
-            "header": "Édition du message d'invitation",
+            "header": "Edit Message Template",
             "description": "(Attention) Délai d'1 heure avant toute ré-édition.",
             "cancel": "Annuler",
             "save": "Sauvegarder"
         },
         "edit_send_invite_message": {
-            "header": "Modifier et envoyer un message d'invitation",
+            "header": "Edit and Send Message Template",
             "description": "1 heure pour la suivante édition.",
             "cancel": "Annuler",
             "send": "Envoyer"
         },
         "edit_send_invite_response_message": {
-            "header": "Modifier et envoyer le message de réponse à l'invitation",
+            "header": "Edit and Send Response",
             "description": "1 heure pour la suivante édition.",
             "cancel": "Annuler",
             "send": "Envoyer"

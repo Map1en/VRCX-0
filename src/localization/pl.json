@@ -368,8 +368,8 @@
             },
             "other": {
                 "header": "Inne",
-                "edit_invite_message": "Edytuj wiadomości zaproszeń",
-                "edit_invite_message_description": "Edytuj wiadomości zaproszeń i odpowiedzi zaproszeń"
+                "edit_invite_message": "Message Templates",
+                "edit_invite_message_description": "Edit invite and request message templates"
             }
         },
         "profile": {
@@ -1295,7 +1295,7 @@
             "invite": "Zaproś"
         },
         "invite_message": {
-            "header": "Wyślij zaproszenie z wiadomością",
+            "header": "Send With Message",
             "confirmation": "Czy na pewno chcesz wysłać?",
             "select_image": "Wybierz obrazek",
             "clear_selected_image": "Wyczyść zaznaczony obrazek",
@@ -1304,43 +1304,43 @@
             "confirm": "Potwierdź"
         },
         "invite_request_message": {
-            "header": "Wyślij prośbę o zaproszenie z wiadomością",
+            "header": "Request With Message",
             "cancel": "Anuluj",
             "refresh": "Odśwież"
         },
         "invite_response_message": {
-            "header": "Wyślij odpowiedź na zaproszenie z wiadomością",
+            "header": "Invite Response",
             "confirmation": "Czy na pewno chcesz wysłać?",
             "cancel": "Anuluj",
             "refresh": "Odśwież",
             "confirm": "Potwierdź"
         },
         "invite_request_response_message": {
-            "header": "Wyślij odpowiedź na prośbę o zaproszenie z wiadomością",
+            "header": "Request Invite Response",
             "cancel": "Anuluj",
             "refresh": "Odśwież"
         },
         "edit_invite_messages": {
-            "header": "Edytuj wiadomości zaproszeń",
+            "header": "Message Templates",
             "invite_message_tab": "Zaproszenie",
-            "invite_request_tab": "Prośba o zaproszenie",
-            "invite_request_response_tab": "Odpowiedź na prośbe o zaproszenie",
+            "invite_request_tab": "Request Invite",
+            "invite_request_response_tab": "Request Invite Response",
             "invite_response_tab": "Odpowiedź na zaproszenie"
         },
         "edit_invite_message": {
-            "header": "Edytuj wiadomość zaproszenia",
+            "header": "Edit Message Template",
             "description": "Limit edytowania na 1 godzinę.",
             "cancel": "Anuluj",
             "save": "Zapisz"
         },
         "edit_send_invite_message": {
-            "header": "Edytuj i wyślij zaproszenie z wiadomością",
+            "header": "Edit and Send Message Template",
             "description": "Limit edytowania na 1 godzinę.",
             "cancel": "Anuluj",
             "send": "Wyślij"
         },
         "edit_send_invite_response_message": {
-            "header": "Edytuj i wyślij odpowiedź na zaproszenie z wiadomością",
+            "header": "Edit and Send Response",
             "description": "Limit edytowania na 1 godzinę.",
             "cancel": "Anuluj",
             "send": "Wyślij"

@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { timeToText } from '@/lib/dateTime.js';
+import { InviteMessageTemplatesDialog } from '@/components/dialogs/InviteMessageDialog.jsx';
 import dayjs from '@/lib/dayjs.js';
 import { convertFileUrlToImageUrl, userImage } from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -74,15 +74,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
 
 const statusOptions = ['join me', 'active', 'ask me', 'busy'];
-const inviteMessageTypes = [
-    ['message', 'dialog.edit_invite_messages.invite_message_tab'],
-    ['request', 'dialog.edit_invite_messages.invite_request_tab'],
-    [
-        'requestResponse',
-        'dialog.edit_invite_messages.invite_request_response_tab'
-    ],
-    ['response', 'dialog.edit_invite_messages.invite_response_tab']
-];
 const instanceTypes = [
     'invite',
     'invite+',
@@ -178,20 +169,6 @@ function normalizeAutoAcceptMode(value) {
     return value === 'Selected Favorites'
         ? 'Selected Favorites'
         : 'All Favorites';
-}
-
-function isInviteMessageOnCooldown(row) {
-    return Boolean(
-        row?.updatedAt && dayjs(row.updatedAt).add(1, 'hour').isAfter(dayjs())
-    );
-}
-
-function getInviteCooldownLabel(updatedAt, now = Date.now()) {
-    if (!updatedAt) {
-        return '-';
-    }
-    const remaining = dayjs(updatedAt).add(1, 'hour').diff(dayjs(now));
-    return remaining >= 0 ? timeToText(remaining) : '-';
 }
 
 function normalizeExportMemo(value) {
@@ -2078,271 +2055,6 @@ function GroupEventCard({
     );
 }
 
-function EditInviteMessagesDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
-    const [activeTab, setActiveTab] = useState('message');
-    const [rowsByType, setRowsByType] = useState({});
-    const [editingRow, setEditingRow] = useState(null);
-    const [loading, setLoading] = useState(false);
-
-    async function loadRows(types = inviteMessageTypes.map(([type]) => type)) {
-        const currentUserId = getCurrentUserId();
-        if (!currentUserId) {
-            return;
-        }
-        setLoading(true);
-        try {
-            const entries = await Promise.all(
-                types.map(async (type) => [
-                    type,
-                    await toolsRepository.getInviteMessages(
-                        { currentUserId, messageType: type },
-                        { endpoint: getEndpoint() }
-                    )
-                ])
-            );
-            setRowsByType((current) => ({
-                ...current,
-                ...Object.fromEntries(
-                    entries.map(([type, rows]) => [
-                        type,
-                        Array.isArray(rows) ? rows : []
-                    ])
-                )
-            }));
-        } catch (error) {
-            toast.error(
-                userFacingErrorMessage(error, 'Failed to load invite messages.')
-            );
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    useEffect(() => {
-        if (open) {
-            void loadRows();
-        } else {
-            setEditingRow(null);
-        }
-    }, [open]);
-
-    function beginEdit(row, messageType) {
-        if (isInviteMessageOnCooldown(row)) {
-            toast.warning(
-                'This invite message is on cooldown and cannot be edited yet.'
-            );
-            return;
-        }
-        setEditingRow({ ...row, messageType });
-    }
-
-    async function saveEdit(message) {
-        const currentUserId = getCurrentUserId();
-        if (!editingRow || !currentUserId) {
-            return;
-        }
-        if (message === editingRow.message) {
-            setEditingRow(null);
-            return;
-        }
-        try {
-            const json = await toolsRepository.editInviteMessage(
-                {
-                    currentUserId,
-                    messageType: editingRow.messageType,
-                    slot: editingRow.slot,
-                    message
-                },
-                { endpoint: getEndpoint() }
-            );
-            if (json?.[editingRow.slot]?.message === editingRow.message) {
-                toast.error(t('message.invite.message_update_failed'));
-                return;
-            }
-            toast.success(t('message.invite.message_updated'));
-            const messageType = editingRow.messageType;
-            setEditingRow(null);
-            await loadRows([messageType]);
-        } catch (error) {
-            toast.error(
-                userFacingErrorMessage(error, 'Failed to update invite message.')
-            );
-        }
-    }
-
-    return (
-        <>
-            <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-5xl">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t('dialog.edit_invite_messages.header')}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {loading
-                                ? 'Loading invite messages.'
-                                : 'Click a row to edit an invite message.'}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <Tabs value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="flex-wrap">
-                            {inviteMessageTypes.map(([type, labelKey]) => (
-                                <TabsTrigger key={type} value={type}>
-                                    {t(labelKey)}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                        {inviteMessageTypes.map(([type]) => (
-                            <TabsContent key={type} value={type}>
-                                <InviteMessageTable
-                                    rows={rowsByType[type] || []}
-                                    loading={loading}
-                                    onEdit={(row) => beginEdit(row, type)}
-                                />
-                            </TabsContent>
-                        ))}
-                    </Tabs>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={loading}
-                            onClick={() => void loadRows()}
-                        >
-                            {t('common.actions.refresh')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <EditInviteMessageDialog
-                row={editingRow}
-                open={Boolean(editingRow)}
-                onOpenChange={(nextOpen) => {
-                    if (!nextOpen) {
-                        setEditingRow(null);
-                    }
-                }}
-                onSave={saveEdit}
-            />
-        </>
-    );
-}
-
-function InviteCooldownText({ updatedAt }) {
-    const [now, setNow] = useState(() => Date.now());
-
-    useEffect(() => {
-        const intervalId = setInterval(() => setNow(Date.now()), 5000);
-        return () => clearInterval(intervalId);
-    }, []);
-
-    return getInviteCooldownLabel(updatedAt, now);
-}
-
-function InviteMessageTable({ rows, loading, onEdit }) {
-    const { t } = useI18n();
-    return (
-        <div className="overflow-hidden rounded-md border">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-20">
-                            {t('table.profile.invite_messages.slot')}
-                        </TableHead>
-                        <TableHead>
-                            {t('table.profile.invite_messages.message')}
-                        </TableHead>
-                        <TableHead className="w-32 text-right">
-                            {t('table.profile.invite_messages.cool_down')}
-                        </TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {rows.length ? (
-                        rows.map((row) => (
-                            <TableRow key={row.slot}>
-                                <TableCell>{row.slot}</TableCell>
-                                <TableCell>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="h-auto w-full justify-start p-0 text-left font-normal whitespace-normal hover:bg-transparent"
-                                        onClick={() => onEdit(row)}
-                                    >
-                                        {row.message}
-                                    </Button>
-                                </TableCell>
-                                <TableCell className="text-muted-foreground text-right">
-                                    <InviteCooldownText
-                                        updatedAt={row.updatedAt}
-                                    />
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell
-                                colSpan={3}
-                                className="text-muted-foreground h-24 text-center"
-                            >
-                                {loading ? 'Loading.' : 'No invite messages.'}
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </div>
-    );
-}
-
-function EditInviteMessageDialog({ row, open, onOpenChange, onSave }) {
-    const { t } = useI18n();
-    const [message, setMessage] = useState('');
-
-    useEffect(() => {
-        if (row) {
-            setMessage(row.message || '');
-        }
-    }, [row]);
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-sm">
-                <DialogHeader>
-                    <DialogTitle>
-                        {t('dialog.edit_invite_message.header')}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {t('dialog.edit_invite_message.description')}
-                    </DialogDescription>
-                </DialogHeader>
-                <Textarea
-                    value={message}
-                    rows={2}
-                    maxLength={64}
-                    onChange={(event) => setMessage(event.target.value)}
-                />
-                <div className="text-muted-foreground text-right text-xs">
-                    {message.length}/64
-                </div>
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        {t('dialog.edit_invite_message.cancel')}
-                    </Button>
-                    <Button type="button" onClick={() => void onSave(message)}>
-                        {t('dialog.edit_invite_message.save')}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 export function ToolsDialogsHost() {
     const systemHosts = useRuntimeStore((state) => state.systemHosts);
     const setSystemHostOpen = useRuntimeStore(
@@ -2387,11 +2099,13 @@ export function ToolsDialogsHost() {
                     setSystemHostOpen('exportAvatarsListOpen', open)
                 }
             />
-            <EditInviteMessagesDialog
+            <InviteMessageTemplatesDialog
                 open={Boolean(systemHosts.editInviteMessagesOpen)}
                 onOpenChange={(open) =>
                     setSystemHostOpen('editInviteMessagesOpen', open)
                 }
+                currentUserId={getCurrentUserId()}
+                endpoint={getEndpoint()}
             />
         </>
     );

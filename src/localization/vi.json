@@ -886,7 +886,7 @@
             "selected_users": "Đã chọn"
         },
         "invite_message": {
-            "header": "Gửi yêu cầu lời mời",
+            "header": "Send With Message",
             "confirmation": "Bạn có chắc muốn gửi không?",
             "select_image": "Chọn ảnh",
             "clear_selected_image": "Clear Selected Image",
@@ -895,36 +895,36 @@
             "confirm": "Xác nhận"
         },
         "invite_request_message": {
-            "header": "Gửi yêu cầu lời mời có tin nhắn",
+            "header": "Request With Message",
             "cancel": "Hủy",
             "refresh": "Làm mới"
         },
         "invite_response_message": {
-            "header": "Gửi phản hồi lời mời",
+            "header": "Invite Response",
             "confirmation": "Bạn có chắc muốn gửi không?",
             "cancel": "Hủy",
             "refresh": "Làm mới",
             "confirm": "Xác nhận"
         },
         "invite_request_response_message": {
-            "header": "Gửi phản hồi lời mời có tin nhắn",
+            "header": "Request Invite Response",
             "cancel": "Hủy",
             "refresh": "Làm mới"
         },
         "edit_invite_message": {
-            "header": "Sửa lời mời",
+            "header": "Edit Message Template",
             "description": "Có 1 tiếng chờ trước khi có thể sửa tiếp",
             "cancel": "Hủy",
             "save": "Lưu"
         },
         "edit_send_invite_message": {
-            "header": "Sửa lại và gửi tin nhắn yêu cầu lời mời",
+            "header": "Edit and Send Message Template",
             "description": "Có 1 tiếng chờ trước khi có thể sửa tiếp",
             "cancel": "Hủy",
             "send": "Gửi"
         },
         "edit_send_invite_response_message": {
-            "header": "Sửa lại và gửi tin nhắn phản hồi lời mời",
+            "header": "Edit and Send Response",
             "description": "Có 1 tiếng chờ trước khi có thể sửa tiếp",
             "cancel": "Hủy",
             "send": "Gửi"

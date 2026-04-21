@@ -648,8 +648,8 @@
             },
             "other": {
                 "header": "その他",
-                "edit_invite_message": "招待メッセージの編集",
-                "edit_invite_message_description": "招待送信用と、招待返信用のメッセージを編集"
+                "edit_invite_message": "Message Templates",
+                "edit_invite_message_description": "Edit invite and request message templates"
             }
         },
         "profile": {
@@ -1836,7 +1836,7 @@
             "invite": "招待"
         },
         "invite_message": {
-            "header": "メッセージ付き招待を送信",
+            "header": "Send With Message",
             "confirmation": "本当に送信しますか？",
             "select_image": "画像を選択",
             "clear_selected_image": "選択した画像をクリア",
@@ -1845,44 +1845,44 @@
             "confirm": "確定"
         },
         "invite_request_message": {
-            "header": "メッセージ付き招待リクエストを送信",
+            "header": "Request With Message",
             "confirmation": "本当に送信しますか？",
             "cancel": "キャンセル",
             "refresh": "更新"
         },
         "invite_response_message": {
-            "header": "招待に返信",
+            "header": "Invite Response",
             "confirmation": "本当に送信しますか？",
             "cancel": "キャンセル",
             "refresh": "更新",
             "confirm": "確定"
         },
         "invite_request_response_message": {
-            "header": "招待リクエストに返信",
+            "header": "Request Invite Response",
             "cancel": "キャンセル",
             "refresh": "更新"
         },
         "edit_invite_messages": {
-            "header": "招待メッセージを編集",
+            "header": "Message Templates",
             "invite_message_tab": "招待",
-            "invite_request_tab": "招待リクエスト",
-            "invite_request_response_tab": "招待リクエストへの返信",
+            "invite_request_tab": "Request Invite",
+            "invite_request_response_tab": "Request Invite Response",
             "invite_response_tab": "招待への返信"
         },
         "edit_invite_message": {
-            "header": "招待メッセージを編集",
+            "header": "Edit Message Template",
             "description": "編集後は1時間クールダウンが必要です。",
             "cancel": "キャンセル",
             "save": "保存"
         },
         "edit_send_invite_message": {
-            "header": "招待メッセージを編集して送信",
+            "header": "Edit and Send Message Template",
             "description": "編集後は1時間クールダウンが必要です。",
             "cancel": "キャンセル",
             "send": "送信"
         },
         "edit_send_invite_response_message": {
-            "header": "招待への返信メッセージを編集して送信",
+            "header": "Edit and Send Response",
             "description": "編集後は1時間クールダウンが必要です。",
             "cancel": "キャンセル",
             "send": "送信"

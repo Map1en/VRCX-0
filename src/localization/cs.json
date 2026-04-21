@@ -954,7 +954,7 @@
             "selected_users": "Selected Users"
         },
         "invite_message": {
-            "header": "Send Invite Message",
+            "header": "Send With Message",
             "confirmation": "Are you sure you want to send?",
             "select_image": "Select Image",
             "clear_selected_image": "Clear Selected Image",
@@ -963,36 +963,36 @@
             "confirm": "Confirm"
         },
         "invite_request_message": {
-            "header": "Send Invite Request Message",
+            "header": "Request With Message",
             "cancel": "Cancel",
             "refresh": "Refresh"
         },
         "invite_response_message": {
-            "header": "Send Invite Response Message",
+            "header": "Invite Response",
             "confirmation": "Are you sure you want to send?",
             "cancel": "Cancel",
             "refresh": "Refresh",
             "confirm": "Confirm"
         },
         "invite_request_response_message": {
-            "header": "Send Invite Request Response Message",
+            "header": "Request Invite Response",
             "cancel": "Cancel",
             "refresh": "Refresh"
         },
         "edit_invite_message": {
-            "header": "Edit Invite Message",
+            "header": "Edit Message Template",
             "description": "1 hour edit cool down time.",
             "cancel": "Cancel",
             "save": "Save"
         },
         "edit_send_invite_message": {
-            "header": "Edit and Send Invite Message",
+            "header": "Edit and Send Message Template",
             "description": "1 hour edit cool down time.",
             "cancel": "Cancel",
             "send": "Send"
         },
         "edit_send_invite_response_message": {
-            "header": "Edit and Send Invite Response Message",
+            "header": "Edit and Send Response",
             "description": "1 hour edit cool down time.",
             "cancel": "Cancel",
             "send": "Send"

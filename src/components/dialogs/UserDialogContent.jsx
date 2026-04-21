@@ -88,6 +88,7 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
+import { InviteMessageDialog } from './InviteMessageDialog.jsx';
 import {
     cachePreviousInstances,
     cacheUserStats,
@@ -110,7 +111,6 @@ import {
     statusPresetsConfigKey
 } from './user-dialog/userProfileFields.js';
 import { UserDialogTabbedView } from './UserDialogTabbedView.jsx';
-import { UserInviteMessageDialog } from './UserInviteMessageDialog.jsx';
 
 function isGroupId(value) {
     return normalizeUserId(value).startsWith('grp_');
@@ -2998,7 +2998,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
         if (requireCurrentUser && !normalizedCurrentUserId) {
             toast.error(
-                'Cannot load invite messages: no current user session is available.'
+                'Cannot load message templates: no current user session is available.'
             );
             return null;
         }
@@ -3045,7 +3045,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
         if (requireCurrentUser && !normalizedCurrentUserId) {
             toast.error(
-                'Cannot load invite messages: no current user session is available.'
+                'Cannot load message templates: no current user session is available.'
             );
             return null;
         }
@@ -3233,11 +3233,11 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         await performSendUserInviteRequest({ context });
     }
 
-    async function selectInviteMessage(row) {
+    async function selectInviteMessage({ row }) {
         const slot = inviteMessageSlot(row);
         if (!Number.isFinite(slot)) {
             toast.error('Invite message slot must be a number.');
-            return;
+            return false;
         }
 
         const request = inviteMessageRequest;
@@ -3255,6 +3255,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         if (sent) {
             setInviteMessageRequest(null);
         }
+        return sent;
     }
 
     async function sendUserBoop() {
@@ -3818,7 +3819,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                     </div>
                 </DialogContent>
             </Dialog>
-            <UserInviteMessageDialog
+            <InviteMessageDialog
                 open={Boolean(inviteMessageRequest)}
                 onOpenChange={(nextOpen) => {
                     if (!nextOpen && actionStatusRef.current === 'idle') {
@@ -3833,17 +3834,21 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                     inviteMessageRequest?.context?.endpoint || currentEndpoint
                 }
                 messageType={inviteMessageRequest?.messageType || 'message'}
+                mode="select"
                 title={
                     inviteMessageRequest?.kind === 'request'
-                        ? 'Request invite message'
-                        : 'Send invite message'
+                        ? 'Request With Message'
+                        : 'Send With Message'
                 }
-                description={`Choose a message slot for ${inviteMessageRequest?.context?.targetLabel || profile?.displayName || profile?.id || 'this user'}.`}
-                sending={
-                    actionStatus === 'invite' ||
-                    actionStatus === 'request-invite'
+                targetLabel={
+                    inviteMessageRequest?.context?.targetLabel ||
+                    profile?.displayName ||
+                    profile?.id ||
+                    'this user'
                 }
-                onSelect={(row) => void selectInviteMessage(row)}
+                allowEdit={false}
+                allowImageUpload={false}
+                onUse={selectInviteMessage}
             />
         </>
     );

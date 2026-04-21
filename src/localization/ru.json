@@ -1050,7 +1050,7 @@
             "selected_users": "Выбранные пользователи"
         },
         "invite_message": {
-            "header": "Отправить пригласительное сообщение",
+            "header": "Send With Message",
             "confirmation": "Вы уверены, что хотите отправить?",
             "select_image": "Выбрать изображение",
             "clear_selected_image": "Очистить выбранное изображение",
@@ -1059,36 +1059,36 @@
             "confirm": "Подтвердить"
         },
         "invite_request_message": {
-            "header": "Отправить сообщение с запросом приглашения",
+            "header": "Request With Message",
             "cancel": "Отмена",
             "refresh": "Обновить"
         },
         "invite_response_message": {
-            "header": "Отправить ответ на запрос приглашения",
+            "header": "Invite Response",
             "confirmation": "Подтвердить отправку?",
             "cancel": "Отмена",
             "refresh": "Обновить",
             "confirm": "Подтвердить"
         },
         "invite_request_response_message": {
-            "header": "Отправить ответное сообщение на запрос приглашения",
+            "header": "Request Invite Response",
             "cancel": "Отмена",
             "refresh": "Обновить"
         },
         "edit_invite_message": {
-            "header": "Редактировать пригласительное сообщение",
+            "header": "Edit Message Template",
             "description": "После редактирования требуется 1 час восстановления.",
             "cancel": "Отмена",
             "save": "Сохранить"
         },
         "edit_send_invite_message": {
-            "header": "Редактировать и отправить приглашение",
+            "header": "Edit and Send Message Template",
             "description": "После редактирования требуется 1 час восстановления.",
             "cancel": "Отмена",
             "send": "Отправить"
         },
         "edit_send_invite_response_message": {
-            "header": "Редактировать и отправить ответ на приглашение",
+            "header": "Edit and Send Response",
             "description": "После редактирования требуется 1 час восстановления.",
             "cancel": "Отмена",
             "send": "Отправить"

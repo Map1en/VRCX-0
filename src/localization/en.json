@@ -723,8 +723,8 @@
             },
             "other": {
                 "header": "Other",
-                "edit_invite_message": "Edit Invite Messages",
-                "edit_invite_message_description": "Edit invite and invite response messages"
+                "edit_invite_message": "Message Templates",
+                "edit_invite_message_description": "Edit invite and request message templates"
             }
         },
         "profile": {
@@ -1918,7 +1918,7 @@
             "invite": "Invite"
         },
         "invite_message": {
-            "header": "Send Invite Message",
+            "header": "Send With Message",
             "confirmation": "Are you sure you want to send?",
             "select_image": "Select Image",
             "clear_selected_image": "Clear Selected Image",
@@ -1927,44 +1927,44 @@
             "confirm": "Confirm"
         },
         "invite_request_message": {
-            "header": "Send Invite Request Message",
+            "header": "Request With Message",
             "confirmation": "Are you sure you want to send?",
             "cancel": "Cancel",
             "refresh": "Refresh"
         },
         "invite_response_message": {
-            "header": "Send Invite Response Message",
+            "header": "Invite Response",
             "confirmation": "Are you sure you want to send?",
             "cancel": "Cancel",
             "refresh": "Refresh",
             "confirm": "Confirm"
         },
         "invite_request_response_message": {
-            "header": "Send Invite Request Response Message",
+            "header": "Request Invite Response",
             "cancel": "Cancel",
             "refresh": "Refresh"
         },
         "edit_invite_messages": {
-            "header": "Edit Invite Messages",
+            "header": "Message Templates",
             "invite_message_tab": "Invite",
-            "invite_request_tab": "Invite Request",
-            "invite_request_response_tab": "Invite Request Response",
+            "invite_request_tab": "Request Invite",
+            "invite_request_response_tab": "Request Invite Response",
             "invite_response_tab": "Invite Response"
         },
         "edit_invite_message": {
-            "header": "Edit Invite Message",
+            "header": "Edit Message Template",
             "description": "1 hour edit cool down time.",
             "cancel": "Cancel",
             "save": "Save"
         },
         "edit_send_invite_message": {
-            "header": "Edit and Send Invite Message",
+            "header": "Edit and Send Message Template",
             "description": "1 hour edit cool down time.",
             "cancel": "Cancel",
             "send": "Send"
         },
         "edit_send_invite_response_message": {
-            "header": "Edit and Send Invite Response Message",
+            "header": "Edit and Send Response",
             "description": "1 hour edit cool down time.",
             "cancel": "Cancel",
             "send": "Send"

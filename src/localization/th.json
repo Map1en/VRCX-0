@@ -1108,7 +1108,7 @@
             "selected_users": "ผู้ใช้ที่เลือก"
         },
         "invite_message": {
-            "header": "ส่งข้อความเชิญ",
+            "header": "Send With Message",
             "confirmation": "คุณแน่ใจหรือไม่ว่าต้องการส่ง?",
             "select_image": "เลือกรูปภาพ",
             "clear_selected_image": "ล้างรูปภาพที่เลือก",
@@ -1117,36 +1117,36 @@
             "confirm": "ยืนยัน"
         },
         "invite_request_message": {
-            "header": "ส่งข้อความขอคำเชิญ",
+            "header": "Request With Message",
             "cancel": "ยกเลิก",
             "refresh": "รีเฟรช"
         },
         "invite_response_message": {
-            "header": "ส่งข้อความตอบกลับคำเชิญ",
+            "header": "Invite Response",
             "confirmation": "คุณแน่ใจหรือไม่ว่าต้องการส่ง?",
             "cancel": "ยกเลิก",
             "refresh": "รีเฟรช",
             "confirm": "ยืนยัน"
         },
         "invite_request_response_message": {
-            "header": "ส่งข้อความตอบกลับคำขอเชิญ",
+            "header": "Request Invite Response",
             "cancel": "ยกเลิก",
             "refresh": "รีเฟรช"
         },
         "edit_invite_message": {
-            "header": "แก้ไขข้อความเชิญ",
+            "header": "Edit Message Template",
             "description": "มีคูลดาวน์ในการแก้ไข 1 ชั่วโมง",
             "cancel": "ยกเลิก",
             "save": "บันทึก"
         },
         "edit_send_invite_message": {
-            "header": "แก้ไขและส่งข้อความเชิญ",
+            "header": "Edit and Send Message Template",
             "description": "มีคูลดาวน์ในการแก้ไข 1 ชั่วโมง",
             "cancel": "ยกเลิก",
             "send": "ส่ง"
         },
         "edit_send_invite_response_message": {
-            "header": "แก้ไขและส่งข้อความตอบกลับคำเชิญ",
+            "header": "Edit and Send Response",
             "description": "มีคูลดาวน์ในการแก้ไข 1 ชั่วโมง",
             "cancel": "ยกเลิก",
             "send": "ส่ง"
