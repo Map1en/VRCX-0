@@ -63,7 +63,7 @@ function ToolItem({
     onPin,
     onUnpin
 }) {
-    const PinStateIcon = isPinned ? PinIcon : PinOffIcon;
+    const PinStateIcon = isPinned ? PinOffIcon : PinIcon;
 
     return (
         <div className="group hover:bg-accent/50 relative rounded-md border text-left transition-colors">
