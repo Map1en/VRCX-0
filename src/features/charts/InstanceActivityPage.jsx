@@ -330,7 +330,7 @@ export function InstanceActivityPage() {
     const [previousInstanceOpen, setPreviousInstanceOpen] = useState(false);
     const [previousInstanceRows, setPreviousInstanceRows] = useState([]);
     const [previousInstanceTitle, setPreviousInstanceTitle] =
-        useState('Previous Instance');
+        useState('Instance Details');
     const [mainChartElement, setMainChartElement] = useState(null);
 
     const chartElementRef = useRef(null);
@@ -715,10 +715,8 @@ export function InstanceActivityPage() {
         if (!row?.location) {
             return;
         }
-        const titleWorldName =
-            row.worldName || t('dashboard.widget.unknown_world');
         setPreviousInstanceRows([row]);
-        setPreviousInstanceTitle(`Previous Instance: ${titleWorldName}`);
+        setPreviousInstanceTitle('Instance Details');
         setPreviousInstanceOpen(true);
     }
 
@@ -1033,7 +1031,7 @@ export function InstanceActivityPage() {
                 onOpenChange={setPreviousInstanceOpen}
                 title={previousInstanceTitle}
                 instances={previousInstanceRows}
-                autoOpenInfo
+                detailsOnly
             />
         </div>
     );

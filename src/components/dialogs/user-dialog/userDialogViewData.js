@@ -25,6 +25,7 @@ export function buildUserDialogTabs({
 }) {
     return [
         { value: 'info', label: 'Info' },
+        { value: 'instance-history', label: 'Instance History' },
         ...(!isCurrentUser && !currentUserHasSharedConnectionsOptOut
             ? [{ value: 'mutual', label: 'Mutual' }]
             : []),

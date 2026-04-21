@@ -116,7 +116,7 @@ import {
     EntityInfoGrid,
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
-import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
+import { PreviousInstancesPanel } from './PreviousInstancesTableDialog.jsx';
 import {
     firstNonGroupIdText,
     formatDate,
@@ -832,7 +832,6 @@ export function UserDialogTabbedView({
     const prompt = useModalStore((state) => state.prompt);
     const confirm = useModalStore((state) => state.confirm);
     const [activeTab, setActiveTab] = useState('info');
-    const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [remoteData, setRemoteData] = useState({
         groups: [],
         mutual: [],
@@ -2386,10 +2385,10 @@ export function UserDialogTabbedView({
                                         icon={MapPinIcon}
                                         disabled={!previousInstances.length}
                                         onSelect={() =>
-                                            setPreviousInstancesOpen(true)
+                                            changeTab('instance-history')
                                         }
                                     >
-                                        Previous Instances
+                                        Instance History
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={BanIcon}
@@ -2568,7 +2567,7 @@ export function UserDialogTabbedView({
                                             )}
                                             onRefresh={onRefreshLocation}
                                             onHistory={() =>
-                                                setPreviousInstancesOpen(true)
+                                                changeTab('instance-history')
                                             }
                                         />
                                     </>
@@ -2799,7 +2798,7 @@ export function UserDialogTabbedView({
                                 value={formatStatsDuration(userTimeSpent)}
                                 onClick={
                                     previousInstances.length
-                                        ? () => setPreviousInstancesOpen(true)
+                                        ? () => changeTab('instance-history')
                                         : undefined
                                 }
                             />
@@ -2815,7 +2814,7 @@ export function UserDialogTabbedView({
                                     onClick={
                                         previousInstances.length
                                             ? () =>
-                                                  setPreviousInstancesOpen(true)
+                                                  changeTab('instance-history')
                                             : undefined
                                     }
                                 />
@@ -3543,6 +3542,19 @@ export function UserDialogTabbedView({
                     />
                 </EntityDialogTabContent>
                 <EntityDialogTabContent
+                    value="instance-history"
+                    className="flex min-h-0 flex-col"
+                >
+                    <PreviousInstancesPanel
+                        title="Instance History"
+                        instances={previousInstances}
+                        variant="user"
+                        targetRef={profile}
+                        onRowsChange={onPreviousInstancesChange}
+                        className="flex-1"
+                    />
+                </EntityDialogTabContent>
+                <EntityDialogTabContent
                     value="activity"
                     className="flex flex-col gap-4"
                 >
@@ -3564,15 +3576,6 @@ export function UserDialogTabbedView({
                     />
                 </EntityDialogTabContent>
             </EntityDialogTabs>
-            <PreviousInstancesTableDialog
-                open={previousInstancesOpen}
-                onOpenChange={setPreviousInstancesOpen}
-                title={`Previous Instances - ${profile.displayName || profile.username || 'User'}`}
-                instances={previousInstances}
-                variant="user"
-                targetRef={profile}
-                onRowsChange={onPreviousInstancesChange}
-            />
         </EntityDialogScaffold>
     );
 }

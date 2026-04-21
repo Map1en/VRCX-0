@@ -1204,7 +1204,7 @@ export function FeedPage({ embedded = false } = {}) {
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [previousInstancesRows, setPreviousInstancesRows] = useState([]);
     const [previousInstancesTitle, setPreviousInstancesTitle] =
-        useState('Previous Instances');
+        useState('Instance History');
     const [loadingPreviousInstancesKey, setLoadingPreviousInstancesKey] =
         useState('');
     const [sorting, setSorting] = useState(() =>
@@ -1357,15 +1357,18 @@ export function FeedPage({ embedded = false } = {}) {
             });
             setPreviousInstancesRows(sortedInstances);
             setPreviousInstancesTitle(
-                [worldName || 'World', groupName].filter(Boolean).join(' / ') ||
-                    'Previous Instances'
+                `Instance History - ${
+                    [worldName || 'World', groupName]
+                        .filter(Boolean)
+                        .join(' / ') || 'World'
+                }`
             );
             setPreviousInstancesOpen(true);
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load previous instances.'
+                    : 'Failed to load instance history.'
             );
         } finally {
             setLoadingPreviousInstancesKey('');

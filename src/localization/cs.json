@@ -505,7 +505,7 @@
                 "send_friend_request": "Send Friend Request",
                 "show_avatar_author": "Show Avatar Author",
                 "show_fallback_avatar": "Show Fallback Avatar Details",
-                "show_previous_instances": "Show Previous Instances",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "Block",
                 "moderation_unblock": "Unblock",
                 "moderation_mute": "Mute",
@@ -643,7 +643,7 @@
                 "new_instance_and_self_invite": "New Instance and Self Invite",
                 "make_home": "Make Home",
                 "reset_home": "Reset Home",
-                "show_previous_instances": "Show Previous Instances",
+                "show_previous_instances": "Show Instance History",
                 "rename": "Rename",
                 "change_description": "Change Description",
                 "change_capacity": "Change Capacity",
@@ -1197,9 +1197,9 @@
             "close": "Close"
         },
         "previous_instances": {
-            "header": "Previous Instances",
-            "info": "Previous Instance Info",
-            "search_placeholder": "Search"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history"
         },
         "group_member_moderation": {
             "header": "Group Member Moderation",

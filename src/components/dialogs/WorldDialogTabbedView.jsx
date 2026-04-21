@@ -69,7 +69,7 @@ import {
     EntityMemoTextarea,
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
-import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
+import { PreviousInstancesPanel } from './PreviousInstancesTableDialog.jsx';
 
 function PlatformBadge({ name, fileSize = '' }) {
     const normalized = String(name || '').toLowerCase();
@@ -835,7 +835,6 @@ export function WorldDialogTabbedView({
     );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const [activeTab, setActiveTab] = useState(() => lastWorldDialogTab);
-    const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [currentInstanceDetails, setCurrentInstanceDetails] = useState({
         location: '',
         instance: null,
@@ -1057,6 +1056,7 @@ export function WorldDialogTabbedView({
     });
     const tabs = [
         { value: 'instances', label: 'Instances' },
+        { value: 'visit-history', label: 'Visit History' },
         { value: 'info', label: 'Info' },
         { value: 'json', label: 'JSON' }
     ];
@@ -1487,9 +1487,9 @@ export function WorldDialogTabbedView({
                             <EntityActionItem
                                 icon={LineChartIcon}
                                 disabled={!previousInstances.length}
-                                onSelect={() => setPreviousInstancesOpen(true)}
+                                onSelect={() => changeTab('visit-history')}
                             >
-                                Previous Instances
+                                Visit History
                             </EntityActionItem>
                             <EntityActionItem
                                 icon={UploadIcon}
@@ -1693,11 +1693,9 @@ export function WorldDialogTabbedView({
                                                 showHistory={Boolean(
                                                     previousInstances.length
                                                 )}
-                                                historyTooltip="Previous instance history"
+                                                historyTooltip="Visit history"
                                                 onHistory={() =>
-                                                    setPreviousInstancesOpen(
-                                                        true
-                                                    )
+                                                    changeTab('visit-history')
                                                 }
                                             />
                                         </div>
@@ -1711,6 +1709,19 @@ export function WorldDialogTabbedView({
                             <EntityBlank />
                         ) : null}
                     </div>
+                </EntityDialogTabContent>
+                <EntityDialogTabContent
+                    value="visit-history"
+                    className="flex min-h-0 flex-col"
+                >
+                    <PreviousInstancesPanel
+                        title="Visit History"
+                        instances={previousInstances}
+                        variant="world"
+                        targetRef={world}
+                        onRowsChange={onPreviousInstancesChange}
+                        className="flex-1"
+                    />
                 </EntityDialogTabContent>
                 <EntityDialogTabContent value="info">
                     <EntityInfoGrid>
@@ -1815,7 +1826,7 @@ export function WorldDialogTabbedView({
                             }
                             onClick={
                                 previousInstances.length
-                                    ? () => setPreviousInstancesOpen(true)
+                                    ? () => changeTab('visit-history')
                                     : undefined
                             }
                         />
@@ -1891,15 +1902,6 @@ export function WorldDialogTabbedView({
                     />
                 </EntityDialogTabContent>
             </EntityDialogTabs>
-            <PreviousInstancesTableDialog
-                open={previousInstancesOpen}
-                onOpenChange={setPreviousInstancesOpen}
-                title={`Previous Instances - ${world.name || 'World'}`}
-                instances={previousInstances}
-                variant="world"
-                targetRef={world}
-                onRowsChange={onPreviousInstancesChange}
-            />
         </EntityDialogScaffold>
     );
 }

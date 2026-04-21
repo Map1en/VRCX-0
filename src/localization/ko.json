@@ -466,7 +466,7 @@
                 "send_friend_request": "친구 요청",
                 "show_avatar_author": "아바타 제작자 보기",
                 "show_fallback_avatar": "대체 아바타 보기",
-                "show_previous_instances": "이전 인스턴스 보기",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "차단",
                 "moderation_unblock": "차단 해제",
                 "moderation_mute": "음소거",
@@ -588,7 +588,7 @@
                 "new_instance": "새 인스턴스",
                 "make_home": "홈 월드로 설정",
                 "reset_home": "홈 월드 초기화",
-                "show_previous_instances": "이전 인스턴스 보기",
+                "show_previous_instances": "Show Instance History",
                 "rename": "이름 변경",
                 "change_description": "설명 변경",
                 "change_capacity": "인원 제한 변경",
@@ -1129,9 +1129,9 @@
             "close": "닫기"
         },
         "previous_instances": {
-            "header": "이전 인스턴스",
-            "info": "이전 인스턴스 정보",
-            "search_placeholder": "검색"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history"
         },
         "group_member_moderation": {
             "header": "Group Member Moderation",

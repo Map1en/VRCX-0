@@ -224,7 +224,7 @@
                 "tips": {
                     "online_time": "เวลาออนไลน์หมายถึงเวลาในเกมที่ VRCX-0 บันทึกไว้สำหรับวันปัจจุบัน",
                     "click_Y_axis": "คลิกป้ายกำกับแกน Y เพื่อไปยังรายละเอียดอินสแตนซ์หรือเปิดหน้าต่างผู้ใช้",
-                    "click_instance_name": "คลิกชื่ออินสแตนซ์เพื่อเปิดหน้าต่างข้อมูลอินสแตนซ์ก่อนหน้า"
+                    "click_instance_name": "Click instance name to open Instance Details."
                 },
                 "settings": {
                     "header": "การตั้งค่า",
@@ -638,7 +638,7 @@
                 "send_friend_request": "ส่งคำขอเป็นเพื่อน",
                 "show_avatar_author": "แสดงผู้สร้างอวาตาร์",
                 "show_fallback_avatar": "แสดงรายละเอียดอวาตาร์สำรอง",
-                "show_previous_instances": "แสดงอินสแตนซ์ก่อนหน้า",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "บล็อก",
                 "moderation_unblock": "เลิกบล็อก",
                 "moderation_mute": "ปิดเสียง",
@@ -703,7 +703,7 @@
                 "instance_closed": "ปิดแล้ว",
                 "close_instance": "ปิดอินสแตนซ์",
                 "instance_age_gated": "จำกัดอายุ",
-                "open_previous_instance": "เปิดอินสแตนซ์ก่อนหน้า"
+                "open_previous_instance": "Open Instance History"
             },
             "groups": {
                 "header": "กลุ่ม",
@@ -781,7 +781,7 @@
                 "new_instance_and_self_invite": "สร้างอินสแตนซ์ใหม่และเชิญตัวเอง",
                 "make_home": "ตั้งเป็นโลกหลัก",
                 "reset_home": "รีเซ็ตโลกหลัก",
-                "show_previous_instances": "แสดงอินสแตนซ์ก่อนหน้า",
+                "show_previous_instances": "Show Instance History",
                 "rename": "เปลี่ยนชื่อ",
                 "change_description": "เปลี่ยนคำอธิบาย",
                 "change_capacity": "เปลี่ยนความจุ",
@@ -1365,9 +1365,9 @@
             "close": "ปิด"
         },
         "previous_instances": {
-            "header": "อินสแตนซ์ก่อนหน้า",
-            "info": "ข้อมูลอินสแตนซ์ก่อนหน้า",
-            "search_placeholder": "ค้นหา"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history"
         },
         "group_member_moderation": {
             "header": "การดูแลสมาชิกกลุ่ม",

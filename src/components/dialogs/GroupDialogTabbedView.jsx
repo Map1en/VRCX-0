@@ -85,7 +85,7 @@ import {
     EntityInfoGrid,
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
-import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
+import { PreviousInstancesPanel } from './PreviousInstancesTableDialog.jsx';
 import {
     languageOptionLabel,
     normalizeLanguageOptionsFromConfig,
@@ -1916,7 +1916,6 @@ export function GroupDialogTabbedView({
     const [memberSort, setMemberSort] = useState('joinedAt:desc');
     const [memberRoleId, setMemberRoleId] = useState('');
     const [moderationOpen, setModerationOpen] = useState(false);
-    const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [postEditor, setPostEditor] = useState(null);
     const [postEditorSubmitting, setPostEditorSubmitting] = useState(false);
     const [vrchatConfigConstants, setVrchatConfigConstants] = useState(null);
@@ -1933,6 +1932,7 @@ export function GroupDialogTabbedView({
     });
     const tabs = [
         { value: 'info', label: 'Info' },
+        { value: 'instance-history', label: 'Instance History' },
         { value: 'posts', label: 'Posts' },
         { value: 'members', label: 'Members' },
         { value: 'photos', label: 'Photos' },
@@ -2986,7 +2986,7 @@ export function GroupDialogTabbedView({
                             }
                             onClick={
                                 previousInstances.length
-                                    ? () => setPreviousInstancesOpen(true)
+                                    ? () => changeTab('instance-history')
                                     : undefined
                             }
                         />
@@ -3095,6 +3095,19 @@ export function GroupDialogTabbedView({
                             </EntityInfoBlock>
                         ) : null}
                     </EntityInfoGrid>
+                </EntityDialogTabContent>
+                <EntityDialogTabContent
+                    value="instance-history"
+                    className="flex min-h-0 flex-col"
+                >
+                    <PreviousInstancesPanel
+                        title="Instance History"
+                        instances={previousInstances}
+                        variant="group"
+                        targetRef={group}
+                        onRowsChange={onPreviousInstancesChange}
+                        className="flex-1"
+                    />
                 </EntityDialogTabContent>
                 <EntityDialogTabContent
                     value="posts"
@@ -3280,15 +3293,6 @@ export function GroupDialogTabbedView({
                     />
                 </EntityDialogTabContent>
             </EntityDialogTabs>
-            <PreviousInstancesTableDialog
-                open={previousInstancesOpen}
-                onOpenChange={setPreviousInstancesOpen}
-                title={`Previous Instances - ${group.name || 'Group'}`}
-                instances={previousInstances}
-                variant="group"
-                targetRef={group}
-                onRowsChange={onPreviousInstancesChange}
-            />
             <GroupPostEditorDialog
                 open={Boolean(postEditor)}
                 onOpenChange={(open) => {

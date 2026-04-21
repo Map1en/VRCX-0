@@ -455,7 +455,7 @@
                 "send_friend_request": "Barátfelkérés küldése",
                 "show_avatar_author": "Avatar készítőjének mutatása",
                 "show_fallback_avatar": "Tartalék avatar részleteinek mutatása",
-                "show_previous_instances": "Korábbi példányok mutatása",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "Tiltás",
                 "moderation_unblock": "Tiltás feloldása",
                 "moderation_mute": "Némítás",
@@ -577,7 +577,7 @@
                 "new_instance": "Új példány",
                 "make_home": "Beállítás otthonként",
                 "reset_home": "Otthon alaphelyzetbe állítása",
-                "show_previous_instances": "Korábbi példányok mutatása",
+                "show_previous_instances": "Show Instance History",
                 "rename": "Átnevezés",
                 "change_description": "Leírás módosítása",
                 "change_capacity": "Kapacitás módosítása",
@@ -1118,9 +1118,9 @@
             "close": "Bezárás"
         },
         "previous_instances": {
-            "header": "Előző példányok",
-            "info": "Előző példány infó",
-            "search_placeholder": "Keresés"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history"
         },
         "group_member_moderation": {
             "header": "Csoporttag moderáció",

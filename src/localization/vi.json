@@ -455,7 +455,7 @@
                 "send_friend_request": "Gửi yêu cầu kết bạn",
                 "show_avatar_author": "Xem tác giả Avatar",
                 "show_fallback_avatar": "Xem Avatar fallback",
-                "show_previous_instances": "Xem Instance trước đây",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "Chặn",
                 "moderation_unblock": "Bỏ chặn",
                 "moderation_mute": "Câm",
@@ -577,7 +577,7 @@
                 "new_instance": "Instance mới",
                 "make_home": "Làm Home",
                 "reset_home": "Cài lại Home (rết)",
-                "show_previous_instances": "Hiện Instances trước",
+                "show_previous_instances": "Show Instance History",
                 "rename": "Đổi tên",
                 "change_description": "Đổi mô tả",
                 "change_capacity": "Đổi số lượng người chứa",
@@ -1118,9 +1118,9 @@
             "close": "Đóng"
         },
         "previous_instances": {
-            "header": "Instance trước",
-            "info": "Thông tin instance trước",
-            "search_placeholder": "Tìm kiếm"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history"
         },
         "group_member_moderation": {
             "header": "Group Member Moderation",

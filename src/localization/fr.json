@@ -311,7 +311,7 @@
                 "tips": {
                     "online_time": "Online time refers to the game time recorded by VRCX-0 for the current day.",
                     "click_Y_axis": "Click Y-axis label to navigate to the instance details or open User dialog.",
-                    "click_instance_name": "Click instance name to open Previous Instance Info dialog."
+                    "click_instance_name": "Click instance name to open Instance Details."
                 },
                 "settings": {
                     "header": "Settings",
@@ -754,7 +754,7 @@
                 "send_friend_request": "Envoyer une demande d'ami",
                 "show_avatar_author": "Afficher l'auteur de l'avatar",
                 "show_fallback_avatar": "Afficher les détails de l'avatar fallback",
-                "show_previous_instances": "Afficher les instances précédentes",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "Bloquer",
                 "moderation_unblock": "Débloquer",
                 "moderation_mute": "Mettre en sourdine",
@@ -892,7 +892,7 @@
                 "new_instance_and_self_invite": "Créer une nouvelle instance et s'inviter",
                 "make_home": "Définir comme lieu d'accueil",
                 "reset_home": "Réinitialiser l'accueil",
-                "show_previous_instances": "Afficher les instances précédentes",
+                "show_previous_instances": "Show Instance History",
                 "rename": "Renommer",
                 "change_description": "Changer la description",
                 "change_capacity": "Changer la capacité",
@@ -1448,9 +1448,9 @@
             "close": "Fermer"
         },
         "previous_instances": {
-            "header": "Instances précédentes",
-            "info": "Informations sur l'instance précédente",
-            "search_placeholder": "Rechercher"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history"
         },
         "group_member_moderation": {
             "header": "Modération des membres du groupe",

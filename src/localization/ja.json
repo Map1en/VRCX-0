@@ -497,7 +497,7 @@
                 "tips": {
                     "online_time": "オンライン時間とは、VRCX-0 が記録した当日のゲームプレイ時間です。",
                     "click_Y_axis": "Y軸ラベルをクリックで、インスタンスの詳細へジャンプ、またはユーザーダイアログを表示できます。",
-                    "click_instance_name": "インスタンス名をクリックで、以前のインスタンス情報ダイアログを表示できます。"
+                    "click_instance_name": "Click instance name to open Instance Details."
                 },
                 "settings": {
                     "header": "設定",
@@ -1268,7 +1268,7 @@
                 "send_friend_request": "フレンドリクエストを送信",
                 "show_avatar_author": "アバター制作者を表示",
                 "show_fallback_avatar": "フォールバックアバターの詳細を表示",
-                "show_previous_instances": "以前のインスタンス",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "ブロック",
                 "moderation_unblock": "ブロック解除",
                 "moderation_mute": "ミュート",
@@ -1341,7 +1341,7 @@
                 "instance_age_restricted_tooltip": "年齢制限のあるインスタンス",
                 "close_instance": "インスタンスを閉じる",
                 "instance_age_gated": "年齢制限あり",
-                "open_previous_instance": "前回のインスタンスを開く",
+                "open_previous_instance": "Open Instance History",
                 "show_mutual_friends": "共通のフレンドを公開",
                 "show_discord_connections": "連携した Discord を公開"
             },
@@ -1482,7 +1482,7 @@
                 "new_instance_and_open_ingame": "インスタンスを作成してゲーム内で開く",
                 "make_home": "ホームに設定",
                 "reset_home": "ホームをリセット",
-                "show_previous_instances": "以前のインスタンス",
+                "show_previous_instances": "Show Instance History",
                 "rename": "名前を変更",
                 "change_description": "説明を変更",
                 "change_capacity": "最大人数を変更",
@@ -2170,11 +2170,11 @@
             "close": "閉じる"
         },
         "previous_instances": {
-            "header": "以前のインスタンス",
-            "info": "以前のインスタンス情報",
-            "search_placeholder": "検索...",
-            "table_view": "テーブル表示",
-            "chart_view": "チャート表示"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history",
+            "table_view": "Players",
+            "chart_view": "Timeline"
         },
         "group_member_moderation": {
             "header": "グループメンバーを管理",

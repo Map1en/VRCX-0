@@ -553,7 +553,7 @@
                 "tips": {
                     "online_time": "Online time refers to the game time recorded by VRCX-0 for the current day.",
                     "click_Y_axis": "Click Y-axis label to navigate to the instance details or open User dialog.",
-                    "click_instance_name": "Click instance name to open Previous Instance Info dialog."
+                    "click_instance_name": "Click instance name to open Instance Details."
                 },
                 "settings": {
                     "header": "Settings",
@@ -1346,7 +1346,7 @@
                 "send_friend_request": "Send Friend Request",
                 "show_avatar_author": "Show Avatar Author",
                 "show_fallback_avatar": "Show Fallback Avatar Details",
-                "show_previous_instances": "Show Previous Instances",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "Block",
                 "moderation_unblock": "Unblock",
                 "moderation_mute": "Mute",
@@ -1419,7 +1419,7 @@
                 "instance_age_restricted_tooltip": "In an age-restricted instance",
                 "close_instance": "Close Instance",
                 "instance_age_gated": "Age Gated",
-                "open_previous_instance": "Open Previous Instances",
+                "open_previous_instance": "Open Instance History",
                 "show_mutual_friends": "Show Mutual Friends",
                 "show_discord_connections": "Show Discord Connections"
             },
@@ -1564,7 +1564,7 @@
                 "new_instance_and_open_ingame": "New Instance and Open In-game",
                 "make_home": "Make Home",
                 "reset_home": "Reset Home",
-                "show_previous_instances": "Show Previous Instances",
+                "show_previous_instances": "Show Instance History",
                 "rename": "Rename",
                 "change_description": "Change Description",
                 "change_capacity": "Change Capacity",
@@ -2258,11 +2258,11 @@
             "close": "Close"
         },
         "previous_instances": {
-            "header": "Previous Instances",
-            "info": "Previous Instance Info",
-            "search_placeholder": "Search",
-            "table_view": "Table View",
-            "chart_view": "Chart View"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history",
+            "table_view": "Players",
+            "chart_view": "Timeline"
         },
         "group_member_moderation": {
             "header": "Group Member Moderation",

@@ -105,7 +105,9 @@ export function Location({
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [previousInstancesRows, setPreviousInstancesRows] = useState([]);
     const [previousInstancesTitle, setPreviousInstancesTitle] =
-        useState('Previous Instances');
+        useState('Instance History');
+    const [previousInstancesDetailsOnly, setPreviousInstancesDetailsOnly] =
+        useState(false);
     const [previousInstancesLoading, setPreviousInstancesLoading] =
         useState(false);
     const currentLocation = locationTarget(location, traveling);
@@ -201,9 +203,8 @@ export function Location({
                 groupName
             }
         ]);
-        setPreviousInstancesTitle(
-            `Previous Instance - ${worldName || worldNameHint || parsedLocation.worldId || currentLocation}`
-        );
+        setPreviousInstancesTitle('Instance Details');
+        setPreviousInstancesDetailsOnly(true);
         setPreviousInstancesOpen(true);
     }
 
@@ -355,14 +356,15 @@ export function Location({
 
             setPreviousInstancesRows(nextRows);
             setPreviousInstancesTitle(
-                `Previous Instances - ${worldName || worldNameHint || parsedLocation.worldId}`
+                `Instance History - ${worldName || worldNameHint || parsedLocation.worldId}`
             );
+            setPreviousInstancesDetailsOnly(false);
             setPreviousInstancesOpen(true);
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load previous instances.'
+                    : 'Failed to load instance history.'
             );
         } finally {
             setPreviousInstancesLoading(false);
@@ -482,7 +484,7 @@ export function Location({
             instances={previousInstancesRows}
             variant="world"
             onRowsChange={setPreviousInstancesRows}
-            autoOpenInfo
+            detailsOnly={previousInstancesDetailsOnly}
         />
     ) : null;
 

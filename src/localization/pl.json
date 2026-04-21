@@ -284,7 +284,7 @@
                 "tips": {
                     "online_time": "Online time refers to the game time recorded by VRCX-0 for the current day.",
                     "click_Y_axis": "Click Y-axis label to navigate to the instance details or open User dialog.",
-                    "click_instance_name": "Click instance name to open Previous Instance Info dialog."
+                    "click_instance_name": "Click instance name to open Instance Details."
                 },
                 "settings": {
                     "header": "Ustawienia",
@@ -802,7 +802,7 @@
                 "send_friend_request": "Wyślij zaproszenie do znajomych",
                 "show_avatar_author": "Pokaż autora awatara",
                 "show_fallback_avatar": "Pokaż szczegóły awatara zastępczego",
-                "show_previous_instances": "Pokaż poprzednie instancje",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "Zablokuj",
                 "moderation_unblock": "Odblokuj",
                 "moderation_mute": "Wycisz",
@@ -868,7 +868,7 @@
                 "instance_closed": "zamknięta",
                 "close_instance": "Zamknij instancję",
                 "instance_age_gated": "weryfikacja wiekowa",
-                "open_previous_instance": "Otwórz poprzednią instancję",
+                "open_previous_instance": "Open Instance History",
                 "show_mutual_friends": "Pokaż wspólnych znajomych"
             },
             "groups": {
@@ -956,7 +956,7 @@
                 "new_instance_and_open_ingame": "Nowa instancja i otwórz w grze",
                 "make_home": "Ustaw dom",
                 "reset_home": "Resetuj dom",
-                "show_previous_instances": "Pokaż poprzednie instancje",
+                "show_previous_instances": "Show Instance History",
                 "rename": "Zmień nazwę",
                 "change_description": "Zmień opis",
                 "change_capacity": "Zmień pojemność",
@@ -1586,9 +1586,9 @@
             "close": "Zamknij"
         },
         "previous_instances": {
-            "header": "Poprzednie instancje",
-            "info": "Informacje o poprzedniej instancji",
-            "search_placeholder": "Szukaj"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history"
         },
         "group_member_moderation": {
             "header": "Moderowanie członków grupy",

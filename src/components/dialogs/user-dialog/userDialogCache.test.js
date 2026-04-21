@@ -21,7 +21,7 @@ describe('userDialogCache', () => {
         expect(dialogTargetKey('https://api.example.test', '')).toBe('');
     });
 
-    it('shows empty stats and no previous instances before a user has loaded', () => {
+    it('shows empty stats and no instance history before a user has loaded', () => {
         const key = dialogTargetKey('https://api.example.test', 'usr_missing');
 
         expect(readCachedUserStats(key)).toEqual({
@@ -33,7 +33,7 @@ describe('userDialogCache', () => {
         expect(readCachedPreviousInstances(key)).toEqual([]);
     });
 
-    it('restores cached stats and previous instances when the same user dialog opens again', () => {
+    it('restores cached stats and instance history when the same user dialog opens again', () => {
         const key = dialogTargetKey('https://api.example.test', 'usr_target');
         cacheUserStats(key, {
             timeSpent: 12345,

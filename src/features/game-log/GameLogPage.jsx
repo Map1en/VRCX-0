@@ -1019,9 +1019,7 @@ export function GameLogPage({ embedded = false } = {}) {
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [previousInstancesRows, setPreviousInstancesRows] = useState([]);
     const [previousInstancesTitle, setPreviousInstancesTitle] =
-        useState('Previous Instances');
-    const [previousInstancesAutoInfo, setPreviousInstancesAutoInfo] =
-        useState(false);
+        useState('Instance History');
     const [loadingPreviousInstancesKey, setLoadingPreviousInstancesKey] =
         useState('');
     const [shiftHeld, setShiftHeld] = useState(false);
@@ -1598,7 +1596,6 @@ export function GameLogPage({ embedded = false } = {}) {
             return;
         }
 
-        setPreviousInstancesAutoInfo(false);
         setLoadingPreviousInstancesKey(rowKey || worldId);
         try {
             const instances =
@@ -1622,14 +1619,14 @@ export function GameLogPage({ embedded = false } = {}) {
             });
             setPreviousInstancesRows(sortedInstances);
             setPreviousInstancesTitle(
-                `Previous Instances: ${row?.worldName || 'World'}`
+                `Instance History - ${row?.worldName || 'World'}`
             );
             setPreviousInstancesOpen(true);
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load previous instances.'
+                    : 'Failed to load instance history.'
             );
         } finally {
             setLoadingPreviousInstancesKey('');
@@ -1998,7 +1995,7 @@ export function GameLogPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    aria-label="Show previous instances"
+                                    aria-label="Show instance history"
                                     className="text-muted-foreground hover:text-foreground size-6 p-0"
                                     disabled={
                                         loadingPreviousInstancesKey === rowKey
@@ -2516,7 +2513,6 @@ export function GameLogPage({ embedded = false } = {}) {
                 instances={previousInstancesRows}
                 variant="world"
                 onRowsChange={setPreviousInstancesRows}
-                autoOpenInfo={previousInstancesAutoInfo}
             />
         </PageScaffold>
     );

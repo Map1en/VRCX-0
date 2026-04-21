@@ -495,7 +495,7 @@
                 "tips": {
                     "online_time": "O tempo online refere-se ao tempo de jogo registrado pelo VRCX-0 para o dia atual.",
                     "click_Y_axis": "Clique no rótulo do eixo Y para navegar até os detalhes da instância ou abrir o diálogo de Usuário.",
-                    "click_instance_name": "Clique no nome da instância para abrir o diálogo de Informações de Instância Anterior."
+                    "click_instance_name": "Click instance name to open Instance Details."
                 },
                 "settings": {
                     "header": "Configurações",
@@ -1257,7 +1257,7 @@
                 "send_friend_request": "Enviar Pedido de Amizade",
                 "show_avatar_author": "Mostrar Autor do Avatar",
                 "show_fallback_avatar": "Mostrar Detalhes do Avatar de Substitutos",
-                "show_previous_instances": "Mostrar Instâncias Anteriores",
+                "show_previous_instances": "Show Instance History",
                 "moderation_block": "Bloquear",
                 "moderation_unblock": "Desbloquear",
                 "moderation_mute": "Silenciar",
@@ -1330,7 +1330,7 @@
                 "instance_age_restricted_tooltip": "Em uma instância com restrição de idade",
                 "close_instance": "Encerrar Instância",
                 "instance_age_gated": "Restrição de Idade",
-                "open_previous_instance": "Abrir Instâncias Anteriores",
+                "open_previous_instance": "Open Instance History",
                 "show_mutual_friends": "Mostrar Amigos Mútuos",
                 "show_discord_connections": "Mostrar Conexões do Discord"
             },
@@ -1465,7 +1465,7 @@
                 "new_instance_and_open_ingame": "Nova Instância e Abrir no Jogo",
                 "make_home": "Definir como Inicial",
                 "reset_home": "Redefinir Inicial",
-                "show_previous_instances": "Mostrar Instâncias Anteriores",
+                "show_previous_instances": "Show Instance History",
                 "rename": "Renomear",
                 "change_description": "Alterar Descrição",
                 "change_capacity": "Alterar Capacidade",
@@ -2152,11 +2152,11 @@
             "close": "Fechar"
         },
         "previous_instances": {
-            "header": "Instâncias Anteriores",
-            "info": "Informações de Instância Anterior",
-            "search_placeholder": "Pesquisar",
-            "table_view": "Visualização em Tabela",
-            "chart_view": "Visualização em Gráfico"
+            "header": "Instance History",
+            "info": "Instance Details",
+            "search_placeholder": "Search instance history",
+            "table_view": "Players",
+            "chart_view": "Timeline"
         },
         "group_member_moderation": {
             "header": "Moderação de Membro do Grupo",
