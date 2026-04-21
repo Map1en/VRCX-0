@@ -15,6 +15,8 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 const WORLD_ID_PATTERN =
     /(?:^|\b)wrld_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::|$|\s)/i;
+const GROUP_ID_PATTERN =
+    /^grp_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function normalizeString(value) {
     return typeof value === 'string'
@@ -37,6 +39,20 @@ function normalizeWorldNameHint(hint, parsedLocation, currentLocation) {
         normalizedHint === normalizeString(parsedLocation?.tag) ||
         normalizedHint === normalizeString(currentLocation) ||
         isRawWorldReference(normalizedHint)
+    ) {
+        return '';
+    }
+    return normalizedHint;
+}
+
+function normalizeGroupNameHint(hint, groupId) {
+    const normalizedHint = normalizeString(hint);
+    if (!normalizedHint) {
+        return '';
+    }
+    if (
+        normalizedHint === normalizeString(groupId) ||
+        GROUP_ID_PATTERN.test(normalizedHint)
     ) {
         return '';
     }
@@ -251,8 +267,11 @@ function resolveEntryMetadata(
         entry.currentLocation
     );
     const hintedGroupName =
-        normalizeString(entry.groupHint) ||
-        readInstanceGroupName(cachedInstance);
+        normalizeGroupNameHint(entry.groupHint, entry.groupId) ||
+        normalizeGroupNameHint(
+            readInstanceGroupName(cachedInstance),
+            entry.groupId
+        );
     const resolvedInstanceName =
         readInstanceDisplayName(cachedInstance) ||
         normalizeString(entry.instanceName) ||
