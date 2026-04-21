@@ -1017,6 +1017,7 @@ export function GameLogPage({ embedded = false } = {}) {
     const [sessions, setSessions] = useState([]);
     const [loadStatus, setLoadStatus] = useState('idle');
     const [detail, setDetail] = useState('');
+    const [preferencesReady, setPreferencesReady] = useState(false);
     const [refreshToken, setRefreshToken] = useState(0);
     const [deletingGameLogKey, setDeletingGameLogKey] = useState('');
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
@@ -1250,6 +1251,7 @@ export function GameLogPage({ embedded = false } = {}) {
                             : 'table'
                     );
                     preferencesReadyRef.current = true;
+                    setPreferencesReady(true);
                 }
             )
             .catch(() => {
@@ -1257,6 +1259,7 @@ export function GameLogPage({ embedded = false } = {}) {
                     return;
                 }
                 preferencesReadyRef.current = true;
+                setPreferencesReady(true);
             });
 
         return () => {
@@ -1422,7 +1425,7 @@ export function GameLogPage({ embedded = false } = {}) {
         const requestId = requestIdRef.current + 1;
         requestIdRef.current = requestId;
 
-        if (!preferencesReadyRef.current || !currentUserId) {
+        if (!preferencesReady || !currentUserId) {
             if (!currentUserId) {
                 setRows([]);
                 setSessions([]);
@@ -1508,6 +1511,7 @@ export function GameLogPage({ embedded = false } = {}) {
         gameLogDisabled,
         isFavoritesLoaded,
         pagination.pageSize,
+        preferencesReady,
         queryFilterTypes,
         refreshToken,
         savedViewMode,
