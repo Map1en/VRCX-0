@@ -1212,6 +1212,7 @@ function FriendRow({
                                         location={displayLocation}
                                         traveling={displayTraveling}
                                         hint={metadataHint}
+                                        link
                                         metadata={locationMetadata}
                                         t={t}
                                         showInstanceIdInLocation={

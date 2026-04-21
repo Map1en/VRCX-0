@@ -105,10 +105,6 @@ function instanceCapacity(instance) {
     return firstFiniteNumber(instance.capacity, instance.world?.capacity);
 }
 
-function instanceUsers(instance) {
-    return Array.isArray(instance?.users) ? instance.users : [];
-}
-
 function platformCount(instance, platform) {
     return Number(instance?.platforms?.[platform] ?? 0);
 }
@@ -158,13 +154,11 @@ function canCloseInstance(instance, currentUserId) {
 
 function InstanceInfoTooltip({
     instance,
-    location,
     canClose,
     closeDisabled,
     onClose,
     children
 }) {
-    const users = instanceUsers(instance);
     const disabledContent = disabledContentSettings(instance);
     return (
         <Tooltip>
@@ -212,27 +206,6 @@ function InstanceInfoTooltip({
                     ) : null}
                     {disabledContent ? (
                         <div>Disabled content {disabledContent}</div>
-                    ) : null}
-                    {location ? (
-                        <div className="text-muted-foreground break-all">
-                            {location}
-                        </div>
-                    ) : null}
-                    {users.length ? (
-                        <div>
-                            <div>Instance users</div>
-                            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1">
-                                {users.map((user, index) => (
-                                    <span
-                                        key={`${user?.id || user?.displayName || 'user'}:${index}`}
-                                    >
-                                        {user?.displayName ||
-                                            user?.id ||
-                                            'User'}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
                     ) : null}
                 </div>
             </TooltipContent>
