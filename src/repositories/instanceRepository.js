@@ -192,7 +192,7 @@ async function getInstance({
         queryKey: queryKeys.instance(
             normalizedWorldId,
             normalizedInstanceId,
-            normalizeEndpoint(endpoint)
+            endpoint
         ),
         policy: entityQueryPolicies.instance,
         force,
@@ -233,7 +233,7 @@ async function getInstanceShortName({
         queryKey: queryKeys.instanceShortName(
             normalizedWorldId,
             normalizedInstanceId,
-            normalizeEndpoint(endpoint)
+            endpoint
         ),
         policy: entityQueryPolicies.instance,
         force,
