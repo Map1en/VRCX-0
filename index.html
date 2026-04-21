@@ -18,6 +18,13 @@
     </head>
     <body>
         <div id="root"></div>
+        <script>
+            if ('%MODE%' === 'development') {
+                document.write(
+                    '<script src="http://localhost:8097"><\/script>'
+                );
+            }
+        </script>
         <script type="module" src="/src/main.js"></script>
     </body>
 </html>
