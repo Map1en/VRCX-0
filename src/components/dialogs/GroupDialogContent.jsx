@@ -5,7 +5,10 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/lib/entityMedia.js';
-import { groupProfileRepository } from '@/repositories/index.js';
+import {
+    groupProfileRepository,
+    userProfileRepository
+} from '@/repositories/index.js';
 import { database } from '@/services/database/index.js';
 import { useDialogStore } from '@/state/dialogStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
@@ -62,6 +65,7 @@ export function GroupDialogContent({ groupId, seedData = null }) {
     );
     const [actionStatus, setActionStatus] = useState('idle');
     const [detail, setDetail] = useState('');
+    const [ownerProfile, setOwnerProfile] = useState(null);
     const [previousInstances, setPreviousInstances] = useState([]);
     const [rawActiveInstances, setRawActiveInstances] = useState([]);
     const actionStatusRef = useRef('idle');
@@ -107,6 +111,38 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             title: group.name
         });
     }, [group?.id, group?.name, updateEntityDialogMetadata]);
+
+    useEffect(() => {
+        let active = true;
+        const ownerId = normalizeEntityId(group?.ownerId);
+        setOwnerProfile(null);
+
+        if (!ownerId || friendsById[ownerId]?.displayName) {
+            return () => {
+                active = false;
+            };
+        }
+
+        userProfileRepository
+            .getUserProfile({
+                userId: ownerId,
+                endpoint: currentEndpoint
+            })
+            .then((profile) => {
+                if (active) {
+                    setOwnerProfile(profile);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setOwnerProfile(null);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [currentEndpoint, friendsById, group?.ownerId]);
 
     useEffect(() => {
         let active = true;
@@ -278,7 +314,10 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         normalizeEntityId(
             group.ownerDisplayName ||
                 group.ownerName ||
-                group.owner?.displayName
+                group.owner?.displayName ||
+                ownerProfile?.displayName ||
+                ownerProfile?.username ||
+                ownerProfile?.name
         ) ||
         normalizeEntityId(friendsById[group.ownerId]?.displayName) ||
         normalizeEntityId(group.ownerId);

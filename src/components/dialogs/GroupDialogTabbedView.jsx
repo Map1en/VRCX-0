@@ -38,11 +38,11 @@ import {
 import { cn } from '@/lib/utils.js';
 import {
     groupProfileRepository,
-    mediaRepository
+    mediaRepository,
+    vrchatAuthRepository
 } from '@/repositories/index.js';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
-import { languageMappings } from '@/shared/constants/language.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -85,6 +85,11 @@ import {
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
 import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
+import {
+    languageOptionLabel,
+    normalizeLanguageOptionsFromConfig,
+    normalizeProfileLanguageRows
+} from './user-dialog/userProfileFields.js';
 
 function firstArray(...values) {
     return values.find((value) => Array.isArray(value)) || [];
@@ -103,31 +108,40 @@ function firstText(...values) {
     return '';
 }
 
-function normalizeGroupLanguages(group) {
-    const rows = firstArray(group?.$languages).map((entry) => {
-        if (typeof entry === 'string') {
-            return { key: entry, value: entry };
-        }
-        return {
-            key: entry?.key || entry?.id || entry?.value || '',
-            value:
-                entry?.value || entry?.label || entry?.name || entry?.key || ''
-        };
-    });
-    const seen = new Set(
-        rows.map((entry) => String(entry.key || entry.value).toLowerCase())
-    );
-    for (const language of firstArray(group?.languages)) {
-        const key = String(language || '')
-            .trim()
-            .toLowerCase();
-        if (!key || seen.has(key)) {
-            continue;
-        }
-        rows.push({ key, value: key });
-        seen.add(key);
+function normalizeGroupLanguages(group, languageOptionMap = new Map()) {
+    return normalizeProfileLanguageRows(group, languageOptionMap);
+}
+
+function GroupTitleLanguages({ languages }) {
+    if (!languages.length) {
+        return null;
     }
-    return rows.filter((entry) => entry.key || entry.value);
+
+    return (
+        <span className="inline-flex shrink-0 flex-wrap items-center gap-1">
+            {languages.map((language) => {
+                const key = String(
+                    language?.key || language?.value || ''
+                ).trim();
+                const label = languageOptionLabel(language);
+                return (
+                    <Badge
+                        key={`${key}:${language?.value || ''}`}
+                        variant="outline"
+                        className="shrink-0 text-xs"
+                        title={label}
+                    >
+                        {label}
+                    </Badge>
+                );
+            })}
+        </span>
+    );
+}
+
+function shouldShowGroupBadgeValue(value) {
+    const normalizedValue = firstText(value).toLowerCase();
+    return Boolean(normalizedValue && normalizedValue !== 'default');
 }
 
 function rowLabel(row) {
@@ -633,14 +647,6 @@ function getInstanceLocation(instance) {
     return worldId && instanceId ? `${worldId}:${instanceId}` : '';
 }
 
-function getInstanceWorldId(instance) {
-    const directWorldId = instance?.worldId || instance?.world?.id;
-    if (directWorldId) {
-        return directWorldId;
-    }
-    return parseLocation(getInstanceLocation(instance)).worldId || '';
-}
-
 function getInstanceTitle(instance) {
     return instance?.world?.name || instance?.worldName || instance?.name || '';
 }
@@ -741,28 +747,12 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                     const location = getInstanceLocation(instance);
                     const parsedLocation = parseLocation(location);
                     const users = getInstanceUsers(instance);
-                    const worldId = getInstanceWorldId(instance);
                     return (
                         <div
                             key={`${location || getInstanceTitle(instance)}:${index}`}
                             className="w-full"
                         >
                             <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <Button
-                                    type="button"
-                                    variant="link"
-                                    className="h-auto min-w-0 justify-start truncate p-0 text-left"
-                                    onClick={() =>
-                                        openWorldDialog({
-                                            worldId: worldId || location,
-                                            title:
-                                                getInstanceTitle(instance) ||
-                                                undefined
-                                        })
-                                    }
-                                >
-                                    {getInstanceTitle(instance) || 'World'}
-                                </Button>
                                 {location ? (
                                     <span className="text-muted-foreground min-w-0 truncate text-xs">
                                         <LocationWorld
@@ -1928,6 +1918,7 @@ export function GroupDialogTabbedView({
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [postEditor, setPostEditor] = useState(null);
     const [postEditorSubmitting, setPostEditorSubmitting] = useState(false);
+    const [vrchatConfigConstants, setVrchatConfigConstants] = useState(null);
     const gallerySignature = Array.isArray(group.galleries)
         ? group.galleries
               .map((gallery) => gallery?.id || '')
@@ -1962,7 +1953,13 @@ export function GroupDialogTabbedView({
             ? remoteData.photos
             : firstArray(group.gallery, group.photos);
     const isPrivateGroup = group.privacy === 'private';
-    const languageRows = normalizeGroupLanguages(group);
+    const languageOptions = normalizeLanguageOptionsFromConfig({
+        constants: vrchatConfigConstants
+    });
+    const languageOptionsMap = new Map(
+        languageOptions.map((option) => [option.key, option])
+    );
+    const languageRows = normalizeGroupLanguages(group, languageOptionsMap);
     const canSetVisibility = group.privacy === 'default';
     const isGroupOwner = group.ownerId === currentUserId;
     const canManagePosts =
@@ -2016,6 +2013,25 @@ export function GroupDialogTabbedView({
         lastGroupDialogTab = nextTab;
         setActiveTab(nextTab);
     }, [currentEndpoint, group.id]);
+
+    useEffect(() => {
+        let active = true;
+        vrchatAuthRepository
+            .getConfig({ endpoint: currentEndpoint })
+            .then((response) => {
+                if (active) {
+                    setVrchatConfigConstants(response?.json?.constants || null);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setVrchatConfigConstants(null);
+                }
+            });
+        return () => {
+            active = false;
+        };
+    }, [currentEndpoint]);
 
     useEffect(() => {
         loadContextRef.current = {
@@ -2222,10 +2238,33 @@ export function GroupDialogTabbedView({
         ownerDisplayName && ownerDisplayName !== group.ownerId
             ? ownerDisplayName
             : '';
+    const ownerLinkLabel = isGroupOwner
+        ? 'You'
+        : ownerLabel || group.ownerId || 'Owner';
+    const showPrivacyBadge = shouldShowGroupBadgeValue(group.privacy);
+    const showMembershipBadge = shouldShowGroupBadgeValue(
+        group.membershipStatus
+    );
 
     async function copyGroupText(text, label) {
         await copyTextToClipboard(text);
         toast.success(`${label} copied.`);
+    }
+
+    function openGroupOwner() {
+        if (!group.ownerId) {
+            return;
+        }
+        openUserDialog({
+            userId: group.ownerId,
+            title: ownerLabel || undefined,
+            seedData: ownerLabel
+                ? {
+                      id: group.ownerId,
+                      displayName: ownerLabel
+                  }
+                : null
+        });
     }
 
     function createGroupPost() {
@@ -2396,66 +2435,47 @@ export function GroupDialogTabbedView({
                               })
                         : null
                 }
-                titlePrefix={
-                    isGroupOwner ? <span className="shrink-0">👑</span> : null
-                }
                 title={groupTitle}
                 onTitleClick={
                     group.name
                         ? () => void copyGroupText(group.name, 'Group name')
                         : undefined
                 }
+                titleMeta={<GroupTitleLanguages languages={languageRows} />}
                 subtitle={
                     group.shortCode && group.discriminator
                         ? `${group.shortCode}.${group.discriminator}`
                         : group.url || ''
                 }
                 description={group.description}
-                detail={detail}
+                detail={
+                    group.ownerId || detail ? (
+                        <div className="flex flex-col items-start gap-1">
+                            {group.ownerId ? (
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    className="text-muted-foreground h-auto justify-start gap-1 p-0 text-xs font-normal"
+                                    title="Open group owner profile"
+                                    onClick={openGroupOwner}
+                                >
+                                    <UserIcon data-icon="inline-start" />
+                                    Owner: {ownerLinkLabel}
+                                </Button>
+                            ) : null}
+                            {detail ? <span>{detail}</span> : null}
+                        </div>
+                    ) : null
+                }
                 badges={
                     <>
-                        {group.ownerId ? (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="xs"
-                                onClick={() =>
-                                    openUserDialog({
-                                        userId: group.ownerId,
-                                        title: ownerLabel || undefined,
-                                        seedData: ownerLabel
-                                            ? {
-                                                  id: group.ownerId,
-                                                  displayName: ownerLabel
-                                              }
-                                            : null
-                                    })
-                                }
-                            >
-                                <UserIcon data-icon="inline-start" />
-                                {ownerLabel || 'Owner'}
-                            </Button>
-                        ) : null}
-                        {languageRows.map((language) => (
-                            <Badge
-                                key={`${language.key}:${language.value}`}
-                                variant="outline"
-                                title={`${language.value || language.key} (${language.key})`}
-                            >
-                                {languageMappings[
-                                    String(language.key).toLowerCase()
-                                ]
-                                    ? String(language.key).toUpperCase()
-                                    : language.value || language.key}
-                            </Badge>
-                        ))}
-                        {group.privacy ? (
+                        {showPrivacyBadge ? (
                             <Badge variant="outline">
                                 <ShieldIcon data-icon="inline-start" />
                                 {group.privacy}
                             </Badge>
                         ) : null}
-                        {group.membershipStatus ? (
+                        {showMembershipBadge ? (
                             <Badge variant="secondary">
                                 {group.membershipStatus}
                             </Badge>
