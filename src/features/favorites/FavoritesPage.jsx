@@ -18,7 +18,7 @@ import {
     UsersIcon,
     XIcon
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Location } from '@/components/Location.jsx';
@@ -115,6 +115,13 @@ import {
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'];
 const EMPTY_ITEMS = Object.freeze([]);
+
+function useStableEvent(handler) {
+    const handlerRef = useRef(handler);
+    handlerRef.current = handler;
+
+    return useCallback((...args) => handlerRef.current?.(...args), []);
+}
 const SPLITTER_CONFIG_KEYS = {
     friend: 'VRCX_FavoritesFriendSplitter',
     world: 'VRCX_FavoritesWorldSplitter',
@@ -675,7 +682,7 @@ function GroupMenu({
     );
 }
 
-function GroupRailSection({
+const GroupRailSection = memo(function GroupRailSection({
     title,
     groups,
     selectedSource,
@@ -828,7 +835,7 @@ function GroupRailSection({
             </div>
         </div>
     );
-}
+});
 
 function FavoritesContentHeader({
     title,
@@ -914,7 +921,7 @@ function FavoritesContentHeader({
     );
 }
 
-function FavoriteCard({
+const FavoriteCard = memo(function FavoriteCard({
     item,
     editMode,
     selected,
@@ -1118,7 +1125,7 @@ function FavoriteCard({
                     checked={selected}
                     onClick={(event) => event.stopPropagation()}
                     onCheckedChange={(checked) =>
-                        onToggleSelect(Boolean(checked))
+                        onToggleSelect?.(item.key, Boolean(checked))
                     }
                 />
             ) : hasCardActions ? (
@@ -1259,7 +1266,7 @@ function FavoriteCard({
             ) : null}
         </div>
     );
-}
+});
 
 function FavoritesPage({ kind, embedded = false }) {
     const favoriteLoadStatus = useFavoriteStore((state) => state.loadStatus);
@@ -2959,6 +2966,76 @@ function FavoritesPage({ kind, embedded = false }) {
         }
     }
 
+    const handleCardToggleSelect = useStableEvent((itemKey, checked) => {
+        setSelectedKeys((keys) =>
+            checked
+                ? Array.from(new Set([...keys, itemKey]))
+                : keys.filter((key) => key !== itemKey)
+        );
+    });
+    const handleCardFriendLaunch = useStableEvent((entry) =>
+        launchFavoriteFriendLocation(entry)
+    );
+    const handleCardFriendSelfInvite = useStableEvent((entry) =>
+        selfInviteFavoriteFriendLocation(entry)
+    );
+    const handleCardFriendInvite = useStableEvent((entry) =>
+        sendFavoriteFriendInvite(entry)
+    );
+    const handleCardFriendRequestInvite = useStableEvent((entry) =>
+        requestFavoriteFriendInvite(entry)
+    );
+    const handleCardFriendBoop = useStableEvent((entry) =>
+        sendFavoriteFriendBoop(entry)
+    );
+    const handleCardWorldNewInstance = useStableEvent((entry) =>
+        openWorldNewInstance(entry, false)
+    );
+    const handleCardWorldSelfInvite = useStableEvent((entry) =>
+        openWorldNewInstance(entry, true)
+    );
+    const handleCardAvatarSelect = useStableEvent((entry) =>
+        selectFavoriteAvatar(entry)
+    );
+    const handleCardRemoveLocalFavorite = useStableEvent((entry) =>
+        handleRemoveLocalFavorite(entry)
+    );
+    const handleCardRemoveRemoteFavorite = useStableEvent((entry) =>
+        handleRemoveRemoteFavorite(entry)
+    );
+    const handleGroupRailRefresh = useStableEvent(() => refreshFavorites());
+    const handleGroupRailSelect = useStableEvent((group) => {
+        setSearchQuery('');
+        setSelectedSource(group.source);
+        setSelectedGroupKey(group.key);
+    });
+    const handleStartCreateLocalGroup = useStableEvent(() => {
+        setCreatingLocalGroup(true);
+        setNewLocalGroupName('');
+    });
+    const handleCancelCreateLocalGroup = useStableEvent(() => {
+        setCreatingLocalGroup(false);
+        setNewLocalGroupName('');
+    });
+    const handleConfirmCreateLocalGroup = useStableEvent(
+        confirmCreateLocalGroup
+    );
+    const handleAvatarHistoryRefreshEvent = useStableEvent(refreshAvatarHistory);
+    const handleAvatarHistoryClearEvent = useStableEvent(
+        handleAvatarHistoryClear
+    );
+    const handleRemoteGroupRenameEvent = useStableEvent(
+        handleRemoteGroupRename
+    );
+    const handleRemoteGroupVisibilityEvent = useStableEvent(
+        handleRemoteGroupVisibility
+    );
+    const handleRemoteGroupClearEvent = useStableEvent(handleRemoteGroupClear);
+    const handleLocalGroupRenameEvent = useStableEvent(handleLocalGroupRename);
+    const handleLocalGroupDeleteEvent = useStableEvent(handleLocalGroupDelete);
+    const handleSplitterResizeEvent = useStableEvent(handleSplitterResize);
+    const persistSplitterLayoutEvent = useStableEvent(persistSplitterLayout);
+
     const title = isSearchActive
         ? 'Search'
         : selectedGroup
@@ -3013,7 +3090,7 @@ function FavoritesPage({ kind, embedded = false }) {
                     id={`favorites-${kind}-splitter`}
                     orientation="horizontal"
                     className="h-full min-h-0 min-w-0 flex-1"
-                    onLayoutChanged={persistSplitterLayout}
+                    onLayoutChanged={persistSplitterLayoutEvent}
                 >
                     <ResizablePanel
                         id={`favorites-${kind}-groups`}
@@ -3023,7 +3100,7 @@ function FavoritesPage({ kind, embedded = false }) {
                         collapsible
                         collapsedSize={0}
                         groupResizeBehavior="preserve-pixel-size"
-                        onResize={handleSplitterResize}
+                        onResize={handleSplitterResizeEvent}
                     >
                         <div className="flex h-full min-h-0 flex-col gap-3 overflow-auto p-2">
                             <GroupRailSection
@@ -3039,17 +3116,15 @@ function FavoritesPage({ kind, embedded = false }) {
                                     favoriteLoadStatus === 'running' ||
                                     refreshing
                                 }
-                                onRefresh={() => void refreshFavorites()}
-                                onSelect={(group) => {
-                                    setSearchQuery('');
-                                    setSelectedSource(group.source);
-                                    setSelectedGroupKey(group.key);
-                                }}
-                                onRemoteRename={handleRemoteGroupRename}
-                                onRemoteVisibility={handleRemoteGroupVisibility}
-                                onRemoteClear={handleRemoteGroupClear}
-                                onLocalRename={handleLocalGroupRename}
-                                onLocalDelete={handleLocalGroupDelete}
+                                onRefresh={handleGroupRailRefresh}
+                                onSelect={handleGroupRailSelect}
+                                onRemoteRename={handleRemoteGroupRenameEvent}
+                                onRemoteVisibility={
+                                    handleRemoteGroupVisibilityEvent
+                                }
+                                onRemoteClear={handleRemoteGroupClearEvent}
+                                onLocalRename={handleLocalGroupRenameEvent}
+                                onLocalDelete={handleLocalGroupDeleteEvent}
                             />
                             <GroupRailSection
                                 title={pageConfig.localSectionTitle}
@@ -3064,27 +3139,19 @@ function FavoritesPage({ kind, embedded = false }) {
                                 creating={creatingLocalGroup}
                                 newGroupName={newLocalGroupName}
                                 showNewGroup={canCreateLocalGroup}
-                                onRefresh={() => void refreshFavorites()}
-                                onSelect={(group) => {
-                                    setSearchQuery('');
-                                    setSelectedSource(group.source);
-                                    setSelectedGroupKey(group.key);
-                                }}
-                                onStartCreate={() => {
-                                    setCreatingLocalGroup(true);
-                                    setNewLocalGroupName('');
-                                }}
+                                onRefresh={handleGroupRailRefresh}
+                                onSelect={handleGroupRailSelect}
+                                onStartCreate={handleStartCreateLocalGroup}
                                 onNewGroupNameChange={setNewLocalGroupName}
-                                onConfirmCreate={confirmCreateLocalGroup}
-                                onCancelCreate={() => {
-                                    setCreatingLocalGroup(false);
-                                    setNewLocalGroupName('');
-                                }}
-                                onRemoteRename={handleRemoteGroupRename}
-                                onRemoteVisibility={handleRemoteGroupVisibility}
-                                onRemoteClear={handleRemoteGroupClear}
-                                onLocalRename={handleLocalGroupRename}
-                                onLocalDelete={handleLocalGroupDelete}
+                                onConfirmCreate={handleConfirmCreateLocalGroup}
+                                onCancelCreate={handleCancelCreateLocalGroup}
+                                onRemoteRename={handleRemoteGroupRenameEvent}
+                                onRemoteVisibility={
+                                    handleRemoteGroupVisibilityEvent
+                                }
+                                onRemoteClear={handleRemoteGroupClearEvent}
+                                onLocalRename={handleLocalGroupRenameEvent}
+                                onLocalDelete={handleLocalGroupDeleteEvent}
                             />
                             {kind === 'avatar' ? (
                                 <GroupRailSection
@@ -3097,23 +3164,17 @@ function FavoritesPage({ kind, embedded = false }) {
                                         hasSearchInput ? '' : selectedGroupKey
                                     }
                                     loading={avatarHistoryLoading}
-                                    onRefresh={() =>
-                                        void refreshAvatarHistory()
-                                    }
-                                    onSelect={(group) => {
-                                        setSearchQuery('');
-                                        setSelectedSource(group.source);
-                                        setSelectedGroupKey(group.key);
-                                    }}
-                                    onRemoteRename={handleRemoteGroupRename}
+                                    onRefresh={handleAvatarHistoryRefreshEvent}
+                                    onSelect={handleGroupRailSelect}
+                                    onRemoteRename={handleRemoteGroupRenameEvent}
                                     onRemoteVisibility={
-                                        handleRemoteGroupVisibility
+                                        handleRemoteGroupVisibilityEvent
                                     }
-                                    onRemoteClear={handleRemoteGroupClear}
-                                    onLocalRename={handleLocalGroupRename}
-                                    onLocalDelete={handleLocalGroupDelete}
-                                    onHistoryClear={() =>
-                                        void handleAvatarHistoryClear()
+                                    onRemoteClear={handleRemoteGroupClearEvent}
+                                    onLocalRename={handleLocalGroupRenameEvent}
+                                    onLocalDelete={handleLocalGroupDeleteEvent}
+                                    onHistoryClear={
+                                        handleAvatarHistoryClearEvent
                                     }
                                 />
                             ) : null}
@@ -3219,71 +3280,38 @@ function FavoritesPage({ kind, embedded = false }) {
                                                     currentUserSnapshot?.currentAvatar ||
                                                     ''
                                                 }
-                                                onToggleSelect={(checked) => {
-                                                    setSelectedKeys((keys) =>
-                                                        checked
-                                                            ? Array.from(
-                                                                  new Set([
-                                                                      ...keys,
-                                                                      item.key
-                                                                  ])
-                                                              )
-                                                            : keys.filter(
-                                                                  (key) =>
-                                                                      key !==
-                                                                      item.key
-                                                              )
-                                                    );
-                                                }}
+                                                onToggleSelect={
+                                                    handleCardToggleSelect
+                                                }
                                                 onRemoveLocal={
-                                                    handleRemoveLocalFavorite
+                                                    handleCardRemoveLocalFavorite
                                                 }
                                                 onRemoveRemote={
-                                                    handleRemoveRemoteFavorite
+                                                    handleCardRemoveRemoteFavorite
                                                 }
-                                                onFriendLaunch={(entry) =>
-                                                    void launchFavoriteFriendLocation(
-                                                        entry
-                                                    )
+                                                onFriendLaunch={
+                                                    handleCardFriendLaunch
                                                 }
-                                                onFriendSelfInvite={(entry) =>
-                                                    void selfInviteFavoriteFriendLocation(
-                                                        entry
-                                                    )
+                                                onFriendSelfInvite={
+                                                    handleCardFriendSelfInvite
                                                 }
-                                                onFriendInvite={(entry) =>
-                                                    void sendFavoriteFriendInvite(
-                                                        entry
-                                                    )
+                                                onFriendInvite={
+                                                    handleCardFriendInvite
                                                 }
-                                                onFriendRequestInvite={(
-                                                    entry
-                                                ) =>
-                                                    void requestFavoriteFriendInvite(
-                                                        entry
-                                                    )
+                                                onFriendRequestInvite={
+                                                    handleCardFriendRequestInvite
                                                 }
-                                                onFriendBoop={(entry) =>
-                                                    void sendFavoriteFriendBoop(
-                                                        entry
-                                                    )
+                                                onFriendBoop={
+                                                    handleCardFriendBoop
                                                 }
-                                                onWorldNewInstance={(entry) =>
-                                                    openWorldNewInstance(
-                                                        entry,
-                                                        false
-                                                    )
+                                                onWorldNewInstance={
+                                                    handleCardWorldNewInstance
                                                 }
-                                                onWorldSelfInvite={(entry) =>
-                                                    openWorldNewInstance(
-                                                        entry,
-                                                        true
-                                                    )
+                                                onWorldSelfInvite={
+                                                    handleCardWorldSelfInvite
                                                 }
-                                                onAvatarSelect={(entry) =>
-                                                    void selectFavoriteAvatar(
-                                                        entry
-                                                    )
+                                                onAvatarSelect={
+                                                    handleCardAvatarSelect
                                                 }
                                             />
                                         ))}

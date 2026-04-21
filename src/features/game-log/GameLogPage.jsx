@@ -24,7 +24,15 @@ import {
     VideoIcon,
     XIcon
 } from 'lucide-react';
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    memo,
+    useCallback,
+    useDeferredValue,
+    useEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -628,7 +636,8 @@ function SessionEventRow({ event }) {
     );
 }
 
-function GameLogSessionSegment({
+const GameLogSessionSegment = memo(function GameLogSessionSegment({
+    sessionKey,
     session,
     isLast,
     isLatest,
@@ -659,7 +668,11 @@ function GameLogSessionSegment({
               ? timeToText(liveDurationMs)
               : '';
     const sessionLocation = session.location || '';
-    const toggleCollapsed = () => onCollapsedChange?.(!collapsed);
+    const toggleCollapsed = () => {
+        if (sessionKey) {
+            onCollapsedChange?.(sessionKey, !collapsed);
+        }
+    };
 
     useEffect(() => {
         if (!shouldShowLiveDuration) {
@@ -804,7 +817,7 @@ function GameLogSessionSegment({
             ) : null}
         </div>
     );
-}
+});
 
 function GameLogSessionsView({
     sessions,
@@ -828,6 +841,28 @@ function GameLogSessionsView({
                 .map((session) => getGameLogSessionKey(session))
                 .filter(Boolean),
         [sessions]
+    );
+    const handleSessionCollapsedChange = useCallback(
+        (sessionKey, nextCollapsed) => {
+            if (!sessionKey) {
+                return;
+            }
+            setCollapsedSessionIds((current) => {
+                const isCollapsed = current.has(sessionKey);
+                if (isCollapsed === nextCollapsed) {
+                    return current;
+                }
+
+                const next = new Set(current);
+                if (nextCollapsed) {
+                    next.add(sessionKey);
+                } else {
+                    next.delete(sessionKey);
+                }
+                return next;
+            });
+        },
+        []
     );
 
     useEffect(() => {
@@ -930,25 +965,13 @@ function GameLogSessionsView({
                     return (
                         <GameLogSessionSegment
                             key={sessionKey || `session:${index}`}
+                            sessionKey={sessionKey}
                             session={session}
                             isLatest={index === 0}
                             isLast={index === sessions.length - 1}
                             isGameRunning={isGameRunning}
                             collapsed={collapsedSessionIds.has(sessionKey)}
-                            onCollapsedChange={(nextCollapsed) => {
-                                if (!sessionKey) {
-                                    return;
-                                }
-                                setCollapsedSessionIds((current) => {
-                                    const next = new Set(current);
-                                    if (nextCollapsed) {
-                                        next.add(sessionKey);
-                                    } else {
-                                        next.delete(sessionKey);
-                                    }
-                                    return next;
-                                });
-                            }}
+                            onCollapsedChange={handleSessionCollapsedChange}
                         />
                     );
                 })}

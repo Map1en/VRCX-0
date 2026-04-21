@@ -311,6 +311,203 @@ function SettingsTabContent({ value, children }) {
     );
 }
 
+function TablePageSizesDialog({ open, onOpenChange, onSaved }) {
+    const { t } = useI18n();
+    const [draft, setDraft] = useState(() => [...TABLE_PAGE_SIZE_DEFAULTS]);
+    const [input, setInput] = useState('');
+    const options = useMemo(() => buildTablePageSizeOptions(draft), [draft]);
+    const filteredOptions = useMemo(
+        () => filterTablePageSizeOptions(options, input),
+        [input, options]
+    );
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+        setDraft(
+            normalizeTablePageSizes(
+                usePreferencesStore.getState().tablePageSizes
+            )
+        );
+        setInput('');
+    }, [open]);
+
+    async function persist(nextSizes, { close = false, showToast = false } = {}) {
+        const normalizedSizes = normalizeTablePageSizes(nextSizes);
+        setDraft(normalizedSizes);
+        try {
+            const saved = await setTablePageSizesPreference(normalizedSizes);
+            onSaved?.(saved);
+            if (close) {
+                onOpenChange(false);
+            }
+            if (showToast) {
+                toast.success(t('common.settings_saved'));
+            }
+            return true;
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to save setting.'
+            );
+            return false;
+        }
+    }
+
+    function addPageSize(value = input, opts = {}) {
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1000) {
+            toast.error(
+                t('view.settings.appearance.appearance.table_page_sizes_error')
+            );
+            return;
+        }
+        void persist([...draft, parsed], opts);
+        setInput('');
+    }
+
+    function removePageSize(value) {
+        const next = draft.filter((entry) => entry !== value);
+        void persist(next.length ? next : [...TABLE_PAGE_SIZE_DEFAULTS]);
+    }
+
+    function togglePageSize(value) {
+        if (draft.includes(value)) {
+            removePageSize(value);
+            return;
+        }
+        void persist([...draft, value]);
+    }
+
+    function save() {
+        if (input.trim()) {
+            addPageSize(input, {
+                close: true,
+                showToast: true
+            });
+            return;
+        }
+        onOpenChange(false);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>
+                        {t(
+                            'view.settings.appearance.appearance.table_page_sizes'
+                        )}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {t(
+                            'view.settings.appearance.appearance.table_page_sizes'
+                        )}
+                    </DialogDescription>
+                </DialogHeader>
+                <FieldGroup>
+                    <div className="flex flex-wrap gap-2">
+                        {draft.map((size) => (
+                            <Badge
+                                key={size}
+                                variant="secondary"
+                                className="gap-2"
+                            >
+                                {size}
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={`${t('common.actions.remove')} ${size}`}
+                                    onClick={() => removePageSize(size)}
+                                >
+                                    <XIcon data-icon="inline-start" />
+                                </Button>
+                            </Badge>
+                        ))}
+                    </div>
+                    <Field
+                        label={t(
+                            'view.settings.appearance.appearance.table_page_sizes'
+                        )}
+                        description="1-1000"
+                        controlId="settings-table-page-size-input"
+                    >
+                        <div className="flex gap-2">
+                            <Input
+                                id="settings-table-page-size-input"
+                                type="number"
+                                name="tablePageSize"
+                                inputMode="numeric"
+                                min={1}
+                                max={1000}
+                                value={input}
+                                placeholder={t(
+                                    'view.settings.appearance.appearance.table_page_sizes'
+                                )}
+                                onChange={(event) =>
+                                    setInput(event.target.value)
+                                }
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        event.preventDefault();
+                                        addPageSize();
+                                    }
+                                }}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                aria-label={t(
+                                    'view.settings.appearance.appearance.table_page_sizes'
+                                )}
+                                onClick={() => addPageSize()}
+                            >
+                                <PlusIcon data-icon="inline-start" />
+                            </Button>
+                        </div>
+                    </Field>
+                    <div className="max-h-64 overflow-y-auto rounded-md border p-1">
+                        <FieldGroup>
+                            {filteredOptions.map((size) => {
+                                const optionId = `settings-table-page-size-option-${size}`;
+                                return (
+                                    <ShadcnField
+                                        key={size}
+                                        orientation="horizontal"
+                                        className="hover:bg-accent hover:text-accent-foreground rounded-sm px-2 py-1.5"
+                                    >
+                                        <Checkbox
+                                            id={optionId}
+                                            checked={draft.includes(size)}
+                                            onCheckedChange={() =>
+                                                togglePageSize(size)
+                                            }
+                                        />
+                                        <ShadcnFieldLabel
+                                            htmlFor={optionId}
+                                            className="w-full cursor-pointer"
+                                        >
+                                            {size}
+                                        </ShadcnFieldLabel>
+                                    </ShadcnField>
+                                );
+                            })}
+                        </FieldGroup>
+                    </div>
+                </FieldGroup>
+                <DialogFooter>
+                    <Button type="button" onClick={() => void save()}>
+                        {t('dialog.alertdialog.ok')}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export function SettingsPage() {
     const { t } = useI18n();
     const locale = useShellStore((state) => state.locale);
@@ -497,10 +694,6 @@ export function SettingsPage() {
     const [openSourceNoticeOpen, setOpenSourceNoticeOpen] = useState(false);
     const [tablePageSizesDialogOpen, setTablePageSizesDialogOpen] =
         useState(false);
-    const [tablePageSizesDraft, setTablePageSizesDraft] = useState(() => [
-        ...TABLE_PAGE_SIZE_DEFAULTS
-    ]);
-    const [tablePageSizeDraftInput, setTablePageSizeDraftInput] = useState('');
     const [tableLimitsDialogOpen, setTableLimitsDialogOpen] = useState(false);
     const [tableLimitsDraft, setTableLimitsDraft] = useState({
         maxTableSize: String(DEFAULT_MAX_TABLE_SIZE),
@@ -508,19 +701,6 @@ export function SettingsPage() {
     });
     const [avatarProviderDialogOpen, setAvatarProviderDialogOpen] =
         useState(false);
-    const tablePageSizeOptions = useMemo(
-        () => buildTablePageSizeOptions(tablePageSizesDraft),
-        [tablePageSizesDraft]
-    );
-    const filteredTablePageSizeOptions = useMemo(
-        () =>
-            filterTablePageSizeOptions(
-                tablePageSizeOptions,
-                tablePageSizeDraftInput
-            ),
-        [tablePageSizeDraftInput, tablePageSizeOptions]
-    );
-
     function applyPreferenceSnapshotToLocalState(snapshot) {
         const normalizedSnapshot = normalizePreferenceSnapshot(snapshot);
         setPrefs((current) => ({ ...current, ...normalizedSnapshot }));
@@ -1018,76 +1198,7 @@ export function SettingsPage() {
     }
 
     async function openTablePageSizesDialog() {
-        setTablePageSizesDraft(
-            normalizeTablePageSizes(
-                usePreferencesStore.getState().tablePageSizes
-            )
-        );
-        setTablePageSizeDraftInput('');
         setTablePageSizesDialogOpen(true);
-    }
-
-    async function persistTablePageSizes(
-        nextSizes,
-        { close = false, showToast = false } = {}
-    ) {
-        const normalizedSizes = normalizeTablePageSizes(nextSizes);
-        setTablePageSizesDraft(normalizedSizes);
-        const saved = await commit(() =>
-            setTablePageSizesPreference(normalizedSizes)
-        );
-        if (!saved) {
-            return false;
-        }
-        setPrefs((current) => ({
-            ...current,
-            tablePageSizes: normalizedSizes
-        }));
-        if (close) {
-            setTablePageSizesDialogOpen(false);
-        }
-        if (showToast) {
-            toast.success(t('common.settings_saved'));
-        }
-        return true;
-    }
-
-    function addTablePageSize(value = tablePageSizeDraftInput, options = {}) {
-        const parsed = Number.parseInt(value, 10);
-        if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1000) {
-            toast.error(
-                t('view.settings.appearance.appearance.table_page_sizes_error')
-            );
-            return;
-        }
-        void persistTablePageSizes([...tablePageSizesDraft, parsed], options);
-        setTablePageSizeDraftInput('');
-    }
-
-    function removeTablePageSize(value) {
-        const next = tablePageSizesDraft.filter((entry) => entry !== value);
-        void persistTablePageSizes(
-            next.length ? next : [...TABLE_PAGE_SIZE_DEFAULTS]
-        );
-    }
-
-    function toggleTablePageSize(value) {
-        if (tablePageSizesDraft.includes(value)) {
-            removeTablePageSize(value);
-            return;
-        }
-        void persistTablePageSizes([...tablePageSizesDraft, value]);
-    }
-
-    async function saveTablePageSizesDialog() {
-        if (tablePageSizeDraftInput.trim()) {
-            addTablePageSize(tablePageSizeDraftInput, {
-                close: true,
-                showToast: true
-            });
-            return;
-        }
-        setTablePageSizesDialogOpen(false);
     }
 
     async function openTableLimitsDialog() {
@@ -5438,130 +5549,13 @@ export function SettingsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            <Dialog
+            <TablePageSizesDialog
                 open={tablePageSizesDialogOpen}
                 onOpenChange={setTablePageSizesDialogOpen}
-            >
-                <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t(
-                                'view.settings.appearance.appearance.table_page_sizes'
-                            )}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {t(
-                                'view.settings.appearance.appearance.table_page_sizes'
-                            )}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <FieldGroup>
-                        <div className="flex flex-wrap gap-2">
-                            {tablePageSizesDraft.map((size) => (
-                                <Badge
-                                    key={size}
-                                    variant="secondary"
-                                    className="gap-2"
-                                >
-                                    {size}
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-xs"
-                                        aria-label={`${t('common.actions.remove')} ${size}`}
-                                        onClick={() =>
-                                            removeTablePageSize(size)
-                                        }
-                                    >
-                                        <XIcon data-icon="inline-start" />
-                                    </Button>
-                                </Badge>
-                            ))}
-                        </div>
-                        <Field
-                            label={t(
-                                'view.settings.appearance.appearance.table_page_sizes'
-                            )}
-                            description="1-1000"
-                            controlId="settings-table-page-size-input"
-                        >
-                            <div className="flex gap-2">
-                                <Input
-                                    id="settings-table-page-size-input"
-                                    type="number"
-                                    name="tablePageSize"
-                                    inputMode="numeric"
-                                    min={1}
-                                    max={1000}
-                                    value={tablePageSizeDraftInput}
-                                    placeholder={t(
-                                        'view.settings.appearance.appearance.table_page_sizes'
-                                    )}
-                                    onChange={(event) =>
-                                        setTablePageSizeDraftInput(
-                                            event.target.value
-                                        )
-                                    }
-                                    onKeyDown={(event) => {
-                                        if (event.key === 'Enter') {
-                                            event.preventDefault();
-                                            addTablePageSize();
-                                        }
-                                    }}
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    aria-label={t(
-                                        'view.settings.appearance.appearance.table_page_sizes'
-                                    )}
-                                    onClick={() => addTablePageSize()}
-                                >
-                                    <PlusIcon data-icon="inline-start" />
-                                </Button>
-                            </div>
-                        </Field>
-                        <div className="max-h-64 overflow-y-auto rounded-md border p-1">
-                            <FieldGroup>
-                                {filteredTablePageSizeOptions.map((size) => {
-                                    const optionId = `settings-table-page-size-option-${size}`;
-                                    return (
-                                        <ShadcnField
-                                            key={size}
-                                            orientation="horizontal"
-                                            className="hover:bg-accent hover:text-accent-foreground rounded-sm px-2 py-1.5"
-                                        >
-                                            <Checkbox
-                                                id={optionId}
-                                                checked={tablePageSizesDraft.includes(
-                                                    size
-                                                )}
-                                                onCheckedChange={() =>
-                                                    toggleTablePageSize(size)
-                                                }
-                                            />
-                                            <ShadcnFieldLabel
-                                                htmlFor={optionId}
-                                                className="w-full cursor-pointer"
-                                            >
-                                                {size}
-                                            </ShadcnFieldLabel>
-                                        </ShadcnField>
-                                    );
-                                })}
-                            </FieldGroup>
-                        </div>
-                    </FieldGroup>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            onClick={() => void saveTablePageSizesDialog()}
-                        >
-                            {t('dialog.alertdialog.ok')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                onSaved={(tablePageSizes) =>
+                    setPrefs((current) => ({ ...current, tablePageSizes }))
+                }
+            />
             <Dialog
                 open={tableLimitsDialogOpen}
                 onOpenChange={setTableLimitsDialogOpen}
