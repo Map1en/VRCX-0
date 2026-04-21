@@ -1,4 +1,7 @@
-import { database } from '@/services/database/index.js';
+import {
+    activityRepository,
+    gameLogRepository
+} from '@/repositories/index.js';
 import { mergeSessions } from '@/shared/utils/activityEngine.js';
 import { runActivityWorkerTask } from '@/workers/activityWorkerRunner.js';
 
@@ -125,8 +128,8 @@ async function hydrateSnapshot(userId, isSelf, ownerUserId = '') {
     }
 
     const [syncState, sessions] = await Promise.all([
-        database.getActivitySyncStateV2(userId),
-        database.getActivitySessionsV2(userId)
+        activityRepository.getActivitySyncState(userId),
+        activityRepository.getActivitySessions(userId)
     ]);
 
     if (syncState) {
@@ -146,7 +149,7 @@ async function hydrateSnapshot(userId, isSelf, ownerUserId = '') {
 }
 
 async function fullRefresh(snapshot, rangeDays) {
-    const sourceItems = await database.getActivitySourceSliceV2({
+    const sourceItems = await activityRepository.getActivitySourceSlice({
         userId: snapshot.userId,
         ownerUserId: snapshot.sync.ownerUserId || '',
         isSelf: snapshot.isSelf,
@@ -177,11 +180,11 @@ async function fullRefresh(snapshot, rangeDays) {
     clearDerivedViews(snapshot);
 
     if (snapshot.isSelf) {
-        await database.replaceActivitySessionsV2(
+        await activityRepository.replaceActivitySessions(
             snapshot.userId,
             snapshot.sessions
         );
-        await database.upsertActivitySyncStateV2(snapshot.sync);
+        await activityRepository.upsertActivitySyncState(snapshot.sync);
     }
 }
 
@@ -190,7 +193,7 @@ async function incrementalRefresh(snapshot) {
         return;
     }
 
-    const sourceItems = await database.getActivitySourceAfterV2({
+    const sourceItems = await activityRepository.getActivitySourceAfter({
         userId: snapshot.userId,
         ownerUserId: snapshot.sync.ownerUserId || '',
         isSelf: snapshot.isSelf,
@@ -200,7 +203,7 @@ async function incrementalRefresh(snapshot) {
     if (sourceItems.length === 0) {
         snapshot.sync.updatedAt = new Date().toISOString();
         if (snapshot.isSelf) {
-            await database.upsertActivitySyncStateV2(snapshot.sync);
+            await activityRepository.upsertActivitySyncState(snapshot.sync);
         }
         return;
     }
@@ -232,7 +235,7 @@ async function incrementalRefresh(snapshot) {
     clearDerivedViews(snapshot);
 
     if (snapshot.isSelf) {
-        await database.appendActivitySessionsV2({
+        await activityRepository.appendActivitySessions({
             userId: snapshot.userId,
             sessions:
                 replaceFromStartAt === null
@@ -242,7 +245,7 @@ async function incrementalRefresh(snapshot) {
                       ),
             replaceFromStartAt
         });
-        await database.upsertActivitySyncStateV2(snapshot.sync);
+        await activityRepository.upsertActivitySyncState(snapshot.sync);
     }
 }
 
@@ -252,7 +255,7 @@ async function expandRange(snapshot, rangeDays) {
         return;
     }
 
-    const sourceItems = await database.getActivitySourceSliceV2({
+    const sourceItems = await activityRepository.getActivitySourceSlice({
         userId: snapshot.userId,
         ownerUserId: snapshot.sync.ownerUserId || '',
         isSelf: snapshot.isSelf,
@@ -272,7 +275,7 @@ async function expandRange(snapshot, rangeDays) {
     if (result.sessions.length > 0) {
         snapshot.sessions = mergeSessions(result.sessions, snapshot.sessions);
         if (snapshot.isSelf) {
-            await database.replaceActivitySessionsV2(
+            await activityRepository.replaceActivitySessions(
                 snapshot.userId,
                 snapshot.sessions
             );
@@ -282,7 +285,7 @@ async function expandRange(snapshot, rangeDays) {
     snapshot.sync.updatedAt = new Date().toISOString();
     clearDerivedViews(snapshot);
     if (snapshot.isSelf) {
-        await database.upsertActivitySyncStateV2(snapshot.sync);
+        await activityRepository.upsertActivitySyncState(snapshot.sync);
     }
 }
 
@@ -433,11 +436,11 @@ async function loadActivityView({
     }
 
     if (!forceRefresh && cacheOwnerUserId) {
-        const persisted = await database.getActivityBucketCacheV2({
+        const persisted = await activityRepository.getActivityBucketCache({
             ownerUserId: cacheOwnerUserId,
             targetUserId: cacheTargetUserId,
             rangeDays,
-            viewKind: database.ACTIVITY_VIEW_KIND.ACTIVITY
+            viewKind: activityRepository.ACTIVITY_VIEW_KIND.ACTIVITY
         });
         if (persisted?.builtFromCursor === currentCursor) {
             view = {
@@ -473,11 +476,11 @@ async function loadActivityView({
     snapshot.activityViews.set(cacheKey, view);
     if (cacheOwnerUserId) {
         deferWrite(() =>
-            database.upsertActivityBucketCacheV2({
+            activityRepository.upsertActivityBucketCache({
                 ownerUserId: cacheOwnerUserId,
                 targetUserId: cacheTargetUserId,
                 rangeDays,
-                viewKind: database.ACTIVITY_VIEW_KIND.ACTIVITY,
+                viewKind: activityRepository.ACTIVITY_VIEW_KIND.ACTIVITY,
                 builtFromCursor: currentCursor,
                 rawBuckets: view.rawBuckets,
                 normalizedBuckets: view.normalizedBuckets,
@@ -543,11 +546,11 @@ async function loadOverlapView({
     }
 
     if (!forceRefresh && ownerUserId) {
-        const persisted = await database.getActivityBucketCacheV2({
+        const persisted = await activityRepository.getActivityBucketCache({
             ownerUserId,
             targetUserId,
             rangeDays,
-            viewKind: database.ACTIVITY_VIEW_KIND.OVERLAP,
+            viewKind: activityRepository.ACTIVITY_VIEW_KIND.OVERLAP,
             excludeKey
         });
         if (persisted?.builtFromCursor === cursor) {
@@ -585,11 +588,11 @@ async function loadOverlapView({
     targetSnapshot.overlapViews.set(cacheKey, view);
     if (ownerUserId) {
         deferWrite(() =>
-            database.upsertActivityBucketCacheV2({
+            activityRepository.upsertActivityBucketCache({
                 ownerUserId,
                 targetUserId,
                 rangeDays,
-                viewKind: database.ACTIVITY_VIEW_KIND.OVERLAP,
+                viewKind: activityRepository.ACTIVITY_VIEW_KIND.OVERLAP,
                 excludeKey,
                 builtFromCursor: cursor,
                 rawBuckets: view.rawBuckets,
@@ -618,7 +621,12 @@ async function loadTopWorldsView({
     sortBy = 'time',
     excludeWorldId = ''
 }) {
-    return database.getMyTopWorlds(rangeDays, limit, sortBy, excludeWorldId);
+    return gameLogRepository.getMyTopWorlds(
+        rangeDays,
+        limit,
+        sortBy,
+        excludeWorldId
+    );
 }
 
 function invalidateUser(userId, ownerUserId = '') {

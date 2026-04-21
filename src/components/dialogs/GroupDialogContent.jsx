@@ -10,7 +10,6 @@ import {
     groupProfileRepository,
     userProfileRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import { useDialogStore } from '@/state/dialogStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';

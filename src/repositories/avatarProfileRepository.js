@@ -1,4 +1,3 @@
-import { database } from '@/services/database/index.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -8,20 +7,17 @@ import {
 } from '@/services/entityQueryCacheService.js';
 import { storeAvatarImage } from '@/shared/utils/avatar.js';
 import { extractFileId } from '@/shared/utils/fileUtils.js';
+import {
+    getVrchatEndpointBase,
+    normalizeVrchatEndpointDomain
+} from '@/shared/vrchatEndpoint.js';
 
 import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import avatarLocalRepository from './avatarLocalRepository.js';
+import memoRepository from './memoRepository.js';
 import webRepository from './webRepository.js';
 
 const cachedAvatarNames = new Map();
-
-function normalizeEndpointDomain(endpointDomain) {
-    if (typeof endpointDomain === 'string' && endpointDomain.trim()) {
-        return endpointDomain.trim();
-    }
-
-    return DEFAULT_ENDPOINT_DOMAIN;
-}
 
 function appendParams(url, params) {
     if (!params || typeof params !== 'object') {
@@ -50,8 +46,7 @@ function appendParams(url, params) {
 }
 
 function buildUrl(path, params = {}, endpoint = '') {
-    const baseUrl = normalizeEndpointDomain(endpoint).replace(/\/?$/, '/');
-    const url = new URL(path, baseUrl);
+    const url = new URL(path, getVrchatEndpointBase(endpoint));
     return appendParams(url, params).toString();
 }
 
@@ -353,7 +348,7 @@ async function executeDelete(path, params = {}, { endpoint = '' } = {}) {
     };
 }
 
-async function getLocalSnapshot(avatarId) {
+async function getLocalSnapshot(avatarId, currentUserId = '') {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
         return {
@@ -366,10 +361,18 @@ async function getLocalSnapshot(avatarId) {
 
     const [cachedAvatar, localTags, timeSpentEntry, memoEntry] =
         await Promise.all([
-            database.getCachedAvatarById(normalizedAvatarId).catch(() => null),
-            database.getAvatarTags(normalizedAvatarId).catch(() => []),
-            database.getAvatarTimeSpent(normalizedAvatarId).catch(() => null),
-            database.getAvatarMemoDB(normalizedAvatarId).catch(() => null)
+            avatarLocalRepository
+                .getCachedAvatarById(normalizedAvatarId)
+                .catch(() => null),
+            avatarLocalRepository
+                .getAvatarTags(normalizedAvatarId)
+                .catch(() => []),
+            currentUserId
+                ? avatarLocalRepository
+                      .getAvatarTimeSpent(currentUserId, normalizedAvatarId)
+                      .catch(() => null)
+                : Promise.resolve(null),
+            memoRepository.getAvatarMemo(normalizedAvatarId).catch(() => null)
         ]);
 
     return {
@@ -384,7 +387,8 @@ async function getAvatarProfile({
     avatarId,
     endpoint = '',
     force = false,
-    allowLocalFallback = true
+    allowLocalFallback = true,
+    currentUserId = ''
 }) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
@@ -393,7 +397,10 @@ async function getAvatarProfile({
         );
     }
 
-    const localSnapshotPromise = getLocalSnapshot(normalizedAvatarId);
+    const localSnapshotPromise = getLocalSnapshot(
+        normalizedAvatarId,
+        currentUserId
+    );
 
     try {
         const [json, localSnapshot] = await Promise.all([
@@ -703,7 +710,7 @@ async function getAvatarNameFromImageUrl(imageUrl, { endpoint = '' } = {}) {
         };
     }
 
-    const cacheKey = `${normalizeEndpointDomain(endpoint)}\u0000${fileId}`;
+    const cacheKey = `${normalizeVrchatEndpointDomain(endpoint)}\u0000${fileId}`;
     if (cachedAvatarNames.has(cacheKey)) {
         return cachedAvatarNames.get(cacheKey);
     }

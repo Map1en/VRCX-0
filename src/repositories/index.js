@@ -9,6 +9,8 @@ export { default as vrchatFriendRepository } from './vrchatFriendRepository.js';
 export { default as vrchatFavoriteRepository } from './vrchatFavoriteRepository.js';
 export { default as vrchatModerationRepository } from './vrchatModerationRepository.js';
 export { default as localFavoritesRepository } from './localFavoritesRepository.js';
+export { default as avatarLocalRepository } from './avatarLocalRepository.js';
+export { default as databaseMaintenanceRepository } from './databaseMaintenanceRepository.js';
 export { default as mediaRepository } from './mediaRepository.js';
 export { default as memoRepository } from './memoRepository.js';
 export { default as userSessionRepository } from './userSessionRepository.js';

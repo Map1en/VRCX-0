@@ -21,10 +21,10 @@ import { openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { mediaRepository, vrchatAuthRepository } from '@/repositories/index.js';
 import userProfileRepository from '@/repositories/userProfileRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from '@/repositories/vrchatAuthRepository.js';
 import { emojiAnimationStyleList } from '@/shared/constants/emoji.js';
 import { extractFileId } from '@/shared/utils/fileUtils.js';
 import { getPrintFileName } from '@/shared/utils/gallery.js';
+import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 import {
     IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
@@ -119,7 +119,7 @@ function buildProfilePicOverride(endpoint, fileId) {
         return '';
     }
 
-    const base = (endpoint || DEFAULT_ENDPOINT_DOMAIN).replace(/\/?$/, '');
+    const base = normalizeVrchatEndpointDomain(endpoint);
     return `${base}/file/${fileId}/1`;
 }
 

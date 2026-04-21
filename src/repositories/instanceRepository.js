@@ -3,18 +3,10 @@ import {
     fetchCachedData,
     queryKeys
 } from '@/services/entityQueryCacheService.js';
+import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
 
 import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
 import webRepository from './webRepository.js';
-
-function normalizeEndpoint(endpoint = '') {
-    return (
-        typeof endpoint === 'string' && endpoint.trim()
-            ? endpoint.trim()
-            : DEFAULT_ENDPOINT_DOMAIN
-    ).replace(/\/?$/, '/');
-}
 
 function normalizeString(value) {
     return typeof value === 'string'
@@ -41,7 +33,7 @@ function appendParams(url, params = {}) {
 }
 
 function buildUrl(path, params = {}, endpoint = '') {
-    const url = new URL(path, normalizeEndpoint(endpoint));
+    const url = new URL(path, getVrchatEndpointBase(endpoint));
     return appendParams(url, params).toString();
 }
 

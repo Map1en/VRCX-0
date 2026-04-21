@@ -20,11 +20,12 @@ import {
     avatarProfileRepository,
     avatarSearchProviderRepository,
     configRepository,
+    databaseMaintenanceRepository,
+    feedRepository,
     mediaRepository,
     vrchatAuthRepository,
     webRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import {
     clearEntityQueryCache,
     getEntityQueryCacheSize,
@@ -918,49 +919,23 @@ export function SettingsPage() {
 
     async function refreshSqliteTableSizes() {
         try {
-            const [
-                gps,
-                status,
-                bio,
-                avatar,
-                onlineOffline,
-                friendLogHistory,
-                notification,
-                location,
-                joinLeave,
-                portalSpawn,
-                videoPlay,
-                event,
-                external
-            ] = await Promise.all([
-                database.getGpsTableSize(),
-                database.getStatusTableSize(),
-                database.getBioTableSize(),
-                database.getAvatarTableSize(),
-                database.getOnlineOfflineTableSize(),
-                database.getFriendLogHistoryTableSize(),
-                database.getNotificationTableSize(),
-                database.getLocationTableSize(),
-                database.getJoinLeaveTableSize(),
-                database.getPortalSpawnTableSize(),
-                database.getVideoPlayTableSize(),
-                database.getEventTableSize(),
-                database.getExternalTableSize()
-            ]);
+            const sizes = await databaseMaintenanceRepository.getTableSizes(
+                auth.currentUserId
+            );
             setSqliteTableSizes({
-                gps,
-                status,
-                bio,
-                avatar,
-                onlineOffline,
-                friendLogHistory,
-                notification,
-                location,
-                joinLeave,
-                portalSpawn,
-                videoPlay,
-                event,
-                external
+                gps: sizes.gps,
+                status: sizes.status,
+                bio: sizes.bio,
+                avatar: sizes.avatar,
+                onlineOffline: sizes.onlineOffline,
+                friendLogHistory: sizes.friendLogHistory,
+                notification: sizes.notification,
+                location: sizes.location,
+                joinLeave: sizes.joinLeave,
+                portalSpawn: sizes.portalSpawn,
+                videoPlay: sizes.videoPlay,
+                event: sizes.event,
+                external: sizes.external
             });
         } catch (error) {
             toast.error(
@@ -1393,8 +1368,11 @@ export function SettingsPage() {
             }
         );
         try {
-            await database.purgeAvatarFeedData(cutoffDate);
-            await database.vacuum();
+            await feedRepository.purgeAvatarFeedData(
+                auth.currentUserId,
+                cutoffDate
+            );
+            await databaseMaintenanceRepository.vacuum();
             toast.dismiss(toastId);
             toast.success(
                 t(

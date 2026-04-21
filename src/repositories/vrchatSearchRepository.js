@@ -1,15 +1,7 @@
+import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
+
 import { safeJsonParse } from './baseRepository.js';
 import webRepository from './webRepository.js';
-
-const DEFAULT_ENDPOINT_DOMAIN = 'https://api.vrchat.cloud/api/1';
-
-function getEndpointDomain(endpoint = '') {
-    const endpointDomain = endpoint || globalThis?.$debug?.endpointDomain;
-    if (typeof endpointDomain === 'string' && endpointDomain.trim()) {
-        return endpointDomain;
-    }
-    return DEFAULT_ENDPOINT_DOMAIN;
-}
 
 function normalizeParams(params = {}) {
     if (!params || typeof params !== 'object') {
@@ -55,8 +47,10 @@ function appendParams(url, params) {
 }
 
 function buildUrl(path, params, endpoint = '') {
-    const baseUrl = getEndpointDomain(endpoint).replace(/\/?$/, '/');
-    const url = new URL(path, baseUrl);
+    const url = new URL(
+        path,
+        getVrchatEndpointBase(endpoint, { allowDebugEndpoint: true })
+    );
     return appendParams(url, params);
 }
 

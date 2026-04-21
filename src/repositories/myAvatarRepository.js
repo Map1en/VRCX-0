@@ -1,29 +1,21 @@
-import { database } from '@/services/database/index.js';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/services/entityQueryCacheService.js';
+import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
 
 import { safeJsonParse } from './baseRepository.js';
+import avatarLocalRepository from './avatarLocalRepository.js';
 import sqliteRepository from './sqliteRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import userSessionRepository from './userSessionRepository.js';
 import webRepository from './webRepository.js';
 
 const PAGE_SIZE = 50;
 const MAX_OFFSET = 5000;
 
-function normalizeEndpointDomain(endpointDomain) {
-    if (typeof endpointDomain === 'string' && endpointDomain.trim()) {
-        return endpointDomain.trim();
-    }
-
-    return DEFAULT_ENDPOINT_DOMAIN;
-}
-
 function buildUrl(path, params = {}, endpoint = '') {
-    const baseUrl = normalizeEndpointDomain(endpoint).replace(/\/?$/, '/');
-    const url = new URL(path, baseUrl);
+    const url = new URL(path, getVrchatEndpointBase(endpoint));
 
     for (const [key, value] of Object.entries(params)) {
         if (value === null || value === undefined) {
@@ -130,7 +122,7 @@ async function getMyAvatars({
     const avatars = [];
 
     if (currentUserId) {
-        await database.initUserTables(currentUserId);
+        await userSessionRepository.ensureUserTables(currentUserId);
     }
 
     for (let offset = 0; offset <= MAX_OFFSET; offset += PAGE_SIZE) {
@@ -148,8 +140,10 @@ async function getMyAvatars({
     }
 
     const [tagsMap, avatarTimeSpentMap] = await Promise.all([
-        database.getAllAvatarTags(),
-        database.getAllAvatarTimeSpent(currentUserId)
+        avatarLocalRepository.getAllAvatarTags(),
+        currentUserId
+            ? avatarLocalRepository.getAllAvatarTimeSpent(currentUserId)
+            : Promise.resolve(new Map())
     ]);
 
     return avatars.map((avatar) => {
@@ -209,20 +203,23 @@ async function updateAvatarTags({
     await sqliteRepository.transaction(async () => {
         for (const [tag] of previousMap) {
             if (!nextMap.has(tag)) {
-                await database.removeAvatarTag(normalizedAvatarId, tag);
+                await avatarLocalRepository.removeAvatarTag(
+                    normalizedAvatarId,
+                    tag
+                );
             }
         }
 
         for (const [tag, entry] of nextMap) {
             const previous = previousMap.get(tag);
             if (!previous) {
-                await database.addAvatarTag(
+                await avatarLocalRepository.addAvatarTag(
                     normalizedAvatarId,
                     tag,
                     entry.color
                 );
             } else if ((previous.color || null) !== (entry.color || null)) {
-                await database.updateAvatarTagColor(
+                await avatarLocalRepository.updateAvatarTagColor(
                     normalizedAvatarId,
                     tag,
                     entry.color

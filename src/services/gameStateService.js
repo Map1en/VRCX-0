@@ -1,6 +1,9 @@
 import { backend } from '@/platform/index.js';
-import { configRepository } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
+import {
+    avatarLocalRepository,
+    configRepository,
+    gameLogRepository
+} from '@/repositories/index.js';
 import { refreshDiscordPresence } from '@/services/discordPresenceService.js';
 import {
     finalizeCurrentGameLogSession,
@@ -103,8 +106,13 @@ async function persistGameStopSession(previousGameState, currentUserSnapshot) {
     ]);
 
     const currentAvatar = currentUserSnapshot?.currentAvatar;
-    if (currentAvatar) {
-        await database.addAvatarTimeSpent(currentAvatar, sessionDuration);
+    const currentUserId = useRuntimeStore.getState().auth.currentUserId;
+    if (currentAvatar && currentUserId) {
+        await avatarLocalRepository.addAvatarTimeSpent(
+            currentUserId,
+            currentAvatar,
+            sessionDuration
+        );
     }
 }
 
@@ -180,7 +188,7 @@ async function scheduleCrashRelaunchIfNeeded(previousGameState) {
                 await backend.app.FocusWindow().catch(() => {});
                 const message =
                     'VRChat crashed, attempting to rejoin last instance.';
-                await database.addGamelogEventToDatabase({
+                await gameLogRepository.addGamelogEventToDatabase({
                     created_at: new Date().toJSON(),
                     type: 'Event',
                     data: message

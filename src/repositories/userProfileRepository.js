@@ -92,7 +92,7 @@ async function getUserGroups({ userId, endpoint = '' }) {
     }
 
     return fetchCachedData({
-        queryKey: ['user', normalizedUserId, 'groups', endpoint || ''],
+        queryKey: queryKeys.userGroups(normalizedUserId, endpoint),
         policy: entityQueryPolicies.groupCollection,
         queryFn: async () => {
             const response = await vrchatFriendRepository.executeGet(

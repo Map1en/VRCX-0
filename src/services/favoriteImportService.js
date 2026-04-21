@@ -1,10 +1,11 @@
 import {
     avatarProfileRepository,
+    avatarLocalRepository,
+    localFavoritesRepository,
     userProfileRepository,
     vrchatFavoriteRepository,
     worldProfileRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import { useFavoriteImportStore } from '@/state/favoriteImportStore.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
@@ -24,11 +25,11 @@ const TYPE_CONFIG = {
                 avatarId: id,
                 endpoint
             });
-            await database.addAvatarToCache(profile);
+            await avatarLocalRepository.addAvatarToCache(profile);
             return profile;
         },
         async addLocal(id, groupName) {
-            await database.addAvatarToFavorites(id, groupName);
+            await localFavoritesRepository.addAvatarToFavorites(id, groupName);
         }
     },
     world: {
@@ -42,7 +43,7 @@ const TYPE_CONFIG = {
                 worldId: id,
                 endpoint
             });
-            await database.addWorldToCache({
+            await localFavoritesRepository.addWorldToCache({
                 ...profile,
                 created_at: profile.created_at || profile.createdAt || '',
                 updated_at: profile.updated_at || profile.updatedAt || ''
@@ -50,7 +51,7 @@ const TYPE_CONFIG = {
             return profile;
         },
         async addLocal(id, groupName) {
-            await database.addWorldToFavorites(id, groupName);
+            await localFavoritesRepository.addWorldToFavorites(id, groupName);
         }
     },
     friend: {
@@ -66,7 +67,10 @@ const TYPE_CONFIG = {
             });
         },
         async addLocal(id, groupName) {
-            await database.addFriendToLocalFavorites(id, groupName);
+            await localFavoritesRepository.addFriendToLocalFavorites(
+                id,
+                groupName
+            );
         }
     }
 };

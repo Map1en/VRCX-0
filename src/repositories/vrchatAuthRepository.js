@@ -1,23 +1,17 @@
+import {
+    DEFAULT_VRCHAT_API_ENDPOINT,
+    getVrchatEndpointBase,
+    normalizeVrchatEndpoint
+} from '@/shared/vrchatEndpoint.js';
+
 import { safeJsonParse } from './baseRepository.js';
 import webRepository from './webRepository.js';
 
-export const DEFAULT_ENDPOINT_DOMAIN = 'https://api.vrchat.cloud/api/1';
+export const DEFAULT_ENDPOINT_DOMAIN = DEFAULT_VRCHAT_API_ENDPOINT;
 export const DEFAULT_WEBSOCKET_DOMAIN = 'wss://pipeline.vrchat.cloud';
 
-function normalizeEndpointDomain(endpointDomain) {
-    if (typeof endpointDomain === 'string' && endpointDomain.trim()) {
-        return endpointDomain.trim();
-    }
-
-    return DEFAULT_ENDPOINT_DOMAIN;
-}
-
 function buildUrl(path, endpointDomain) {
-    const baseUrl = normalizeEndpointDomain(endpointDomain).replace(
-        /\/?$/,
-        '/'
-    );
-    return new URL(path, baseUrl).toString();
+    return new URL(path, getVrchatEndpointBase(endpointDomain)).toString();
 }
 
 function parseJsonResponse(data) {
@@ -57,7 +51,7 @@ async function execute(
     path,
     { endpoint = '', method = 'GET', headers = {}, params = null } = {}
 ) {
-    const endpointDomain = normalizeEndpointDomain(endpoint);
+    const endpointDomain = normalizeVrchatEndpoint(endpoint);
     const requestOptions = {
         url: buildUrl(path, endpointDomain),
         method,

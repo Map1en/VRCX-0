@@ -38,7 +38,6 @@ import {
     configRepository,
     vrchatModerationRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { getTablePageSizesPreference } from '@/services/preferencesService.js';
 import { moderationTypes } from '@/shared/constants';
@@ -600,10 +599,10 @@ export function ModerationPage({ embedded = false } = {}) {
                 const nextRows = Array.isArray(response.json)
                     ? response.json
                     : [];
-                await database.initUserTables(currentUserId);
-                await vrchatModerationRepository.syncLocalModerationSnapshot(
-                    nextRows
-                );
+                await vrchatModerationRepository.syncLocalModerationSnapshot({
+                    ownerUserId: currentUserId,
+                    rows: nextRows
+                });
                 if (!active) {
                     return;
                 }
@@ -703,10 +702,10 @@ export function ModerationPage({ embedded = false } = {}) {
                 (entry) => !isSameModerationRow(entry, row)
             );
             setRows(nextRows);
-            await database.initUserTables(ownerUserId);
-            await vrchatModerationRepository.syncLocalModerationSnapshot(
-                nextRows
-            );
+            await vrchatModerationRepository.syncLocalModerationSnapshot({
+                ownerUserId,
+                rows: nextRows
+            });
             setDetail(
                 `Deleted ${row.type || 'moderation'} for ${row.targetDisplayName || row.targetUserId}.`
             );

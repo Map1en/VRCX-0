@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar.jsx';
 import { timeToText } from '@/lib/dateTime.js';
-import { database } from '@/services/database/index.js';
+import { gameLogRepository } from '@/repositories/index.js';
 import { openWorldDialog } from '@/services/dialogService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { Badge } from '@/ui/shadcn/badge';
@@ -132,8 +132,8 @@ function PreviousInstancesDialog({
         setInfoData({ status: 'running', error: '', players: [], details: [] });
 
         Promise.all([
-            database.getPlayersFromInstance(location),
-            database.getPlayerDetailFromInstance(location)
+            gameLogRepository.getPlayersFromInstance(location),
+            gameLogRepository.getPlayerDetailFromInstance(location)
         ])
             .then(([players, details]) => {
                 if (!active) {

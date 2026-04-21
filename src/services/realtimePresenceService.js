@@ -1,6 +1,5 @@
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
-import { configRepository } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
+import { configRepository, feedRepository } from '@/repositories/index.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFeedLiveStore } from '@/state/feedLiveStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
@@ -408,11 +407,24 @@ function scheduleOfflineFeed({ userId, patch = {}, previous = {} }) {
 }
 
 function publishFeedEntry(entry, databaseMethod) {
-    if (
-        !entry ||
-        !databaseMethod ||
-        typeof database[databaseMethod] !== 'function'
-    ) {
+    const feedWriterByMethod = {
+        addAvatarToDatabase: feedRepository.addAvatarEntryForUser.bind(
+            feedRepository
+        ),
+        addBioToDatabase: feedRepository.addBioEntryForUser.bind(
+            feedRepository
+        ),
+        addGPSToDatabase: feedRepository.addGpsEntryForUser.bind(
+            feedRepository
+        ),
+        addOnlineOfflineToDatabase:
+            feedRepository.addOnlineOfflineEntryForUser.bind(feedRepository),
+        addStatusToDatabase: feedRepository.addStatusEntryForUser.bind(
+            feedRepository
+        )
+    };
+    const feedWriter = feedWriterByMethod[databaseMethod];
+    if (!entry || typeof feedWriter !== 'function') {
         return;
     }
     void (async () => {
@@ -424,11 +436,7 @@ function publishFeedEntry(entry, databaseMethod) {
             if (currentSessionUserId() !== ownerUserId) {
                 return;
             }
-            const scopedDatabaseMethod = `${databaseMethod}ForUser`;
-            if (typeof database[scopedDatabaseMethod] !== 'function') {
-                return;
-            }
-            await database[scopedDatabaseMethod](ownerUserId, entry);
+            await feedWriter(ownerUserId, entry);
             if (currentSessionUserId() !== ownerUserId) {
                 return;
             }

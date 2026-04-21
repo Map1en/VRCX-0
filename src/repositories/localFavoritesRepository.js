@@ -223,6 +223,55 @@ async function getAvatarCache() {
     return Array.isArray(rows) ? rows.map(normalizeAvatarCacheRow) : [];
 }
 
+async function addWorldToCache(entry) {
+    return sqliteRepository.executeNonQuery(
+        `INSERT OR REPLACE INTO cache_world (id, added_at, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version) VALUES (@id, @added_at, @author_id, @author_name, @created_at, @description, @image_url, @name, @release_status, @thumbnail_image_url, @updated_at, @version)`,
+        {
+            '@id': entry.id,
+            '@added_at': new Date().toJSON(),
+            '@author_id': entry.authorId,
+            '@author_name': entry.authorName,
+            '@created_at': entry.created_at,
+            '@description': entry.description,
+            '@image_url': entry.imageUrl,
+            '@name': entry.name,
+            '@release_status': entry.releaseStatus,
+            '@thumbnail_image_url': entry.thumbnailImageUrl,
+            '@updated_at': entry.updated_at,
+            '@version': entry.version
+        }
+    );
+}
+
+async function getCachedWorldById(id) {
+    const normalizedId = normalizeEntityId(id);
+    if (!normalizedId) {
+        return null;
+    }
+    const rows = await sqliteRepository.query(
+        'SELECT * FROM cache_world WHERE id = @id LIMIT 1',
+        {
+            '@id': normalizedId
+        }
+    );
+    return Array.isArray(rows) && rows.length
+        ? normalizeWorldCacheRow(rows[0])
+        : null;
+}
+
+async function removeWorldFromCache(worldId) {
+    const normalizedWorldId = normalizeEntityId(worldId);
+    if (!normalizedWorldId) {
+        return;
+    }
+    await sqliteRepository.executeNonQuery(
+        'DELETE FROM cache_world WHERE id = @world_id',
+        {
+            '@world_id': normalizedWorldId
+        }
+    );
+}
+
 async function addLocalFavorite({ kind, entityId, groupName }) {
     const target = resolveLocalFavoriteDeleteTarget(kind);
     const normalizedEntityId = normalizeEntityId(entityId);
@@ -242,6 +291,30 @@ async function addLocalFavorite({ kind, entityId, groupName }) {
             '@created_at': new Date().toJSON()
         }
     );
+}
+
+function addAvatarToFavorites(avatarId, groupName) {
+    return addLocalFavorite({
+        kind: 'avatar',
+        entityId: avatarId,
+        groupName
+    });
+}
+
+function addWorldToFavorites(worldId, groupName) {
+    return addLocalFavorite({
+        kind: 'world',
+        entityId: worldId,
+        groupName
+    });
+}
+
+function addFriendToLocalFavorites(userId, groupName) {
+    return addLocalFavorite({
+        kind: 'friend',
+        entityId: userId,
+        groupName
+    });
 }
 
 async function removeLocalFavorite({ kind, entityId, groupName }) {
@@ -326,8 +399,13 @@ async function deleteLocalFavoriteGroup({ kind, groupName }) {
 }
 
 const localFavoritesRepository = Object.freeze({
+    addAvatarToFavorites,
+    addFriendToLocalFavorites,
+    addWorldToCache,
+    addWorldToFavorites,
     getExplicitLocalFavoriteGroups,
     createLocalFavoriteGroup,
+    getCachedWorldById,
     getWorldFavorites,
     getAvatarFavorites,
     getFriendFavorites,
@@ -336,12 +414,18 @@ const localFavoritesRepository = Object.freeze({
     addLocalFavorite,
     removeLocalFavorite,
     renameLocalFavoriteGroup,
-    deleteLocalFavoriteGroup
+    deleteLocalFavoriteGroup,
+    removeWorldFromCache
 });
 
 export {
+    addAvatarToFavorites,
+    addFriendToLocalFavorites,
+    addWorldToCache,
+    addWorldToFavorites,
     getExplicitLocalFavoriteGroups,
     createLocalFavoriteGroup,
+    getCachedWorldById,
     getWorldFavorites,
     getAvatarFavorites,
     getFriendFavorites,
@@ -350,6 +434,7 @@ export {
     addLocalFavorite,
     removeLocalFavorite,
     renameLocalFavoriteGroup,
-    deleteLocalFavoriteGroup
+    deleteLocalFavoriteGroup,
+    removeWorldFromCache
 };
 export default localFavoritesRepository;

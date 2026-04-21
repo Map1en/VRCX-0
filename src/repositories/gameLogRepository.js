@@ -1,7 +1,7 @@
-import { database } from '@/services/database/index.js';
 import { buildGameLogSessions } from '@/shared/utils/gameLog.js';
 
 import configRepository from './configRepository.js';
+import gameLogLocalRepository from './gameLogLocalRepository.js';
 
 export const GAME_LOG_FILTER_TYPES = Object.freeze([
     'Location',
@@ -290,7 +290,11 @@ function resolveSessionFetchLimit({
     );
 }
 
-async function loadSessionEvents(locationSegments, favoriteUserIds) {
+async function loadSessionEvents(
+    locationSegments,
+    favoriteUserIds,
+    currentUserId = ''
+) {
     if (!Array.isArray(locationSegments) || locationSegments.length === 0) {
         return [];
     }
@@ -308,10 +312,11 @@ async function loadSessionEvents(locationSegments, favoriteUserIds) {
                 .filter(Boolean)
         )
     );
-    const events = await database.getSessionsEventsForSegments(
+    const events = await gameLogLocalRepository.getSessionsEventsForSegments(
         locationTags,
         new Date(minEpoch - dateWindowMs).toISOString(),
-        new Date(maxEpoch + dateWindowMs).toISOString()
+        new Date(maxEpoch + dateWindowMs).toISOString(),
+        normalizeId(currentUserId)
     );
 
     return events.map((event) => {
@@ -324,6 +329,7 @@ async function loadSessionEvents(locationSegments, favoriteUserIds) {
 }
 
 async function queryGameLog({
+    currentUserId = '',
     search = '',
     filters = [],
     favoriteUserIds = []
@@ -332,9 +338,6 @@ async function queryGameLog({
         configRepository.getInt('maxTableSize_v2', 500),
         configRepository.getInt('searchLimit', 50000)
     ]);
-
-    database.setMaxTableSize(maxTableSize);
-    database.setSearchTableSize(searchLimit);
 
     const normalizedFilters = normalizeFilterList(filters);
     const normalizedFavorites = Array.from(
@@ -347,15 +350,16 @@ async function queryGameLog({
     const normalizedSearch = String(search || '').trim();
 
     if (normalizedSearch) {
-        return database.searchGameLogDatabase(
+        return gameLogLocalRepository.searchGameLogDatabase(
             normalizedSearch,
             normalizedFilters,
             normalizedFavorites,
-            searchLimit
+            searchLimit,
+            normalizeId(currentUserId)
         );
     }
 
-    return database.lookupGameLogDatabase(
+    return gameLogLocalRepository.lookupGameLogDatabase(
         normalizedFilters,
         normalizedFavorites,
         maxTableSize
@@ -363,6 +367,7 @@ async function queryGameLog({
 }
 
 async function queryLatestSessions({
+    currentUserId = '',
     search = '',
     filters = [],
     favoriteUserIds = [],
@@ -401,7 +406,7 @@ async function queryLatestSessions({
             latestFiltered.length < normalizedLimit &&
             allLocationSegments.length < searchLimit
         ) {
-            const batch = await database.getSessionsLocationSegments(
+            const batch = await gameLogLocalRepository.getSessionsLocationSegments(
                 beforeId,
                 fetchCount
             );
@@ -419,7 +424,8 @@ async function queryLatestSessions({
 
             const batchEvents = await loadSessionEvents(
                 batch,
-                normalizedFavoriteSet
+                normalizedFavoriteSet,
+                normalizeId(currentUserId)
             );
             allLocationSegments.push(...batch);
             allEvents.push(...batchEvents);
@@ -439,12 +445,15 @@ async function queryLatestSessions({
 
     const locationSegments =
         normalizedDateFrom || normalizedDateTo
-            ? await database.getSessionsLocationSegmentsByDateRange(
+            ? await gameLogLocalRepository.getSessionsLocationSegmentsByDateRange(
                   normalizedDateFrom || '1970-01-01T00:00:00.000Z',
                   normalizedDateTo || new Date().toISOString(),
                   fetchLimit
               )
-            : await database.getSessionsLocationSegments(null, fetchLimit);
+            : await gameLogLocalRepository.getSessionsLocationSegments(
+                  null,
+                  fetchLimit
+              );
 
     if (!Array.isArray(locationSegments) || locationSegments.length === 0) {
         return [];
@@ -452,7 +461,8 @@ async function queryLatestSessions({
 
     const annotatedEvents = await loadSessionEvents(
         locationSegments,
-        normalizedFavoriteSet
+        normalizedFavoriteSet,
+        normalizeId(currentUserId)
     );
     const result = buildGameLogSessions(locationSegments, annotatedEvents);
 
@@ -464,15 +474,17 @@ async function queryLatestSessions({
 }
 
 async function deleteGameLogEntry(row) {
-    await database.deleteGameLogEntry(row);
+    await gameLogLocalRepository.deleteGameLogEntry(row);
 }
 
 async function getUserIdFromDisplayName(displayName) {
-    return database.getUserIdFromDisplayName(displayName);
+    return gameLogLocalRepository.getUserIdFromDisplayName(displayName);
 }
 
 async function getPreviousInstancesByWorldId({ worldId }) {
-    const rows = await database.getPreviousInstancesByWorldId({ id: worldId });
+    const rows = await gameLogLocalRepository.getPreviousInstancesByWorldId({
+        id: worldId
+    });
     if (rows instanceof Map) {
         return Array.from(rows.values());
     }
@@ -484,13 +496,13 @@ async function getWorldNameByWorldId(worldId) {
     if (!normalizedWorldId) {
         return '';
     }
-    return database
+    return gameLogLocalRepository
         .getGameLogWorldNameByWorldId(normalizedWorldId)
         .catch(() => '');
 }
 
 async function getAllUserStats({ userIds = [], displayNames = [] } = {}) {
-    return database.getAllUserStats(
+    return gameLogLocalRepository.getAllUserStats(
         (Array.isArray(userIds) ? userIds : [])
             .map((value) => normalizeId(value))
             .filter(Boolean),
@@ -500,24 +512,15 @@ async function getAllUserStats({ userIds = [], displayNames = [] } = {}) {
     );
 }
 
-async function getMutualCountForAllUsers() {
-    return database.getMutualCountForAllUsers();
-}
-
-async function getMutualGraphMeta() {
-    return database.getMutualGraphMeta();
-}
-
 const gameLogRepository = Object.freeze({
+    ...gameLogLocalRepository,
     queryGameLog,
     queryLatestSessions,
     deleteGameLogEntry,
     getUserIdFromDisplayName,
     getPreviousInstancesByWorldId,
     getWorldNameByWorldId,
-    getAllUserStats,
-    getMutualCountForAllUsers,
-    getMutualGraphMeta
+    getAllUserStats
 });
 
 export {
@@ -527,8 +530,6 @@ export {
     getUserIdFromDisplayName,
     getPreviousInstancesByWorldId,
     getWorldNameByWorldId,
-    getAllUserStats,
-    getMutualCountForAllUsers,
-    getMutualGraphMeta
+    getAllUserStats
 };
 export default gameLogRepository;

@@ -2,9 +2,10 @@ import { backend } from '@/platform/index.js';
 import {
     avatarSearchProviderRepository,
     configRepository,
+    gameLogRepository,
+    localFavoritesRepository,
     webRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -68,7 +69,7 @@ async function persistVrcxMessage(data) {
                 type: 'Event',
                 data: normalizeString(data.Data)
             };
-            await database.addGamelogEventToDatabase(entry);
+            await gameLogRepository.addGamelogEventToDatabase(entry);
             useNotificationStore.getState().pushNotification({
                 level: 'info',
                 title: 'External notifier',
@@ -85,7 +86,7 @@ async function persistVrcxMessage(data) {
                 userId: normalizeString(data.UserId),
                 location
             };
-            await database.addGamelogExternalToDatabase(entry);
+            await gameLogRepository.addGamelogExternalToDatabase(entry);
             if (data.notify ?? true) {
                 useNotificationStore.getState().pushNotification({
                     level: 'info',
@@ -134,7 +135,10 @@ async function handleLaunchCommand(input) {
             if (!worldId || !groupName) {
                 throw new Error('Invalid local favorite world command.');
             }
-            await database.addWorldToFavorites(worldId, groupName);
+            await localFavoritesRepository.addWorldToFavorites(
+                worldId,
+                groupName
+            );
             openWorldDialog({ worldId });
             void bootstrapFavorites({
                 userId: runtimeState.auth.currentUserId,
@@ -149,7 +153,10 @@ async function handleLaunchCommand(input) {
             if (!avatarId || !groupName) {
                 throw new Error('Invalid local favorite avatar command.');
             }
-            await database.addAvatarToFavorites(avatarId, groupName);
+            await localFavoritesRepository.addAvatarToFavorites(
+                avatarId,
+                groupName
+            );
             openAvatarDialog({ avatarId });
             void bootstrapFavorites({
                 userId: runtimeState.auth.currentUserId,

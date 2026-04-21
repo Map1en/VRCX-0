@@ -245,6 +245,7 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
 
         gameLogRepository
             .queryGameLog({
+                currentUserId,
                 filters: Array.isArray(config.filters) ? config.filters : []
             })
             .then((nextRows) => {

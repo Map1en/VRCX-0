@@ -7,8 +7,10 @@ import { InstanceActionBar } from '@/components/instances/InstanceActionBar.jsx'
 import { Location } from '@/components/Location.jsx';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { timeToText } from '@/lib/dateTime.js';
-import { userProfileRepository } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
+import {
+    gameLogRepository,
+    userProfileRepository
+} from '@/repositories/index.js';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { getResolvedThemeMode } from '@/services/themeService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
@@ -362,8 +364,8 @@ function PreviousInstancesTableDialog({
         setInfoData({ status: 'running', error: '', players: [], details: [] });
 
         Promise.all([
-            database.getPlayersFromInstance(location),
-            database.getPlayerDetailFromInstance(location)
+            gameLogRepository.getPlayersFromInstance(location),
+            gameLogRepository.getPlayerDetailFromInstance(location)
         ])
             .then(([players, details]) => {
                 if (!active) {
@@ -439,13 +441,15 @@ function PreviousInstancesTableDialog({
                     );
                     return;
                 }
-                await database.deleteGameLogInstance({
+                await gameLogRepository.deleteGameLogInstance({
                     id: targetRef?.id || '',
                     location,
                     events: row.events
                 });
             } else {
-                await database.deleteGameLogInstanceByInstanceId({ location });
+                await gameLogRepository.deleteGameLogInstanceByInstanceId({
+                    location
+                });
             }
             setRows((current) => {
                 const nextRows = current.filter((item) => item !== row);

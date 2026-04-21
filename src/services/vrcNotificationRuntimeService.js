@@ -1,5 +1,4 @@
-import { DEFAULT_ENDPOINT_DOMAIN } from '@/repositories/vrchatAuthRepository.js';
-import { database } from '@/services/database/index.js';
+import notificationRepository from '@/repositories/notificationRepository.js';
 import {
     applyBoopLegacyHandling,
     createDefaultNotificationRef,
@@ -7,6 +6,7 @@ import {
     parseNotificationDetails,
     sanitizeNotificationJson
 } from '@/shared/utils/notificationTransforms.js';
+import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
@@ -67,7 +67,7 @@ function normalizeV2Notification(data, endpoint = '') {
     ref.data = parseObject(ref.data);
     ref.responses = parseArray(ref.responses);
     ref.details = parseObject(ref.details);
-    applyBoopLegacyHandling(ref, endpoint || DEFAULT_ENDPOINT_DOMAIN);
+    applyBoopLegacyHandling(ref, normalizeVrchatEndpointDomain(endpoint));
     return ref;
 }
 
@@ -90,9 +90,6 @@ function clearNotificationMenuIfNoUnseen() {
 
 async function ensureNotificationTables() {
     const currentUserId = getCurrentAuth().currentUserId;
-    if (currentUserId) {
-        await database.initUserTables(currentUserId);
-    }
     return currentUserId;
 }
 
@@ -110,7 +107,10 @@ async function persistV1Notification(notification) {
     if (!currentUserId || !shouldPersistV1(notification, currentUserId)) {
         return;
     }
-    await database.addNotificationToDatabase(notification);
+    await notificationRepository.addNotificationToDatabase({
+        userId: currentUserId,
+        notification
+    });
 }
 
 async function persistV2Notification(notification) {
@@ -118,30 +118,44 @@ async function persistV2Notification(notification) {
     if (!currentUserId) {
         return;
     }
-    await database.addNotificationV2ToDatabase(notification);
+    await notificationRepository.addNotificationV2ToDatabase({
+        userId: currentUserId,
+        notification
+    });
 }
 
 async function expireNotificationById(id) {
-    if (!id || !(await ensureNotificationTables())) {
+    const currentUserId = await ensureNotificationTables();
+    if (!id || !currentUserId) {
         return;
     }
-    await database.expireNotificationV2(id);
+    await notificationRepository.expireNotificationV2({
+        userId: currentUserId,
+        id
+    });
     const row = useVrcNotificationStore
         .getState()
         .rows.find((entry) => entry.id === id);
     if (row && (!row.version || row.version < 2)) {
-        await database.updateNotificationExpired({
-            ...row,
-            $isExpired: true
+        await notificationRepository.updateNotificationExpired({
+            userId: currentUserId,
+            notification: {
+                ...row,
+                $isExpired: true
+            }
         });
     }
 }
 
 async function markV2NotificationSeen(id) {
-    if (!id || !(await ensureNotificationTables())) {
+    const currentUserId = await ensureNotificationTables();
+    if (!id || !currentUserId) {
         return;
     }
-    await database.seenNotificationV2(id);
+    await notificationRepository.seenNotificationV2({
+        userId: currentUserId,
+        id
+    });
 }
 
 export async function handleRealtimeNotificationEvent(type, content) {

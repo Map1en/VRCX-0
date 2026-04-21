@@ -1,11 +1,12 @@
 import { backend } from '@/platform/index.js';
 import {
     configRepository,
+    databaseMaintenanceRepository,
+    gameLogRepository,
     mediaRepository,
     vrchatFriendRepository,
     webRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import {
     getEmojiFileName,
     getPrintFileName,
@@ -359,7 +360,7 @@ async function resolveScreenshotMetadataContext(path, screenshotDateTime) {
 
     const screenshotDateIso = new Date(screenshotTimestamp).toJSON();
     const locationEntry =
-        await database.getLocationBeforeOrAt(screenshotDateIso);
+        await gameLogRepository.getLocationBeforeOrAt(screenshotDateIso);
     if (!locationEntry?.location) {
         return null;
     }
@@ -370,11 +371,12 @@ async function resolveScreenshotMetadataContext(path, screenshotDateTime) {
         return null;
     }
 
-    const joinLeaveEntries = await database.getJoinLeaveEntriesForLocationRange(
-        locationEntry.location,
-        locationEntry.created_at,
-        screenshotDateIso
-    );
+    const joinLeaveEntries =
+        await gameLogRepository.getJoinLeaveEntriesForLocationRange(
+            locationEntry.location,
+            locationEntry.created_at,
+            screenshotDateIso
+        );
 
     const playerMap = new Map();
     for (const entry of joinLeaveEntries) {
@@ -683,7 +685,7 @@ async function persistVideoEntry(entry) {
         startedAt: entry.created_at || new Date().toISOString(),
         updatedAt: new Date().toISOString()
     });
-    await database.addGamelogVideoPlayToDatabase(entry);
+    await gameLogRepository.addGamelogVideoPlayToDatabase(entry);
     void pushSharedFeedNotification({
         ...entry,
         message: [
@@ -715,7 +717,9 @@ async function resolveUserIdFromDisplayName(displayName) {
 
     try {
         return normalizeString(
-            await database.getUserIdFromDisplayName(normalizedDisplayName)
+            await gameLogRepository.getUserIdFromDisplayName(
+                normalizedDisplayName
+            )
         );
     } catch (error) {
         console.warn('Failed to resolve video uploader display name:', error);
@@ -960,7 +964,7 @@ async function persistGameLog(gameLog, options = {}) {
                 parsed.worldId || '',
                 worldName
             );
-            await database.addGamelogLocationToDatabase(entry);
+            await gameLogRepository.addGamelogLocationToDatabase(entry);
             updateCurrentLocation({
                 location: normalizedLocation,
                 worldName,
@@ -987,7 +991,7 @@ async function persistGameLog(gameLog, options = {}) {
                 location,
                 userId
             );
-            await database.addGamelogJoinLeaveToDatabase(entry);
+            await gameLogRepository.addGamelogJoinLeaveToDatabase(entry);
             break;
         }
         case 'player-left': {
@@ -1012,12 +1016,12 @@ async function persistGameLog(gameLog, options = {}) {
                 userId,
                 duration
             );
-            await database.addGamelogJoinLeaveToDatabase(entry);
+            await gameLogRepository.addGamelogJoinLeaveToDatabase(entry);
             break;
         }
         case 'portal-spawn':
             entry = createPortalSpawnEntry(gameLog.dt, location);
-            await database.addGamelogPortalSpawnToDatabase(entry);
+            await gameLogRepository.addGamelogPortalSpawnToDatabase(entry);
             break;
         case 'video-play': {
             const videoUrl = decodeURI(normalizeString(gameLog.videoUrl));
@@ -1071,7 +1075,7 @@ async function persistGameLog(gameLog, options = {}) {
                 resourceUrl,
                 location
             );
-            await database.addGamelogResourceLoadToDatabase(entry);
+            await gameLogRepository.addGamelogResourceLoadToDatabase(entry);
             break;
         }
         case 'api-request': {
@@ -1104,7 +1108,7 @@ async function persistGameLog(gameLog, options = {}) {
                 type: 'Event',
                 data: normalizeString(gameLog.event)
             };
-            await database.addGamelogEventToDatabase(entry);
+            await gameLogRepository.addGamelogEventToDatabase(entry);
             break;
         case 'vrcx':
             entry = await persistProviderVideo(gameLog, location);
@@ -1189,8 +1193,8 @@ export async function initializeGameLogIngest() {
     }
 
     ingestState.initializing = (async () => {
-        await database.initTables();
-        const dateTill = await database.getLastDateGameLogDatabase();
+        await databaseMaintenanceRepository.initGlobalTables();
+        const dateTill = await gameLogRepository.getLastDateGameLogDatabase();
         await backend.logWatcher.SetDateTill(dateTill);
         ingestState.tailCaughtUp = false;
         ingestState.initialized = true;
@@ -1255,7 +1259,7 @@ export async function finalizeCurrentGameLogSession(
             }
 
             if (leaveEntries.length > 0) {
-                await database.addGamelogJoinLeaveBulk(leaveEntries);
+                await gameLogRepository.addGamelogJoinLeaveBulk(leaveEntries);
             }
 
             const startedAtTime = Date.parse(startedAt);
@@ -1264,7 +1268,7 @@ export async function finalizeCurrentGameLogSession(
                 Number.isFinite(startedAtTime) &&
                 stoppedAtTime >= startedAtTime
             ) {
-                await database.updateGamelogLocationTimeToDatabase({
+                await gameLogRepository.updateGamelogLocationTimeToDatabase({
                     created_at: startedAt,
                     time: stoppedAtTime - startedAtTime
                 });

@@ -1464,6 +1464,7 @@ export function GameLogPage({ embedded = false } = {}) {
                 ? 'queryLatestSessions'
                 : 'queryGameLog'
         ]({
+            currentUserId,
             search: deferredSearchQuery,
             filters: queryFilterTypes,
             favoriteUserIds,

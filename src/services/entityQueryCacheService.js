@@ -1,3 +1,5 @@
+import { normalizeVrchatEndpointKey } from '@/shared/vrchatEndpoint.js';
+
 import { queryClient } from './queryClient.js';
 
 const SECOND = 1000;
@@ -108,16 +110,8 @@ export const entityQueryPolicies = Object.freeze({
     })
 });
 
-function normalizeEndpointKey(endpoint) {
-    return (
-        typeof endpoint === 'string'
-            ? endpoint.trim()
-            : String(endpoint ?? '').trim()
-    ).replace(/\/+$/, '');
-}
-
 function withEndpoint(queryKey, endpoint = '') {
-    const normalizedEndpoint = normalizeEndpointKey(endpoint);
+    const normalizedEndpoint = normalizeVrchatEndpointKey(endpoint);
     return normalizedEndpoint
         ? [...queryKey, { endpoint: normalizedEndpoint }]
         : queryKey;
@@ -137,6 +131,8 @@ function stableParams(params = {}) {
 
 export const queryKeys = Object.freeze({
     user: (userId, endpoint = '') => withEndpoint(['user', userId], endpoint),
+    userGroups: (userId, endpoint = '') =>
+        withEndpoint(['user', userId, 'groups'], endpoint),
     instance: (worldId, instanceId, endpoint = '') =>
         withEndpoint(['instance', worldId, instanceId], endpoint),
     instanceShortName: (worldId, instanceId, endpoint = '') =>

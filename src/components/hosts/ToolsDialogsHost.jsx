@@ -21,10 +21,10 @@ import { backend } from '@/platform/index.js';
 import {
     configRepository,
     groupProfileRepository,
+    memoRepository,
     myAvatarRepository,
     toolsRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import { openGroupDialog, openUserDialog } from '@/services/dialogService.js';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
 import { replaceBioSymbols } from '@/shared/utils/base/string.js';
@@ -153,7 +153,7 @@ function updateArrayValue(values, value, checked) {
 }
 
 async function getUserMemoMap() {
-    const rows = await database.getAllUserMemos().catch(() => []);
+    const rows = await memoRepository.getAllUserMemos().catch(() => []);
     return new Map(
         (Array.isArray(rows) ? rows : [])
             .filter((row) => typeof row?.userId === 'string' && row.userId)

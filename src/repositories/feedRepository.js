@@ -1,6 +1,6 @@
-import { database } from '@/services/database/index.js';
-
 import configRepository from './configRepository.js';
+import feedLocalRepository from './feedLocalRepository.js';
+import userSessionRepository from './userSessionRepository.js';
 
 export const FEED_FILTER_TYPES = Object.freeze([
     'GPS',
@@ -49,11 +49,8 @@ class FeedRepository {
             configRepository.getInt('searchLimit', 50000)
         ]);
 
-        database.setMaxTableSize(maxTableSize);
-        database.setSearchTableSize(searchLimit);
-
         if (this.#currentUserId !== normalizedUserId) {
-            await database.initUserTables(normalizedUserId);
+            await userSessionRepository.ensureUserTables(normalizedUserId);
             this.#currentUserId = normalizedUserId;
         }
 
@@ -72,7 +69,8 @@ class FeedRepository {
         dateFrom = '',
         dateTo = ''
     }) {
-        const { maxTableSize, searchLimit } = await this.#ensureReady(userId);
+        const { normalizedUserId, maxTableSize, searchLimit } =
+            await this.#ensureReady(userId);
         const normalizedFilters = normalizeFilterList(filters);
         const normalizedFavorites = Array.from(
             new Set(
@@ -84,7 +82,8 @@ class FeedRepository {
         const normalizedSearch = String(search || '').trim();
 
         if (normalizedSearch || dateFrom || dateTo) {
-            return database.searchFeedDatabase(
+            return feedLocalRepository.searchFeedDatabase(
+                normalizedUserId,
                 normalizedSearch,
                 normalizedFilters,
                 normalizedFavorites,
@@ -94,11 +93,39 @@ class FeedRepository {
             );
         }
 
-        return database.lookupFeedDatabase(
+        return feedLocalRepository.lookupFeedDatabase(
+            normalizedUserId,
             normalizedFilters,
             normalizedFavorites,
             maxTableSize
         );
+    }
+
+    async addGpsEntryForUser(userId, entry) {
+        return feedLocalRepository.addGPSToDatabaseForUser(userId, entry);
+    }
+
+    async addStatusEntryForUser(userId, entry) {
+        return feedLocalRepository.addStatusToDatabaseForUser(userId, entry);
+    }
+
+    async addBioEntryForUser(userId, entry) {
+        return feedLocalRepository.addBioToDatabaseForUser(userId, entry);
+    }
+
+    async addAvatarEntryForUser(userId, entry) {
+        return feedLocalRepository.addAvatarToDatabaseForUser(userId, entry);
+    }
+
+    async addOnlineOfflineEntryForUser(userId, entry) {
+        return feedLocalRepository.addOnlineOfflineToDatabaseForUser(
+            userId,
+            entry
+        );
+    }
+
+    async purgeAvatarFeedData(userId, cutoffDate = null) {
+        return feedLocalRepository.purgeAvatarFeedData(userId, cutoffDate);
     }
 }
 

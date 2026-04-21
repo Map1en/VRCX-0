@@ -103,6 +103,30 @@ async function getFriendLogHistory(userId, options = {}) {
         .filter((row) => typeof row.userId === 'string' && row.userId.trim());
 }
 
+async function addFriendLogHistory(userId, entry) {
+    const userPrefix = normalizeUserTablePrefix(userId);
+    await sqliteRepository.executeNonQuery(
+        `INSERT OR IGNORE INTO ${userPrefix}_friend_log_history (created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number) VALUES (@created_at, @type, @user_id, @display_name, @previous_display_name, @trust_level, @previous_trust_level, @friend_number)`,
+        {
+            '@created_at': entry?.created_at ?? '',
+            '@type': entry?.type ?? '',
+            '@user_id': entry?.userId ?? '',
+            '@display_name': entry?.displayName ?? '',
+            '@previous_display_name': entry?.previousDisplayName ?? '',
+            '@trust_level': entry?.trustLevel ?? '',
+            '@previous_trust_level': entry?.previousTrustLevel ?? '',
+            '@friend_number':
+                Number.parseInt(entry?.friendNumber ?? 0, 10) || 0
+        }
+    );
+}
+
+async function addFriendLogHistoryArray(userId, entries = []) {
+    for (const entry of Array.isArray(entries) ? entries : []) {
+        await addFriendLogHistory(userId, entry);
+    }
+}
+
 async function deleteFriendLogHistory(userId, entry) {
     const userPrefix = normalizeUserTablePrefix(userId);
     const rowId = Number.parseInt(entry?.rowId ?? 0, 10) || 0;
@@ -127,9 +151,17 @@ async function deleteFriendLogHistory(userId, entry) {
 }
 
 const friendLogHistoryRepository = {
+    addFriendLogHistory,
+    addFriendLogHistoryArray,
     getFriendLogHistory,
     deleteFriendLogHistory
 };
 
-export { FRIEND_LOG_TYPES, getFriendLogHistory, deleteFriendLogHistory };
+export {
+    FRIEND_LOG_TYPES,
+    addFriendLogHistory,
+    addFriendLogHistoryArray,
+    deleteFriendLogHistory,
+    getFriendLogHistory
+};
 export default friendLogHistoryRepository;

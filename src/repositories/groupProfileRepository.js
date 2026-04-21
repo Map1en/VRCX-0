@@ -5,18 +5,10 @@ import {
 } from '@/services/entityQueryCacheService.js';
 import { replaceBioSymbols } from '@/shared/utils/base/string.js';
 import { createDefaultGroupRef } from '@/shared/utils/groupTransforms.js';
+import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
 
 import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
 import webRepository from './webRepository.js';
-
-function normalizeEndpointDomain(endpointDomain) {
-    if (typeof endpointDomain === 'string' && endpointDomain.trim()) {
-        return endpointDomain.trim();
-    }
-
-    return DEFAULT_ENDPOINT_DOMAIN;
-}
 
 function appendParams(url, params) {
     if (!params || typeof params !== 'object') {
@@ -45,8 +37,7 @@ function appendParams(url, params) {
 }
 
 function buildUrl(path, params = {}, endpoint = '') {
-    const baseUrl = normalizeEndpointDomain(endpoint).replace(/\/?$/, '/');
-    const url = new URL(path, baseUrl);
+    const url = new URL(path, getVrchatEndpointBase(endpoint));
     return appendParams(url, params).toString();
 }
 
@@ -383,7 +374,7 @@ async function getUserGroups({ userId, endpoint = '' }) {
     }
 
     const rows = await fetchCachedData({
-        queryKey: ['user', normalizedUserId, 'groups', endpoint || ''],
+        queryKey: queryKeys.userGroups(normalizedUserId, endpoint),
         policy: entityQueryPolicies.groupCollection,
         queryFn: async () => {
             const response = await executeGet(

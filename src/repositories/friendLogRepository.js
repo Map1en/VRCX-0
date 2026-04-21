@@ -71,10 +71,45 @@ async function replaceFriendLogCurrent(userId, entries = []) {
     };
 }
 
+async function upsertFriendLogCurrent(userId, entry) {
+    const userPrefix = normalizeUserTablePrefix(userId);
+    if (!entry?.userId) {
+        return;
+    }
+
+    await sqliteRepository.executeNonQuery(
+        `INSERT OR REPLACE INTO ${userPrefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES (@user_id, @display_name, @trust_level, @friend_number)`,
+        {
+            '@user_id': entry.userId,
+            '@display_name': entry.displayName ?? '',
+            '@trust_level': entry.trustLevel ?? 'Visitor',
+            '@friend_number':
+                Number.parseInt(entry.friendNumber ?? 0, 10) || 0
+        }
+    );
+}
+
+async function deleteFriendLogCurrent(userId, targetUserId) {
+    const userPrefix = normalizeUserTablePrefix(userId);
+    await sqliteRepository.executeNonQuery(
+        `DELETE FROM ${userPrefix}_friend_log_current WHERE user_id = @user_id`,
+        {
+            '@user_id': targetUserId
+        }
+    );
+}
+
 const friendLogRepository = {
     getFriendLogCurrent,
+    deleteFriendLogCurrent,
+    upsertFriendLogCurrent,
     replaceFriendLogCurrent
 };
 
-export { getFriendLogCurrent, replaceFriendLogCurrent };
+export {
+    deleteFriendLogCurrent,
+    getFriendLogCurrent,
+    replaceFriendLogCurrent,
+    upsertFriendLogCurrent
+};
 export default friendLogRepository;

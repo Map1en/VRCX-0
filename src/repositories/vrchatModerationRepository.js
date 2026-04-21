@@ -1,23 +1,14 @@
-import { database } from '@/services/database/index.js';
+import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
 
 import { safeJsonParse } from './baseRepository.js';
-import { DEFAULT_ENDPOINT_DOMAIN } from './vrchatAuthRepository.js';
+import sqliteRepository from './sqliteRepository.js';
+import userSessionRepository, {
+    normalizeUserTablePrefix
+} from './userSessionRepository.js';
 import webRepository from './webRepository.js';
 
-function normalizeEndpointDomain(endpointDomain) {
-    if (typeof endpointDomain === 'string' && endpointDomain.trim()) {
-        return endpointDomain.trim();
-    }
-
-    return DEFAULT_ENDPOINT_DOMAIN;
-}
-
 function buildUrl(path, endpointDomain) {
-    const baseUrl = normalizeEndpointDomain(endpointDomain).replace(
-        /\/?$/,
-        '/'
-    );
-    return new URL(path, baseUrl).toString();
+    return new URL(path, getVrchatEndpointBase(endpointDomain)).toString();
 }
 
 function parseJsonResponse(data) {
@@ -222,7 +213,94 @@ async function getPlayerModerations({ endpoint = '' } = {}) {
     };
 }
 
-async function syncLocalModerationSnapshot(rows = []) {
+async function getAllLocalModerations(ownerUserId) {
+    const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+    if (!normalizedOwnerUserId) {
+        return [];
+    }
+
+    await userSessionRepository.ensureUserTables(normalizedOwnerUserId);
+    const userPrefix = normalizeUserTablePrefix(normalizedOwnerUserId);
+    const rows = await sqliteRepository.query(
+        `SELECT user_id, updated_at, display_name, block, mute FROM ${userPrefix}_moderation`
+    );
+    return Array.isArray(rows)
+        ? rows.map((row) => ({
+              userId: Array.isArray(row) ? row[0] : row.user_id,
+              updatedAt: Array.isArray(row) ? row[1] : row.updated_at,
+              displayName: Array.isArray(row) ? row[2] : row.display_name,
+              block: Number(Array.isArray(row) ? row[3] : row.block) === 1,
+              mute: Number(Array.isArray(row) ? row[4] : row.mute) === 1
+          }))
+        : [];
+}
+
+async function getLocalModerationRow(ownerUserId, userId) {
+    const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+    const normalizedUserId = normalizeUserId(userId);
+    if (!normalizedOwnerUserId || !normalizedUserId) {
+        return {};
+    }
+
+    await userSessionRepository.ensureUserTables(normalizedOwnerUserId);
+    const userPrefix = normalizeUserTablePrefix(normalizedOwnerUserId);
+    const rows = await sqliteRepository.query(
+        `SELECT user_id, updated_at, display_name, block, mute FROM ${userPrefix}_moderation WHERE user_id = @userId LIMIT 1`,
+        {
+            '@userId': normalizedUserId
+        }
+    );
+    const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+    if (!row) {
+        return {};
+    }
+    return {
+        userId: Array.isArray(row) ? row[0] : row.user_id,
+        updatedAt: Array.isArray(row) ? row[1] : row.updated_at,
+        displayName: Array.isArray(row) ? row[2] : row.display_name,
+        block: Number(Array.isArray(row) ? row[3] : row.block) === 1,
+        mute: Number(Array.isArray(row) ? row[4] : row.mute) === 1
+    };
+}
+
+async function setLocalModerationRow(ownerUserId, entry) {
+    const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+    if (!normalizedOwnerUserId || !entry?.userId) {
+        return;
+    }
+
+    await userSessionRepository.ensureUserTables(normalizedOwnerUserId);
+    const userPrefix = normalizeUserTablePrefix(normalizedOwnerUserId);
+    await sqliteRepository.executeNonQuery(
+        `INSERT OR REPLACE INTO ${userPrefix}_moderation (user_id, updated_at, display_name, block, mute) VALUES (@user_id, @updated_at, @display_name, @block, @mute)`,
+        {
+            '@user_id': entry.userId,
+            '@updated_at': entry.updatedAt,
+            '@display_name': entry.displayName,
+            '@block': entry.block ? 1 : 0,
+            '@mute': entry.mute ? 1 : 0
+        }
+    );
+}
+
+async function deleteLocalModerationRow(ownerUserId, userId) {
+    const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+    const normalizedUserId = normalizeUserId(userId);
+    if (!normalizedOwnerUserId || !normalizedUserId) {
+        return;
+    }
+
+    await userSessionRepository.ensureUserTables(normalizedOwnerUserId);
+    const userPrefix = normalizeUserTablePrefix(normalizedOwnerUserId);
+    await sqliteRepository.executeNonQuery(
+        `DELETE FROM ${userPrefix}_moderation WHERE user_id = @user_id`,
+        {
+            '@user_id': normalizedUserId
+        }
+    );
+}
+
+async function syncLocalModerationSnapshot({ ownerUserId, rows = [] } = {}) {
     const moderationByUserId = new Map();
 
     for (const row of Array.isArray(rows) ? rows : []) {
@@ -255,17 +333,17 @@ async function syncLocalModerationSnapshot(rows = []) {
         });
     }
 
-    const existingRows = await database.getAllModerations();
+    const existingRows = await getAllLocalModerations(ownerUserId);
     const writes = [];
 
     for (const row of existingRows) {
         if (row.userId && !moderationByUserId.has(row.userId)) {
-            writes.push(database.deleteModeration(row.userId));
+            writes.push(deleteLocalModerationRow(ownerUserId, row.userId));
         }
     }
 
     for (const row of moderationByUserId.values()) {
-        writes.push(database.setModeration(row));
+        writes.push(setLocalModerationRow(ownerUserId, row));
     }
 
     await Promise.all(writes);
@@ -320,7 +398,7 @@ async function deletePlayerModeration({ endpoint = '', moderated, type } = {}) {
     );
 }
 
-async function getLocalModeration({ userId } = {}) {
+async function getLocalModeration({ ownerUserId = '', userId } = {}) {
     const normalizedUserId = normalizeUserId(userId);
     if (!normalizedUserId) {
         return {
@@ -330,7 +408,7 @@ async function getLocalModeration({ userId } = {}) {
         };
     }
 
-    const row = await database.getModeration(normalizedUserId);
+    const row = await getLocalModerationRow(ownerUserId, normalizedUserId);
     return {
         userId: normalizedUserId,
         block: Boolean(row?.block),
@@ -340,6 +418,7 @@ async function getLocalModeration({ userId } = {}) {
 
 async function saveLocalModeration({
     userId,
+    ownerUserId = '',
     displayName = '',
     block = false,
     mute = false
@@ -352,7 +431,7 @@ async function saveLocalModeration({
     }
 
     if (!block && !mute) {
-        await database.deleteModeration(normalizedUserId);
+        await deleteLocalModerationRow(ownerUserId, normalizedUserId);
         return {
             userId: normalizedUserId,
             block: false,
@@ -367,31 +446,37 @@ async function saveLocalModeration({
         block,
         mute
     };
-    await database.setModeration(entry);
+    await setLocalModerationRow(ownerUserId, entry);
     return entry;
 }
 
 const vrchatModerationRepository = Object.freeze({
+    deleteLocalModerationRow,
     executeGet,
     executePut,
     executePost,
+    getAllLocalModerations,
     getPlayerModerations,
     syncLocalModerationSnapshot,
     sendPlayerModeration,
     deletePlayerModeration,
     getLocalModeration,
-    saveLocalModeration
+    saveLocalModeration,
+    setLocalModerationRow
 });
 
 export {
+    deleteLocalModerationRow,
     executeGet,
     executePut,
     executePost,
+    getAllLocalModerations,
     getPlayerModerations,
     syncLocalModerationSnapshot,
     sendPlayerModeration,
     deletePlayerModeration,
     getLocalModeration,
-    saveLocalModeration
+    saveLocalModeration,
+    setLocalModerationRow
 };
 export default vrchatModerationRepository;

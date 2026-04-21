@@ -26,13 +26,13 @@ import { userImage } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import {
     avatarProfileRepository,
+    avatarLocalRepository,
     configRepository,
     localFavoritesRepository,
     notificationRepository,
     vrchatSearchRepository,
     vrchatFavoriteRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import {
     openAvatarDialog,
     openUserDialog,
@@ -1635,7 +1635,7 @@ function FavoritesPage({ kind, embedded = false }) {
                 currentUserSnapshot
             });
             if (kind === 'avatar') {
-                const rows = await database.getAvatarHistory(
+                const rows = await avatarLocalRepository.getAvatarHistory(
                     currentUserId,
                     100
                 );
@@ -2573,7 +2573,10 @@ function FavoritesPage({ kind, embedded = false }) {
 
         setAvatarHistoryLoading(true);
         try {
-            const rows = await database.getAvatarHistory(currentUserId, 100);
+            const rows = await avatarLocalRepository.getAvatarHistory(
+                currentUserId,
+                100
+            );
             setAvatarHistory(Array.isArray(rows) ? rows : []);
         } catch (error) {
             toast.error(
@@ -2600,7 +2603,7 @@ function FavoritesPage({ kind, embedded = false }) {
         }
 
         try {
-            await database.clearAvatarHistory();
+            await avatarLocalRepository.clearAvatarHistory(currentUserId);
             setAvatarHistory([]);
             if (selectedSource === 'history') {
                 setSelectedGroupKey('');

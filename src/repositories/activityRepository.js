@@ -1,5 +1,13 @@
 import sqliteRepository from './sqliteRepository.js';
-import { normalizeUserTablePrefix } from './userSessionRepository.js';
+import {
+    buildUserTableName,
+    normalizeUserTablePrefix
+} from './localDatabaseSchema.js';
+
+const ACTIVITY_VIEW_KIND = Object.freeze({
+    ACTIVITY: 'activity',
+    OVERLAP: 'overlap'
+});
 
 function getSyncStateTable(userId) {
     return `${normalizeUserTablePrefix(userId)}_activity_sync_state_v2`;
@@ -7,6 +15,25 @@ function getSyncStateTable(userId) {
 
 function getSessionsTable(userId) {
     return `${normalizeUserTablePrefix(userId)}_activity_sessions_v2`;
+}
+
+function getBucketCacheTable(userId) {
+    return buildUserTableName(userId, 'activity_bucket_cache_v2');
+}
+
+function getFeedOnlineOfflineTable(ownerUserId) {
+    return buildUserTableName(ownerUserId, 'feed_online_offline');
+}
+
+function parseJson(value, fallback) {
+    if (!value) {
+        return fallback;
+    }
+    try {
+        return JSON.parse(value);
+    } catch {
+        return fallback;
+    }
 }
 
 function normalizeActivitySyncStateRow(row, fallbackUserId) {
@@ -197,6 +224,148 @@ async function getSelfActivitySourceAfter({
         .filter((row) => typeof row?.created_at === 'string' && row.created_at);
 }
 
+async function getFriendPresenceSlice({
+    userId,
+    fromDateIso,
+    toDateIso = '',
+    ownerUserId
+}) {
+    const tableName = getFeedOnlineOfflineTable(ownerUserId);
+    const rows = await sqliteRepository.query(
+        `
+            SELECT created_at, type
+            FROM (
+                SELECT created_at, type, 0 AS sort_group
+                FROM (
+                    SELECT created_at, type
+                    FROM ${tableName}
+                    WHERE user_id = @userId
+                      AND (type = 'Online' OR type = 'Offline')
+                      AND created_at < @fromDateIso
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                )
+                UNION ALL
+                SELECT created_at, type, 1 AS sort_group
+                FROM ${tableName}
+                WHERE user_id = @userId
+                  AND (type = 'Online' OR type = 'Offline')
+                  AND created_at >= @fromDateIso
+                  ${toDateIso ? 'AND created_at < @toDateIso' : ''}
+            )
+            ORDER BY created_at ASC, sort_group ASC
+        `,
+        {
+            '@userId': userId,
+            '@fromDateIso': fromDateIso,
+            '@toDateIso': toDateIso
+        }
+    );
+
+    const output = Array.isArray(rows)
+        ? rows.map((row) => ({
+              created_at: Array.isArray(row) ? row[0] : row.created_at,
+              type: Array.isArray(row) ? row[1] : row.type
+          }))
+        : [];
+
+    if (toDateIso) {
+        const tailRows = await sqliteRepository.query(
+            `SELECT created_at, type
+             FROM ${tableName}
+             WHERE user_id = @userId
+               AND (type = 'Online' OR type = 'Offline')
+               AND created_at >= @toDateIso
+             ORDER BY created_at ASC
+             LIMIT 1`,
+            {
+                '@userId': userId,
+                '@toDateIso': toDateIso
+            }
+        );
+        for (const row of tailRows ?? []) {
+            output.push({
+                created_at: Array.isArray(row) ? row[0] : row.created_at,
+                type: Array.isArray(row) ? row[1] : row.type
+            });
+        }
+    }
+
+    return output.sort((left, right) =>
+        String(left.created_at || '').localeCompare(
+            String(right.created_at || '')
+        )
+    );
+}
+
+async function getFriendPresenceAfter({
+    userId,
+    afterCreatedAt,
+    ownerUserId
+}) {
+    const tableName = getFeedOnlineOfflineTable(ownerUserId);
+    const rows = await sqliteRepository.query(
+        `SELECT created_at, type
+         FROM ${tableName}
+         WHERE user_id = @userId
+           AND (type = 'Online' OR type = 'Offline')
+           AND created_at > @afterCreatedAt
+         ORDER BY created_at`,
+        {
+            '@userId': userId,
+            '@afterCreatedAt': afterCreatedAt
+        }
+    );
+    return Array.isArray(rows)
+        ? rows.map((row) => ({
+              created_at: Array.isArray(row) ? row[0] : row.created_at,
+              type: Array.isArray(row) ? row[1] : row.type
+          }))
+        : [];
+}
+
+async function getActivitySourceSlice({
+    userId,
+    ownerUserId = '',
+    isSelf,
+    fromDays,
+    toDays = 0
+}) {
+    if (isSelf) {
+        return getSelfActivitySourceSlice({ fromDays, toDays });
+    }
+
+    const fromDateIso = new Date(
+        Date.now() - fromDays * 86400000
+    ).toISOString();
+    const toDateIso =
+        toDays > 0
+            ? new Date(Date.now() - toDays * 86400000).toISOString()
+            : '';
+    return getFriendPresenceSlice({
+        userId,
+        fromDateIso,
+        toDateIso,
+        ownerUserId
+    });
+}
+
+async function getActivitySourceAfter({
+    userId,
+    ownerUserId = '',
+    isSelf,
+    afterCreatedAt,
+    inclusive = false
+}) {
+    return isSelf
+        ? getSelfActivitySourceAfter({ afterCreatedAt, inclusive })
+        : getFriendPresenceAfter({
+              userId,
+              afterCreatedAt,
+              ownerUserId
+          });
+}
+
 async function getActivitySyncState(userId) {
     const normalizedUserId =
         typeof userId === 'string'
@@ -325,23 +494,96 @@ async function appendActivitySessions({
     });
 }
 
+async function getActivityBucketCache({
+    ownerUserId,
+    targetUserId = '',
+    rangeDays,
+    viewKind,
+    excludeKey = ''
+}) {
+    const rows = await sqliteRepository.query(
+        `SELECT user_id, target_user_id, range_days, view_kind, exclude_key, bucket_version, built_from_cursor, raw_buckets_json, normalized_buckets_json, summary_json, built_at
+         FROM ${getBucketCacheTable(ownerUserId)}
+         WHERE user_id = @ownerUserId AND target_user_id = @targetUserId AND range_days = @rangeDays AND view_kind = @viewKind AND exclude_key = @excludeKey
+         LIMIT 1`,
+        {
+            '@ownerUserId': ownerUserId,
+            '@targetUserId': targetUserId,
+            '@rangeDays': rangeDays,
+            '@viewKind': viewKind,
+            '@excludeKey': excludeKey
+        }
+    );
+    const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+    if (!row) {
+        return null;
+    }
+    const read = (index, key) => (Array.isArray(row) ? row[index] : row[key]);
+    return {
+        ownerUserId: read(0, 'user_id'),
+        targetUserId: read(1, 'target_user_id'),
+        rangeDays: read(2, 'range_days'),
+        viewKind: read(3, 'view_kind'),
+        excludeKey: read(4, 'exclude_key') || '',
+        bucketVersion: read(5, 'bucket_version') || 1,
+        builtFromCursor: read(6, 'built_from_cursor') || '',
+        rawBuckets: parseJson(read(7, 'raw_buckets_json'), []),
+        normalizedBuckets: parseJson(read(8, 'normalized_buckets_json'), []),
+        summary: parseJson(read(9, 'summary_json'), {}),
+        builtAt: read(10, 'built_at') || ''
+    };
+}
+
+async function upsertActivityBucketCache(entry) {
+    await sqliteRepository.executeNonQuery(
+        `INSERT OR REPLACE INTO ${getBucketCacheTable(entry.ownerUserId)}
+         (user_id, target_user_id, range_days, view_kind, exclude_key, bucket_version, built_from_cursor, raw_buckets_json, normalized_buckets_json, summary_json, built_at)
+         VALUES (@ownerUserId, @targetUserId, @rangeDays, @viewKind, @excludeKey, @bucketVersion, @builtFromCursor, @rawBucketsJson, @normalizedBucketsJson, @summaryJson, @builtAt)`,
+        {
+            '@ownerUserId': entry.ownerUserId,
+            '@targetUserId': entry.targetUserId || '',
+            '@rangeDays': entry.rangeDays,
+            '@viewKind': entry.viewKind,
+            '@excludeKey': entry.excludeKey || '',
+            '@bucketVersion': entry.bucketVersion || 1,
+            '@builtFromCursor': entry.builtFromCursor || '',
+            '@rawBucketsJson': JSON.stringify(entry.rawBuckets || []),
+            '@normalizedBucketsJson': JSON.stringify(
+                entry.normalizedBuckets || []
+            ),
+            '@summaryJson': JSON.stringify(entry.summary || {}),
+            '@builtAt': entry.builtAt || ''
+        }
+    );
+}
+
 const activityRepository = Object.freeze({
+    ACTIVITY_VIEW_KIND,
+    getActivityBucketCache,
     getSelfActivitySourceSlice,
     getSelfActivitySourceAfter,
+    getActivitySourceSlice,
+    getActivitySourceAfter,
     getActivitySyncState,
     upsertActivitySyncState,
     getActivitySessions,
     replaceActivitySessions,
-    appendActivitySessions
+    appendActivitySessions,
+    upsertActivityBucketCache
 });
 
 export {
+    ACTIVITY_VIEW_KIND,
+    getActivityBucketCache,
+    getActivitySourceAfter,
+    getActivitySourceSlice,
     getSelfActivitySourceSlice,
     getSelfActivitySourceAfter,
     getActivitySyncState,
     upsertActivitySyncState,
     getActivitySessions,
     replaceActivitySessions,
-    appendActivitySessions
+    appendActivitySessions,
+    upsertActivityBucketCache
 };
 export default activityRepository;

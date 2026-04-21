@@ -8,11 +8,10 @@ import {
 } from '@/services/dialogService.js';
 import { getColourFromUserID } from '@/shared/utils/colour.js';
 import { parseLocation } from '@/shared/utils/location.js';
+import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
-
-const DEFAULT_ENDPOINT_DOMAIN = 'https://api.vrchat.cloud/api/1';
 
 export function convertFileUrlToImageUrl(
     url,
@@ -29,10 +28,9 @@ export function convertFileUrlToImageUrl(
     if (match) {
         const fileId = match[1];
         const version = match[2];
-        const endpoint =
-            endpointDomain ||
-            useRuntimeStore.getState().auth.currentUserEndpoint ||
-            DEFAULT_ENDPOINT_DOMAIN;
+        const endpoint = normalizeVrchatEndpointDomain(
+            endpointDomain || useRuntimeStore.getState().auth.currentUserEndpoint
+        );
         return `${endpoint}/image/file_${fileId}/${version}/${resolution}`;
     }
 

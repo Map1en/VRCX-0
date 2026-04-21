@@ -400,7 +400,7 @@ export function FriendListPage({ embedded = false } = {}) {
         let active = true;
         Promise.all([
             memoRepository.getAllUserMemos(),
-            memoRepository.getAllUserNotes()
+            memoRepository.getAllUserNotes(currentUserId)
         ])
             .then(([memoRows, noteRows]) => {
                 if (!active) {
@@ -427,7 +427,7 @@ export function FriendListPage({ embedded = false } = {}) {
         return () => {
             active = false;
         };
-    }, []);
+    }, [currentUserId]);
 
     const favoriteFriendIds = useMemo(
         () => buildFavoriteIdSet(remoteFavoriteFriendIds, localFriendFavorites),
@@ -485,12 +485,23 @@ export function FriendListPage({ embedded = false } = {}) {
             .map((friend) => String(friend?.displayName || '').trim())
             .filter(Boolean);
 
+        const mutualSnapshotPromise = currentUserId
+            ? mutualGraphRepository.getSnapshot(currentUserId).then(
+                  ({ snapshot, meta }) => {
+                      const countMap = new Map();
+                      for (const [friendId, mutualIds] of snapshot) {
+                          countMap.set(friendId, mutualIds.length);
+                      }
+                      return [countMap, meta];
+                  }
+              )
+            : Promise.resolve([new Map(), new Map()]);
+
         Promise.all([
             gameLogRepository.getAllUserStats({ userIds, displayNames }),
-            gameLogRepository.getMutualCountForAllUsers(),
-            gameLogRepository.getMutualGraphMeta()
+            mutualSnapshotPromise
         ])
-            .then(([statsRows, mutualCountMap, mutualMetaMap]) => {
+            .then(([statsRows, [mutualCountMap, mutualMetaMap]]) => {
                 if (!active || statsHydrationRequestRef.current !== requestId) {
                     return;
                 }
@@ -560,7 +571,7 @@ export function FriendListPage({ embedded = false } = {}) {
         return () => {
             active = false;
         };
-    }, [applyFriendPatches, rosterStatsKey]);
+    }, [applyFriendPatches, currentUserId, rosterStatsKey]);
 
     const filteredRows = useMemo(() => {
         return filterFriendListRows({

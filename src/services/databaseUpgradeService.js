@@ -1,7 +1,9 @@
 import { backend } from '@/platform/index.js';
-import { configRepository } from '@/repositories/index.js';
+import {
+    configRepository,
+    databaseMaintenanceRepository
+} from '@/repositories/index.js';
 import sqliteRepository from '@/repositories/sqliteRepository.js';
-import { database } from '@/services/database/index.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
@@ -89,18 +91,18 @@ async function runFullDatabaseUpgrade() {
         await backend.sqlite.BeginUpgrade(currentVersion, DATABASE_VERSION);
         upgradeStarted = true;
 
-        await database.cleanLegendFromFriendLog();
-        await database.fixGameLogTraveling();
-        await database.fixNegativeGPS();
-        await database.fixBrokenLeaveEntries();
-        await database.fixBrokenGroupInvites();
-        await database.fixBrokenNotifications();
-        await database.fixBrokenGroupChange();
-        await database.fixCancelFriendRequestTypo();
-        await database.fixBrokenGameLogDisplayNames();
-        await database.upgradeDatabaseVersion();
-        await database.vacuum();
-        await database.optimize();
+        await databaseMaintenanceRepository.cleanLegendFromFriendLog();
+        await databaseMaintenanceRepository.fixGameLogTraveling();
+        await databaseMaintenanceRepository.fixNegativeGPS();
+        await databaseMaintenanceRepository.fixBrokenLeaveEntries();
+        await databaseMaintenanceRepository.fixBrokenGroupInvites();
+        await databaseMaintenanceRepository.fixBrokenNotifications();
+        await databaseMaintenanceRepository.fixBrokenGroupChange();
+        await databaseMaintenanceRepository.fixCancelFriendRequestTypo();
+        await databaseMaintenanceRepository.fixBrokenGameLogDisplayNames();
+        await databaseMaintenanceRepository.upgradeDatabaseVersion();
+        await databaseMaintenanceRepository.vacuum();
+        await databaseMaintenanceRepository.optimize();
         await writeUpgradeDatabaseVersion();
         await backend.sqlite.CommitUpgrade();
         upgradeCommitted = true;

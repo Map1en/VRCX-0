@@ -59,4 +59,12 @@ function buildValuesList(rows, columns, prefix = 'value') {
     return { valuesSql, args };
 }
 
-export { buildInClause, buildValuesList };
+function clampSqlLimit(value, fallback = 500, max = 50000) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return fallback;
+    }
+    return Math.min(parsed, max);
+}
+
+export { buildInClause, buildValuesList, clampSqlLimit };

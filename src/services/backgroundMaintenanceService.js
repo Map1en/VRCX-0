@@ -2,13 +2,13 @@ import { clearFavoriteRemoteDetailsCache } from '@/features/favorites/useFavorit
 import { backend } from '@/platform/index.js';
 import {
     configRepository,
+    databaseMaintenanceRepository,
     groupProfileRepository,
     playerListRepository,
     userProfileRepository,
     vrchatAuthRepository,
     vrchatModerationRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import {
     defaultBranchForVersion,
     downloadUpdateAndWait,
@@ -347,8 +347,10 @@ export async function refreshPlayerModerations({ isCurrent = null } = {}) {
         return;
     }
 
-    await database.initUserTables(currentUserId);
-    await vrchatModerationRepository.syncLocalModerationSnapshot(response.json);
+    await vrchatModerationRepository.syncLocalModerationSnapshot({
+        ownerUserId: currentUserId,
+        rows: response.json
+    });
 }
 
 async function refreshGroupUserInstances() {
@@ -871,7 +873,9 @@ export async function runBackgroundMaintenanceTick() {
         await runClearVrcxCacheIfDue();
         await runDueTask('discordUpdate', 3, refreshDiscordPresence);
         await runDueTask('autoStateChange', 3, updateAutoStateChange);
-        await runDueTask('databaseOptimize', 86400, () => database.optimize());
+        await runDueTask('databaseOptimize', 86400, () =>
+            databaseMaintenanceRepository.optimize()
+        );
     } finally {
         running = false;
     }

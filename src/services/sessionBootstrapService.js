@@ -89,7 +89,7 @@ export async function bootstrapAuthenticatedSession(user) {
     );
 
     try {
-        await userSessionRepository.initUserTables(userId);
+        await userSessionRepository.ensureUserTables(userId);
         runtimeStore.setStartupTask(
             'services',
             'running',

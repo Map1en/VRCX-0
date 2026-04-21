@@ -30,12 +30,12 @@ import {
     playerListRepository,
     toolsRepository,
     userProfileRepository,
+    userSessionRepository,
     vrchatAuthRepository,
     vrchatFriendRepository,
     vrchatModerationRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
-import { database } from '@/services/database/index.js';
 import { openGroupDialog } from '@/services/dialogService.js';
 import friendRelationshipService from '@/services/friendRelationshipService.js';
 import {
@@ -1132,14 +1132,16 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
         const revision = moderationRevisionRef.current;
         const localModerationPromise = currentUserId
-            ? database
-                  .initUserTables(currentUserId)
+            ? userSessionRepository
+                  .ensureUserTables(currentUserId)
                   .then(() =>
                       vrchatModerationRepository.getLocalModeration({
+                          ownerUserId: currentUserId,
                           userId: normalizedUserId
                       })
                   )
             : vrchatModerationRepository.getLocalModeration({
+                  ownerUserId: '',
                   userId: normalizedUserId
               });
         localModerationPromise
@@ -2782,10 +2784,11 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 [type]: enabled
             };
             if (currentUserId) {
-                await database.initUserTables(currentUserId);
+                await userSessionRepository.ensureUserTables(currentUserId);
             }
             const savedState =
                 await vrchatModerationRepository.saveLocalModeration({
+                    ownerUserId: currentUserId,
                     userId: rosterUserId,
                     displayName: profile?.displayName || rosterUserId,
                     ...nextModerationState
