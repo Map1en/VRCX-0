@@ -12,7 +12,6 @@ import {
     MessageSquareIcon,
     MonitorIcon,
     PencilIcon,
-    PlayIcon,
     RefreshCwIcon,
     Share2Icon,
     SmartphoneIcon,
@@ -44,8 +43,12 @@ import {
     userProfileRepository
 } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
-import { parseLocation } from '@/shared/utils/location.js';
+import {
+    parseLocation,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location.js';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
@@ -67,23 +70,6 @@ import {
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
 import { PreviousInstancesTableDialog } from './PreviousInstancesTableDialog.jsx';
-
-function Section({ label, value, mono = false, children }) {
-    return (
-        <div className="flex flex-col gap-1">
-            <div className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
-                {label}
-            </div>
-            {children || (
-                <div
-                    className={mono ? 'font-mono text-sm break-all' : 'text-sm'}
-                >
-                    {value || '—'}
-                </div>
-            )}
-        </div>
-    );
-}
 
 function PlatformBadge({ name, fileSize = '' }) {
     const normalized = String(name || '').toLowerCase();
@@ -241,27 +227,6 @@ function normalizeInstanceGroup(value, fallbackId = '') {
     };
 }
 
-function instanceCreatorId(instance) {
-    return firstText(instance?.creatorGroupId, instance?.creatorUserId);
-}
-
-function instanceCreatorName(instance) {
-    return instance?.creatorGroupId
-        ? firstText(
-              instance.creatorGroup?.name,
-              instance.creatorGroup?.displayName,
-              instance.creatorGroup?.display_name,
-              instance.creatorGroup?.shortCode,
-              instance.creatorGroupId
-          )
-        : firstText(
-              instance?.creatorUser?.displayName,
-              instance?.creatorUser?.display_name,
-              instance?.creatorUser?.username,
-              instance?.creatorUser?.name
-          );
-}
-
 function normalizeInstanceUsers(...sources) {
     const rows = [];
     const push = (value) => {
@@ -307,6 +272,40 @@ function normalizeInstanceUsers(...sources) {
         push(source);
     }
     return rows;
+}
+
+function instanceUserKey(user) {
+    return firstText(
+        user?.id,
+        user?.userId,
+        user?.user_id,
+        user?.targetUserId,
+        user?.target_user_id,
+        user?.displayName,
+        user?.display_name,
+        user?.username,
+        user?.name
+    );
+}
+
+function mergeInstanceUsers(...sources) {
+    const usersByKey = new Map();
+    const anonymousUsers = [];
+
+    for (const user of normalizeInstanceUsers(...sources)) {
+        const key = instanceUserKey(user);
+        if (!key) {
+            anonymousUsers.push(user);
+            continue;
+        }
+
+        usersByKey.set(key, {
+            ...(usersByKey.get(key) || {}),
+            ...user
+        });
+    }
+
+    return [...usersByKey.values(), ...anonymousUsers];
 }
 
 function resolveInstanceRows(world) {
@@ -466,6 +465,13 @@ function sameLocationTag(left, right) {
         leftParsed.instanceId &&
         rightParsed.instanceId &&
         leftParsed.instanceId === rightParsed.instanceId
+    );
+}
+
+function friendIsInInstance(friend, location) {
+    return sameLocationTag(
+        resolveFriendPresenceLocation(friend, { requireInstance: true }),
+        location
     );
 }
 
@@ -795,7 +801,6 @@ export function WorldDialogTabbedView({
     canUpdateHome,
     canManageWorld,
     onRefresh,
-    onLaunch,
     onHome,
     onRename,
     onChangeDescription,
@@ -828,6 +833,7 @@ export function WorldDialogTabbedView({
     const currentGameDestination = useRuntimeStore(
         (state) => state.gameState.currentDestination
     );
+    const friendsById = useFriendRosterStore((state) => state.friendsById);
     const [activeTab, setActiveTab] = useState(() => lastWorldDialogTab);
     const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
     const [currentInstanceDetails, setCurrentInstanceDetails] = useState({
@@ -911,7 +917,7 @@ export function WorldDialogTabbedView({
                       currentInstanceDetailsForLocation.instance?.world
                           ?.capacity ??
                       world.capacity,
-                  users: normalizeInstanceUsers(
+                  users: mergeInstanceUsers(
                       currentInstanceDetailsForLocation.instance?.users,
                       currentInstanceDetailsForLocation.instance?.players,
                       currentInstanceDetailsForLocation.instance?.playerList,
@@ -1021,7 +1027,12 @@ export function WorldDialogTabbedView({
     )
         .sort()
         .join('|');
+    const friendRows = Object.values(friendsById || {});
     const displayInstanceRows = baseDisplayInstanceRows.map((instance) => {
+        const location = resolveLaunchLocation(world, instance);
+        const friendsInInstance = location
+            ? friendRows.filter((friend) => friendIsInInstance(friend, location))
+            : [];
         const creatorGroupId = firstText(
             instance.creatorGroupId,
             isGroupId(instance.creatorUserId) ? instance.creatorUserId : ''
@@ -1029,16 +1040,20 @@ export function WorldDialogTabbedView({
         const creatorGroupProfile = creatorGroupId
             ? creatorGroupsById[creatorGroupId]
             : null;
+        const instanceWithFriends = {
+            ...instance,
+            users: mergeInstanceUsers(instance.users, friendsInInstance)
+        };
         return creatorGroupProfile
             ? {
-                  ...instance,
+                  ...instanceWithFriends,
                   creatorGroupId,
                   creatorGroup: normalizeInstanceGroup(
                       creatorGroupProfile,
                       creatorGroupId
                   )
               }
-            : instance;
+            : instanceWithFriends;
     });
     const tabs = [
         { value: 'instances', label: 'Instances' },
@@ -1445,15 +1460,6 @@ export function WorldDialogTabbedView({
                                     </EntityActionItem>
                                 </>
                             ) : null}
-                            {isInstanceLocation ? (
-                                <EntityActionItem
-                                    icon={PlayIcon}
-                                    disabled={actionStatus === 'launching'}
-                                    onSelect={onLaunch}
-                                >
-                                    Launch Instance
-                                </EntityActionItem>
-                            ) : null}
                             <EntityActionSeparator />
                             <EntityActionItem
                                 icon={FlagIcon}
@@ -1618,64 +1624,7 @@ export function WorldDialogTabbedView({
                             {world.capacity || '—'}
                         </span>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {isInstanceLocation ? (
-                            <Section label="Location">
-                                <LocationWorld
-                                    locationObject={normalizedWorldId}
-                                    currentUserId={currentUserId}
-                                    worldDialogShortName={worldDialogShortName}
-                                    instanceOwner={
-                                        currentInstanceRow?.creatorGroupId
-                                            ? ''
-                                            : instanceCreatorId(
-                                                  currentInstanceRow
-                                              )
-                                    }
-                                    instanceOwnerName={
-                                        currentInstanceRow?.creatorGroupId
-                                            ? ''
-                                            : instanceCreatorName(
-                                                  currentInstanceRow
-                                              )
-                                    }
-                                    playerCount={
-                                        currentInstanceRow?.playerCount ??
-                                        undefined
-                                    }
-                                    capacity={
-                                        currentInstanceDetailsForLocation
-                                            .instance?.capacity ?? undefined
-                                    }
-                                    hint={world.name || ''}
-                                />
-                            </Section>
-                        ) : null}
-                        <Section label="World ID" value={world.id} mono />
-                        <Section
-                            label="Capacity"
-                            value={
-                                world.capacity ? String(world.capacity) : '—'
-                            }
-                        />
-                        <Section
-                            label="Occupants"
-                            value={
-                                world.occupants ? String(world.occupants) : '—'
-                            }
-                        />
-                    </div>
                     <div className="flex flex-col gap-2">
-                        {isInstanceLocation ? (
-                            <Button
-                                type="button"
-                                disabled={actionStatus === 'launching'}
-                                onClick={onLaunch}
-                            >
-                                <PlayIcon data-icon="inline-start" />
-                                Launch Current Instance
-                            </Button>
-                        ) : null}
                         {displayInstanceRows.length ? (
                             displayInstanceRows.map((instance) => {
                                 const location = resolveLaunchLocation(
@@ -1710,30 +1659,6 @@ export function WorldDialogTabbedView({
                                                     instance.groupName ||
                                                     instance.group?.name ||
                                                     ''
-                                                }
-                                                instanceOwner={
-                                                    instance.creatorGroupId
-                                                        ? ''
-                                                        : instanceCreatorId(
-                                                              instance
-                                                          )
-                                                }
-                                                instanceOwnerName={
-                                                    instance.creatorGroupId
-                                                        ? ''
-                                                        : instanceCreatorName(
-                                                              instance
-                                                          )
-                                                }
-                                                playerCount={
-                                                    instance.playerCount ??
-                                                    instance.userCount ??
-                                                    instance.occupants
-                                                }
-                                                capacity={
-                                                    instance.capacity ??
-                                                    instance.ref?.capacity ??
-                                                    undefined
                                                 }
                                                 hint={
                                                     world.name ||
