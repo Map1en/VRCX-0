@@ -5,6 +5,7 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     groupProfileRepository,
     userProfileRepository
@@ -575,9 +576,10 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             toast.success(enabled ? 'Group blocked.' : 'Group unblocked.');
         } catch (error) {
             toast.error(
-                error instanceof Error
-                    ? error.message
-                    : 'Failed to update group block state.'
+                userFacingErrorMessage(
+                    error,
+                    'Failed to update group block state.'
+                )
             );
         } finally {
             actionStatusRef.current = 'idle';

@@ -39,6 +39,7 @@ import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import { getAvailablePlatforms } from '@/lib/avatarPlatform.js';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import {
     avatarProfileRepository,
@@ -1379,6 +1380,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         myAvatarRepository
             .getMyAvatars({
                 endpoint: currentEndpoint,
+                currentUserId,
                 currentAvatarId,
                 previousAvatarSwapTime
             })
@@ -1395,13 +1397,15 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 if (requestIdRef.current !== requestId) {
                     return;
                 }
+                console.warn('Avatar inventory failed to load:', error);
 
                 setAvatars([]);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to load the avatar inventory.'
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to load the avatar inventory.'
+                    )
                 );
             });
     }, [
@@ -1987,7 +1991,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
 
                 {detail ? (
                     <div className="text-muted-foreground text-sm">
-                        {detail}
+                        {userFacingErrorMessage(
+                            detail,
+                            'Failed to load the avatar inventory.'
+                        )}
                     </div>
                 ) : null}
 

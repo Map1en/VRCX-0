@@ -35,6 +35,7 @@ import {
     openExternalLink,
     userImage
 } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import {
     groupProfileRepository,
@@ -2463,7 +2464,14 @@ export function GroupDialogTabbedView({
                                     Owner: {ownerLinkLabel}
                                 </Button>
                             ) : null}
-                            {detail ? <span>{detail}</span> : null}
+                            {detail ? (
+                                <span>
+                                    {userFacingErrorMessage(
+                                        detail,
+                                        'Failed to load group details.'
+                                    )}
+                                </span>
+                            ) : null}
                         </div>
                     ) : null
                 }

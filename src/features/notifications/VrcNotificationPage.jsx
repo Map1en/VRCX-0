@@ -38,6 +38,7 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import {
     configRepository,
@@ -2118,7 +2119,10 @@ export function VrcNotificationPage({ embedded = false } = {}) {
 
                 {detail ? (
                     <div className="text-muted-foreground text-sm">
-                        {detail}
+                        {userFacingErrorMessage(
+                            detail,
+                            'Failed to load notifications.'
+                        )}
                     </div>
                 ) : null}
 

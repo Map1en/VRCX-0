@@ -33,6 +33,7 @@ import {
     PageToolbarRow
 } from '@/components/layout/PageScaffold.jsx';
 import { formatDateFilter } from '@/lib/dateTime.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     configRepository,
     vrchatModerationRepository
@@ -617,9 +618,10 @@ export function ModerationPage({ embedded = false } = {}) {
                 setRows([]);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to load the moderation snapshot.'
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to load the moderation snapshot.'
+                    )
                 );
             });
 
@@ -1019,7 +1021,10 @@ export function ModerationPage({ embedded = false } = {}) {
 
                 {detail ? (
                     <div className="text-muted-foreground text-sm">
-                        {detail}
+                        {userFacingErrorMessage(
+                            detail,
+                            'Failed to load the moderation snapshot.'
+                        )}
                     </div>
                 ) : null}
             </PageToolbar>

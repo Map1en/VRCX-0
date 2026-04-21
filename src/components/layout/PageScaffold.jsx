@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     Empty,
     EmptyContent,
@@ -120,6 +121,14 @@ export function EmptyState({
     contentClassName = '',
     children
 }) {
+    const safeDescription =
+        typeof description === 'string'
+            ? userFacingErrorMessage(
+                  description,
+                  'The requested data could not be loaded.'
+              )
+            : description;
+
     return (
         <Empty className={cn('min-h-72', className)}>
             <EmptyHeader className={contentClassName}>
@@ -129,8 +138,8 @@ export function EmptyState({
                     </EmptyMedia>
                 ) : null}
                 {title ? <EmptyTitle>{title}</EmptyTitle> : null}
-                {description ? (
-                    <EmptyDescription>{description}</EmptyDescription>
+                {safeDescription ? (
+                    <EmptyDescription>{safeDescription}</EmptyDescription>
                 ) : null}
             </EmptyHeader>
             {children ? <EmptyContent>{children}</EmptyContent> : null}

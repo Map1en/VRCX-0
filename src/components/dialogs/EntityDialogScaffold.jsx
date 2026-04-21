@@ -1,6 +1,7 @@
 import { MoreHorizontalIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -140,7 +141,10 @@ function EntityDialogHeader({
 
                         {detail ? (
                             <div className="text-muted-foreground text-xs">
-                                {detail}
+                                {userFacingErrorMessage(
+                                    detail,
+                                    'The requested data could not be loaded.'
+                                )}
                             </div>
                         ) : null}
                     </div>

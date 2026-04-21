@@ -6,6 +6,7 @@ import {
     convertFileUrlToImageUrl,
     copyTextToClipboard
 } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis.js';
 import {
     defaultWorldCacheInfo,
@@ -1255,7 +1256,7 @@ export function WorldDialogContent({
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return false;
             }
-            toast.error(error instanceof Error ? error.message : errorMessage);
+            toast.error(userFacingErrorMessage(error, errorMessage));
             return false;
         } finally {
             actionStatusRef.current = 'idle';

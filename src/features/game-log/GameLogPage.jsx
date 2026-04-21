@@ -48,6 +48,7 @@ import { Location } from '@/components/Location.jsx';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { timeToText } from '@/lib/dateTime.js';
 import { copyTextToClipboard, openExternalLink } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import {
     configRepository,
@@ -1497,9 +1498,10 @@ export function GameLogPage({ embedded = false } = {}) {
                 setSessions([]);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to load the game log snapshot.'
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to load the game log snapshot.'
+                    )
                 );
             });
     }, [
@@ -2368,7 +2370,10 @@ export function GameLogPage({ embedded = false } = {}) {
                     )}
                     {detail ? (
                         <div className="text-muted-foreground text-sm">
-                            {detail}
+                            {userFacingErrorMessage(
+                                detail,
+                                'Failed to load the game log snapshot.'
+                            )}
                         </div>
                     ) : null}
                 </PageToolbar>

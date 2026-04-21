@@ -18,6 +18,7 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     notificationRepository,
     toolsRepository,
@@ -938,9 +939,10 @@ export function VrcNotificationCenterHost() {
                                 onClick={() => {
                                     void loadForCurrentUser().catch((error) => {
                                         toast.error(
-                                            error instanceof Error
-                                                ? error.message
-                                                : 'Failed to refresh notifications.'
+                                            userFacingErrorMessage(
+                                                error,
+                                                'Failed to refresh notifications.'
+                                            )
                                         );
                                     });
                                 }}
@@ -955,7 +957,10 @@ export function VrcNotificationCenterHost() {
                     </div>
                     {detail ? (
                         <div className="text-muted-foreground text-xs">
-                            {detail}
+                            {userFacingErrorMessage(
+                                detail,
+                                'Failed to load notifications.'
+                            )}
                         </div>
                     ) : null}
                 </SheetHeader>

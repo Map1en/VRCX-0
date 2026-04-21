@@ -1,5 +1,15 @@
 import sqliteService from '../../repositories/sqliteRepository.js';
 import { dbVars } from '../database';
+import { normalizeUserTablePrefix } from './userTables.js';
+
+function avatarHistoryTableName(userId = '') {
+    const normalizedUserId =
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+    const tablePrefix = normalizedUserId
+        ? normalizeUserTablePrefix(normalizedUserId)
+        : dbVars.userPrefix;
+    return tablePrefix ? `${tablePrefix}_avatar_history` : '';
+}
 
 const avatarFavorites = {
     addAvatarToCache(entry) {
@@ -23,8 +33,12 @@ const avatarFavorites = {
     },
 
     addAvatarToHistory(avatarId) {
+        const tableName = avatarHistoryTableName();
+        if (!tableName) {
+            return;
+        }
         sqliteService.executeNonQuery(
-            `INSERT INTO ${dbVars.userPrefix}_avatar_history (avatar_id, created_at, time)
+            `INSERT INTO ${tableName} (avatar_id, created_at, time)
             VALUES (@avatar_id, @created_at, 0)
             ON CONFLICT(avatar_id) DO UPDATE SET created_at = @created_at`,
             {
@@ -34,16 +48,20 @@ const avatarFavorites = {
         );
     },
 
-    async getAvatarTimeSpent(avatarId) {
+    async getAvatarTimeSpent(avatarId, userId = '') {
         var ref = {
             timeSpent: 0,
             avatarId
         };
+        const tableName = avatarHistoryTableName(userId);
+        if (!tableName) {
+            return ref;
+        }
         await sqliteService.execute(
             (row) => {
                 ref.timeSpent = row[0];
             },
-            `SELECT time FROM ${dbVars.userPrefix}_avatar_history WHERE avatar_id = @avatarId`,
+            `SELECT time FROM ${tableName} WHERE avatar_id = @avatarId`,
             {
                 '@avatarId': avatarId
             }
@@ -52,18 +70,26 @@ const avatarFavorites = {
         return ref;
     },
 
-    async getAllAvatarTimeSpent() {
+    async getAllAvatarTimeSpent(userId = '') {
         const map = new Map();
+        const tableName = avatarHistoryTableName(userId);
+        if (!tableName) {
+            return map;
+        }
         await sqliteService.execute((row) => {
             map.set(row[0], row[1] || 0);
-        }, `SELECT avatar_id, time FROM ${dbVars.userPrefix}_avatar_history`);
+        }, `SELECT avatar_id, time FROM ${tableName}`);
 
         return map;
     },
 
     addAvatarTimeSpent(avatarId, timeSpent) {
+        const tableName = avatarHistoryTableName();
+        if (!tableName) {
+            return;
+        }
         sqliteService.executeNonQuery(
-            `UPDATE ${dbVars.userPrefix}_avatar_history SET time = time + @timeSpent WHERE avatar_id = @avatarId`,
+            `UPDATE ${tableName} SET time = time + @timeSpent WHERE avatar_id = @avatarId`,
             {
                 '@avatarId': avatarId,
                 '@timeSpent': timeSpent
@@ -73,6 +99,10 @@ const avatarFavorites = {
 
     async getAvatarHistory(currentUserId, limit = 100) {
         var data = [];
+        const tableName = avatarHistoryTableName(currentUserId);
+        if (!tableName) {
+            return data;
+        }
         await sqliteService.execute((dbRow) => {
             var row = {
                 id: dbRow[0],
@@ -88,7 +118,7 @@ const avatarFavorites = {
                 version: dbRow[14]
             };
             data.push(row);
-        }, `SELECT * FROM ${dbVars.userPrefix}_avatar_history INNER JOIN cache_avatar ON cache_avatar.id = ${dbVars.userPrefix}_avatar_history.avatar_id WHERE author_id != '${currentUserId}' ORDER BY ${dbVars.userPrefix}_avatar_history.created_at DESC LIMIT ${limit}`);
+        }, `SELECT * FROM ${tableName} INNER JOIN cache_avatar ON cache_avatar.id = ${tableName}.avatar_id WHERE author_id != '${currentUserId}' ORDER BY ${tableName}.created_at DESC LIMIT ${limit}`);
         return data;
     },
 
@@ -120,9 +150,10 @@ const avatarFavorites = {
     },
 
     clearAvatarHistory() {
-        sqliteService.executeNonQuery(
-            `DELETE FROM ${dbVars.userPrefix}_avatar_history`
-        );
+        const tableName = avatarHistoryTableName();
+        if (tableName) {
+            sqliteService.executeNonQuery(`DELETE FROM ${tableName}`);
+        }
         sqliteService.executeNonQuery('DELETE FROM cache_avatar');
     },
 

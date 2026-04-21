@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
 import { openExternalLink } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import {
     GAME_LOG_FILTER_TYPES,
@@ -267,9 +268,10 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                 setRows([]);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to load game-log widget.'
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to load game-log widget.'
+                    )
                 );
             });
 
@@ -373,9 +375,10 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <DashboardWidgetEmptyState
                 title="Game log widget failed"
-                description={
-                    detail || 'The local game-log query did not complete.'
-                }
+                description={userFacingErrorMessage(
+                    detail,
+                    'The local game-log query did not complete.'
+                )}
             />
         );
     }

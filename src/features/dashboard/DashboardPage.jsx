@@ -16,6 +16,7 @@ import {
     getDashboardPanelDefinition,
     resolveDashboardPanelKey
 } from '@/components/dashboard/dashboardRegistry.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import { generateDashboardRowId } from '@/repositories/dashboardRepository.js';
 import {
@@ -786,7 +787,10 @@ export function DashboardPage() {
                         </div>
                         {detail ? (
                             <div className="text-muted-foreground text-sm">
-                                {detail}
+                                {userFacingErrorMessage(
+                                    detail,
+                                    'Failed to load dashboard configuration.'
+                                )}
                             </div>
                         ) : null}
                     </CardHeader>

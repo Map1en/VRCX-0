@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
 import {
@@ -113,7 +114,10 @@ function UpdaterDialog({ open, onOpenChange }) {
             .catch((error) => {
                 if (active) {
                     setDetail(
-                        error instanceof Error ? error.message : String(error)
+                        userFacingErrorMessage(
+                            error,
+                            'Failed to load update releases.'
+                        )
                     );
                 }
             })
@@ -146,7 +150,9 @@ function UpdaterDialog({ open, onOpenChange }) {
             setPendingInstall(true);
             setDetail(`${selectedRelease.displayName} is ready to install.`);
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(error, 'Failed to download update.')
+            );
         } finally {
             if (cancelTokenRef.current === cancelToken) {
                 cancelTokenRef.current = null;
@@ -240,7 +246,10 @@ function UpdaterDialog({ open, onOpenChange }) {
                     ) : null}
                     {detail ? (
                         <div className="text-muted-foreground text-sm">
-                            {detail}
+                            {userFacingErrorMessage(
+                                detail,
+                                'Failed to update VRCX.'
+                            )}
                         </div>
                     ) : null}
                 </FieldGroup>
@@ -319,7 +328,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                 setDetail('No VRChat registry backups are saved.');
             }
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to load VRChat registry backups.'
+                )
+            );
         } finally {
             setLoading(false);
         }
@@ -332,7 +346,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
             await configRepository.setBool('vrcRegistryAutoBackup', nextValue);
         } catch (error) {
             setAutoBackup(!nextValue);
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to update VRChat registry backup settings.'
+                )
+            );
         }
     }
 
@@ -343,7 +362,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
             await configRepository.setBool('vrcRegistryAskRestore', nextValue);
         } catch (error) {
             setAskRestore(!nextValue);
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to update VRChat registry backup settings.'
+                )
+            );
         }
     }
 
@@ -376,7 +400,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
             setSelectedKey(nextBackups[nextBackups.length - 1]?.key || '');
             setDetail('Registry backup saved.');
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to create VRChat registry backup.'
+                )
+            );
         } finally {
             setLoading(false);
         }
@@ -393,7 +422,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
             await restoreVrcRegistryBackup(selectedBackup.key);
             setDetail('Registry backup restored.');
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to restore VRChat registry backup.'
+                )
+            );
         } finally {
             setLoading(false);
         }
@@ -414,7 +448,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
             setSelectedKey(nextBackups[0]?.key || '');
             setDetail('Registry backup deleted.');
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to delete VRChat registry backup.'
+                )
+            );
         } finally {
             setLoading(false);
         }
@@ -437,7 +476,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                     : 'Save cancelled.'
             );
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to save VRChat registry backup.'
+                )
+            );
         } finally {
             setLoading(false);
         }
@@ -454,7 +498,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                     : 'Restore cancelled.'
             );
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to restore VRChat registry backup.'
+                )
+            );
         } finally {
             setLoading(false);
         }
@@ -479,7 +528,12 @@ function RegistryBackupDialog({ open, onOpenChange }) {
             await deleteVrcRegistryFolder();
             setDetail('VRChat registry folder deleted.');
         } catch (error) {
-            setDetail(error instanceof Error ? error.message : String(error));
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to delete VRChat registry folder.'
+                )
+            );
         } finally {
             setLoading(false);
         }
@@ -563,7 +617,10 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                     ) : null}
                     {detail ? (
                         <div className="text-muted-foreground text-sm">
-                            {detail}
+                            {userFacingErrorMessage(
+                                detail,
+                                'Failed to update VRChat registry backups.'
+                            )}
                         </div>
                     ) : null}
                 </FieldGroup>
@@ -665,7 +722,10 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
             })
             .catch((error) => {
                 toast.error(
-                    error instanceof Error ? error.message : String(error)
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to load launch options.'
+                    )
                 );
             })
             .finally(() => {
@@ -708,7 +768,9 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
             toast.success('Updated launch options');
             onOpenChange(false);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(error, 'Failed to save launch options.')
+            );
         } finally {
             setLoading(false);
         }
@@ -902,7 +964,12 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                     : '0 GB'
             );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to load VRChat configuration.'
+                )
+            );
         } finally {
             setLoading(false);
         }
@@ -919,7 +986,7 @@ function VRChatConfigDialog({ open, onOpenChange }) {
             .OpenFolderSelectorDialog(config[key] || '')
             .catch((error) => {
                 toast.error(
-                    error instanceof Error ? error.message : String(error)
+                    userFacingErrorMessage(error, 'Failed to select folder.')
                 );
                 return '';
             });
@@ -939,7 +1006,9 @@ function VRChatConfigDialog({ open, onOpenChange }) {
             );
             await loadConfig();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(error, 'Failed to sweep asset cache.')
+            );
         } finally {
             setLoading(false);
         }
@@ -962,7 +1031,9 @@ function VRChatConfigDialog({ open, onOpenChange }) {
             toast.success(t('message.cache.deleted'));
             await loadConfig();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(error, 'Failed to delete asset cache.')
+            );
         } finally {
             setLoading(false);
         }
@@ -980,7 +1051,12 @@ function VRChatConfigDialog({ open, onOpenChange }) {
             toast.success('Saved VRChat config.');
             onOpenChange(false);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to save VRChat configuration.'
+                )
+            );
         } finally {
             setLoading(false);
         }

@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
 import { backend } from '@/platform/index.js';
 import {
@@ -2060,7 +2061,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             toast.success(successMessage);
             return true;
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : errorMessage);
+            toast.error(userFacingErrorMessage(error, errorMessage));
             return false;
         } finally {
             actionStatusRef.current = 'idle';

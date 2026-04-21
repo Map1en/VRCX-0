@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import { getPlatformInfo } from '@/lib/avatarPlatform.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis.js';
 import { backend } from '@/platform/tauri/index.js';
 import {
@@ -982,7 +983,7 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                     : label.success
             );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : label.error);
+            toast.error(userFacingErrorMessage(error, label.error));
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');

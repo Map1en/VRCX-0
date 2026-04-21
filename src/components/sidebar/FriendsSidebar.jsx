@@ -14,6 +14,7 @@ import { useLocationMetadataBatch } from '@/components/location/useLocationMetad
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
 import { timeToText } from '@/lib/dateTime.js';
 import { getNameColour, userImage } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { getTrustColor, TRUST_COLOR_DEFAULTS } from '@/lib/trustColors.js';
 import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
 import { cn } from '@/lib/utils.js';
@@ -1974,7 +1975,7 @@ export function FriendsSidebar({ prefs }) {
             applyCurrentUserSnapshot(nextUser);
             toast.success(successMessage);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : errorMessage);
+            toast.error(userFacingErrorMessage(error, errorMessage));
         }
     }
 

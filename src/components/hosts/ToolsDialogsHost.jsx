@@ -15,6 +15,7 @@ import { useI18n } from '@/app/hooks/use-i18n.js';
 import { timeToText } from '@/lib/dateTime.js';
 import dayjs from '@/lib/dayjs.js';
 import { convertFileUrlToImageUrl, userImage } from '@/lib/entityMedia.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/index.js';
 import {
@@ -451,7 +452,10 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
             })
             .catch((error) =>
                 toast.error(
-                    error instanceof Error ? error.message : String(error)
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to load tool settings.'
+                    )
                 )
             )
             .finally(() => {
@@ -479,7 +483,9 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                 await configRepository.setString(key, value);
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(error, 'Failed to save tool settings.')
+            );
         }
     }
 
@@ -865,7 +871,10 @@ function ExportFriendsListDialog({ open, onOpenChange }) {
             })
             .catch((error) =>
                 toast.error(
-                    error instanceof Error ? error.message : String(error)
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to export friends list.'
+                    )
                 )
             );
         return () => {
@@ -929,7 +938,10 @@ function ExportAvatarsListDialog({ open, onOpenChange }) {
             })
             .catch((error) =>
                 toast.error(
-                    error instanceof Error ? error.message : String(error)
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to export avatar list.'
+                    )
                 )
             )
             .finally(() => {
@@ -995,7 +1007,9 @@ function NoteExportDialog({ open, onOpenChange }) {
             }
             setRows(nextRows);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(error, 'Failed to load memo export rows.')
+            );
         } finally {
             setLoading(false);
         }
@@ -1043,7 +1057,7 @@ function NoteExportDialog({ open, onOpenChange }) {
                 } catch (error) {
                     setErrors(
                         (current) =>
-                            `${current}Name: ${row.name}\n${error instanceof Error ? error.message : String(error)}\n\n`
+                            `${current}Name: ${row.name}\n${userFacingErrorMessage(error, 'Failed to update memo.')}\n\n`
                     );
                     break;
                 }
@@ -1388,7 +1402,9 @@ function GroupCalendarDialog({ open, onOpenChange }) {
             setFollowingIds(followingRows.map(getEventId).filter(Boolean));
             await resolveGroupNames([...normalizedRows, ...followingRows]);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(error, 'Failed to load group events.')
+            );
         } finally {
             setLoading(false);
         }
@@ -1433,7 +1449,12 @@ function GroupCalendarDialog({ open, onOpenChange }) {
                 updateArrayValue(current, eventId, nextFollowing)
             );
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(
+                    error,
+                    'Failed to update group event follow state.'
+                )
+            );
         }
     }
 
@@ -1709,7 +1730,7 @@ async function getCalendarIcs(event) {
         return normalizedContent;
     } catch (error) {
         toast.error(
-            `Failed to download .ics file, ${error instanceof Error ? error.message : String(error)}`
+            userFacingErrorMessage(error, 'Failed to download .ics file.')
         );
         return '';
     }
@@ -1733,7 +1754,7 @@ async function downloadEventIcs(event) {
         await backend.app.SaveCalendarFile(fileName, content);
     } catch (error) {
         toast.error(
-            `Failed to save .ics file, ${error instanceof Error ? error.message : String(error)}`
+            userFacingErrorMessage(error, 'Failed to save .ics file.')
         );
     }
 }
@@ -1750,7 +1771,9 @@ async function copyEventLink(event, t) {
         );
         toast.success(t('dialog.group_calendar.event_card.copied_event_link'));
     } catch (error) {
-        toast.error(error instanceof Error ? error.message : String(error));
+        toast.error(
+            userFacingErrorMessage(error, 'Failed to copy event link.')
+        );
     }
 }
 
@@ -2088,7 +2111,9 @@ function EditInviteMessagesDialog({ open, onOpenChange }) {
                 )
             }));
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(error, 'Failed to load invite messages.')
+            );
         } finally {
             setLoading(false);
         }
@@ -2140,7 +2165,9 @@ function EditInviteMessagesDialog({ open, onOpenChange }) {
             setEditingRow(null);
             await loadRows([messageType]);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.error(
+                userFacingErrorMessage(error, 'Failed to update invite message.')
+            );
         }
     }
 

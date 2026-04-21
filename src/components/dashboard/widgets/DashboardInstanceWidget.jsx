@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { timeToText } from '@/lib/dateTime.js';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import { playerListRepository } from '@/repositories/index.js';
 import { languageMappings } from '@/shared/constants/language.js';
@@ -276,9 +277,10 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                 setRows([]);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to rebuild the current instance roster.'
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to rebuild the current instance roster.'
+                    )
                 );
             });
 
@@ -400,9 +402,10 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <DashboardWidgetEmptyState
                 title="Instance widget failed"
-                description={
-                    detail || 'The player-list snapshot did not complete.'
-                }
+                description={userFacingErrorMessage(
+                    detail,
+                    'The player-list snapshot did not complete.'
+                )}
             />
         );
     }

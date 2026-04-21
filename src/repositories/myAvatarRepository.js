@@ -123,10 +123,15 @@ async function getAvatarsPage({
 
 async function getMyAvatars({
     endpoint = '',
+    currentUserId = '',
     currentAvatarId = '',
     previousAvatarSwapTime = 0
 } = {}) {
     const avatars = [];
+
+    if (currentUserId) {
+        await database.initUserTables(currentUserId);
+    }
 
     for (let offset = 0; offset <= MAX_OFFSET; offset += PAGE_SIZE) {
         const response = await getAvatarsPage({
@@ -144,7 +149,7 @@ async function getMyAvatars({
 
     const [tagsMap, avatarTimeSpentMap] = await Promise.all([
         database.getAllAvatarTags(),
-        database.getAllAvatarTimeSpent()
+        database.getAllAvatarTimeSpent(currentUserId)
     ]);
 
     return avatars.map((avatar) => {

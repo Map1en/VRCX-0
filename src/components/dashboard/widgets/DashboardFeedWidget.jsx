@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { Location } from '@/components/Location.jsx';
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import { FEED_FILTER_TYPES, feedRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
@@ -383,9 +384,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                 setRows([]);
                 setLoadStatus('error');
                 setDetail(
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to load feed widget.'
+                    userFacingErrorMessage(error, 'Failed to load feed widget.')
                 );
             });
 
@@ -512,7 +511,10 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <DashboardWidgetEmptyState
                 title="Feed widget failed"
-                description={detail || 'The local feed query did not complete.'}
+                description={userFacingErrorMessage(
+                    detail,
+                    'The local feed query did not complete.'
+                )}
             />
         );
     }

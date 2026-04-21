@@ -4,12 +4,37 @@ import {
     OctagonXIcon,
     TriangleAlertIcon
 } from 'lucide-react';
+import { toast } from 'sonner';
 
+import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { useShellStore } from '@/state/shellStore.js';
 import { Toaster } from '@/ui/shadcn/sonner';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 const TITLE_BAR_TOAST_OFFSET = { top: 'calc(2rem + 32px)' };
+let sonnerErrorToastPatched = false;
+
+function patchSonnerErrorToast() {
+    if (sonnerErrorToastPatched || typeof toast.error !== 'function') {
+        return;
+    }
+    sonnerErrorToastPatched = true;
+
+    const originalErrorToast = toast.error.bind(toast);
+    try {
+        toast.error = (message, options) =>
+            originalErrorToast(
+                typeof message === 'string' || message instanceof Error
+                    ? userFacingErrorMessage(message, 'Action failed.')
+                    : message,
+                options
+            );
+    } catch {
+        sonnerErrorToastPatched = false;
+    }
+}
+
+patchSonnerErrorToast();
 
 function resolveSonnerTheme(themeMode) {
     if (themeMode === 'dark') {
