@@ -35,9 +35,15 @@ export function AppShellLayout() {
     const location = useLocation();
     const rightSidebarOpen = useShellStore((state) => state.rightSidebarOpen);
     const [sidePanelWidth, setSidePanelWidth] = useState(loadSidePanelWidth);
+    const sidePanelWidthRef = useRef(sidePanelWidth);
+    const sidePanelElementRef = useRef(null);
     const resizeCleanupRef = useRef(null);
     const showSidePanel = shouldShowSidePanel(location.pathname);
     const sidePanelVisible = showSidePanel && rightSidebarOpen;
+
+    useEffect(() => {
+        sidePanelWidthRef.current = sidePanelWidth;
+    }, [sidePanelWidth]);
 
     useEffect(() => {
         try {
@@ -52,15 +58,24 @@ export function AppShellLayout() {
 
     useEffect(() => {
         return () => {
-            resizeCleanupRef.current?.();
+            resizeCleanupRef.current?.(false);
         };
     }, []);
 
     useEffect(() => {
         if (!sidePanelVisible) {
-            resizeCleanupRef.current?.();
+            resizeCleanupRef.current?.(false);
         }
     }, [sidePanelVisible]);
+
+    function applySidePanelWidth(width) {
+        const nextWidth = clampSidePanelWidth(width);
+        sidePanelWidthRef.current = nextWidth;
+        if (sidePanelElementRef.current) {
+            sidePanelElementRef.current.style.width = `${nextWidth}px`;
+        }
+        return nextWidth;
+    }
 
     function startSidePanelResize(event) {
         event.preventDefault();
@@ -78,12 +93,10 @@ export function AppShellLayout() {
         let cleanedUp = false;
 
         const handleMove = (moveEvent) => {
-            setSidePanelWidth(
-                clampSidePanelWidth(window.innerWidth - moveEvent.clientX)
-            );
+            applySidePanelWidth(window.innerWidth - moveEvent.clientX);
         };
 
-        const cleanup = () => {
+        const cleanup = (commit = true) => {
             if (cleanedUp) {
                 return;
             }
@@ -100,6 +113,12 @@ export function AppShellLayout() {
                 // Releasing capture is best-effort after pointer cancellation.
             }
             resizeCleanupRef.current = null;
+            if (commit) {
+                const nextWidth = sidePanelWidthRef.current;
+                setSidePanelWidth((currentWidth) =>
+                    currentWidth === nextWidth ? currentWidth : nextWidth
+                );
+            }
         };
 
         resizeCleanupRef.current?.();
@@ -125,6 +144,7 @@ export function AppShellLayout() {
                                 onPointerDown={startSidePanelResize}
                             />
                             <SidePanel
+                                ref={sidePanelElementRef}
                                 className="w-full shrink-0"
                                 style={{ width: sidePanelWidth }}
                             />

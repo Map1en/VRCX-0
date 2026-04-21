@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import {
     cloneElement,
+    forwardRef,
     isValidElement,
     useEffect,
     useMemo,
@@ -170,7 +171,10 @@ function SortSelect({ value, disabled, onChange, placeholder = 'None', t }) {
     );
 }
 
-export function SidePanel({ className = '', style = undefined }) {
+export const SidePanel = forwardRef(function SidePanel(
+    { className = '', style = undefined },
+    ref
+) {
     const { t } = useI18n();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const onlineIds = useFriendRosterStore((state) => state.onlineIds);
@@ -432,6 +436,7 @@ export function SidePanel({ className = '', style = undefined }) {
 
     return (
         <aside
+            ref={ref}
             className={cn(
                 'bg-background flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l',
                 className
@@ -809,4 +814,4 @@ export function SidePanel({ className = '', style = undefined }) {
             </Dialog>
         </aside>
     );
-}
+});
