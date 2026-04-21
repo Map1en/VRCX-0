@@ -1131,8 +1131,18 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         }
 
         const revision = moderationRevisionRef.current;
-        vrchatModerationRepository
-            .getLocalModeration({ userId: normalizedUserId })
+        const localModerationPromise = currentUserId
+            ? database
+                  .initUserTables(currentUserId)
+                  .then(() =>
+                      vrchatModerationRepository.getLocalModeration({
+                          userId: normalizedUserId
+                      })
+                  )
+            : vrchatModerationRepository.getLocalModeration({
+                  userId: normalizedUserId
+              });
+        localModerationPromise
             .then((entry) => {
                 if (active && moderationRevisionRef.current === revision) {
                     setModerationState({
@@ -2771,6 +2781,9 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 ...moderationState,
                 [type]: enabled
             };
+            if (currentUserId) {
+                await database.initUserTables(currentUserId);
+            }
             const savedState =
                 await vrchatModerationRepository.saveLocalModeration({
                     userId: rosterUserId,

@@ -803,8 +803,16 @@ export function PlayerListPage({ embedded = false } = {}) {
     useEffect(() => {
         let active = true;
 
+        if (!currentUserId) {
+            setModerationByUserId({});
+            return () => {
+                active = false;
+            };
+        }
+
         database
-            .getAllModerations()
+            .initUserTables(currentUserId)
+            .then(() => database.getAllModerations())
             .then((rows) => {
                 if (!active) {
                     return;

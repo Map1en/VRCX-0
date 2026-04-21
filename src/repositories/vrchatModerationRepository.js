@@ -96,6 +96,10 @@ function normalizePlayerModerationRow(row) {
     };
 }
 
+function normalizeUserId(value) {
+    return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+}
+
 async function executeGet(path, { endpoint = '' } = {}) {
     const response = await webRepository.execute({
         url: buildUrl(path, endpoint),
@@ -317,10 +321,7 @@ async function deletePlayerModeration({ endpoint = '', moderated, type } = {}) {
 }
 
 async function getLocalModeration({ userId } = {}) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = normalizeUserId(userId);
     if (!normalizedUserId) {
         return {
             userId: '',
@@ -343,10 +344,7 @@ async function saveLocalModeration({
     block = false,
     mute = false
 } = {}) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = normalizeUserId(userId);
     if (!normalizedUserId) {
         throw new Error(
             'VrchatModerationRepository.saveLocalModeration requires a user id.'

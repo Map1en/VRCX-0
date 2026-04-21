@@ -347,6 +347,7 @@ export async function refreshPlayerModerations({ isCurrent = null } = {}) {
         return;
     }
 
+    await database.initUserTables(currentUserId);
     await vrchatModerationRepository.syncLocalModerationSnapshot(response.json);
 }
 

@@ -4,6 +4,9 @@ import { dbVars } from '../database';
 const moderation = {
     async getModeration(userId) {
         var row = {};
+        if (!dbVars.userPrefix) {
+            return row;
+        }
         await sqliteService.execute(
             (dbRow) => {
                 var block = false;
@@ -32,6 +35,9 @@ const moderation = {
 
     async getAllModerations() {
         var rows = [];
+        if (!dbVars.userPrefix) {
+            return rows;
+        }
         await sqliteService.execute((dbRow) => {
             rows.push({
                 userId: dbRow[0],
@@ -45,6 +51,9 @@ const moderation = {
     },
 
     async setModeration(entry) {
+        if (!dbVars.userPrefix) {
+            return;
+        }
         var block = 0;
         var mute = 0;
         if (entry.block) {
@@ -66,6 +75,9 @@ const moderation = {
     },
 
     async deleteModeration(userId) {
+        if (!dbVars.userPrefix) {
+            return;
+        }
         await sqliteService.executeNonQuery(
             `DELETE FROM ${dbVars.userPrefix}_moderation WHERE user_id = @user_id`,
             {
