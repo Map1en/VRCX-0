@@ -28,6 +28,7 @@ import {
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
+import { getFriendsSortFunction } from '@/shared/utils/friend.js';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -206,6 +207,36 @@ function compareFavoriteGroups(left, right, order = []) {
         String(right.label || right.key || ''),
         undefined,
         { sensitivity: 'base' }
+    );
+}
+
+function readFriendRef(friend) {
+    return friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
+}
+
+function toLegacyFriendSortRow(friend) {
+    const ref = readFriendRef(friend);
+    return {
+        ...friend,
+        name:
+            friend?.name ||
+            friend?.displayName ||
+            friend?.username ||
+            friend?.id ||
+            '',
+        ref: ref && ref !== friend ? { ...friend, ...ref } : friend
+    };
+}
+
+function sortFriendsBySidebarPrefs(friends, sortMethods) {
+    const methods = (sortMethods ?? []).filter(Boolean);
+    if (!methods.length) {
+        return friends;
+    }
+
+    const sort = getFriendsSortFunction(methods);
+    return [...friends].sort((left, right) =>
+        sort(toLegacyFriendSortRow(left), toLegacyFriendSortRow(right))
     );
 }
 
@@ -457,6 +488,11 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         selectedGroups: [],
         groupOrder: []
     });
+    const [sidebarSortMethods, setSidebarSortMethods] = useState([
+        'Sort by Status',
+        'Sort Alphabetically',
+        ''
+    ]);
     const deferredSearchQuery = useDeferredValue(searchQuery);
     const scrollRef = useRef(null);
     const [scrollMetrics, setScrollMetrics] = useState({
@@ -474,7 +510,13 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             configRepository.getBool('FriendLocationShowSameInstance', false),
             configRepository.getBool('isSidebarDivideByFriendGroup', false),
             configRepository.getString('sidebarFavoriteGroups', '[]'),
-            configRepository.getString('sidebarFavoriteGroupOrder', '[]')
+            configRepository.getString('sidebarFavoriteGroupOrder', '[]'),
+            configRepository.getString('sidebarSortMethod1', 'Sort by Status'),
+            configRepository.getString(
+                'sidebarSortMethod2',
+                'Sort Alphabetically'
+            ),
+            configRepository.getString('sidebarSortMethod3', '')
         ])
             .then(
                 ([
@@ -483,7 +525,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                     nextShowSameInstance,
                     nextDivideByGroup,
                     nextSelectedGroups,
-                    nextGroupOrder
+                    nextGroupOrder,
+                    nextSortMethod1,
+                    nextSortMethod2,
+                    nextSortMethod3
                 ]) => {
                     if (!active) {
                         return;
@@ -497,6 +542,11 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                         selectedGroups: parseConfigArray(nextSelectedGroups),
                         groupOrder: parseConfigArray(nextGroupOrder)
                     });
+                    setSidebarSortMethods([
+                        nextSortMethod1 || '',
+                        nextSortMethod2 || '',
+                        nextSortMethod3 || ''
+                    ]);
                 }
             )
             .catch(() => {});
@@ -512,14 +562,20 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             [
                 'isSidebarDivideByFriendGroup',
                 'sidebarFavoriteGroups',
-                'sidebarFavoriteGroupOrder'
+                'sidebarFavoriteGroupOrder',
+                'sidebarSortMethod1',
+                'sidebarSortMethod2',
+                'sidebarSortMethod3'
             ],
             async () => {
                 try {
                     const [
                         nextDivideByGroup,
                         nextSelectedGroups,
-                        nextGroupOrder
+                        nextGroupOrder,
+                        nextSortMethod1,
+                        nextSortMethod2,
+                        nextSortMethod3
                     ] = await Promise.all([
                         configRepository.getBool(
                             'isSidebarDivideByFriendGroup',
@@ -532,7 +588,16 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                         configRepository.getString(
                             'sidebarFavoriteGroupOrder',
                             '[]'
-                        )
+                        ),
+                        configRepository.getString(
+                            'sidebarSortMethod1',
+                            'Sort by Status'
+                        ),
+                        configRepository.getString(
+                            'sidebarSortMethod2',
+                            'Sort Alphabetically'
+                        ),
+                        configRepository.getString('sidebarSortMethod3', '')
                     ]);
                     if (active) {
                         setSidebarFavoritePrefs({
@@ -541,6 +606,11 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                 parseConfigArray(nextSelectedGroups),
                             groupOrder: parseConfigArray(nextGroupOrder)
                         });
+                        setSidebarSortMethods([
+                            nextSortMethod1 || '',
+                            nextSortMethod2 || '',
+                            nextSortMethod3 || ''
+                        ]);
                     }
                 } catch {
                     // ignore preference refresh failures
@@ -741,16 +811,28 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
     ]);
 
     const onlineFriends = useMemo(
-        () => onlineIds.map((id) => friendsById[id]).filter(Boolean),
-        [friendsById, onlineIds]
+        () =>
+            sortFriendsBySidebarPrefs(
+                onlineIds.map((id) => friendsById[id]).filter(Boolean),
+                sidebarSortMethods
+            ),
+        [friendsById, onlineIds, sidebarSortMethods]
     );
     const activeFriends = useMemo(
-        () => activeIds.map((id) => friendsById[id]).filter(Boolean),
-        [activeIds, friendsById]
+        () =>
+            sortFriendsBySidebarPrefs(
+                activeIds.map((id) => friendsById[id]).filter(Boolean),
+                sidebarSortMethods
+            ),
+        [activeIds, friendsById, sidebarSortMethods]
     );
     const offlineFriends = useMemo(
-        () => offlineIds.map((id) => friendsById[id]).filter(Boolean),
-        [friendsById, offlineIds]
+        () =>
+            sortFriendsBySidebarPrefs(
+                offlineIds.map((id) => friendsById[id]).filter(Boolean),
+                sidebarSortMethods
+            ),
+        [friendsById, offlineIds, sidebarSortMethods]
     );
     const favoriteFriends = useMemo(
         () =>
@@ -918,7 +1000,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 groupKey: group.key,
                 title: group.label,
                 description: '',
-                friends: friendsInGroup,
+                friends: sortFriendsBySidebarPrefs(
+                    friendsInGroup,
+                    sidebarSortMethods
+                ),
                 worldId: '',
                 groupId: '',
                 collapsed: collapsedFavoriteGroups.has(group.key)
@@ -942,7 +1027,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 groupKey: group.key,
                 title: group.label,
                 description: '',
-                friends: friendsInGroup,
+                friends: sortFriendsBySidebarPrefs(
+                    friendsInGroup,
+                    sidebarSortMethods
+                ),
                 worldId: '',
                 groupId: '',
                 collapsed: collapsedFavoriteGroups.has(group.key)
@@ -959,7 +1047,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 groupKey: 'ungrouped',
                 title: 'Favorites',
                 description: '',
-                friends: ungrouped,
+                friends: sortFriendsBySidebarPrefs(
+                    ungrouped,
+                    sidebarSortMethods
+                ),
                 worldId: '',
                 groupId: '',
                 collapsed: collapsedFavoriteGroups.has('ungrouped')
@@ -978,7 +1069,8 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         localFriendFavorites,
         selectedFavoriteGroupKeys,
         sidebarFavoritePrefs.groupOrder,
-        sidebarFavoritePrefs.isDivideByGroup
+        sidebarFavoritePrefs.isDivideByGroup,
+        sidebarSortMethods
     ]);
 
     const visibleSections = useMemo(() => {

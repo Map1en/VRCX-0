@@ -1,7 +1,6 @@
 import {
     ExternalLinkIcon,
     GlobeIcon,
-    MapPinIcon,
     PencilIcon,
     UserIcon,
     UsersIcon
@@ -390,10 +389,9 @@ export function FriendLocationCard({
                         <div className="flex min-h-0 flex-col gap-2 overflow-hidden text-sm">
                             {displayInstanceInfo ? (
                                 <div
-                                    className="text-muted-foreground flex w-full min-w-0 items-start gap-2 text-left"
+                                    className="text-muted-foreground w-full min-w-0 text-left"
                                     onClick={(event) => event.stopPropagation()}
                                 >
-                                    <MapPinIcon className="mt-0.5 size-4 shrink-0" />
                                     <span className="text-foreground line-clamp-2 min-w-0 break-words">
                                         {locationValue ? (
                                             <Location

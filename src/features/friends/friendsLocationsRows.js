@@ -233,10 +233,12 @@ export function buildSameInstanceGroups(friends, lastLocation = null) {
             location,
             friends: friendsInLocation
         }))
-        .sort((left, right) =>
-            left.location.localeCompare(right.location, undefined, {
-                sensitivity: 'base'
-            })
+        .sort(
+            (left, right) =>
+                right.friends.length - left.friends.length ||
+                left.location.localeCompare(right.location, undefined, {
+                    sensitivity: 'base'
+                })
         );
 }
 
