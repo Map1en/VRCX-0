@@ -543,7 +543,7 @@ export function AvatarDialogTabbedView({
                 onValueChange={changeTab}
                 tabs={tabs}
             >
-                <EntityDialogTabContent value="info">
+                <EntityDialogTabContent value="info" forceMount>
                     <EntityInfoGrid>
                         {galleryImages.length || canManageAvatar ? (
                             <EntityInfoBlock label="Gallery" full>

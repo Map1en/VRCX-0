@@ -186,11 +186,16 @@ function EntityDialogTabs({ value, onValueChange, tabs, children }) {
     );
 }
 
-function EntityDialogTabContent({ value, className, children }) {
+function EntityDialogTabContent({
+    value,
+    className,
+    children,
+    forceMount = false
+}) {
     return (
         <TabsContent
             value={value}
-            forceMount
+            forceMount={forceMount || undefined}
             className={cn(
                 'm-0 min-h-0 flex-1 overflow-auto pt-4 data-[state=inactive]:hidden',
                 className

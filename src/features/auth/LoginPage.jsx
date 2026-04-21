@@ -1,6 +1,6 @@
 import { NetworkIcon, Trash2Icon, UserIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -69,12 +69,10 @@ import {
 } from './loginDisplay.js';
 import {
     getSnapshotLoginParams,
-    sanitizeLoginRedirectTarget as sanitizeRedirectTarget
 } from './loginSession.js';
 
 export function LoginPage() {
     const navigate = useNavigate();
-    const location = useLocation();
     const { t } = useI18n();
     const locale = useShellStore((state) => state.locale);
     const proxyServer = usePreferencesStore((state) => state.proxyServer);
@@ -115,10 +113,6 @@ export function LoginPage() {
         setProxyInput(proxyServer || '');
     }, [proxyServer]);
 
-    const redirectQuery = new URLSearchParams(location.search).get('redirect');
-    const redirectTo = sanitizeRedirectTarget(
-        location.state?.redirectTo ?? redirectQuery ?? '/feed'
-    );
     const isDatabaseBlocked = !databaseReady;
     const isAutoLoginActive =
         autoLoginState.status === 'scheduled' ||
@@ -408,9 +402,9 @@ export function LoginPage() {
 
     useEffect(() => {
         if (sessionPhase === 'ready') {
-            navigate(redirectTo, { replace: true });
+            navigate('/feed', { replace: true });
         }
-    }, [navigate, redirectTo, sessionPhase]);
+    }, [navigate, sessionPhase]);
 
     async function handleLanguageChange(nextLanguage) {
         try {

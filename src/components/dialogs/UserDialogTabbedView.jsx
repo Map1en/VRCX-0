@@ -26,7 +26,13 @@ import {
     VolumeXIcon,
     XIcon
 } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -752,6 +758,25 @@ function FavoriteWorldGroups({
 
 let lastUserDialogTab = 'info';
 
+const emptyUserDialogRemoteData = Object.freeze({
+    groups: Object.freeze([]),
+    mutual: Object.freeze([]),
+    worlds: Object.freeze([]),
+    favoriteWorldGroups: Object.freeze([]),
+    favoriteWorlds: Object.freeze([]),
+    avatars: Object.freeze([])
+});
+
+const emptyUserDialogStatus = Object.freeze({});
+
+const emptyUserDialogSearch = Object.freeze({
+    mutual: '',
+    groups: '',
+    worlds: '',
+    favoriteWorlds: '',
+    avatars: ''
+});
+
 export function UserDialogTabbedView({
     profile,
     memo,
@@ -832,23 +857,10 @@ export function UserDialogTabbedView({
     const prompt = useModalStore((state) => state.prompt);
     const confirm = useModalStore((state) => state.confirm);
     const [activeTab, setActiveTab] = useState('info');
-    const [remoteData, setRemoteData] = useState({
-        groups: [],
-        mutual: [],
-        worlds: [],
-        favoriteWorldGroups: [],
-        favoriteWorlds: [],
-        avatars: []
-    });
-    const [remoteStatus, setRemoteStatus] = useState({});
-    const [remoteErrors, setRemoteErrors] = useState({});
-    const [search, setSearch] = useState({
-        mutual: '',
-        groups: '',
-        worlds: '',
-        favoriteWorlds: '',
-        avatars: ''
-    });
+    const [remoteData, setRemoteData] = useState(emptyUserDialogRemoteData);
+    const [remoteStatus, setRemoteStatus] = useState(emptyUserDialogStatus);
+    const [remoteErrors, setRemoteErrors] = useState(emptyUserDialogStatus);
+    const [search, setSearch] = useState(emptyUserDialogSearch);
     const [worldSort, setWorldSort] = useState('updated');
     const [worldOrder, setWorldOrder] = useState('descending');
     const [avatarSort, setAvatarSort] = useState('name');
@@ -893,21 +905,39 @@ export function UserDialogTabbedView({
         visibleProfileAvatars,
         tabs,
         groupSearchActive
-    } = buildUserDialogListViewData({
-        profile,
-        remoteData,
-        remoteStatus,
-        friendsById,
-        search,
-        mutualSort,
-        groupSort,
-        isCurrentUser,
-        inGameGroupOrder,
-        selectedGroupIds,
-        effectiveAvatarReleaseStatus,
-        avatarSort,
-        currentUserHasSharedConnectionsOptOut
-    });
+    } = useMemo(
+        () =>
+            buildUserDialogListViewData({
+                profile,
+                remoteData,
+                remoteStatus,
+                friendsById,
+                search,
+                mutualSort,
+                groupSort,
+                isCurrentUser,
+                inGameGroupOrder,
+                selectedGroupIds,
+                effectiveAvatarReleaseStatus,
+                avatarSort,
+                currentUserHasSharedConnectionsOptOut
+            }),
+        [
+            avatarSort,
+            currentUserHasSharedConnectionsOptOut,
+            effectiveAvatarReleaseStatus,
+            friendsById,
+            groupSort,
+            inGameGroupOrder,
+            isCurrentUser,
+            mutualSort,
+            profile,
+            remoteData,
+            remoteStatus,
+            search,
+            selectedGroupIds
+        ]
+    );
     const isRecentDialogAction = (actionType) =>
         recentActionVersion >= 0 && isActionRecent(profile.id, actionType);
     const recentDialogShortcut = (actionType) =>
@@ -924,23 +954,10 @@ export function UserDialogTabbedView({
             avatarSort,
             avatarReleaseStatus: effectiveAvatarReleaseStatus
         };
-        setRemoteData({
-            groups: [],
-            mutual: [],
-            worlds: [],
-            favoriteWorldGroups: [],
-            favoriteWorlds: [],
-            avatars: []
-        });
-        setRemoteStatus({});
-        setRemoteErrors({});
-        setSearch({
-            mutual: '',
-            groups: '',
-            worlds: '',
-            favoriteWorlds: '',
-            avatars: ''
-        });
+        setRemoteData(emptyUserDialogRemoteData);
+        setRemoteStatus(emptyUserDialogStatus);
+        setRemoteErrors(emptyUserDialogStatus);
+        setSearch(emptyUserDialogSearch);
         const nextTab = resolveTabValue(tabs, lastUserDialogTab);
         lastUserDialogTab = nextTab;
         setActiveTab(nextTab);

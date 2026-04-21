@@ -4,7 +4,6 @@ import {
     Outlet,
     Route,
     Routes,
-    useLocation
 } from 'react-router-dom';
 
 import { GlobalHosts } from '@/components/hosts/GlobalHosts.jsx';
@@ -14,33 +13,13 @@ import { useSessionStore } from '@/state/sessionStore.js';
 
 import { protectedRoutes, publicRoutes } from './routes.jsx';
 
-function sanitizeRedirectTarget(value) {
-    if (
-        typeof value !== 'string' ||
-        !value.startsWith('/') ||
-        value.startsWith('/login')
-    ) {
-        return '/feed';
-    }
-
-    return value;
-}
-
 function RequireAuth() {
     const isSessionReady = useSessionStore(
         (state) => state.sessionPhase === 'ready'
     );
-    const location = useLocation();
 
     if (!isSessionReady) {
-        const redirectTo = `${location.pathname}${location.search}${location.hash}`;
-        return (
-            <Navigate
-                to={`/login?redirect=${encodeURIComponent(redirectTo)}`}
-                replace
-                state={{ redirectTo }}
-            />
-        );
+        return <Navigate to="/login" replace />;
     }
 
     return <Outlet />;
@@ -50,16 +29,9 @@ function RedirectIfAuthenticated() {
     const isSessionReady = useSessionStore(
         (state) => state.sessionPhase === 'ready'
     );
-    const location = useLocation();
 
     if (isSessionReady) {
-        const redirectQuery = new URLSearchParams(location.search).get(
-            'redirect'
-        );
-        const redirectTo = sanitizeRedirectTarget(
-            location.state?.redirectTo ?? redirectQuery ?? '/feed'
-        );
-        return <Navigate to={redirectTo} replace />;
+        return <Navigate to="/feed" replace />;
     }
 
     return <Outlet />;

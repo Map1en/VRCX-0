@@ -1723,7 +1723,7 @@ export function WorldDialogTabbedView({
                         className="flex-1"
                     />
                 </EntityDialogTabContent>
-                <EntityDialogTabContent value="info">
+                <EntityDialogTabContent value="info" forceMount>
                     <EntityInfoGrid>
                         <EntityMemoTextarea
                             label="Memo"
