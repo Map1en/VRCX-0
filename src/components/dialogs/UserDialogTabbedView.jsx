@@ -1373,6 +1373,9 @@ export function UserDialogTabbedView({
                   (user) => userIdForRow(user) !== locationOwnerId
               )
             : locationUsers;
+    const locationInstanceUsers = locationOwnerRow
+        ? [locationOwnerRow, ...locationPlayerUsers]
+        : locationPlayerUsers;
 
     async function copyUserText(text, label) {
         await copyTextToClipboard(text);
@@ -2509,72 +2512,65 @@ export function UserDialogTabbedView({
                 <EntityDialogTabContent value="info">
                     {visiblePresenceLocation ? (
                         <div className="border-border mb-2 flex flex-col gap-2 border-b pb-2">
-                            <div className="flex flex-col gap-1 text-sm">
+                            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                                 {visiblePresenceLocation.includes(':') ? (
-                                    <InstanceActionBar
-                                        location={visiblePresenceLocation}
-                                        launchLocation={visiblePresenceLocation}
-                                        inviteLocation={visiblePresenceLocation}
-                                        instanceLocation={
-                                            visiblePresenceLocation
-                                        }
-                                        instance={locationInstance}
-                                        worldName={locationWorldTitle}
-                                        friendCount={locationFriendCount}
-                                        playerCount={locationPlayerCount}
-                                        capacity={
-                                            locationInstance?.capacity ??
-                                            locationInstance?.recommendedCapacity
-                                        }
-                                        refreshTooltip={t(
-                                            'dialog.user.info.refresh_instance_info'
-                                        )}
-                                        showHistory={Boolean(
-                                            previousInstances.length
-                                        )}
-                                        onRefresh={onRefreshLocation}
-                                        onHistory={() =>
-                                            setPreviousInstancesOpen(true)
-                                        }
-                                    />
-                                ) : null}
-                                {visiblePresenceLocation.includes(':') ? (
-                                    <LocationWorld
-                                        locationObject={{
-                                            ...(locationInstance || {}),
-                                            tag: visiblePresenceLocation,
-                                            location: visiblePresenceLocation,
-                                            userId: locationOwnerId,
-                                            playerCount: locationPlayerCount,
-                                            capacity:
+                                    <>
+                                        <LocationWorld
+                                            className="min-w-0"
+                                            locationObject={{
+                                                ...(locationInstance || {}),
+                                                tag: visiblePresenceLocation,
+                                                location:
+                                                    visiblePresenceLocation,
+                                                userId: locationOwnerId,
+                                                playerCount:
+                                                    locationPlayerCount,
+                                                capacity:
+                                                    locationInstance?.capacity ??
+                                                    locationInstance?.recommendedCapacity
+                                            }}
+                                            currentUserId={currentUserId}
+                                            grouphint={
+                                                locationInstance?.groupName ||
+                                                profile.$location?.groupName ||
+                                                ''
+                                            }
+                                            endpoint={currentEndpoint}
+                                            hint={locationWorldTitle}
+                                            instanceClickAction="world"
+                                        />
+                                        <InstanceActionBar
+                                            className="shrink-0"
+                                            location={visiblePresenceLocation}
+                                            launchLocation={
+                                                visiblePresenceLocation
+                                            }
+                                            inviteLocation={
+                                                visiblePresenceLocation
+                                            }
+                                            instanceLocation={
+                                                visiblePresenceLocation
+                                            }
+                                            instance={locationInstance}
+                                            worldName={locationWorldTitle}
+                                            friendCount={locationFriendCount}
+                                            playerCount={locationPlayerCount}
+                                            capacity={
                                                 locationInstance?.capacity ??
                                                 locationInstance?.recommendedCapacity
-                                        }}
-                                        currentUserId={currentUserId}
-                                        grouphint={
-                                            locationInstance?.groupName ||
-                                            profile.$location?.groupName ||
-                                            ''
-                                        }
-                                        instanceOwner={
-                                            locationOwnerIsGroup
-                                                ? ''
-                                                : locationOwnerId
-                                        }
-                                        instanceOwnerName={
-                                            locationOwnerIsGroup
-                                                ? ''
-                                                : locationOwnerName
-                                        }
-                                        playerCount={locationPlayerCount}
-                                        capacity={
-                                            locationInstance?.capacity ??
-                                            locationInstance?.recommendedCapacity
-                                        }
-                                        endpoint={currentEndpoint}
-                                        hint={locationWorldTitle}
-                                        instanceClickAction="world"
-                                    />
+                                            }
+                                            refreshTooltip={t(
+                                                'dialog.user.info.refresh_instance_info'
+                                            )}
+                                            showHistory={Boolean(
+                                                previousInstances.length
+                                            )}
+                                            onRefresh={onRefreshLocation}
+                                            onHistory={() =>
+                                                setPreviousInstancesOpen(true)
+                                            }
+                                        />
+                                    </>
                                 ) : (
                                     <Location
                                         location={visiblePresenceLocation}
@@ -2584,35 +2580,12 @@ export function UserDialogTabbedView({
                                     />
                                 )}
                             </div>
-                            {locationOwnerRow || locationPlayerUsers.length ? (
-                                <div className="flex max-h-36 flex-col gap-2 overflow-auto">
-                                    {locationOwnerRow ? (
-                                        <div className="flex flex-col gap-1">
-                                            <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                                                {t(
-                                                    'dialog.user.info.instance_creator'
-                                                )}
-                                            </div>
-                                            <EntityList
-                                                rows={[locationOwnerRow]}
-                                                kind="user"
-                                            />
-                                        </div>
-                                    ) : null}
-                                    {locationPlayerUsers.length ? (
-                                        <div className="flex flex-col gap-1">
-                                            <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                                                {t(
-                                                    'dialog.user.info.instance_users'
-                                                )}{' '}
-                                                {locationPlayerUsers.length}
-                                            </div>
-                                            <EntityList
-                                                rows={locationPlayerUsers}
-                                                kind="user"
-                                            />
-                                        </div>
-                                    ) : null}
+                            {locationInstanceUsers.length ? (
+                                <div className="max-h-36 overflow-auto">
+                                    <EntityList
+                                        rows={locationInstanceUsers}
+                                        kind="user"
+                                    />
                                 </div>
                             ) : null}
                         </div>
