@@ -122,8 +122,7 @@ const SPLITTER_CONFIG_KEYS = {
 };
 const SPLITTER_DEFAULT_SIZE_PX = 260;
 const SPLITTER_MIN_SIZE_PX = 0;
-const SPLITTER_MAX_SIZE_PX = 520;
-const SPLITTER_FALLBACK_WIDTH = 1200;
+const SPLITTER_CONTENT_MIN_SIZE_PX = 320;
 const CARD_SCALE_CONFIG_KEYS = {
     friend: 'VRCX_FavoritesFriendCardScale',
     world: 'VRCX_FavoritesWorldCardScale',
@@ -148,33 +147,12 @@ function clampNumber(value, min, max, fallback) {
     return Math.min(max, Math.max(min, parsed));
 }
 
-function clampSplitterSizePx(value) {
+function normalizeSplitterSizePx(value) {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) {
         return SPLITTER_DEFAULT_SIZE_PX;
     }
-    return Math.min(
-        SPLITTER_MAX_SIZE_PX,
-        Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed))
-    );
-}
-
-function pxToSplitterPercent(value, width) {
-    const parsedWidth = Number(width);
-    const safeWidth =
-        Number.isFinite(parsedWidth) && parsedWidth > 0
-            ? parsedWidth
-            : SPLITTER_FALLBACK_WIDTH;
-    return Math.min(100, Math.max(0, (Number(value) / safeWidth) * 100));
-}
-
-function splitterPercentToPx(value, width) {
-    const parsedWidth = Number(width);
-    const safeWidth =
-        Number.isFinite(parsedWidth) && parsedWidth > 0
-            ? parsedWidth
-            : SPLITTER_FALLBACK_WIDTH;
-    return clampSplitterSizePx((Number(value) / 100) * safeWidth);
+    return Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed));
 }
 
 function FavoriteExportDialog({
@@ -869,16 +847,16 @@ function FavoritesContentHeader({
 }) {
     return (
         <>
-            <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="flex flex-col gap-0.5 pl-0.5 text-base font-semibold">
-                    <span>{title}</span>
+            <div className="mb-3 flex min-w-0 items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-0.5 pl-0.5 text-base font-semibold">
+                    <span className="truncate">{title}</span>
                     {subtitle ? (
-                        <small className="text-muted-foreground text-xs font-normal">
+                        <small className="text-muted-foreground truncate text-xs font-normal">
                             {subtitle}
                         </small>
                     ) : null}
                 </div>
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex shrink-0 items-center gap-2 text-sm">
                     <span>Edit mode</span>
                     <Switch
                         checked={editMode}
@@ -887,9 +865,9 @@ function FavoritesContentHeader({
                     />
                 </div>
             </div>
-            <div className="flex items-center justify-end">
+            <div className="flex min-w-0 items-center justify-end">
                 {editModeVisible ? (
-                    <div className="mb-3 flex flex-wrap gap-2">
+                    <div className="mb-3 flex min-w-0 flex-wrap justify-end gap-2">
                         <Button
                             type="button"
                             size="sm"
@@ -1383,15 +1361,10 @@ function FavoritesPage({ kind, embedded = false }) {
     const [splitterSizePx, setSplitterSizePx] = useState(
         SPLITTER_DEFAULT_SIZE_PX
     );
-    const [splitterGroupWidth, setSplitterGroupWidth] = useState(
-        SPLITTER_FALLBACK_WIDTH
-    );
     const [splitterLayoutVersion, setSplitterLayoutVersion] = useState(0);
     const [cardScale, setCardScale] = useState(1);
     const [cardSpacing, setCardSpacing] = useState(1);
     const removingFavoriteKeyRef = useRef('');
-    const splitterGroupRef = useRef(null);
-    const splitterDraggingRef = useRef(false);
     const pendingSplitterSizePxRef = useRef(null);
     const selectedKeysSet = useMemo(
         () => new Set(selectedKeys),
@@ -1477,7 +1450,7 @@ function FavoritesPage({ kind, embedded = false }) {
                     setSplitterLayoutVersion((version) => version + 1);
                     return;
                 }
-                setSplitterSizePx(clampSplitterSizePx(parsed));
+                setSplitterSizePx(normalizeSplitterSizePx(parsed));
                 setSplitterLayoutVersion((version) => version + 1);
             })
             .catch(() => {
@@ -1491,37 +1464,6 @@ function FavoritesPage({ kind, embedded = false }) {
             active = false;
         };
     }, [kind]);
-
-    useEffect(() => {
-        const element = splitterGroupRef.current;
-        if (!element) {
-            return undefined;
-        }
-
-        const updateWidth = () => {
-            const width = element.getBoundingClientRect?.().width;
-            if (Number.isFinite(width) && width > 0) {
-                setSplitterGroupWidth(width);
-            }
-        };
-
-        updateWidth();
-        let observer = null;
-        if (typeof ResizeObserver !== 'undefined') {
-            observer = new ResizeObserver(updateWidth);
-            observer.observe(element);
-        }
-        if (typeof window !== 'undefined') {
-            window.addEventListener('resize', updateWidth);
-        }
-
-        return () => {
-            observer?.disconnect();
-            if (typeof window !== 'undefined') {
-                window.removeEventListener('resize', updateWidth);
-            }
-        };
-    }, []);
 
     useEffect(() => {
         let active = true;
@@ -2991,47 +2933,25 @@ function FavoritesPage({ kind, embedded = false }) {
         toast.error(`Removed ${removedCount}; ${failedCount} failed.`);
     }
 
-    const splitterDefaultSize = pxToSplitterPercent(
-        splitterSizePx,
-        splitterGroupWidth
-    );
-    const splitterMinSize = pxToSplitterPercent(
-        SPLITTER_MIN_SIZE_PX,
-        splitterGroupWidth
-    );
-    const splitterMaxSize = pxToSplitterPercent(
-        SPLITTER_MAX_SIZE_PX,
-        splitterGroupWidth
-    );
-
     function persistSplitterSizePx(nextSizePx) {
-        const clampedSizePx = clampSplitterSizePx(nextSizePx);
-        setSplitterSizePx(clampedSizePx);
+        const normalizedSizePx = normalizeSplitterSizePx(nextSizePx);
+        setSplitterSizePx(normalizedSizePx);
         void configRepository.setString(
             SPLITTER_CONFIG_KEYS[kind],
-            String(clampedSizePx)
+            String(normalizedSizePx)
         );
     }
 
-    function persistSplitterLayout(sizes) {
-        const nextSize = Array.isArray(sizes) ? Number(sizes[0]) : NaN;
-        if (!Number.isFinite(nextSize) || nextSize < 0) {
+    function handleSplitterResize(panelSize) {
+        const nextSizePx = Number(panelSize?.inPixels);
+        if (!Number.isFinite(nextSizePx) || nextSizePx < 0) {
             return;
         }
-        if (!splitterDraggingRef.current) {
-            return;
-        }
-        pendingSplitterSizePxRef.current = splitterPercentToPx(
-            nextSize,
-            splitterGroupWidth
-        );
+        pendingSplitterSizePxRef.current =
+            normalizeSplitterSizePx(nextSizePx);
     }
 
-    function handleSplitterDragging(isDragging) {
-        splitterDraggingRef.current = Boolean(isDragging);
-        if (isDragging) {
-            return;
-        }
+    function persistSplitterLayout() {
         const pendingSizePx = pendingSplitterSizePxRef.current;
         pendingSplitterSizePxRef.current = null;
         if (Number.isFinite(pendingSizePx)) {
@@ -3087,22 +3007,25 @@ function FavoritesPage({ kind, embedded = false }) {
                 localItemsByGroup={localItemsByGroup}
             />
 
-            <div ref={splitterGroupRef} className="flex h-full min-h-0 flex-1">
+            <div className="flex h-full min-h-0 min-w-0 flex-1">
                 <ResizablePanelGroup
-                    key={`${kind}:${splitterLayoutVersion}:${Math.round(splitterGroupWidth)}`}
-                    direction="horizontal"
-                    className="h-full min-h-0 flex-1"
-                    onLayout={persistSplitterLayout}
+                    key={`${kind}:${splitterLayoutVersion}`}
+                    id={`favorites-${kind}-splitter`}
+                    orientation="horizontal"
+                    className="h-full min-h-0 min-w-0 flex-1"
+                    onLayoutChanged={persistSplitterLayout}
                 >
                     <ResizablePanel
-                        defaultSize={splitterDefaultSize}
-                        minSize={splitterMinSize}
-                        maxSize={splitterMaxSize}
+                        id={`favorites-${kind}-groups`}
+                        defaultSize={splitterSizePx}
+                        minSize={SPLITTER_MIN_SIZE_PX}
+                        className="min-w-0"
                         collapsible
                         collapsedSize={0}
-                        order={1}
+                        groupResizeBehavior="preserve-pixel-size"
+                        onResize={handleSplitterResize}
                     >
-                        <div className="flex h-full min-h-0 flex-col gap-3 overflow-auto pr-2">
+                        <div className="flex h-full min-h-0 flex-col gap-3 overflow-auto p-2">
                             <GroupRailSection
                                 title={pageConfig.remoteSectionTitle}
                                 groups={remoteGroups}
@@ -3196,12 +3119,13 @@ function FavoritesPage({ kind, embedded = false }) {
                             ) : null}
                         </div>
                     </ResizablePanel>
-                    <ResizableHandle
-                        withHandle
-                        onDragging={handleSplitterDragging}
-                    />
-                    <ResizablePanel order={2}>
-                        <div className="flex h-full min-h-0 flex-col pl-[26px]">
+                    <ResizableHandle withHandle />
+                    <ResizablePanel
+                        id={`favorites-${kind}-content`}
+                        minSize={SPLITTER_CONTENT_MIN_SIZE_PX}
+                        className="min-w-0"
+                    >
+                        <div className="flex h-full min-h-0 min-w-0 flex-col pl-[26px]">
                             <FavoritesContentHeader
                                 title={title}
                                 subtitle={subtitle}
@@ -3226,7 +3150,7 @@ function FavoritesPage({ kind, embedded = false }) {
                                 onCopySelection={() => void copySelection()}
                                 onBulkRemove={() => void bulkRemoveSelection()}
                             />
-                            <div className="min-h-0 flex-1 overflow-auto pr-2">
+                            <div className="min-h-0 min-w-0 flex-1 overflow-auto pr-2">
                                 {favoriteLoadStatus === 'running' &&
                                 !contentItems.length ? (
                                     <FavoritesLoadingState title="Loading favorites baseline." />
@@ -3265,7 +3189,7 @@ function FavoritesPage({ kind, embedded = false }) {
                                     />
                                 ) : (
                                     <div
-                                        className="grid"
+                                        className="grid min-w-0"
                                         style={{
                                             gap: `${Math.max(4, Math.round(8 * cardSpacing))}px`,
                                             gridTemplateColumns: `repeat(auto-fill,minmax(${Math.round(260 * cardScale)}px,1fr))`

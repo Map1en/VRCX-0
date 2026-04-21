@@ -13,8 +13,8 @@ import {
     ChevronDownIcon,
     ChevronRightIcon,
     CopyIcon,
+    CalendarIcon,
     ExternalLinkIcon,
-    ListFilterIcon,
     LockIcon,
     StarIcon,
     XIcon
@@ -2202,15 +2202,16 @@ export function FeedPage({ embedded = false } = {}) {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    size="sm"
-                                    className="gap-1.5"
+                                    size="icon-sm"
+                                    className="relative"
+                                    title={t('view.feed.filter')}
+                                    aria-label={t('view.feed.filter')}
                                 >
-                                    <ListFilterIcon data-icon="inline-start" />
-                                    {t('view.feed.filter')}
+                                    <CalendarIcon data-icon="icon" />
                                     {activeFilterCount ? (
                                         <Badge
                                             variant="secondary"
-                                            className="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs"
+                                            className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[0.65rem] leading-none"
                                         >
                                             {activeFilterCount}
                                         </Badge>
@@ -2273,7 +2274,7 @@ export function FeedPage({ embedded = false } = {}) {
                         </Button>
                     </div>
 
-                    <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+                    <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto">
                         <Button
                             type="button"
                             variant={
@@ -2302,7 +2303,7 @@ export function FeedPage({ embedded = false } = {}) {
                         })}
                     </div>
 
-                    <div className="relative min-w-64 flex-1">
+                    <div className="relative min-w-0 flex-1 basis-0">
                         <Input
                             value={searchDraft}
                             onChange={(event) =>
@@ -2315,7 +2316,7 @@ export function FeedPage({ embedded = false } = {}) {
                                 }
                             }}
                             placeholder={t('view.feed.search_placeholder')}
-                            className="h-9 pr-9"
+                            className="h-9 min-w-0 pr-9"
                         />
                         {searchDraft ? (
                             <Button

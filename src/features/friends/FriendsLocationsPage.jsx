@@ -1173,10 +1173,11 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 (cardGridMinWidth + cardGridGap)
         ) || 1
     );
-    const cardRowHeight = Math.max(
+    const cardGridRowHeight = Math.max(
         160,
-        150 * cardScale + 48 * spacingScale + cardGridGap
+        150 * cardScale + 48 * spacingScale
     );
+    const cardRowHeight = cardGridRowHeight + cardGridGap;
 
     const virtualRows = useMemo(() => {
         const rows = [];
@@ -1807,9 +1808,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                     renderFavoriteGroupHeader(row.section)
                                 ) : (
                                     <div
-                                        className="grid h-full overflow-hidden"
+                                        className="grid overflow-hidden"
                                         style={{
                                             gap: `${cardGridGap}px`,
+                                            height: `${cardGridRowHeight}px`,
                                             gridTemplateColumns: `repeat(${cardGridColumns}, minmax(${cardGridMinWidth}px, 1fr))`
                                         }}
                                     >

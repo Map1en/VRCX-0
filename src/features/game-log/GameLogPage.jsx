@@ -128,12 +128,7 @@ import {
     writePersistedGameLogState
 } from './gameLogState.js';
 
-const SESSION_FILTER_TYPES = [
-    'Location',
-    'OnPlayerJoined',
-    'OnPlayerLeft',
-    'VideoPlay'
-];
+const SESSION_FILTER_TYPES = ['OnPlayerJoined', 'OnPlayerLeft', 'VideoPlay'];
 function normalizeId(value) {
     return typeof value === 'string'
         ? value.trim()
@@ -2346,7 +2341,9 @@ export function GameLogPage({ embedded = false } = {}) {
                                         }
                                     />
                                 </div>
-                                {renderSearchInput('relative w-60 shrink-0')}
+                                {renderSearchInput(
+                                    'relative ml-auto w-60 shrink-0'
+                                )}
                                 {renderTableControls()}
                             </div>
                         </div>
@@ -2364,7 +2361,9 @@ export function GameLogPage({ embedded = false } = {}) {
                                     }
                                     className="flex shrink-0 items-center gap-1"
                                 />
-                                {renderSearchInput('relative w-60 shrink-0')}
+                                {renderSearchInput(
+                                    'relative ml-auto w-60 shrink-0'
+                                )}
                                 {renderTableControls()}
                             </div>
                         </div>

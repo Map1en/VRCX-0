@@ -6,6 +6,7 @@ import {
     XIcon
 } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useDefaultLayout } from 'react-resizable-panels';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -468,20 +469,27 @@ function DashboardReadRow({ row, dashboardId, onPanelChange }) {
     const direction = row?.direction === 'vertical' ? 'vertical' : 'horizontal';
     const panels = Array.isArray(row?.panels) ? row.panels.slice(0, 2) : [];
     const rowKey = getDashboardRowKey(row);
+    const firstPanelId = `dashboard-${dashboardId}-row-${rowKey}-panel-0`;
+    const secondPanelId = `dashboard-${dashboardId}-row-${rowKey}-panel-1`;
+    const rowLayout = useDefaultLayout({
+        id: `dashboard-${dashboardId}-row-${rowKey}`,
+        panelIds: [firstPanelId, secondPanelId]
+    });
 
     if (panels.length === 2) {
         return (
             <div className="relative h-full min-h-[180px]">
                 <ResizablePanelGroup
-                    direction={direction}
-                    autoSaveId={`dashboard-${dashboardId}-row-${rowKey}`}
+                    id={`dashboard-${dashboardId}-row-${rowKey}`}
+                    orientation={direction}
                     className="h-full min-h-[180px]"
+                    defaultLayout={rowLayout.defaultLayout}
+                    onLayoutChanged={rowLayout.onLayoutChanged}
                 >
                     <ResizablePanel
-                        id={`dashboard-${dashboardId}-row-${rowKey}-panel-0`}
-                        order={1}
-                        defaultSize={50}
-                        minSize={20}
+                        id={firstPanelId}
+                        defaultSize="50%"
+                        minSize="20%"
                     >
                         <div className="h-full min-h-[180px] min-w-0">
                             <DashboardPanelPreview
@@ -494,10 +502,9 @@ function DashboardReadRow({ row, dashboardId, onPanelChange }) {
                     </ResizablePanel>
                     <ResizableHandle />
                     <ResizablePanel
-                        id={`dashboard-${dashboardId}-row-${rowKey}-panel-1`}
-                        order={2}
-                        defaultSize={50}
-                        minSize={20}
+                        id={secondPanelId}
+                        defaultSize="50%"
+                        minSize="20%"
                     >
                         <div className="h-full min-h-[180px] min-w-0">
                             <DashboardPanelPreview
@@ -552,6 +559,18 @@ export function DashboardPage() {
         () => dashboards.find((entry) => entry.id === id) || null,
         [dashboards, id]
     );
+    const dashboardRowPanelIds = useMemo(
+        () =>
+            (Array.isArray(dashboard?.rows) ? dashboard.rows : []).map(
+                (row) =>
+                    `dashboard-${id}-row-panel-${getDashboardRowKey(row)}`
+            ),
+        [dashboard?.rows, id]
+    );
+    const dashboardLayout = useDefaultLayout({
+        id: `dashboard-${id || 'empty'}`,
+        panelIds: dashboardRowPanelIds
+    });
 
     useEffect(() => {
         void ensureLoaded().catch(() => {});
@@ -982,9 +1001,11 @@ export function DashboardPage() {
                     </>
                 ) : rowCount ? (
                     <ResizablePanelGroup
-                        direction="vertical"
-                        autoSaveId={`dashboard-${id}`}
+                        id={`dashboard-${id}`}
+                        orientation="vertical"
                         className="min-h-0 flex-1"
+                        defaultLayout={dashboardLayout.defaultLayout}
+                        onLayoutChanged={dashboardLayout.onLayoutChanged}
                     >
                         {dashboard.rows.map((row, rowIndex) => {
                             const rowKey = getDashboardRowKey(row);
@@ -992,9 +1013,8 @@ export function DashboardPage() {
                                 <Fragment key={`row-${rowKey}`}>
                                     <ResizablePanel
                                         id={`dashboard-${id}-row-panel-${rowKey}`}
-                                        order={rowIndex + 1}
-                                        defaultSize={100 / rowCount}
-                                        minSize={10}
+                                        defaultSize={`${100 / rowCount}%`}
+                                        minSize="10%"
                                     >
                                         <DashboardReadRow
                                             row={row}
