@@ -187,8 +187,16 @@ function isRealLocation(location) {
     return Boolean(
         value &&
         value !== 'offline' &&
+        value !== 'offline:offline' &&
         value !== 'traveling' &&
         value !== 'private'
+    );
+}
+
+function isTravelingLocation(location) {
+    return (
+        typeof location === 'string' &&
+        location.trim().toLowerCase() === 'traveling'
     );
 }
 
@@ -264,6 +272,72 @@ function resolveDuration(previous) {
         previous?.locationUpdatedAt || previous?.$location_at || 0
     );
     return timestamp > 0 ? Date.now() - timestamp : '';
+}
+
+function resolveGpsPreviousLocation(previous = {}) {
+    const previousLocation =
+        typeof previous?.location === 'string' ? previous.location.trim() : '';
+    if (isTravelingLocation(previousLocation)) {
+        return firstString(previous.$previousLocation);
+    }
+    return previousLocation;
+}
+
+function resolveGpsDuration(previous = {}) {
+    if (isTravelingLocation(previous?.location)) {
+        const previousLocationTimestamp = Number(
+            previous?.$previousLocation_at || 0
+        );
+        return previousLocationTimestamp > 0
+            ? Date.now() - previousLocationTimestamp
+            : '';
+    }
+    return resolveDuration(previous);
+}
+
+function buildLocationMetadataPatch(location, previous = {}, timestamp) {
+    if (isTravelingLocation(location)) {
+        if (isTravelingLocation(previous?.location)) {
+            return {};
+        }
+        const previousLocation = firstString(
+            previous?.location,
+            previous?.$location?.tag
+        );
+        const previousLocationTimestamp =
+            previous?.locationUpdatedAt || previous?.$location_at || 0;
+        const metadata = {
+            locationUpdatedAt: timestamp,
+            $location_at: timestamp,
+            $travelingToTime: timestamp,
+            travelingToTime: timestamp
+        };
+        if (isRealLocation(previousLocation)) {
+            metadata.$previousLocation = previousLocation;
+            metadata.$previousLocation_at = previousLocationTimestamp;
+        }
+        return metadata;
+    }
+
+    const previousTravelLocation = firstString(previous?.$previousLocation);
+    const previousLocationTimestamp = Number(
+        previous?.$previousLocation_at || 0
+    );
+    const returnedToPreviousLocation =
+        previousTravelLocation && previousTravelLocation === location;
+    const locationTimestamp =
+        returnedToPreviousLocation && previousLocationTimestamp > 0
+            ? previousLocationTimestamp
+            : timestamp;
+
+    return {
+        locationUpdatedAt: locationTimestamp,
+        $location_at: locationTimestamp,
+        $previousLocation: '',
+        $previousLocation_at: '',
+        $travelingToTime: '',
+        travelingToTime: ''
+    };
 }
 
 function buildFeedBase({ type, userId, patch = {}, previous = {} }) {
@@ -400,8 +474,7 @@ function recordOnlineFeed({
 }
 
 function recordGpsFeed({ userId, patch = {}, previous = {}, location }) {
-    const previousLocation =
-        typeof previous?.location === 'string' ? previous.location.trim() : '';
+    const previousLocation = resolveGpsPreviousLocation(previous);
     if (
         !isRealLocation(previousLocation) ||
         !isRealLocation(location) ||
@@ -421,7 +494,7 @@ function recordGpsFeed({ userId, patch = {}, previous = {}, location }) {
             worldName,
             groupName,
             previousLocation,
-            time: resolveDuration(previous)
+            time: resolveGpsDuration(previous)
         },
         'addGPSToDatabase'
     );
@@ -726,20 +799,25 @@ export function handleRealtimePresenceEvent(message) {
                 userPatch.worldId,
                 content.worldId
             );
+            const locationTimestamp = Date.now();
+            const locationPatch = buildLocationPatch(
+                eventLocation,
+                eventTravelingToLocation,
+                eventWorldId,
+                onlinePresenceFallback(previous)
+            );
             const patch = {
                 ...userPatch,
                 id: userId,
                 platform: content.platform,
                 state: 'online',
                 pendingOffline: false,
-                ...buildLocationPatch(
-                    eventLocation,
-                    eventTravelingToLocation,
-                    eventWorldId,
-                    onlinePresenceFallback(previous)
-                ),
-                locationUpdatedAt: Date.now(),
-                $location_at: Date.now()
+                ...locationPatch,
+                ...buildLocationMetadataPatch(
+                    locationPatch.location,
+                    previous,
+                    locationTimestamp
+                )
             };
             if (!canceledPendingOffline && !isOnlineState(previous)) {
                 recordOnlineFeed({
@@ -818,19 +896,24 @@ export function handleRealtimePresenceEvent(message) {
                 userPatch.worldId,
                 content.worldId
             );
+            const locationTimestamp = Date.now();
+            const locationPatch = buildLocationPatch(
+                eventLocation,
+                eventTravelingToLocation,
+                eventWorldId,
+                onlinePresenceFallback(previous)
+            );
             const patch = {
                 ...userPatch,
                 id: userId,
                 state: 'online',
                 pendingOffline: false,
-                ...buildLocationPatch(
-                    eventLocation,
-                    eventTravelingToLocation,
-                    eventWorldId,
-                    onlinePresenceFallback(previous)
-                ),
-                locationUpdatedAt: Date.now(),
-                $location_at: Date.now()
+                ...locationPatch,
+                ...buildLocationMetadataPatch(
+                    locationPatch.location,
+                    previous,
+                    locationTimestamp
+                )
             };
             recordGpsFeed({
                 userId,
