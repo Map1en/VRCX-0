@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import {
     Fragment,
+    memo,
     useDeferredValue,
     useEffect,
     useMemo,
@@ -382,7 +383,106 @@ function SortButton({ column, label }) {
     );
 }
 
-function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
+const avatarInfoLineCache = new Map();
+
+function getAvatarInfoLineCacheKey(imageUrl, endpoint) {
+    const normalizedImageUrl = String(imageUrl || '').trim();
+    if (!normalizedImageUrl) {
+        return '';
+    }
+    return `${String(endpoint || '').trim()}\n${normalizedImageUrl}`;
+}
+
+function normalizeAvatarInfoLineState({
+    avatarName = '',
+    ownerId = '',
+    status = 'idle',
+    cacheKey = ''
+} = {}) {
+    return {
+        avatarName: typeof avatarName === 'string' ? avatarName.trim() : '',
+        ownerId: normalizeId(ownerId),
+        status,
+        cacheKey
+    };
+}
+
+function isSameAvatarInfoLineState(left, right) {
+    return (
+        left?.avatarName === right?.avatarName &&
+        left?.ownerId === right?.ownerId &&
+        left?.status === right?.status &&
+        left?.cacheKey === right?.cacheKey
+    );
+}
+
+function setAvatarInfoLineState(setInfo, nextInfo) {
+    setInfo((current) =>
+        isSameAvatarInfoLineState(current, nextInfo) ? current : nextInfo
+    );
+}
+
+function resolveInitialAvatarInfoLineState({
+    avatarName,
+    imageUrl,
+    ownerId,
+    endpoint
+}) {
+    const hintedName =
+        typeof avatarName === 'string' ? avatarName.trim() : '';
+    const hintedOwnerId = normalizeId(ownerId);
+    const cacheKey = getAvatarInfoLineCacheKey(imageUrl, endpoint);
+
+    if (!cacheKey) {
+        return normalizeAvatarInfoLineState({
+            avatarName: hintedName,
+            ownerId: hintedOwnerId,
+            status: 'idle'
+        });
+    }
+
+    if (hintedName || hintedOwnerId) {
+        const nextInfo = normalizeAvatarInfoLineState({
+            avatarName: hintedName,
+            ownerId: hintedOwnerId,
+            status: 'ready',
+            cacheKey
+        });
+        avatarInfoLineCache.set(cacheKey, nextInfo);
+        return nextInfo;
+    }
+
+    const cachedInfo = avatarInfoLineCache.get(cacheKey);
+    if (cachedInfo) {
+        return cachedInfo;
+    }
+
+    return normalizeAvatarInfoLineState({
+        status: 'loading',
+        cacheKey
+    });
+}
+
+function avatarTagsEqual(left, right) {
+    if (left === right) {
+        return true;
+    }
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+        return !left?.length && !right?.length;
+    }
+    if (left.length !== right.length) {
+        return false;
+    }
+    return left.every((value, index) => value === right[index]);
+}
+
+const AvatarInfoLine = memo(function AvatarInfoLine({
+    avatarName,
+    avatarTags,
+    imageUrl,
+    ownerId,
+    userId
+}) {
     const { t } = useI18n();
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -390,40 +490,64 @@ function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
-    const [info, setInfo] = useState(() => ({
-        avatarName: typeof avatarName === 'string' ? avatarName.trim() : '',
-        ownerId: normalizeId(ownerId),
-        status: 'idle'
-    }));
+    const [info, setInfo] = useState(() =>
+        resolveInitialAvatarInfoLineState({
+            avatarName,
+            imageUrl,
+            ownerId,
+            endpoint: currentEndpoint
+        })
+    );
 
     useEffect(() => {
         const hintedName =
             typeof avatarName === 'string' ? avatarName.trim() : '';
         const hintedOwnerId = normalizeId(ownerId);
+        const cacheKey = getAvatarInfoLineCacheKey(
+            imageUrl,
+            currentEndpoint
+        );
 
-        if (!imageUrl) {
-            setInfo({
+        if (!cacheKey) {
+            setAvatarInfoLineState(setInfo, {
                 avatarName: hintedName,
                 ownerId: hintedOwnerId,
-                status: 'idle'
+                status: 'idle',
+                cacheKey: ''
             });
             return undefined;
         }
 
         if (hintedName || hintedOwnerId) {
-            setInfo({
+            const nextInfo = normalizeAvatarInfoLineState({
                 avatarName: hintedName,
                 ownerId: hintedOwnerId,
-                status: 'ready'
+                status: 'ready',
+                cacheKey
             });
+            avatarInfoLineCache.set(cacheKey, nextInfo);
+            setAvatarInfoLineState(setInfo, nextInfo);
+            return undefined;
+        }
+
+        const cachedInfo = avatarInfoLineCache.get(cacheKey);
+        if (cachedInfo) {
+            setAvatarInfoLineState(setInfo, cachedInfo);
             return undefined;
         }
 
         let active = true;
-        setInfo({
-            avatarName: '',
-            ownerId: '',
-            status: 'loading'
+        setInfo((current) => {
+            if (current.cacheKey === cacheKey && current.status === 'ready') {
+                return current;
+            }
+            const nextInfo = normalizeAvatarInfoLineState({
+                status: 'loading',
+                cacheKey
+            });
+            return isSameAvatarInfoLineState(current, nextInfo)
+                ? current
+                : nextInfo;
         });
 
         avatarProfileRepository
@@ -433,23 +557,27 @@ function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
                     return;
                 }
 
-                setInfo({
+                const resolvedInfo = normalizeAvatarInfoLineState({
                     avatarName:
                         typeof nextInfo?.avatarName === 'string'
                             ? nextInfo.avatarName.trim()
                             : '',
                     ownerId: normalizeId(nextInfo?.ownerId),
-                    status: 'ready'
+                    status: 'ready',
+                    cacheKey
                 });
+                avatarInfoLineCache.set(cacheKey, resolvedInfo);
+                setAvatarInfoLineState(setInfo, resolvedInfo);
             })
             .catch(() => {
                 if (!active) {
                     return;
                 }
-                setInfo({
+                setAvatarInfoLineState(setInfo, {
                     avatarName: hintedName,
                     ownerId: hintedOwnerId,
-                    status: 'error'
+                    status: 'error',
+                    cacheKey
                 });
             });
 
@@ -568,6 +696,16 @@ function AvatarInfoLine({ avatarName, avatarTags, imageUrl, ownerId, userId }) {
                 </div>
             ) : null}
         </div>
+    );
+}, areAvatarInfoLinePropsEqual);
+
+function areAvatarInfoLinePropsEqual(previousProps, nextProps) {
+    return (
+        previousProps.avatarName === nextProps.avatarName &&
+        previousProps.imageUrl === nextProps.imageUrl &&
+        previousProps.ownerId === nextProps.ownerId &&
+        previousProps.userId === nextProps.userId &&
+        avatarTagsEqual(previousProps.avatarTags, nextProps.avatarTags)
     );
 }
 
@@ -1156,7 +1294,6 @@ export function FeedPage({ embedded = false } = {}) {
     const localFriendFavorites = useFavoriteStore(
         (state) => state.localFriendFavorites
     );
-    const liveFeedEntries = useFeedLiveStore((state) => state.entries);
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const friendRosterLastLoadedAt = useFriendRosterStore(
         (state) => state.lastLoadedAt
@@ -1929,35 +2066,42 @@ export function FeedPage({ embedded = false } = {}) {
     ]);
 
     useEffect(() => {
-        if (
-            !preferencesReady ||
-            !currentUserId ||
-            liveFeedEntries.length === 0
-        ) {
-            return;
+        if (!preferencesReady || !currentUserId) {
+            return undefined;
         }
-        const { matchingEntries, maxSequence } = collectMatchingLiveFeedEntries(
-            liveFeedEntries,
-            lastLiveFeedSequenceRef.current,
-            {
-                currentUserId,
-                activeFilters,
-                dateFrom,
-                dateTo,
-                favoriteIdSet,
-                favoritesOnly,
-                search: deferredSearchQuery
+
+        return useFeedLiveStore.subscribe((state, previousState) => {
+            if (
+                state.version === previousState?.version ||
+                state.entries.length === 0
+            ) {
+                return;
             }
-        );
-        if (maxSequence > lastLiveFeedSequenceRef.current) {
-            lastLiveFeedSequenceRef.current = maxSequence;
-        }
-        if (!matchingEntries.length) {
-            return;
-        }
-        setRows((current) =>
-            mergeLiveFeedEntries(current, matchingEntries, maxFeedRows)
-        );
+
+            const { matchingEntries, maxSequence } =
+                collectMatchingLiveFeedEntries(
+                    state.entries,
+                    lastLiveFeedSequenceRef.current,
+                    {
+                        currentUserId,
+                        activeFilters,
+                        dateFrom,
+                        dateTo,
+                        favoriteIdSet,
+                        favoritesOnly,
+                        search: deferredSearchQuery
+                    }
+                );
+            if (maxSequence > lastLiveFeedSequenceRef.current) {
+                lastLiveFeedSequenceRef.current = maxSequence;
+            }
+            if (!matchingEntries.length) {
+                return;
+            }
+            setRows((current) =>
+                mergeLiveFeedEntries(current, matchingEntries, maxFeedRows)
+            );
+        });
     }, [
         activeFilters,
         currentUserId,
@@ -1966,7 +2110,6 @@ export function FeedPage({ embedded = false } = {}) {
         deferredSearchQuery,
         favoriteIdSet,
         favoritesOnly,
-        liveFeedEntries,
         maxFeedRows,
         preferencesReady
     ]);
