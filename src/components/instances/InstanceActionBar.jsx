@@ -194,11 +194,14 @@ function InstanceInfoTooltip({
                         <span className="text-platform-pc">PC: </span>
                         {platformCount(instance, 'standalonewindows')}
                         <span className="text-platform-quest ml-2">
-                            Android{' '}
+                            {appI18n.t('dialog.instance.generated.android')}{' '}
                         </span>
                         {platformCount(instance, 'android')}
                     </div>
-                    <div>iOS {platformCount(instance, 'ios')}</div>
+                    <div>
+                        {appI18n.t('dialog.instance.generated.ios')}{' '}
+                        {platformCount(instance, 'ios')}
+                    </div>
                     {instance?.gameServerVersion ? (
                         <div>{appI18n.t('dialog.instance.generated.game_version')} {instance.gameServerVersion}</div>
                     ) : null}
