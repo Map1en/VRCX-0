@@ -18,6 +18,7 @@ import { QuickSearchDialog } from '@/components/sidebar/QuickSearchDialog.jsx';
 import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/index.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
+import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
@@ -44,6 +45,9 @@ const TITLE_BAR_INTERACTIVE_SELECTOR = [
     '[role="button"]',
     '[data-titlebar-interactive="true"]'
 ].join(',');
+
+const UPDATE_EXE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+const UPDATE_EXE_CHECK_RETRY_MS = 5 * 60 * 1000;
 
 function TitleBarButton({ label, className, children, onClick, ...props }) {
     return (
@@ -75,6 +79,7 @@ export function AppTitleBar() {
     const location = useLocation();
     const [isMaximized, setIsMaximized] = useState(false);
     const [quickSearchOpen, setQuickSearchOpen] = useState(false);
+    const [hasPendingUpdate, setHasPendingUpdate] = useState(false);
     const { openDirectAccessFromClipboard } = useDirectAccessAction();
     const isSessionReady = useSessionStore(
         (state) => state.sessionPhase === 'ready'
@@ -98,6 +103,9 @@ export function AppTitleBar() {
         (state) => state.markAllSeen
     );
     const removeNavNotification = useShellStore((state) => state.removeNotify);
+    const setSystemHostOpen = useRuntimeStore(
+        (state) => state.setSystemHostOpen
+    );
     const rightSidebarOpen = useShellStore((state) => state.rightSidebarOpen);
     const toggleRightSidebar = useShellStore(
         (state) => state.toggleRightSidebar
@@ -144,6 +152,60 @@ export function AppTitleBar() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isSessionReady, openDirectAccessFromClipboard]);
+
+    useEffect(() => {
+        if (!isSessionReady) {
+            setHasPendingUpdate(false);
+            return undefined;
+        }
+
+        let active = true;
+        let checking = false;
+        let lastPendingUpdateCheckAt = 0;
+        let lastPendingUpdateFailureAt = 0;
+        const refreshPendingUpdate = ({ force = false } = {}) => {
+            const now = Date.now();
+            if (
+                checking ||
+                (!force &&
+                    (now - lastPendingUpdateCheckAt <
+                        UPDATE_EXE_CHECK_INTERVAL_MS ||
+                        now - lastPendingUpdateFailureAt <
+                            UPDATE_EXE_CHECK_RETRY_MS))
+            ) {
+                return;
+            }
+
+            checking = true;
+            backend.app
+                .CheckForUpdateExe()
+                .then((value) => {
+                    lastPendingUpdateCheckAt = Date.now();
+                    lastPendingUpdateFailureAt = 0;
+                    if (active) {
+                        setHasPendingUpdate(Boolean(value));
+                    }
+                })
+                .catch(() => {
+                    lastPendingUpdateFailureAt = Date.now();
+                })
+                .finally(() => {
+                    checking = false;
+                });
+        };
+
+        refreshPendingUpdate({ force: true });
+        const intervalId = window.setInterval(
+            refreshPendingUpdate,
+            UPDATE_EXE_CHECK_INTERVAL_MS
+        );
+        window.addEventListener('focus', refreshPendingUpdate);
+        return () => {
+            active = false;
+            window.clearInterval(intervalId);
+            window.removeEventListener('focus', refreshPendingUpdate);
+        };
+    }, [isSessionReady]);
 
     async function runWindowAction(action, shouldSync = true) {
         try {
@@ -280,6 +342,19 @@ export function AppTitleBar() {
                 </div>
                 {titleBarActionsVisible ? (
                     <div className="flex h-full shrink-0 items-center">
+                        {hasPendingUpdate ? (
+                            <Button
+                                type="button"
+                                size="sm"
+                                title={t('nav_menu.update')}
+                                className="mx-1 h-6 gap-1.5 rounded-sm px-2 text-xs"
+                                onClick={() =>
+                                    setSystemHostOpen('updaterOpen', true)
+                                }
+                            >
+                                {t('nav_menu.update')}
+                            </Button>
+                        ) : null}
                         <TitleBarButton
                             label={`${t('side_panel.search_placeholder')} Ctrl+K`}
                             className="w-auto gap-1.5 px-2"

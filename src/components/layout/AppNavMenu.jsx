@@ -19,7 +19,6 @@ import { toast } from 'sonner';
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
-import { backend } from '@/platform/index.js';
 import { logoutFromReactShell } from '@/services/authExecutionService.js';
 import {
     setSidebarCollapsedPreference,
@@ -92,8 +91,6 @@ import {
 } from './navMenuModel.js';
 
 const themeModeOptions = ['system', 'light', 'dark'];
-const UPDATE_EXE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
-const UPDATE_EXE_CHECK_RETRY_MS = 5 * 60 * 1000;
 const tableDensityOptions = [
     {
         value: 'standard',
@@ -717,7 +714,6 @@ export function AppNavMenu({ isCollapsed }) {
         (state) => state.showNewDashboardButton
     );
     const [isCreatingDashboard, setIsCreatingDashboard] = useState(false);
-    const [hasPendingUpdate, setHasPendingUpdate] = useState(false);
     const appVersion = formatReleaseDisplayVersion(VERSION || '') || '-';
     const notifiedKeys = useMemo(() => {
         const keys = new Set(notifiedMenus);
@@ -738,54 +734,6 @@ export function AppNavMenu({ isCollapsed }) {
         }
         void loadVrcNotifications().catch(() => {});
     }, [currentUserId, loadVrcNotifications, sessionPhase]);
-
-    useEffect(() => {
-        let active = true;
-        let checking = false;
-        let lastPendingUpdateCheckAt = 0;
-        let lastPendingUpdateFailureAt = 0;
-        const refreshPendingUpdate = ({ force = false } = {}) => {
-            const now = Date.now();
-            if (
-                checking ||
-                (!force &&
-                    (now - lastPendingUpdateCheckAt <
-                        UPDATE_EXE_CHECK_INTERVAL_MS ||
-                        now - lastPendingUpdateFailureAt <
-                            UPDATE_EXE_CHECK_RETRY_MS))
-            ) {
-                return;
-            }
-
-            checking = true;
-            backend.app
-                .CheckForUpdateExe()
-                .then((value) => {
-                    lastPendingUpdateCheckAt = Date.now();
-                    lastPendingUpdateFailureAt = 0;
-                    if (active) {
-                        setHasPendingUpdate(Boolean(value));
-                    }
-                })
-                .catch(() => {
-                    lastPendingUpdateFailureAt = Date.now();
-                })
-                .finally(() => {
-                    checking = false;
-                });
-        };
-        refreshPendingUpdate({ force: true });
-        const intervalId = window.setInterval(
-            refreshPendingUpdate,
-            UPDATE_EXE_CHECK_INTERVAL_MS
-        );
-        window.addEventListener('focus', refreshPendingUpdate);
-        return () => {
-            active = false;
-            window.clearInterval(intervalId);
-            window.removeEventListener('focus', refreshPendingUpdate);
-        };
-    }, []);
 
     useEffect(() => {
         if (!preferencesHydrated) {
@@ -1215,9 +1163,6 @@ export function AppNavMenu({ isCollapsed }) {
                                 >
                                     <span className="relative inline-flex size-4 items-center justify-center">
                                         <SettingsIcon />
-                                        {hasPendingUpdate ? (
-                                            <span className="bg-destructive absolute -top-0.5 -right-0.5 size-1.5 rounded-full" />
-                                        ) : null}
                                     </span>
                                     <span>{t('nav_tooltip.manage')}</span>
                                 </SidebarMenuButton>
@@ -1257,25 +1202,6 @@ export function AppNavMenu({ isCollapsed }) {
                                     </Button>
                                 </div>
                                 <DropdownMenuSeparator />
-                                {hasPendingUpdate ? (
-                                    <DropdownMenuGroup>
-                                        <DropdownMenuItem
-                                            onSelect={() =>
-                                                useRuntimeStore
-                                                    .getState()
-                                                    .setSystemHostOpen(
-                                                        'updaterOpen',
-                                                        true
-                                                    )
-                                            }
-                                        >
-                                            {t('nav_menu.update_available')}
-                                        </DropdownMenuItem>
-                                    </DropdownMenuGroup>
-                                ) : null}
-                                {hasPendingUpdate ? (
-                                    <DropdownMenuSeparator />
-                                ) : null}
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem
                                         onSelect={() =>
