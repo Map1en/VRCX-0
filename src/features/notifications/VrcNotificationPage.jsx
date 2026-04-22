@@ -1391,12 +1391,14 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     const previewLabel =
                         getNotificationMessage(row.original) ||
                         t('table.notification.photo');
+                    const previewAriaLabel =
+                        getNotificationMessage(row.original) || 'photo';
                     return (
                         <Button
                             type="button"
                             variant="ghost"
                             className="h-auto p-1"
-                            aria-label={`Preview notification image: ${previewLabel}`}
+                            aria-label={`Preview notification image: ${previewAriaLabel}`}
                             onClick={() =>
                                 openNotificationImagePreview(row.original)
                             }

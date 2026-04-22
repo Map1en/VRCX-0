@@ -382,7 +382,7 @@
             },
             "saved_account_remove": {
                 "title": "Remove saved account",
-                "description": "{name} will be removed.",
+                "description": "{name} will be removed",
                 "confirm": "Remove",
                 "removing": "Removing..."
             },
@@ -457,7 +457,7 @@
                 "request_invite": "Request invite?",
                 "request_invite_2": "Request Invite",
                 "send_boop": "Send boop",
-                "optional_emoji_id_leave_blank_to_send_the_defaul": "Optional emoji id. Leave blank to send the default boop.",
+                "optional_emoji_id_leave_blank_to_send_the_defaul": "Optional emoji id. Leave blank to send the default boop",
                 "send": "Send"
             }
         },
@@ -549,7 +549,7 @@
                 "none": "None",
                 "secondary_style": "Secondary style",
                 "author_tags": "Author tags",
-                "style_list_could_not_be_loaded_unknown_style_selections_will": "Style list could not be loaded. Unknown style selections will be preserved.",
+                "style_list_could_not_be_loaded_unknown_style_selections_will": "Style list could not be loaded. Unknown style selections will be preserved",
                 "manage_avatar_tags": "Manage avatar tags",
                 "add_local_tag": "Add local tag",
                 "tag_name": "Tag name",
@@ -915,7 +915,7 @@
                 "notification_response_sent": "Notification response sent",
                 "notification_log_entry_deleted": "Notification log entry deleted",
                 "send_boop": "Send boop",
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "No custom emoji selected. The default boop will be sent.",
+                "no_custom_emoji_selected_the_default_boop_will_be_sent": "No custom emoji selected. The default boop will be sent",
                 "search_emoji": "Search emoji",
                 "clear_selection": "Clear selection",
                 "loading_emojis": "Loading emojis",
@@ -1115,7 +1115,7 @@
                 "connections": "connections",
                 "loading_mutual_graph_snapshot": "Loading mutual graph snapshot",
                 "no_friends_are_available_for_mutual_graph_fetching": "No friends are available for mutual graph fetching",
-                "mutual_graph_fetch_cancelled_the_cached_graph_was_not_replac": "Mutual graph fetch cancelled. The cached graph was not replaced.",
+                "mutual_graph_fetch_cancelled_the_cached_graph_was_not_replac": "Mutual graph fetch cancelled. The cached graph was not replaced",
                 "mutual_friends_graph_refreshed": "Mutual-friends graph refreshed",
                 "no_selection": "No selection",
                 "no_friends_match_this_search": "No friends match this search",
@@ -1123,7 +1123,7 @@
                 "hidden_nodes": "Hidden nodes:",
                 "mutual_graph_failed_to_load": "Mutual graph failed to load",
                 "no_cached_mutual_graph_yet": "No cached mutual graph yet",
-                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_t": "The local mutual-friends snapshot is empty. Use Start fetch to build the graph cache.",
+                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_t": "The local mutual-friends snapshot is empty. Use Start fetch to build the graph cache",
                 "no_graph_nodes_match_the_current_search": "No graph nodes match the current search",
                 "try_a_broader_search_term_or_clear_the_node_filter": "Try a broader search term or clear the node filter"
             },
@@ -1885,7 +1885,7 @@
                 "matches_the_stored_feed_widget_config": "Matches the stored feed widget config",
                 "game_log_filters": "Game-log filters",
                 "show_detail": "Show detail",
-                "expands_the_compact_game_log_description": "Expands the compact game-log description.",
+                "expands_the_compact_game_log_description": "Expands the compact game-log description",
                 "select_panel": "Select panel",
                 "not_configured": "Not configured",
                 "remove_panel": "Remove panel",
@@ -1976,13 +1976,13 @@
                 "skipped_before_request": "Automatic login was skipped before the auth request started",
                 "throttled": "Automatic login was disabled after repeated failures in the last hour.",
                 "expired": "The previous browser session expired and no saved account fallback was available.",
-                "failed_manual": "Automatic login failed. Manual sign-in is still available below.",
+                "failed_manual": "Automatic login failed. Manual sign-in is still available below",
                 "failed_unexpectedly": "Automatic login failed unexpectedly",
                 "skipped_form_changed": "Automatic login was skipped because the login form changed",
                 "skipped_manual_started": "Automatic login was skipped because a manual login started",
                 "skipped_saved_account_selected": "Automatic login was skipped because another saved account was selected",
                 "skipped_countdown_finished": "Automatic login was skipped before the countdown finished",
-                "skipped_saved_account_edited": "Automatic login was skipped because a saved account is being edited."
+                "skipped_saved_account_edited": "Automatic login was skipped because a saved account is being edited"
             }
         },
         "favorites": {
@@ -2033,7 +2033,7 @@
                 "request_invite": "Request invite?",
                 "request_invite_2": "Request Invite",
                 "send_boop": "Send boop",
-                "optional_emoji_id_leave_blank_to_send_the_defaul": "Optional emoji id. Leave blank to send the default boop.",
+                "optional_emoji_id_leave_blank_to_send_the_defaul": "Optional emoji id. Leave blank to send the default boop",
                 "send": "Send",
                 "select_avatar": "Select avatar?",
                 "delete_value_favorites": "Delete {value} favorites?",
@@ -2064,7 +2064,7 @@
                 "request_invite": "Request invite?",
                 "request_invite_2": "Request Invite",
                 "send_boop": "Send boop",
-                "optional_emoji_id_leave_blank_to_send_the_defaul": "Optional emoji id. Leave blank to send the default boop.",
+                "optional_emoji_id_leave_blank_to_send_the_defaul": "Optional emoji id. Leave blank to send the default boop",
                 "send": "Send"
             }
         },
@@ -2363,7 +2363,7 @@
                 "fetching_the_current_vrchat_user_snapshot_for_this_dialog": "Fetching the current VRChat user snapshot for this dialog",
                 "user_profile_unavailable": "User profile unavailable",
                 "edit_social_status": "Edit social status",
-                "update_your_social_status_and_status_description": "Update your social status and status description.",
+                "update_your_social_status_and_status_description": "Update your social status and status description",
                 "status_description": "Status description",
                 "clear_status_description": "Clear status description",
                 "status_history": "Status history",
@@ -2868,7 +2868,7 @@
                 "set_avatar_style_metadata_and_author_tags": "Set avatar style metadata and author tags",
                 "select_style": "Select style",
                 "none": "None",
-                "avatar_snapshot_unavailable_description": "VRCX-0 could not resolve an avatar snapshot for this dialog."
+                "avatar_snapshot_unavailable_description": "VRCX-0 could not resolve an avatar snapshot for this dialog"
             },
             "generated_dynamic": {
                 "use_value_as_your_vrchat_fallback_avatar": "Use {value} as your VRChat fallback avatar?",
@@ -3860,7 +3860,7 @@
         "favorite_import": {
             "generated": {
                 "import": "import",
-                "paste_exported_ids_process_the_list_then_import_to_a_vrchat_": "Paste exported IDs, process the list, then import to a VRChat favorite group or a local favorite group.",
+                "paste_exported_ids_process_the_list_then_import_to_a_vrchat_": "Paste exported IDs, process the list, then import to a VRChat favorite group or a local favorite group",
                 "process_list": "Process list",
                 "vrchat_group": "VRChat group",
                 "local_group": "Local group",
@@ -4196,14 +4196,14 @@
             "login_greeting": "Hello there, {name}!",
             "logout_greeting": "See you again, {name}!",
             "email_2fa_resent": "Email 2FA resent",
-            "email_2fa_no_credentials": "Cannot send 2FA email without saved credentials. Please login again.",
+            "email_2fa_no_credentials": "Cannot send 2FA email without saved credentials. Please login again",
             "saved_credentials_invalid": "Saved credentials are no longer valid",
             "account_removed": "Account removed",
             "auto_login_success": "Automatically logged in",
             "auto_login_failed": "Failed to login automatically",
             "offline": "You're offline",
             "login_network_issue_hint_title": "Having trouble signing in?",
-            "login_network_issue_hint_description": "Several recent sign-in attempts failed. Click Open for the troubleshooting guide."
+            "login_network_issue_hint_description": "Several recent sign-in attempts failed. Click Open for the troubleshooting guide"
         },
         "vrcx_updater": {
             "failed": "Failed to check for update, {message}",
@@ -4243,18 +4243,18 @@
         },
         "database": {
             "migration_found_title": "Existing VRCX database detected",
-            "migration_found_description": "An existing VRCX database was found on this computer. Would you like to migrate it to VRCX-0? The original VRCX data will not be modified.",
+            "migration_found_description": "An existing VRCX database was found on this computer. Would you like to migrate it to VRCX-0? The original VRCX data will not be modified",
             "migration_start": "Migrate",
             "migration_skip": "Skip",
             "migration_restarting_title": "Migrating data",
             "migration_restarting": "VRCX-0 will restart to complete the migration...",
             "upgrade_complete": "Database upgrade complete",
             "upgrade_in_progress_title": "Database upgrade in progress",
-            "upgrade_in_progress_description": "Updating database from version {from} to {to}. Please do not close VRCX-0.",
-            "upgrade_in_progress_initializing": "Initializing database upgrade. Please do not close VRCX-0.",
+            "upgrade_in_progress_description": "Updating database from version {from} to {to}. Please do not close VRCX-0",
+            "upgrade_in_progress_initializing": "Initializing database upgrade. Please do not close VRCX-0",
             "upgrade_in_progress_wait": "User actions are temporarily blocked until the upgrade finishes",
             "upgrade_failed_title": "Database upgrade failed",
-            "upgrade_failed_description": "Database upgrade failed. Check the console for details.",
+            "upgrade_failed_description": "Database upgrade failed. Check the console for details",
             "disk_space": "Please free up some disk space",
             "disk_error": "Please check your disk for errors"
         },
@@ -4622,7 +4622,7 @@
                 "error_message": "Error Message",
                 "endpoint": "Endpoint",
                 "missing_credentials": "Missing Credentials",
-                "vpn_in_use": "VRChat currently blocks most VPNs. Please disable any connected VPNs and try again.",
+                "vpn_in_use": "VRChat currently blocks most VPNs. Please disable any connected VPNs and try again",
                 "login_error": "Login Error",
                 "invalid_json_response": "Invalid JSON response",
                 "403_404_bailing_request": "Bailing request due to recent 404/403",
@@ -4835,7 +4835,7 @@
             },
             "generated_modal": {
                 "proxy_settings": "Proxy Settings",
-                "set_the_proxy_server_used_by_vrcx_0_restart_is_r": "Set the proxy server used by VRCX-0. Restart is required to apply a changed proxy.",
+                "set_the_proxy_server_used_by_vrcx_0_restart_is_r": "Set the proxy server used by VRCX-0. Restart is required to apply a changed proxy",
                 "restart": "Restart"
             }
         },
@@ -4859,7 +4859,7 @@
                 "request_invite": "Request invite?",
                 "request_invite_2": "Request Invite",
                 "send_boop": "Send boop",
-                "optional_emoji_id_leave_blank_to_send_the_defaul": "Optional emoji id. Leave blank to send the default boop.",
+                "optional_emoji_id_leave_blank_to_send_the_defaul": "Optional emoji id. Leave blank to send the default boop",
                 "send": "Send",
                 "edit_status_description": "Edit status description"
             }
@@ -4907,7 +4907,7 @@
             },
             "generated_modal": {
                 "delete_vrchat_registry": "Delete VRChat registry",
-                "delete_the_vrchat_registry_folder_this_matches_t": "Delete the VRChat registry folder. This matches the old reset action and cannot be undone from here."
+                "delete_the_vrchat_registry_folder_this_matches_t": "Delete the VRChat registry folder. This matches the old reset action and cannot be undone from here"
             }
         },
         "vrc_notification_center": {
@@ -4968,7 +4968,7 @@
                 "database_schema_is_current": "Database schema is current",
                 "database_update_complete": "Database update complete",
                 "apply_upgrade_failed": "VRCX-0 failed to apply a local database upgrade",
-                "refresh_config_failed_after_upgrade": "VRCX-0 upgraded the database, but failed to refresh local configuration. Please restart the application."
+                "refresh_config_failed_after_upgrade": "VRCX-0 upgraded the database, but failed to refresh local configuration. Please restart the application"
             }
         },
         "favorite_import_service": {
@@ -4997,7 +4997,7 @@
             "generated": {
                 "status_automatically_changed": "Status automatically changed",
                 "vrchat_registry_backup": "VRChat Registry Backup",
-                "registry_backup_restore_description": "The VRChat registry folder is missing and a saved registry backup is available. Restore a backup before starting VRChat.",
+                "registry_backup_restore_description": "The VRChat registry folder is missing and a saved registry backup is available. Restore a backup before starting VRChat",
                 "vrcx_update_available": "VRCX-0 update available",
                 "update_ready_to_install": "An update is downloaded and ready to install",
                 "downloading_version": "Downloading {version}",
@@ -5016,13 +5016,13 @@
     "repository": {
         "sqlite_repository": {
             "generated_modal": {
-                "please_repair_or_delete_your_database_file_by_fo": "Please repair or delete your database file by following the VRCX-0 database repair instructions.",
+                "please_repair_or_delete_your_database_file_by_fo": "Please repair or delete your database file by following the VRCX-0 database repair instructions",
                 "your_database_is_corrupted": "Your database is corrupted",
-                "disk_full_description": "The disk containing the database is full.",
+                "disk_full_description": "The disk containing the database is full",
                 "disk_full_title": "Disk containing database is full",
-                "database_locked_description": "Please close other applications that might be using the database file.",
+                "database_locked_description": "Please close other applications that might be using the database file",
                 "database_locked_title": "Database is locked",
-                "disk_io_error_description": "A disk I/O error occurred while accessing the database.",
+                "disk_io_error_description": "A disk I/O error occurred while accessing the database",
                 "disk_io_error_title": "Disk I/O error"
             }
         }
