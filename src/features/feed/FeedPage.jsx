@@ -861,7 +861,7 @@ function FeedUserLink({
             <Button
                 type="button"
                 variant="ghost"
-                className="hover:text-primary h-auto justify-start p-0 text-left font-medium"
+                className="hover:text-primary h-auto max-w-full self-start justify-start text-left font-medium"
                 disabled={!userId}
                 onClick={() =>
                     openUserDialog({
@@ -870,7 +870,7 @@ function FeedUserLink({
                     })
                 }
             >
-                <span className="truncate">{userLabel}</span>
+                <span className="max-w-full truncate">{userLabel}</span>
             </Button>
         </div>
     );
@@ -2202,37 +2202,6 @@ export function FeedPage({ embedded = false } = {}) {
                     const typeLabel = row.original.type
                         ? t(`view.feed.filters.${row.original.type}`)
                         : '';
-                    const parsedLocation = parseLocation(
-                        row.original?.location || ''
-                    );
-                    const worldDialogTarget =
-                        parsedLocation.isRealInstance && parsedLocation.tag
-                            ? parsedLocation.tag
-                            : parsedLocation.worldId;
-                    if (
-                        row.original?.type !== 'Location' &&
-                        row.original?.location &&
-                        parsedLocation.worldId
-                    ) {
-                        return (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-auto p-0"
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    openWorldDialog({
-                                        worldId: worldDialogTarget,
-                                        title:
-                                            row.original.worldName ||
-                                            parsedLocation.worldId
-                                    });
-                                }}
-                            >
-                                <Badge variant="outline">{typeLabel}</Badge>
-                            </Button>
-                        );
-                    }
                     return <Badge variant="outline">{typeLabel}</Badge>;
                 }
             },
