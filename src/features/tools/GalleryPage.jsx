@@ -59,6 +59,7 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { appI18n } from '@/services/i18nService.js';
 
 const FILE_TABS = {
     gallery: {
@@ -365,7 +366,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : `Failed to load ${tab}.`
+                        : appI18n.t('view.tools.generated_toast.failed_to_load_value', { value: tab })
                 );
             }
         } finally {
@@ -397,7 +398,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to load prints.'
+                        : appI18n.t('view.tools.generated_toast.failed_to_load_prints')
                 );
             }
         } finally {
@@ -429,7 +430,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to load inventory.'
+                        : appI18n.t('view.tools.generated_toast.failed_to_load_inventory')
                 );
             }
         } finally {
@@ -642,10 +643,10 @@ export function GalleryPage() {
 
         const authTarget = getAuthTarget();
         const result = await confirm({
-            title: `Delete ${tab} item`,
+            title: appI18n.t('view.tools.generated_modal.delete_value_item', { value: tab }),
             description: normalizedFileId,
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -670,13 +671,13 @@ export function GalleryPage() {
                     (file) => file.id !== normalizedFileId
                 )
             }));
-            toast.success('Media item deleted.');
+            toast.success(t('view.tools.generated.media_item_deleted'));
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to delete media item.'
+                        : appI18n.t('view.tools.generated_toast.failed_to_delete_media_item')
                 );
             }
         } finally {
@@ -697,10 +698,10 @@ export function GalleryPage() {
 
         const authTarget = getAuthTarget();
         const result = await confirm({
-            title: 'Delete print',
+            title: appI18n.t('view.tools.generated_modal.delete_print'),
             description: normalizedPrintId,
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -722,14 +723,14 @@ export function GalleryPage() {
                         (print) => print.id !== normalizedPrintId
                     )
                 }));
-                toast.success('Print deleted.');
+                toast.success(t('view.tools.generated.print_deleted'));
             }
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to delete print.'
+                        : appI18n.t('view.tools.generated_toast.failed_to_delete_print')
                 );
             }
         } finally {
@@ -745,7 +746,7 @@ export function GalleryPage() {
             return;
         }
         if (!currentUserId) {
-            toast.error('No current user is available.');
+            toast.error(t('view.tools.generated.no_current_user_is_available'));
             return;
         }
 
@@ -798,7 +799,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to update profile media.'
+                        : appI18n.t('view.tools.generated_toast.failed_to_update_profile_media')
                 );
             }
         } finally {
@@ -837,14 +838,14 @@ export function GalleryPage() {
                     )
                 }));
                 await refreshInventory();
-                toast.success('Inventory bundle consumed.');
+                toast.success(t('view.tools.generated.inventory_bundle_consumed'));
             }
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to consume inventory bundle.'
+                        : appI18n.t('view.tools.generated_toast.failed_to_consume_inventory_bundle')
                 );
             }
         } finally {
@@ -883,7 +884,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to redeem reward.'
+                        : appI18n.t('view.tools.generated_toast.failed_to_redeem_reward')
                 );
             }
         } finally {
@@ -916,7 +917,7 @@ export function GalleryPage() {
                     {t('dialog.gallery_icons.header')}
                 </span>
                 {uploadingTab ? (
-                    <Badge variant="outline">Uploading {uploadingTab}</Badge>
+                    <Badge variant="outline">{t('message.upload.loading')} {uploadingTab}</Badge>
                 ) : null}
                 <Button
                     variant="outline"
@@ -1271,7 +1272,7 @@ export function GalleryPage() {
                                                                             {
                                                                                 file.framesOverTime
                                                                             }
-                                                                            fps
+                                                                            {t('view.tools.generated.fps')}
                                                                         </Badge>
                                                                     ) : null}
                                                                     {file.frames ? (
@@ -1279,7 +1280,7 @@ export function GalleryPage() {
                                                                             {
                                                                                 file.frames
                                                                             }
-                                                                            frames
+                                                                            {t('view.tools.generated.frames')}
                                                                         </Badge>
                                                                     ) : null}
                                                                 </div>
@@ -1300,7 +1301,7 @@ export function GalleryPage() {
                                                                 }
                                                             >
                                                                 <EyeIcon data-icon="inline-start" />
-                                                                Preview
+                                                                {t('view.tools.generated.preview')}
                                                             </Button>
                                                             {profileField ? (
                                                                 <Button
@@ -1343,7 +1344,7 @@ export function GalleryPage() {
                                                                 }
                                                             >
                                                                 <Trash2Icon data-icon="inline-start" />
-                                                                Delete
+                                                                {t('common.actions.delete')}
                                                             </Button>
                                                         </div>
                                                     </CardContent>
@@ -1353,8 +1354,8 @@ export function GalleryPage() {
                                     </div>
                                 ) : (
                                     <EmptyState
-                                        title={`No ${tab} loaded.`}
-                                        description={`Refresh this tab to load ${definition.tag} files.`}
+                                        title={appI18n.t('view.tools.generated_dynamic.no_value_loaded', { value: tab })}
+                                        description={appI18n.t('view.tools.generated_dynamic.refresh_this_tab_to_load_value_files', { value: definition.tag })}
                                     />
                                 )}
                             </CardContent>
@@ -1520,7 +1521,7 @@ export function GalleryPage() {
                                                             }
                                                         >
                                                             <EyeIcon data-icon="inline-start" />
-                                                            Preview
+                                                            {t('view.tools.generated.preview')}
                                                         </Button>
                                                         <Button
                                                             variant="destructive"
@@ -1535,7 +1536,7 @@ export function GalleryPage() {
                                                             }
                                                         >
                                                             <Trash2Icon data-icon="inline-start" />
-                                                            Delete
+                                                            {t('common.actions.delete')}
                                                         </Button>
                                                     </div>
                                                 </CardContent>
@@ -1545,8 +1546,8 @@ export function GalleryPage() {
                                 </div>
                             ) : (
                                 <EmptyState
-                                    title="No prints loaded."
-                                    description="Refresh this tab to load your VRChat prints."
+                                    title={t('view.tools.generated.no_prints_loaded')}
+                                    description={t('view.tools.generated.refresh_this_tab_to_load_your_vrchat_prints')}
                                 />
                             )}
                         </CardContent>
@@ -1700,8 +1701,8 @@ export function GalleryPage() {
                                 </div>
                             ) : (
                                 <EmptyState
-                                    title="No inventory items loaded."
-                                    description="Refresh this tab to load inventory items."
+                                    title={t('view.tools.generated.no_inventory_items_loaded')}
+                                    description={t('view.tools.generated.refresh_this_tab_to_load_inventory_items')}
                                 />
                             )}
                         </CardContent>

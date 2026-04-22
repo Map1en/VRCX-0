@@ -1079,7 +1079,7 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
                         size="icon-sm"
                         className="rounded-full"
                         disabled={loading}
-                        aria-label={t('dialog.user.activity.refresh_hint')}
+                        aria-label={"Refresh activity data"}
                         title={t('dialog.user.activity.refresh_hint')}
                         onClick={() => void refreshData({ forceRefresh: true })}
                     >

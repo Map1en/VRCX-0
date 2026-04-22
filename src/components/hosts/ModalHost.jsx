@@ -21,6 +21,7 @@ import {
 } from '@/ui/shadcn/dialog';
 import { Input } from '@/ui/shadcn/input';
 import { Textarea } from '@/ui/shadcn/textarea';
+import { appI18n } from '@/services/i18nService.js';
 
 function matchesPromptPattern(pattern, value) {
     if (!(pattern instanceof RegExp)) {
@@ -149,7 +150,7 @@ export function ModalHost() {
                             onChange={(event) =>
                                 updatePromptValue(event.target.value)
                             }
-                            placeholder="Prompt value"
+                            placeholder={appI18n.t('dialog.tools.generated.prompt_value')}
                             className="min-h-32"
                         />
                     ) : (
@@ -159,7 +160,7 @@ export function ModalHost() {
                             onChange={(event) =>
                                 updatePromptValue(event.target.value)
                             }
-                            placeholder="Prompt value"
+                            placeholder={appI18n.t('dialog.tools.generated.prompt_value')}
                         />
                     )}
                     {promptFooter}

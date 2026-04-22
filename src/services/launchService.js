@@ -9,6 +9,7 @@ import {
 } from '@/services/directAccessService.js';
 import { getLaunchURL, isRealInstance } from '@/shared/utils/instance.js';
 import { parseLocation } from '@/shared/utils/location.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function normalizeString(value) {
     return typeof value === 'string'
@@ -102,7 +103,7 @@ export async function attachRunningVrchat(
             throw new Error('Unable to open this instance in VRChat.');
         }
         toast.warning(
-            'Failed open instance in VRChat, falling back to self invite.'
+            appI18n.t('common.generated.generated.failed_open_instance_in_vrchat_falling_back_to_self_invite')
         );
         const launchToken = await resolveInstanceLaunchToken(
             location,
@@ -115,7 +116,7 @@ export async function attachRunningVrchat(
             shortName: parsed.shortName || launchToken,
             endpoint
         });
-        toast.success('Self invite sent.');
+        toast.success(appI18n.t('common.generated.generated.self_invite_sent'));
     }
 }
 
@@ -179,5 +180,5 @@ export async function launchVrchat(
                 : 'Failed to find VRChat. Configure a custom launch path in launch options.'
         );
     }
-    toast.success('VRChat launched.');
+    toast.success(appI18n.t('common.generated.generated.vrchat_launched'));
 }

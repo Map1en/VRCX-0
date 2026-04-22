@@ -153,7 +153,7 @@ export function AppMenuBar({
                             <MenuItem onSelect={() => onOpenQuickSearch?.()}>
                                 {t('app_menu.quick_search')}
                                 <MenubarShortcut className="tracking-normal">
-                                    Ctrl+K
+                                    {t('app_menu.generated.ctrl_k')}
                                 </MenubarShortcut>
                             </MenuItem>
                             <MenuItem

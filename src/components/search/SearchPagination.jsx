@@ -6,6 +6,7 @@ import {
     PaginationContent,
     PaginationItem
 } from '@/ui/shadcn/pagination';
+import { appI18n } from '@/services/i18nService.js';
 
 export function SearchPagination({
     show = false,
@@ -26,12 +27,12 @@ export function SearchPagination({
                         type="button"
                         variant="outline"
                         size="sm"
-                        aria-label="Previous search page"
+                        aria-label={"Previous search page"}
                         disabled={prevDisabled}
                         onClick={onPrev}
                     >
                         <ArrowLeftIcon data-icon="inline-start" />
-                        Previous
+                        {appI18n.t('table.pagination.previous')}
                     </Button>
                 </PaginationItem>
                 <PaginationItem>
@@ -39,11 +40,11 @@ export function SearchPagination({
                         type="button"
                         variant="outline"
                         size="sm"
-                        aria-label="Next search page"
+                        aria-label={"Next search page"}
                         disabled={nextDisabled}
                         onClick={onNext}
                     >
-                        Next
+                        {appI18n.t('table.pagination.next')}
                         <ArrowRightIcon data-icon="inline-end" />
                     </Button>
                 </PaginationItem>

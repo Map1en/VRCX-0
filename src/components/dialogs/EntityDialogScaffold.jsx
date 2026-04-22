@@ -19,6 +19,7 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
+import { appI18n } from '@/services/i18nService.js';
 
 function EntityDialogScaffold({ className, children }) {
     return (
@@ -269,7 +270,7 @@ function EntityActionDropdown({
                     type="button"
                     size="icon-lg"
                     variant={dangerous ? 'destructive' : 'outline'}
-                    aria-label="Open entity actions"
+                    aria-label={"Open entity actions"}
                     className="relative"
                 >
                     {busy ? (
@@ -358,7 +359,7 @@ function EntityRawJson({ value, valueFactory }) {
                     ) : (
                         <RefreshCwIcon data-icon="inline-start" />
                     )}
-                    Refresh
+                    {appI18n.t('common.actions.refresh')}
                 </Button>
             </div>
             <pre className="bg-muted/20 max-h-[55vh] overflow-auto rounded-md border p-3 text-xs">

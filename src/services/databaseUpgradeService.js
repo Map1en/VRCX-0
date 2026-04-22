@@ -7,6 +7,7 @@ import sqliteRepository from '@/repositories/sqliteRepository.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const DATABASE_VERSION = 16;
 
@@ -19,11 +20,22 @@ function errorMessage(error) {
 }
 
 function failedUpgradeDescription(failedUpgrade) {
-    const path = failedUpgrade?.workDbPath || 'Unknown path';
-    const reason = failedUpgrade?.reason
-        ? `\n\nReason: ${failedUpgrade.reason}`
-        : '';
-    return `The previous database upgrade failed. This database cannot be used until it is repaired manually.\n\nWork database: ${path}${reason}`;
+    const workDbPath =
+        failedUpgrade?.workDbPath ||
+        appI18n.t('service.database_upgrade_service.generated.unknown_path');
+    if (failedUpgrade?.reason) {
+        return appI18n.t(
+            'service.database_upgrade_service.generated.failed_upgrade_description_with_reason',
+            {
+                path: workDbPath,
+                reason: failedUpgrade.reason
+            }
+        );
+    }
+    return appI18n.t(
+        'service.database_upgrade_service.generated.failed_upgrade_description',
+        { path: workDbPath }
+    );
 }
 
 async function blockOnFailedUpgrade(failedUpgrade) {
@@ -37,7 +49,9 @@ async function blockOnFailedUpgrade(failedUpgrade) {
     });
 
     await useModalStore.getState().alert({
-        title: 'Database upgrade failed',
+        title: appI18n.t(
+            'service.database_upgrade_service.generated.database_upgrade_failed'
+        ),
         description: failedUpgradeDescription(failedUpgrade),
         dismissible: false
     });
@@ -69,7 +83,9 @@ async function runFullDatabaseUpgrade() {
             phase: 'completed',
             fromVersion: currentVersion,
             toVersion: DATABASE_VERSION,
-            detail: 'Database schema is current.',
+            detail: appI18n.t(
+                'service.database_upgrade_service.generated.database_schema_is_current'
+            ),
             legacyMigrationAvailable: false
         });
         useSessionStore.getState().setSessionState({ databaseReady: true });
@@ -81,7 +97,7 @@ async function runFullDatabaseUpgrade() {
         phase: 'running',
         fromVersion: currentVersion,
         toVersion: DATABASE_VERSION,
-        detail: `Updating database from ${currentVersion} to ${DATABASE_VERSION}.`,
+        detail: appI18n.t('service.database_upgrade_service.generated_dynamic.updating_database_from_value_to_value', { value: currentVersion, value2: DATABASE_VERSION }),
         legacyMigrationAvailable: false
     });
 
@@ -113,7 +129,9 @@ async function runFullDatabaseUpgrade() {
             phase: 'completed',
             fromVersion: currentVersion,
             toVersion: DATABASE_VERSION,
-            detail: 'Database update complete.'
+            detail: appI18n.t(
+                'service.database_upgrade_service.generated.database_update_complete'
+            )
         });
         useSessionStore.getState().setSessionState({ databaseReady: true });
         return true;
@@ -133,10 +151,13 @@ async function runFullDatabaseUpgrade() {
             }
         }
 
-        let description = 'VRCX-0 failed to apply a local database upgrade.';
+        let description = appI18n.t(
+            'service.database_upgrade_service.generated.apply_upgrade_failed'
+        );
         if (upgradeCommitted) {
-            description =
-                'VRCX-0 upgraded the database, but failed to refresh local configuration. Please restart the application.';
+            description = appI18n.t(
+                'service.database_upgrade_service.generated.refresh_config_failed_after_upgrade'
+            );
         } else if (failedUpgrade) {
             description = failedUpgradeDescription(failedUpgrade);
         }
@@ -146,7 +167,9 @@ async function runFullDatabaseUpgrade() {
             detail: description
         });
         await useModalStore.getState().alert({
-            title: 'Database upgrade failed',
+            title: appI18n.t(
+                'service.database_upgrade_service.generated.database_upgrade_failed'
+            ),
             description,
             dismissible: false
         });

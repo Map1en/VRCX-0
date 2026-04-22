@@ -107,6 +107,7 @@ import {
     sanitizeFriendListSorting as sanitizeSorting,
     writePersistedFriendListState as writePersistedState
 } from './friendListState.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function SortButton({ column, label, descFirst = false }) {
     const direction = column.getIsSorted();
@@ -685,7 +686,7 @@ export function FriendListPage({ embedded = false } = {}) {
                     return next;
                 });
                 toast.success(
-                    `Unfriended ${friend.displayName || normalizedUserId}.`
+                    appI18n.t('view.friends.generated_dynamic.unfriended_value', { value: friend.displayName || normalizedUserId })
                 );
             }
             return {
@@ -696,7 +697,7 @@ export function FriendListPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : `Failed to unfriend ${friend.displayName || normalizedUserId}.`
+                    : appI18n.t('view.friends.generated_toast.failed_to_unfriend_value', { value: friend.displayName || normalizedUserId })
             );
             return { stale: false, deleted: false };
         } finally {
@@ -711,10 +712,10 @@ export function FriendListPage({ embedded = false } = {}) {
         }
 
         const result = await confirm({
-            title: 'Unfriend user?',
+            title: appI18n.t('view.friends.generated_modal.unfriend_user'),
             description: friend?.displayName || normalizedUserId,
-            confirmText: 'Unfriend',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('view.friends.generated_modal.unfriend'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -733,13 +734,13 @@ export function FriendListPage({ embedded = false } = {}) {
         }
 
         const result = await confirm({
-            title: `Unfriend ${selectedRows.length} friends?`,
+            title: appI18n.t('view.friends.generated_dynamic.unfriend_value_friends', { value: selectedRows.length }),
             description: selectedRows
                 .map((friend) => friend.displayName || friend.id)
                 .slice(0, 30)
                 .join('\n'),
-            confirmText: 'Unfriend',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('view.friends.generated_modal.unfriend'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -760,7 +761,7 @@ export function FriendListPage({ embedded = false } = {}) {
                 }
             }
             if (deletedCount > 0) {
-                toast.success(`Unfriended ${deletedCount} friends.`);
+                toast.success(appI18n.t('view.friends.generated_dynamic.unfriended_value_friends', { value: deletedCount }));
             }
         } finally {
             setIsBulkDeleting(false);
@@ -776,7 +777,7 @@ export function FriendListPage({ embedded = false } = {}) {
             (friend) => normalizeId(friend?.id) && !friend?.date_joined
         );
         if (!rowsToFetch.length) {
-            toast.success('Friend details are already loaded.');
+            toast.success(t('view.friend_list.generated.friend_details_are_already_loaded'));
             return;
         }
 
@@ -826,10 +827,10 @@ export function FriendListPage({ embedded = false } = {}) {
             }
 
             if (cancelUserLoadRef.current) {
-                toast.warning('Friend detail loading cancelled.');
+                toast.warning(t('view.friend_list.generated.friend_detail_loading_cancelled'));
                 return;
             }
-            toast.success(`Loaded ${loadedCount} friend profiles.`);
+            toast.success(appI18n.t('view.friends.generated_dynamic.loaded_value_friend_profiles', { value: loadedCount }));
         } finally {
             setIsLoadingUserDetails(false);
             if (!cancelUserLoadRef.current) {
@@ -897,7 +898,7 @@ export function FriendListPage({ embedded = false } = {}) {
 
         if (currentUserSnapshot?.hasSharedConnectionsOptOut) {
             toast.warning(
-                'Shared connections are opted out for the current account.'
+                t('view.friend_list.generated.shared_connections_are_opted_out_for_the_current_account')
             );
             return;
         }
@@ -906,7 +907,7 @@ export function FriendListPage({ embedded = false } = {}) {
             normalizeId(friend?.id)
         );
         if (!friendSnapshot.length) {
-            toast.info('No friends are available for mutual-friends loading.');
+            toast.info(t('view.friend_list.generated.no_friends_are_available_for_mutual_friends_loading'));
             return;
         }
 
@@ -971,7 +972,7 @@ export function FriendListPage({ embedded = false } = {}) {
                 metaEntries
             );
             await mutualGraphRepository.saveSnapshot(currentUserId, entries);
-            toast.success('Mutual friends loaded.');
+            toast.success(t('view.friend_list.generated.mutual_friends_loaded'));
         } finally {
             setIsMutualFetching(false);
         }
@@ -1517,9 +1518,7 @@ export function FriendListPage({ embedded = false } = {}) {
                             className="size-9"
                             disabled={!isFavoritesLoaded}
                             title={t('view.friend_list.favorites_only_tooltip')}
-                            aria-label={t(
-                                'view.friend_list.favorites_only_tooltip'
-                            )}
+                            aria-label={"Filter favorites only"}
                             onClick={() =>
                                 setFavoritesOnly((current) => !current)
                             }
@@ -1565,7 +1564,7 @@ export function FriendListPage({ embedded = false } = {}) {
                                 {t('view.friend_list.bulk_unfriend')}
                             </span>
                             <Switch
-                                aria-label={t('view.friend_list.bulk_unfriend')}
+                                aria-label={"Bulk Unfriend Mode"}
                                 checked={bulkUnfriendMode}
                                 disabled={!currentUserId || isBulkDeleting}
                                 onCheckedChange={setBulkUnfriendMode}
@@ -1614,10 +1613,10 @@ export function FriendListPage({ embedded = false } = {}) {
 
             <PageBody>
                 {isLoading ? (
-                    <LoadingState label="Loading the friend roster snapshot" />
+                    <LoadingState label={t('view.friend_list.generated.loading_the_friend_roster_snapshot')} />
                 ) : isError ? (
                     <FriendListEmptyState
-                        title="Friend roster failed to load"
+                        title={t('view.friend_list.generated.friend_roster_failed_to_load')}
                         description={
                             friendDetail ||
                             'The roster bootstrap did not complete.'
@@ -1690,15 +1689,15 @@ export function FriendListPage({ embedded = false } = {}) {
 
                         <PageFooter>
                             <div className="text-muted-foreground text-sm">
-                                Showing{' '}
+                                {t('view.friend_list.generated.showing')}{' '}
                                 <span className="text-foreground font-medium">
                                     {table.getRowModel().rows.length}
                                 </span>{' '}
-                                of{' '}
+                                {t('view.friend_list.generated.of')}{' '}
                                 <span className="text-foreground font-medium">
                                     {filteredRows.length}
                                 </span>{' '}
-                                friend{filteredRows.length === 1 ? '' : 's'}
+                                {t('view.friend_list.generated.friend')}{filteredRows.length === 1 ? '' : 's'}
                             </div>
                             <DataTablePagination
                                 table={table}
@@ -1725,7 +1724,7 @@ export function FriendListPage({ embedded = false } = {}) {
                     </>
                 ) : (
                     <FriendListEmptyState
-                        title="No friends match the current filters"
+                        title={t('view.friend_list.generated.no_friends_match_the_current_filters')}
                         description={
                             favoritesOnly
                                 ? 'Try turning off favorites-only or broadening the search query.'
@@ -1741,7 +1740,7 @@ export function FriendListPage({ embedded = false } = {}) {
             >
                 <DialogContent showCloseButton={false} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Loading friend details</DialogTitle>
+                        <DialogTitle>{t('view.friend_list.generated.loading_friend_details')}</DialogTitle>
                     </DialogHeader>
                     <div className="flex flex-col gap-2">
                         <div className="bg-muted h-4 overflow-hidden rounded-full border">

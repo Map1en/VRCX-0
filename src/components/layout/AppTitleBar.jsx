@@ -35,6 +35,7 @@ import {
 import { AppMenuBar } from './AppMenuBar.jsx';
 import { shouldShowSidePanel } from './sidePanelRoutes.js';
 import { useDirectAccessAction } from './useDirectAccessAction.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const TITLE_BAR_INTERACTIVE_SELECTOR = [
     'button',
@@ -272,7 +273,7 @@ export function AppTitleBar() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to mark notifications as seen.'
+                    : appI18n.t('component.app_title_bar.generated_toast.failed_to_mark_notifications_as_seen')
             );
         }
     }
@@ -310,7 +311,7 @@ export function AppTitleBar() {
                     onDoubleClick={handleTitleBarDoubleClick}
                 >
                     <span className="text-foreground shrink-0 text-xs font-semibold">
-                        VRCX-0
+                        {t('view.settings.advanced.advanced.vrcx_settings.header')}
                     </span>
                     {titleBarActionsVisible ? (
                         <div
@@ -356,7 +357,7 @@ export function AppTitleBar() {
                             </Button>
                         ) : null}
                         <TitleBarButton
-                            label={`${t('side_panel.search_placeholder')} Ctrl+K`}
+                            label={appI18n.t('component.app_title_bar.generated_dynamic.value_ctrl_k', { value: t('side_panel.search_placeholder') })}
                             className="w-auto gap-1.5 px-2"
                             onClick={() => setQuickSearchOpen(true)}
                         >
@@ -365,7 +366,7 @@ export function AppTitleBar() {
                             <TitleBarShortcutKey>K</TitleBarShortcutKey>
                         </TitleBarButton>
                         <TitleBarButton
-                            label={`${t('prompt.direct_access_omni.header')} Ctrl+D`}
+                            label={appI18n.t('component.app_title_bar.generated_dynamic.value_ctrl_d', { value: t('prompt.direct_access_omni.header') })}
                             className="w-auto gap-1.5 px-2"
                             onClick={() => void openDirectAccessFromClipboard()}
                         >
@@ -418,7 +419,7 @@ export function AppTitleBar() {
                 ) : null}
                 <div className="flex h-full shrink-0 items-center">
                     <TitleBarButton
-                        label="Minimize window"
+                        label={t('app_menu.generated.minimize_window')}
                         onClick={() =>
                             void runWindowAction(
                                 backend.webview.minimizeWindow,
@@ -439,7 +440,7 @@ export function AppTitleBar() {
                         <MaximizeIcon data-icon="inline-start" />
                     </TitleBarButton>
                     <TitleBarButton
-                        label="Close window"
+                        label={t('app_menu.generated.close_window')}
                         className="hover:bg-destructive hover:text-destructive-foreground"
                         onClick={() =>
                             void runWindowAction(

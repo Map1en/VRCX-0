@@ -76,6 +76,7 @@ import {
     rowSearchText,
     rowWorldId
 } from './previous-instances-table/previousInstancesRows.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function formatDate(value) {
     if (!value) {
@@ -348,8 +349,8 @@ function PreviousInstanceInfoChart({ rows }) {
     if (!chartRows.length) {
         return (
             <DialogEmptyState
-                title="No player detail rows"
-                description="There are no timeline rows for this instance."
+                title={appI18n.t('dialog.previous_instances.generated.no_player_detail_rows')}
+                description={appI18n.t('dialog.previous_instances.generated.there_are_no_timeline_rows_for_this_instance')}
             />
         );
     }
@@ -443,8 +444,8 @@ function PreviousInstanceDetailsPanel({
     if (!row) {
         return (
             <DialogEmptyState
-                title="No instance selected"
-                description="Select an instance row to view its details."
+                title={appI18n.t('dialog.previous_instances.generated.no_instance_selected')}
+                description={appI18n.t('dialog.previous_instances.generated.select_an_instance_row_to_view_its_details')}
                 className={className}
             />
         );
@@ -461,7 +462,7 @@ function PreviousInstanceDetailsPanel({
                     {showTitle ? (
                         <div className="min-w-0">
                             <h3 className="text-base font-semibold">
-                                Instance Details
+                                {appI18n.t('dialog.previous_instances.info')}
                             </h3>
                             <p className="text-muted-foreground truncate text-sm">
                                 {rowLocation(row) || 'Instance details'}
@@ -476,30 +477,30 @@ function PreviousInstanceDetailsPanel({
                             onClick={onBack}
                         >
                             <ArrowLeftIcon data-icon="inline-start" />
-                            Back
+                            {appI18n.t('dialog.previous_instances.generated.back')}
                         </Button>
                     ) : null}
                 </div>
             ) : null}
             <div className="grid gap-2 text-sm sm:grid-cols-2">
                 <div>
-                    <span className="text-muted-foreground">Created</span>
+                    <span className="text-muted-foreground">{appI18n.t('dialog.previous_instances.generated.created')}</span>
                     <div>{formatDate(row?.created_at || row?.createdAt)}</div>
                 </div>
                 <div>
-                    <span className="text-muted-foreground">Duration</span>
+                    <span className="text-muted-foreground">{appI18n.t('dialog.previous_instances.generated.duration')}</span>
                     <div>{rowDuration(row)}</div>
                 </div>
                 <div>
-                    <span className="text-muted-foreground">World</span>
+                    <span className="text-muted-foreground">{appI18n.t('dialog.previous_instances.generated.world')}</span>
                     <div>{row?.worldName || '-'}</div>
                 </div>
                 <div>
-                    <span className="text-muted-foreground">Group</span>
+                    <span className="text-muted-foreground">{appI18n.t('dialog.previous_instances.generated.group')}</span>
                     <div>{row?.groupName || '-'}</div>
                 </div>
                 <div>
-                    <span className="text-muted-foreground">Creator</span>
+                    <span className="text-muted-foreground">{appI18n.t('dialog.previous_instances.generated.creator')}</span>
                     <div>
                         <InstanceOwnerCell
                             userId={rowOwnerUserId(row)}
@@ -516,17 +517,17 @@ function PreviousInstanceDetailsPanel({
             >
                 <div className="flex items-center justify-between gap-3">
                     <TabsList variant="line">
-                        <TabsTrigger value="players">Players</TabsTrigger>
-                        <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                        <TabsTrigger value="players">{appI18n.t('dialog.previous_instances.generated.players')}</TabsTrigger>
+                        <TabsTrigger value="timeline">{appI18n.t('dialog.previous_instances.chart_view')}</TabsTrigger>
                     </TabsList>
                     <span className="text-muted-foreground text-xs">
-                        {infoData.players.length} players
+                        {infoData.players.length} {appI18n.t('dashboard.widget.instance_players')}
                     </span>
                 </div>
                 {infoData.status === 'running' ? (
                     <div className="text-muted-foreground flex items-center gap-2 rounded-md border border-dashed p-4 text-sm">
                         <Spinner className="size-4" />
-                        <span>Loading instance details...</span>
+                        <span>{appI18n.t('dialog.previous_instances.generated.loading_instance_details')}</span>
                     </div>
                 ) : null}
                 {infoData.status === 'error' ? (
@@ -539,16 +540,16 @@ function PreviousInstanceDetailsPanel({
                                 <Table>
                                     <TableHeader className="bg-background sticky top-0">
                                         <TableRow>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>User ID</TableHead>
+                                            <TableHead>{appI18n.t('dialog.previous_instances.generated.name')}</TableHead>
+                                            <TableHead>{appI18n.t('dialog.previous_instances.generated.user_id')}</TableHead>
                                             <TableHead className="w-24">
-                                                Visits
+                                                {appI18n.t('dialog.world.info.visits')}
                                             </TableHead>
                                             <TableHead className="w-28">
-                                                Time
+                                                {appI18n.t('table.previous_instances.time')}
                                             </TableHead>
                                             <TableHead className="w-44">
-                                                First Seen
+                                                {appI18n.t('dialog.previous_instances.generated.first_seen')}
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -600,8 +601,7 @@ function PreviousInstanceDetailsPanel({
                                                     colSpan={5}
                                                     className="py-6 text-center"
                                                 >
-                                                    No player detail rows for
-                                                    this instance.
+                                                    {appI18n.t('dialog.previous_instances.generated.no_player_detail_rows_for_this_instance')}
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -623,20 +623,20 @@ function PreviousInstanceDetailsPanel({
             {detailsViewMode === 'players' && infoData.details.length ? (
                 <details className="rounded-md border p-3">
                     <summary className="cursor-pointer text-sm font-medium">
-                        Leave Details ({infoData.details.length})
+                        {appI18n.t('dialog.previous_instances.generated.leave_details')}{infoData.details.length})
                     </summary>
                     <div className="mt-3 max-h-48 overflow-auto">
                         <Table>
                             <TableHeader className="bg-background sticky top-0">
                                 <TableRow>
                                     <TableHead className="h-8 px-2 py-1 text-xs">
-                                        Left At
+                                        {appI18n.t('dialog.previous_instances.generated.left_at')}
                                     </TableHead>
                                     <TableHead className="h-8 px-2 py-1 text-xs">
-                                        Name
+                                        {appI18n.t('dialog.previous_instances.generated.name')}
                                     </TableHead>
                                     <TableHead className="h-8 px-2 py-1 text-xs">
-                                        Duration
+                                        {appI18n.t('dialog.previous_instances.generated.duration')}
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -730,11 +730,11 @@ function PreviousInstancesPanel({
             return;
         }
         const result = await confirm({
-            title: 'Delete instance record?',
+            title: appI18n.t('dialog.previous_instances_table.generated_modal.delete_instance_record'),
             description: location,
             destructive: true,
-            confirmText: 'Delete',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -744,7 +744,7 @@ function PreviousInstancesPanel({
             if (variant === 'user') {
                 if (!Array.isArray(row.events) || row.events.length === 0) {
                     toast.error(
-                        'This user instance row cannot be deleted without event ids.'
+                        appI18n.t('dialog.previous_instances.generated.this_user_instance_row_cannot_be_deleted_without_event_ids')
                     );
                     return;
                 }
@@ -764,12 +764,12 @@ function PreviousInstancesPanel({
                 return nextRows;
             });
             setDetailRow((current) => (current === row ? null : current));
-            toast.success('Instance record deleted.');
+            toast.success(appI18n.t('dialog.previous_instances.generated.instance_record_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete instance record.'
+                    : appI18n.t('dialog.previous_instances_table.generated_toast.failed_to_delete_instance_record')
             );
         }
     }
@@ -843,8 +843,7 @@ function PreviousInstancesPanel({
                     <div className="min-w-0">
                         <h3 className="text-base font-semibold">{title}</h3>
                         <p className="text-muted-foreground text-sm">
-                            {filteredRows.length}/{rows.length} recorded
-                            instance visits.
+                            {filteredRows.length}/{rows.length} {appI18n.t('dialog.previous_instances.generated.recorded_instance_visits')}
                         </p>
                     </div>
                 </div>
@@ -856,11 +855,11 @@ function PreviousInstancesPanel({
                         setSearch(event.target.value);
                         setPageIndex(0);
                     }}
-                    placeholder="Search instance history"
+                    placeholder={appI18n.t('dialog.previous_instances.search_placeholder')}
                     className="max-w-sm"
                 />
                 <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground text-sm">Rows</span>
+                    <span className="text-muted-foreground text-sm">{appI18n.t('dialog.previous_instances.generated.rows')}</span>
                     <Select
                         value={String(pageSize)}
                         onValueChange={(value) => {
@@ -901,7 +900,7 @@ function PreviousInstancesPanel({
                                             setSortDesc((value) => !value)
                                         }
                                     >
-                                        Created
+                                        {appI18n.t('dialog.previous_instances.generated.created')}
                                         {sortDesc ? (
                                             <ArrowDownIcon data-icon="inline-end" />
                                         ) : (
@@ -909,14 +908,14 @@ function PreviousInstancesPanel({
                                         )}
                                     </Button>
                                 </TableHead>
-                                <TableHead>Location</TableHead>
+                                <TableHead>{appI18n.t('dialog.previous_instances.generated.location')}</TableHead>
                                 <TableHead className="w-48">
-                                    World / Group
+                                    {appI18n.t('dialog.previous_instances.generated.world_group')}
                                 </TableHead>
-                                <TableHead className="w-44">Creator</TableHead>
-                                <TableHead className="w-24">Duration</TableHead>
+                                <TableHead className="w-44">{appI18n.t('dialog.previous_instances.generated.creator')}</TableHead>
+                                <TableHead className="w-24">{appI18n.t('dialog.previous_instances.generated.duration')}</TableHead>
                                 <TableHead className="w-80 text-right">
-                                    Actions
+                                    {appI18n.t('dialog.previous_instances.generated.actions')}
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
@@ -943,7 +942,7 @@ function PreviousInstancesPanel({
                                                 }
                                             >
                                                 <span className="sr-only">
-                                                    Open instance details
+                                                    {appI18n.t('dialog.previous_instances.generated.open_instance_details')}
                                                 </span>
                                             </Button>
                                             <div className="pointer-events-none relative z-10 max-w-full text-left">
@@ -989,7 +988,7 @@ function PreviousInstancesPanel({
                                                         openLocation(row)
                                                     }
                                                 >
-                                                    Open
+                                                    {appI18n.t('common.actions.open')}
                                                 </Button>
                                                 <Button
                                                     type="button"
@@ -999,7 +998,7 @@ function PreviousInstancesPanel({
                                                         setDetailRow(row)
                                                     }
                                                 >
-                                                    Details
+                                                    {appI18n.t('dialog.previous_instances.generated.details')}
                                                 </Button>
                                                 <Button
                                                     type="button"
@@ -1011,7 +1010,7 @@ function PreviousInstancesPanel({
                                                     }
                                                 >
                                                     <Trash2Icon data-icon="inline-start" />
-                                                    Delete
+                                                    {appI18n.t('common.actions.delete')}
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -1023,7 +1022,7 @@ function PreviousInstancesPanel({
                 </div>
             ) : (
                 <DialogEmptyState
-                    title="No instance records"
+                    title={appI18n.t('dialog.previous_instances.generated.no_instance_records')}
                     description={
                         search.trim()
                             ? 'No instance records match the current search.'
@@ -1034,7 +1033,7 @@ function PreviousInstancesPanel({
             )}
             <div className="flex items-center justify-between">
                 <div className="text-muted-foreground text-sm">
-                    Page {currentPageIndex + 1} / {totalPages}
+                    {appI18n.t('dialog.previous_instances.generated.page')} {currentPageIndex + 1} / {totalPages}
                 </div>
                 <div className="flex gap-2">
                     <Button
@@ -1046,7 +1045,7 @@ function PreviousInstancesPanel({
                             setPageIndex((value) => Math.max(0, value - 1))
                         }
                     >
-                        Previous
+                        {appI18n.t('table.pagination.previous')}
                     </Button>
                     <Button
                         type="button"
@@ -1059,7 +1058,7 @@ function PreviousInstancesPanel({
                             )
                         }
                     >
-                        Next
+                        {appI18n.t('table.pagination.next')}
                     </Button>
                     {onClose ? (
                         <Button
@@ -1068,7 +1067,7 @@ function PreviousInstancesPanel({
                             size="sm"
                             onClick={onClose}
                         >
-                            Close
+                            {appI18n.t('common.actions.close')}
                         </Button>
                     ) : null}
                 </div>

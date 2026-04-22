@@ -56,6 +56,7 @@ import {
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+import { appI18n } from '@/services/i18nService.js';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
 const DEFAULT_SORTING = [{ id: 'created', desc: true }];
@@ -670,11 +671,11 @@ export function ModerationPage({ embedded = false } = {}) {
         const result = skipConfirm
             ? { ok: true }
             : await confirm({
-                  title: 'Confirm',
+                  title: appI18n.t('common.actions.confirm'),
                   description: `Continue? Moderation ${row.type || ''}`.trim(),
                   destructive: true,
-                  confirmText: 'Delete',
-                  cancelText: 'Cancel'
+                  confirmText: appI18n.t('common.actions.delete'),
+                  cancelText: appI18n.t('common.actions.cancel')
               });
 
         if (
@@ -707,7 +708,7 @@ export function ModerationPage({ embedded = false } = {}) {
                 rows: nextRows
             });
             setDetail(
-                `Deleted ${row.type || 'moderation'} for ${row.targetDisplayName || row.targetUserId}.`
+                appI18n.t('view.moderation.generated_dynamic.deleted_value_for_value', { value: row.type || 'moderation', value2: row.targetDisplayName || row.targetUserId })
             );
         } catch (error) {
             setDetail(
@@ -916,7 +917,7 @@ export function ModerationPage({ embedded = false } = {}) {
                                 size="icon-xs"
                                 variant="ghost"
                                 className="text-muted-foreground hover:text-foreground"
-                                aria-label={t('common.actions.delete')}
+                                aria-label={"Delete"}
                                 disabled={isDeleting}
                                 onClick={() =>
                                     handleDeleteModeration(original, {
@@ -1001,14 +1002,14 @@ export function ModerationPage({ embedded = false } = {}) {
                     <Input
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder="Search"
+                        placeholder={t('common.actions.search')}
                         className="h-9 min-w-32 flex-1 sm:max-w-40"
                     />
                     <Button
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        aria-label="Refresh moderation snapshot"
+                        aria-label={"Refresh moderation snapshot"}
                         disabled={!currentUserId || loadStatus === 'running'}
                         onClick={() => setRefreshToken((value) => value + 1)}
                     >
@@ -1033,10 +1034,10 @@ export function ModerationPage({ embedded = false } = {}) {
 
             <PageBody>
                 {isLoading ? (
-                    <LoadingState label="Loading the moderation snapshot" />
+                    <LoadingState label={t('view.moderation.generated.loading_the_moderation_snapshot')} />
                 ) : isError ? (
                     <ModerationEmptyState
-                        title="Moderation snapshot failed to load"
+                        title={t('view.moderation.generated.moderation_snapshot_failed_to_load')}
                         description={
                             detail || 'The moderation request did not complete.'
                         }
@@ -1069,15 +1070,15 @@ export function ModerationPage({ embedded = false } = {}) {
 
                         <PageFooter>
                             <div className="text-muted-foreground text-sm">
-                                Showing{' '}
+                                {t('view.moderation.generated.showing')}{' '}
                                 <span className="text-foreground font-medium">
                                     {table.getRowModel().rows.length}
                                 </span>{' '}
-                                of{' '}
+                                {t('view.moderation.generated.of')}{' '}
                                 <span className="text-foreground font-medium">
                                     {filteredRows.length}
                                 </span>{' '}
-                                moderation row
+                                {t('view.moderation.generated.moderation_row')}
                                 {filteredRows.length === 1 ? '' : 's'}
                             </div>
                             <DataTablePagination
@@ -1104,8 +1105,8 @@ export function ModerationPage({ embedded = false } = {}) {
                     </>
                 ) : (
                     <ModerationEmptyState
-                        title="No moderation rows match the current filters"
-                        description="Broaden the type filters or search query to see more results."
+                        title={t('view.moderation.generated.no_moderation_rows_match_the_current_filters')}
+                        description={t('view.moderation.generated.broaden_the_type_filters_or_search_query_to_see_more_results')}
                     />
                 )}
             </PageBody>

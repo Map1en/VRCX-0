@@ -57,13 +57,14 @@ import {
     SEARCH_PAGE_SIZE as PAGE_SIZE
 } from './searchRequests.js';
 import { dedupeById, emptyArray } from './searchResults.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function SearchEmptyState() {
-    return <EmptyState title="No data" className="min-h-56" />;
+    return <EmptyState title={appI18n.t('common.no_data')} className="min-h-56" />;
 }
 
 function SearchLoadingState() {
-    return <LoadingState label="Loading" className="min-h-56" />;
+    return <LoadingState label={appI18n.t('common.loading')} className="min-h-56" />;
 }
 
 function AvatarCard({ avatar }) {
@@ -333,7 +334,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to load world categories.'
+                        : appI18n.t('view.search.generated_toast.failed_to_load_world_categories')
                 );
             });
 
@@ -376,7 +377,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to load avatar providers.'
+                        : appI18n.t('view.search.generated_toast.failed_to_load_avatar_providers')
                 );
             });
 
@@ -451,7 +452,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to search users.'
+                        : appI18n.t('view.search.generated_toast.failed_to_search_users')
                 );
             }
         } finally {
@@ -485,7 +486,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to search worlds.'
+                        : appI18n.t('view.search.generated_toast.failed_to_search_worlds')
                 );
             }
         } finally {
@@ -514,7 +515,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to search groups.'
+                        : appI18n.t('view.search.generated_toast.failed_to_search_groups')
                 );
             }
         } finally {
@@ -546,7 +547,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to search avatars.'
+                        : appI18n.t('view.search.generated_toast.failed_to_search_avatars')
                 );
             }
         } finally {
@@ -631,7 +632,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to save avatar provider.'
+                        : appI18n.t('view.search.generated_toast.failed_to_save_avatar_provider')
                 );
             });
     }
@@ -868,7 +869,7 @@ export function SearchPage() {
                                     variant="ghost"
                                     size="icon-xs"
                                     className="text-muted-foreground absolute top-1/2 right-2 -translate-y-1/2"
-                                    aria-label="Clear input"
+                                    aria-label={"Clear input"}
                                     onClick={() => setSearchText('')}
                                 >
                                     <XIcon data-icon="inline-start" />
@@ -881,7 +882,7 @@ export function SearchPage() {
                             size="icon"
                             variant="ghost"
                             title={t('view.search.clear_results_tooltip')}
-                            aria-label={t('view.search.clear_results_tooltip')}
+                            aria-label={"Clear Search Results"}
                             onClick={handleClearSearch}
                         >
                             <Trash2Icon data-icon="inline-start" />
@@ -1086,9 +1087,7 @@ export function SearchPage() {
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                aria-label={t(
-                                    'view.search.avatar.search_provider'
-                                )}
+                                aria-label={"Search Provider"}
                                 onClick={() =>
                                     setIsAvatarProviderDialogOpen(true)
                                 }

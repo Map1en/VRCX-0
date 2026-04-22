@@ -303,7 +303,7 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Widget settings"
+                    aria-label={"Widget settings"}
                 >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
@@ -366,8 +366,8 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
     if (!currentUserId) {
         return renderShell(
             <DashboardWidgetEmptyState
-                title="Game log unavailable"
-                description="Sign in before the dashboard can query game-log rows."
+                title={t('view.dashboard.generated.game_log_unavailable')}
+                description={t('view.dashboard.generated.sign_in_before_the_dashboard_can_query_game_log_rows')}
             />
         );
     }
@@ -375,7 +375,7 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
     if (loadStatus === 'error') {
         return renderShell(
             <DashboardWidgetEmptyState
-                title="Game log widget failed"
+                title={t('view.dashboard.generated.game_log_widget_failed')}
                 description={userFacingErrorMessage(
                     detail,
                     'The local game-log query did not complete.'
@@ -388,7 +388,7 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <div className="text-muted-foreground flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm">
                 <Spinner />
-                Loading game log widget
+                {t('view.dashboard.generated.loading_game_log_widget')}
             </div>
         );
     }
@@ -396,8 +396,8 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
     if (!annotatedRows.length) {
         return renderShell(
             <DashboardWidgetEmptyState
-                title="No game-log rows"
-                description="The current filter set did not return any recent game-log activity."
+                title={t('view.dashboard.generated.no_game_log_rows')}
+                description={t('view.dashboard.generated.the_current_filter_set_did_not_return_any_recent_game_log_ac')}
             />
         );
     }
@@ -405,13 +405,13 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
     return renderShell(
         <>
             <div className="text-muted-foreground flex flex-wrap gap-2 px-3 pt-3 text-xs">
-                <span>{annotatedRows.length} recent rows</span>
+                <span>{annotatedRows.length} {t('view.dashboard.generated.recent_rows')}</span>
                 <span>
                     {Array.isArray(config.filters) && config.filters.length
                         ? `${config.filters.length} type filters`
                         : 'All game-log types'}
                 </span>
-                {showDetail ? <span>Detail expanded</span> : null}
+                {showDetail ? <span>{t('view.dashboard.generated.detail_expanded')}</span> : null}
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto">
@@ -452,7 +452,7 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                                                     className="shrink-0 gap-1 px-1.5"
                                                 >
                                                     <HeartIcon className="size-3 fill-current" />
-                                                    Favorite
+                                                    {t('view.dashboard.generated.favorite')}
                                                 </Badge>
                                             ) : null}
                                         </div>

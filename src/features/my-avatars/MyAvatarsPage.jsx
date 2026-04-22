@@ -120,6 +120,7 @@ import {
     sanitizeMyAvatarsSorting,
     writePersistedMyAvatarsState
 } from './myAvatarsState.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function SortButton({ column, label, descFirst = false }) {
     const direction = column.getIsSorted();
@@ -210,14 +211,14 @@ function AvatarActionMenuItems({
             <Group>
                 <Item onSelect={() => handleAction('details')}>
                     <EyeIcon />
-                    View details
+                    {appI18n.t('view.my_avatars.generated.view_details')}
                 </Item>
                 <Item
                     disabled={disabled || isActive}
                     onSelect={() => handleAction('wear')}
                 >
                     <CheckIcon />
-                    Select avatar
+                    {appI18n.t('view.my_avatars.generated.select_avatar')}
                 </Item>
             </Group>
             <Separator />
@@ -227,7 +228,7 @@ function AvatarActionMenuItems({
                     onSelect={() => handleAction('manageTags')}
                 >
                     <TagIcon />
-                    Manage tags
+                    {appI18n.t('view.my_avatars.generated.manage_tags')}
                 </Item>
             </Group>
             <Separator />
@@ -246,42 +247,42 @@ function AvatarActionMenuItems({
                     onSelect={() => handleAction('rename')}
                 >
                     <PencilIcon />
-                    Rename
+                    {appI18n.t('view.my_avatars.generated.rename')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('changeDescription')}
                 >
                     <PencilIcon />
-                    Change description
+                    {appI18n.t('view.my_avatars.generated.change_description')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('changeTags')}
                 >
                     <PencilIcon />
-                    Change content tags
+                    {appI18n.t('view.my_avatars.generated.change_content_tags')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('changeStyles')}
                 >
                     <PencilIcon />
-                    Change styles/author tags
+                    {appI18n.t('view.my_avatars.generated.change_styles_author_tags')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('changeImage')}
                 >
                     <ImageIcon />
-                    Change image
+                    {appI18n.t('view.my_avatars.generated.change_image')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('createImpostor')}
                 >
                     <RefreshCwIcon />
-                    Create impostor
+                    {appI18n.t('view.my_avatars.generated.create_impostor')}
                 </Item>
             </Group>
         </>
@@ -298,7 +299,7 @@ function AvatarActionsDropdown({ avatar, isActive, isUpdating, onAction }) {
                     type="button"
                     variant="ghost"
                     size="icon-xs"
-                    aria-label="Open avatar actions"
+                    aria-label={"Open avatar actions"}
                     disabled={isUpdating}
                     onClick={(event) => event.stopPropagation()}
                 >
@@ -340,7 +341,7 @@ function MyAvatarFilterPopover({
             <PopoverTrigger asChild>
                 <Button type="button" variant="outline" size="sm">
                     <ListFilterIcon data-icon="inline-start" />
-                    Filter
+                    {appI18n.t('view.my_avatars.generated.filter')}
                     {activeFilterCount ? (
                         <Badge variant="secondary">{activeFilterCount}</Badge>
                     ) : null}
@@ -350,7 +351,7 @@ function MyAvatarFilterPopover({
                 <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1.5">
                         <div className="text-muted-foreground text-xs font-medium">
-                            Visibility
+                            {appI18n.t('view.my_avatars.generated.visibility')}
                         </div>
                         <div className="flex flex-wrap gap-1">
                             {MY_AVATARS_RELEASE_STATUS_OPTIONS.map((option) => (
@@ -378,7 +379,7 @@ function MyAvatarFilterPopover({
                     </div>
                     <div className="flex flex-col gap-1.5">
                         <div className="text-muted-foreground text-xs font-medium">
-                            Platform
+                            {appI18n.t('view.my_avatars.generated.platform')}
                         </div>
                         <div className="flex flex-wrap gap-1">
                             {MY_AVATARS_PLATFORM_OPTIONS.map((option) => (
@@ -407,7 +408,7 @@ function MyAvatarFilterPopover({
                     {allTags.length ? (
                         <div className="flex flex-col gap-1.5">
                             <div className="text-muted-foreground text-xs font-medium">
-                                Tags
+                                {appI18n.t('dialog.avatar.info.tags')}
                             </div>
                             <div className="flex max-h-40 flex-wrap gap-1 overflow-y-auto">
                                 {allTags.map((tag) => {
@@ -456,7 +457,7 @@ function MyAvatarFilterPopover({
                             size="sm"
                             onClick={onClearFilters}
                         >
-                            Clear filters
+                            {appI18n.t('view.my_avatars.generated.clear_filters')}
                         </Button>
                     ) : null}
                 </div>
@@ -509,7 +510,7 @@ function GridSettingsMenu({
                     type="button"
                     size="icon-sm"
                     variant="ghost"
-                    aria-label="Grid settings"
+                    aria-label={"Grid settings"}
                 >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
@@ -518,7 +519,7 @@ function GridSettingsMenu({
                 <FieldGroup>
                     <Field>
                         <div className="flex items-center justify-between text-sm font-medium">
-                            <FieldLabel>Scale</FieldLabel>
+                            <FieldLabel>{appI18n.t('view.friends_locations.scale')}</FieldLabel>
                             <span className="text-xs">{cardScalePercent}%</span>
                         </div>
                         <Slider
@@ -526,14 +527,14 @@ function GridSettingsMenu({
                             min={0.4}
                             max={1.4}
                             step={0.05}
-                            aria-label="Avatar card scale"
+                            aria-label={"Avatar card scale"}
                             onValueChange={(value) => updateCardScale(value[0])}
                             onValueCommit={(value) => commitCardScale(value[0])}
                         />
                     </Field>
                     <Field>
                         <div className="flex items-center justify-between text-sm font-medium">
-                            <FieldLabel>Spacing</FieldLabel>
+                            <FieldLabel>{appI18n.t('view.friends_locations.spacing')}</FieldLabel>
                             <span className="text-xs">
                                 {cardSpacingPercent}%
                             </span>
@@ -543,7 +544,7 @@ function GridSettingsMenu({
                             min={0.6}
                             max={2}
                             step={0.05}
-                            aria-label="Avatar card spacing"
+                            aria-label={"Avatar card spacing"}
                             onValueChange={(value) =>
                                 updateCardSpacing(value[0])
                             }
@@ -787,7 +788,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 )
             );
             setManageTagsAvatar(null);
-            setDetail(`Updated local tags for ${avatar?.name || avatarId}.`);
+            setDetail(appI18n.t('view.my_avatars.generated_dynamic.updated_local_tags_for_value', { value: avatar?.name || avatarId }));
         } catch (error) {
             setDetail(
                 error instanceof Error
@@ -868,11 +869,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
 
     async function renameAvatar(avatar) {
         const result = await prompt({
-            title: 'Rename avatar',
+            title: appI18n.t('view.my_avatars.generated_modal.rename_avatar'),
             description: avatar?.name || avatar?.id || '',
             inputValue: avatar?.name || '',
-            confirmText: 'Rename',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('view.my_avatars.generated_modal.rename'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -888,11 +889,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
 
     async function changeAvatarDescription(avatar) {
         const result = await prompt({
-            title: 'Change avatar description',
+            title: appI18n.t('view.my_avatars.generated_modal.change_avatar_description'),
             description: avatar?.name || avatar?.id || '',
             inputValue: avatar?.description || '',
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -922,10 +923,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         );
         if (shouldConfirm) {
             const result = await confirm({
-                title: 'Confirm',
-                description: `Select avatar?\n${avatar?.name || avatarId}`,
-                confirmText: 'Select',
-                cancelText: 'Cancel'
+                title: appI18n.t('common.actions.confirm'),
+                description: appI18n.t('view.my_avatars.generated_modal.select_avatar_value', { value: avatar?.name || avatarId }),
+                confirmText: appI18n.t('common.actions.select'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -949,8 +950,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
             }
-            setDetail(`Selected avatar ${avatar?.name || avatarId}.`);
-            toast.success('Avatar selected.');
+            setDetail(appI18n.t('view.my_avatars.generated_dynamic.selected_avatar_value', { value: avatar?.name || avatarId }));
+            toast.success(t('view.my_avatars.generated.avatar_selected'));
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
                 const message =
@@ -978,7 +979,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             description: avatar?.name || avatar?.id || '',
             confirmText:
                 nextReleaseStatus === 'public' ? 'Make Public' : 'Make Private',
-            cancelText: 'Cancel'
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1011,10 +1012,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         }
 
         const result = await confirm({
-            title: 'Create impostor?',
+            title: appI18n.t('view.my_avatars.generated_modal.create_impostor'),
             description: avatar?.name || avatarId,
-            confirmText: 'Create',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('view.my_avatars.generated_modal.create'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1039,7 +1040,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 return;
             }
             setDetail('Impostor queued for creation.');
-            toast.success('Impostor queued for creation.');
+            toast.success(t('view.my_avatars.generated.impostor_queued_for_creation'));
         } catch (error) {
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
@@ -1109,9 +1110,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
 
     function showImageValidationError(validation) {
         if (validation.reason === 'too_large') {
-            toast.error('Selected image is too large.');
+            toast.error(t('view.my_avatars.generated.selected_image_is_too_large'));
         } else if (validation.reason === 'not_image') {
-            toast.error('Selected file is not an image.');
+            toast.error(t('view.my_avatars.generated.selected_file_is_not_an_image'));
         }
     }
 
@@ -1184,8 +1185,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             }
 
             applyAvatarUpdate(result.avatar);
-            setDetail(`Avatar image updated for ${avatar?.name || avatarId}.`);
-            toast.success('Avatar image updated.');
+            setDetail(appI18n.t('view.my_avatars.generated_dynamic.avatar_image_updated_for_value', { value: avatar?.name || avatarId }));
+            toast.success(t('view.my_avatars.generated.avatar_image_updated'));
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
                 const message =
@@ -1900,7 +1901,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                             variant={
                                 viewMode === 'grid' ? 'default' : 'outline'
                             }
-                            aria-label="Show avatar grid"
+                            aria-label={"Show avatar grid"}
                             onClick={() => {
                                 setViewMode('grid');
                                 void configRepository.setString(
@@ -1917,7 +1918,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                             variant={
                                 viewMode === 'table' ? 'default' : 'outline'
                             }
-                            aria-label="Show avatar table"
+                            aria-label={"Show avatar table"}
                             onClick={() => {
                                 setViewMode('table');
                                 void configRepository.setString(
@@ -1950,13 +1951,13 @@ export function MyAvatarsPage({ embedded = false } = {}) {
 
                     {loadStatus === 'running' ? (
                         <span className="text-muted-foreground text-sm">
-                            Loading
+                            {t('common.loading')}
                         </span>
                     ) : null}
                     <Input
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder="Search"
+                        placeholder={t('common.actions.search')}
                         className="w-80"
                     />
                     {viewMode === 'grid' ? (
@@ -1974,7 +1975,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        aria-label="Refresh avatar inventory"
+                        aria-label={"Refresh avatar inventory"}
                         disabled={!currentUserId || loadStatus === 'running'}
                         onClick={() => setRefreshToken((value) => value + 1)}
                     >
@@ -1996,10 +1997,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 ) : null}
 
                 {isLoading ? (
-                    <LoadingState label="Loading the avatar inventory" />
+                    <LoadingState label={t('view.my_avatars.generated.loading_the_avatar_inventory')} />
                 ) : isError ? (
                     <MyAvatarsEmptyState
-                        title="Avatar inventory failed to load"
+                        title={t('view.my_avatars.generated.avatar_inventory_failed_to_load')}
                         description={
                             detail || 'The avatar request did not complete.'
                         }
@@ -2126,15 +2127,15 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                             </DataTableSurface>
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                 <div className="text-muted-foreground text-sm">
-                                    Showing{' '}
+                                    {t('view.my_avatars.generated.showing')}{' '}
                                     <span className="text-foreground font-medium">
                                         {table.getRowModel().rows.length}
                                     </span>{' '}
-                                    of{' '}
+                                    {t('view.my_avatars.generated.of')}{' '}
                                     <span className="text-foreground font-medium">
                                         {filteredAvatars.length}
                                     </span>{' '}
-                                    avatar
+                                    {t('view.my_avatars.generated.avatar')}
                                     {filteredAvatars.length === 1 ? '' : 's'}
                                 </div>
                                 <DataTablePagination
@@ -2216,8 +2217,8 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     )
                 ) : (
                     <MyAvatarsEmptyState
-                        title="No avatars match the current filters"
-                        description="Broaden the filters or search query to see more avatars."
+                        title={t('view.my_avatars.generated.no_avatars_match_the_current_filters')}
+                        description={t('view.my_avatars.generated.broaden_the_filters_or_search_query_to_see_more_avatars')}
                     />
                 )}
             </div>
@@ -2225,7 +2226,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 open={Boolean(imageCropRequest)}
                 file={imageCropRequest?.file || null}
                 aspectRatio={4 / 3}
-                title="Change avatar image"
+                title={t('view.my_avatars.generated.change_avatar_image')}
                 onOpenChange={(open) => {
                     if (!open) {
                         setImageCropRequest(null);

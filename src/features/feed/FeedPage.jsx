@@ -142,6 +142,7 @@ import {
     sanitizeFeedSorting as sanitizeSorting,
     writePersistedFeedTableState as writePersistedState
 } from './feedTableState.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function resolvePresenceLocation(profile) {
     return resolveFriendPresenceLocation(profile);
@@ -209,7 +210,7 @@ async function copyFeedText(text, label = 'Value') {
         return;
     }
     await copyTextToClipboard(value);
-    toast.success(`${label} copied.`);
+    toast.success(appI18n.t('view.feed.generated_dynamic.value_copied', { value: label }));
 }
 
 function FeedStatusBadge({ status, label }) {
@@ -640,7 +641,7 @@ const AvatarInfoLine = memo(function AvatarInfoLine({
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to resolve avatar author.'
+                        : appI18n.t('view.feed.generated_toast.failed_to_resolve_avatar_author')
                 );
                 return;
             }
@@ -664,12 +665,12 @@ const AvatarInfoLine = memo(function AvatarInfoLine({
         }
 
         if (!nextOwnerId) {
-            toast.warning('Avatar author unavailable.');
+            toast.warning(t('view.feed.generated.avatar_author_unavailable'));
             return;
         }
 
         if (nextOwnerId === normalizedUserId) {
-            toast.warning('Avatar is private or not found.');
+            toast.warning(t('view.feed.generated.avatar_is_private_or_not_found'));
             return;
         }
 
@@ -892,7 +893,7 @@ function FeedUserLink({
                         }
                     >
                         <UserIcon />
-                        Open user
+                        {appI18n.t('view.feed.generated.open_user')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!worldTarget}
@@ -904,7 +905,7 @@ function FeedUserLink({
                         }
                     >
                         <GlobeIcon />
-                        Open current location
+                        {appI18n.t('view.feed.generated.open_current_location')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!groupTarget}
@@ -916,7 +917,7 @@ function FeedUserLink({
                         }
                     >
                         <UsersIcon />
-                        Open group
+                        {appI18n.t('view.feed.generated.open_group')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -926,7 +927,7 @@ function FeedUserLink({
                         onSelect={() => void actions?.launchLocation(location)}
                     >
                         <ExternalLinkIcon />
-                        Launch in VRChat
+                        {appI18n.t('view.feed.generated.launch_in_vrchat')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
@@ -935,7 +936,7 @@ function FeedUserLink({
                         }
                     >
                         <ExternalLinkIcon />
-                        Self invite
+                        {appI18n.t('view.feed.generated.self_invite')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -945,7 +946,7 @@ function FeedUserLink({
                         onSelect={() => void actions?.sendInvite(friend || row)}
                     >
                         <ExternalLinkIcon />
-                        Send invite
+                        {appI18n.t('view.feed.generated.send_invite')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={isCurrentUser || !canRequestInvite}
@@ -954,14 +955,14 @@ function FeedUserLink({
                         }
                     >
                         <ExternalLinkIcon />
-                        Request invite
+                        {appI18n.t('view.feed.generated.request_invite')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={isCurrentUser || !canBoop}
                         onSelect={() => void actions?.sendBoop(friend || row)}
                     >
                         <ExternalLinkIcon />
-                        Send boop
+                        {appI18n.t('view.feed.generated.send_boop')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -971,7 +972,7 @@ function FeedUserLink({
                         onSelect={() => void copyFeedText(userId, 'User ID')}
                     >
                         <CopyIcon />
-                        Copy user ID
+                        {appI18n.t('view.feed.generated.copy_user_id')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!displayName}
@@ -980,7 +981,7 @@ function FeedUserLink({
                         }
                     >
                         <CopyIcon />
-                        Copy display name
+                        {appI18n.t('view.feed.generated.copy_display_name')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
             </ContextMenuContent>
@@ -1214,7 +1215,7 @@ function FeedExpandedRow({
                                     type="button"
                                     variant="ghost"
                                     className="h-auto p-0"
-                                    aria-label="Preview previous avatar"
+                                    aria-label={"Preview previous avatar"}
                                     onClick={() =>
                                         onPreviewImage?.({
                                             url:
@@ -1228,7 +1229,7 @@ function FeedExpandedRow({
                                 >
                                     <img
                                         src={previousImage}
-                                        alt="Previous avatar"
+                                        alt={appI18n.t('view.feed.generated.previous_avatar')}
                                         className="h-30 w-40 rounded object-cover"
                                         loading="lazy"
                                     />
@@ -1254,7 +1255,7 @@ function FeedExpandedRow({
                                     type="button"
                                     variant="ghost"
                                     className="h-auto p-0"
-                                    aria-label="Preview current avatar"
+                                    aria-label={"Preview current avatar"}
                                     onClick={() =>
                                         onPreviewImage?.({
                                             url:
@@ -1522,7 +1523,7 @@ export function FeedPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load instance history.'
+                    : appI18n.t('view.feed.generated_toast.failed_to_load_instance_history')
             );
         } finally {
             setLoadingPreviousInstancesKey('');
@@ -1563,15 +1564,15 @@ export function FeedPage({ embedded = false } = {}) {
                 currentEndpoint
             );
             if (opened) {
-                toast.success('VRChat launch request sent.');
+                toast.success(t('view.feed.generated.vrchat_launch_request_sent'));
                 return;
             }
-            toast.error('Unable to open this instance in VRChat.');
+            toast.error(t('view.feed.generated.unable_to_open_this_instance_in_vrchat'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to launch instance.'
+                    : appI18n.t('view.feed.generated_toast.failed_to_launch_instance')
             );
         }
     }
@@ -1592,12 +1593,12 @@ export function FeedPage({ embedded = false } = {}) {
                 parsedLocation.shortName || '',
                 currentEndpoint
             );
-            toast.success('Self invite sent.');
+            toast.success(t('view.feed.generated.self_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send self invite.'
+                    : appI18n.t('view.feed.generated_toast.failed_to_send_self_invite')
             );
         }
     }
@@ -1609,28 +1610,28 @@ export function FeedPage({ embedded = false } = {}) {
         }
         if (!currentInviteLocation) {
             toast.error(
-                'Cannot invite: no current VRChat location is available.'
+                t('view.feed.generated.cannot_invite_no_current_vrchat_location_is_available')
             );
             return;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error('Cannot invite from the current instance type.');
+            toast.error(t('view.feed.generated.cannot_invite_from_the_current_instance_type'));
             return;
         }
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                'Cannot invite: current location is not a concrete instance.'
+                t('view.feed.generated.cannot_invite_current_location_is_not_a_concrete_instance')
             );
             return;
         }
 
         const result = await confirm({
-            title: 'Send invite?',
+            title: appI18n.t('view.feed.generated_modal.send_invite'),
             description: friend?.displayName || 'this user',
-            confirmText: 'Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('view.feed.generated_modal.invite'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1654,12 +1655,12 @@ export function FeedPage({ embedded = false } = {}) {
                     rsvp: true
                 }
             });
-            toast.success('Invite sent.');
+            toast.success(t('view.feed.generated.invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send invite.'
+                    : appI18n.t('view.feed.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -1670,15 +1671,15 @@ export function FeedPage({ embedded = false } = {}) {
             return;
         }
         if (!canRequestInviteFromFeedFriend(friend, currentUserSnapshot)) {
-            toast.error('Cannot request invite: friend is not online.');
+            toast.error(t('view.feed.generated.cannot_request_invite_friend_is_not_online'));
             return;
         }
 
         const result = await confirm({
-            title: 'Request invite?',
+            title: appI18n.t('view.feed.generated_modal.request_invite'),
             description: friend?.displayName || 'this user',
-            confirmText: 'Request Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('view.feed.generated_modal.request_invite_2'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1692,12 +1693,12 @@ export function FeedPage({ embedded = false } = {}) {
                     platform: 'standalonewindows'
                 }
             });
-            toast.success('Invite request sent.');
+            toast.success(t('view.feed.generated.invite_request_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to request invite.'
+                    : appI18n.t('view.feed.generated_toast.failed_to_request_invite')
             );
         }
     }
@@ -1710,12 +1711,12 @@ export function FeedPage({ embedded = false } = {}) {
 
         try {
             const result = await prompt({
-                title: 'Send boop',
+                title: appI18n.t('view.feed.generated_modal.send_boop'),
                 description:
-                    'Optional emoji id. Leave blank to send the default boop.',
+                    appI18n.t('view.feed.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
                 inputValue: '',
-                confirmText: 'Send',
-                cancelText: 'Cancel'
+                confirmText: appI18n.t('view.feed.generated_modal.send'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -1725,10 +1726,10 @@ export function FeedPage({ embedded = false } = {}) {
                 emojiId: result.value,
                 endpoint: currentEndpoint
             });
-            toast.success('Boop sent.');
+            toast.success(t('view.feed.generated.boop_sent'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to send boop.'
+                error instanceof Error ? error.message : appI18n.t('view.feed.generated_toast.failed_to_send_boop')
             );
         }
     }
@@ -2337,7 +2338,7 @@ export function FeedPage({ embedded = false } = {}) {
                                     size="icon-sm"
                                     className="relative"
                                     title={t('view.feed.filter')}
-                                    aria-label={t('view.feed.filter')}
+                                    aria-label={"Filter"}
                                 >
                                     <CalendarIcon data-icon="icon" />
                                     {activeFilterCount ? (
@@ -2397,7 +2398,7 @@ export function FeedPage({ embedded = false } = {}) {
                             variant={favoritesOnly ? 'default' : 'outline'}
                             size="icon-sm"
                             title={t('view.feed.favorites_only_tooltip')}
-                            aria-label={t('view.feed.favorites_only_tooltip')}
+                            aria-label={"Filter favorites only"}
                             onClick={() =>
                                 setFavoritesOnly((current) => !current)
                             }
@@ -2454,7 +2455,7 @@ export function FeedPage({ embedded = false } = {}) {
                                 <InputGroupButton
                                     type="button"
                                     size="icon-xs"
-                                    aria-label="Clear search"
+                                    aria-label={"Clear search"}
                                     onClick={clearSearch}
                                 >
                                     <XIcon data-icon="icon" />
@@ -2524,7 +2525,7 @@ export function FeedPage({ embedded = false } = {}) {
                                         {loadStatus === 'running' ? (
                                             <span className="inline-flex items-center gap-2">
                                                 <Spinner />
-                                                Loading feed rows
+                                                {t('view.feed.generated.loading_feed_rows')}
                                             </span>
                                         ) : favoritesOnly &&
                                           !isFavoritesLoaded ? (
@@ -2543,7 +2544,7 @@ export function FeedPage({ embedded = false } = {}) {
 
                 <PageFooter>
                     <div className="text-muted-foreground text-sm">
-                        {rows.length} rows
+                        {rows.length} {t('view.feed.generated.rows')}
                         {favoritesOnly ? ' · Favorites only' : ''}
                     </div>
                     <DataTablePagination

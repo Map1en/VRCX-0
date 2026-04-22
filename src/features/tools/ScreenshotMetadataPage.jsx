@@ -73,6 +73,7 @@ import {
     sortScreenshotRowsByNewest,
     sortScreenshotSearchRows
 } from './screenshotMetadataValues.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function EmptyState({ title, description, loading = false }) {
     return (
@@ -383,7 +384,7 @@ export function ScreenshotMetadataPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to open screenshot picker.'
+                    : appI18n.t('view.tools.generated_toast.failed_to_open_screenshot_picker')
             );
         }
     }
@@ -402,7 +403,7 @@ export function ScreenshotMetadataPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to open folder.'
+                    : appI18n.t('view.tools.generated_toast.failed_to_open_folder')
             );
         }
     }
@@ -417,7 +418,7 @@ export function ScreenshotMetadataPage() {
             toast.success(t('message.image.copied_to_clipboard'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to copy image.'
+                error instanceof Error ? error.message : appI18n.t('view.tools.generated_toast.failed_to_copy_image')
             );
         }
     }
@@ -432,7 +433,7 @@ export function ScreenshotMetadataPage() {
             title: t('dialog.screenshot_metadata.delete_metadata'),
             description: metadata?.fileName || filePath,
             confirmText: t('dialog.screenshot_metadata.delete_metadata'),
-            cancelText: 'Cancel',
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -620,7 +621,7 @@ export function ScreenshotMetadataPage() {
         event.preventDefault();
         const filePath = getDroppedScreenshotPath(event);
         if (!filePath) {
-            toast.error('Dropped screenshot path is not available.');
+            toast.error(t('view.tools.generated.dropped_screenshot_path_is_not_available'));
             return;
         }
         resetSearchContext({ clearQuery: true });
@@ -688,10 +689,10 @@ export function ScreenshotMetadataPage() {
                     {t('dialog.screenshot_metadata.header')}
                 </span>
                 {isDeletingMetadata ? (
-                    <Badge variant="outline">Deleting metadata</Badge>
+                    <Badge variant="outline">{t('view.tools.generated.deleting_metadata')}</Badge>
                 ) : null}
                 {isUploadingScreenshot ? (
-                    <Badge variant="outline">Uploading screenshot</Badge>
+                    <Badge variant="outline">{t('view.tools.generated.uploading_screenshot')}</Badge>
                 ) : null}
             </div>
 
@@ -802,7 +803,7 @@ export function ScreenshotMetadataPage() {
                             </SelectGroup>
                         </SelectContent>
                     </Select>
-                    <Button onClick={() => void runSearch()}>Search</Button>
+                    <Button onClick={() => void runSearch()}>{t('common.actions.search')}</Button>
                     {searchViewMode === 'table' && searchRows.length ? (
                         <span className="text-xs whitespace-pre-wrap">
                             {t('dialog.screenshot_metadata.result_count', {
@@ -823,8 +824,8 @@ export function ScreenshotMetadataPage() {
                     {isSearchLoading ? (
                         <EmptyState
                             loading
-                            title="Searching screenshots"
-                            description="Resolving file list and metadata summaries."
+                            title={t('view.tools.generated.searching_screenshots')}
+                            description={t('view.tools.generated.resolving_file_list_and_metadata_summaries')}
                         />
                     ) : (
                         <Table className="app-data-table">
@@ -942,7 +943,7 @@ export function ScreenshotMetadataPage() {
                         <CardHeader>
                             <div className="flex items-center justify-between gap-4">
                                 <div className="flex flex-col gap-1">
-                                    <CardTitle>Preview</CardTitle>
+                                    <CardTitle>{t('view.tools.generated.preview')}</CardTitle>
                                     <CardDescription>
                                         {metadata?.fileName ||
                                             t(
@@ -957,14 +958,14 @@ export function ScreenshotMetadataPage() {
                                         onClick={() => void navigatePrev()}
                                     >
                                         <ArrowLeftIcon data-icon="inline-start" />
-                                        Prev
+                                        {t('view.tools.generated.prev')}
                                     </Button>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => void navigateNext()}
                                     >
-                                        Next
+                                        {t('table.pagination.next')}
                                         <ArrowRightIcon data-icon="inline-end" />
                                     </Button>
                                 </div>
@@ -979,8 +980,8 @@ export function ScreenshotMetadataPage() {
                             {isMetadataLoading ? (
                                 <EmptyState
                                     loading
-                                    title="Loading screenshot"
-                                    description="Fetching embedded metadata and file details."
+                                    title={t('view.tools.generated.loading_screenshot')}
+                                    description={t('view.tools.generated.fetching_embedded_metadata_and_file_details')}
                                 />
                             ) : imageUrl ? (
                                 <Button
@@ -1010,7 +1011,7 @@ export function ScreenshotMetadataPage() {
                             ) : (
                                 <EmptyState
                                     title={t('dialog.screenshot_metadata.drag')}
-                                    description="Browse for a screenshot, load the latest screenshot, or run a metadata search."
+                                    description={t('view.tools.generated.browse_for_a_screenshot_load_the_latest_screenshot_or_run_a_')}
                                 />
                             )}
                         </CardContent>
@@ -1018,10 +1019,9 @@ export function ScreenshotMetadataPage() {
 
                     <Card className="flex min-h-0 flex-col">
                         <CardHeader>
-                            <CardTitle>Details</CardTitle>
+                            <CardTitle>{t('view.tools.generated.details')}</CardTitle>
                             <CardDescription>
-                                Metadata extracted from the selected VRChat
-                                screenshot.
+                                {t('view.tools.generated.metadata_extracted_from_the_selected_vrchat_screenshot')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-6 overflow-y-auto">
@@ -1132,7 +1132,7 @@ export function ScreenshotMetadataPage() {
                                             </div>
                                         ) : (
                                             <div className="text-muted-foreground text-sm">
-                                                No player metadata.
+                                                {t('view.tools.generated.no_player_metadata')}
                                             </div>
                                         )}
                                     </section>
@@ -1180,7 +1180,7 @@ export function ScreenshotMetadataPage() {
                                     {metadata.application ? (
                                         <section className="flex flex-col gap-2 border-t pt-4">
                                             <div className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
-                                                Application
+                                                {t('view.settings.general.application.header')}
                                             </div>
                                             <div className="text-muted-foreground text-sm">
                                                 {metadata.application}
@@ -1190,8 +1190,8 @@ export function ScreenshotMetadataPage() {
                                 </>
                             ) : (
                                 <EmptyState
-                                    title="No screenshot selected."
-                                    description="Load a screenshot to inspect embedded world, player and file metadata."
+                                    title={t('view.tools.generated.no_screenshot_selected')}
+                                    description={t('view.tools.generated.load_a_screenshot_to_inspect_embedded_world_player_and_file_')}
                                 />
                             )}
                         </CardContent>

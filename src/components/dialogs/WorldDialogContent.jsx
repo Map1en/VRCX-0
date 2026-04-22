@@ -74,6 +74,7 @@ import {
     WorldAllowedDomainsDialog,
     WorldTagsDialog
 } from './WorldOwnerEditDialogs.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 function WorldDialogEmptyState({ title, description, loading = false }) {
     return (
@@ -195,13 +196,13 @@ function WorldNewInstanceDialog({
                     onValueChange={(value) => patchForm({ selectedTab: value })}
                 >
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="Normal">Normal</TabsTrigger>
-                        <TabsTrigger value="Legacy">Legacy</TabsTrigger>
+                        <TabsTrigger value="Normal">{appI18n.t('dialog.new_instance.normal')}</TabsTrigger>
+                        <TabsTrigger value="Legacy">{appI18n.t('dialog.new_instance.legacy')}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="Normal">
                         <FieldGroup className="gap-4">
                             <Field>
-                                <FieldLabel>Access</FieldLabel>
+                                <FieldLabel>{appI18n.t('dialog.world.generated.access')}</FieldLabel>
                                 <Select
                                     value={form.accessType}
                                     disabled={Boolean(request?.created)}
@@ -227,7 +228,7 @@ function WorldNewInstanceDialog({
                                 </Select>
                             </Field>
                             <Field>
-                                <FieldLabel>Region</FieldLabel>
+                                <FieldLabel>{appI18n.t('dialog.new_instance.region')}</FieldLabel>
                                 <Select
                                     value={form.region}
                                     disabled={Boolean(request?.created)}
@@ -256,7 +257,7 @@ function WorldNewInstanceDialog({
                                 <>
                                     <Field>
                                         <FieldLabel htmlFor="world-instance-group-id">
-                                            Group ID
+                                            {appI18n.t('dialog.group.info.id')}
                                         </FieldLabel>
                                         <Input
                                             id="world-instance-group-id"
@@ -270,7 +271,7 @@ function WorldNewInstanceDialog({
                                         />
                                     </Field>
                                     <Field>
-                                        <FieldLabel>Group Access</FieldLabel>
+                                        <FieldLabel>{appI18n.t('dialog.new_instance.group_access_type')}</FieldLabel>
                                         <Select
                                             value={form.groupAccessType}
                                             disabled={Boolean(request?.created)}
@@ -306,7 +307,7 @@ function WorldNewInstanceDialog({
                                     {form.groupAccessType === 'members' ? (
                                         <Field>
                                             <FieldLabel htmlFor="world-instance-role-ids">
-                                                Role IDs
+                                                {appI18n.t('dialog.world.generated.role_ids')}
                                             </FieldLabel>
                                             <Input
                                                 id="world-instance-role-ids"
@@ -344,7 +345,7 @@ function WorldNewInstanceDialog({
                                                 }
                                             />
                                             <FieldLabel htmlFor="world-instance-queue-enabled">
-                                                Queue enabled
+                                                {appI18n.t('dialog.world.generated.queue_enabled')}
                                             </FieldLabel>
                                         </Field>
                                         <Field
@@ -366,7 +367,7 @@ function WorldNewInstanceDialog({
                                                 }
                                             />
                                             <FieldLabel htmlFor="world-instance-age-gate">
-                                                Age gate
+                                                {appI18n.t('dialog.world.generated.age_gate')}
                                             </FieldLabel>
                                         </Field>
                                     </FieldGroup>
@@ -374,7 +375,7 @@ function WorldNewInstanceDialog({
                             ) : null}
                             <Field>
                                 <FieldLabel htmlFor="world-instance-display-name">
-                                    Display Name
+                                    {appI18n.t('dialog.world.generated.display_name')}
                                 </FieldLabel>
                                 <Input
                                     id="world-instance-display-name"
@@ -392,7 +393,7 @@ function WorldNewInstanceDialog({
                     <TabsContent value="Legacy">
                         <FieldGroup className="gap-4">
                             <Field>
-                                <FieldLabel>Access</FieldLabel>
+                                <FieldLabel>{appI18n.t('dialog.world.generated.access')}</FieldLabel>
                                 <Select
                                     value={form.accessType}
                                     onValueChange={(value) =>
@@ -417,7 +418,7 @@ function WorldNewInstanceDialog({
                                 </Select>
                             </Field>
                             <Field>
-                                <FieldLabel>Region</FieldLabel>
+                                <FieldLabel>{appI18n.t('dialog.new_instance.region')}</FieldLabel>
                                 <Select
                                     value={form.region}
                                     onValueChange={(value) =>
@@ -443,7 +444,7 @@ function WorldNewInstanceDialog({
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="world-launch-instance-name">
-                                    Instance Name
+                                    {appI18n.t('table.previous_instances.instance_name')}
                                 </FieldLabel>
                                 <Input
                                     id="world-launch-instance-name"
@@ -463,7 +464,7 @@ function WorldNewInstanceDialog({
                             form.accessType !== 'group' ? (
                                 <Field>
                                     <FieldLabel htmlFor="world-launch-user-id">
-                                        User ID
+                                        {appI18n.t('dialog.world.generated.user_id')}
                                     </FieldLabel>
                                     <Input
                                         id="world-launch-user-id"
@@ -480,7 +481,7 @@ function WorldNewInstanceDialog({
                                 <>
                                     <Field>
                                         <FieldLabel htmlFor="world-launch-group-id">
-                                            Group ID
+                                            {appI18n.t('dialog.group.info.id')}
                                         </FieldLabel>
                                         <Input
                                             id="world-launch-group-id"
@@ -493,7 +494,7 @@ function WorldNewInstanceDialog({
                                         />
                                     </Field>
                                     <Field>
-                                        <FieldLabel>Group Access</FieldLabel>
+                                        <FieldLabel>{appI18n.t('dialog.new_instance.group_access_type')}</FieldLabel>
                                         <Select
                                             value={form.groupAccessType}
                                             onValueChange={(value) =>
@@ -539,7 +540,7 @@ function WorldNewInstanceDialog({
                                         }
                                     />
                                     <FieldLabel htmlFor="world-launch-age-gate">
-                                        Age gate
+                                        {appI18n.t('dialog.world.generated.age_gate')}
                                     </FieldLabel>
                                 </Field>
                             ) : null}
@@ -556,7 +557,7 @@ function WorldNewInstanceDialog({
                                         }
                                     />
                                     <FieldLabel htmlFor="world-launch-strict">
-                                        Strict
+                                        {appI18n.t('dialog.world.generated.strict')}
                                     </FieldLabel>
                                 </Field>
                             ) : null}
@@ -567,7 +568,7 @@ function WorldNewInstanceDialog({
                     <FieldGroup className="gap-4">
                         <Field>
                             <FieldLabel htmlFor="world-created-location">
-                                Location
+                                {appI18n.t('dialog.world.generated.location')}
                             </FieldLabel>
                             <Input
                                 id="world-created-location"
@@ -601,7 +602,7 @@ function WorldNewInstanceDialog({
                             disabled={submitting}
                             onClick={() => onCopy?.(activeCreated)}
                         >
-                            Copy URL
+                            {appI18n.t('dialog.world.generated.copy_url')}
                         </Button>
                         <Button
                             type="button"
@@ -609,7 +610,7 @@ function WorldNewInstanceDialog({
                             disabled={submitting}
                             onClick={() => onSelfInvite?.(activeCreated)}
                         >
-                            Self Invite
+                            {appI18n.t('dialog.world.generated.self_invite')}
                         </Button>
                         <Button
                             type="button"
@@ -617,7 +618,7 @@ function WorldNewInstanceDialog({
                             disabled={submitting || inviteDisabled}
                             onClick={() => onInvite?.(activeCreated)}
                         >
-                            Invite
+                            {appI18n.t('dialog.world.generated.invite')}
                         </Button>
                         <Button
                             type="button"
@@ -625,14 +626,14 @@ function WorldNewInstanceDialog({
                             disabled={submitting}
                             onClick={() => onLaunch?.(activeCreated)}
                         >
-                            Launch
+                            {appI18n.t('dialog.world.generated.launch')}
                         </Button>
                         <Button
                             type="button"
                             disabled={submitting}
                             onClick={() => onOpenInGame?.(activeCreated)}
                         >
-                            Open In-Game
+                            {appI18n.t('dialog.world.generated.open_in_game')}
                         </Button>
                     </DialogFooter>
                 ) : (
@@ -643,7 +644,7 @@ function WorldNewInstanceDialog({
                             disabled={submitting}
                             onClick={() => onOpenChange(false)}
                         >
-                            Cancel
+                            {appI18n.t('common.actions.cancel')}
                         </Button>
                         <Button
                             type="button"
@@ -985,8 +986,8 @@ export function WorldDialogContent({
         return (
             <WorldDialogEmptyState
                 loading
-                title="Loading world profile"
-                description="Fetching the current VRChat world snapshot for this dialog."
+                title={appI18n.t('dialog.world.generated.loading_world_profile')}
+                description={appI18n.t('dialog.world.generated.fetching_the_current_vrchat_world_snapshot_for_this_dialog')}
             />
         );
     }
@@ -994,7 +995,7 @@ export function WorldDialogContent({
     if (!world) {
         return (
             <WorldDialogEmptyState
-                title="World profile unavailable"
+                title={appI18n.t('dialog.world.generated.world_profile_unavailable')}
                 description={
                     detail ||
                     'VRCX-0 could not resolve a world snapshot for this dialog.'
@@ -1052,7 +1053,7 @@ export function WorldDialogContent({
                 return;
             }
             setWorld(nextWorld);
-            toast.success('World refreshed.');
+            toast.success(appI18n.t('dialog.world.generated.world_refreshed'));
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
@@ -1060,7 +1061,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to refresh world.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_refresh_world')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1082,15 +1083,15 @@ export function WorldDialogContent({
                 currentEndpoint
             );
             if (opened) {
-                toast.success('VRChat launch request sent.');
+                toast.success(appI18n.t('dialog.world.generated.vrchat_launch_request_sent'));
                 return;
             }
-            toast.error('Unable to open this instance in VRChat.');
+            toast.error(appI18n.t('dialog.world.generated.unable_to_open_this_instance_in_vrchat'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to launch VRChat instance.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_launch_vrchat_instance')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1112,7 +1113,7 @@ export function WorldDialogContent({
                 ? 'Reset your VRChat home location.'
                 : `Set ${world.name || world.id} as your VRChat home world?`,
             confirmText: isHomeWorld ? 'Reset Home' : 'Make Home',
-            cancelText: 'Cancel'
+            cancelText: appI18n.t('common.actions.cancel')
         });
 
         if (!result.ok) {
@@ -1140,13 +1141,13 @@ export function WorldDialogContent({
                 });
             }
             toast.success(
-                isHomeWorld ? 'Home world reset.' : 'Home world updated.'
+                isHomeWorld ? appI18n.t('dialog.world.generated_toast.home_world_reset') : appI18n.t('dialog.world.generated_toast.home_world_updated')
             );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update home world.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_update_home_world')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1167,10 +1168,10 @@ export function WorldDialogContent({
             }
             const nextMemo = nextEntry.memo || '';
             setMemo(nextMemo);
-            toast.success(nextMemo ? 'Memo saved.' : 'Memo cleared.');
+            toast.success(nextMemo ? appI18n.t('dialog.world.generated_toast.memo_saved') : appI18n.t('dialog.world.generated_toast.memo_cleared'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to save memo.'
+                error instanceof Error ? error.message : appI18n.t('dialog.world.generated_toast.failed_to_save_memo')
             );
         }
     }
@@ -1186,7 +1187,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to open world cache folder.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_open_world_cache_folder')
             );
         }
     }
@@ -1212,7 +1213,7 @@ export function WorldDialogContent({
                 String(configResponse?.json?.sdkUnityVersion || '')
             );
             if (!args) {
-                toast.error('World cache location unavailable.');
+                toast.error(appI18n.t('dialog.world.generated.world_cache_location_unavailable'));
                 return;
             }
             await backend.assetBundle.DeleteCache(
@@ -1226,7 +1227,7 @@ export function WorldDialogContent({
                 return;
             }
             setWorldSideData((current) => ({ ...current, cache }));
-            toast.success('World cache deleted.');
+            toast.success(appI18n.t('dialog.world.generated.world_cache_deleted'));
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
@@ -1234,7 +1235,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete world cache.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_delete_world_cache')
             );
         } finally {
             if (actionStatusRef.current === 'cache') {
@@ -1246,12 +1247,12 @@ export function WorldDialogContent({
 
     async function editMemo() {
         const result = await prompt({
-            title: 'Edit local memo',
+            title: appI18n.t('dialog.world.generated_modal.edit_local_memo'),
             description: world.name || world.id,
             inputValue: memo,
             multiline: true,
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
 
         if (!result.ok) {
@@ -1307,11 +1308,11 @@ export function WorldDialogContent({
 
     async function renameWorld() {
         const result = await prompt({
-            title: 'Rename world',
+            title: appI18n.t('dialog.world.generated_modal.rename_world'),
             description: world.name || world.id,
             inputValue: world.name || '',
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (result.ok) {
             await saveWorldPatch(
@@ -1326,12 +1327,12 @@ export function WorldDialogContent({
 
     async function changeWorldDescription() {
         const result = await prompt({
-            title: 'Change world description',
+            title: appI18n.t('dialog.world.generated_modal.change_world_description'),
             description: world.name || world.id,
             inputValue: world.description || '',
             multiline: true,
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (result.ok) {
             await saveWorldPatch(
@@ -1346,18 +1347,18 @@ export function WorldDialogContent({
 
     async function changeWorldCapacity(field, label) {
         const result = await prompt({
-            title: `Change ${label}`,
+            title: appI18n.t('dialog.world.generated_dynamic.change_value', { value: label }),
             description: world.name || world.id,
             inputValue: String(world[field] || ''),
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
         }
         const value = Number.parseInt(result.value, 10);
         if (!Number.isFinite(value) || value < 1) {
-            toast.error(`${label} must be a positive number.`);
+            toast.error(appI18n.t('dialog.world.generated_dynamic.value_must_be_a_positive_number', { value: label }));
             return;
         }
         await saveWorldPatch(
@@ -1371,11 +1372,11 @@ export function WorldDialogContent({
 
     async function changeWorldYouTubePreview() {
         const result = await prompt({
-            title: 'Change YouTube preview',
+            title: appI18n.t('dialog.world.generated_modal.change_youtube_preview'),
             description: world.name || world.id,
             inputValue: world.previewYoutubeId || '',
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1395,7 +1396,7 @@ export function WorldDialogContent({
                     processedValue = pathId;
                 }
             } catch {
-                toast.error('YouTube preview must be a video id or valid URL.');
+                toast.error(appI18n.t('dialog.world.generated.youtube_preview_must_be_a_video_id_or_valid_url'));
                 return;
             }
         }
@@ -1452,7 +1453,7 @@ export function WorldDialogContent({
             title: nextPublished ? 'Publish world?' : 'Unpublish world?',
             description: world.name || world.id,
             confirmText: nextPublished ? 'Publish' : 'Unpublish',
-            cancelText: 'Cancel',
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: !nextPublished
         });
         if (!result.ok) {
@@ -1486,7 +1487,7 @@ export function WorldDialogContent({
                     : currentWorld
             );
             toast.success(
-                nextPublished ? 'World published.' : 'World unpublished.'
+                nextPublished ? appI18n.t('dialog.world.generated_toast.world_published') : appI18n.t('dialog.world.generated_toast.world_unpublished')
             );
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
@@ -1495,7 +1496,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update world publication.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_update_world_publication')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1509,10 +1510,10 @@ export function WorldDialogContent({
         }
 
         const result = await confirm({
-            title: 'Delete persistent data?',
+            title: appI18n.t('dialog.world.generated_modal.delete_persistent_data'),
             description: world.name || world.id,
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -1538,7 +1539,7 @@ export function WorldDialogContent({
                     : currentWorld
             );
             setHasPersistData(false);
-            toast.success('World persistent data deleted.');
+            toast.success(appI18n.t('dialog.world.generated.world_persistent_data_deleted'));
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
@@ -1546,7 +1547,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete world persistent data.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_delete_world_persistent_data')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1560,10 +1561,10 @@ export function WorldDialogContent({
         }
 
         const result = await confirm({
-            title: 'Delete world?',
+            title: appI18n.t('dialog.world.generated_modal.delete_world'),
             description: world.name || world.id,
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -1577,13 +1578,13 @@ export function WorldDialogContent({
                 worldId: world.id,
                 endpoint: currentEndpoint
             });
-            toast.success('World deleted.');
+            toast.success(appI18n.t('dialog.world.generated.world_deleted'));
             closeDialog();
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete world.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_delete_world')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1630,7 +1631,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load new instance settings.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_load_new_instance_settings')
             );
         }
     }
@@ -1647,7 +1648,7 @@ export function WorldDialogContent({
         const targetWorldId = world.id;
         const targetEndpoint = currentEndpoint;
         if (form.accessType === 'group' && !normalizeEntityId(form.groupId)) {
-            toast.error('Group ID is required for group instances.');
+            toast.error(appI18n.t('dialog.world.generated.group_id_is_required_for_group_instances'));
             return;
         }
 
@@ -1709,7 +1710,7 @@ export function WorldDialogContent({
                 }
             );
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
-                toast.success('Instance created.');
+                toast.success(appI18n.t('dialog.world.generated.instance_created'));
                 return;
             }
             setNewInstanceRequest((current) => ({
@@ -1723,7 +1724,7 @@ export function WorldDialogContent({
                 const parsedLocation = parseLocation(location);
                 if (!parsedLocation.worldId || !parsedLocation.instanceId) {
                     toast.error(
-                        'Instance created, but the new instance location is not inviteable.'
+                        appI18n.t('dialog.world.generated.instance_created_but_the_new_instance_location_is_not_invite')
                     );
                 } else {
                     try {
@@ -1734,23 +1735,23 @@ export function WorldDialogContent({
                                 '',
                             currentEndpoint
                         );
-                        toast.success('Instance created and self invite sent.');
+                        toast.success(appI18n.t('dialog.world.generated.instance_created_and_self_invite_sent'));
                     } catch (error) {
                         toast.error(
                             error instanceof Error
-                                ? `Instance created, but self invite failed: ${error.message}`
-                                : 'Instance created, but self invite failed.'
+                                ? appI18n.t('dialog.world.generated_toast.instance_created_but_self_invite_failed_value', { value: error.message })
+                                : appI18n.t('dialog.world.generated_toast.instance_created_but_self_invite_failed')
                         );
                     }
                 }
             } else {
-                toast.success('Instance created.');
+                toast.success(appI18n.t('dialog.world.generated.instance_created'));
             }
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to create instance.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_create_instance')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1763,14 +1764,14 @@ export function WorldDialogContent({
             return;
         }
         await copyTextToClipboard(created.url);
-        toast.success('Instance URL copied.');
+        toast.success(appI18n.t('dialog.world.generated.instance_url_copied'));
     }
 
     async function selfInviteCreatedInstance(created) {
         const parsedLocation = parseLocation(created?.location || '');
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                'Cannot self invite: location is not a concrete instance.'
+                appI18n.t('dialog.world.generated.cannot_self_invite_location_is_not_a_concrete_instance')
             );
             return;
         }
@@ -1782,12 +1783,12 @@ export function WorldDialogContent({
                 created.shortName || created.secureOrShortName || '',
                 currentEndpoint
             );
-            toast.success('Self invite sent.');
+            toast.success(appI18n.t('dialog.world.generated.self_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send self invite.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_send_self_invite')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1828,7 +1829,7 @@ export function WorldDialogContent({
         const parsedLocation = parseLocation(created.location);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                'Cannot open in VRChat: location is not a concrete instance.'
+                appI18n.t('dialog.world.generated.cannot_open_in_vrchat_location_is_not_a_concrete_instance')
             );
             return;
         }
@@ -1847,17 +1848,17 @@ export function WorldDialogContent({
                     currentEndpoint
                 );
                 toast.warning(
-                    'Failed open instance in VRChat, falling back to self invite.'
+                    appI18n.t('dialog.world.generated.failed_open_instance_in_vrchat_falling_back_to_self_invite')
                 );
-                toast.success('Self invite sent.');
+                toast.success(appI18n.t('dialog.world.generated.self_invite_sent'));
                 return;
             }
-            toast.success('VRChat launch request sent.');
+            toast.success(appI18n.t('dialog.world.generated.vrchat_launch_request_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to open instance in VRChat.'
+                    : appI18n.t('dialog.world.generated_toast.failed_to_open_instance_in_vrchat')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1937,9 +1938,9 @@ export function WorldDialogContent({
             }
             setWorld(worldProfileRepository.normalize(result.world));
             setDetail(
-                `World image updated for ${selectedWorld.name || selectedWorldId}.`
+                appI18n.t('dialog.world.generated_dynamic.world_image_updated_for_value', { value: selectedWorld.name || selectedWorldId })
             );
-            toast.success('World image updated.');
+            toast.success(appI18n.t('dialog.world.generated.world_image_updated'));
         } catch (error) {
             const message =
                 error instanceof Error
@@ -2047,7 +2048,7 @@ export function WorldDialogContent({
                 open={Boolean(imageCropRequest)}
                 file={imageCropRequest?.file || null}
                 aspectRatio={4 / 3}
-                title="Change world image"
+                title={appI18n.t('dialog.world.generated.change_world_image')}
                 onOpenChange={(open) => {
                     if (!open) {
                         setImageCropRequest(null);

@@ -141,6 +141,7 @@ import {
     sanitizeGameLogSorting,
     writePersistedGameLogState
 } from './gameLogState.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const SESSION_FILTER_TYPES = ['OnPlayerJoined', 'OnPlayerLeft', 'VideoPlay'];
 function normalizeId(value) {
@@ -193,7 +194,7 @@ async function openGameLogUser(row) {
         }
 
         if (displayName.startsWith('ID:')) {
-            toast.info(`No user id was found for ${displayName}.`);
+            toast.info(appI18n.t('view.game_log.generated_dynamic.no_user_id_was_found_for_value', { value: displayName }));
             return;
         }
 
@@ -219,12 +220,12 @@ async function openGameLogUser(row) {
             });
             return;
         }
-        toast.info(`No user id was found for ${displayName}.`);
+        toast.info(appI18n.t('view.game_log.generated_dynamic.no_user_id_was_found_for_value', { value: displayName }));
     } catch (error) {
         toast.error(
             error instanceof Error
                 ? error.message
-                : `Failed to look up ${displayName}.`
+                : appI18n.t('view.game_log.generated_toast.failed_to_look_up_value', { value: displayName })
         );
     }
 }
@@ -508,7 +509,7 @@ function SessionEventRow({ event }) {
                         </Badge>
                     </div>
                     <span className="flex-1 font-medium">
-                        {count} player{count === 1 ? '' : 's'}{' '}
+                        {count} {t('view.game_log.generated.player')}{count === 1 ? '' : 's'}{' '}
                         {isJoin ? 'joined' : 'left'}
                     </span>
                     <ChevronRightIcon
@@ -758,7 +759,7 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
                                     <Badge
                                         variant="outline"
                                         className="h-4 shrink-0 px-1 text-xs tabular-nums"
-                                        title="Time spent in this instance"
+                                        title={t('view.game_log.generated.time_spent_in_this_instance')}
                                     >
                                         {durationText}
                                     </Badge>
@@ -1590,10 +1591,10 @@ export function GameLogPage({ embedded = false } = {}) {
         if (!skipConfirm) {
             const detailValue = describeGameLogDetail(row);
             const result = await confirm({
-                title: 'Delete game log row?',
+                title: appI18n.t('view.game_log.generated_modal.delete_game_log_row'),
                 description: detailValue.primary || row.type || row.created_at,
-                confirmText: 'Delete',
-                cancelText: 'Cancel',
+                confirmText: appI18n.t('common.actions.delete'),
+                cancelText: appI18n.t('common.actions.cancel'),
                 destructive: true
             });
 
@@ -1610,12 +1611,12 @@ export function GameLogPage({ embedded = false } = {}) {
                     (entry) => getGameLogRowKey(entry) !== rowKey
                 )
             );
-            toast.success('Game log row deleted.');
+            toast.success(t('view.game_log.generated.game_log_row_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete game log row.'
+                    : appI18n.t('view.game_log.generated_toast.failed_to_delete_game_log_row')
             );
         } finally {
             setDeletingGameLogKey('');
@@ -1659,7 +1660,7 @@ export function GameLogPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load instance history.'
+                    : appI18n.t('view.game_log.generated_toast.failed_to_load_instance_history')
             );
         } finally {
             setLoadingPreviousInstancesKey('');
@@ -1673,7 +1674,7 @@ export function GameLogPage({ embedded = false } = {}) {
         }
 
         await copyTextToClipboard(text);
-        toast.success('Copied game log detail.');
+        toast.success(t('view.game_log.generated.copied_game_log_detail'));
     }
 
     useEffect(() => {
@@ -1937,7 +1938,7 @@ export function GameLogPage({ embedded = false } = {}) {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            aria-label="Open link"
+                                            aria-label={"Open link"}
                                             className="size-6 p-0"
                                             onClick={(event) => {
                                                 event.stopPropagation();
@@ -1954,7 +1955,7 @@ export function GameLogPage({ embedded = false } = {}) {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            aria-label="Copy detail"
+                                            aria-label={"Copy detail"}
                                             className="size-6 p-0"
                                             onClick={(event) => {
                                                 event.stopPropagation();
@@ -2028,7 +2029,7 @@ export function GameLogPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    aria-label="Show instance history"
+                                    aria-label={"Show instance history"}
                                     className="text-muted-foreground hover:text-foreground size-6 p-0"
                                     disabled={
                                         loadingPreviousInstancesKey === rowKey
@@ -2162,8 +2163,8 @@ export function GameLogPage({ embedded = false } = {}) {
                     type="button"
                     size="icon"
                     variant={savedViewMode === 'sessions' ? 'default' : 'ghost'}
-                    title="Sessions"
-                    aria-label="Show sessions"
+                    title={t('view.game_log.generated.sessions')}
+                    aria-label={"Show sessions"}
                     onClick={() => {
                         setSavedViewMode('sessions');
                         void configRepository.setString(
@@ -2178,8 +2179,8 @@ export function GameLogPage({ embedded = false } = {}) {
                     type="button"
                     size="icon"
                     variant={savedViewMode === 'table' ? 'default' : 'ghost'}
-                    title="Table"
-                    aria-label="Show table"
+                    title={t('view.game_log.generated.table')}
+                    aria-label={"Show table"}
                     onClick={() => {
                         setSavedViewMode('table');
                         void configRepository.setString(
@@ -2200,8 +2201,8 @@ export function GameLogPage({ embedded = false } = {}) {
                 type="button"
                 variant={favoritesOnly ? 'default' : 'outline'}
                 size="icon"
-                title="Favorites only"
-                aria-label="Favorites only"
+                title={t('view.game_log.generated.favorites_only')}
+                aria-label={"Favorites only"}
                 onClick={() => setActiveFavoritesOnly((current) => !current)}
             >
                 <StarIcon data-icon="inline-start" />
@@ -2230,8 +2231,8 @@ export function GameLogPage({ embedded = false } = {}) {
                             (sessionDateFrom || sessionDateTo) &&
                                 'bg-accent text-accent-foreground'
                         )}
-                        title="Session date range"
-                        aria-label="Session date range"
+                        title={t('view.game_log.generated.session_date_range')}
+                        aria-label={"Session date range"}
                     >
                         <CalendarRangeIcon data-icon="inline-start" />
                         {sessionDateFrom || sessionDateTo ? (
@@ -2260,7 +2261,7 @@ export function GameLogPage({ embedded = false } = {}) {
                                 sessionDateDraftTo || '...'
                             ].join(' - ')}
                             <span className="ml-2">
-                                Max {GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS} days
+                                {t('view.game_log.generated.max')} {GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS} {t('view.game_log.generated.days')}
                             </span>
                         </div>
                         <div className="flex justify-end gap-2">
@@ -2301,14 +2302,14 @@ export function GameLogPage({ embedded = false } = {}) {
                             commitSearchDraft();
                         }
                     }}
-                    placeholder="Search"
+                    placeholder={t('common.actions.search')}
                 />
                 {searchDraft ? (
                     <InputGroupAddon align="inline-end">
                         <InputGroupButton
                             type="button"
                             size="icon-xs"
-                            aria-label="Clear search"
+                            aria-label={"Clear search"}
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => {
                                 setSearchDraft('');
@@ -2330,8 +2331,8 @@ export function GameLogPage({ embedded = false } = {}) {
                     type="button"
                     variant="outline"
                     size="icon"
-                    title="Refresh"
-                    aria-label="Refresh game log"
+                    title={t('common.actions.refresh')}
+                    aria-label={"Refresh game log"}
                     disabled={
                         !currentUserId ||
                         gameLogDisabled ||
@@ -2407,18 +2408,18 @@ export function GameLogPage({ embedded = false } = {}) {
 
                 <PageBody>
                     {isLoading ? (
-                        <LoadingState label="Loading the game log snapshot" />
+                        <LoadingState label={t('view.game_log.generated.loading_the_game_log_snapshot')} />
                     ) : isError ? (
                         <GameLogEmptyState
-                            title="Game log failed to load"
+                            title={t('view.game_log.generated.game_log_failed_to_load')}
                             description={
                                 detail || 'The game log query did not complete.'
                             }
                         />
                     ) : gameLogDisabled ? (
                         <GameLogEmptyState
-                            title="Game log is disabled"
-                            description="Enable game log ingestion in settings before this page can load local VRChat activity."
+                            title={t('view.game_log.generated.game_log_is_disabled')}
+                            description={t('view.game_log.generated.enable_game_log_ingestion_in_settings_before_this_page_can_l')}
                         />
                     ) : savedViewMode === 'sessions' ? (
                         hasSessions ? (
@@ -2444,7 +2445,7 @@ export function GameLogPage({ embedded = false } = {}) {
                             />
                         ) : (
                             <GameLogEmptyState
-                                title="No game log sessions match the current filters"
+                                title={t('view.game_log.generated.no_game_log_sessions_match_the_current_filters')}
                                 description={
                                     favoritesOnly && !isFavoritesLoaded
                                         ? 'Favorites are still hydrating.'
@@ -2488,15 +2489,15 @@ export function GameLogPage({ embedded = false } = {}) {
 
                             <PageFooter>
                                 <div className="text-muted-foreground text-sm">
-                                    Showing{' '}
+                                    {t('view.game_log.generated.showing')}{' '}
                                     <span className="text-foreground font-medium">
                                         {table.getRowModel().rows.length}
                                     </span>{' '}
-                                    of{' '}
+                                    {t('view.game_log.generated.of')}{' '}
                                     <span className="text-foreground font-medium">
                                         {annotatedRows.length}
                                     </span>{' '}
-                                    game log row
+                                    {t('view.game_log.generated.game_log_row')}
                                     {annotatedRows.length === 1 ? '' : 's'}
                                 </div>
                                 <DataTablePagination
@@ -2526,7 +2527,7 @@ export function GameLogPage({ embedded = false } = {}) {
                         </div>
                     ) : (
                         <GameLogEmptyState
-                            title="No game log rows match the current filters"
+                            title={t('view.game_log.generated.no_game_log_rows_match_the_current_filters')}
                             description={
                                 favoritesOnly && !isFavoritesLoaded
                                     ? 'Favorites are still hydrating.'

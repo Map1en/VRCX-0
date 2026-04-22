@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { backend } from '@/platform/index.js';
 import { toolDefinitionMap } from '@/shared/constants/tools.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const toolRouteMap = {
     gallery: '/tools/gallery',
@@ -23,7 +24,7 @@ export async function triggerToolByKey(toolKey, { navigate, t }) {
     const tool = toolDefinitionMap.get(toolKey);
     const action = tool?.action;
     if (!action) {
-        toast.error(`Unknown tool action: ${toolKey}`);
+        toast.error(appI18n.t('service.tool_action_service.generated_dynamic.unknown_tool_action_value', { value: toolKey }));
         return;
     }
 
@@ -81,5 +82,5 @@ export async function triggerToolByKey(toolKey, { navigate, t }) {
         }
     }
 
-    toast.error(`Unsupported tool action: ${toolKey}`);
+    toast.error(appI18n.t('service.tool_action_service.generated_dynamic.unsupported_tool_action_value', { value: toolKey }));
 }

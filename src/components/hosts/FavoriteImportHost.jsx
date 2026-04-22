@@ -39,6 +39,7 @@ import {
     TableRow
 } from '@/ui/shadcn/table';
 import { Textarea } from '@/ui/shadcn/textarea';
+import { appI18n } from '@/services/i18nService.js';
 
 function getRowName(type, row) {
     if (type === 'friend') {
@@ -163,10 +164,9 @@ export function FavoriteImportHost() {
         >
             <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>{label} import</DialogTitle>
+                    <DialogTitle>{label} {appI18n.t('dialog.favorite_import.generated.import')}</DialogTitle>
                     <DialogDescription>
-                        Paste exported IDs, process the list, then import to a
-                        VRChat favorite group or a local favorite group.
+                        {appI18n.t('dialog.favorite_import.generated.paste_exported_ids_process_the_list_then_import_to_a_vrchat_')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -185,7 +185,7 @@ export function FavoriteImportHost() {
                                 variant="secondary"
                                 onClick={cancelFavoriteImport}
                             >
-                                Cancel
+                                {appI18n.t('common.actions.cancel')}
                             </Button>
                         ) : (
                             <Button
@@ -193,7 +193,7 @@ export function FavoriteImportHost() {
                                 disabled={!input.trim()}
                                 onClick={() => void processFavoriteImportList()}
                             >
-                                Process list
+                                {appI18n.t('dialog.favorite_import.generated.process_list')}
                             </Button>
                         )}
                     </div>
@@ -213,7 +213,7 @@ export function FavoriteImportHost() {
                             onValueChange={(value) => setRemoteGroupName(value)}
                         >
                             <SelectTrigger size="sm" className="min-w-48">
-                                <SelectValue placeholder="VRChat group" />
+                                <SelectValue placeholder={appI18n.t('dialog.favorite_import.generated.vrchat_group')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
@@ -238,7 +238,7 @@ export function FavoriteImportHost() {
                             onValueChange={(value) => setLocalGroupName(value)}
                         >
                             <SelectTrigger size="sm" className="min-w-48">
-                                <SelectValue placeholder="Local group" />
+                                <SelectValue placeholder={appI18n.t('dialog.favorite_import.generated.local_group')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
@@ -259,7 +259,7 @@ export function FavoriteImportHost() {
                             disabled={rows.length === 0}
                             onClick={clearFavoriteImportRows}
                         >
-                            Clear table
+                            {appI18n.t('dialog.favorite_import.generated.clear_table')}
                         </Button>
                         <Button
                             size="sm"
@@ -270,7 +270,7 @@ export function FavoriteImportHost() {
                             }
                             onClick={() => void importFavoriteImportRows()}
                         >
-                            Import
+                            {appI18n.t('view.favorite.import')}
                         </Button>
                     </div>
                 </div>
@@ -282,7 +282,7 @@ export function FavoriteImportHost() {
                             variant="secondary"
                             onClick={() => setErrors('')}
                         >
-                            Clear errors
+                            {appI18n.t('dialog.favorite_import.generated.clear_errors')}
                         </Button>
                         <pre className="bg-muted/30 max-h-40 overflow-auto rounded-md border p-3 text-xs whitespace-pre-wrap">
                             {errors}
@@ -294,12 +294,12 @@ export function FavoriteImportHost() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-16">Image</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Detail</TableHead>
+                                <TableHead className="w-16">{appI18n.t('dialog.favorite_import.generated.image')}</TableHead>
+                                <TableHead>{appI18n.t('dialog.favorite_import.generated.name')}</TableHead>
+                                <TableHead>{appI18n.t('dialog.favorite_import.generated.detail')}</TableHead>
                                 <TableHead>ID</TableHead>
                                 <TableHead className="w-36 text-right">
-                                    Actions
+                                    {appI18n.t('dialog.favorite_import.generated.actions')}
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
@@ -336,7 +336,7 @@ export function FavoriteImportHost() {
                                                         openRowDialog(type, row)
                                                     }
                                                 >
-                                                    Open
+                                                    {appI18n.t('common.actions.open')}
                                                 </Button>
                                                 <Button
                                                     size="xs"
@@ -345,7 +345,7 @@ export function FavoriteImportHost() {
                                                         removeRow(row.id)
                                                     }
                                                 >
-                                                    Delete
+                                                    {appI18n.t('common.actions.delete')}
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -357,8 +357,7 @@ export function FavoriteImportHost() {
                                         colSpan={5}
                                         className="text-muted-foreground h-24 text-center"
                                     >
-                                        No parsed {label.toLowerCase()} rows
-                                        yet.
+                                        {appI18n.t('dialog.favorite_import.generated.no_parsed')} {label.toLowerCase()} {appI18n.t('dialog.favorite_import.generated.rows_yet')}
                                     </TableCell>
                                 </TableRow>
                             )}

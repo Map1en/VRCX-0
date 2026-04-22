@@ -76,6 +76,7 @@ import {
 } from '@/ui/shadcn/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
+import { appI18n } from '@/services/i18nService.js';
 
 const statusOptions = ['join me', 'active', 'ask me', 'busy'];
 const instanceTypes = [
@@ -442,7 +443,7 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                 toast.error(
                     userFacingErrorMessage(
                         error,
-                        'Failed to load tool settings.'
+                        appI18n.t('host.tools_dialogs.generated_toast.failed_to_load_tool_settings')
                     )
                 )
             )
@@ -472,7 +473,7 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
             }
         } catch (error) {
             toast.error(
-                userFacingErrorMessage(error, 'Failed to save tool settings.')
+                userFacingErrorMessage(error, appI18n.t('host.tools_dialogs.generated_toast.failed_to_save_tool_settings'))
             );
         }
     }
@@ -769,7 +770,7 @@ function AutoChangeStatusDialog({ open, onOpenChange }) {
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                     >
-                        Close
+                        {t('common.actions.close')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -861,7 +862,7 @@ function ExportFriendsListDialog({ open, onOpenChange }) {
                 toast.error(
                     userFacingErrorMessage(
                         error,
-                        'Failed to export friends list.'
+                        appI18n.t('host.tools_dialogs.generated_toast.failed_to_export_friends_list')
                     )
                 )
             );
@@ -931,7 +932,7 @@ function ExportAvatarsListDialog({ open, onOpenChange }) {
                 toast.error(
                     userFacingErrorMessage(
                         error,
-                        'Failed to export avatar list.'
+                        appI18n.t('host.tools_dialogs.generated_toast.failed_to_export_avatar_list')
                     )
                 )
             )
@@ -1003,7 +1004,7 @@ function NoteExportDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    'Failed to load memo export rows.'
+                    appI18n.t('host.tools_dialogs.generated_toast.failed_to_load_memo_export_rows')
                 )
             );
         } finally {
@@ -1409,7 +1410,7 @@ function GroupCalendarDialog({ open, onOpenChange }) {
             await resolveGroupNames([...normalizedRows, ...followingRows]);
         } catch (error) {
             toast.error(
-                userFacingErrorMessage(error, 'Failed to load group events.')
+                userFacingErrorMessage(error, appI18n.t('host.tools_dialogs.generated_toast.failed_to_load_group_events'))
             );
         } finally {
             setLoading(false);
@@ -1458,7 +1459,7 @@ function GroupCalendarDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    'Failed to update group event follow state.'
+                    appI18n.t('host.tools_dialogs.generated_toast.failed_to_update_group_event_follow_state')
                 )
             );
         }
@@ -1739,14 +1740,14 @@ async function getCalendarIcs(event) {
             .trimStart();
         if (!normalizedContent.startsWith('BEGIN:VCALENDAR')) {
             toast.error(
-                'Failed to download .ics file, invalid iCalendar content'
+                appI18n.t('dialog.tools.generated.failed_to_download_ics_file_invalid_icalendar_content')
             );
             return '';
         }
         return normalizedContent;
     } catch (error) {
         toast.error(
-            userFacingErrorMessage(error, 'Failed to download .ics file.')
+            userFacingErrorMessage(error, appI18n.t('host.tools_dialogs.generated_toast.failed_to_download_ics_file'))
         );
         return '';
     }
@@ -1769,7 +1770,7 @@ async function downloadEventIcs(event) {
     try {
         await backend.app.SaveCalendarFile(fileName, content);
     } catch (error) {
-        toast.error(userFacingErrorMessage(error, 'Failed to save .ics file.'));
+        toast.error(userFacingErrorMessage(error, appI18n.t('host.tools_dialogs.generated_toast.failed_to_save_ics_file')));
     }
 }
 
@@ -1786,7 +1787,7 @@ async function copyEventLink(event, t) {
         toast.success(t('dialog.group_calendar.event_card.copied_event_link'));
     } catch (error) {
         toast.error(
-            userFacingErrorMessage(error, 'Failed to copy event link.')
+            userFacingErrorMessage(error, appI18n.t('host.tools_dialogs.generated_toast.failed_to_copy_event_link'))
         );
     }
 }
@@ -1951,7 +1952,7 @@ function GroupEventCard({
                                     type="button"
                                     size="icon-sm"
                                     variant="outline"
-                                    aria-label="Copy event link"
+                                    aria-label={"Copy event link"}
                                     onClick={stopAndRun(
                                         () => void copyEventLink(event, t)
                                     )}

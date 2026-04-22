@@ -31,6 +31,7 @@ import {
 } from '@/ui/shadcn/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
+import { appI18n } from '@/services/i18nService.js';
 
 const INVITE_MESSAGE_TYPES = [
     { type: 'message', label: 'Invite' },
@@ -286,7 +287,7 @@ function InviteMessagePanel({
         }
         if (isInviteMessageOnCooldown(row, nowMs)) {
             toast.warning(
-                'This message template is on cooldown and cannot be edited yet.'
+                appI18n.t('dialog.invite_message.generated.this_message_template_is_on_cooldown_and_cannot_be_edited_ye')
             );
             return;
         }
@@ -321,7 +322,7 @@ function InviteMessagePanel({
             await saveMessage(editingRow, editMessage);
             setEditingRow(null);
             await loadRows();
-            toast.success('Message template updated.');
+            toast.success(appI18n.t('dialog.invite_message.generated.message_template_updated'));
         } catch (nextError) {
             setError(
                 nextError instanceof Error
@@ -404,14 +405,14 @@ function InviteMessagePanel({
                             }}
                         >
                             <ImageIcon data-icon="inline-start" />
-                            Clear image: {imageName}
+                            {appI18n.t('dialog.invite_message.generated.clear_image')} {imageName}
                         </Button>
                     ) : null}
                 </div>
             ) : null}
             {targetLabel && resolvedMode !== 'manage' ? (
                 <div className="text-muted-foreground text-sm">
-                    Target: {targetLabel}
+                    {appI18n.t('dialog.invite_message.generated.target')} {targetLabel}
                 </div>
             ) : null}
             {error ? (
@@ -423,14 +424,14 @@ function InviteMessagePanel({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-20">Slot</TableHead>
-                            <TableHead>Message</TableHead>
+                            <TableHead className="w-20">{appI18n.t('table.profile.invite_messages.slot')}</TableHead>
+                            <TableHead>{appI18n.t('dialog.invite_message.generated.message')}</TableHead>
                             <TableHead className="w-32 text-right">
-                                Cooldown
+                                {appI18n.t('dialog.invite_message.generated.cooldown')}
                             </TableHead>
                             {showActionColumn ? (
                                 <TableHead className="w-28 text-right">
-                                    Action
+                                    {appI18n.t('dialog.invite_message.generated.action')}
                                 </TableHead>
                             ) : null}
                         </TableRow>
@@ -444,7 +445,7 @@ function InviteMessagePanel({
                                 >
                                     <span className="inline-flex items-center gap-2">
                                         <Spinner data-icon="inline-start" />
-                                        Loading message templates.
+                                        {appI18n.t('dialog.invite_message.generated.loading_message_templates')}
                                     </span>
                                 </TableCell>
                             </TableRow>
@@ -547,7 +548,7 @@ function InviteMessagePanel({
                                     colSpan={showActionColumn ? 4 : 3}
                                     className="text-muted-foreground h-24 text-center"
                                 >
-                                    No message templates.
+                                    {appI18n.t('dialog.invite_message.generated.no_message_templates')}
                                 </TableCell>
                             </TableRow>
                         )}
@@ -558,7 +559,7 @@ function InviteMessagePanel({
                 <div className="flex flex-col gap-2 rounded-md border p-3">
                     <div className="text-sm font-medium">
                         {resolvedMode === 'respond' ? 'Edit and send' : 'Edit'}{' '}
-                        slot{' '}
+                        {appI18n.t('dialog.invite_message.generated.slot')}{' '}
                         <span className="font-mono">{editingRow.slot}</span>
                     </div>
                     <Textarea
@@ -580,7 +581,7 @@ function InviteMessagePanel({
                                 disabled={sending}
                                 onClick={() => setEditingRow(null)}
                             >
-                                Cancel
+                                {appI18n.t('common.actions.cancel')}
                             </Button>
                             <Button
                                 type="button"
@@ -612,7 +613,7 @@ function InviteMessagePanel({
             ) : confirmRow ? (
                 <div className="flex flex-col gap-2 rounded-md border p-3 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0 text-sm">
-                        Send slot{' '}
+                        {appI18n.t('dialog.invite_message.generated.send_slot')}{' '}
                         <span className="font-mono">{confirmRow.slot}</span>
                         {confirmRow.message ? (
                             <span className="text-muted-foreground ml-2">
@@ -628,7 +629,7 @@ function InviteMessagePanel({
                             disabled={sending}
                             onClick={() => setConfirmRow(null)}
                         >
-                            Cancel
+                            {appI18n.t('common.actions.cancel')}
                         </Button>
                         <Button
                             type="button"
@@ -641,7 +642,7 @@ function InviteMessagePanel({
                             ) : (
                                 <SendIcon data-icon="inline-start" />
                             )}
-                            Confirm
+                            {appI18n.t('common.actions.confirm')}
                         </Button>
                     </div>
                 </div>
@@ -654,7 +655,7 @@ function InviteMessagePanel({
                     onClick={() => void loadRows()}
                 >
                     <RefreshCcwIcon data-icon="inline-start" />
-                    Refresh
+                    {appI18n.t('common.actions.refresh')}
                 </Button>
                 <Button
                     type="button"
@@ -662,7 +663,7 @@ function InviteMessagePanel({
                     disabled={sending}
                     onClick={onClose}
                 >
-                    Close
+                    {appI18n.t('common.actions.close')}
                 </Button>
             </DialogFooter>
         </div>
@@ -760,9 +761,9 @@ function InviteMessageTemplatesDialog({
         <Dialog open={Boolean(open)} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[90vh] max-w-[min(92vw,64rem)] flex-col">
                 <DialogHeader>
-                    <DialogTitle>Message Templates</DialogTitle>
+                    <DialogTitle>{appI18n.t('dialog.invite_message.generated.message_templates')}</DialogTitle>
                     <DialogDescription>
-                        Edit reusable invite and request message templates.
+                        {appI18n.t('dialog.invite_message.generated.edit_reusable_invite_and_request_message_templates')}
                     </DialogDescription>
                 </DialogHeader>
                 {open ? (

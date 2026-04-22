@@ -71,6 +71,7 @@ import {
     getLoginUserDisplayName as getUserDisplayName
 } from './loginDisplay.js';
 import { getSnapshotLoginParams } from './loginSession.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function getSavedAccountFallback(user) {
     const label = getUserDisplayName(user) || user?.username || user?.id || '?';
@@ -174,7 +175,9 @@ export function LoginPage() {
         });
     }
 
-    function cancelPendingAutoLogin(detail = 'Automatic login was skipped.') {
+    function cancelPendingAutoLogin(
+        detail = t('view.auth.auto_login.skipped')
+    ) {
         const controller = autoLoginAbortRef.current;
         if (controller) {
             controller.abort();
@@ -221,7 +224,7 @@ export function LoginPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to load saved auth snapshot.'
+                        : appI18n.t('view.auth.generated_toast.failed_to_load_saved_auth_snapshot')
                 );
             })
             .finally(() => {
@@ -283,8 +286,12 @@ export function LoginPage() {
                     ? snapshot.autoLoginDelaySeconds
                     : 0,
             detail: savedCredential
-                ? `Preparing automatic login for ${autoLoginDisplayName}.`
-                : `Preparing automatic session restore for ${userId}.`,
+                ? t('view.auth.auto_login.preparing_login_for', {
+                      name: autoLoginDisplayName
+                  })
+                : t('view.auth.auto_login.preparing_restore_for', {
+                      userId
+                  }),
             userId
         });
 
@@ -301,10 +308,16 @@ export function LoginPage() {
                     remainingSeconds,
                     detail:
                         remainingSeconds > 0
-                            ? `Automatic login will start in ${remainingSeconds}s.`
+                            ? t('view.auth.auto_login.starts_in', {
+                                  seconds: remainingSeconds
+                              })
                             : savedCredential
-                              ? `Authenticating ${autoLoginDisplayName}.`
-                              : `Restoring an existing browser session for ${autoLoginDisplayName}.`
+                              ? t('view.auth.auto_login.authenticating', {
+                                    name: autoLoginDisplayName
+                                })
+                              : t('view.auth.auto_login.restoring_session_for', {
+                                    name: autoLoginDisplayName
+                                })
                 }));
             }
         })
@@ -324,8 +337,12 @@ export function LoginPage() {
                             status: 'success',
                             remainingSeconds: 0,
                             detail: savedCredential
-                                ? `Automatically logged in as ${autoLoginDisplayName}.`
-                                : `Automatically restored the previous browser session for ${autoLoginDisplayName}.`,
+                                ? t('view.auth.auto_login.logged_in_as', {
+                                      name: autoLoginDisplayName
+                                  })
+                                : t('view.auth.auto_login.restored_session_for', {
+                                      name: autoLoginDisplayName
+                                  }),
                             userId
                         });
                         break;
@@ -333,7 +350,9 @@ export function LoginPage() {
                         setAutoLoginState({
                             status: 'cancelled',
                             remainingSeconds: 0,
-                            detail: 'Automatic login was skipped before the auth request started.',
+                            detail: t(
+                                'view.auth.auto_login.skipped_before_request'
+                            ),
                             userId
                         });
                         break;
@@ -341,7 +360,7 @@ export function LoginPage() {
                         setAutoLoginState({
                             status: 'throttled',
                             remainingSeconds: 0,
-                            detail: 'Automatic login was disabled after repeated failures in the last hour.',
+                            detail: t('view.auth.auto_login.throttled'),
                             userId
                         });
                         break;
@@ -349,7 +368,7 @@ export function LoginPage() {
                         setAutoLoginState({
                             status: 'expired',
                             remainingSeconds: 0,
-                            detail: 'The previous browser session expired and no saved account fallback was available.',
+                            detail: t('view.auth.auto_login.expired'),
                             userId
                         });
                         break;
@@ -357,7 +376,7 @@ export function LoginPage() {
                         setAutoLoginState({
                             status: 'failed',
                             remainingSeconds: 0,
-                            detail: 'Automatic login failed. Manual sign-in is still available below.',
+                            detail: t('view.auth.auto_login.failed_manual'),
                             userId
                         });
                         break;
@@ -382,14 +401,14 @@ export function LoginPage() {
                     remainingSeconds: 0,
                     detail: getErrorMessage(
                         error,
-                        'Automatic login failed unexpectedly.'
+                        t('view.auth.auto_login.failed_unexpectedly')
                     ),
                     userId
                 });
                 toast.error(
                     getErrorMessage(
                         error,
-                        'Automatic login failed unexpectedly.'
+                        appI18n.t('view.auth.generated_toast.automatic_login_failed_unexpectedly')
                     )
                 );
             });
@@ -401,7 +420,7 @@ export function LoginPage() {
                 autoLoginAbortRef.current = null;
             }
         };
-    }, [databaseReady, isAutoLoginStartBlocked, isLoading, snapshot]);
+    }, [databaseReady, isAutoLoginStartBlocked, isLoading, snapshot, t]);
 
     useEffect(
         () => () => {
@@ -423,7 +442,7 @@ export function LoginPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to change language.'
+                    : appI18n.t('view.auth.generated_toast.failed_to_change_language')
             );
         }
     }
@@ -436,7 +455,7 @@ export function LoginPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to load proxy settings.'
+                        : appI18n.t('view.auth.generated_toast.failed_to_load_proxy_settings')
                 );
             }
         }
@@ -460,7 +479,7 @@ export function LoginPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save proxy settings.'
+                    : appI18n.t('view.auth.generated_toast.failed_to_save_proxy_settings')
             );
         } finally {
             setIsSavingProxySettings(false);
@@ -469,7 +488,7 @@ export function LoginPage() {
 
     async function handleCustomEndpointToggle(checked) {
         cancelPendingAutoLogin(
-            'Automatic login was skipped because the login form changed.'
+            t('view.auth.auto_login.skipped_form_changed')
         );
         const previousValue = Boolean(snapshot?.enableCustomEndpoint);
         const nextValue = checked === true;
@@ -494,7 +513,7 @@ export function LoginPage() {
                 websocket: previousValue ? current.websocket : ''
             }));
             toast.error(
-                getErrorMessage(error, 'Failed to update endpoint preference.')
+                getErrorMessage(error, appI18n.t('view.auth.generated_toast.failed_to_update_endpoint_preference'))
             );
         } finally {
             setIsUpdatingEndpointSetting(false);
@@ -517,7 +536,7 @@ export function LoginPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to remove saved account.'
+                    : appI18n.t('view.auth.generated_toast.failed_to_remove_saved_account')
             );
         } finally {
             setIsDeleting(false);
@@ -543,7 +562,7 @@ export function LoginPage() {
         event.preventDefault();
 
         if (!databaseReady) {
-            toast.error('Database initialization is still pending.');
+            toast.error(t('common.generated.generated.database_initialization_is_still_pending'));
             return;
         }
 
@@ -552,7 +571,7 @@ export function LoginPage() {
         }
 
         cancelPendingAutoLogin(
-            'Automatic login was skipped because a manual login started.'
+            t('view.auth.auto_login.skipped_manual_started')
         );
         setIsSubmitting(true);
         try {
@@ -568,12 +587,12 @@ export function LoginPage() {
                 saveCredentials: loginForm.saveCredentials
             });
             applySnapshot(nextSnapshot);
-            toast.success('Authenticated and prepared the session.');
+            toast.success(t('common.generated.generated.authenticated_and_prepared_the_session'));
         } catch (error) {
             if (error?.authSnapshot) {
                 applySnapshot(error.authSnapshot);
             }
-            toast.error(getErrorMessage(error, 'Failed to authenticate.'));
+            toast.error(getErrorMessage(error, appI18n.t('view.auth.generated_toast.failed_to_authenticate')));
         } finally {
             setIsSubmitting(false);
         }
@@ -586,26 +605,26 @@ export function LoginPage() {
         }
 
         if (!databaseReady) {
-            toast.error('Database initialization is still pending.');
+            toast.error(t('common.generated.generated.database_initialization_is_still_pending'));
             return;
         }
 
         cancelPendingAutoLogin(
-            'Automatic login was skipped because another saved account was selected.'
+            t('view.auth.auto_login.skipped_saved_account_selected')
         );
         setActiveSavedUserId(userId);
         try {
             const nextSnapshot = await executeSavedCredentialLogin(entry);
             applySnapshot(nextSnapshot);
             toast.success(
-                `Authenticated and prepared the session for ${getUserDisplayName(entry.user)}.`
+                appI18n.t('view.auth.generated_dynamic.authenticated_and_prepared_the_session_for_value', { value: getUserDisplayName(entry.user) })
             );
         } catch (error) {
             if (error?.authSnapshot) {
                 applySnapshot(error.authSnapshot);
             }
             toast.error(
-                getErrorMessage(error, 'Failed to restore the saved account.')
+                getErrorMessage(error, appI18n.t('view.auth.generated_toast.failed_to_restore_the_saved_account'))
             );
         } finally {
             setActiveSavedUserId('');
@@ -690,7 +709,7 @@ export function LoginPage() {
                                 <Alert variant={autoLoginAlertVariant}>
                                     <AlertDescription className="flex flex-wrap items-center gap-3 text-sm">
                                         <Badge variant="secondary">
-                                            Auto-login
+                                            {t('common.generated.generated.auto_login')}
                                         </Badge>
                                         <span className="font-medium">
                                             {autoLoginTarget}
@@ -709,7 +728,7 @@ export function LoginPage() {
                                                 {
                                                     autoLoginState.remainingSeconds
                                                 }
-                                                s
+                                                {t('common.time_units.s')}
                                             </span>
                                         ) : null}
                                         {autoLoginState.status ===
@@ -720,11 +739,13 @@ export function LoginPage() {
                                                 size="sm"
                                                 onClick={() =>
                                                     cancelPendingAutoLogin(
-                                                        'Automatic login was skipped before the countdown finished.'
+                                                        t(
+                                                            'view.auth.auto_login.skipped_countdown_finished'
+                                                        )
                                                     )
                                                 }
                                             >
-                                                Skip
+                                                {t('message.database.migration_skip')}
                                             </Button>
                                         ) : null}
                                         {autoLoginState.status ===
@@ -737,7 +758,7 @@ export function LoginPage() {
                                                 size="sm"
                                                 onClick={retryAutoLogin}
                                             >
-                                                Retry
+                                                {t('common.generated.generated.retry')}
                                             </Button>
                                         ) : null}
                                     </AlertDescription>
@@ -781,7 +802,9 @@ export function LoginPage() {
                                                     value={loginForm.username}
                                                     onChange={(event) => {
                                                         cancelPendingAutoLogin(
-                                                            'Automatic login was skipped because the login form changed.'
+                                                            t(
+                                                                'view.auth.auto_login.skipped_form_changed'
+                                                            )
                                                         );
                                                         setLoginForm(
                                                             (current) => ({
@@ -833,7 +856,9 @@ export function LoginPage() {
                                                     value={loginForm.password}
                                                     onChange={(event) => {
                                                         cancelPendingAutoLogin(
-                                                            'Automatic login was skipped because the login form changed.'
+                                                            t(
+                                                                'view.auth.auto_login.skipped_form_changed'
+                                                            )
                                                         );
                                                         setLoginForm(
                                                             (current) => ({
@@ -876,7 +901,9 @@ export function LoginPage() {
                                                         checked
                                                     ) => {
                                                         cancelPendingAutoLogin(
-                                                            'Automatic login was skipped because the login form changed.'
+                                                            t(
+                                                                'view.auth.auto_login.skipped_form_changed'
+                                                            )
                                                         );
                                                         setLoginForm(
                                                             (current) => ({
@@ -1049,7 +1076,9 @@ export function LoginPage() {
                                                             ) => {
                                                                 event.stopPropagation();
                                                                 cancelPendingAutoLogin(
-                                                                    'Automatic login was skipped because a saved account is being edited.'
+                                                                    t(
+                                                                        'view.auth.auto_login.skipped_saved_account_edited'
+                                                                    )
                                                                 );
                                                                 setDeleteTarget(
                                                                     entry
@@ -1174,7 +1203,9 @@ export function LoginPage() {
                                             value={loginForm.endpoint}
                                             onChange={(event) => {
                                                 cancelPendingAutoLogin(
-                                                    'Automatic login was skipped because the login form changed.'
+                                                    t(
+                                                        'view.auth.auto_login.skipped_form_changed'
+                                                    )
                                                 );
                                                 setLoginForm((current) => ({
                                                     ...current,
@@ -1199,7 +1230,9 @@ export function LoginPage() {
                                             value={loginForm.websocket}
                                             onChange={(event) => {
                                                 cancelPendingAutoLogin(
-                                                    'Automatic login was skipped because the login form changed.'
+                                                    t(
+                                                        'view.auth.auto_login.skipped_form_changed'
+                                                    )
                                                 );
                                                 setLoginForm((current) => ({
                                                     ...current,

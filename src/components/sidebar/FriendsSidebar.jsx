@@ -72,6 +72,7 @@ import {
 } from '@/ui/shadcn/context-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+import { appI18n } from '@/services/i18nService.js';
 
 const groupToggleKeys = {
     me: 'isFriendsGroupMe',
@@ -1796,15 +1797,15 @@ export function FriendsSidebar({ prefs }) {
                 currentEndpoint
             );
             if (opened) {
-                toast.success('VRChat launch request sent.');
+                toast.success(t('side_panel.generated.vrchat_launch_request_sent'));
                 return;
             }
-            toast.error('Unable to open this instance in VRChat.');
+            toast.error(t('side_panel.generated.unable_to_open_this_instance_in_vrchat'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to launch instance.'
+                    : appI18n.t('component.friends_sidebar.generated_toast.failed_to_launch_instance')
             );
         }
     }
@@ -1824,12 +1825,12 @@ export function FriendsSidebar({ prefs }) {
                 parsedLocation.shortName,
                 currentEndpoint
             );
-            toast.success('Self invite sent.');
+            toast.success(t('side_panel.generated.self_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send self invite.'
+                    : appI18n.t('component.friends_sidebar.generated_toast.failed_to_send_self_invite')
             );
         }
     }
@@ -1841,26 +1842,26 @@ export function FriendsSidebar({ prefs }) {
         }
         if (!currentInviteLocation) {
             toast.error(
-                'Cannot invite: no current VRChat location is available.'
+                t('side_panel.generated.cannot_invite_no_current_vrchat_location_is_available')
             );
             return;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error('Cannot invite from the current instance type.');
+            toast.error(t('side_panel.generated.cannot_invite_from_the_current_instance_type'));
             return;
         }
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                'Cannot invite: current location is not a concrete instance.'
+                t('side_panel.generated.cannot_invite_current_location_is_not_a_concrete_instance')
             );
             return;
         }
         const result = await confirm({
-            title: 'Send invite?',
+            title: appI18n.t('component.friends_sidebar.generated_modal.send_invite'),
             description: friend.displayName || friendId,
-            confirmText: 'Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('component.friends_sidebar.generated_modal.invite'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1884,12 +1885,12 @@ export function FriendsSidebar({ prefs }) {
                 }
             });
             recordRecentAction(friendId, 'Invite');
-            toast.success('Invite sent.');
+            toast.success(t('side_panel.generated.invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send invite.'
+                    : appI18n.t('component.friends_sidebar.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -1900,10 +1901,10 @@ export function FriendsSidebar({ prefs }) {
             return;
         }
         const result = await confirm({
-            title: 'Request invite?',
+            title: appI18n.t('component.friends_sidebar.generated_modal.request_invite'),
             description: friend.displayName || friendId,
-            confirmText: 'Request Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('component.friends_sidebar.generated_modal.request_invite_2'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1917,12 +1918,12 @@ export function FriendsSidebar({ prefs }) {
                 }
             });
             recordRecentAction(friendId, 'Request Invite');
-            toast.success('Invite request sent.');
+            toast.success(t('side_panel.generated.invite_request_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to request invite.'
+                    : appI18n.t('component.friends_sidebar.generated_toast.failed_to_request_invite')
             );
         }
     }
@@ -1934,12 +1935,12 @@ export function FriendsSidebar({ prefs }) {
         }
         try {
             const result = await prompt({
-                title: 'Send boop',
+                title: appI18n.t('component.friends_sidebar.generated_modal.send_boop'),
                 description:
-                    'Optional emoji id. Leave blank to send the default boop.',
+                    appI18n.t('component.friends_sidebar.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
                 inputValue: '',
-                confirmText: 'Send',
-                cancelText: 'Cancel'
+                confirmText: appI18n.t('component.friends_sidebar.generated_modal.send'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -1949,10 +1950,10 @@ export function FriendsSidebar({ prefs }) {
                 emojiId: result.value,
                 endpoint: currentEndpoint
             });
-            toast.success('Boop sent.');
+            toast.success(t('side_panel.generated.boop_sent'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to send boop.'
+                error instanceof Error ? error.message : appI18n.t('component.friends_sidebar.generated_toast.failed_to_send_boop')
             );
         }
     }
@@ -1963,7 +1964,7 @@ export function FriendsSidebar({ prefs }) {
     ) {
         if (!currentUserId) {
             toast.error(
-                'Cannot update profile: no current user session is available.'
+                t('side_panel.generated.cannot_update_profile_no_current_user_session_is_available')
             );
             return;
         }
@@ -2002,11 +2003,11 @@ export function FriendsSidebar({ prefs }) {
 
     async function editCurrentUserStatusDescription() {
         const result = await prompt({
-            title: 'Edit status description',
+            title: appI18n.t('component.friends_sidebar.generated_modal.edit_status_description'),
             inputValue: currentUser?.statusDescription || '',
             multiline: true,
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;

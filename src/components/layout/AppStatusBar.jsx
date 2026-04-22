@@ -34,6 +34,7 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+import { appI18n } from '@/services/i18nService.js';
 
 const VISIBILITY_KEY = 'VRCX_statusBarVisibility';
 const CLOCKS_KEY = 'VRCX_statusBarClocks';
@@ -402,7 +403,7 @@ export function AppStatusBar() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to save status bar visibility.'
+                        : appI18n.t('component.app_status_bar.generated_toast.failed_to_save_status_bar_visibility')
                 );
             });
     }
@@ -430,7 +431,7 @@ export function AppStatusBar() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to save clock count.'
+                        : appI18n.t('component.app_status_bar.generated_toast.failed_to_save_clock_count')
                 );
             });
     }
@@ -457,7 +458,7 @@ export function AppStatusBar() {
                     toast.error(
                         error instanceof Error
                             ? error.message
-                            : 'Failed to save status bar clocks.'
+                            : appI18n.t('component.app_status_bar.generated_toast.failed_to_save_status_bar_clocks')
                     );
                 });
             return nextClocks;
@@ -472,7 +473,7 @@ export function AppStatusBar() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to open VRChat status.'
+                    : appI18n.t('component.app_status_bar.generated_toast.failed_to_open_vrchat_status')
             );
         }
     }
@@ -483,12 +484,12 @@ export function AppStatusBar() {
         }
         const currentProxyServer = usePreferencesStore.getState().proxyServer;
         const result = await prompt({
-            title: 'Proxy Settings',
+            title: appI18n.t('component.app_status_bar.generated_modal.proxy_settings'),
             description:
-                'Set the proxy server used by VRCX-0. Restart is required to apply a changed proxy.',
+                appI18n.t('component.app_status_bar.generated_modal.set_the_proxy_server_used_by_vrcx_0_restart_is_r'),
             inputValue: currentProxyServer,
-            confirmText: 'Restart',
-            cancelText: 'Close'
+            confirmText: appI18n.t('component.app_status_bar.generated_modal.restart'),
+            cancelText: appI18n.t('common.actions.close')
         });
         if (!result.ok) {
             return;
@@ -507,19 +508,19 @@ export function AppStatusBar() {
                             <StatusSegment
                                 visible={visibility.steamvr}
                                 active={Boolean(isSteamVRRunning)}
-                                label="SteamVR"
+                                label={t('status_bar.steamvr')}
                             />
                             <StatusSegment
                                 visible={visibility.vrchat}
                                 active={Boolean(isGameRunning)}
-                                label="VRChat"
+                                label={t('view.settings.advanced.advanced.vrchat_settings.header')}
                                 tooltip={
                                     <div className="flex flex-col gap-1 text-xs">
                                         {isGameRunning ? (
                                             <>
                                                 <div className="flex justify-between gap-4">
                                                     <span className="text-muted-foreground">
-                                                        Started at
+                                                        {t('app_menu.generated.started_at')}
                                                     </span>
                                                     <span>
                                                         {formatStatusDate(
@@ -529,7 +530,7 @@ export function AppStatusBar() {
                                                 </div>
                                                 <div className="flex justify-between gap-4">
                                                     <span className="text-muted-foreground">
-                                                        Session duration
+                                                        {t('app_menu.generated.session_duration')}
                                                     </span>
                                                     <span>
                                                         {gameDuration || '-'}
@@ -537,7 +538,7 @@ export function AppStatusBar() {
                                                 </div>
                                                 <div className="flex justify-between gap-4">
                                                     <span className="text-muted-foreground">
-                                                        Instance duration
+                                                        {t('app_menu.generated.instance_duration')}
                                                     </span>
                                                     <span>
                                                         {currentLocationDuration ||
@@ -554,7 +555,7 @@ export function AppStatusBar() {
                                             <>
                                                 <div className="flex justify-between gap-4">
                                                     <span className="text-muted-foreground">
-                                                        Last game event
+                                                        {t('app_menu.generated.last_game_event')}
                                                     </span>
                                                     <span>
                                                         {formatStatusDate(
@@ -564,7 +565,7 @@ export function AppStatusBar() {
                                                 </div>
                                                 <div className="flex justify-between gap-4">
                                                     <span className="text-muted-foreground">
-                                                        Last event type
+                                                        {t('app_menu.generated.last_event_type')}
                                                     </span>
                                                     <span>
                                                         {runtimeGameState.lastGameLogType ||
@@ -586,7 +587,7 @@ export function AppStatusBar() {
                                     vrcStatus.indicator &&
                                     vrcStatus.indicator !== 'none'
                                 }
-                                label="Servers"
+                                label={t('status_bar.servers')}
                                 onClick={() => void openStatusPage()}
                                 tooltip={
                                     vrcStatus.summary ||
@@ -612,7 +613,7 @@ export function AppStatusBar() {
                                     </TooltipTrigger>
                                     <TooltipContent className="flex max-w-xs flex-col gap-1 text-xs">
                                         <span>
-                                            WebSocket{' '}
+                                            {t('view.login.field.websocket')}{' '}
                                             {runtimeTransport.websocketConnected
                                                 ? t('status_bar.ws_connected')
                                                 : t(
@@ -633,7 +634,7 @@ export function AppStatusBar() {
                                     Boolean(nowPlaying.url)
                                 }
                                 active
-                                label="Now Playing"
+                                label={t('status_bar.now_playing')}
                                 value={nowPlaying.name || nowPlaying.url}
                                 onClick={() => {
                                     void backend.app
@@ -642,7 +643,7 @@ export function AppStatusBar() {
                                             toast.error(
                                                 error instanceof Error
                                                     ? error.message
-                                                    : 'Failed to open media link.'
+                                                    : appI18n.t('component.app_status_bar.generated_toast.failed_to_open_media_link')
                                             );
                                         });
                                 }}
@@ -751,7 +752,7 @@ export function AppStatusBar() {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            aria-label="Proxy settings"
+                                            aria-label={"Proxy settings"}
                                             className={cn(
                                                 '-ml-px h-6 w-7 rounded-none border-l',
                                                 proxyServer
@@ -765,7 +766,7 @@ export function AppStatusBar() {
                                                             error instanceof
                                                                 Error
                                                                 ? error.message
-                                                                : 'Failed to update proxy settings.'
+                                                                : appI18n.t('component.app_status_bar.generated_toast.failed_to_update_proxy_settings')
                                                         );
                                                     }
                                                 );
@@ -800,7 +801,7 @@ export function AppStatusBar() {
                 ))}
                 <ContextMenuSeparator />
                 <ContextMenuSub>
-                    <ContextMenuSubTrigger>Clocks</ContextMenuSubTrigger>
+                    <ContextMenuSubTrigger>{t('app_menu.generated.clocks')}</ContextMenuSubTrigger>
                     <ContextMenuSubContent>
                         {[0, 1, 2, 3].map((count) => (
                             <ContextMenuCheckboxItem

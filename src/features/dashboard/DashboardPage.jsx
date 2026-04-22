@@ -68,6 +68,7 @@ import {
     getNextDashboardInstanceColumnConfig,
     isDashboardFilterActive
 } from './dashboardConfig.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function DashboardFilterConfig({ title, filterTypes, config, onConfigChange }) {
     const filters = getDashboardFilterList(config);
@@ -84,7 +85,7 @@ function DashboardFilterConfig({ title, filterTypes, config, onConfigChange }) {
                     variant={filters.length === 0 ? 'default' : 'outline'}
                     onClick={() => onConfigChange({ ...config, filters: [] })}
                 >
-                    All
+                    {appI18n.t('view.dashboard.generated.all')}
                 </Button>
                 {filterTypes.map((filterType) => (
                     <Button
@@ -141,7 +142,7 @@ function DashboardInstanceColumnConfig({ config, onConfigChange }) {
     return (
         <div className="flex flex-col gap-2">
             <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Visible columns
+                {appI18n.t('view.dashboard.generated.visible_columns')}
             </div>
             <div className="flex flex-wrap gap-2">
                 {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column) => (
@@ -177,14 +178,14 @@ function DashboardWidgetConfigEditor({ panelKey, config, onConfigChange }) {
         return (
             <div className="flex flex-col gap-3">
                 <DashboardFilterConfig
-                    title="Feed filters"
+                    title={appI18n.t('view.dashboard.generated.feed_filters')}
                     filterTypes={FEED_FILTER_TYPES}
                     config={config}
                     onConfigChange={onConfigChange}
                 />
                 <DashboardSwitchConfig
-                    label="Show type column"
-                    description="Matches the stored feed widget config."
+                    label={appI18n.t('view.dashboard.generated.show_type_column')}
+                    description={appI18n.t('view.dashboard.generated.matches_the_stored_feed_widget_config')}
                     checked={Boolean(config.showType)}
                     onCheckedChange={(checked) =>
                         onConfigChange({
@@ -201,14 +202,14 @@ function DashboardWidgetConfigEditor({ panelKey, config, onConfigChange }) {
         return (
             <div className="flex flex-col gap-3">
                 <DashboardFilterConfig
-                    title="Game-log filters"
+                    title={appI18n.t('view.dashboard.generated.game_log_filters')}
                     filterTypes={GAME_LOG_FILTER_TYPES}
                     config={config}
                     onConfigChange={onConfigChange}
                 />
                 <DashboardSwitchConfig
-                    label="Show detail"
-                    description="Expands the compact game-log description."
+                    label={appI18n.t('view.dashboard.generated.show_detail')}
+                    description={appI18n.t('view.dashboard.generated.expands_the_compact_game_log_description')}
                     checked={Boolean(config.showDetail)}
                     onCheckedChange={(checked) =>
                         onConfigChange({
@@ -248,7 +249,7 @@ function DashboardPanelSelectorDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[80vh] overflow-hidden sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Select panel</DialogTitle>
+                    <DialogTitle>{appI18n.t('view.dashboard.generated.select_panel')}</DialogTitle>
                 </DialogHeader>
                 <div className="min-h-0 overflow-y-auto">
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -258,7 +259,7 @@ function DashboardPanelSelectorDialog({
                             className="text-muted-foreground h-auto justify-start border-dashed p-3 text-left font-normal whitespace-normal"
                             onClick={() => onSelect('__none__')}
                         >
-                            Not configured
+                            {appI18n.t('view.dashboard.generated.not_configured')}
                         </Button>
                         {options.map((option) => {
                             const definition = getDashboardPanelDefinition(
@@ -317,7 +318,7 @@ function DashboardEditorPanel({
                     variant="ghost"
                     size="icon-sm"
                     className="absolute top-1 right-1 z-20"
-                    aria-label="Remove panel"
+                    aria-label={"Remove panel"}
                     onClick={onRemove}
                 >
                     <XIcon data-icon="inline-start" />
@@ -332,7 +333,7 @@ function DashboardEditorPanel({
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                aria-label="Clear panel"
+                                aria-label={"Clear panel"}
                                 onClick={() => onChange(null)}
                             >
                                 <Trash2Icon data-icon="inline-start" />
@@ -349,14 +350,14 @@ function DashboardEditorPanel({
                 ) : (
                     <>
                         <span className="text-muted-foreground text-base">
-                            Panel not selected
+                            {appI18n.t('view.dashboard.generated.panel_not_selected')}
                         </span>
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => setSelectorOpen(true)}
                         >
-                            Select
+                            {appI18n.t('common.actions.select')}
                         </Button>
                     </>
                 )}
@@ -369,7 +370,7 @@ function DashboardEditorPanel({
                     className="absolute bottom-2 left-1/2 -translate-x-1/2"
                     onClick={() => setSelectorOpen(true)}
                 >
-                    Select
+                    {appI18n.t('common.actions.select')}
                 </Button>
             ) : null}
             <DashboardPanelSelectorDialog
@@ -406,7 +407,7 @@ function DashboardEditorRow({
         <div className="relative flex h-full min-h-[180px] flex-col gap-2 rounded-md border border-dashed p-2">
             <div className="flex items-center justify-between gap-2">
                 <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Row {rowIndex + 1}
+                    {appI18n.t('view.dashboard.generated.row')} {rowIndex + 1}
                 </div>
                 <div className="flex items-center gap-2">
                     {panels.length === 2 ? (
@@ -420,10 +421,10 @@ function DashboardEditorRow({
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectItem value="horizontal">
-                                        Horizontal
+                                        {appI18n.t('view.dashboard.generated.horizontal')}
                                     </SelectItem>
                                     <SelectItem value="vertical">
-                                        Vertical
+                                        {appI18n.t('view.dashboard.generated.vertical')}
                                     </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
@@ -433,7 +434,7 @@ function DashboardEditorRow({
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        aria-label="Remove row"
+                        aria-label={"Remove row"}
                         onClick={onRowRemove}
                     >
                         <Trash2Icon data-icon="inline-start" />
@@ -675,7 +676,7 @@ export function DashboardPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update dashboard panel.'
+                    : appI18n.t('view.dashboard.generated_toast.failed_to_update_dashboard_panel')
             );
         }
     };
@@ -708,12 +709,12 @@ export function DashboardPage() {
                 rows: editRows
             });
             setIsEditing(false);
-            toast.success('Dashboard saved.');
+            toast.success(appI18n.t('view.dashboard.generated.dashboard_saved'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save dashboard.'
+                    : appI18n.t('view.dashboard.generated_toast.failed_to_save_dashboard')
             );
         } finally {
             setIsSaving(false);
@@ -726,12 +727,12 @@ export function DashboardPage() {
         }
 
         const result = await confirm({
-            title: 'Delete dashboard?',
+            title: appI18n.t('view.dashboard.generated_modal.delete_dashboard'),
             description:
-                'This removes the dashboard definition from the stored navigation config.',
+                appI18n.t('view.dashboard.generated_modal.this_removes_the_dashboard_definition_from_the_s'),
             destructive: true,
-            confirmText: 'Delete',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -750,7 +751,7 @@ export function DashboardPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete dashboard.'
+                    : appI18n.t('view.dashboard.generated_toast.failed_to_delete_dashboard')
             );
         }
     };
@@ -764,7 +765,7 @@ export function DashboardPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to create dashboard.'
+                    : appI18n.t('view.dashboard.generated_toast.failed_to_create_dashboard')
             );
         }
     };
@@ -776,10 +777,10 @@ export function DashboardPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <LayoutDashboardIcon className="size-5" />
-                            Dashboard
+                            {appI18n.t('dashboard.default_name')}
                         </CardTitle>
                         <CardDescription>
-                            Loading dashboard configuration.
+                            {appI18n.t('view.dashboard.generated.loading_dashboard_configuration')}
                         </CardDescription>
                     </CardHeader>
                 </Card>
@@ -795,7 +796,7 @@ export function DashboardPage() {
                         <div className="flex flex-col gap-2">
                             <CardTitle className="flex items-center gap-2">
                                 <LayoutDashboardIcon className="size-5" />
-                                Dashboard
+                                {appI18n.t('dashboard.default_name')}
                             </CardTitle>
                             <CardDescription>
                                 {dashboards.length
@@ -815,7 +816,7 @@ export function DashboardPage() {
                     <CardContent className="flex flex-wrap gap-2">
                         <Button type="button" onClick={handleCreateDashboard}>
                             <PlusIcon data-icon="inline-start" />
-                            New Dashboard
+                            {appI18n.t('dashboard.new_dashboard')}
                         </Button>
                         {dashboards.length ? (
                             <Button
@@ -827,7 +828,7 @@ export function DashboardPage() {
                                     })
                                 }
                             >
-                                Open First Dashboard
+                                {appI18n.t('view.dashboard.generated.open_first_dashboard')}
                             </Button>
                         ) : (
                             <Button
@@ -837,7 +838,7 @@ export function DashboardPage() {
                                     navigate('/feed', { replace: true })
                                 }
                             >
-                                Back to Feed
+                                {appI18n.t('view.dashboard.generated.back_to_feed')}
                             </Button>
                         )}
                     </CardContent>
@@ -855,7 +856,7 @@ export function DashboardPage() {
                     <Input
                         value={editName}
                         onChange={(event) => setEditName(event.target.value)}
-                        placeholder="Dashboard name"
+                        placeholder={appI18n.t('view.dashboard.generated.dashboard_name')}
                         className="mx-2 h-7 max-w-52 text-sm"
                     />
                     <div className="flex gap-2">
@@ -871,7 +872,7 @@ export function DashboardPage() {
                             }}
                         >
                             <XIcon data-icon="inline-start" />
-                            Cancel
+                            {appI18n.t('common.actions.cancel')}
                         </Button>
                         <Button
                             type="button"
@@ -880,7 +881,7 @@ export function DashboardPage() {
                             onClick={handleDelete}
                         >
                             <Trash2Icon data-icon="inline-start" />
-                            Delete
+                            {appI18n.t('common.actions.delete')}
                         </Button>
                     </div>
                     <Button
@@ -891,7 +892,7 @@ export function DashboardPage() {
                         disabled={isSaving}
                     >
                         <SaveIcon data-icon="inline-start" />
-                        Save
+                        {appI18n.t('common.actions.save')}
                     </Button>
                 </div>
             ) : null}
@@ -928,7 +929,7 @@ export function DashboardPage() {
                             ))
                         ) : (
                             <div className="text-muted-foreground flex min-h-[180px] items-center justify-center rounded-md border border-dashed text-sm">
-                                Add a row to start building this dashboard.
+                                {appI18n.t('view.dashboard.generated.add_a_row_to_start_building_this_dashboard')}
                             </div>
                         )}
 
@@ -936,15 +937,15 @@ export function DashboardPage() {
                             <div className="border-muted-foreground/20 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 mt-auto flex min-h-[80px] flex-1 items-start justify-center rounded-md border-2 border-dashed p-4 transition-colors">
                                 <div className="flex flex-wrap items-center gap-3">
                                     <span className="text-muted-foreground text-xs">
-                                        Add Row:
+                                        {appI18n.t('view.dashboard.generated.add_row')}
                                     </span>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="icon"
                                         className="h-10 w-16 border-2 border-dashed"
-                                        title="Add Full Row"
-                                        aria-label="Add full row"
+                                        title={appI18n.t('dashboard.actions.add_full_row')}
+                                        aria-label={"Add full row"}
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             handleAddRow(1);
@@ -957,8 +958,8 @@ export function DashboardPage() {
                                         variant="outline"
                                         size="icon"
                                         className="h-10 w-16 gap-1 border-2 border-dashed"
-                                        title="Add Split Row"
-                                        aria-label="Add split row"
+                                        title={appI18n.t('dashboard.actions.add_split_row')}
+                                        aria-label={"Add split row"}
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             handleAddRow(2);
@@ -972,8 +973,8 @@ export function DashboardPage() {
                                         variant="outline"
                                         size="icon"
                                         className="h-10 w-16 gap-1 border-2 border-dashed"
-                                        title="Add Vertical Row"
-                                        aria-label="Add vertical row"
+                                        title={appI18n.t('dashboard.actions.add_vertical_row')}
+                                        aria-label={"Add vertical row"}
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             handleAddRow(2, 'vertical');
@@ -991,7 +992,7 @@ export function DashboardPage() {
                                 type="button"
                                 variant="ghost"
                                 className="border-muted-foreground/20 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 mt-auto flex min-h-[80px] flex-1 items-center justify-center rounded-md border-2 border-dashed transition-colors"
-                                aria-label="Show add row options"
+                                aria-label={"Show add row options"}
                                 onClick={() => setShowAddRowOptions(true)}
                             >
                                 <PlusIcon
@@ -1043,12 +1044,12 @@ export function DashboardPage() {
                 ) : (
                     <div className="text-muted-foreground flex flex-1 items-center justify-center rounded-md border border-dashed">
                         <div className="flex flex-col items-center gap-3">
-                            <p>This dashboard is empty</p>
+                            <p>{appI18n.t('dashboard.empty')}</p>
                             <Button
                                 type="button"
                                 onClick={() => setIsEditing(true)}
                             >
-                                Start Editing
+                                {appI18n.t('dashboard.actions.start_editing')}
                             </Button>
                         </div>
                     </div>

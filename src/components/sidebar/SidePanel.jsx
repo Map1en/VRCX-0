@@ -48,6 +48,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { FriendsSidebar } from './FriendsSidebar.jsx';
 import { GroupsSidebar } from './GroupsSidebar.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 const sortOptions = [
     [
@@ -269,11 +270,11 @@ export const SidePanel = forwardRef(function SidePanel(
         () => [
             {
                 value: 'friends',
-                label: `${t('side_panel.friends')} (${onlineIds.length}/${totalFriendCount})`
+                label: appI18n.t('component.side_panel.generated_dynamic.value_value_value', { value: t('side_panel.friends'), value2: onlineIds.length, value3: totalFriendCount })
             },
             {
                 value: 'groups',
-                label: `${t('side_panel.groups')} (${groupInstances.length})`
+                label: appI18n.t('component.side_panel.generated_dynamic.value_value', { value: t('side_panel.groups'), value2: groupInstances.length })
             }
         ],
         [groupInstances.length, onlineIds.length, t, totalFriendCount]
@@ -416,18 +417,18 @@ export const SidePanel = forwardRef(function SidePanel(
         }
         const auth = useRuntimeStore.getState().auth;
         if (!auth.currentUserId || !auth.currentUserSnapshot) {
-            toast.error('No authenticated user snapshot is available.');
+            toast.error(t('side_panel.generated.no_authenticated_user_snapshot_is_available'));
             return;
         }
         setIsRefreshing(true);
         try {
             await refreshCurrentUserFriendsAndFavorites();
-            toast.success('Friend and favorite snapshots refreshed.');
+            toast.success(t('side_panel.generated.friend_and_favorite_snapshots_refreshed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to refresh friends.'
+                    : appI18n.t('component.side_panel.generated_toast.failed_to_refresh_friends')
             );
         } finally {
             setIsRefreshing(false);
@@ -466,7 +467,7 @@ export const SidePanel = forwardRef(function SidePanel(
                                 variant="ghost"
                                 size="icon"
                                 className="ml-auto"
-                                aria-label={t('side_panel.settings.display')}
+                                aria-label={"Display"}
                             >
                                 {isRefreshing ? (
                                     <Spinner data-icon="inline-start" />
@@ -486,7 +487,7 @@ export const SidePanel = forwardRef(function SidePanel(
                                     variant="outline"
                                     size="sm"
                                     className="w-full justify-start"
-                                    aria-label={t('side_panel.refresh_tooltip')}
+                                    aria-label={"Refresh friends"}
                                     disabled={isRefreshing}
                                     onClick={() => {
                                         setSettingsPopoverOpen(false);

@@ -2,6 +2,7 @@ import { useModalStore } from '@/state/modalStore.js';
 
 import { normalizePlatformError } from '../platform/tauri/errors.js';
 import { backend } from '../platform/tauri/index.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function showSQLiteErrorModal(error) {
     const message =
@@ -16,15 +17,19 @@ function showSQLiteErrorModal(error) {
     if (message.includes('database disk image is malformed')) {
         void modalStore.confirm({
             description:
-                'Please repair or delete your database file by following the VRCX-0 database repair instructions.',
-            title: 'Your database is corrupted'
+                appI18n.t('repository.sqlite_repository.generated_modal.please_repair_or_delete_your_database_file_by_fo'),
+            title: appI18n.t('repository.sqlite_repository.generated_modal.your_database_is_corrupted')
         });
         return;
     }
     if (message.includes('database or disk is full')) {
         void modalStore.alert({
-            description: 'The disk containing the database is full.',
-            title: 'Disk containing database is full'
+            description: appI18n.t(
+                'repository.sqlite_repository.generated_modal.disk_full_description'
+            ),
+            title: appI18n.t(
+                'repository.sqlite_repository.generated_modal.disk_full_title'
+            )
         });
         return;
     }
@@ -33,17 +38,23 @@ function showSQLiteErrorModal(error) {
         message.includes('attempt to write a readonly database')
     ) {
         void modalStore.alert({
-            description:
-                'Please close other applications that might be using the database file.',
-            title: 'Database is locked'
+            description: appI18n.t(
+                'repository.sqlite_repository.generated_modal.database_locked_description'
+            ),
+            title: appI18n.t(
+                'repository.sqlite_repository.generated_modal.database_locked_title'
+            )
         });
         return;
     }
     if (message.includes('disk I/O error')) {
         void modalStore.alert({
-            description:
-                'A disk I/O error occurred while accessing the database.',
-            title: 'Disk I/O error'
+            description: appI18n.t(
+                'repository.sqlite_repository.generated_modal.disk_io_error_description'
+            ),
+            title: appI18n.t(
+                'repository.sqlite_repository.generated_modal.disk_io_error_title'
+            )
         });
     }
 }

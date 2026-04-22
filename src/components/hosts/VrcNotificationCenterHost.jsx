@@ -47,6 +47,7 @@ import {
 } from '@/ui/shadcn/sheet';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { appI18n } from '@/services/i18nService.js';
 
 const categoryOrder = ['friend', 'group', 'other'];
 
@@ -221,7 +222,7 @@ function openSender(notification) {
         return;
     }
     if (!openNotificationLink(notification?.link)) {
-        toast.info('This notification does not expose a navigable sender.');
+        toast.info(appI18n.t('view.notification.generated.this_notification_does_not_expose_a_navigable_sender'));
     }
 }
 
@@ -326,8 +327,8 @@ function NotificationRow({
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            aria-label="Accept"
-                            title="Accept"
+                            aria-label={"Accept"}
+                            title={appI18n.t('view.notification.actions.accept')}
                             onClick={() =>
                                 void onAcceptFriendRequest(notification)
                             }
@@ -342,8 +343,8 @@ function NotificationRow({
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            aria-label="Invite"
-                            title="Invite"
+                            aria-label={"Invite"}
+                            title={appI18n.t('view.notification.generated.invite')}
                             onClick={() =>
                                 void onAcceptRequestInvite(notification)
                             }
@@ -356,8 +357,8 @@ function NotificationRow({
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            aria-label="Decline with message"
-                            title="Decline with message"
+                            aria-label={"Decline with message"}
+                            title={appI18n.t('view.notification.actions.decline_with_message')}
                             onClick={() =>
                                 void onSendInviteResponseWithMessage(
                                     notification,
@@ -374,8 +375,8 @@ function NotificationRow({
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            aria-label="Decline with message"
-                            title="Decline with message"
+                            aria-label={"Decline with message"}
+                            title={appI18n.t('view.notification.actions.decline_with_message')}
                             onClick={() =>
                                 void onSendInviteResponseWithMessage(
                                     notification,
@@ -416,8 +417,8 @@ function NotificationRow({
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            aria-label="Decline"
-                            title="Decline"
+                            aria-label={"Decline"}
+                            title={appI18n.t('view.notification.actions.decline')}
                             onClick={() =>
                                 void onHideNotification(notification)
                             }
@@ -430,7 +431,7 @@ function NotificationRow({
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            aria-label="Open notification link"
+                            aria-label={"Open notification link"}
                             onClick={() =>
                                 openNotificationLink(notification.link)
                             }
@@ -443,7 +444,7 @@ function NotificationRow({
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            aria-label="Mark seen"
+                            aria-label={"Mark seen"}
                             onClick={() => {
                                 void onMarkSeen(notification);
                             }}
@@ -456,8 +457,8 @@ function NotificationRow({
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            aria-label="Delete log"
-                            title="Delete log"
+                            aria-label={"Delete log"}
+                            title={appI18n.t('view.notification.actions.delete_log')}
                             onClick={() =>
                                 void onDeleteNotification(notification)
                             }
@@ -629,7 +630,7 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to mark notifications as seen.'
+                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_mark_notifications_as_seen')
             );
         });
     }
@@ -664,8 +665,8 @@ export function VrcNotificationCenterHost() {
     async function acceptFriendRequest(notification) {
         try {
             const result = await modalStore.confirm({
-                title: 'Accept friend request',
-                description: `Accept the friend request from ${notification.senderUsername || 'this user'}?`
+                title: appI18n.t('host.vrc_notification_center.generated_modal.accept_friend_request'),
+                description: appI18n.t('host.vrc_notification_center.generated_dynamic.accept_the_friend_request_from_value', { value: notification.senderUsername || 'this user' })
             });
             if (!result.ok) {
                 return;
@@ -675,7 +676,7 @@ export function VrcNotificationCenterHost() {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success('Friend request accepted.');
+            toast.success(t('view.notification.generated.friend_request_accepted'));
         } catch (error) {
             if (error?.status === 404) {
                 await expireNotificationLocally(notification);
@@ -684,7 +685,7 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to accept friend request.'
+                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_accept_friend_request')
             );
         }
     }
@@ -692,9 +693,9 @@ export function VrcNotificationCenterHost() {
     async function hideNotification(notification) {
         try {
             const result = await modalStore.confirm({
-                title: 'Decline notification',
-                description: `Decline the ${notification.type || 'notification'} notification?`,
-                confirmText: 'Decline',
+                title: appI18n.t('host.vrc_notification_center.generated_modal.decline_notification'),
+                description: appI18n.t('host.vrc_notification_center.generated_dynamic.decline_the_value_notification', { value: notification.type || 'notification' }),
+                confirmText: appI18n.t('host.vrc_notification_center.generated_modal.decline'),
                 destructive: true
             });
             if (!result.ok) {
@@ -708,12 +709,12 @@ export function VrcNotificationCenterHost() {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success('Notification declined.');
+            toast.success(t('view.notification.generated.notification_declined'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to decline notification.'
+                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_decline_notification')
             );
         }
     }
@@ -722,24 +723,24 @@ export function VrcNotificationCenterHost() {
         try {
             if (!currentInviteLocation) {
                 toast.error(
-                    'Cannot invite: no current VRChat location is available.'
+                    t('view.notification.generated.cannot_invite_no_current_vrchat_location_is_available')
                 );
                 return;
             }
             if (!canInviteFromCurrentLocation) {
-                toast.error('Cannot invite from the current instance type.');
+                toast.error(t('view.notification.generated.cannot_invite_from_the_current_instance_type'));
                 return;
             }
             const parsedLocation = parseLocation(currentInviteLocation);
             if (!parsedLocation.worldId || !parsedLocation.instanceId) {
                 toast.error(
-                    'Cannot invite: current location is not a concrete instance.'
+                    t('view.notification.generated.cannot_invite_current_location_is_not_a_concrete_instance')
                 );
                 return;
             }
             const result = await modalStore.confirm({
-                title: 'Send invite',
-                description: `Send an invite to ${notification.senderUsername || 'this user'}?`
+                title: appI18n.t('host.vrc_notification_center.generated_modal.send_invite'),
+                description: appI18n.t('host.vrc_notification_center.generated_dynamic.send_an_invite_to_value', { value: notification.senderUsername || 'this user' })
             });
             if (!result.ok) {
                 return;
@@ -769,12 +770,12 @@ export function VrcNotificationCenterHost() {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success('Invite sent.');
+            toast.success(t('view.notification.generated.invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send invite.'
+                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -782,7 +783,7 @@ export function VrcNotificationCenterHost() {
     function sendInviteResponseWithMessage(notification, messageType) {
         if (!currentUserId) {
             toast.error(
-                'Cannot send invite response: no current user session is available.'
+                t('view.notification.generated.cannot_send_invite_response_no_current_user_session_is_avail')
             );
             return;
         }
@@ -807,7 +808,7 @@ export function VrcNotificationCenterHost() {
             endpoint
         });
         await expireNotificationLocally(notification);
-        toast.success('Invite response sent.');
+        toast.success(t('view.notification.generated.invite_response_sent'));
     }
 
     async function sendNotificationResponse(notification, response) {
@@ -835,7 +836,7 @@ export function VrcNotificationCenterHost() {
                     })
                     .catch(() => {});
                 await expireNotificationLocally(notification);
-                toast.success('Boop sent.');
+                toast.success(t('view.notification.generated.boop_sent'));
                 return;
             }
             await notificationRepository.sendNotificationResponse({
@@ -845,7 +846,7 @@ export function VrcNotificationCenterHost() {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success('Notification response sent.');
+            toast.success(t('view.notification.generated.notification_response_sent'));
         } catch (error) {
             if (notification.version >= 2) {
                 await expireNotificationLocally(notification);
@@ -853,7 +854,7 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send notification response.'
+                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_send_notification_response')
             );
         }
     }
@@ -861,9 +862,9 @@ export function VrcNotificationCenterHost() {
     async function deleteNotification(notification) {
         try {
             const result = await modalStore.confirm({
-                title: 'Delete notification log entry',
-                description: `Delete the local ${notification.type || 'notification'} log entry?`,
-                confirmText: 'Delete',
+                title: appI18n.t('host.vrc_notification_center.generated_modal.delete_notification_log_entry'),
+                description: appI18n.t('host.vrc_notification_center.generated_modal.delete_the_local_value_log_entry', { value: notification.type || 'notification' }),
+                confirmText: appI18n.t('common.actions.delete'),
                 destructive: true
             });
             if (!result.ok) {
@@ -875,12 +876,12 @@ export function VrcNotificationCenterHost() {
                 version: notification.version
             });
             await refreshCenter();
-            toast.success('Notification log entry deleted.');
+            toast.success(t('view.notification.generated.notification_log_entry_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete notification.'
+                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_delete_notification')
             );
         }
     }
@@ -908,14 +909,14 @@ export function VrcNotificationCenterHost() {
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                aria-label={t('side_panel.refresh_tooltip')}
+                                aria-label={"Refresh friends"}
                                 disabled={loadStatus === 'running'}
                                 onClick={() => {
                                     void loadForCurrentUser().catch((error) => {
                                         toast.error(
                                             userFacingErrorMessage(
                                                 error,
-                                                'Failed to refresh notifications.'
+                                                appI18n.t('host.vrc_notification_center.generated_toast.failed_to_refresh_notifications')
                                             )
                                         );
                                     });

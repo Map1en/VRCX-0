@@ -60,6 +60,7 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 import { Separator } from '@/ui/shadcn/separator';
+import { appI18n } from '@/services/i18nService.js';
 
 function getFolderItemKey(item) {
     return typeof item === 'string' ? item : item?.key;
@@ -920,7 +921,7 @@ export function CustomNavDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to create dashboard.'
+                    : appI18n.t('component.custom_nav.generated_toast.failed_to_create_dashboard')
             );
         }
     }
@@ -958,7 +959,7 @@ export function CustomNavDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update dashboard.'
+                    : appI18n.t('component.custom_nav.generated_toast.failed_to_update_dashboard')
             );
         }
     }
@@ -985,7 +986,7 @@ export function CustomNavDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete dashboard.'
+                    : appI18n.t('component.custom_nav.generated_toast.failed_to_delete_dashboard')
             );
         }
     }

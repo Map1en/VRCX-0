@@ -45,6 +45,7 @@ import {
     EntityMemoTextarea,
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 function PlatformBadge({ label, rating, fileSize, icon: Icon }) {
     return (
@@ -173,7 +174,7 @@ export function AvatarDialogTabbedView({
 
     async function copyAvatarText(text, label) {
         await copyTextToClipboard(text);
-        toast.success(`${label} copied.`);
+        toast.success(appI18n.t('dialog.avatar.generated_dynamic.value_copied', { value: label }));
     }
 
     return (
@@ -230,11 +231,11 @@ export function AvatarDialogTabbedView({
                         {isCurrentAvatar ? (
                             <Badge variant="secondary">
                                 <UserIcon data-icon="inline-start" />
-                                Current
+                                {appI18n.t('common.current_session')}
                             </Badge>
                         ) : null}
                         {avatarBlocked ? (
-                            <Badge variant="destructive">Blocked</Badge>
+                            <Badge variant="destructive">{appI18n.t('dialog.avatar.generated.blocked')}</Badge>
                         ) : null}
                         {isFavorite ? (
                             <Badge>
@@ -242,7 +243,7 @@ export function AvatarDialogTabbedView({
                                     data-icon="inline-start"
                                     className="fill-current"
                                 />
-                                Favorite
+                                {appI18n.t('dialog.avatar.generated.favorite')}
                             </Badge>
                         ) : null}
                         {avatar.$isCached ? (
@@ -260,23 +261,23 @@ export function AvatarDialogTabbedView({
                         ) : null}
                         {hasImposter ? (
                             <Badge variant="outline">
-                                Impostor
+                                {appI18n.t('dialog.avatar.tags.impostor')}
                                 {imposterVersion ? ` v${imposterVersion}` : ''}
                             </Badge>
                         ) : null}
                         {avatar.styles?.primary || avatar.styles?.secondary ? (
                             <Badge variant="outline">
-                                Styles {avatar.styles?.primary || ''}
+                                {appI18n.t('view.favorite.avatars.styles')} {avatar.styles?.primary || ''}
                                 {avatar.styles?.secondary
                                     ? ` / ${avatar.styles.secondary}`
                                     : ''}
                             </Badge>
                         ) : null}
                         {avatar.unityPackageUrl || avatar.unityPackage?.url ? (
-                            <Badge variant="outline">Future proofing</Badge>
+                            <Badge variant="outline">{appI18n.t('dialog.avatar.generated.future_proofing')}</Badge>
                         ) : null}
                         {avatar.tags?.some((tag) => /quest/i.test(tag)) ? (
-                            <Badge variant="outline">Fallback</Badge>
+                            <Badge variant="outline">{appI18n.t('dialog.avatar.tags.fallback')}</Badge>
                         ) : null}
                         {platformInfo?.pc?.platform ? (
                             <PlatformBadge
@@ -290,7 +291,7 @@ export function AvatarDialogTabbedView({
                         ) : null}
                         {platformInfo?.android?.platform ? (
                             <PlatformBadge
-                                label="Android"
+                                label={appI18n.t('dialog.avatar.generated.android')}
                                 rating={platformInfo.android.performanceRating}
                                 fileSize={fileAnalysis.android?._fileSize}
                                 icon={SmartphoneIcon}
@@ -324,7 +325,7 @@ export function AvatarDialogTabbedView({
                                 size="icon-lg"
                                 variant="outline"
                                 className="rounded-full"
-                                aria-label="Delete cached avatar"
+                                aria-label={"Delete cached avatar"}
                                 disabled={actionStatus === 'cache'}
                                 onClick={onDeleteCache}
                             >
@@ -340,7 +341,7 @@ export function AvatarDialogTabbedView({
                             type="button"
                             size="icon-lg"
                             className="rounded-full"
-                            aria-label="Select avatar"
+                            aria-label={"Select avatar"}
                             disabled={
                                 !canSelectAvatar || actionStatus === 'selecting'
                             }
@@ -357,7 +358,7 @@ export function AvatarDialogTabbedView({
                                 disabled={actionStatus === 'refresh'}
                                 onSelect={onRefresh}
                             >
-                                Refresh
+                                {appI18n.t('common.actions.refresh')}
                             </EntityActionItem>
                             {avatarUrl ? (
                                 <>
@@ -370,7 +371,7 @@ export function AvatarDialogTabbedView({
                                             )
                                         }
                                     >
-                                        Share / Copy URL
+                                        {appI18n.t('dialog.avatar.generated.share_copy_url')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={ExternalLinkIcon}
@@ -378,7 +379,7 @@ export function AvatarDialogTabbedView({
                                             openExternalLink(avatarUrl)
                                         }
                                     >
-                                        Open VRChat Page
+                                        {appI18n.t('dialog.avatar.generated.open_vrchat_page')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={CopyIcon}
@@ -389,7 +390,7 @@ export function AvatarDialogTabbedView({
                                             )
                                         }
                                     >
-                                        Copy Avatar ID
+                                        {appI18n.t('dialog.avatar.generated.copy_avatar_id')}
                                     </EntityActionItem>
                                 </>
                             ) : null}
@@ -402,7 +403,7 @@ export function AvatarDialogTabbedView({
                                 }
                                 onSelect={onSelectFallback}
                             >
-                                Select Fallback Avatar
+                                {appI18n.t('dialog.avatar.actions.select_fallback')}
                             </EntityActionItem>
                             {canManageAvatar && packageUrl ? (
                                 <EntityActionItem
@@ -411,7 +412,7 @@ export function AvatarDialogTabbedView({
                                         openExternalLink(packageUrl)
                                     }
                                 >
-                                    Download Unity Package
+                                    {appI18n.t('dialog.avatar.generated.download_unity_package')}
                                 </EntityActionItem>
                             ) : null}
                             {canManageAvatar ? (
@@ -439,7 +440,7 @@ export function AvatarDialogTabbedView({
                                         disabled={actionStatus === 'rename'}
                                         onSelect={onRename}
                                     >
-                                        Rename
+                                        {appI18n.t('dialog.avatar.generated.rename')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
@@ -448,21 +449,21 @@ export function AvatarDialogTabbedView({
                                         }
                                         onSelect={onChangeDescription}
                                     >
-                                        Change Description
+                                        {appI18n.t('dialog.avatar.generated.change_description')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus === 'tags'}
                                         onSelect={onChangeContentTags}
                                     >
-                                        Change Content Tags
+                                        {appI18n.t('dialog.avatar.actions.change_content_tags')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus === 'styles'}
                                         onSelect={onChangeStylesAndAuthorTags}
                                     >
-                                        Change Styles and Author Tags
+                                        {appI18n.t('dialog.avatar.actions.change_styles_author_tags')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={ImageIcon}
@@ -471,7 +472,7 @@ export function AvatarDialogTabbedView({
                                         }
                                         onSelect={onChangeImage}
                                     >
-                                        Change Image
+                                        {appI18n.t('dialog.avatar.generated.change_image')}
                                     </EntityActionItem>
                                     <EntityActionSeparator />
                                     {hasImposter ? (
@@ -484,7 +485,7 @@ export function AvatarDialogTabbedView({
                                                 }
                                                 onSelect={onRegenerateImposter}
                                             >
-                                                Regenerate Impostor
+                                                {appI18n.t('dialog.avatar.actions.regenerate_impostor')}
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={Trash2Icon}
@@ -494,7 +495,7 @@ export function AvatarDialogTabbedView({
                                                 }
                                                 onSelect={onDeleteImposter}
                                             >
-                                                Delete Impostor
+                                                {appI18n.t('dialog.avatar.actions.delete_impostor')}
                                             </EntityActionItem>
                                         </>
                                     ) : (
@@ -505,7 +506,7 @@ export function AvatarDialogTabbedView({
                                             }
                                             onSelect={onCreateImposter}
                                         >
-                                            Create Impostor
+                                            {appI18n.t('dialog.avatar.actions.create_impostor')}
                                         </EntityActionItem>
                                     )}
                                 </>
@@ -533,7 +534,7 @@ export function AvatarDialogTabbedView({
                                         disabled={actionStatus === 'delete'}
                                         onSelect={onDelete}
                                     >
-                                        Delete
+                                        {appI18n.t('common.actions.delete')}
                                     </EntityActionItem>
                                 </>
                             ) : null}
@@ -549,7 +550,7 @@ export function AvatarDialogTabbedView({
                 <EntityDialogTabContent value="info" forceMount>
                     <EntityInfoGrid>
                         {galleryImages.length || canManageAvatar ? (
-                            <EntityInfoBlock label="Gallery" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.avatar.generated.gallery')} full>
                                 <div className="mt-2 flex w-full flex-col gap-2">
                                     {canManageAvatar ? (
                                         <Button
@@ -563,7 +564,7 @@ export function AvatarDialogTabbedView({
                                             onClick={onUploadGallery}
                                         >
                                             <UploadIcon data-icon="inline-start" />
-                                            Upload
+                                            {appI18n.t('dialog.avatar.generated.upload')}
                                         </Button>
                                     ) : null}
                                     {galleryImages.length ? (
@@ -615,7 +616,7 @@ export function AvatarDialogTabbedView({
                                                         )
                                                     }
                                                 >
-                                                    Previous
+                                                    {appI18n.t('table.pagination.previous')}
                                                 </Button>
                                                 <span>
                                                     {galleryIndex + 1} /{' '}
@@ -637,20 +638,20 @@ export function AvatarDialogTabbedView({
                                                         )
                                                     }
                                                 >
-                                                    Next
+                                                    {appI18n.t('table.pagination.next')}
                                                 </Button>
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="text-muted-foreground rounded-md border border-dashed p-4 text-xs">
-                                            No gallery images.
+                                            {appI18n.t('dialog.avatar.generated.no_gallery_images')}
                                         </div>
                                     )}
                                 </div>
                             </EntityInfoBlock>
                         ) : null}
                         {listings.length ? (
-                            <EntityInfoBlock label="Published Listings" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.avatar.generated.published_listings')} full>
                                 <div className="flex flex-col gap-2">
                                     {listings.map((listing, index) => (
                                         <div
@@ -676,19 +677,19 @@ export function AvatarDialogTabbedView({
                             </EntityInfoBlock>
                         ) : null}
                         <EntityMemoTextarea
-                            label="Memo"
+                            label={appI18n.t('dialog.avatar.generated.memo')}
                             value={memo}
-                            placeholder="Memo"
+                            placeholder={appI18n.t('dialog.avatar.generated.memo')}
                             onSave={onSaveMemo}
                         />
                         <EntityInfoBlock
-                            label="Avatar ID"
+                            label={appI18n.t('dialog.avatar.info.id')}
                             value={avatar.id}
                             mono
                             full
                         />
                         <EntityInfoBlock
-                            label="Author"
+                            label={appI18n.t('dialog.avatar.generated.author')}
                             onClick={
                                 avatar.authorId
                                     ? () =>
@@ -705,7 +706,7 @@ export function AvatarDialogTabbedView({
                             </span>
                         </EntityInfoBlock>
                         <EntityInfoBlock
-                            label="Created At"
+                            label={appI18n.t('dialog.avatar.generated.created_at')}
                             value={
                                 avatar.created_at || avatar.createdAt
                                     ? formatDateFilter(
@@ -716,7 +717,7 @@ export function AvatarDialogTabbedView({
                             }
                         />
                         <EntityInfoBlock
-                            label="Last Updated"
+                            label={appI18n.t('dialog.avatar.generated.last_updated')}
                             value={
                                 avatar.updated_at || avatar.updatedAt
                                     ? formatDateFilter(
@@ -727,20 +728,20 @@ export function AvatarDialogTabbedView({
                             }
                         />
                         <EntityInfoBlock
-                            label="Version"
+                            label={appI18n.t('dialog.avatar.generated.version')}
                             value={
                                 avatar.version ? String(avatar.version) : '—'
                             }
                         />
                         <EntityInfoBlock
-                            label="Time Spent"
+                            label={appI18n.t('dialog.avatar.generated.time_spent')}
                             value={
                                 avatar.$timeSpent
                                     ? timeToText(avatar.$timeSpent)
                                     : '—'
                             }
                         />
-                        <EntityInfoBlock label="Platform" full>
+                        <EntityInfoBlock label={appI18n.t('dialog.avatar.generated.platform')} full>
                             <span className="block text-xs whitespace-normal">
                                 {[
                                     platformInfo?.pc?.platform
@@ -758,14 +759,14 @@ export function AvatarDialogTabbedView({
                             </span>
                         </EntityInfoBlock>
                         {localTags.length ? (
-                            <EntityInfoBlock label="Local Tags" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.avatar.generated.local_tags')} full>
                                 <TagList
                                     tags={localTags.map((entry) => entry.tag)}
                                 />
                             </EntityInfoBlock>
                         ) : null}
                         {contentTags.length ? (
-                            <EntityInfoBlock label="Content Tags" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.avatar.generated.content_tags')} full>
                                 <TagList
                                     tags={contentTags}
                                     trimPrefix="content_"
@@ -773,7 +774,7 @@ export function AvatarDialogTabbedView({
                             </EntityInfoBlock>
                         ) : null}
                         {authorTags.length ? (
-                            <EntityInfoBlock label="Author Tags" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.world.info.author_tags')} full>
                                 <TagList
                                     tags={authorTags}
                                     trimPrefix="author_tag_"
@@ -781,7 +782,7 @@ export function AvatarDialogTabbedView({
                             </EntityInfoBlock>
                         ) : null}
                         {otherTags.length ? (
-                            <EntityInfoBlock label="VRChat Tags" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.avatar.generated.vrchat_tags')} full>
                                 <TagList tags={otherTags} />
                             </EntityInfoBlock>
                         ) : null}

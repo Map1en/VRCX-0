@@ -344,7 +344,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Widget settings"
+                    aria-label={"Widget settings"}
                 >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
@@ -392,8 +392,8 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
     if (!isGameRunning) {
         return renderShell(
             <DashboardWidgetEmptyState
-                title="Instance widget idle"
-                description="Start VRChat before the dashboard can rebuild the current instance roster."
+                title={t('view.dashboard.generated.instance_widget_idle')}
+                description={t('view.dashboard.generated.start_vrchat_before_the_dashboard_can_rebuild_the_current_in')}
             />
         );
     }
@@ -401,7 +401,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
     if (loadStatus === 'error') {
         return renderShell(
             <DashboardWidgetEmptyState
-                title="Instance widget failed"
+                title={t('view.dashboard.generated.instance_widget_failed')}
                 description={userFacingErrorMessage(
                     detail,
                     'Current players did not finish loading.'
@@ -414,7 +414,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <div className="text-muted-foreground flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm">
                 <Spinner />
-                Loading instance widget
+                {t('view.dashboard.generated.loading_instance_widget')}
             </div>
         );
     }
@@ -422,8 +422,8 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
     if (!enrichedRows.length) {
         return renderShell(
             <DashboardWidgetEmptyState
-                title="Instance widget idle"
-                description="Current players are not available yet."
+                title={t('view.dashboard.generated.instance_widget_idle')}
+                description={t('view.dashboard.generated.current_players_are_not_available_yet')}
             />
         );
     }
@@ -448,7 +448,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1">
                     <span>
-                        {context.playerCount || enrichedRows.length} players
+                        {context.playerCount || enrichedRows.length} {t('dashboard.widget.instance_players')}
                     </span>
                     {parsedLocation.instanceName ? (
                         <span>#{parsedLocation.instanceName}</span>

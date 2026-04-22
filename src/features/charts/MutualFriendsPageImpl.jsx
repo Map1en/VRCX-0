@@ -70,6 +70,7 @@ import {
     readExcludedMutualFriendIds,
     writeExcludedMutualFriendIds
 } from './mutual-friends/mutualFriendsSettings.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const COLORS_PALETTE = [
     '#5470c6',
@@ -185,7 +186,7 @@ function UserPickerRow({
                 </span>
                 {Number.isFinite(option?.degree) ? (
                     <span className="text-muted-foreground block truncate text-xs">
-                        {option.degree} connections
+                        {option.degree} {appI18n.t('view.charts.generated.connections')}
                     </span>
                 ) : null}
             </span>
@@ -214,7 +215,7 @@ function GraphLoadingState() {
     return (
         <AppLoadingState
             className="min-h-80"
-            label="Loading mutual graph snapshot."
+            label={appI18n.t('view.charts.generated.loading_mutual_graph_snapshot')}
         />
     );
 }
@@ -1067,7 +1068,7 @@ export function MutualFriendsPage() {
             .map((friendId) => friendsById[friendId])
             .filter((friend) => friend?.id);
         if (!friendSnapshot.length) {
-            toast.info('No friends are available for mutual graph fetching.');
+            toast.info(t('view.charts.generated.no_friends_are_available_for_mutual_graph_fetching'));
             return;
         }
 
@@ -1144,7 +1145,7 @@ export function MutualFriendsPage() {
 
             if (cancelled) {
                 toast.warning(
-                    'Mutual graph fetch cancelled. The cached graph was not replaced.'
+                    t('view.charts.generated.mutual_graph_fetch_cancelled_the_cached_graph_was_not_replac')
                 );
                 return;
             }
@@ -1161,7 +1162,7 @@ export function MutualFriendsPage() {
                 'Fetched and cached the mutual-friends graph.',
                 ownerUserId
             );
-            toast.success('Mutual-friends graph refreshed.');
+            toast.success(t('view.charts.generated.mutual_friends_graph_refreshed'));
         } catch (error) {
             setStatus('error');
             setDetail(
@@ -1172,7 +1173,7 @@ export function MutualFriendsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to fetch mutual-friends graph.'
+                    : appI18n.t('view.charts.generated_toast.failed_to_fetch_mutual_friends_graph')
             );
         } finally {
             fetchCancelRef.current = false;
@@ -1258,11 +1259,11 @@ export function MutualFriendsPage() {
         const isFriend = Boolean(friendsById[selectedNode.id]);
         if (!isFriend) {
             const result = await confirm({
-                title: 'Refresh non-friend mutuals',
+                title: appI18n.t('view.charts.generated_modal.refresh_non_friend_mutuals'),
                 description:
-                    'This node is not currently in the friend roster. Continue refreshing its mutual-friends cache?',
-                confirmText: 'Refresh',
-                cancelText: 'Cancel'
+                    appI18n.t('view.charts.generated_modal.this_node_is_not_currently_in_the_friend_roster_'),
+                confirmText: appI18n.t('common.actions.refresh'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -1291,7 +1292,7 @@ export function MutualFriendsPage() {
                 `Refreshed mutuals for ${selectedNode.label}.`,
                 ownerUserId
             );
-            toast.success(`Refreshed mutuals for ${selectedNode.label}.`);
+            toast.success(appI18n.t('view.charts.generated_dynamic.refreshed_mutuals_for_value', { value: selectedNode.label }));
         } catch (error) {
             if (error?.status === 403 || error?.status === 404) {
                 if (currentUserIdRef.current !== ownerUserId) {
@@ -1309,7 +1310,7 @@ export function MutualFriendsPage() {
                     ownerUserId
                 );
                 toast.warning(
-                    `${selectedNode.label} has opted out of shared connections.`
+                    appI18n.t('view.charts.generated_dynamic.value_has_opted_out_of_shared_connections', { value: selectedNode.label })
                 );
                 return;
             }
@@ -1317,7 +1318,7 @@ export function MutualFriendsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to refresh selected mutuals.'
+                    : appI18n.t('view.charts.generated_toast.failed_to_refresh_selected_mutuals')
             );
         } finally {
             setNodeRefreshId('');
@@ -1425,7 +1426,7 @@ export function MutualFriendsPage() {
                                                 }}
                                             >
                                                 <span className="min-w-0 flex-1 truncate">
-                                                    No selection
+                                                    {t('view.charts.generated.no_selection')}
                                                 </span>
                                                 <CheckIcon
                                                     data-icon="inline-end"
@@ -1468,8 +1469,7 @@ export function MutualFriendsPage() {
                                             )}
                                             {!filteredNodeOptions.length ? (
                                                 <div className="text-muted-foreground p-3 text-xs">
-                                                    No friends match this
-                                                    search.
+                                                    {t('view.charts.generated.no_friends_match_this_search')}
                                                 </div>
                                             ) : null}
                                         </div>
@@ -1489,7 +1489,7 @@ export function MutualFriendsPage() {
                                     onClick={handleOpenSelectedNode}
                                 >
                                     <UserIcon data-icon="inline-start" />
-                                    Open
+                                    {t('common.actions.open')}
                                 </Button>
                                 <Button
                                     type="button"
@@ -1514,7 +1514,7 @@ export function MutualFriendsPage() {
                                     onClick={handleHideSelectedNode}
                                 >
                                     <EyeOffIcon data-icon="inline-start" />
-                                    Hide
+                                    {t('nav_menu.custom_nav.hide')}
                                 </Button>
                             </>
                         ) : null}
@@ -1522,7 +1522,7 @@ export function MutualFriendsPage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label="Refresh mutual graph"
+                            aria-label={"Refresh mutual graph"}
                             onClick={() => setReloadToken((value) => value + 1)}
                             disabled={fetchProgress.isFetching}
                         >
@@ -1538,9 +1538,7 @@ export function MutualFriendsPage() {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    aria-label={t(
-                                        'view.charts.mutual_friend.settings.title'
-                                    )}
+                                    aria-label={"Graph Layout Settings"}
                                 >
                                     <Settings2Icon data-icon="inline-start" />
                                 </Button>
@@ -1804,8 +1802,7 @@ export function MutualFriendsPage() {
                                                 )}
                                                 {!filteredExcludeOptions.length ? (
                                                     <div className="text-muted-foreground p-3 text-xs">
-                                                        No friends match this
-                                                        search.
+                                                        {t('view.charts.generated.no_friends_match_this_search')}
                                                     </div>
                                                 ) : null}
                                             </div>
@@ -1817,7 +1814,7 @@ export function MutualFriendsPage() {
                                         </p>
                                     </div>
                                     <div className="text-muted-foreground text-xs">
-                                        Hidden nodes: {excludedCount}. Visible
+                                        {t('view.charts.generated.hidden_nodes')} {excludedCount}. Visible
                                         nodes: {nodeCount}. Visible links:{' '}
                                         {edgeCount}.
                                     </div>
@@ -1860,7 +1857,7 @@ export function MutualFriendsPage() {
                         <GraphLoadingState />
                     ) : status === 'error' ? (
                         <GraphEmptyState
-                            title="Mutual graph failed to load"
+                            title={t('view.charts.generated.mutual_graph_failed_to_load')}
                             description={
                                 detail ||
                                 'The graph adapter could not read the cached mutual-friends tables.'
@@ -1868,13 +1865,13 @@ export function MutualFriendsPage() {
                         />
                     ) : !baseGraph.nodes.length ? (
                         <GraphEmptyState
-                            title="No cached mutual graph yet"
-                            description="The local mutual-friends snapshot is empty. Use Start fetch to build the graph cache."
+                            title={t('view.charts.generated.no_cached_mutual_graph_yet')}
+                            description={t('view.charts.generated.the_local_mutual_friends_snapshot_is_empty_use_start_fetch_t')}
                         />
                     ) : !filteredGraph.nodes.length ? (
                         <GraphEmptyState
-                            title="No graph nodes match the current search"
-                            description="Try a broader search term or clear the node filter."
+                            title={t('view.charts.generated.no_graph_nodes_match_the_current_search')}
+                            description={t('view.charts.generated.try_a_broader_search_term_or_clear_the_node_filter')}
                         />
                     ) : (
                         <div

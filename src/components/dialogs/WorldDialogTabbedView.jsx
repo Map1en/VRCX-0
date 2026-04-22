@@ -75,6 +75,7 @@ import {
     EntityRawJson
 } from './EntityDialogScaffold.jsx';
 import { PreviousInstancesPanel } from './PreviousInstancesTableDialog.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 function PlatformBadge({ name, fileSize = '' }) {
     const normalized = String(name || '').toLowerCase();
@@ -99,9 +100,9 @@ function WorldInstancesEmptyState() {
     return (
         <Empty className="min-h-32 border">
             <EmptyHeader>
-                <EmptyTitle>No active instances</EmptyTitle>
+                <EmptyTitle>{appI18n.t('dialog.world.generated.no_active_instances')}</EmptyTitle>
                 <EmptyDescription>
-                    No public or group instances are currently listed.
+                    {appI18n.t('dialog.world.generated.no_public_or_group_instances_are_currently_listed')}
                 </EmptyDescription>
             </EmptyHeader>
         </Empty>
@@ -1309,7 +1310,7 @@ export function WorldDialogTabbedView({
 
     async function copyWorldText(text, label) {
         await copyTextToClipboard(text);
-        toast.success(`${label} copied.`);
+        toast.success(appI18n.t('dialog.world.generated_dynamic.value_copied', { value: label }));
     }
 
     return (
@@ -1371,19 +1372,19 @@ export function WorldDialogTabbedView({
                         {world.capacity > 0 ? (
                             <Badge variant="outline">
                                 <UsersIcon data-icon="inline-start" />
-                                Capacity {world.capacity}
+                                {t('dialog.world.info.capacity')} {world.capacity}
                             </Badge>
                         ) : null}
                         {world.occupants > 0 ? (
                             <Badge variant="outline">
                                 <UsersIcon data-icon="inline-start" />
-                                Occupants {world.occupants}
+                                {t('dialog.world.generated.occupants')} {world.occupants}
                             </Badge>
                         ) : null}
                         {world.favorites > 0 ? (
                             <Badge variant="outline">
                                 <HeartIcon data-icon="inline-start" />
-                                Favorites {world.favorites}
+                                {t('dialog.world.generated.favorites')} {world.favorites}
                             </Badge>
                         ) : null}
                         {world.$isCached ? (
@@ -1423,7 +1424,7 @@ export function WorldDialogTabbedView({
                                 type="button"
                                 size="icon-lg"
                                 variant="outline"
-                                aria-label="Delete cached world"
+                                aria-label={"Delete cached world"}
                                 disabled={actionStatus === 'cache'}
                                 onClick={onDeleteCache}
                             >
@@ -1441,7 +1442,7 @@ export function WorldDialogTabbedView({
                                 disabled={actionStatus === 'refresh'}
                                 onSelect={onRefresh}
                             >
-                                Refresh
+                                {t('common.actions.refresh')}
                             </EntityActionItem>
                             {worldUrl ? (
                                 <>
@@ -1454,7 +1455,7 @@ export function WorldDialogTabbedView({
                                             )
                                         }
                                     >
-                                        Share / Copy URL
+                                        {t('dialog.world.generated.share_copy_url')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={ExternalLinkIcon}
@@ -1462,7 +1463,7 @@ export function WorldDialogTabbedView({
                                             openExternalLink(worldUrl)
                                         }
                                     >
-                                        Open VRChat Page
+                                        {t('dialog.world.generated.open_vrchat_page')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={CopyIcon}
@@ -1473,7 +1474,7 @@ export function WorldDialogTabbedView({
                                             )
                                         }
                                     >
-                                        Copy World ID
+                                        {t('dialog.world.generated.copy_world_id')}
                                     </EntityActionItem>
                                 </>
                             ) : null}
@@ -1483,14 +1484,14 @@ export function WorldDialogTabbedView({
                                 disabled={actionStatus === 'new-instance'}
                                 onSelect={onNewInstance}
                             >
-                                New Instance
+                                {t('dialog.world.generated.new_instance')}
                             </EntityActionItem>
                             <EntityActionItem
                                 icon={MessageSquareIcon}
                                 disabled={actionStatus === 'new-instance'}
                                 onSelect={onNewInstanceSelfInvite}
                             >
-                                New Instance and Self Invite
+                                {t('dialog.world.actions.new_instance_and_self_invite')}
                             </EntityActionItem>
                             <EntityActionItem
                                 icon={HomeIcon}
@@ -1506,7 +1507,7 @@ export function WorldDialogTabbedView({
                                 disabled={!previousInstances.length}
                                 onSelect={() => changeTab('visit-history')}
                             >
-                                Visit History
+                                {t('dialog.world.generated.visit_history')}
                             </EntityActionItem>
                             <EntityActionItem
                                 icon={UploadIcon}
@@ -1516,7 +1517,7 @@ export function WorldDialogTabbedView({
                                 }
                                 onSelect={onDeletePersistentData}
                             >
-                                Delete Persistent Data
+                                {t('dialog.world.actions.delete_persistent_data')}
                             </EntityActionItem>
                             <EntityActionSeparator />
                             {canManageWorld ? (
@@ -1526,49 +1527,49 @@ export function WorldDialogTabbedView({
                                         disabled={actionStatus === 'save-world'}
                                         onSelect={onRename}
                                     >
-                                        Rename
+                                        {t('dialog.world.generated.rename')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus === 'save-world'}
                                         onSelect={onChangeDescription}
                                     >
-                                        Change Description
+                                        {t('dialog.world.generated.change_description')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus === 'save-world'}
                                         onSelect={onChangeCapacity}
                                     >
-                                        Change Capacity
+                                        {t('dialog.world.generated.change_capacity')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus === 'save-world'}
                                         onSelect={onChangeRecommendedCapacity}
                                     >
-                                        Change Recommended Capacity
+                                        {t('dialog.world.generated.change_recommended_capacity')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus === 'save-world'}
                                         onSelect={onChangePreview}
                                     >
-                                        Change YouTube Preview
+                                        {t('prompt.change_world_preview.header')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus === 'save-world'}
                                         onSelect={onChangeTags}
                                     >
-                                        Change Tags
+                                        {t('dialog.world.generated.change_tags')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus === 'save-world'}
                                         onSelect={onChangeAllowedDomains}
                                     >
-                                        Change Allowed Domains
+                                        {t('dialog.world.generated.change_allowed_domains')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={ImageIcon}
@@ -1577,7 +1578,7 @@ export function WorldDialogTabbedView({
                                         }
                                         onSelect={onChangeImage}
                                     >
-                                        Change Image
+                                        {t('dialog.world.generated.change_image')}
                                     </EntityActionItem>
                                     {packageUrl ? (
                                         <EntityActionItem
@@ -1586,7 +1587,7 @@ export function WorldDialogTabbedView({
                                                 openExternalLink(packageUrl)
                                             }
                                         >
-                                            Download Unity Package
+                                            {t('dialog.world.generated.download_unity_package')}
                                         </EntityActionItem>
                                     ) : null}
                                     <EntityActionSeparator />
@@ -1609,7 +1610,7 @@ export function WorldDialogTabbedView({
                                         disabled={actionStatus === 'delete'}
                                         onSelect={onDelete}
                                     >
-                                        Delete
+                                        {t('common.actions.delete')}
                                     </EntityActionItem>
                                 </>
                             ) : null}
@@ -1629,15 +1630,15 @@ export function WorldDialogTabbedView({
                     <div className="flex flex-wrap items-center gap-3 text-sm">
                         <span className="inline-flex items-center gap-1">
                             <UserIcon className="size-4" />
-                            Public {world.publicOccupants ?? 0}
+                            {t('dialog.world.generated.public')} {world.publicOccupants ?? 0}
                         </span>
                         <span className="inline-flex items-center gap-1">
                             <UserIcon className="size-4" />
-                            Private {world.privateOccupants ?? 0}
+                            {t('dialog.world.generated.private')} {world.privateOccupants ?? 0}
                         </span>
                         <span className="inline-flex items-center gap-1">
                             <UsersIcon className="size-4" />
-                            Capacity {world.recommendedCapacity || '—'} /{' '}
+                            {t('dialog.world.info.capacity')} {world.recommendedCapacity || '—'} /{' '}
                             {world.capacity || '—'}
                         </span>
                     </div>
@@ -1732,7 +1733,7 @@ export function WorldDialogTabbedView({
                     className="flex min-h-0 flex-col"
                 >
                     <PreviousInstancesPanel
-                        title="Visit History"
+                        title={t('dialog.world.generated.visit_history')}
                         instances={previousInstances}
                         variant="world"
                         targetRef={world}
@@ -1743,20 +1744,20 @@ export function WorldDialogTabbedView({
                 <EntityDialogTabContent value="info" forceMount>
                     <EntityInfoGrid>
                         <EntityMemoTextarea
-                            label="Memo"
+                            label={t('dialog.world.generated.memo')}
                             value={memo}
-                            placeholder="Memo"
+                            placeholder={t('dialog.world.generated.memo')}
                             onSave={onSaveMemo}
                         />
                         <EntityInfoBlock
-                            label="World ID"
+                            label={t('dialog.world.generated.world_id')}
                             value={world.id}
                             mono
                             full
                         />
                         {previewUrl ? (
                             <EntityInfoBlock
-                                label="YouTube Preview"
+                                label={t('dialog.world.generated.youtube_preview')}
                                 wide
                                 onClick={() => openExternalLink(previewUrl)}
                             >
@@ -1766,7 +1767,7 @@ export function WorldDialogTabbedView({
                             </EntityInfoBlock>
                         ) : null}
                         <EntityInfoBlock
-                            label="Author"
+                            label={t('dialog.world.generated.author')}
                             onClick={
                                 world.authorId
                                     ? () =>
@@ -1783,13 +1784,13 @@ export function WorldDialogTabbedView({
                             </span>
                         </EntityInfoBlock>
                         <EntityInfoBlock
-                            label="Players"
+                            label={t('dialog.world.generated.players')}
                             value={
                                 world.occupants ? String(world.occupants) : '—'
                             }
                         />
                         <EntityInfoBlock
-                            label="Favorites"
+                            label={t('dialog.world.generated.favorites')}
                             value={
                                 world.favorites
                                     ? `${world.favorites}${favoriteRate ? ` (${favoriteRate}%)` : ''}`
@@ -1797,21 +1798,21 @@ export function WorldDialogTabbedView({
                             }
                         />
                         <EntityInfoBlock
-                            label="Visits"
+                            label={t('dialog.world.info.visits')}
                             value={world.visits ? String(world.visits) : '—'}
                         />
                         <EntityInfoBlock
-                            label="Capacity"
+                            label={t('dialog.world.info.capacity')}
                             value={`${world.recommendedCapacity || '—'} (${world.capacity || '—'})`}
                         />
                         <EntityInfoBlock
-                            label="Created"
+                            label={t('dialog.world.generated.created')}
                             value={formatDate(
                                 world.createdAt || world.created_at
                             )}
                         />
                         <EntityInfoBlock
-                            label="Last Updated"
+                            label={t('dialog.world.generated.last_updated')}
                             value={formatDate(
                                 world.updatedAt || world.updated_at
                             )}
@@ -1819,23 +1820,23 @@ export function WorldDialogTabbedView({
                         {world.labsPublicationDate &&
                         world.labsPublicationDate !== 'none' ? (
                             <EntityInfoBlock
-                                label="Labs Publication Date"
+                                label={t('dialog.world.info.labs_publication_date')}
                                 value={formatDate(world.labsPublicationDate)}
                             />
                         ) : null}
                         <EntityInfoBlock
-                            label="Publication Date"
+                            label={t('dialog.world.info.publication_date')}
                             value={formatDate(world.publicationDate)}
                         />
                         <EntityInfoBlock
-                            label="Last Visited"
+                            label={t('dialog.world.generated.last_visited')}
                             value={formatDate(
                                 lastVisitedInstance?.created_at ||
                                     lastVisitedInstance?.createdAt
                             )}
                         />
                         <EntityInfoBlock
-                            label="Visit Count"
+                            label={t('dialog.world.info.visit_count')}
                             value={
                                 previousInstances.length
                                     ? String(previousInstances.length)
@@ -1848,7 +1849,7 @@ export function WorldDialogTabbedView({
                             }
                         />
                         <EntityInfoBlock
-                            label="Time Spent"
+                            label={t('dialog.world.generated.time_spent')}
                             value={
                                 totalVisitTime > 0
                                     ? timeToText(totalVisitTime)
@@ -1856,15 +1857,15 @@ export function WorldDialogTabbedView({
                             }
                         />
                         <EntityInfoBlock
-                            label="Version"
+                            label={t('dialog.world.generated.version')}
                             value={world.version ? String(world.version) : '—'}
                         />
                         <EntityInfoBlock
-                            label="Heat"
+                            label={t('dialog.world.info.heat')}
                             value={world.heat ? String(world.heat) : '—'}
                         />
                         <EntityInfoBlock
-                            label="Popularity"
+                            label={t('dialog.world.generated.popularity')}
                             value={
                                 world.popularity
                                     ? String(world.popularity)
@@ -1872,10 +1873,10 @@ export function WorldDialogTabbedView({
                             }
                         />
                         <EntityInfoBlock
-                            label="Persistent Data"
+                            label={t('dialog.world.generated.persistent_data')}
                             value={hasPersistData ? 'Available' : '—'}
                         />
-                        <EntityInfoBlock label="Platform" full>
+                        <EntityInfoBlock label={t('dialog.world.generated.platform')} full>
                             <span className="block text-xs whitespace-normal">
                                 {world.platforms?.join(', ') || '—'}
                             </span>
@@ -1883,7 +1884,7 @@ export function WorldDialogTabbedView({
                         {Array.isArray(world.urlList) &&
                         world.urlList.length ? (
                             <EntityInfoBlock
-                                label="Allowed Video Player Domains"
+                                label={t('dialog.allowed_video_player_domains.header')}
                                 full
                             >
                                 <div className="flex flex-wrap gap-1.5">
@@ -1896,7 +1897,7 @@ export function WorldDialogTabbedView({
                             </EntityInfoBlock>
                         ) : null}
                         {authorTags.length ? (
-                            <EntityInfoBlock label="Author Tags" full>
+                            <EntityInfoBlock label={t('dialog.world.info.author_tags')} full>
                                 <div className="flex flex-wrap gap-1.5">
                                     {authorTags.map((tag) => (
                                         <Badge key={tag} variant="outline">

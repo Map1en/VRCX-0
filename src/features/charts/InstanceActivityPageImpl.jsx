@@ -49,6 +49,7 @@ import {
     getDetailGroupKeys,
     getLocalDayBounds
 } from './instance-activity/instanceActivityRows.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const DEFAULT_BAR_WIDTH = 25;
 
@@ -122,7 +123,7 @@ function ChartLoadingState() {
     return (
         <AppLoadingState
             className="min-h-80"
-            label="Loading instance activity."
+            label={appI18n.t('view.charts.generated.loading_instance_activity')}
         />
     );
 }
@@ -289,8 +290,8 @@ function InstanceActivityDetailChart({
                 <div ref={setDetailChartElementRef} className="w-full" />
             ) : (
                 <ChartEmptyState
-                    title="No detail rows"
-                    description="No matching player activity rows were found for this instance visit."
+                    title={appI18n.t('view.charts.generated.no_detail_rows')}
+                    description={appI18n.t('view.charts.generated.no_matching_player_activity_rows_were_found_for_this_instanc')}
                 />
             )}
         </div>
@@ -737,7 +738,7 @@ export function InstanceActivityPage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label="Refresh instance activity"
+                            aria-label={"Refresh instance activity"}
                             onClick={handleRefresh}
                         >
                             <RefreshCcwIcon data-icon="inline-start" />
@@ -748,7 +749,7 @@ export function InstanceActivityPage() {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    aria-label="Instance activity settings"
+                                    aria-label={"Instance activity settings"}
                                 >
                                     <Settings2Icon data-icon="inline-start" />
                                 </Button>
@@ -843,7 +844,7 @@ export function InstanceActivityPage() {
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                aria-label="Previous day"
+                                aria-label={"Previous day"}
                                 disabled={isPrevDayDisabled}
                                 onClick={() => handleDateStep(false)}
                             >
@@ -853,7 +854,7 @@ export function InstanceActivityPage() {
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                aria-label="Next day"
+                                aria-label={"Next day"}
                                 disabled={isNextDayDisabled}
                                 onClick={() => handleDateStep(true)}
                             >
@@ -933,7 +934,7 @@ export function InstanceActivityPage() {
                         <ChartLoadingState />
                     ) : dataStatus === 'error' ? (
                         <ChartEmptyState
-                            title="Instance activity failed to load"
+                            title={t('view.charts.generated.instance_activity_failed_to_load')}
                             description={
                                 dataDetail ||
                                 'The chart adapter could not read game-log instance activity for the selected day.'
@@ -947,7 +948,7 @@ export function InstanceActivityPage() {
                             />
                             {!chartRows.length ? (
                                 <ChartEmptyState
-                                    title="No instance activity on this day"
+                                    title={t('view.charts.generated.no_instance_activity_on_this_day')}
                                     description={
                                         availableDates.includes(selectedDate)
                                             ? 'The selected day exists in the activity index, but the timeline query returned no current-user instance rows.'
@@ -1017,8 +1018,8 @@ export function InstanceActivityPage() {
                                 })
                             ) : (
                                 <ChartEmptyState
-                                    title="No detail charts match the current filters"
-                                    description="Turn on solo or no-friend instances to show the hidden detail groups."
+                                    title={t('view.charts.generated.no_detail_charts_match_the_current_filters')}
+                                    description={t('view.charts.generated.turn_on_solo_or_no_friend_instances_to_show_the_hidden_detai')}
                                 />
                             )}
                         </div>

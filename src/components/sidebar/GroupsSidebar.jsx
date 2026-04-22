@@ -23,6 +23,7 @@ import {
     ContextMenuItem,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { appI18n } from '@/services/i18nService.js';
 
 const GROUP_HEADER_ROW_SIZE = 38;
 const GROUP_INSTANCE_ROW_SIZE = 49;
@@ -193,15 +194,15 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
                 endpoint
             );
             if (opened) {
-                toast.success('VRChat launch request sent.');
+                toast.success(t('side_panel.generated.vrchat_launch_request_sent'));
                 return;
             }
-            toast.error('Unable to open this instance in VRChat.');
+            toast.error(t('side_panel.generated.unable_to_open_this_instance_in_vrchat'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to launch instance.'
+                    : appI18n.t('component.groups_sidebar.generated_toast.failed_to_launch_instance')
             );
         }
     }
@@ -221,7 +222,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send self invite.'
+                    : appI18n.t('component.groups_sidebar.generated_toast.failed_to_send_self_invite')
             );
         }
     }

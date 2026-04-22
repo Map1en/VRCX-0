@@ -19,6 +19,7 @@ import {
     InputGroupButton,
     InputGroupInput
 } from '@/ui/shadcn/input-group';
+import { appI18n } from '@/services/i18nService.js';
 
 function providerListKey(providerList) {
     return JSON.stringify(
@@ -73,7 +74,7 @@ export function AvatarProviderSettingsDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save avatar providers.'
+                    : appI18n.t('component.avatar_provider_settings.generated_toast.failed_to_save_avatar_providers')
             );
         } finally {
             if (inFlightProviderListKeyRef.current === nextProviderListKey) {
@@ -131,7 +132,7 @@ export function AvatarProviderSettingsDialog({
                                 htmlFor={`avatar-provider-${index}`}
                                 className="sr-only"
                             >
-                                Avatar provider {index + 1}
+                                {t('view.search.generated.avatar_provider')} {index + 1}
                             </FieldLabel>
                             <InputGroup>
                                 <InputGroupInput

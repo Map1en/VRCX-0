@@ -177,6 +177,7 @@ import {
     parseWebJson,
     TABLE_PAGE_SIZE_DEFAULTS
 } from './settingsValues.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const fontFamilyLabelKeys = {
     inter: 'view.settings.appearance.appearance.font_family_inter',
@@ -362,7 +363,7 @@ function TablePageSizesDialog({ open, onOpenChange, onSaved }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save setting.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_save_setting')
             );
             return false;
         }
@@ -432,7 +433,7 @@ function TablePageSizesDialog({ open, onOpenChange, onSaved }) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-xs"
-                                    aria-label={`${t('common.actions.remove')} ${size}`}
+                                    aria-label={`Remove ${size}`}
                                     onClick={() => removePageSize(size)}
                                 >
                                     <XIcon data-icon="inline-start" />
@@ -473,9 +474,7 @@ function TablePageSizesDialog({ open, onOpenChange, onSaved }) {
                                 <InputGroupButton
                                     type="button"
                                     size="icon-xs"
-                                    aria-label={t(
-                                        'view.settings.appearance.appearance.table_page_sizes'
-                                    )}
+                                    aria-label={"Table Page Sizes"}
                                     onClick={() => addPageSize()}
                                 >
                                     <PlusIcon data-icon="inline-start" />
@@ -769,7 +768,7 @@ export function SettingsPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to load settings.'
+                        : appI18n.t('view.settings.generated_toast.failed_to_load_settings')
                 );
             })
             .finally(() => {
@@ -954,7 +953,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save setting.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_save_setting')
             );
             return false;
         }
@@ -1091,7 +1090,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save trust color.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_save_trust_color')
             );
             await restorePersistedTrustColors();
         }
@@ -1106,7 +1105,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save trust color.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_save_trust_color')
             );
         }
     }
@@ -1135,7 +1134,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to refresh SQLite table sizes.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_refresh_sqlite_table_sizes')
             );
         }
     }
@@ -1154,7 +1153,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to refresh config JSON.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_refresh_config_json')
             );
         }
     }
@@ -1169,7 +1168,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to refresh online user count.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_refresh_online_user_count')
             );
         }
     }
@@ -1193,7 +1192,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load proxy settings.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_load_proxy_settings')
             );
             return;
         }
@@ -1206,7 +1205,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save proxy settings.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_save_proxy_settings')
             );
         }
     }
@@ -1296,7 +1295,7 @@ export function SettingsPage() {
         }
         const voices = window.speechSynthesis.getVoices();
         if (!voices.length) {
-            toast.warning('No text-to-speech voices are available.');
+            toast.warning(t('view.settings.generated.no_text_to_speech_voices_are_available'));
             return;
         }
         const utterance = new window.SpeechSynthesisUtterance();
@@ -1348,7 +1347,7 @@ export function SettingsPage() {
             return;
         }
         await backend.app.DeleteAllScreenshotMetadata();
-        toast.success('Screenshot metadata removed.');
+        toast.success(t('view.settings.generated.screenshot_metadata_removed'));
     }
 
     async function refreshCacheSize() {
@@ -1396,7 +1395,7 @@ export function SettingsPage() {
             favoriteDetailsPending: 0
         }));
         toast.success(
-            `Cleared ${queryCacheCount} query cache entries, ${avatarNameCacheCount} avatar name entries, and ${favoriteStats.detailCacheCount} favorite detail entries.`
+            appI18n.t('view.settings.generated_dynamic.cleared_value_query_cache_entries_value_avatar_n', { value: queryCacheCount, value2: avatarNameCacheCount, value3: favoriteStats.detailCacheCount })
         );
     }
 
@@ -1546,11 +1545,11 @@ export function SettingsPage() {
 
     async function promptCropExistingPrints() {
         const result = await confirm({
-            title: 'Crop Existing Prints',
+            title: appI18n.t('view.settings.generated_modal.crop_existing_prints'),
             description:
-                'Crop already saved instance prints in the configured UGC folder now?',
-            confirmText: 'Crop Prints',
-            cancelText: 'Skip'
+                appI18n.t('view.settings.generated_modal.crop_already_saved_instance_prints_in_the_config'),
+            confirmText: appI18n.t('view.settings.generated_modal.crop_prints'),
+            cancelText: appI18n.t('view.settings.generated_modal.skip')
         });
         if (!result.ok) {
             return;
@@ -1560,7 +1559,7 @@ export function SettingsPage() {
             prefs.userGeneratedContentPath
         );
         await mediaRepository.cropAllPrints(ugcFolderPath);
-        toast.success('Existing saved prints cropped.');
+        toast.success(t('view.settings.generated.existing_saved_prints_cropped'));
     }
 
     async function handleCropInstancePrintsChange(checked) {
@@ -1583,7 +1582,7 @@ export function SettingsPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to crop existing prints.'
+                        : appI18n.t('view.settings.generated_toast.failed_to_crop_existing_prints')
                 );
             });
         }
@@ -1771,7 +1770,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save translation settings.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_save_translation_settings')
             );
         } finally {
             setIntegrationStatus((current) => ({
@@ -1827,7 +1826,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to fetch translation models.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_fetch_translation_models')
             );
         } finally {
             setIntegrationStatus((current) => ({ ...current, models: 'idle' }));
@@ -1979,7 +1978,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save feed filters.'
+                    : appI18n.t('view.settings.generated_toast.failed_to_save_feed_filters')
             );
         });
     }
@@ -2025,7 +2024,7 @@ export function SettingsPage() {
                 {loading ? (
                     <div className="text-muted-foreground flex items-center gap-2 text-sm">
                         <Spinner />
-                        Loading settings snapshot…
+                        {t('view.settings.generated.loading_settings_snapshot')}
                     </div>
                 ) : null}
                 <SettingsTabContent value="system">
@@ -4397,7 +4396,7 @@ export function SettingsPage() {
                                 >
                                     <div className="flex items-center gap-2">
                                         <Badge variant="outline">
-                                            {prefs.autoLoginDelaySeconds}s
+                                            {prefs.autoLoginDelaySeconds}{t('common.time_units.s')}
                                         </Badge>
                                         <Button
                                             type="button"
@@ -4646,13 +4645,13 @@ export function SettingsPage() {
                                     </span>
                                 </div>
                                 <div className="flex justify-between gap-3">
-                                    <span>Favorite detail cache</span>
+                                    <span>{t('view.settings.generated.favorite_detail_cache')}</span>
                                     <span className="font-mono">
                                         {cacheStats.favoriteDetailsCache}
                                     </span>
                                 </div>
                                 <div className="flex justify-between gap-3">
-                                    <span>Favorite detail pending</span>
+                                    <span>{t('view.settings.generated.favorite_detail_pending')}</span>
                                     <span className="font-mono">
                                         {cacheStats.favoriteDetailsPending}
                                     </span>
@@ -4668,7 +4667,7 @@ export function SettingsPage() {
                                 </div>
                             </div>
                             <Field
-                                label={`${t('view.settings.advanced.advanced.cache_debug.disable_gamelog')} ${t('view.settings.advanced.advanced.cache_debug.disable_gamelog_notice')}`}
+                                label={appI18n.t('view.settings.generated_dynamic.value_value', { value: t('view.settings.advanced.advanced.cache_debug.disable_gamelog'), value2: t('view.settings.advanced.advanced.cache_debug.disable_gamelog_notice') })}
                             >
                                 <Switch
                                     checked={prefs.gameLogDisabled}
@@ -5438,7 +5437,7 @@ export function SettingsPage() {
                                 (provider, index) => (
                                     <Field
                                         key={`avatar-provider-dialog-${index}`}
-                                        label={`${t('view.settings.advanced.advanced.remote_database.avatar_database_provider')} ${index + 1}`}
+                                        label={appI18n.t('view.settings.generated_dynamic.value_value', { value: t('view.settings.advanced.advanced.remote_database.avatar_database_provider'), value2: index + 1 })}
                                         controlId={`settings-avatar-provider-${index}`}
                                     >
                                         <InputGroup>
@@ -5463,9 +5462,7 @@ export function SettingsPage() {
                                                 <InputGroupButton
                                                     type="button"
                                                     size="icon-xs"
-                                                    aria-label={t(
-                                                        'common.actions.remove'
-                                                    )}
+                                                    aria-label={"Remove"}
                                                     onClick={() =>
                                                         removeAvatarProvider(
                                                             index

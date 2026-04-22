@@ -38,6 +38,7 @@ import {
     resolveColumnLabel,
     setColumnOrderLocked
 } from './tableColumnLayout.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function moveColumn(table, columnId, delta, order = getColumnOrder(table)) {
     const currentIndex = order.indexOf(columnId);
@@ -88,7 +89,7 @@ export function TableColumnVisibilityMenu({
                 align="end"
                 className="max-h-96 w-72 overflow-y-auto"
             >
-                <DropdownMenuLabel>Table layout</DropdownMenuLabel>
+                <DropdownMenuLabel>{appI18n.t('table.generated.table_layout')}</DropdownMenuLabel>
                 <DropdownMenuGroup>
                     <DropdownMenuItem
                         onSelect={(event) => {
@@ -97,7 +98,7 @@ export function TableColumnVisibilityMenu({
                         }}
                     >
                         <RotateCcwIcon data-icon="inline-start" />
-                        Reset columns
+                        {appI18n.t('table.generated.reset_columns')}
                     </DropdownMenuItem>
                     {showColumnOrderLock ? (
                         <DropdownMenuItem
@@ -155,7 +156,7 @@ export function TableColumnVisibilityMenu({
                                     }}
                                 >
                                     <ArrowUpIcon data-icon="inline-start" />
-                                    Move up
+                                    {appI18n.t('table.generated.move_up')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     inset
@@ -171,7 +172,7 @@ export function TableColumnVisibilityMenu({
                                     }}
                                 >
                                     <ArrowDownIcon data-icon="inline-start" />
-                                    Move down
+                                    {appI18n.t('table.generated.move_down')}
                                 </DropdownMenuItem>
                             </Fragment>
                         );
@@ -254,7 +255,7 @@ export function TableColumnHeaderContextMenu({
                                     resetTableLayout(table, onResetLayout)
                                 }
                             >
-                                Reset columns
+                                {appI18n.t('table.generated.reset_columns')}
                             </ContextMenuItem>
                         ) : null}
                     </ContextMenuGroup>

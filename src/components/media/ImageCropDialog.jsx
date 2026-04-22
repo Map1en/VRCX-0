@@ -17,6 +17,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Slider } from '@/ui/shadcn/slider';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { appI18n } from '@/services/i18nService.js';
 
 export function ImageCropDialog({
     open,
@@ -148,7 +149,7 @@ export function ImageCropDialog({
                             <canvas
                                 ref={canvasRef}
                                 role="img"
-                                aria-label="Selected upload preview"
+                                aria-label={"Selected upload preview"}
                                 className="h-full w-full object-cover"
                             />
                         ) : null}
@@ -156,7 +157,7 @@ export function ImageCropDialog({
                     <FieldGroup className="grid gap-4 md:grid-cols-3">
                         <Field>
                             <FieldLabel htmlFor="image-crop-zoom">
-                                Zoom
+                                {appI18n.t('message.image.generated.zoom')}
                             </FieldLabel>
                             <Slider
                                 id="image-crop-zoom"
@@ -171,7 +172,7 @@ export function ImageCropDialog({
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="image-crop-offset-x">
-                                Horizontal
+                                {appI18n.t('message.image.generated.horizontal')}
                             </FieldLabel>
                             <Slider
                                 id="image-crop-offset-x"
@@ -186,7 +187,7 @@ export function ImageCropDialog({
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="image-crop-offset-y">
-                                Vertical
+                                {appI18n.t('message.image.generated.vertical')}
                             </FieldLabel>
                             <Slider
                                 id="image-crop-offset-y"
@@ -207,7 +208,7 @@ export function ImageCropDialog({
                         disabled={isConfirming}
                         onClick={() => onOpenChange?.(false)}
                     >
-                        Cancel
+                        {appI18n.t('common.actions.cancel')}
                     </Button>
                     <Button
                         disabled={isConfirming || !file}
@@ -216,7 +217,7 @@ export function ImageCropDialog({
                         {isConfirming ? (
                             <Spinner data-icon="inline-start" />
                         ) : null}
-                        Upload
+                        {appI18n.t('message.image.generated.upload')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

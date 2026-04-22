@@ -18,27 +18,28 @@ import {
     normalizeLanguageOptionsFromConfig,
     normalizeProfileLanguageRows
 } from './userProfileFields.js';
+import { appI18n } from '@/services/i18nService.js';
 
 export function buildUserDialogTabs({
     isCurrentUser,
     currentUserHasSharedConnectionsOptOut
 }) {
     return [
-        { value: 'info', label: 'Info' },
-        { value: 'instance-history', label: 'Instance History' },
+        { value: 'info', label: appI18n.t('dialog.user.tabs.info') },
+        { value: 'instance-history', label: appI18n.t('dialog.user.tabs.instance_history') },
         ...(!isCurrentUser && !currentUserHasSharedConnectionsOptOut
-            ? [{ value: 'mutual', label: 'Mutual' }]
+            ? [{ value: 'mutual', label: appI18n.t('dialog.user.tabs.mutual') }]
             : []),
-        { value: 'groups', label: 'Groups' },
-        { value: 'worlds', label: 'Worlds' },
+        { value: 'groups', label: appI18n.t('dialog.user.tabs.groups') },
+        { value: 'worlds', label: appI18n.t('dialog.user.tabs.worlds') },
         ...(!isCurrentUser
             ? [
-                  { value: 'favorite-worlds', label: 'Favorite Worlds' },
-                  { value: 'avatars', label: 'Avatars' }
+                  { value: 'favorite-worlds', label: appI18n.t('dialog.user.tabs.favorite_worlds') },
+                  { value: 'avatars', label: appI18n.t('dialog.user.tabs.avatars') }
               ]
             : []),
-        { value: 'activity', label: 'Activity' },
-        { value: 'json', label: 'JSON' }
+        { value: 'activity', label: appI18n.t('dialog.user.tabs.activity') },
+        { value: 'json', label: appI18n.t('dialog.user.tabs.json') }
     ];
 }
 

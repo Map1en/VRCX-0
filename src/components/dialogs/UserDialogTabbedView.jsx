@@ -162,6 +162,7 @@ import {
 } from './user-dialog/userDialogViewData.js';
 import { languageOptionLabel } from './user-dialog/userProfileFields.js';
 import { UserActivityPanel } from './UserActivityPanel.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 const userDialogTabServiceRepositories = Object.freeze({
     avatarProfileRepository,
@@ -232,7 +233,7 @@ function PreviousDisplayNamesBadge({ names }) {
                 <div className="flex flex-col">
                     <div className="border-border flex items-center justify-between gap-3 border-b px-3 py-2">
                         <div className="text-sm font-medium">
-                            Previous display names
+                            {appI18n.t('dialog.user.generated.previous_display_names')}
                         </div>
                         <Badge variant="secondary">{names.length}</Badge>
                     </div>
@@ -415,7 +416,7 @@ function UserGroupCard({
                         {group?.isRepresenting || group?.is_representing ? (
                             <TagIcon
                                 className="mr-1.5 shrink-0"
-                                aria-label="Representing"
+                                aria-label={"Representing"}
                             />
                         ) : null}
                         {visibility !== 'visible' ? (
@@ -437,8 +438,8 @@ function UserGroupCard({
                             variant="ghost"
                             className="ml-1 shrink-0"
                             disabled={busy}
-                            title="Manage group membership"
-                            aria-label="Manage group membership"
+                            title={appI18n.t('dialog.user.generated.manage_group_membership')}
+                            aria-label={"Manage group membership"}
                         >
                             <SettingsIcon data-icon="inline-start" />
                         </Button>
@@ -453,7 +454,7 @@ function UserGroupCard({
                                         }
                                     >
                                         <DownloadIcon className="rotate-180" />
-                                        Move Top
+                                        {appI18n.t('dialog.user.generated.move_top')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onSelect={() =>
@@ -461,7 +462,7 @@ function UserGroupCard({
                                         }
                                     >
                                         <ArrowUpIcon />
-                                        Move Up
+                                        {appI18n.t('dialog.user.generated.move_up')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onSelect={() =>
@@ -469,7 +470,7 @@ function UserGroupCard({
                                         }
                                     >
                                         <ArrowDownIcon />
-                                        Move Down
+                                        {appI18n.t('dialog.user.generated.move_down')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onSelect={() =>
@@ -477,7 +478,7 @@ function UserGroupCard({
                                         }
                                     >
                                         <DownloadIcon />
-                                        Move Bottom
+                                        {appI18n.t('dialog.user.generated.move_bottom')}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
@@ -491,13 +492,13 @@ function UserGroupCard({
                                 }
                             >
                                 <DropdownMenuRadioItem value="visible">
-                                    Visibility: Everyone
+                                    {appI18n.t('dialog.user.generated.visibility_everyone')}
                                 </DropdownMenuRadioItem>
                                 <DropdownMenuRadioItem value="friends">
-                                    Visibility: Friends
+                                    {appI18n.t('dialog.user.generated.visibility_friends')}
                                 </DropdownMenuRadioItem>
                                 <DropdownMenuRadioItem value="hidden">
-                                    Visibility: Hidden
+                                    {appI18n.t('dialog.user.generated.visibility_hidden')}
                                 </DropdownMenuRadioItem>
                             </DropdownMenuRadioGroup>
                             <DropdownMenuItem
@@ -505,7 +506,7 @@ function UserGroupCard({
                                 onSelect={() => onLeave?.(group)}
                             >
                                 <LogOutIcon />
-                                Leave Group
+                                {appI18n.t('dialog.user.generated.leave_group')}
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                     </DropdownMenuContent>
@@ -585,7 +586,7 @@ function EntityListState({ kind, loading = false, error = '' }) {
         return (
             <div className="text-muted-foreground flex min-h-32 items-center justify-center gap-2 text-sm">
                 <Spinner className="size-4" />
-                <span>Loading...</span>
+                <span>{appI18n.t('dialog.user.generated.loading')}</span>
             </div>
         );
     }
@@ -602,7 +603,7 @@ function EntityListState({ kind, loading = false, error = '' }) {
         <Empty className="min-h-32 border">
             <EmptyHeader>
                 <EmptyTitle>{entityListEmptyTitle(kind)}</EmptyTitle>
-                <EmptyDescription>No matching entries.</EmptyDescription>
+                <EmptyDescription>{appI18n.t('common.no_matching_entries')}</EmptyDescription>
             </EmptyHeader>
         </Empty>
     );
@@ -1532,7 +1533,7 @@ export function UserDialogTabbedView({
 
     async function copyUserText(text, label) {
         await copyTextToClipboard(text);
-        toast.success(`${label} copied.`);
+        toast.success(appI18n.t('dialog.user.generated_dynamic.value_copied', { value: label }));
     }
 
     async function openDiscordProfile(discordId) {
@@ -1542,7 +1543,7 @@ export function UserDialogTabbedView({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to open Discord profile.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_open_discord_profile')
             );
         }
     }
@@ -1578,7 +1579,7 @@ export function UserDialogTabbedView({
             });
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Translation failed.'
+                error instanceof Error ? error.message : appI18n.t('dialog.user.generated_toast.translation_failed')
             );
         } finally {
             setBioTranslationLoading(false);
@@ -1601,12 +1602,12 @@ export function UserDialogTabbedView({
                 });
                 return;
             }
-            toast.error('Avatar author unavailable.');
+            toast.error(t('dialog.user.generated.avatar_author_unavailable'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load avatar author.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_load_avatar_author')
             );
         }
     }
@@ -1616,11 +1617,11 @@ export function UserDialogTabbedView({
             return;
         }
         const result = await prompt({
-            title: 'Invite to group',
-            description: 'Enter the VRChat group id to invite this user to.',
+            title: appI18n.t('dialog.user.generated_modal.invite_to_group'),
+            description: appI18n.t('dialog.user.generated_modal.enter_the_vrchat_group_id_to_invite_this_user_to'),
             inputValue: '',
-            confirmText: 'Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('dialog.user.generated_modal.invite'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1631,12 +1632,12 @@ export function UserDialogTabbedView({
                 userId: profile.id,
                 endpoint: currentEndpoint
             });
-            toast.success('Group invite sent.');
+            toast.success(t('dialog.user.generated.group_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send group invite.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_send_group_invite')
             );
         }
     }
@@ -1660,13 +1661,13 @@ export function UserDialogTabbedView({
                 endpoint: currentEndpoint,
                 params: { visibility }
             });
-            toast.success('Group visibility updated.');
+            toast.success(t('dialog.user.generated.group_visibility_updated'));
             await refreshGroupsAfterMembershipChange();
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update group visibility.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_update_group_visibility')
             );
         } finally {
             setGroupActionId('');
@@ -1679,10 +1680,10 @@ export function UserDialogTabbedView({
             return;
         }
         const result = await confirm({
-            title: 'Leave group',
-            description: `Leave ${summarizeEntityRow(group, groupId)}?`,
-            confirmText: 'Leave',
-            cancelText: 'Cancel',
+            title: appI18n.t('dialog.user.generated_modal.leave_group'),
+            description: appI18n.t('dialog.user.generated_dynamic.leave_value', { value: summarizeEntityRow(group, groupId) }),
+            confirmText: appI18n.t('dialog.user.generated_modal.leave'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -1695,13 +1696,13 @@ export function UserDialogTabbedView({
                 groupId,
                 endpoint: currentEndpoint
             });
-            toast.success('Left group.');
+            toast.success(t('dialog.user.generated.left_group'));
             await refreshGroupsAfterMembershipChange();
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to leave group.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_leave_group')
             );
         } finally {
             setGroupActionId('');
@@ -1744,7 +1745,7 @@ export function UserDialogTabbedView({
     function exportUserGroups(rows) {
         const groups = rows.length ? rows : profileGroups;
         if (!groups.length) {
-            toast.error('No groups to export.');
+            toast.error(t('dialog.user.generated.no_groups_to_export'));
             return;
         }
         const filenameUser =
@@ -1752,7 +1753,7 @@ export function UserDialogTabbedView({
                 profile.username || profile.displayName || profile.id
             ).replace(/[^a-z0-9_-]+/gi, '_') || 'user';
         downloadJsonFile(`vrcx-${filenameUser}-groups.json`, groups);
-        toast.success(`Exported ${groups.length} groups.`);
+        toast.success(appI18n.t('dialog.user.generated_dynamic.exported_value_groups', { value: groups.length }));
     }
 
     async function changeSelectedGroupsVisibility(visibility) {
@@ -1775,9 +1776,9 @@ export function UserDialogTabbedView({
                 (result) => result.status === 'rejected'
             ).length;
             if (failed) {
-                toast.error(`Failed to update ${failed} groups.`);
+                toast.error(appI18n.t('dialog.user.generated_dynamic.failed_to_update_value_groups', { value: failed }));
             } else {
-                toast.success(`Updated ${selectedUserGroups.length} groups.`);
+                toast.success(appI18n.t('dialog.user.generated_dynamic.updated_value_groups', { value: selectedUserGroups.length }));
             }
             await refreshGroupsAfterMembershipChange();
         } finally {
@@ -1790,10 +1791,10 @@ export function UserDialogTabbedView({
             return;
         }
         const result = await confirm({
-            title: 'Leave selected groups',
-            description: `Leave ${selectedUserGroups.length} selected groups?`,
-            confirmText: 'Leave',
-            cancelText: 'Cancel',
+            title: appI18n.t('dialog.user.generated_modal.leave_selected_groups'),
+            description: appI18n.t('dialog.user.generated_dynamic.leave_value_selected_groups', { value: selectedUserGroups.length }),
+            confirmText: appI18n.t('dialog.user.generated_modal.leave'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -1813,9 +1814,9 @@ export function UserDialogTabbedView({
                 (entry) => entry.status === 'rejected'
             ).length;
             if (failed) {
-                toast.error(`Failed to leave ${failed} groups.`);
+                toast.error(appI18n.t('dialog.user.generated_dynamic.failed_to_leave_value_groups', { value: failed }));
             } else {
-                toast.success(`Left ${selectedUserGroups.length} groups.`);
+                toast.success(appI18n.t('dialog.user.generated_dynamic.left_value_groups', { value: selectedUserGroups.length }));
                 clearSelectedGroups();
             }
             await refreshGroupsAfterMembershipChange();
@@ -1881,7 +1882,7 @@ export function UserDialogTabbedView({
                 JSON.stringify(nextOrder),
                 3
             );
-            toast.success('Group order updated.');
+            toast.success(t('dialog.user.generated.group_order_updated'));
         } catch (error) {
             useRuntimeStore
                 .getState()
@@ -1889,7 +1890,7 @@ export function UserDialogTabbedView({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update group order.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_update_group_order')
             );
         } finally {
             setGroupActionId('');
@@ -1917,7 +1918,7 @@ export function UserDialogTabbedView({
                         disabled={remoteStatus[tab] === 'running'}
                         onClick={() => void loadTab(tab, { force: true })}
                     >
-                        Refresh
+                        {t('common.actions.refresh')}
                     </Button>
                 ) : null}
                 {children}
@@ -2004,14 +2005,14 @@ export function UserDialogTabbedView({
                         {profile.$isModerator ? (
                             <Badge variant="secondary">
                                 <ShieldCheckIcon data-icon="inline-start" />
-                                Moderator
+                                {t('dialog.user.generated.moderator')}
                             </Badge>
                         ) : null}
                         {profile.$isTroll ? (
-                            <Badge variant="destructive">Nuisance</Badge>
+                            <Badge variant="destructive">{t('view.settings.appearance.user_colors.trust_levels.nuisance')}</Badge>
                         ) : null}
                         {profile.$isProbableTroll ? (
-                            <Badge variant="outline">Almost Nuisance</Badge>
+                            <Badge variant="outline">{t('view.favorite.avatars.almost_nuisance')}</Badge>
                         ) : null}
                         {profile.$customTag ? (
                             <Badge
@@ -2034,19 +2035,19 @@ export function UserDialogTabbedView({
                         ) : null}
                         {friendNumber ? (
                             <Badge variant="outline">
-                                Friend #{friendNumber}
+                                {t('dialog.user.generated.friend')}{friendNumber}
                             </Badge>
                         ) : null}
                         {mutualFriendCount ? (
                             <Badge variant="outline">
-                                {mutualFriendCount} mutual
+                                {mutualFriendCount} {t('dialog.user.generated.mutual')}
                             </Badge>
                         ) : null}
                         {moderationState.block ? (
-                            <Badge variant="destructive">Blocked</Badge>
+                            <Badge variant="destructive">{t('dialog.user.generated.blocked')}</Badge>
                         ) : null}
                         {moderationState.mute ? (
-                            <Badge variant="destructive">Muted</Badge>
+                            <Badge variant="destructive">{t('dialog.user.generated.muted')}</Badge>
                         ) : null}
                         <Badge variant="outline">
                             {profile.$trustLevel || 'Visitor'}
@@ -2067,7 +2068,7 @@ export function UserDialogTabbedView({
                                     void openDiscordProfile(profile.discordId)
                                 }
                             >
-                                Discord
+                                {t('dialog.user.generated.discord')}
                             </Button>
                         ) : null}
                     </>
@@ -2090,7 +2091,7 @@ export function UserDialogTabbedView({
                                                   type="button"
                                                   variant="ghost"
                                                   size="icon"
-                                                  title={`${badge.badgeName || 'Badge'}${badge.hidden ? ' (Hidden)' : ''}`}
+                                                  title={appI18n.t('dialog.user.generated_dynamic.value_value', { value: badge.badgeName || 'Badge', value2: badge.hidden ? ' (Hidden)' : '' })}
                                                   className="size-8 rounded-sm p-0"
                                                   onClick={(event) =>
                                                       event.stopPropagation()
@@ -2156,7 +2157,7 @@ export function UserDialogTabbedView({
                                                   ) : null}
                                                   {badge.assignedAt ? (
                                                       <div className="text-muted-foreground font-mono text-xs">
-                                                          Assigned:{' '}
+                                                          {t('dialog.user.generated.assigned')}{' '}
                                                           {formatStatsDate(
                                                               badge.assignedAt
                                                           )}
@@ -2178,7 +2179,7 @@ export function UserDialogTabbedView({
                                                                       'idle' ||
                                                                   !onToggleBadgeVisibility
                                                               }
-                                                              aria-label="Hidden"
+                                                              aria-label={"Hidden"}
                                                               onCheckedChange={(
                                                                   checked
                                                               ) =>
@@ -2191,7 +2192,7 @@ export function UserDialogTabbedView({
                                                               }
                                                           />
                                                           <FieldLabel>
-                                                              Hidden
+                                                              {t('dialog.user.generated.hidden')}
                                                           </FieldLabel>
                                                       </Field>
                                                       <Field orientation="horizontal">
@@ -2204,7 +2205,7 @@ export function UserDialogTabbedView({
                                                                       'idle' ||
                                                                   !onToggleBadgeShowcased
                                                               }
-                                                              aria-label="Showcased"
+                                                              aria-label={"Showcased"}
                                                               onCheckedChange={(
                                                                   checked
                                                               ) =>
@@ -2217,7 +2218,7 @@ export function UserDialogTabbedView({
                                                               }
                                                           />
                                                           <FieldLabel>
-                                                              Showcased
+                                                              {t('dialog.user.badges.showcased')}
                                                           </FieldLabel>
                                                       </Field>
                                                   </FieldGroup>
@@ -2280,7 +2281,7 @@ export function UserDialogTabbedView({
                                 disabled={loadStatus === 'running'}
                                 onSelect={onRefresh}
                             >
-                                Refresh
+                                {t('common.actions.refresh')}
                             </EntityActionItem>
                             {userUrl ? (
                                 <>
@@ -2293,7 +2294,7 @@ export function UserDialogTabbedView({
                                             )
                                         }
                                     >
-                                        Share / Copy URL
+                                        {t('dialog.user.generated.share_copy_url')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={ExternalLinkIcon}
@@ -2301,7 +2302,7 @@ export function UserDialogTabbedView({
                                             openExternalLink(userUrl)
                                         }
                                     >
-                                        Open VRChat Page
+                                        {t('dialog.user.generated.open_vrchat_page')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={CopyIcon}
@@ -2312,7 +2313,7 @@ export function UserDialogTabbedView({
                                             )
                                         }
                                     >
-                                        Copy User ID
+                                        {t('dialog.user.generated.copy_user_id')}
                                     </EntityActionItem>
                                     <EntityActionSeparator />
                                 </>
@@ -2321,14 +2322,14 @@ export function UserDialogTabbedView({
                                 icon={UserIcon}
                                 onSelect={onEditMemo}
                             >
-                                Edit Note Memo
+                                {t('dialog.user.generated.edit_note_memo')}
                             </EntityActionItem>
                             {currentAvatarTarget ? (
                                 <EntityActionItem
                                     icon={UserIcon}
                                     onSelect={() => void showAvatarAuthor()}
                                 >
-                                    Show Avatar Author
+                                    {t('dialog.user.actions.show_avatar_author')}
                                 </EntityActionItem>
                             ) : null}
                             {fallbackAvatarTarget ? (
@@ -2340,7 +2341,7 @@ export function UserDialogTabbedView({
                                         )
                                     }
                                 >
-                                    Show Fallback Avatar Details
+                                    {t('dialog.user.actions.show_fallback_avatar')}
                                 </EntityActionItem>
                             ) : null}
                             {isCurrentUser ? (
@@ -2351,39 +2352,39 @@ export function UserDialogTabbedView({
                                         disabled={actionStatus !== 'idle'}
                                         onSelect={onEditSelfStatus}
                                     >
-                                        Edit Social Status
+                                        {t('dialog.user.generated.edit_social_status_2')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus !== 'idle'}
                                         onSelect={onEditSelfLanguages}
                                     >
-                                        Edit Language
+                                        {t('dialog.user.generated.edit_language_2')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus !== 'idle'}
                                         onSelect={onEditSelfBio}
                                     >
-                                        Edit Bio
+                                        {t('dialog.user.generated.edit_bio')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus !== 'idle'}
                                         onSelect={onEditSelfBioLinks}
                                     >
-                                        Edit Bio Links
+                                        {t('dialog.user.generated.edit_bio_links')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={PencilIcon}
                                         disabled={actionStatus !== 'idle'}
                                         onSelect={onEditSelfPronouns}
                                     >
-                                        Edit Pronouns
+                                        {t('dialog.user.generated.edit_pronouns')}
                                     </EntityActionItem>
                                     <EntityActionSeparator />
                                     <SelfPreferenceCheckboxItem
-                                        label="Avatar Cloning"
+                                        label={t('dialog.user.info.avatar_cloning')}
                                         checked={Boolean(
                                             profile.allowAvatarCopying
                                         )}
@@ -2391,7 +2392,7 @@ export function UserDialogTabbedView({
                                         onToggle={onToggleSelfAvatarCopying}
                                     />
                                     <SelfPreferenceCheckboxItem
-                                        label="Booping"
+                                        label={t('dialog.user.info.booping')}
                                         checked={
                                             profile.isBoopingEnabled !== false
                                         }
@@ -2399,7 +2400,7 @@ export function UserDialogTabbedView({
                                         onToggle={onToggleSelfBooping}
                                     />
                                     <SelfPreferenceCheckboxItem
-                                        label="Show Mutual Friends"
+                                        label={t('dialog.user.info.show_mutual_friends')}
                                         checked={
                                             !profile.hasSharedConnectionsOptOut
                                         }
@@ -2407,7 +2408,7 @@ export function UserDialogTabbedView({
                                         onToggle={onToggleSelfSharedConnections}
                                     />
                                     <SelfPreferenceCheckboxItem
-                                        label="Show Discord Connections"
+                                        label={t('dialog.user.info.show_discord_connections')}
                                         checked={
                                             !profile.hasDiscordFriendsOptOut
                                         }
@@ -2433,7 +2434,7 @@ export function UserDialogTabbedView({
                                                     onFriendRequest('accept')
                                                 }
                                             >
-                                                Accept Friend Request
+                                                {t('dialog.user.actions.accept_friend_request')}
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={XIcon}
@@ -2445,7 +2446,7 @@ export function UserDialogTabbedView({
                                                     onFriendRequest('decline')
                                                 }
                                             >
-                                                Decline Friend Request
+                                                {t('dialog.user.actions.decline_friend_request')}
                                             </EntityActionItem>
                                         </>
                                     ) : !isFriend &&
@@ -2457,7 +2458,7 @@ export function UserDialogTabbedView({
                                                 onFriendRequest('cancel')
                                             }
                                         >
-                                            Cancel Friend Request
+                                            {t('dialog.user.actions.cancel_friend_request')}
                                         </EntityActionItem>
                                     ) : !isFriend ? (
                                         <EntityActionItem
@@ -2470,7 +2471,7 @@ export function UserDialogTabbedView({
                                                 onFriendRequest('send')
                                             }
                                         >
-                                            Send Friend Request
+                                            {t('dialog.user.actions.send_friend_request')}
                                         </EntityActionItem>
                                     ) : null}
                                     {isFriend ? (
@@ -2486,7 +2487,7 @@ export function UserDialogTabbedView({
                                                 }
                                                 onSelect={onInvite}
                                             >
-                                                Send Invite
+                                                {t('dialog.user.generated.send_invite')}
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MessageSquareIcon}
@@ -2499,7 +2500,7 @@ export function UserDialogTabbedView({
                                                 }
                                                 onSelect={onInviteMessage}
                                             >
-                                                Send With Message
+                                                {t('dialog.invite_message.header')}
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MailIcon}
@@ -2511,7 +2512,7 @@ export function UserDialogTabbedView({
                                                 }
                                                 onSelect={onInviteRequest}
                                             >
-                                                Request Invite
+                                                {t('dialog.user.generated.request_invite')}
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MailIcon}
@@ -2525,7 +2526,7 @@ export function UserDialogTabbedView({
                                                     onInviteRequestMessage
                                                 }
                                             >
-                                                Request With Message
+                                                {t('dialog.invite_request_message.header')}
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={MousePointerIcon}
@@ -2535,7 +2536,7 @@ export function UserDialogTabbedView({
                                                 }
                                                 onSelect={onBoop}
                                             >
-                                                Boop
+                                                {t('dialog.user.generated.boop')}
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={UserMinusIcon}
@@ -2545,7 +2546,7 @@ export function UserDialogTabbedView({
                                                 }
                                                 onSelect={onUnfriend}
                                             >
-                                                Unfriend
+                                                {t('dialog.user.generated.unfriend')}
                                             </EntityActionItem>
                                         </>
                                     ) : null}
@@ -2554,14 +2555,14 @@ export function UserDialogTabbedView({
                                         disabled={actionStatus !== 'idle'}
                                         onSelect={() => void inviteToGroup()}
                                     >
-                                        Invite To Group
+                                        {t('dialog.user.generated.invite_to_group')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={SettingsIcon}
                                         disabled={actionStatus !== 'idle'}
                                         onSelect={onGroupModeration}
                                     >
-                                        Group Moderation
+                                        {t('dialog.user.actions.group_moderation')}
                                     </EntityActionItem>
                                     <EntityActionSeparator />
                                     <EntityActionItem
@@ -2571,7 +2572,7 @@ export function UserDialogTabbedView({
                                             changeTab('instance-history')
                                         }
                                     >
-                                        Instance History
+                                        {t('dialog.previous_instances.header')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={BanIcon}
@@ -2679,7 +2680,7 @@ export function UserDialogTabbedView({
                                         disabled={actionStatus !== 'idle'}
                                         onSelect={onReportHacking}
                                     >
-                                        Report Hacking
+                                        {t('dialog.user.generated.report_hacking')}
                                     </EntityActionItem>
                                 </>
                             ) : null}
@@ -2776,7 +2777,7 @@ export function UserDialogTabbedView({
                     <EntityInfoGrid>
                         {profile.note && !hideUserNotes ? (
                             <EntityInfoBlock
-                                label="Note"
+                                label={t('dialog.user.generated.note')}
                                 full
                                 onClick={onEditMemo}
                             >
@@ -2787,7 +2788,7 @@ export function UserDialogTabbedView({
                         ) : null}
                         {memo && !hideUserMemos ? (
                             <EntityInfoBlock
-                                label="Memo"
+                                label={t('dialog.user.generated.memo')}
                                 full
                                 onClick={onEditMemo}
                             >
@@ -2796,7 +2797,7 @@ export function UserDialogTabbedView({
                                 </pre>
                             </EntityInfoBlock>
                         ) : null}
-                        <EntityInfoBlock label="Avatar Info" full>
+                        <EntityInfoBlock label={t('dialog.user.info.avatar_info')} full>
                             {currentAvatarTarget ? (
                                 <Button
                                     type="button"
@@ -2817,10 +2818,10 @@ export function UserDialogTabbedView({
                                 </span>
                             )}
                         </EntityInfoBlock>
-                        <EntityInfoBlock label="Represented Group" full>
+                        <EntityInfoBlock label={t('dialog.user.info.represented_group')} full>
                             {representedGroupStatus === 'running' ? (
                                 <span className="text-muted-foreground block text-xs">
-                                    Loading...
+                                    {t('dialog.user.generated.loading')}
                                 </span>
                             ) : representedGroup?.isRepresenting ? (
                                 <Button
@@ -2893,7 +2894,7 @@ export function UserDialogTabbedView({
                                 </span>
                             )}
                         </EntityInfoBlock>
-                        <EntityInfoBlock label="Bio" full>
+                        <EntityInfoBlock label={t('dialog.user.generated.bio')} full>
                             <div className="flex items-start gap-2">
                                 <pre className="text-muted-foreground max-h-52 min-w-0 flex-1 overflow-auto font-sans text-xs whitespace-pre-wrap">
                                     {visibleBio}
@@ -2957,27 +2958,27 @@ export function UserDialogTabbedView({
                         </EntityInfoBlock>
                         {!isCurrentUser ? (
                             <EntityInfoBlock
-                                label="Last Seen"
+                                label={t('dialog.user.generated.last_seen')}
                                 value={formatStatsDate(lastSeen)}
                             />
                         ) : null}
                         <EntityInfoBlock
-                            label="Last Login"
+                            label={t('dialog.user.generated.last_login')}
                             value={formatDate(
                                 profile.last_login || profile.last_activity
                             )}
                         />
                         <EntityInfoBlock
-                            label="Last Activity"
+                            label={t('dialog.user.generated.last_activity')}
                             value={formatDate(profile.last_activity)}
                         />
                         <EntityInfoBlock
-                            label="Date Joined"
+                            label={t('dialog.user.generated.date_joined')}
                             value={profile.date_joined}
                         />
                         {isCurrentUser ? (
                             <EntityInfoBlock
-                                label="Play Time"
+                                label={t('dialog.user.info.play_time')}
                                 value={formatStatsDuration(userTimeSpent)}
                                 onClick={
                                     previousInstances.length
@@ -2988,7 +2989,7 @@ export function UserDialogTabbedView({
                         ) : (
                             <>
                                 <EntityInfoBlock
-                                    label="Join Count"
+                                    label={t('dialog.user.generated.join_count')}
                                     value={
                                         userJoinCount
                                             ? String(userJoinCount)
@@ -3002,14 +3003,14 @@ export function UserDialogTabbedView({
                                     }
                                 />
                                 <EntityInfoBlock
-                                    label="Time Together"
+                                    label={t('dialog.user.generated.time_together')}
                                     value={formatStatsDuration(userTimeSpent)}
                                 />
                             </>
                         )}
                         {!isCurrentUser ? (
                             <EntityInfoBlock
-                                label="Avatar Cloning"
+                                label={t('dialog.user.info.avatar_cloning')}
                                 value={
                                     profile.allowAvatarCopying
                                         ? 'Allow'
@@ -3018,7 +3019,7 @@ export function UserDialogTabbedView({
                             />
                         ) : null}
                         {visibleHomeLocationTarget ? (
-                            <EntityInfoBlock label="Home Location" full>
+                            <EntityInfoBlock label={t('dialog.user.generated.home_location')} full>
                                 <Location
                                     location={visibleHomeLocationTarget}
                                     enableContextMenu
@@ -3026,7 +3027,7 @@ export function UserDialogTabbedView({
                                 />
                             </EntityInfoBlock>
                         ) : null}
-                        <EntityInfoBlock label="User ID" mono full>
+                        <EntityInfoBlock label={t('dialog.user.generated.user_id')} mono full>
                             <span className="block truncate font-mono text-xs">
                                 {profile.id || '—'}
                                 {profile.id ? (
@@ -3034,8 +3035,8 @@ export function UserDialogTabbedView({
                                         <DropdownMenuTrigger asChild>
                                             <Button
                                                 type="button"
-                                                aria-label="Open user copy menu"
-                                                title="Copy user details"
+                                                aria-label={"Open user copy menu"}
+                                                title={t('dialog.user.generated.copy_user_details')}
                                                 className="ml-1"
                                                 size="icon-xs"
                                                 variant="ghost"
@@ -3056,7 +3057,7 @@ export function UserDialogTabbedView({
                                                         )
                                                     }
                                                 >
-                                                    Copy User ID
+                                                    {t('dialog.user.generated.copy_user_id')}
                                                 </DropdownMenuItem>
                                                 {profile.displayName ? (
                                                     <DropdownMenuItem
@@ -3067,7 +3068,7 @@ export function UserDialogTabbedView({
                                                             )
                                                         }
                                                     >
-                                                        Copy Display Name
+                                                        {t('dialog.user.generated.copy_display_name')}
                                                     </DropdownMenuItem>
                                                 ) : null}
                                             </DropdownMenuGroup>
@@ -3087,10 +3088,10 @@ export function UserDialogTabbedView({
                         tab="mutual"
                         rows={mutualFriends}
                         filteredRows={filteredMutualFriends}
-                        placeholder="Search mutual friends"
+                        placeholder={t('dialog.user.generated.search_mutual_friends')}
                     >
                         <span className="text-muted-foreground text-sm">
-                            Sort By
+                            {t('dialog.user.generated.sort_by')}
                         </span>
                         <Select
                             value={mutualSort}
@@ -3132,12 +3133,12 @@ export function UserDialogTabbedView({
                         tab="groups"
                         rows={profileGroups}
                         filteredRows={filteredProfileGroups}
-                        placeholder="Search groups"
+                        placeholder={t('dialog.user.generated.search_groups')}
                     >
                         {!groupEditMode ? (
                             <>
                                 <span className="text-muted-foreground text-sm">
-                                    Sort By
+                                    {t('dialog.user.generated.sort_by')}
                                 </span>
                                 <Select
                                     value={effectiveGroupSort}
@@ -3209,7 +3210,7 @@ export function UserDialogTabbedView({
                                                 )
                                             }
                                         >
-                                            Select Visible
+                                            {t('dialog.user.generated.select_visible')}
                                         </Button>
                                         <Button
                                             type="button"
@@ -3222,7 +3223,7 @@ export function UserDialogTabbedView({
                                             }
                                             onClick={clearSelectedGroups}
                                         >
-                                            Clear Selected
+                                            {t('dialog.user.generated.clear_selected')}
                                         </Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -3236,7 +3237,7 @@ export function UserDialogTabbedView({
                                                     }
                                                 >
                                                     <SettingsIcon data-icon="inline-start" />
-                                                    Bulk Actions
+                                                    {t('dialog.user.generated.bulk_actions')}
                                                     {selectedGroupCount ? (
                                                         <span className="text-muted-foreground text-xs">
                                                             (
@@ -3259,7 +3260,7 @@ export function UserDialogTabbedView({
                                                         }
                                                     >
                                                         <EyeIcon />
-                                                        Set Selected Visible
+                                                        {t('dialog.user.generated.set_selected_visible')}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         disabled={
@@ -3272,7 +3273,7 @@ export function UserDialogTabbedView({
                                                         }
                                                     >
                                                         <EyeIcon />
-                                                        Set Selected Hidden
+                                                        {t('dialog.user.generated.set_selected_hidden')}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         disabled={
@@ -3285,7 +3286,7 @@ export function UserDialogTabbedView({
                                                         }
                                                     >
                                                         <UsersIcon />
-                                                        Set Selected Friends
+                                                        {t('dialog.user.generated.set_selected_friends')}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         onSelect={() =>
@@ -3295,11 +3296,11 @@ export function UserDialogTabbedView({
                                                         }
                                                     >
                                                         <DownloadIcon />
-                                                        Export{' '}
+                                                        {t('dialog.user.generated.export')}{' '}
                                                         {selectedGroupCount
                                                             ? 'Selected'
                                                             : 'All'}{' '}
-                                                        Groups
+                                                        {t('dialog.user.generated.groups')}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         variant="destructive"
@@ -3311,7 +3312,7 @@ export function UserDialogTabbedView({
                                                         }
                                                     >
                                                         <LogOutIcon />
-                                                        Leave Selected
+                                                        {t('dialog.user.generated.leave_selected')}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuGroup>
                                             </DropdownMenuContent>
@@ -3463,7 +3464,7 @@ export function UserDialogTabbedView({
                                     void loadTab('worlds', { force: true })
                                 }
                             >
-                                Refresh
+                                {t('common.actions.refresh')}
                             </Button>
                             <Input
                                 value={search.worlds}
@@ -3473,11 +3474,11 @@ export function UserDialogTabbedView({
                                         worlds: event.target.value
                                     }))
                                 }
-                                placeholder="Search worlds"
+                                placeholder={t('dialog.user.generated.search_worlds')}
                                 className="ml-auto h-8 w-40"
                             />
                             <span className="text-muted-foreground text-sm">
-                                Sort By
+                                {t('dialog.user.generated.sort_by')}
                             </span>
                             <Select
                                 value={worldSort}
@@ -3490,25 +3491,25 @@ export function UserDialogTabbedView({
                                 <SelectContent>
                                     <SelectGroup>
                                         <SelectItem value="name">
-                                            Name
+                                            {t('dialog.user.generated.name')}
                                         </SelectItem>
                                         <SelectItem value="updated">
-                                            Updated
+                                            {t('dialog.user.generated.updated')}
                                         </SelectItem>
                                         <SelectItem value="created">
-                                            Created
+                                            {t('dialog.user.generated.created')}
                                         </SelectItem>
                                         <SelectItem value="favorites">
-                                            Favorites
+                                            {t('dialog.user.generated.favorites')}
                                         </SelectItem>
                                         <SelectItem value="popularity">
-                                            Popularity
+                                            {t('dialog.user.generated.popularity')}
                                         </SelectItem>
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
                             <span className="text-muted-foreground text-sm">
-                                Order By
+                                {t('dialog.user.generated.order_by')}
                             </span>
                             <Select
                                 value={worldOrder}
@@ -3521,10 +3522,10 @@ export function UserDialogTabbedView({
                                 <SelectContent>
                                     <SelectGroup>
                                         <SelectItem value="descending">
-                                            Descending
+                                            {t('dialog.user.worlds.order.descending')}
                                         </SelectItem>
                                         <SelectItem value="ascending">
-                                            Ascending
+                                            {t('dialog.user.worlds.order.ascending')}
                                         </SelectItem>
                                     </SelectGroup>
                                 </SelectContent>
@@ -3547,7 +3548,7 @@ export function UserDialogTabbedView({
                         tab="favorite-worlds"
                         rows={favoriteWorlds}
                         filteredRows={filteredFavoriteWorlds}
-                        placeholder="Search favorite worlds"
+                        placeholder={t('dialog.user.generated.search_favorite_worlds')}
                     />
                     <FavoriteWorldGroups
                         groups={remoteData.favoriteWorldGroups}
@@ -3572,7 +3573,7 @@ export function UserDialogTabbedView({
                             }
                         >
                             <UserIcon data-icon="inline-start" />
-                            Current Avatar:{' '}
+                            {t('dialog.user.generated.current_avatar')}{' '}
                             {currentAvatarDisplayName || 'Avatar'}
                         </Button>
                     ) : null}
@@ -3590,7 +3591,7 @@ export function UserDialogTabbedView({
                                 void loadTab('avatars', { force: true })
                             }
                         >
-                            Refresh
+                            {t('common.actions.refresh')}
                         </Button>
                         <Input
                             value={search.avatars}
@@ -3600,13 +3601,13 @@ export function UserDialogTabbedView({
                                     avatars: event.target.value
                                 }))
                             }
-                            placeholder="Search avatars"
+                            placeholder={t('dialog.user.generated.search_avatars')}
                             className="ml-auto h-8 w-40"
                         />
                         {profile.id === currentUserId ? (
                             <>
                                 <span className="text-muted-foreground text-sm">
-                                    Sort By
+                                    {t('dialog.user.generated.sort_by')}
                                 </span>
                                 <Select
                                     value={avatarSort}
@@ -3621,19 +3622,19 @@ export function UserDialogTabbedView({
                                     <SelectContent>
                                         <SelectGroup>
                                             <SelectItem value="name">
-                                                Name
+                                                {t('dialog.user.generated.name')}
                                             </SelectItem>
                                             <SelectItem value="update">
-                                                Updated
+                                                {t('dialog.user.generated.updated')}
                                             </SelectItem>
                                             <SelectItem value="createdAt">
-                                                Uploaded
+                                                {t('dialog.user.avatars.sort_by_uploaded')}
                                             </SelectItem>
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
                                 <span className="text-muted-foreground text-sm">
-                                    Group By
+                                    {t('dialog.user.generated.group_by')}
                                 </span>
                                 <Select
                                     value={avatarReleaseStatus}
@@ -3648,13 +3649,13 @@ export function UserDialogTabbedView({
                                     <SelectContent>
                                         <SelectGroup>
                                             <SelectItem value="all">
-                                                All
+                                                {t('dialog.user.generated.all')}
                                             </SelectItem>
                                             <SelectItem value="public">
-                                                Public
+                                                {t('dialog.user.generated.public')}
                                             </SelectItem>
                                             <SelectItem value="private">
-                                                Private
+                                                {t('dialog.user.generated.private')}
                                             </SelectItem>
                                         </SelectGroup>
                                     </SelectContent>
@@ -3674,7 +3675,7 @@ export function UserDialogTabbedView({
                     className="flex min-h-0 flex-col"
                 >
                     <PreviousInstancesPanel
-                        title="Instance History"
+                        title={t('dialog.previous_instances.header')}
                         instances={previousInstances}
                         variant="user"
                         targetRef={profile}

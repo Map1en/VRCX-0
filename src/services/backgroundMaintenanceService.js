@@ -31,6 +31,7 @@ import {
     bootstrapFriendRoster,
     syncFriendRosterStateFromCurrentUserSnapshot
 } from './friendBootstrapService.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const timers = {
     currentUserRefresh: 300,
@@ -595,7 +596,9 @@ async function updateAutoStateChange() {
     });
     useNotificationStore.getState().pushNotification({
         level: 'info',
-        title: 'Status automatically changed',
+        title: appI18n.t(
+            'service.background_maintenance.generated.status_automatically_changed'
+        ),
         message: nextStatus
     });
 }
@@ -732,9 +735,13 @@ async function checkAutoBackupRestoreVrcRegistry() {
     }
 
     await useModalStore.getState().alert({
-        title: 'VRChat Registry Backup',
+        title: appI18n.t(
+            'service.background_maintenance.generated.vrchat_registry_backup'
+        ),
         description:
-            'The VRChat registry folder is missing and a saved registry backup is available. Restore a backup before starting VRChat.'
+            appI18n.t(
+                'service.background_maintenance.generated.registry_backup_restore_description'
+            )
     });
     useRuntimeStore.getState().setSystemHostOpen('registryBackupOpen', true);
     await backend.app.FocusWindow().catch(() => {});
@@ -761,8 +768,12 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
         if (available) {
             useNotificationStore.getState().pushNotification({
                 level: 'info',
-                title: 'VRCX-0 update available',
-                message: 'An update is downloaded and ready to install.'
+                title: appI18n.t(
+                    'service.background_maintenance.generated.vrcx_update_available'
+                ),
+                message: appI18n.t(
+                    'service.background_maintenance.generated.update_ready_to_install'
+                )
             });
             useRuntimeStore.getState().setSystemHostOpen('updaterOpen', true);
         } else {
@@ -792,28 +803,41 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                     );
                     useNotificationStore.getState().pushNotification({
                         level: 'info',
-                        title: 'VRCX-0 update available',
-                        message: `Version ${displayVersion} is available on the ${branch} branch.`
+                        title: appI18n.t(
+                            'service.background_maintenance.generated.vrcx_update_available'
+                        ),
+                        message: appI18n.t('service.background_maintenance_service.generated_dynamic.version_value_is_available_on_the_value_branch', { value: displayVersion, value2: branch })
                     });
 
                     if (autoUpdateMode === 'Auto Download') {
                         useRuntimeStore.getState().setUpdateLoopState({
                             lastUpdaterCheckAt: new Date().toISOString(),
-                            lastUpdaterCheckDetail: `Downloading ${displayVersion}.`
+                            lastUpdaterCheckDetail: appI18n.t(
+                                'service.background_maintenance.generated.downloading_version',
+                                { version: displayVersion }
+                            )
                         });
                         await downloadUpdateAndWait(latestRelease, {
                             onProgress: (progress) => {
                                 useRuntimeStore.getState().setUpdateLoopState({
                                     lastUpdaterCheckAt:
                                         new Date().toISOString(),
-                                    lastUpdaterCheckDetail: `Downloading ${displayVersion}: ${progress}%`
+                                    lastUpdaterCheckDetail: appI18n.t(
+                                        'service.background_maintenance.generated.downloading_version_progress',
+                                        {
+                                            version: displayVersion,
+                                            progress
+                                        }
+                                    )
                                 });
                             }
                         });
                         useNotificationStore.getState().pushNotification({
                             level: 'info',
-                            title: 'VRCX-0 update downloaded',
-                            message: `Version ${displayVersion} is ready to install.`
+                            title: appI18n.t(
+                                'service.background_maintenance.generated.vrcx_update_downloaded'
+                            ),
+                            message: appI18n.t('service.background_maintenance_service.generated_dynamic.version_value_is_ready_to_install', { value: displayVersion })
                         });
                         useRuntimeStore
                             .getState()

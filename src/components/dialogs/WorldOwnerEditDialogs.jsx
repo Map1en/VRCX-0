@@ -25,6 +25,7 @@ import {
     InputGroupInput
 } from '@/ui/shadcn/input-group';
 import { Textarea } from '@/ui/shadcn/textarea';
+import { appI18n } from '@/services/i18nService.js';
 
 const CONTENT_TAGS = [
     ['contentHorror', 'content_horror', 'Horror'],
@@ -167,10 +168,9 @@ function WorldTagsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>World Tags</DialogTitle>
+                    <DialogTitle>{appI18n.t('dialog.world.generated.world_tags')}</DialogTitle>
                     <DialogDescription>
-                        Edit managed content, author, and feature tags for this
-                        world.
+                        {appI18n.t('dialog.world.generated.edit_managed_content_author_and_feature_tags_for_this_world')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup className="gap-3">
@@ -186,7 +186,7 @@ function WorldTagsDialog({
                             }
                         />
                         <FieldLabel htmlFor="world-tag-avatar-scaling-disabled">
-                            Avatar scaling disabled
+                            {appI18n.t('dialog.world.generated.avatar_scaling_disabled')}
                         </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">
@@ -201,7 +201,7 @@ function WorldTagsDialog({
                             }
                         />
                         <FieldLabel htmlFor="world-tag-focus-view-disabled">
-                            Focus view disabled
+                            {appI18n.t('dialog.world.generated.focus_view_disabled')}
                         </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">
@@ -214,12 +214,12 @@ function WorldTagsDialog({
                             }
                         />
                         <FieldLabel htmlFor="world-tag-debug-allowed">
-                            Enable debugging
+                            {appI18n.t('dialog.world.generated.enable_debugging')}
                         </FieldLabel>
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="world-owner-author-tags">
-                            Author tags
+                            {appI18n.t('dialog.world.generated.author_tags')}
                         </FieldLabel>
                         <Textarea
                             id="world-owner-author-tags"
@@ -233,7 +233,7 @@ function WorldTagsDialog({
                         />
                     </Field>
                     <FieldSet>
-                        <FieldLegend variant="label">Content tags</FieldLegend>
+                        <FieldLegend variant="label">{appI18n.t('dialog.world.generated.content_tags')}</FieldLegend>
                         <FieldGroup
                             data-slot="checkbox-group"
                             className="grid grid-cols-2 gap-2"
@@ -263,7 +263,7 @@ function WorldTagsDialog({
                                 htmlFor="world-owner-content-tags"
                                 className="sr-only"
                             >
-                                Raw content tags
+                                {appI18n.t('dialog.world.generated.raw_content_tags')}
                             </FieldLabel>
                             <Textarea
                                 id="world-owner-content-tags"
@@ -281,7 +281,7 @@ function WorldTagsDialog({
                     </FieldSet>
                     <FieldSet>
                         <FieldLegend variant="label">
-                            Default content settings
+                            {appI18n.t('dialog.world.generated.default_content_settings')}
                         </FieldLegend>
                         <FieldGroup
                             data-slot="checkbox-group"
@@ -316,7 +316,7 @@ function WorldTagsDialog({
                         disabled={saving}
                         onClick={() => onOpenChange?.(false)}
                     >
-                        Cancel
+                        {appI18n.t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -325,7 +325,7 @@ function WorldTagsDialog({
                             onSave?.(buildWorldTags(draft, world?.tags))
                         }
                     >
-                        Save
+                        {appI18n.t('common.actions.save')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -360,9 +360,9 @@ function WorldAllowedDomainsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>Allowed Video Player Domains</DialogTitle>
+                    <DialogTitle>{appI18n.t('dialog.allowed_video_player_domains.header')}</DialogTitle>
                     <DialogDescription>
-                        Manage domains allowed for this world's video player.
+                        {appI18n.t('dialog.world.generated.manage_domains_allowed_for_this_world_s_video_player')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup className="gap-2">
@@ -372,7 +372,7 @@ function WorldAllowedDomainsDialog({
                                 htmlFor={`world-allowed-domain-${index}`}
                                 className="sr-only"
                             >
-                                Allowed domain {index + 1}
+                                {appI18n.t('dialog.world.generated.allowed_domain')} {index + 1}
                             </FieldLabel>
                             <InputGroup>
                                 <InputGroupInput
@@ -413,7 +413,7 @@ function WorldAllowedDomainsDialog({
                             setUrlList((current) => [...current, ''])
                         }
                     >
-                        Add domain
+                        {appI18n.t('dialog.world.generated.add_domain')}
                     </Button>
                 </FieldGroup>
                 <DialogFooter>
@@ -428,7 +428,7 @@ function WorldAllowedDomainsDialog({
                             )
                         }
                     >
-                        Save
+                        {appI18n.t('common.actions.save')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -70,6 +70,7 @@ import {
     resolveWorldIdCandidate,
     uniqueFriendsById
 } from './friendsLocationsRows.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function formatOptionValue(value) {
     return Number(value)
@@ -1299,15 +1300,15 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 currentEndpoint
             );
             if (opened) {
-                toast.success('VRChat launch request sent.');
+                toast.success(t('view.friend_list.generated.vrchat_launch_request_sent'));
                 return;
             }
-            toast.error('Unable to open this instance in VRChat.');
+            toast.error(t('view.friend_list.generated.unable_to_open_this_instance_in_vrchat'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to launch instance.'
+                    : appI18n.t('view.friends.generated_toast.failed_to_launch_instance')
             );
         }
     }
@@ -1328,12 +1329,12 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 parsedLocation.shortName || '',
                 currentEndpoint
             );
-            toast.success('Self invite sent.');
+            toast.success(t('view.friend_list.generated.self_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send self invite.'
+                    : appI18n.t('view.friends.generated_toast.failed_to_send_self_invite')
             );
         }
     }
@@ -1345,28 +1346,28 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         }
         if (!currentInviteLocation) {
             toast.error(
-                'Cannot invite: no current VRChat location is available.'
+                t('view.friend_list.generated.cannot_invite_no_current_vrchat_location_is_available')
             );
             return;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error('Cannot invite from the current instance type.');
+            toast.error(t('view.friend_list.generated.cannot_invite_from_the_current_instance_type'));
             return;
         }
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                'Cannot invite: current location is not a concrete instance.'
+                t('view.friend_list.generated.cannot_invite_current_location_is_not_a_concrete_instance')
             );
             return;
         }
 
         const result = await confirm({
-            title: 'Send invite?',
+            title: appI18n.t('view.friends.generated_modal.send_invite'),
             description: friend?.displayName || friend?.username || 'this user',
-            confirmText: 'Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('view.friends.generated_modal.invite'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1390,12 +1391,12 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                     rsvp: true
                 }
             });
-            toast.success('Invite sent.');
+            toast.success(t('view.friend_list.generated.invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send invite.'
+                    : appI18n.t('view.friends.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -1407,10 +1408,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         }
 
         const result = await confirm({
-            title: 'Request invite?',
+            title: appI18n.t('view.friends.generated_modal.request_invite'),
             description: friend?.displayName || friend?.username || 'this user',
-            confirmText: 'Request Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('view.friends.generated_modal.request_invite_2'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1424,12 +1425,12 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                     platform: 'standalonewindows'
                 }
             });
-            toast.success('Invite request sent.');
+            toast.success(t('view.friend_list.generated.invite_request_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to request invite.'
+                    : appI18n.t('view.friends.generated_toast.failed_to_request_invite')
             );
         }
     }
@@ -1442,12 +1443,12 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
 
         try {
             const result = await prompt({
-                title: 'Send boop',
+                title: appI18n.t('view.friends.generated_modal.send_boop'),
                 description:
-                    'Optional emoji id. Leave blank to send the default boop.',
+                    appI18n.t('view.friends.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
                 inputValue: '',
-                confirmText: 'Send',
-                cancelText: 'Cancel'
+                confirmText: appI18n.t('view.friends.generated_modal.send'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -1457,10 +1458,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                 emojiId: result.value,
                 endpoint: currentEndpoint
             });
-            toast.success('Boop sent.');
+            toast.success(t('view.friend_list.generated.boop_sent'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to send boop.'
+                error instanceof Error ? error.message : appI18n.t('view.friends.generated_toast.failed_to_send_boop')
             );
         }
     }
@@ -1511,7 +1512,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                 }
                             >
                                 <GlobeIcon data-icon="inline-start" />
-                                World
+                                {t('view.friend_list.generated.world')}
                             </Button>
                         ) : null}
                         {section.groupId ? (
@@ -1527,7 +1528,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                 }
                             >
                                 <UsersIcon data-icon="inline-start" />
-                                Group
+                                {t('view.friend_list.generated.group')}
                             </Button>
                         ) : null}
                     </div>
@@ -1682,7 +1683,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                             type="button"
                             size="icon-sm"
                             variant="ghost"
-                            aria-label="Friends location settings"
+                            aria-label={"Friends location settings"}
                         >
                             <Settings2Icon data-icon="inline-start" />
                         </Button>
@@ -1785,7 +1786,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                     />
                 ) : isError ? (
                     <FriendsLocationsEmptyState
-                        title="Friend locations failed to load"
+                        title={t('view.friend_list.generated.friend_locations_failed_to_load')}
                         description={
                             rosterDetail ||
                             'The roster bootstrap did not complete.'
@@ -1833,7 +1834,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                     </div>
                 ) : (
                     <FriendsLocationsEmptyState
-                        title="No friends match the current filters"
+                        title={t('view.friend_list.generated.no_friends_match_the_current_filters')}
                         description={
                             activeSegment === 'favorite' && !isFavoritesLoaded
                                 ? 'Favorites are still hydrating.'

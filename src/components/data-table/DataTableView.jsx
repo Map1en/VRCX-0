@@ -50,6 +50,7 @@ import {
     getReorderableColumnIds
 } from './tableColumnLayout.js';
 import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 function moveColumnByDrag(table, activeId, overId) {
     if (!activeId || !overId || activeId === overId) {
@@ -269,7 +270,7 @@ export function DataTablePagination({
                     </PaginationItem>
                     <PaginationItem>
                         <Badge variant="outline">
-                            Page {resolvedPageIndex + 1} / {resolvedPageCount}
+                            {appI18n.t('table.generated.page')} {resolvedPageIndex + 1} / {resolvedPageCount}
                         </Badge>
                     </PaginationItem>
                     <PaginationItem>

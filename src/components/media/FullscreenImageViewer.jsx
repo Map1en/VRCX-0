@@ -561,7 +561,7 @@ export function FullscreenImageViewer({
                             variant="ghost"
                             size="icon"
                             disabled={copying || (!url && !sourcePath)}
-                            aria-label={t('message.image.copy')}
+                            aria-label={"Copy image"}
                             title={t('message.image.copy')}
                             onClick={() => void copyImage()}
                         >
@@ -576,7 +576,7 @@ export function FullscreenImageViewer({
                             variant="ghost"
                             size="icon"
                             disabled={downloading || (!url && !sourcePath)}
-                            aria-label={t('message.image.download')}
+                            aria-label={"Download image"}
                             title={t('message.image.download')}
                             onClick={() => void downloadImage()}
                         >
@@ -594,7 +594,7 @@ export function FullscreenImageViewer({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label={t('message.image.zoom_out')}
+                            aria-label={"Zoom out"}
                             title={t('message.image.zoom_out')}
                             onClick={zoomOut}
                         >
@@ -604,7 +604,7 @@ export function FullscreenImageViewer({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label={t('message.image.zoom_in')}
+                            aria-label={"Zoom in"}
                             title={t('message.image.zoom_in')}
                             onClick={zoomIn}
                         >
@@ -614,7 +614,7 @@ export function FullscreenImageViewer({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label={t('message.image.rotate_clockwise')}
+                            aria-label={"Rotate clockwise"}
                             title={t('message.image.rotate_clockwise')}
                             onClick={rotateClockwise}
                         >
@@ -624,9 +624,7 @@ export function FullscreenImageViewer({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label={t(
-                                'message.image.rotate_counterclockwise'
-                            )}
+                            aria-label={"Rotate counterclockwise"}
                             title={t('message.image.rotate_counterclockwise')}
                             onClick={rotateCounterClockwise}
                         >
@@ -636,7 +634,7 @@ export function FullscreenImageViewer({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label={t('message.image.reset')}
+                            aria-label={"Reset"}
                             title={t('message.image.reset')}
                             onClick={resetTransform}
                         >
@@ -650,7 +648,7 @@ export function FullscreenImageViewer({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label={t('message.image.close')}
+                            aria-label={"Close"}
                             title={t('message.image.close')}
                             onClick={onClose}
                         >

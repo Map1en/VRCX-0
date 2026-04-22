@@ -30,6 +30,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { appI18n } from '@/services/i18nService.js';
 
 function getInitials(value) {
     const source = String(value || '').trim();
@@ -323,7 +324,7 @@ export function FriendLocationCard({
             return;
         }
         await copyTextToClipboard(text);
-        toast.success(`${label} copied.`);
+        toast.success(appI18n.t('component.friend_location_card.generated_dynamic.value_copied', { value: label }));
     }
 
     return (
@@ -434,7 +435,7 @@ export function FriendLocationCard({
                         onSelect={onOpenUser}
                     >
                         <UserIcon />
-                        User
+                        {appI18n.t('common.generated.generated.user')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canOpenWorld}
@@ -458,14 +459,14 @@ export function FriendLocationCard({
                         onSelect={() => void onLaunchLocation?.()}
                     >
                         <ExternalLinkIcon />
-                        Launch in VRChat
+                        {appI18n.t('common.generated.generated.launch_in_vrchat')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
                         onSelect={() => void onSelfInviteLocation?.()}
                     >
                         <ExternalLinkIcon />
-                        Self invite
+                        {appI18n.t('common.generated.generated.self_invite')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -474,19 +475,19 @@ export function FriendLocationCard({
                         disabled={!canSendInvite}
                         onSelect={() => void onSendInvite?.()}
                     >
-                        Send invite
+                        {appI18n.t('common.generated.generated.send_invite')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canRequestInvite}
                         onSelect={() => void onRequestInvite?.()}
                     >
-                        Request invite
+                        {appI18n.t('common.generated.generated.request_invite')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canBoop}
                         onSelect={() => void onSendBoop?.()}
                     >
-                        Send boop
+                        {appI18n.t('common.generated.generated.send_boop')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -497,7 +498,7 @@ export function FriendLocationCard({
                             void copyCardText(friend?.id, 'User ID')
                         }
                     >
-                        Copy user ID
+                        {appI18n.t('common.generated.generated.copy_user_id')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!rawLocation}
@@ -505,7 +506,7 @@ export function FriendLocationCard({
                             void copyCardText(rawLocation, 'Location')
                         }
                     >
-                        Copy location
+                        {appI18n.t('common.generated.generated.copy_location')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
             </ContextMenuContent>

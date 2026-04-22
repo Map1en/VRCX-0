@@ -63,6 +63,7 @@ import {
 } from '@/ui/shadcn/input-group';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+import { appI18n } from '@/services/i18nService.js';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
 const DEFAULT_SORTING = [];
@@ -712,10 +713,10 @@ export function FriendLogPage({ embedded = false } = {}) {
         const result = skipConfirm
             ? { ok: true }
             : await confirm({
-                  title: 'Confirm',
+                  title: appI18n.t('common.actions.confirm'),
                   description: t('confirm.delete_log'),
-                  confirmText: 'Delete',
-                  cancelText: 'Cancel',
+                  confirmText: appI18n.t('common.actions.delete'),
+                  cancelText: appI18n.t('common.actions.cancel'),
                   destructive: true
               });
 
@@ -901,7 +902,7 @@ export function FriendLogPage({ embedded = false } = {}) {
                                 size="icon-xs"
                                 variant="ghost"
                                 className="text-muted-foreground hover:text-foreground"
-                                aria-label={t('common.actions.delete')}
+                                aria-label={"Delete"}
                                 disabled={
                                     !currentUserId ||
                                     rowsOwnerUserId !==
@@ -1006,8 +1007,8 @@ export function FriendLogPage({ embedded = false } = {}) {
                             type="button"
                             variant="outline"
                             size="icon"
-                            title="Refresh"
-                            aria-label="Refresh friend history"
+                            title={t('common.actions.refresh')}
+                            aria-label={"Refresh friend history"}
                             disabled={
                                 !currentUserId || loadStatus === 'running'
                             }
@@ -1036,10 +1037,10 @@ export function FriendLogPage({ embedded = false } = {}) {
 
             <PageBody>
                 {isLoading ? (
-                    <LoadingState label="Loading the friend history snapshot" />
+                    <LoadingState label={t('view.friend_log.generated.loading_the_friend_history_snapshot')} />
                 ) : isError ? (
                     <FriendLogEmptyState
-                        title="Friend history failed to load"
+                        title={t('view.friend_log.generated.friend_history_failed_to_load')}
                         description={
                             detail || 'The history query did not complete.'
                         }
@@ -1075,15 +1076,15 @@ export function FriendLogPage({ embedded = false } = {}) {
 
                         <PageFooter>
                             <div className="text-muted-foreground text-sm">
-                                Showing{' '}
+                                {t('view.friend_log.generated.showing')}{' '}
                                 <span className="text-foreground font-medium">
                                     {table.getRowModel().rows.length}
                                 </span>{' '}
-                                of{' '}
+                                {t('view.friend_log.generated.of')}{' '}
                                 <span className="text-foreground font-medium">
                                     {orderedRows.length}
                                 </span>{' '}
-                                log row{orderedRows.length === 1 ? '' : 's'}
+                                {t('view.friend_log.generated.log_row')}{orderedRows.length === 1 ? '' : 's'}
                             </div>
                             <DataTablePagination
                                 table={table}
@@ -1109,8 +1110,8 @@ export function FriendLogPage({ embedded = false } = {}) {
                     </>
                 ) : (
                     <FriendLogEmptyState
-                        title="No friend history rows match the current filters"
-                        description="Broaden the type filters or search query to see more history."
+                        title={t('view.friend_log.generated.no_friend_history_rows_match_the_current_filters')}
+                        description={t('view.friend_log.generated.broaden_the_type_filters_or_search_query_to_see_more_history')}
                     />
                 )}
             </PageBody>

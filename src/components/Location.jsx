@@ -44,6 +44,7 @@ import {
 } from '@/ui/shadcn/context-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+import { appI18n } from '@/services/i18nService.js';
 
 function locationTarget(location, traveling) {
     const normalizedLocation = normalizeLocationValue(location);
@@ -269,12 +270,12 @@ export function Location({
                 parsedLocation.shortName || '',
                 currentEndpoint
             );
-            toast.success('Self invite sent.');
+            toast.success(t('common.generated.generated.self_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send self invite.'
+                    : appI18n.t('component.location.generated_toast.failed_to_send_self_invite')
             );
         }
     }
@@ -364,7 +365,7 @@ export function Location({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load instance history.'
+                    : appI18n.t('component.location.generated_toast.failed_to_load_instance_history')
             );
         } finally {
             setPreviousInstancesLoading(false);
@@ -528,7 +529,7 @@ export function Location({
                             }
                         >
                             <CopyIcon />
-                            Copy location
+                            {t('common.generated.generated.copy_location')}
                         </ContextMenuItem>
                     </ContextMenuGroup>
                     <ContextMenuSeparator />
@@ -580,7 +581,7 @@ export function Location({
                                     onSelect={launchCurrentInstance}
                                 >
                                     <ExternalLinkIcon />
-                                    Launch in VRChat
+                                    {t('common.generated.generated.launch_in_vrchat')}
                                 </ContextMenuItem>
                                 <ContextMenuItem
                                     disabled={!canUseCurrentInstance}
@@ -589,7 +590,7 @@ export function Location({
                                     }
                                 >
                                     <MessageSquareIcon />
-                                    Self invite
+                                    {t('common.generated.generated.self_invite')}
                                 </ContextMenuItem>
                             </ContextMenuGroup>
                         </>

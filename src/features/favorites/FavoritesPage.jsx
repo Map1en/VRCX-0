@@ -118,6 +118,7 @@ import {
     clearFavoriteRemoteDetailsCache,
     useFavoriteRemoteDetails
 } from './useFavoriteRemoteDetails.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'];
 const EMPTY_ITEMS = Object.freeze([]);
@@ -220,12 +221,12 @@ function FavoriteExportDialog({
     async function copyExportContent() {
         try {
             await navigator.clipboard.writeText(content);
-            toast.success('Copied favorite export data.');
+            toast.success(appI18n.t('view.favorite.generated.copied_favorite_export_data'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to copy favorite export data.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_copy_favorite_export_data')
             );
         }
     }
@@ -234,10 +235,9 @@ function FavoriteExportDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Export favorite {kind}s</DialogTitle>
+                    <DialogTitle>{appI18n.t('view.favorite.generated.export_favorite')} {kind}{appI18n.t('common.time_units.s')}</DialogTitle>
                     <DialogDescription>
-                        Review the CSV content before copying it to the
-                        clipboard.
+                        {appI18n.t('view.favorite.generated.review_the_csv_content_before_copying_it_to_the_clipboard')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup
@@ -271,12 +271,12 @@ function FavoriteExportDialog({
                         onValueChange={setRemoteGroupKey}
                     >
                         <SelectTrigger size="sm" className="min-w-52">
-                            <SelectValue placeholder="VRChat group" />
+                            <SelectValue placeholder={appI18n.t('view.favorite.generated.vrchat_group')} />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
                                 <SelectItem value={EXPORT_ALL_VALUE}>
-                                    All VRChat favorites
+                                    {appI18n.t('view.favorite.generated.all_vrchat_favorites')}
                                 </SelectItem>
                                 {remoteGroups.map((group) => (
                                     <SelectItem
@@ -298,12 +298,12 @@ function FavoriteExportDialog({
                         onValueChange={setLocalGroupKey}
                     >
                         <SelectTrigger size="sm" className="min-w-52">
-                            <SelectValue placeholder="Local group" />
+                            <SelectValue placeholder={appI18n.t('view.favorite.generated.local_group')} />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
                                 <SelectItem value={EXPORT_NONE_VALUE}>
-                                    No local group
+                                    {appI18n.t('view.favorite.generated.no_local_group')}
                                 </SelectItem>
                                 {localGroups.map((group) => (
                                     <SelectItem
@@ -317,7 +317,7 @@ function FavoriteExportDialog({
                         </SelectContent>
                     </Select>
                     <span className="text-muted-foreground text-sm">
-                        {items.length} item(s)
+                        {items.length} {appI18n.t('view.favorite.generated.item_s')}
                     </span>
                 </div>
                 <Textarea
@@ -333,14 +333,14 @@ function FavoriteExportDialog({
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                     >
-                        Close
+                        {appI18n.t('common.actions.close')}
                     </Button>
                     <Button
                         type="button"
                         disabled={!items.length || !selectedFields.length}
                         onClick={() => void copyExportContent()}
                     >
-                        Copy
+                        {appI18n.t('common.actions.copy')}
                     </Button>
                 </div>
             </DialogContent>
@@ -375,16 +375,16 @@ function FavoritesToolbar({
                 <SelectTrigger size="sm" className="min-w-48">
                     <span className="flex items-center gap-2">
                         <ArrowUpDownIcon className="size-4" />
-                        <SelectValue placeholder="Sort favorites" />
+                        <SelectValue placeholder={appI18n.t('view.favorite.generated.sort_favorites')} />
                     </span>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectGroup>
-                        <SelectItem value="name">Sort by name</SelectItem>
-                        <SelectItem value="date">Sort by date</SelectItem>
+                        <SelectItem value="name">{appI18n.t('view.search.avatar.sort_name')}</SelectItem>
+                        <SelectItem value="date">{appI18n.t('view.favorite.generated.sort_by_date')}</SelectItem>
                         {kind === 'world' ? (
                             <SelectItem value="players">
-                                Sort by players
+                                {appI18n.t('view.favorite.generated.sort_by_players')}
                             </SelectItem>
                         ) : null}
                     </SelectGroup>
@@ -411,7 +411,7 @@ function FavoritesToolbar({
                                 }
                                 onClick={() => onSearchModeChange('name')}
                             >
-                                Name
+                                {appI18n.t('view.favorite.generated.name')}
                             </InputGroupButton>
                             <InputGroupButton
                                 type="button"
@@ -420,7 +420,7 @@ function FavoritesToolbar({
                                 }
                                 onClick={() => onSearchModeChange('tag')}
                             >
-                                Tag
+                                {appI18n.t('view.favorite.worlds.search_mode_tag')}
                             </InputGroupButton>
                         </InputGroupAddon>
                     ) : searchQuery ? (
@@ -428,7 +428,7 @@ function FavoritesToolbar({
                             <InputGroupButton
                                 type="button"
                                 size="icon-xs"
-                                aria-label="Clear search"
+                                aria-label={"Clear search"}
                                 onClick={() => onSearchChange('')}
                             >
                                 <XIcon data-icon="icon" />
@@ -442,7 +442,7 @@ function FavoritesToolbar({
                     size="icon-sm"
                     variant="ghost"
                     className="rounded-full"
-                    aria-label="Refresh favorites"
+                    aria-label={"Refresh favorites"}
                     disabled={refreshing}
                     onClick={onRefresh}
                 >
@@ -460,7 +460,7 @@ function FavoritesToolbar({
                             size="icon-sm"
                             variant="ghost"
                             className="rounded-full"
-                            aria-label="Favorite options"
+                            aria-label={"Favorite options"}
                         >
                             <EllipsisIcon data-icon="inline-start" />
                         </Button>
@@ -472,7 +472,7 @@ function FavoritesToolbar({
                         >
                             <Field>
                                 <div className="flex items-center justify-between text-sm font-semibold">
-                                    <FieldLabel>Scale</FieldLabel>
+                                    <FieldLabel>{appI18n.t('view.friends_locations.scale')}</FieldLabel>
                                     <span className="text-muted-foreground text-xs">
                                         {cardScalePercent}%
                                     </span>
@@ -489,7 +489,7 @@ function FavoritesToolbar({
                             </Field>
                             <Field>
                                 <div className="flex items-center justify-between text-sm font-semibold">
-                                    <FieldLabel>Spacing</FieldLabel>
+                                    <FieldLabel>{appI18n.t('view.friends_locations.spacing')}</FieldLabel>
                                     <span className="text-muted-foreground text-xs">
                                         {cardSpacingPercent}%
                                     </span>
@@ -509,11 +509,11 @@ function FavoritesToolbar({
                         <DropdownMenuGroup>
                             <DropdownMenuItem onSelect={onImport}>
                                 <UploadIcon data-icon="inline-start" />
-                                Import
+                                {appI18n.t('view.favorite.import')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={onExport}>
                                 <DownloadIcon data-icon="inline-start" />
-                                Export
+                                {appI18n.t('view.favorite.generated.export')}
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                     </DropdownMenuContent>
@@ -565,7 +565,7 @@ function GroupMenu({
                         size="icon-xs"
                         variant="ghost"
                         className="rounded-full"
-                        aria-label="History group options"
+                        aria-label={"History group options"}
                         onClick={(event) => event.stopPropagation()}
                     >
                         <EllipsisIcon data-icon="inline-start" />
@@ -581,7 +581,7 @@ function GroupMenu({
                             variant="destructive"
                             onSelect={() => onHistoryClear(group)}
                         >
-                            Clear
+                            {appI18n.t('common.actions.clear')}
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                 </DropdownMenuContent>
@@ -598,7 +598,7 @@ function GroupMenu({
                         size="icon-xs"
                         variant="ghost"
                         className="rounded-full"
-                        aria-label="Remote group options"
+                        aria-label={"Remote group options"}
                         onClick={(event) => event.stopPropagation()}
                     >
                         <MoreHorizontalIcon data-icon="inline-start" />
@@ -613,12 +613,12 @@ function GroupMenu({
                         <DropdownMenuItem
                             onSelect={() => onRemoteRename(group)}
                         >
-                            Rename
+                            {appI18n.t('view.favorite.generated.rename')}
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSub>
                         <DropdownMenuSubTrigger>
-                            Visibility
+                            {appI18n.t('view.favorite.generated.visibility')}
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent className="w-40">
                             <DropdownMenuGroup>
@@ -647,7 +647,7 @@ function GroupMenu({
                             variant="destructive"
                             onSelect={() => onRemoteClear(group)}
                         >
-                            Clear
+                            {appI18n.t('common.actions.clear')}
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                 </DropdownMenuContent>
@@ -663,7 +663,7 @@ function GroupMenu({
                     size="icon-xs"
                     variant="ghost"
                     className="rounded-full"
-                    aria-label="Local group options"
+                    aria-label={"Local group options"}
                     onClick={(event) => event.stopPropagation()}
                 >
                     <EllipsisIcon data-icon="inline-start" />
@@ -672,13 +672,13 @@ function GroupMenu({
             <DropdownMenuContent side="right" align="start" className="w-48">
                 <DropdownMenuGroup>
                     <DropdownMenuItem onSelect={() => onLocalRename(group)}>
-                        Rename
+                        {appI18n.t('view.favorite.generated.rename')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         variant="destructive"
                         onSelect={() => onLocalDelete(group)}
                     >
-                        Delete
+                        {appI18n.t('common.actions.delete')}
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -739,7 +739,7 @@ const GroupRailSection = memo(function GroupRailSection({
                         >
                             <div className="min-w-0">
                                 <div className="truncate font-semibold">
-                                    Group {index + 1}
+                                    {appI18n.t('view.favorite.generated.group')} {index + 1}
                                 </div>
                                 <div className="bg-muted mt-1 h-3 w-14 rounded" />
                             </div>
@@ -801,7 +801,7 @@ const GroupRailSection = memo(function GroupRailSection({
                     })
                 ) : (
                     <div className="text-muted-foreground py-3 text-center text-xs">
-                        No data
+                        {appI18n.t('common.no_data')}
                     </div>
                 )}
                 {showNewGroup && !creating ? (
@@ -813,7 +813,7 @@ const GroupRailSection = memo(function GroupRailSection({
                         onClick={onStartCreate}
                     >
                         <PlusIcon data-icon="inline-start" />
-                        <span>New Group</span>
+                        <span>{appI18n.t('view.favorite.generated.new_group')}</span>
                     </Button>
                 ) : null}
                 {showNewGroup && creating ? (
@@ -822,7 +822,7 @@ const GroupRailSection = memo(function GroupRailSection({
                         autoFocus
                         className="h-8 text-sm"
                         disabled={loading}
-                        placeholder="New Group"
+                        placeholder={appI18n.t('view.favorite.generated.new_group')}
                         onChange={(event) =>
                             onNewGroupNameChange(event.target.value)
                         }
@@ -868,7 +868,7 @@ function FavoritesContentHeader({
                     ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-2 text-sm">
-                    <span>Edit mode</span>
+                    <span>{appI18n.t('view.favorite.generated.edit_mode')}</span>
                     <Switch
                         checked={editMode}
                         disabled={editModeDisabled}
@@ -894,7 +894,7 @@ function FavoritesContentHeader({
                             disabled={!hasSelection}
                             onClick={onClearSelection}
                         >
-                            Clear
+                            {appI18n.t('common.actions.clear')}
                         </Button>
                         {showCopyButton ? (
                             <Button
@@ -905,7 +905,7 @@ function FavoritesContentHeader({
                                 onClick={onCopySelection}
                             >
                                 <CopyIcon data-icon="inline-start" />
-                                Copy
+                                {appI18n.t('common.actions.copy')}
                             </Button>
                         ) : null}
                         <Button
@@ -916,7 +916,7 @@ function FavoritesContentHeader({
                             onClick={onBulkRemove}
                         >
                             <Trash2Icon data-icon="inline-start" />
-                            Bulk Unfavorite
+                            {appI18n.t('view.favorite.bulk_unfavorite')}
                         </Button>
                     </div>
                 ) : null}
@@ -1140,7 +1140,7 @@ const FavoriteCard = memo(function FavoriteCard({
                             size="icon-sm"
                             variant="ghost"
                             className="rounded-full"
-                            aria-label="Favorite item options"
+                            aria-label={"Favorite item options"}
                             disabled={removing}
                             onClick={(event) => event.stopPropagation()}
                         >
@@ -1154,7 +1154,7 @@ const FavoriteCard = memo(function FavoriteCard({
                     <DropdownMenuContent align="end">
                         <DropdownMenuGroup>
                             <DropdownMenuItem onSelect={() => openHandler?.()}>
-                                View details
+                                {appI18n.t('view.favorite.generated.view_details')}
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         {item.kind === 'friend' ? (
@@ -1170,7 +1170,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                             onFriendRequestInvite?.(item)
                                         }
                                     >
-                                        Request invite
+                                        {appI18n.t('view.favorite.generated.request_invite')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         disabled={
@@ -1180,7 +1180,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                         }
                                         onSelect={() => onFriendInvite?.(item)}
                                     >
-                                        Send invite
+                                        {appI18n.t('view.favorite.generated.send_invite')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         disabled={
@@ -1190,7 +1190,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                         }
                                         onSelect={() => onFriendBoop?.(item)}
                                     >
-                                        Send boop
+                                        {appI18n.t('view.favorite.generated.send_boop')}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
@@ -1202,7 +1202,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                         }
                                         onSelect={() => onFriendLaunch?.(item)}
                                     >
-                                        Launch in VRChat
+                                        {appI18n.t('view.favorite.generated.launch_in_vrchat')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         disabled={
@@ -1213,7 +1213,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                             onFriendSelfInvite?.(item)
                                         }
                                     >
-                                        Self invite
+                                        {appI18n.t('view.favorite.generated.self_invite')}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                             </>
@@ -1224,13 +1224,13 @@ const FavoriteCard = memo(function FavoriteCard({
                                     disabled={!onWorldNewInstance}
                                     onSelect={() => onWorldNewInstance?.(item)}
                                 >
-                                    New instance
+                                    {appI18n.t('view.favorite.generated.new_instance')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     disabled={!onWorldSelfInvite}
                                     onSelect={() => onWorldSelfInvite?.(item)}
                                 >
-                                    New instance and self invite
+                                    {appI18n.t('view.favorite.generated.new_instance_and_self_invite')}
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                         ) : null}
@@ -1240,7 +1240,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                     disabled={!canSelectAvatar}
                                     onSelect={() => onAvatarSelect?.(item)}
                                 >
-                                    Select avatar
+                                    {appI18n.t('view.favorite.generated.select_avatar')}
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                         ) : null}
@@ -1594,12 +1594,12 @@ function FavoritesPage({ kind, embedded = false }) {
                 );
                 setAvatarHistory(Array.isArray(rows) ? rows : []);
             }
-            toast.success('Favorites refreshed.');
+            toast.success(appI18n.t('view.favorite.generated.favorites_refreshed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to refresh favorites.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_refresh_favorites')
             );
         } finally {
             setRefreshing(false);
@@ -1615,7 +1615,7 @@ function FavoritesPage({ kind, embedded = false }) {
                     toast.error(
                         error instanceof Error
                             ? error.message
-                            : 'Failed to save favorite sort preference.'
+                            : appI18n.t('view.favorites.generated_toast.failed_to_save_favorite_sort_preference')
                     );
                 }
             );
@@ -1663,11 +1663,11 @@ function FavoritesPage({ kind, embedded = false }) {
             removingFavoriteKeyRef.current = item.key;
             setRemovingFavoriteKey(item.key);
             const result = await confirm({
-                title: 'Remove local favorite?',
-                description: `Remove ${item.title || 'favorite'} from ${item.groupLabel || 'Favorites'}?`,
+                title: appI18n.t('view.favorites.generated_modal.remove_local_favorite'),
+                description: appI18n.t('view.favorites.generated_dynamic.remove_value_from_value', { value: item.title || 'favorite', value2: item.groupLabel || 'Favorites' }),
                 destructive: true,
-                confirmText: 'Remove',
-                cancelText: 'Cancel'
+                confirmText: appI18n.t('common.actions.remove'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
 
             if (!result.ok) {
@@ -1689,7 +1689,7 @@ function FavoritesPage({ kind, embedded = false }) {
                 groupName: item.groupKey
             });
             if (!silent) {
-                toast.success('Local favorite removed.');
+                toast.success(appI18n.t('view.favorite.generated.local_favorite_removed'));
             }
             return true;
         } catch (error) {
@@ -1699,7 +1699,7 @@ function FavoritesPage({ kind, embedded = false }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to remove local favorite.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_remove_local_favorite')
             );
             return false;
         } finally {
@@ -1728,11 +1728,11 @@ function FavoritesPage({ kind, embedded = false }) {
             removingFavoriteKeyRef.current = item.key;
             setRemovingFavoriteKey(item.key);
             const result = await confirm({
-                title: 'Remove VRChat favorite?',
-                description: `Remove ${item.title || 'favorite'} from ${item.groupLabel || 'Favorites'}?`,
+                title: appI18n.t('view.favorites.generated_modal.remove_vrchat_favorite'),
+                description: appI18n.t('view.favorites.generated_dynamic.remove_value_from_value', { value: item.title || 'favorite', value2: item.groupLabel || 'Favorites' }),
                 destructive: true,
-                confirmText: 'Remove',
-                cancelText: 'Cancel'
+                confirmText: appI18n.t('common.actions.remove'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
 
             if (!result.ok) {
@@ -1749,7 +1749,7 @@ function FavoritesPage({ kind, embedded = false }) {
             });
             removeRemoteFavorite(item.id);
             if (!silent) {
-                toast.success('VRChat favorite removed.');
+                toast.success(appI18n.t('view.favorite.generated.vrchat_favorite_removed'));
             }
             return true;
         } catch (error) {
@@ -1759,7 +1759,7 @@ function FavoritesPage({ kind, embedded = false }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to remove VRChat favorite.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_remove_vrchat_favorite')
             );
             return false;
         } finally {
@@ -2344,7 +2344,7 @@ function FavoritesPage({ kind, embedded = false }) {
 
     async function exportCurrentFavorites() {
         if (!allItems.length) {
-            toast.error('No favorites available to export.');
+            toast.error(appI18n.t('view.favorite.generated.no_favorites_available_to_export'));
             return;
         }
 
@@ -2353,12 +2353,12 @@ function FavoritesPage({ kind, embedded = false }) {
 
     async function handleRemoteGroupRename(group) {
         const result = await prompt({
-            title: 'Change favorite group name',
-            description: 'Enter the new display name.',
+            title: appI18n.t('view.favorites.generated_modal.change_favorite_group_name'),
+            description: appI18n.t('view.favorites.generated_modal.enter_the_new_display_name'),
             inputValue: group.label || group.name,
             pattern: /\S+/,
-            confirmText: 'Change',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('view.favorites.generated_modal.change'),
+            cancelText: appI18n.t('common.actions.cancel'),
             errorMessage: 'Group name is required.'
         });
         if (!result.ok) {
@@ -2378,12 +2378,12 @@ function FavoritesPage({ kind, embedded = false }) {
                 displayName: nextName
             });
             await refreshFavorites();
-            toast.success('Favorite group renamed.');
+            toast.success(appI18n.t('view.favorite.generated.favorite_group_renamed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to rename favorite group.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_rename_favorite_group')
             );
         }
     }
@@ -2402,23 +2402,23 @@ function FavoritesPage({ kind, embedded = false }) {
                 visibility
             });
             await refreshFavorites();
-            toast.success('Group visibility changed.');
+            toast.success(appI18n.t('view.favorite.generated.group_visibility_changed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to change group visibility.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_change_group_visibility')
             );
         }
     }
 
     async function handleRemoteGroupClear(group) {
         const result = await confirm({
-            title: 'Clear favorite group?',
-            description: 'Remove all favorites from this group?',
+            title: appI18n.t('view.favorites.generated_modal.clear_favorite_group'),
+            description: appI18n.t('view.favorites.generated_modal.remove_all_favorites_from_this_group'),
             destructive: true,
-            confirmText: 'Clear',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.clear'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -2432,24 +2432,24 @@ function FavoritesPage({ kind, embedded = false }) {
                 group: group.name
             });
             await refreshFavorites();
-            toast.success('Favorite group cleared.');
+            toast.success(appI18n.t('view.favorite.generated.favorite_group_cleared'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to clear favorite group.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_clear_favorite_group')
             );
         }
     }
 
     async function handleLocalGroupRename(group) {
         const result = await prompt({
-            title: 'Rename local favorite group',
-            description: 'Enter the new local group name.',
+            title: appI18n.t('view.favorites.generated_modal.rename_local_favorite_group'),
+            description: appI18n.t('view.favorites.generated_modal.enter_the_new_local_group_name'),
             inputValue: group.label,
             pattern: /\S+/,
-            confirmText: 'Save',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel'),
             errorMessage: 'Group name is required.'
         });
         if (!result.ok) {
@@ -2460,7 +2460,7 @@ function FavoritesPage({ kind, embedded = false }) {
             return;
         }
         if (localGroups.some((localGroup) => localGroup.key === nextName)) {
-            toast.error(`Local group ${nextName} already exists.`);
+            toast.error(appI18n.t('view.favorites.generated_dynamic.local_group_value_already_exists', { value: nextName }));
             return;
         }
 
@@ -2478,23 +2478,23 @@ function FavoritesPage({ kind, embedded = false }) {
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey(nextName);
             }
-            toast.success('Local favorite group renamed.');
+            toast.success(appI18n.t('view.favorite.generated.local_favorite_group_renamed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to rename local favorite group.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_rename_local_favorite_group')
             );
         }
     }
 
     async function handleLocalGroupDelete(group) {
         const result = await confirm({
-            title: 'Delete local favorite group?',
-            description: `Delete ${group.label}?`,
+            title: appI18n.t('view.favorites.generated_modal.delete_local_favorite_group'),
+            description: appI18n.t('view.favorites.generated_modal.delete_value', { value: group.label }),
             destructive: true,
-            confirmText: 'Delete',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -2509,12 +2509,12 @@ function FavoritesPage({ kind, embedded = false }) {
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey('');
             }
-            toast.success('Local favorite group deleted.');
+            toast.success(appI18n.t('view.favorite.generated.local_favorite_group_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete local favorite group.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_delete_local_favorite_group')
             );
         }
     }
@@ -2535,7 +2535,7 @@ function FavoritesPage({ kind, embedded = false }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to refresh avatar history.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_refresh_avatar_history')
             );
         } finally {
             setAvatarHistoryLoading(false);
@@ -2544,12 +2544,12 @@ function FavoritesPage({ kind, embedded = false }) {
 
     async function handleAvatarHistoryClear() {
         const result = await confirm({
-            title: 'Clear avatar history?',
+            title: appI18n.t('view.favorites.generated_modal.clear_avatar_history'),
             description:
-                'Clear local avatar history and cached avatar metadata?',
+                appI18n.t('view.favorites.generated_modal.clear_local_avatar_history_and_cached_avatar_met'),
             destructive: true,
-            confirmText: 'Clear',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.clear'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -2561,12 +2561,12 @@ function FavoritesPage({ kind, embedded = false }) {
             if (selectedSource === 'history') {
                 setSelectedGroupKey('');
             }
-            toast.success('Avatar history cleared.');
+            toast.success(appI18n.t('view.favorite.generated.avatar_history_cleared'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to clear avatar history.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_clear_avatar_history')
             );
         }
     }
@@ -2602,15 +2602,15 @@ function FavoritesPage({ kind, embedded = false }) {
                 currentEndpoint
             );
             if (opened) {
-                toast.success('VRChat launch request sent.');
+                toast.success(appI18n.t('view.favorite.generated.vrchat_launch_request_sent'));
                 return;
             }
-            toast.error('Unable to open this instance in VRChat.');
+            toast.error(appI18n.t('view.favorite.generated.unable_to_open_this_instance_in_vrchat'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to launch instance.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_launch_instance')
             );
         }
     }
@@ -2633,7 +2633,7 @@ function FavoritesPage({ kind, embedded = false }) {
                 friends: friendsMap
             })
         ) {
-            toast.error('Cannot self invite to this instance.');
+            toast.error(appI18n.t('view.favorite.generated.cannot_self_invite_to_this_instance'));
             return;
         }
 
@@ -2643,12 +2643,12 @@ function FavoritesPage({ kind, embedded = false }) {
                 parsedLocation.shortName || '',
                 currentEndpoint
             );
-            toast.success('Self invite sent.');
+            toast.success(appI18n.t('view.favorite.generated.self_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send self invite.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_send_self_invite')
             );
         }
     }
@@ -2661,28 +2661,28 @@ function FavoritesPage({ kind, embedded = false }) {
         }
         if (!currentInviteLocation) {
             toast.error(
-                'Cannot invite: no current VRChat location is available.'
+                appI18n.t('view.favorite.generated.cannot_invite_no_current_vrchat_location_is_available')
             );
             return;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error('Cannot invite from the current instance type.');
+            toast.error(appI18n.t('view.favorite.generated.cannot_invite_from_the_current_instance_type'));
             return;
         }
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                'Cannot invite: current location is not a concrete instance.'
+                appI18n.t('view.favorite.generated.cannot_invite_current_location_is_not_a_concrete_instance')
             );
             return;
         }
 
         const result = await confirm({
-            title: 'Send invite?',
+            title: appI18n.t('view.favorites.generated_modal.send_invite'),
             description: friend?.displayName || 'this user',
-            confirmText: 'Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('view.favorites.generated_modal.invite'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -2706,12 +2706,12 @@ function FavoritesPage({ kind, embedded = false }) {
                     rsvp: true
                 }
             });
-            toast.success('Invite sent.');
+            toast.success(appI18n.t('view.favorite.generated.invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send invite.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -2724,10 +2724,10 @@ function FavoritesPage({ kind, embedded = false }) {
         }
 
         const result = await confirm({
-            title: 'Request invite?',
+            title: appI18n.t('view.favorites.generated_modal.request_invite'),
             description: friend?.displayName || 'this user',
-            confirmText: 'Request Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('view.favorites.generated_modal.request_invite_2'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -2741,12 +2741,12 @@ function FavoritesPage({ kind, embedded = false }) {
                     platform: 'standalonewindows'
                 }
             });
-            toast.success('Invite request sent.');
+            toast.success(appI18n.t('view.favorite.generated.invite_request_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to request invite.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_request_invite')
             );
         }
     }
@@ -2760,12 +2760,12 @@ function FavoritesPage({ kind, embedded = false }) {
 
         try {
             const result = await prompt({
-                title: 'Send boop',
+                title: appI18n.t('view.favorites.generated_modal.send_boop'),
                 description:
-                    'Optional emoji id. Leave blank to send the default boop.',
+                    appI18n.t('view.favorites.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
                 inputValue: '',
-                confirmText: 'Send',
-                cancelText: 'Cancel'
+                confirmText: appI18n.t('view.favorites.generated_modal.send'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -2775,10 +2775,10 @@ function FavoritesPage({ kind, embedded = false }) {
                 emojiId: result.value,
                 endpoint: currentEndpoint
             });
-            toast.success('Boop sent.');
+            toast.success(appI18n.t('view.favorite.generated.boop_sent'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to send boop.'
+                error instanceof Error ? error.message : appI18n.t('view.favorites.generated_toast.failed_to_send_boop')
             );
         }
     }
@@ -2806,10 +2806,10 @@ function FavoritesPage({ kind, embedded = false }) {
         );
         if (shouldConfirm) {
             const result = await confirm({
-                title: 'Select avatar?',
+                title: appI18n.t('view.favorites.generated_modal.select_avatar'),
                 description: item.title || 'Avatar',
-                confirmText: 'Select',
-                cancelText: 'Cancel'
+                confirmText: appI18n.t('common.actions.select'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -2821,12 +2821,12 @@ function FavoritesPage({ kind, embedded = false }) {
                 avatarId: item.id,
                 endpoint: currentEndpoint
             });
-            toast.success('Avatar selected.');
+            toast.success(appI18n.t('view.favorite.generated.avatar_selected'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to select avatar.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_select_avatar')
             );
         }
     }
@@ -2843,7 +2843,7 @@ function FavoritesPage({ kind, embedded = false }) {
             return;
         }
         if (localGroups.some((group) => group.key === nextName)) {
-            toast.error(`Local group ${nextName} already exists.`);
+            toast.error(appI18n.t('view.favorites.generated_dynamic.local_group_value_already_exists', { value: nextName }));
             return;
         }
         try {
@@ -2860,7 +2860,7 @@ function FavoritesPage({ kind, embedded = false }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to create local favorite group.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_create_local_favorite_group')
             );
         }
     }
@@ -2882,12 +2882,12 @@ function FavoritesPage({ kind, embedded = false }) {
             await navigator.clipboard.writeText(
                 selectedContentItems.map((item) => `${item.id}\n`).join('')
             );
-            toast.success('Copied selected favorite ids.');
+            toast.success(appI18n.t('view.favorite.generated.copied_selected_favorite_ids'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to copy selected favorites.'
+                    : appI18n.t('view.favorites.generated_toast.failed_to_copy_selected_favorites')
             );
         }
     }
@@ -2898,11 +2898,11 @@ function FavoritesPage({ kind, embedded = false }) {
         }
 
         const result = await confirm({
-            title: `Delete ${selectedContentItems.length} favorites?`,
-            description: 'This action cannot be undone.',
+            title: appI18n.t('view.favorites.generated_modal.delete_value_favorites', { value: selectedContentItems.length }),
+            description: appI18n.t('view.favorites.generated_modal.this_action_cannot_be_undone'),
             destructive: true,
-            confirmText: 'Delete',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -2938,10 +2938,10 @@ function FavoritesPage({ kind, embedded = false }) {
         }
         if (failedCount === 0) {
             setEditMode(false);
-            toast.success('Selected favorites removed.');
+            toast.success(appI18n.t('view.favorite.generated.selected_favorites_removed'));
             return;
         }
-        toast.error(`Removed ${removedCount}; ${failedCount} failed.`);
+        toast.error(appI18n.t('view.favorites.generated_dynamic.removed_value_value_failed', { value: removedCount, value2: failedCount }));
     }
 
     function persistSplitterSizePx(nextSizePx) {
@@ -3159,7 +3159,7 @@ function FavoritesPage({ kind, embedded = false }) {
                             />
                             {kind === 'avatar' ? (
                                 <GroupRailSection
-                                    title="Local History"
+                                    title={appI18n.t('view.favorite.avatars.local_history')}
                                     groups={avatarHistoryGroups}
                                     selectedSource={
                                         hasSearchInput ? '' : selectedSource
@@ -3220,10 +3220,10 @@ function FavoritesPage({ kind, embedded = false }) {
                             <div className="min-h-0 min-w-0 flex-1 overflow-auto pr-2">
                                 {favoriteLoadStatus === 'running' &&
                                 !contentItems.length ? (
-                                    <FavoritesLoadingState title="Loading favorites baseline." />
+                                    <FavoritesLoadingState title={appI18n.t('view.favorite.generated.loading_favorites_baseline')} />
                                 ) : favoriteLoadStatus === 'error' ? (
                                     <FavoritesEmptyState
-                                        title="Favorites failed to load"
+                                        title={appI18n.t('view.favorite.generated.favorites_failed_to_load')}
                                         description={
                                             favoriteDetail ||
                                             'The favorites baseline did not finish loading.'

@@ -35,6 +35,7 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Field, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
+import { appI18n } from '@/services/i18nService.js';
 
 const emptyDetails = {
     tag: '',
@@ -240,7 +241,7 @@ export function LaunchDialogHost() {
                     toast.error(
                         error instanceof Error
                             ? error.message
-                            : 'Failed to resolve launch details.'
+                            : appI18n.t('host.launch_dialog.generated_toast.failed_to_resolve_launch_details')
                     );
                 }
             })
@@ -266,7 +267,7 @@ export function LaunchDialogHost() {
             return;
         }
         await copyTextToClipboard(value);
-        toast.success(`${label} copied.`);
+        toast.success(appI18n.t('host.launch_dialog.generated_dynamic.value_copied', { value: label }));
     }
 
     async function runAction(key, action) {
@@ -281,7 +282,7 @@ export function LaunchDialogHost() {
             }
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Launch action failed.'
+                error instanceof Error ? error.message : appI18n.t('host.launch_dialog.generated_toast.launch_action_failed')
             );
         } finally {
             setBusy('');
@@ -291,11 +292,11 @@ export function LaunchDialogHost() {
     async function launchWithMode(nextDesktopMode) {
         if (isGameRunning) {
             const result = await confirm({
-                title: 'Launch VRChat',
+                title: appI18n.t('host.launch_dialog.generated_modal.launch_vrchat'),
                 description:
-                    'VRChat is already running. Continue launching this instance?',
-                confirmText: 'Launch',
-                cancelText: 'Cancel'
+                    appI18n.t('host.launch_dialog.generated_modal.vrchat_is_already_running_continue_launching_thi'),
+                confirmText: appI18n.t('host.launch_dialog.generated_modal.launch'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!result.ok) {
                 return false;
@@ -348,10 +349,9 @@ export function LaunchDialogHost() {
             >
                 <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
-                        <DialogTitle>Launch</DialogTitle>
+                        <DialogTitle>{appI18n.t('dialog.launch.generated.launch')}</DialogTitle>
                         <DialogDescription>
-                            Open, copy, invite, or self-invite to this VRChat
-                            instance.
+                            {appI18n.t('dialog.launch.generated.open_copy_invite_or_self_invite_to_this_vrchat_instance')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -370,7 +370,7 @@ export function LaunchDialogHost() {
                         />
                         {details.shortUrl ? (
                             <LaunchField
-                                label="Short URL"
+                                label={appI18n.t('dialog.launch.short_url')}
                                 value={details.shortUrl}
                                 notice="Only available when VRChat returned a short name for this instance."
                                 onCopy={() =>
@@ -382,7 +382,7 @@ export function LaunchDialogHost() {
                             />
                         ) : null}
                         <LaunchField
-                            label="Location"
+                            label={appI18n.t('dialog.launch.generated.location')}
                             value={details.location}
                             onCopy={() =>
                                 void copyField(details.location, 'Location')
@@ -400,7 +400,7 @@ export function LaunchDialogHost() {
                                 }
                                 onClick={() => setInviteOpen(true)}
                             >
-                                Invite
+                                {appI18n.t('dialog.launch.generated.invite')}
                             </Button>
                             {canOpenInstanceInGame ? (
                                 <Button
@@ -419,7 +419,7 @@ export function LaunchDialogHost() {
                                         )
                                     }
                                 >
-                                    Open In-Game
+                                    {appI18n.t('dialog.launch.generated.open_in_game')}
                                 </Button>
                             ) : null}
                             <Button
@@ -438,7 +438,7 @@ export function LaunchDialogHost() {
                                     )
                                 }
                             >
-                                Self Invite
+                                {appI18n.t('dialog.launch.generated.self_invite')}
                             </Button>
                         </div>
                         <div className="flex">
@@ -468,7 +468,7 @@ export function LaunchDialogHost() {
                                             Boolean(busy)
                                         }
                                         className="border-primary-foreground/25 rounded-l-none border-l"
-                                        aria-label="More launch options"
+                                        aria-label={"More launch options"}
                                     >
                                         <MoreHorizontalIcon data-icon="inline-start" />
                                     </Button>
@@ -487,7 +487,7 @@ export function LaunchDialogHost() {
                                                 )
                                             }
                                         >
-                                            Launch
+                                            {appI18n.t('dialog.launch.generated.launch')}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                             onSelect={() =>
@@ -497,7 +497,7 @@ export function LaunchDialogHost() {
                                                 )
                                             }
                                         >
-                                            Start as Desktop
+                                            {appI18n.t('dialog.launch.generated.start_as_desktop')}
                                         </DropdownMenuItem>
                                     </DropdownMenuGroup>
                                 </DropdownMenuContent>

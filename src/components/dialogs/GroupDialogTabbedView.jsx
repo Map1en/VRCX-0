@@ -112,6 +112,7 @@ import {
     normalizeLanguageOptionsFromConfig,
     normalizeProfileLanguageRows
 } from './user-dialog/userProfileFields.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function firstArray(...values) {
     return values.find((value) => Array.isArray(value)) || [];
@@ -159,7 +160,7 @@ function GroupListState({
                 )}
             >
                 <Spinner className="size-4" />
-                <span>Loading...</span>
+                <span>{appI18n.t('dialog.group.generated.loading')}</span>
             </div>
         );
     }
@@ -423,7 +424,7 @@ function PostList({
                                 ) : null}
                                 {post?.editorDisplayName ? (
                                     <span>
-                                        edited by {post.editorDisplayName}
+                                        {appI18n.t('dialog.group.generated.edited_by')} {post.editorDisplayName}
                                     </span>
                                 ) : null}
                                 {post?.updatedAt ? (
@@ -440,7 +441,7 @@ function PostList({
                                             type="button"
                                             size="icon-sm"
                                             variant="ghost"
-                                            aria-label="Edit post"
+                                            aria-label={"Edit post"}
                                             onClick={() => onEditPost?.(post)}
                                         >
                                             <PencilIcon data-icon="inline-start" />
@@ -449,7 +450,7 @@ function PostList({
                                             type="button"
                                             size="icon-sm"
                                             variant="ghost"
-                                            aria-label="Delete post"
+                                            aria-label={"Delete post"}
                                             onClick={() => onDeletePost?.(post)}
                                         >
                                             <Trash2Icon data-icon="inline-start" />
@@ -506,13 +507,13 @@ function PhotoGalleryRows({ rows, group, loading, error, onPreviewImage }) {
     }, [activeGallery, galleryEntries]);
 
     if (loading) {
-        return <GroupListState title="No photos" loading />;
+        return <GroupListState title={appI18n.t('dialog.group.generated.no_photos')} loading />;
     }
     if (error) {
-        return <GroupListState title="No photos" error={error} />;
+        return <GroupListState title={appI18n.t('dialog.group.generated.no_photos')} error={error} />;
     }
     if (!galleryEntries.length) {
-        return <GroupListState title="No photos" />;
+        return <GroupListState title={appI18n.t('dialog.group.generated.no_photos')} />;
     }
 
     return (
@@ -802,7 +803,7 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                 endpoint
             );
             if (opened) {
-                toast.success('VRChat launch request sent.');
+                toast.success(appI18n.t('dialog.group.generated.vrchat_launch_request_sent'));
                 return;
             }
             openWorldDialog({
@@ -812,13 +813,13 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to launch instance.'
+                    : appI18n.t('dialog.group.generated_toast.failed_to_launch_instance')
             );
         }
     }
 
     return (
-        <EntityInfoBlock label="Instances" full>
+        <EntityInfoBlock label={appI18n.t('dialog.group.generated.instances')} full>
             <div className="mt-1 flex flex-col gap-2">
                 {instances.map((instance, index) => {
                     const location = getInstanceLocation(instance);
@@ -874,7 +875,7 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
                                         type="button"
                                         size="icon-sm"
                                         variant="ghost"
-                                        aria-label="Launch instance"
+                                        aria-label={"Launch instance"}
                                         onClick={() => void launch(location)}
                                     >
                                         <PlayIcon data-icon="inline-start" />
@@ -951,12 +952,12 @@ function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
 }
 
 const moderationTabs = [
-    { value: 'members', label: 'Members' },
-    { value: 'bans', label: 'Bans' },
-    { value: 'invites', label: 'Invites' },
-    { value: 'requests', label: 'Join Requests' },
-    { value: 'blocked', label: 'Blocked Requests' },
-    { value: 'logs', label: 'Logs' }
+    { value: 'members', label: appI18n.t('dialog.group.moderation_tabs.members') },
+    { value: 'bans', label: appI18n.t('dialog.group.moderation_tabs.bans') },
+    { value: 'invites', label: appI18n.t('dialog.group.moderation_tabs.invites') },
+    { value: 'requests', label: appI18n.t('dialog.group.moderation_tabs.join_requests') },
+    { value: 'blocked', label: appI18n.t('dialog.group.moderation_tabs.blocked_requests') },
+    { value: 'logs', label: appI18n.t('dialog.group.moderation_tabs.logs') }
 ];
 
 function moderationRowUserId(row) {
@@ -1177,28 +1178,28 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
         }
         if (activeTab === 'members') {
             return [
-                { key: 'kick', label: 'Kick', destructive: true },
-                { key: 'ban', label: 'Ban', destructive: true }
+                { key: 'kick', label: appI18n.t('dialog.group.moderation_tabs.kick'), destructive: true },
+                { key: 'ban', label: appI18n.t('dialog.group.moderation_tabs.ban'), destructive: true }
             ];
         }
         if (activeTab === 'bans') {
-            return [{ key: 'unban', label: 'Unban' }];
+            return [{ key: 'unban', label: appI18n.t('dialog.group.moderation_tabs.unban') }];
         }
         if (activeTab === 'invites') {
             return [
-                { key: 'delete-invite', label: 'Delete', destructive: true }
+                { key: 'delete-invite', label: appI18n.t('dialog.group.moderation_tabs.delete'), destructive: true }
             ];
         }
         if (activeTab === 'requests') {
             return [
-                { key: 'accept-request', label: 'Accept' },
-                { key: 'reject-request', label: 'Reject', destructive: true },
-                { key: 'block-request', label: 'Block', destructive: true }
+                { key: 'accept-request', label: appI18n.t('dialog.group.moderation_tabs.accept') },
+                { key: 'reject-request', label: appI18n.t('dialog.group.moderation_tabs.reject'), destructive: true },
+                { key: 'block-request', label: appI18n.t('dialog.group.moderation_tabs.block'), destructive: true }
             ];
         }
         if (activeTab === 'blocked') {
             return [
-                { key: 'delete-blocked', label: 'Delete', destructive: true }
+                { key: 'delete-blocked', label: appI18n.t('dialog.group.moderation_tabs.delete'), destructive: true }
             ];
         }
         return [];
@@ -1211,10 +1212,10 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
         }
         const label = moderationRowLabel(row);
         const result = await confirm({
-            title: `${action.label} group user?`,
+            title: appI18n.t('dialog.group.generated_dynamic.value_group_user', { value: action.label }),
             description: label,
             confirmText: action.label,
-            cancelText: 'Cancel',
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: Boolean(action.destructive)
         });
         if (!result.ok) {
@@ -1286,12 +1287,12 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                 [activeTab]: 'ready'
             });
             setErrorsByTab({});
-            toast.success(`${action.label} completed.`);
+            toast.success(appI18n.t('dialog.group.generated_dynamic.value_completed', { value: action.label }));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : `${action.label} failed.`
+                    : appI18n.t('dialog.group.generated_toast.value_failed', { value: action.label })
             );
         } finally {
             setActionKey('');
@@ -1302,7 +1303,7 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-[min(92vw,64rem)]">
                 <DialogHeader>
-                    <DialogTitle>Moderation Tools</DialogTitle>
+                    <DialogTitle>{appI18n.t('dialog.group.generated.moderation_tools')}</DialogTitle>
                     <DialogDescription>
                         {group.name || 'Group'}
                     </DialogDescription>
@@ -1344,7 +1345,7 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                         }
                                     >
                                         <RefreshCwIcon data-icon="inline-start" />
-                                        Refresh
+                                        {appI18n.t('common.actions.refresh')}
                                     </Button>
                                     <Button
                                         type="button"
@@ -1372,7 +1373,7 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                             setSearch(event.target.value);
                                             setPageIndex(0);
                                         }}
-                                        placeholder={`Search ${tab.label.toLowerCase()}`}
+                                        placeholder={appI18n.t('dialog.group.generated_dynamic.search_value', { value: tab.label.toLowerCase() })}
                                         className="h-8 w-64"
                                     />
                                     <Select
@@ -1409,13 +1410,13 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                             </div>
                             {loading ? (
                                 <GroupListState
-                                    title={`No ${tab.label.toLowerCase()}`}
+                                    title={appI18n.t('dialog.group.generated_dynamic.no_value', { value: tab.label.toLowerCase() })}
                                     loading
                                 />
                             ) : null}
                             {error ? (
                                 <GroupListState
-                                    title={`No ${tab.label.toLowerCase()}`}
+                                    title={appI18n.t('dialog.group.generated_dynamic.no_value', { value: tab.label.toLowerCase() })}
                                     error={error}
                                 />
                             ) : null}
@@ -1425,19 +1426,19 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                         <TableHeader className="bg-background sticky top-0">
                                             <TableRow>
                                                 <TableHead className="w-56">
-                                                    User
+                                                    {appI18n.t('dialog.group.generated.user')}
                                                 </TableHead>
                                                 <TableHead>
-                                                    Roles / Description
+                                                    {appI18n.t('dialog.group.generated.roles_description')}
                                                 </TableHead>
                                                 <TableHead className="w-44">
-                                                    Status
+                                                    {appI18n.t('dialog.group.generated.status')}
                                                 </TableHead>
                                                 <TableHead className="w-44">
-                                                    Date
+                                                    {appI18n.t('dialog.group.generated.date')}
                                                 </TableHead>
                                                 <TableHead className="w-48 text-right">
-                                                    Actions
+                                                    {appI18n.t('dialog.group.generated.actions')}
                                                 </TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -1575,7 +1576,7 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                                         colSpan={5}
                                                         className="text-muted-foreground py-8 text-center text-sm"
                                                     >
-                                                        No rows.
+                                                        {appI18n.t('dialog.group.generated.no_rows')}
                                                     </TableCell>
                                                 </TableRow>
                                             )}
@@ -1586,7 +1587,7 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                             {!loading && !error ? (
                                 <div className="mt-3 flex items-center justify-between">
                                     <span className="text-muted-foreground text-sm">
-                                        Page {currentPageIndex + 1} /{' '}
+                                        {appI18n.t('dialog.group.generated.page')} {currentPageIndex + 1} /{' '}
                                         {totalPages}
                                     </span>
                                     <div className="flex gap-2">
@@ -1601,7 +1602,7 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                                 )
                                             }
                                         >
-                                            Previous
+                                            {appI18n.t('table.pagination.previous')}
                                         </Button>
                                         <Button
                                             type="button"
@@ -1620,7 +1621,7 @@ function GroupModerationToolsDialog({ open, onOpenChange, group, endpoint }) {
                                                 )
                                             }
                                         >
-                                            Next
+                                            {appI18n.t('table.pagination.next')}
                                         </Button>
                                     </div>
                                 </div>
@@ -1732,7 +1733,7 @@ function GroupPostEditorDialog({
                 <FieldGroup className="gap-4">
                     <Field>
                         <FieldLabel htmlFor="group-post-title">
-                            Title
+                            {appI18n.t('dialog.group_post_edit.title')}
                         </FieldLabel>
                         <Input
                             id="group-post-title"
@@ -1745,7 +1746,7 @@ function GroupPostEditorDialog({
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="group-post-text">
-                            Message
+                            {appI18n.t('dialog.group.generated.message')}
                         </FieldLabel>
                         <Textarea
                             id="group-post-text"
@@ -1774,12 +1775,12 @@ function GroupPostEditorDialog({
                                 }
                             />
                             <FieldLabel htmlFor="group-post-send-notification">
-                                Send notification
+                                {appI18n.t('dialog.group.generated.send_notification')}
                             </FieldLabel>
                         </Field>
                     ) : null}
                     <Field>
-                        <FieldLabel>Post visibility</FieldLabel>
+                        <FieldLabel>{appI18n.t('dialog.group.generated.post_visibility')}</FieldLabel>
                         <ToggleGroup
                             type="single"
                             variant="outline"
@@ -1806,7 +1807,7 @@ function GroupPostEditorDialog({
                     </Field>
                     {form.visibility === 'group' ? (
                         <Field>
-                            <FieldLabel>Roles</FieldLabel>
+                            <FieldLabel>{appI18n.t('dialog.group.generated.roles')}</FieldLabel>
                             {roles.length ? (
                                 <FieldGroup
                                     data-slot="checkbox-group"
@@ -1846,7 +1847,7 @@ function GroupPostEditorDialog({
                                 </FieldGroup>
                             ) : (
                                 <GroupListState
-                                    title="No roles"
+                                    title={appI18n.t('dialog.group.generated.no_roles')}
                                     description=""
                                     className="min-h-20 p-3"
                                 />
@@ -1855,7 +1856,7 @@ function GroupPostEditorDialog({
                     ) : null}
                     <Field>
                         <FieldLabel htmlFor="group-post-image-id">
-                            Image
+                            {appI18n.t('dialog.group.generated.image')}
                         </FieldLabel>
                         <InputGroup>
                             <InputGroupInput
@@ -1865,7 +1866,7 @@ function GroupPostEditorDialog({
                                     updateForm({ imageId: event.target.value })
                                 }
                                 disabled={submitting}
-                                placeholder="Gallery image id"
+                                placeholder={appI18n.t('dialog.group.generated.gallery_image_id')}
                             />
                             <InputGroupAddon align="inline-end">
                                 <InputGroupButton
@@ -1873,7 +1874,7 @@ function GroupPostEditorDialog({
                                     disabled={submitting || !form.imageId}
                                     onClick={() => updateForm({ imageId: '' })}
                                 >
-                                    Clear
+                                    {appI18n.t('common.actions.clear')}
                                 </InputGroupButton>
                                 <InputGroupButton
                                     type="button"
@@ -1883,7 +1884,7 @@ function GroupPostEditorDialog({
                                     }
                                     onClick={() => void loadGalleryRows()}
                                 >
-                                    Refresh
+                                    {appI18n.t('common.actions.refresh')}
                                 </InputGroupButton>
                             </InputGroupAddon>
                         </InputGroup>
@@ -1928,8 +1929,8 @@ function GroupPostEditorDialog({
                             </div>
                         ) : (
                             <GroupListState
-                                title="No gallery images"
-                                description="Refresh to load gallery images."
+                                title={appI18n.t('dialog.group.generated.no_gallery_images')}
+                                description={appI18n.t('dialog.group.generated.refresh_to_load_gallery_images')}
                                 loading={galleryStatus === 'running'}
                                 error={galleryError}
                                 className="min-h-24 p-3"
@@ -1944,7 +1945,7 @@ function GroupPostEditorDialog({
                         disabled={submitting}
                         onClick={() => onOpenChange?.(false)}
                     >
-                        Cancel
+                        {appI18n.t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -2026,12 +2027,12 @@ export function GroupDialogTabbedView({
         gallerySignature
     });
     const tabs = [
-        { value: 'info', label: 'Info' },
-        { value: 'instance-history', label: 'Instance History' },
-        { value: 'posts', label: 'Posts' },
-        { value: 'members', label: 'Members' },
-        { value: 'photos', label: 'Photos' },
-        { value: 'json', label: 'JSON' }
+        { value: 'info', label: appI18n.t('dialog.group.moderation_tabs.info') },
+        { value: 'instance-history', label: appI18n.t('dialog.group.moderation_tabs.instance_history') },
+        { value: 'posts', label: appI18n.t('dialog.group.moderation_tabs.posts') },
+        { value: 'members', label: appI18n.t('dialog.group.moderation_tabs.members') },
+        { value: 'photos', label: appI18n.t('dialog.group.moderation_tabs.photos') },
+        { value: 'json', label: appI18n.t('dialog.group.moderation_tabs.json') }
     ];
     const posts =
         remoteStatus.posts === 'ready'
@@ -2344,7 +2345,7 @@ export function GroupDialogTabbedView({
 
     async function copyGroupText(text, label) {
         await copyTextToClipboard(text);
-        toast.success(`${label} copied.`);
+        toast.success(appI18n.t('dialog.group.generated_dynamic.value_copied', { value: label }));
     }
 
     function openGroupOwner() {
@@ -2383,7 +2384,7 @@ export function GroupDialogTabbedView({
         const title = String(form.title || '').trim();
         const text = String(form.text || '').trim();
         if (!title || !text) {
-            toast.warning('Title and text are required.');
+            toast.warning(appI18n.t('dialog.group.generated.title_and_text_are_required'));
             return;
         }
 
@@ -2428,14 +2429,14 @@ export function GroupDialogTabbedView({
             setPostEditor(null);
             toast.success(
                 form.mode === 'edit'
-                    ? 'Group post updated.'
-                    : 'Group post created.'
+                    ? appI18n.t('dialog.group.generated_toast.group_post_updated')
+                    : appI18n.t('dialog.group.generated_toast.group_post_created')
             );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save group post.'
+                    : appI18n.t('dialog.group.generated_toast.failed_to_save_group_post')
             );
         } finally {
             setPostEditorSubmitting(false);
@@ -2444,11 +2445,11 @@ export function GroupDialogTabbedView({
 
     async function inviteUserToGroup() {
         const result = await prompt({
-            title: 'Invite to group',
-            description: 'Enter the VRChat user id to invite.',
+            title: appI18n.t('dialog.group.generated_modal.invite_to_group'),
+            description: appI18n.t('dialog.group.generated_modal.enter_the_vrchat_user_id_to_invite'),
             inputValue: '',
-            confirmText: 'Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('dialog.group.generated_modal.invite'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -2459,12 +2460,12 @@ export function GroupDialogTabbedView({
                 userId: result.value,
                 endpoint: currentEndpoint
             });
-            toast.success('Group invite sent.');
+            toast.success(appI18n.t('dialog.group.generated.group_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send group invite.'
+                    : appI18n.t('dialog.group.generated_toast.failed_to_send_group_invite')
             );
         }
     }
@@ -2484,10 +2485,10 @@ export function GroupDialogTabbedView({
 
     async function deleteGroupPost(post) {
         const result = await confirm({
-            title: 'Delete group post?',
+            title: appI18n.t('dialog.group.generated_modal.delete_group_post'),
             description: post?.title || group.name || 'Group',
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -2503,12 +2504,12 @@ export function GroupDialogTabbedView({
                 ...current,
                 posts: current.posts.filter((row) => row.id !== post.id)
             }));
-            toast.success('Group post deleted.');
+            toast.success(appI18n.t('dialog.group.generated.group_post_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete group post.'
+                    : appI18n.t('dialog.group.generated_toast.failed_to_delete_group_post')
             );
         }
     }
@@ -2552,11 +2553,11 @@ export function GroupDialogTabbedView({
                                     type="button"
                                     variant="ghost"
                                     className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-xs font-normal"
-                                    title="Open group owner profile"
+                                    title={appI18n.t('dialog.group.generated.open_group_owner_profile')}
                                     onClick={openGroupOwner}
                                 >
                                     <UserIcon data-icon="inline-start" />
-                                    Owner: {ownerLinkLabel}
+                                    {appI18n.t('dialog.group.generated.owner')} {ownerLinkLabel}
                                 </Button>
                             ) : null}
                             {detail ? (
@@ -2586,17 +2587,17 @@ export function GroupDialogTabbedView({
                         {group.isVerified ? (
                             <Badge>
                                 <BadgeCheckIcon data-icon="inline-start" />
-                                Verified
+                                {appI18n.t('dialog.group.tags.verified')}
                             </Badge>
                         ) : null}
                         <Badge variant="outline">
                             <UsersIcon data-icon="inline-start" />
-                            {group.memberCount} members
+                            {group.memberCount} {appI18n.t('dialog.group.generated.members')}
                         </Badge>
                         {group.onlineMemberCount > 0 ? (
                             <Badge variant="outline">
                                 <UsersIcon data-icon="inline-start" />
-                                {group.onlineMemberCount} online
+                                {group.onlineMemberCount} {appI18n.t('dashboard.widget.feed_online')}
                             </Badge>
                         ) : null}
                     </>
@@ -2609,7 +2610,7 @@ export function GroupDialogTabbedView({
                                 size="icon-lg"
                                 variant="outline"
                                 className="rounded-full"
-                                aria-label="Cancel join request"
+                                aria-label={"Cancel join request"}
                                 disabled={actionStatus === 'cancel-request'}
                                 onClick={onCancelRequest}
                             >
@@ -2620,7 +2621,7 @@ export function GroupDialogTabbedView({
                                 type="button"
                                 size="icon-lg"
                                 className="rounded-full"
-                                aria-label="Join group"
+                                aria-label={"Join group"}
                                 disabled={!canJoin || actionStatus === 'join'}
                                 onClick={onJoin}
                             >
@@ -2633,7 +2634,7 @@ export function GroupDialogTabbedView({
                                 disabled={actionStatus === 'refresh'}
                                 onSelect={onRefresh}
                             >
-                                Refresh
+                                {appI18n.t('common.actions.refresh')}
                             </EntityActionItem>
                             {groupUrl ? (
                                 <>
@@ -2646,7 +2647,7 @@ export function GroupDialogTabbedView({
                                             )
                                         }
                                     >
-                                        Share / Copy URL
+                                        {appI18n.t('dialog.group.generated.share_copy_url')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={ExternalLinkIcon}
@@ -2654,7 +2655,7 @@ export function GroupDialogTabbedView({
                                             openExternalLink(groupUrl)
                                         }
                                     >
-                                        Open Group Page
+                                        {appI18n.t('dialog.group.generated.open_group_page')}
                                     </EntityActionItem>
                                     <EntityActionItem
                                         icon={CopyIcon}
@@ -2665,7 +2666,7 @@ export function GroupDialogTabbedView({
                                             )
                                         }
                                     >
-                                        Copy Group ID
+                                        {appI18n.t('dialog.group.generated.copy_group_id')}
                                     </EntityActionItem>
                                 </>
                             ) : null}
@@ -2716,7 +2717,7 @@ export function GroupDialogTabbedView({
                                                 void inviteUserToGroup()
                                             }
                                         >
-                                            Invite To Group
+                                            {appI18n.t('dialog.group.generated.invite_to_group')}
                                         </EntityActionItem>
                                     ) : null}
                                     {canManagePosts ? (
@@ -2729,7 +2730,7 @@ export function GroupDialogTabbedView({
                                                 void createGroupPost()
                                             }
                                         >
-                                            Create Post
+                                            {appI18n.t('dialog.group.generated.create_post')}
                                         </EntityActionItem>
                                     ) : null}
                                     {canModerateGroup ? (
@@ -2739,7 +2740,7 @@ export function GroupDialogTabbedView({
                                                 setModerationOpen(true)
                                             }
                                         >
-                                            Moderation Tools
+                                            {appI18n.t('dialog.group.generated.moderation_tools')}
                                         </EntityActionItem>
                                     ) : null}
                                     {canSetVisibility ? (
@@ -2758,7 +2759,7 @@ export function GroupDialogTabbedView({
                                                 {memberVisibility === 'visible'
                                                     ? 'Selected: '
                                                     : ''}
-                                                Visibility Everyone
+                                                {appI18n.t('dialog.group.actions.visibility_everyone')}
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={UserIcon}
@@ -2773,7 +2774,7 @@ export function GroupDialogTabbedView({
                                                 {memberVisibility === 'friends'
                                                     ? 'Selected: '
                                                     : ''}
-                                                Visibility Friends
+                                                {appI18n.t('dialog.group.actions.visibility_friends')}
                                             </EntityActionItem>
                                             <EntityActionItem
                                                 icon={UserIcon}
@@ -2788,7 +2789,7 @@ export function GroupDialogTabbedView({
                                                 {memberVisibility === 'hidden'
                                                     ? 'Selected: '
                                                     : ''}
-                                                Visibility Hidden
+                                                {appI18n.t('dialog.group.actions.visibility_hidden')}
                                             </EntityActionItem>
                                         </>
                                     ) : null}
@@ -2799,7 +2800,7 @@ export function GroupDialogTabbedView({
                                         disabled={actionStatus === 'leave'}
                                         onSelect={onLeave}
                                     >
-                                        Leave Group
+                                        {appI18n.t('dialog.group.generated.leave_group')}
                                     </EntityActionItem>
                                 </>
                             ) : (
@@ -2858,7 +2859,7 @@ export function GroupDialogTabbedView({
                             endpoint={currentEndpoint}
                         />
                         {group.announcement?.id || group.announcement?.title ? (
-                            <EntityInfoBlock label="Announcement" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.group.info.announcement')} full>
                                 <span className="block truncate text-sm">
                                     {group.announcement.title || 'Announcement'}
                                 </span>
@@ -2945,7 +2946,7 @@ export function GroupDialogTabbedView({
                                                     })
                                                 }
                                             >
-                                                <span>Author:</span>
+                                                <span>{appI18n.t('dialog.group.generated.author')}</span>
                                                 <span className="text-foreground font-medium">
                                                     {announcementUserLabel(
                                                         group.announcement,
@@ -2959,7 +2960,7 @@ export function GroupDialogTabbedView({
                                             </Button>
                                         ) : (
                                             <span className="inline-flex items-center gap-1">
-                                                <span>Author:</span>
+                                                <span>{appI18n.t('dialog.group.generated.author')}</span>
                                                 <span className="text-foreground font-medium">
                                                     {announcementUserLabel(
                                                         group.announcement,
@@ -2999,7 +3000,7 @@ export function GroupDialogTabbedView({
                                                     })
                                                 }
                                             >
-                                                <span>Edited by:</span>
+                                                <span>{appI18n.t('dialog.group.posts.edited_by')}</span>
                                                 <span className="text-foreground font-medium">
                                                     {announcementUserLabel(
                                                         group.announcement,
@@ -3013,7 +3014,7 @@ export function GroupDialogTabbedView({
                                             </Button>
                                         ) : (
                                             <span className="inline-flex items-center gap-1">
-                                                <span>Edited by:</span>
+                                                <span>{appI18n.t('dialog.group.posts.edited_by')}</span>
                                                 <span className="text-foreground font-medium">
                                                     {announcementUserLabel(
                                                         group.announcement,
@@ -3025,7 +3026,7 @@ export function GroupDialogTabbedView({
                                     ) : null}
                                     {group.announcement.createdAt ? (
                                         <span className="inline-flex items-center gap-1">
-                                            <span>Created:</span>
+                                            <span>{appI18n.t('dialog.group.generated.created')}</span>
                                             <span className="text-foreground font-medium">
                                                 {announcementTimestamp(
                                                     group.announcement.createdAt
@@ -3035,7 +3036,7 @@ export function GroupDialogTabbedView({
                                     ) : null}
                                     {group.announcement.updatedAt ? (
                                         <span className="inline-flex items-center gap-1">
-                                            <span>Updated:</span>
+                                            <span>{appI18n.t('dialog.group.generated.updated')}</span>
                                             <span className="text-foreground font-medium">
                                                 {announcementTimestamp(
                                                     group.announcement.updatedAt
@@ -3047,18 +3048,18 @@ export function GroupDialogTabbedView({
                             </EntityInfoBlock>
                         ) : null}
                         {group.rules ? (
-                            <EntityInfoBlock label="Rules" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.group.info.rules')} full>
                                 <pre className="text-muted-foreground font-sans text-xs whitespace-pre-wrap">
                                     {group.rules}
                                 </pre>
                             </EntityInfoBlock>
                         ) : null}
                         <EntityInfoBlock
-                            label="Members"
+                            label={appI18n.t('dialog.group.generated.members_2')}
                             value={`${group.memberCount || 0} (${group.onlineMemberCount || 0})`}
                         />
                         <EntityInfoBlock
-                            label="Created At"
+                            label={appI18n.t('dialog.group.generated.created_at')}
                             value={
                                 group.createdAt || group.created_at
                                     ? formatDateFilter(
@@ -3069,7 +3070,7 @@ export function GroupDialogTabbedView({
                             }
                         />
                         <EntityInfoBlock
-                            label="Last Visited"
+                            label={appI18n.t('dialog.group.generated.last_visited')}
                             value={
                                 previousInstances[0]?.created_at ||
                                 previousInstances[0]?.createdAt
@@ -3087,25 +3088,25 @@ export function GroupDialogTabbedView({
                             }
                         />
                         <EntityInfoBlock
-                            label="Join State"
+                            label={appI18n.t('dialog.group.generated.join_state')}
                             value={joinState || '—'}
                         />
                         <EntityInfoBlock
-                            label="Membership"
+                            label={appI18n.t('dialog.group.generated.membership')}
                             value={
                                 memberStatus || group.membershipStatus || '—'
                             }
                         />
                         <EntityInfoBlock
-                            label="Languages"
+                            label={appI18n.t('dialog.group.generated.languages')}
                             value={group.languages.join(', ') || '—'}
                         />
                         <EntityInfoBlock
-                            label="Privacy"
+                            label={appI18n.t('dialog.group.generated.privacy')}
                             value={group.privacy || '—'}
                         />
                         {group.links.length ? (
-                            <EntityInfoBlock label="Links" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.group.info.links')} full>
                                 <div className="flex flex-wrap gap-1.5">
                                     {group.links.map((link) => (
                                         <Button
@@ -3143,13 +3144,13 @@ export function GroupDialogTabbedView({
                             }
                         />
                         <EntityInfoBlock
-                            label="Group ID"
+                            label={appI18n.t('dialog.group.info.id')}
                             value={group.id}
                             mono
                             wide
                         />
                         <EntityInfoBlock
-                            label="Owner"
+                            label={appI18n.t('dialog.group.generated.owner_2')}
                             value={ownerLabel || '—'}
                             wide
                             onClick={
@@ -3169,7 +3170,7 @@ export function GroupDialogTabbedView({
                             }
                         />
                         {group.tags.length ? (
-                            <EntityInfoBlock label="Tags" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.avatar.info.tags')} full>
                                 <div className="flex flex-wrap gap-1.5">
                                     {group.tags.map((tag) => (
                                         <Badge key={tag} variant="outline">
@@ -3180,7 +3181,7 @@ export function GroupDialogTabbedView({
                             </EntityInfoBlock>
                         ) : null}
                         {group.roles.length ? (
-                            <EntityInfoBlock label="Roles" full>
+                            <EntityInfoBlock label={appI18n.t('dialog.group.generated.roles')} full>
                                 <div className="flex flex-wrap gap-1.5">
                                     {group.roles.map((role) => (
                                         <Badge
@@ -3200,7 +3201,7 @@ export function GroupDialogTabbedView({
                     className="flex min-h-0 flex-col"
                 >
                     <PreviousInstancesPanel
-                        title="Instance History"
+                        title={appI18n.t('dialog.previous_instances.header')}
                         instances={previousInstances}
                         variant="group"
                         targetRef={group}
@@ -3214,7 +3215,7 @@ export function GroupDialogTabbedView({
                 >
                     <div className="flex items-center gap-2">
                         <div className="text-muted-foreground text-sm">
-                            {filteredPosts.length}/{posts.length} posts
+                            {filteredPosts.length}/{posts.length} {appI18n.t('dialog.group.generated.posts')}
                         </div>
                         <Input
                             value={search.posts}
@@ -3224,7 +3225,7 @@ export function GroupDialogTabbedView({
                                     posts: event.target.value
                                 }))
                             }
-                            placeholder="Search posts"
+                            placeholder={appI18n.t('dialog.group.generated.search_posts')}
                             className="ml-auto h-8 max-w-64"
                         />
                     </div>
@@ -3252,7 +3253,7 @@ export function GroupDialogTabbedView({
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="text-muted-foreground text-sm">
                             {filteredMembers.length}/
-                            {group.memberCount || members.length} members
+                            {group.memberCount || members.length} {appI18n.t('dialog.group.generated.members')}
                         </div>
                         <Button
                             type="button"
@@ -3263,7 +3264,7 @@ export function GroupDialogTabbedView({
                                 void loadTab('members', { force: true })
                             }
                         >
-                            Refresh
+                            {appI18n.t('common.actions.refresh')}
                         </Button>
                         <Button
                             type="button"
@@ -3272,7 +3273,7 @@ export function GroupDialogTabbedView({
                             disabled={remoteStatus.members === 'running'}
                             onClick={() => void loadAllMembers()}
                         >
-                            Load All
+                            {appI18n.t('dialog.group.generated.load_all')}
                         </Button>
                         <Button
                             type="button"
@@ -3295,21 +3296,21 @@ export function GroupDialogTabbedView({
                             disabled={remoteStatus.members === 'running'}
                         >
                             <SelectTrigger size="sm" className="w-44">
-                                <SelectValue placeholder="Sort" />
+                                <SelectValue placeholder={appI18n.t('side_panel.settings.sort')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectItem value="joinedAt:desc">
-                                        Joined newest
+                                        {appI18n.t('dialog.group.generated.joined_newest')}
                                     </SelectItem>
                                     <SelectItem value="joinedAt:asc">
-                                        Joined oldest
+                                        {appI18n.t('dialog.group.generated.joined_oldest')}
                                     </SelectItem>
                                     <SelectItem value="user.displayName:asc">
-                                        Name A-Z
+                                        {appI18n.t('dialog.group.generated.name_a_z')}
                                     </SelectItem>
                                     <SelectItem value="user.displayName:desc">
-                                        Name Z-A
+                                        {appI18n.t('dialog.group.generated.name_z_a')}
                                     </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
@@ -3322,12 +3323,12 @@ export function GroupDialogTabbedView({
                             disabled={remoteStatus.members === 'running'}
                         >
                             <SelectTrigger size="sm" className="w-48">
-                                <SelectValue placeholder="Role" />
+                                <SelectValue placeholder={appI18n.t('dialog.group.generated.role')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectItem value="all">
-                                        All roles
+                                        {appI18n.t('dialog.group.generated.all_roles')}
                                     </SelectItem>
                                     {group.roles.map((role) => (
                                         <SelectItem
@@ -3348,7 +3349,7 @@ export function GroupDialogTabbedView({
                                     members: event.target.value
                                 }))
                             }
-                            placeholder="Search members"
+                            placeholder={appI18n.t('dialog.group.generated.search_members')}
                             className="ml-auto h-8 max-w-64"
                         />
                     </div>

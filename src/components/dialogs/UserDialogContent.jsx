@@ -112,6 +112,7 @@ import {
     statusPresetsConfigKey
 } from './user-dialog/userProfileFields.js';
 import { UserDialogTabbedView } from './UserDialogTabbedView.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 function isGroupId(value) {
     return normalizeUserId(value).startsWith('grp_');
@@ -1935,12 +1936,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         let nextNote = targetProfile.note || '';
         if (!editingCurrentUser) {
             const noteResult = await prompt({
-                title: 'Edit VRChat note',
+                title: appI18n.t('dialog.user.generated_modal.edit_vrchat_note'),
                 description: targetProfile.displayName || targetProfile.id,
                 inputValue: nextNote,
                 multiline: true,
-                confirmText: 'Next',
-                cancelText: 'Cancel'
+                confirmText: appI18n.t('dialog.user.generated_modal.next'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!noteResult.ok) {
                 return;
@@ -1949,12 +1950,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         }
 
         const result = await prompt({
-            title: 'Edit local memo',
+            title: appI18n.t('dialog.user.generated_modal.edit_local_memo'),
             description: targetProfile.displayName || targetProfile.id,
             inputValue: memo,
             multiline: true,
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
 
         if (!result.ok) {
@@ -2011,10 +2012,10 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                         friendsById[rosterUserId]?.state
                 });
             }
-            toast.success(nextMemo ? 'Memo saved.' : 'Memo cleared.');
+            toast.success(nextMemo ? appI18n.t('dialog.user.generated_toast.memo_saved') : appI18n.t('dialog.user.generated_toast.memo_cleared'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to save memo.'
+                error instanceof Error ? error.message : appI18n.t('dialog.user.generated_toast.failed_to_save_memo')
             );
         }
     }
@@ -2095,7 +2096,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             !nextStatus ||
             (!profile?.$isModerator && nextStatus === 'offline')
         ) {
-            toast.warning('Please choose a valid social status.');
+            toast.warning(appI18n.t('dialog.user.generated.please_choose_a_valid_social_status'));
             return;
         }
         const saved = await saveCurrentUserPatch(
@@ -2118,7 +2119,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     async function saveSelfStatusPreset() {
         const nextStatus = normalizeSelfStatusInput(socialStatusDraft.status);
         if (!nextStatus) {
-            toast.warning('Please choose a valid social status.');
+            toast.warning(appI18n.t('dialog.user.generated.please_choose_a_valid_social_status'));
             return;
         }
         const nextPreset = {
@@ -2135,11 +2136,11 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                         nextPreset.statusDescription
             )
         ) {
-            toast.info('Status preset already exists.');
+            toast.info(appI18n.t('dialog.user.generated.status_preset_already_exists'));
             return;
         }
         if (statusPresets.length >= maxStatusPresets) {
-            toast.warning(`Status presets are limited to ${maxStatusPresets}.`);
+            toast.warning(appI18n.t('dialog.user.generated_dynamic.status_presets_are_limited_to_value', { value: maxStatusPresets }));
             return;
         }
 
@@ -2150,13 +2151,13 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 statusPresetsConfigKey,
                 nextPresets
             );
-            toast.success('Status preset saved.');
+            toast.success(appI18n.t('dialog.user.generated.status_preset_saved'));
         } catch (error) {
             setStatusPresets(statusPresets);
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save status preset.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_save_status_preset')
             );
         }
     }
@@ -2176,7 +2177,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to remove status preset.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_remove_status_preset')
             );
         }
     }
@@ -2208,12 +2209,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             });
             applyCurrentUserSnapshot(nextUser);
             setSelectedLanguageToAdd('');
-            toast.success('Language added.');
+            toast.success(appI18n.t('dialog.user.generated.language_added'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to add language.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_add_language')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2237,12 +2238,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             });
             applyCurrentUserSnapshot(nextUser);
             setSelectedLanguageToAdd('');
-            toast.success('Language removed.');
+            toast.success(appI18n.t('dialog.user.generated.language_removed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to remove language.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_remove_language')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2252,11 +2253,11 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
     async function editSelfBio() {
         const result = await prompt({
-            title: 'Edit bio',
+            title: appI18n.t('dialog.user.generated_modal.edit_bio'),
             inputValue: profile.bio || '',
             multiline: true,
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (result.ok) {
             await saveCurrentUserPatch(
@@ -2271,14 +2272,14 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
     async function editSelfBioLinks() {
         const result = await prompt({
-            title: 'Edit bio links',
-            description: 'One link per line, up to 3.',
+            title: appI18n.t('dialog.user.generated_modal.edit_bio_links'),
+            description: appI18n.t('dialog.user.generated_modal.one_link_per_line_up_to_3'),
             inputValue: Array.isArray(profile.bioLinks)
                 ? profile.bioLinks.join('\n')
                 : '',
             multiline: true,
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (result.ok) {
             await saveCurrentUserPatch(
@@ -2299,12 +2300,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
     async function editSelfPronouns() {
         const result = await prompt({
-            title: 'Edit pronouns',
+            title: appI18n.t('dialog.user.generated_modal.edit_pronouns'),
             inputValue: Array.isArray(profile.pronouns)
                 ? profile.pronouns.join(', ')
                 : profile.pronouns || '',
-            confirmText: 'Save',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.save'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (result.ok) {
             await saveCurrentUserPatch(
@@ -2379,12 +2380,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 }
             );
             applyCurrentUserSnapshot(nextUser);
-            toast.success('Badge updated.');
+            toast.success(appI18n.t('dialog.user.generated.badge_updated'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update badge.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_update_badge')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2414,12 +2415,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 }
             );
             applyCurrentUserSnapshot(nextUser);
-            toast.success('Badge updated.');
+            toast.success(appI18n.t('dialog.user.generated.badge_updated'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update badge.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_update_badge')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2442,10 +2443,10 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         actionStatusRef.current = 'unfriend';
         setActionStatus('unfriend');
         const result = await confirm({
-            title: 'Unfriend user?',
+            title: appI18n.t('dialog.user.generated_modal.unfriend_user'),
             description: friend?.displayName || rosterUserId,
-            confirmText: 'Unfriend',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('dialog.user.generated_modal.unfriend'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
 
@@ -2464,7 +2465,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             });
             if (deleteResult.stale) {
                 toast.info(
-                    'Unfriend request sent, but the active session changed before local state was updated.'
+                    appI18n.t('dialog.user.generated.unfriend_request_sent_but_the_active_session_changed_before_')
                 );
             } else {
                 setBaseProfile((currentProfile) =>
@@ -2477,14 +2478,14 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                         : currentProfile
                 );
                 toast.success(
-                    `Unfriended ${friend?.displayName || rosterUserId}.`
+                    appI18n.t('dialog.user.generated_dynamic.unfriended_value', { value: friend?.displayName || rosterUserId })
                 );
             }
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to unfriend user.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_unfriend_user')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2532,7 +2533,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         actionStatusRef.current = `friend-request:${action}`;
         setActionStatus(actionStatusRef.current);
         const result = await confirm({
-            title: `${label}?`,
+            title: appI18n.t('dialog.user.generated_dynamic.value', { value: label }),
             description: profile?.displayName || rosterUserId,
             confirmText:
                 action === 'accept'
@@ -2542,7 +2543,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                       : action === 'cancel'
                         ? 'Cancel Request'
                         : 'Send Request',
-            cancelText: 'Cancel',
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: action === 'decline' || action === 'cancel'
         });
 
@@ -2571,7 +2572,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                     ) {
                         return;
                     }
-                    toast.info('Friend request is no longer active.');
+                    toast.info(appI18n.t('dialog.user.generated.friend_request_is_no_longer_active'));
                     return;
                 }
                 const response =
@@ -2628,8 +2629,8 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 }
                 toast.success(
                     isNowFriend
-                        ? 'Friend request accepted.'
-                        : 'Friend request sent.'
+                        ? appI18n.t('dialog.user.generated_toast.friend_request_accepted')
+                        : appI18n.t('dialog.user.generated_toast.friend_request_sent')
                 );
             } else {
                 incomingNotification =
@@ -2648,7 +2649,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                     ) {
                         return;
                     }
-                    toast.info('Friend request is no longer active.');
+                    toast.info(appI18n.t('dialog.user.generated.friend_request_is_no_longer_active'));
                     return;
                 }
                 if (incomingNotification) {
@@ -2680,8 +2681,8 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 }
                 toast.success(
                     action === 'decline'
-                        ? 'Friend request declined.'
-                        : 'Friend request cancelled.'
+                        ? appI18n.t('dialog.user.generated_toast.friend_request_declined')
+                        : appI18n.t('dialog.user.generated_toast.friend_request_cancelled')
                 );
             }
         } catch (error) {
@@ -2705,11 +2706,11 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 ) {
                     return;
                 }
-                toast.info('Friend request is no longer active.');
+                toast.info(appI18n.t('dialog.user.generated.friend_request_is_no_longer_active'));
                 return;
             }
             toast.error(
-                error instanceof Error ? error.message : `${label} failed.`
+                error instanceof Error ? error.message : appI18n.t('dialog.user.generated_toast.value_failed', { value: label })
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2740,10 +2741,10 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         actionStatusRef.current = `${type}:${enabled ? 'enable' : 'disable'}`;
         setActionStatus(actionStatusRef.current);
         const result = await confirm({
-            title: `${label} user?`,
+            title: appI18n.t('dialog.user.generated_dynamic.value_user', { value: label }),
             description: profile?.displayName || rosterUserId,
             confirmText: label,
-            cancelText: 'Cancel',
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: enabled
         });
 
@@ -2787,12 +2788,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 block: Boolean(savedState.block),
                 mute: Boolean(savedState.mute)
             });
-            toast.success(`${label} request sent.`);
+            toast.success(appI18n.t('dialog.user.generated_dynamic.value_request_sent', { value: label }));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : `Failed to ${label.toLowerCase()} user.`
+                    : appI18n.t('dialog.user.generated_toast.failed_to_value_user', { value: label.toLowerCase() })
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2822,10 +2823,10 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         actionStatusRef.current = `${type}:${enabled ? 'enable' : 'disable'}`;
         setActionStatus(actionStatusRef.current);
         const result = await confirm({
-            title: `${label}?`,
+            title: appI18n.t('dialog.user.generated_dynamic.value', { value: label }),
             description: profile?.displayName || rosterUserId,
             confirmText: label,
-            cancelText: 'Cancel',
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: enabled
         });
 
@@ -2853,12 +2854,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 ...current,
                 [type]: enabled
             }));
-            toast.success(`${label} request sent.`);
+            toast.success(appI18n.t('dialog.user.generated_dynamic.value_request_sent', { value: label }));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : `Failed to ${label.toLowerCase()}.`
+                    : appI18n.t('dialog.user.generated_toast.failed_to_value', { value: label.toLowerCase() })
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2909,12 +2910,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 hideAvatar: nextType === 4,
                 showAvatar: nextType === 5
             });
-            toast.success(`${label} updated.`);
+            toast.success(appI18n.t('dialog.user.generated_dynamic.value_updated', { value: label }));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update avatar moderation.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_update_avatar_moderation')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2933,10 +2934,10 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         }
 
         const result = await confirm({
-            title: 'Report hacking?',
+            title: appI18n.t('dialog.user.generated_modal.report_hacking'),
             description: profile?.displayName || rosterUserId,
-            confirmText: 'Report',
-            cancelText: 'Cancel',
+            confirmText: appI18n.t('dialog.user.generated_modal.report'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -2955,12 +2956,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 },
                 { endpoint: currentEndpoint }
             );
-            toast.success('Report sent.');
+            toast.success(appI18n.t('dialog.user.generated.report_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to report user.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_report_user')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -2987,26 +2988,26 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
         if (requireCurrentUser && !normalizedCurrentUserId) {
             toast.error(
-                'Cannot load message templates: no current user session is available.'
+                appI18n.t('dialog.user.generated.cannot_load_message_templates_no_current_user_session_is_ava')
             );
             return null;
         }
 
         if (!currentInviteLocation) {
             toast.error(
-                'Cannot invite: no current VRChat location is available.'
+                appI18n.t('dialog.user.generated.cannot_invite_no_current_vrchat_location_is_available')
             );
             return null;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error('Cannot invite from the current instance type.');
+            toast.error(appI18n.t('dialog.user.generated.cannot_invite_from_the_current_instance_type'));
             return null;
         }
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                'Cannot invite: current location is not a concrete instance.'
+                appI18n.t('dialog.user.generated.cannot_invite_current_location_is_not_a_concrete_instance')
             );
             return null;
         }
@@ -3034,7 +3035,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
         if (requireCurrentUser && !normalizedCurrentUserId) {
             toast.error(
-                'Cannot load message templates: no current user session is available.'
+                appI18n.t('dialog.user.generated.cannot_load_message_templates_no_current_user_session_is_ava')
             );
             return null;
         }
@@ -3091,14 +3092,14 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 messageSlot !== null ? 'Invite Message' : 'Invite'
             );
             toast.success(
-                messageSlot !== null ? 'Invite message sent.' : 'Invite sent.'
+                messageSlot !== null ? appI18n.t('dialog.user.generated_toast.invite_message_sent') : appI18n.t('dialog.user.generated_toast.invite_sent')
             );
             return true;
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send invite.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_send_invite')
             );
             return false;
         } finally {
@@ -3126,10 +3127,10 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         }
 
         const result = await confirm({
-            title: 'Send invite?',
+            title: appI18n.t('dialog.user.generated_modal.send_invite'),
             description: profile?.displayName || context.rosterUserId,
-            confirmText: 'Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('dialog.user.generated_modal.invite'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -3172,15 +3173,15 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             );
             toast.success(
                 requestSlot !== null
-                    ? 'Invite request message sent.'
-                    : 'Invite request sent.'
+                    ? appI18n.t('dialog.user.generated_toast.invite_request_message_sent')
+                    : appI18n.t('dialog.user.generated_toast.invite_request_sent')
             );
             return true;
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to request invite.'
+                    : appI18n.t('dialog.user.generated_toast.failed_to_request_invite')
             );
             return false;
         } finally {
@@ -3210,10 +3211,10 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         }
 
         const result = await confirm({
-            title: 'Request invite?',
+            title: appI18n.t('dialog.user.generated_modal.request_invite'),
             description: profile?.displayName || context.rosterUserId,
-            confirmText: 'Request Invite',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('dialog.user.generated_modal.request_invite_2'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -3225,7 +3226,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     async function selectInviteMessage({ row }) {
         const slot = inviteMessageSlot(row);
         if (!Number.isFinite(slot)) {
-            toast.error('Invite message slot must be a number.');
+            toast.error(appI18n.t('dialog.user.generated.invite_message_slot_must_be_a_number'));
             return false;
         }
 
@@ -3262,12 +3263,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         setActionStatus('boop');
         try {
             const result = await prompt({
-                title: 'Send boop',
+                title: appI18n.t('dialog.user.generated_modal.send_boop'),
                 description:
-                    'Optional emoji id. Leave blank to send the default boop.',
+                    appI18n.t('dialog.user.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
                 inputValue: '',
-                confirmText: 'Send',
-                cancelText: 'Cancel'
+                confirmText: appI18n.t('dialog.user.generated_modal.send'),
+                cancelText: appI18n.t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -3279,10 +3280,10 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 emojiId: result.value,
                 endpoint: currentEndpoint
             });
-            toast.success('Boop sent.');
+            toast.success(appI18n.t('dialog.user.generated.boop_sent'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to send boop.'
+                error instanceof Error ? error.message : appI18n.t('dialog.user.generated_toast.failed_to_send_boop')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -3301,18 +3302,18 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         }
 
         const result = await prompt({
-            title: 'Group moderation',
-            description: `Enter a group id to open moderation for ${profile?.displayName || rosterUserId}.`,
+            title: appI18n.t('dialog.user.generated_modal.group_moderation'),
+            description: appI18n.t('dialog.user.generated_dynamic.enter_a_group_id_to_open_moderation_for_value', { value: profile?.displayName || rosterUserId }),
             inputValue: '',
-            confirmText: 'Open',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('common.actions.open'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
         }
         const groupId = normalizeUserId(result.value);
         if (!groupId) {
-            toast.error('Group ID is required.');
+            toast.error(appI18n.t('dialog.user.generated.group_id_is_required'));
             return;
         }
         openGroupDialog({ groupId });
@@ -3322,8 +3323,8 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         return (
             <UserDialogEmptyState
                 loading
-                title="Loading user profile"
-                description="Fetching the current VRChat user snapshot for this dialog."
+                title={appI18n.t('dialog.user.generated.loading_user_profile')}
+                description={appI18n.t('dialog.user.generated.fetching_the_current_vrchat_user_snapshot_for_this_dialog')}
             />
         );
     }
@@ -3331,7 +3332,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     if (!profile) {
         return (
             <UserDialogEmptyState
-                title="User profile unavailable"
+                title={appI18n.t('dialog.user.generated.user_profile_unavailable')}
                 description={
                     detail ||
                     'VRCX-0 could not resolve a user snapshot for this dialog.'
@@ -3455,22 +3456,22 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             >
                 <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
-                        <DialogTitle>Edit social status</DialogTitle>
+                        <DialogTitle>{appI18n.t('dialog.user.generated.edit_social_status')}</DialogTitle>
                         <DialogDescription>
-                            Update your social status and status description.
+                            {appI18n.t('dialog.user.generated.update_your_social_status_and_status_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <FieldGroup>
                         <Field>
                             <FieldLabel htmlFor="user-social-status-description">
-                                Status description
+                                {appI18n.t('dialog.user.generated.status_description')}
                             </FieldLabel>
                             <div className="flex items-center gap-2">
                                 <Input
                                     id="user-social-status-description"
                                     value={socialStatusDraft.statusDescription}
                                     maxLength={32}
-                                    placeholder="Status description"
+                                    placeholder={appI18n.t('dialog.user.generated.status_description')}
                                     disabled={actionStatus !== 'idle'}
                                     onChange={(event) => {
                                         setSocialStatusDraft((draft) => ({
@@ -3486,7 +3487,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                         variant="outline"
                                         size="icon"
                                         disabled={actionStatus !== 'idle'}
-                                        aria-label="Clear status description"
+                                        aria-label={"Clear status description"}
                                         onClick={() => {
                                             setSocialStatusDraft((draft) => ({
                                                 ...draft,
@@ -3504,7 +3505,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                             variant="outline"
                                             size="icon"
                                             disabled={actionStatus !== 'idle'}
-                                            aria-label="Status history"
+                                            aria-label={"Status history"}
                                         >
                                             <HistoryIcon data-icon="inline-start" />
                                         </Button>
@@ -3542,7 +3543,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                                 )
                                             ) : (
                                                 <DropdownMenuItem disabled>
-                                                    No status history
+                                                    {appI18n.t('dialog.user.generated.no_status_history')}
                                                 </DropdownMenuItem>
                                             )}
                                         </DropdownMenuGroup>
@@ -3554,7 +3555,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                             </div>
                         </Field>
                         <Field>
-                            <FieldLabel>Social status</FieldLabel>
+                            <FieldLabel>{appI18n.t('dialog.user.generated.social_status')}</FieldLabel>
                             <ToggleGroup
                                 type="single"
                                 variant="outline"
@@ -3562,7 +3563,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                 orientation="vertical"
                                 spacing={2}
                                 className="w-full"
-                                aria-label="Social status"
+                                aria-label={"Social status"}
                                 onValueChange={(nextStatus) => {
                                     if (!nextStatus) {
                                         return;
@@ -3607,7 +3608,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                         </Field>
                         {statusPresets.length ? (
                             <Field>
-                                <FieldLabel>Presets</FieldLabel>
+                                <FieldLabel>{appI18n.t('dialog.social_status.presets')}</FieldLabel>
                                 <div className="flex flex-wrap gap-2">
                                     {statusPresets.map((preset, index) => {
                                         const presetStatus =
@@ -3667,7 +3668,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                                     disabled={
                                                         actionStatus !== 'idle'
                                                     }
-                                                    aria-label="Remove status preset"
+                                                    aria-label={"Remove status preset"}
                                                     onClick={() => {
                                                         void removeSelfStatusPreset(
                                                             index
@@ -3691,7 +3692,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                             onClick={() => void saveSelfStatusPreset()}
                         >
                             <BookmarkIcon data-icon="inline-start" />
-                            Save Preset
+                            {appI18n.t('dialog.user.generated.save_preset')}
                         </Button>
                         <Button
                             type="button"
@@ -3699,14 +3700,14 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                             disabled={actionStatus !== 'idle'}
                             onClick={() => setSocialStatusDialogOpen(false)}
                         >
-                            Cancel
+                            {appI18n.t('common.actions.cancel')}
                         </Button>
                         <Button
                             type="button"
                             disabled={actionStatus !== 'idle'}
                             onClick={() => void saveSelfSocialStatus()}
                         >
-                            Update
+                            {appI18n.t('dialog.user.generated.update')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -3721,9 +3722,9 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             >
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Edit language</DialogTitle>
+                        <DialogTitle>{appI18n.t('dialog.user.generated.edit_language')}</DialogTitle>
                         <DialogDescription>
-                            Add or remove the languages shown on your profile.
+                            {appI18n.t('dialog.user.generated.add_or_remove_the_languages_shown_on_your_profile')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col gap-4">
@@ -3757,7 +3758,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                                 ))
                             ) : (
                                 <div className="text-muted-foreground text-sm">
-                                    No languages selected.
+                                    {appI18n.t('dialog.user.generated.no_languages_selected')}
                                 </div>
                             )}
                         </div>
@@ -3804,8 +3805,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                         </Select>
                         {languageOptionsStatus === 'error' ? (
                             <div className="text-muted-foreground text-xs">
-                                VRChat language list unavailable, using local
-                                language codes.
+                                {appI18n.t('dialog.user.generated.vrchat_language_list_unavailable_using_local_language_codes')}
                             </div>
                         ) : null}
                     </div>

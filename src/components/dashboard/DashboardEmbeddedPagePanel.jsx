@@ -3,12 +3,13 @@ import { Suspense } from 'react';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 import { getDashboardPagePanelComponent } from './dashboardPagePanelRegistry.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 function EmbeddedPageFallback() {
     return (
         <div className="text-muted-foreground flex min-h-[220px] flex-1 items-center justify-center gap-2 text-sm">
             <Spinner />
-            Loading dashboard panel
+            {appI18n.t('view.dashboard.generated.loading_dashboard_panel')}
         </div>
     );
 }

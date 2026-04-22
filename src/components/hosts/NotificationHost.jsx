@@ -11,6 +11,7 @@ import {
     SheetHeader,
     SheetTitle
 } from '@/ui/shadcn/sheet';
+import { appI18n } from '@/services/i18nService.js';
 
 export function NotificationHost() {
     const items = useNotificationStore((state) => state.items);
@@ -29,25 +30,24 @@ export function NotificationHost() {
                     <div className="flex items-center justify-between gap-3">
                         <SheetTitle className="flex items-center gap-2">
                             <BellIcon className="size-4" />
-                            Notifications
+                            {appI18n.t('dialog.tools.generated.notifications')}
                         </SheetTitle>
                         <Badge
                             variant={unreadCount > 0 ? 'default' : 'outline'}
                         >
-                            {unreadCount} unread
+                            {unreadCount} {appI18n.t('dialog.tools.generated.unread')}
                         </Badge>
                     </div>
                     <SheetDescription>
-                        Backend events and system messages land here.
+                        {appI18n.t('dialog.tools.generated.backend_events_and_system_messages_land_here')}
                     </SheetDescription>
                 </SheetHeader>
                 <div className="mt-6 flex items-center justify-between gap-3">
                     <div className="text-muted-foreground text-xs">
-                        Notifications are surfaced from the top-level status
-                        bar.
+                        {appI18n.t('dialog.tools.generated.notifications_are_surfaced_from_the_top_level_status_bar')}
                     </div>
                     <Button size="sm" variant="outline" onClick={markAllRead}>
-                        Mark all read
+                        {appI18n.t('dialog.tools.generated.mark_all_read')}
                     </Button>
                 </div>
                 <Separator className="my-4" />
@@ -71,7 +71,7 @@ export function NotificationHost() {
                                         type="button"
                                         size="icon-sm"
                                         variant="ghost"
-                                        aria-label="Dismiss notification"
+                                        aria-label={"Dismiss notification"}
                                         onClick={() =>
                                             dismissNotification(item.id)
                                         }
@@ -83,7 +83,7 @@ export function NotificationHost() {
                         ))
                     ) : (
                         <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
-                            No notifications yet.
+                            {appI18n.t('dialog.tools.generated.no_notifications_yet')}
                         </div>
                     )}
                 </div>

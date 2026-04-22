@@ -89,6 +89,7 @@ import {
     routePathByName,
     saveNavMenuModel
 } from './navMenuModel.js';
+import { appI18n } from '@/services/i18nService.js';
 
 const themeModeOptions = ['system', 'light', 'dark'];
 const tableDensityOptions = [
@@ -804,7 +805,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to create dashboard.'
+                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_create_dashboard')
             );
         } finally {
             setIsCreatingDashboard(false);
@@ -824,7 +825,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to mark notifications as seen.'
+                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_mark_notifications_as_seen')
             );
         }
     }
@@ -888,7 +889,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete dashboard.'
+                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_delete_dashboard')
             );
         }
     }
@@ -918,7 +919,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save custom navigation.'
+                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_save_custom_navigation')
             );
         }
     }
@@ -937,7 +938,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to save dashboard navigation.'
+                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_save_dashboard_navigation')
             );
         }
     }
@@ -957,7 +958,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to unpin tool from navigation.'
+                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_unpin_tool_from_navigation')
             );
         }
     }
@@ -1176,7 +1177,7 @@ export function AppNavMenu({ isCollapsed }) {
                                     <img
                                         className="size-6 cursor-pointer"
                                         src={vrcxLogo}
-                                        alt="VRCX-0"
+                                        alt={t('view.settings.advanced.advanced.vrcx_settings.header')}
                                         onClick={() =>
                                             void openExternalLink(links.github)
                                         }
@@ -1190,7 +1191,7 @@ export function AppNavMenu({ isCollapsed }) {
                                         }
                                     >
                                         <span className="flex items-center gap-1 truncate text-sm font-medium">
-                                            VRCX-0
+                                            {t('view.settings.advanced.advanced.vrcx_settings.header')}
                                             <HeartIcon
                                                 data-icon="inline-end"
                                                 className="text-primary fill-current stroke-none"
@@ -1299,7 +1300,7 @@ export function AppNavMenu({ isCollapsed }) {
                                                     toast.error(
                                                         error instanceof Error
                                                             ? error.message
-                                                            : 'Failed to sign out of VRCX-0.'
+                                                            : appI18n.t('component.app_nav_menu.generated_toast.failed_to_sign_out_of_vrcx_0')
                                                     );
                                                 });
                                         }}

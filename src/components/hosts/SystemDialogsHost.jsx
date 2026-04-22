@@ -54,6 +54,7 @@ import {
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
+import { appI18n } from '@/services/i18nService.js';
 
 function UpdaterDialog({ open, onOpenChange }) {
     const cancelTokenRef = useRef(null);
@@ -141,14 +142,14 @@ function UpdaterDialog({ open, onOpenChange }) {
         cancelTokenRef.current = cancelToken;
         setDownloading(true);
         setProgress(0);
-        setDetail(`Downloading ${selectedRelease.displayName}.`);
+        setDetail(appI18n.t('host.system_dialogs.generated_dynamic.downloading_value', { value: selectedRelease.displayName }));
         try {
             await downloadUpdateAndWait(selectedRelease, {
                 onProgress: setProgress,
                 isCancelled: () => cancelToken.cancelled
             });
             setPendingInstall(true);
-            setDetail(`${selectedRelease.displayName} is ready to install.`);
+            setDetail(appI18n.t('host.system_dialogs.generated_dynamic.value_is_ready_to_install', { value: selectedRelease.displayName }));
         } catch (error) {
             setDetail(
                 userFacingErrorMessage(error, 'Failed to download update.')
@@ -179,9 +180,9 @@ function UpdaterDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>VRCX-0 Update</DialogTitle>
+                    <DialogTitle>{appI18n.t('dialog.system.generated.vrcx_0_update')}</DialogTitle>
                     <DialogDescription>
-                        Current version{' '}
+                        {appI18n.t('dialog.system.generated.current_version')}{' '}
                         {formatReleaseDisplayVersion(VERSION || '') || '-'}.
                     </DialogDescription>
                 </DialogHeader>
@@ -193,8 +194,8 @@ function UpdaterDialog({ open, onOpenChange }) {
                         }
                     >
                         <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="Stable">Stable</TabsTrigger>
-                            <TabsTrigger value="Beta">Beta</TabsTrigger>
+                            <TabsTrigger value="Stable">{appI18n.t('dialog.vrcx_updater.branch_stable')}</TabsTrigger>
+                            <TabsTrigger value="Beta">{appI18n.t('dialog.system.generated.beta')}</TabsTrigger>
                         </TabsList>
                     </Tabs>
                     <Select
@@ -241,7 +242,7 @@ function UpdaterDialog({ open, onOpenChange }) {
                     ) : null}
                     {pendingInstall ? (
                         <div className="bg-muted/30 rounded-md border p-3 text-sm">
-                            An update is downloaded and ready to install.
+                            {appI18n.t('dialog.system.generated.an_update_is_downloaded_and_ready_to_install')}
                         </div>
                     ) : null}
                     {detail ? (
@@ -260,7 +261,7 @@ function UpdaterDialog({ open, onOpenChange }) {
                             variant="outline"
                             onClick={() => void handleCancel()}
                         >
-                            Cancel
+                            {appI18n.t('common.actions.cancel')}
                         </Button>
                     ) : null}
                     <Button
@@ -268,14 +269,14 @@ function UpdaterDialog({ open, onOpenChange }) {
                         disabled={!selectedRelease || loading || downloading}
                         onClick={() => void handleDownload()}
                     >
-                        Download
+                        {appI18n.t('dialog.vrcx_updater.download')}
                     </Button>
                     <Button
                         type="button"
                         disabled={downloading || !pendingInstall}
                         onClick={handleInstall}
                     >
-                        Install And Restart
+                        {appI18n.t('dialog.system.generated.install_and_restart')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -417,7 +418,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
         }
 
         setLoading(true);
-        setDetail(`Restoring ${selectedBackup.name}.`);
+        setDetail(appI18n.t('host.system_dialogs.generated_dynamic.restoring_value', { value: selectedBackup.name }));
         try {
             await restoreVrcRegistryBackup(selectedBackup.key);
             setDetail('Registry backup restored.');
@@ -439,7 +440,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
         }
 
         setLoading(true);
-        setDetail(`Deleting ${selectedBackup.name}.`);
+        setDetail(appI18n.t('host.system_dialogs.generated_dynamic.deleting_value', { value: selectedBackup.name }));
         try {
             const nextBackups = await deleteVrcRegistryBackup(
                 selectedBackup.key
@@ -465,7 +466,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
         }
 
         setLoading(true);
-        setDetail(`Saving ${selectedBackup.name}.`);
+        setDetail(appI18n.t('host.system_dialogs.generated_dynamic.saving_value', { value: selectedBackup.name }));
         try {
             const filePath = await saveVrcRegistryBackupToFile(
                 selectedBackup.key
@@ -511,11 +512,11 @@ function RegistryBackupDialog({ open, onOpenChange }) {
 
     async function handleDeleteRegistryFolder() {
         const result = await confirm({
-            title: 'Delete VRChat registry',
+            title: appI18n.t('host.system_dialogs.generated_modal.delete_vrchat_registry'),
             description:
-                'Delete the VRChat registry folder. This matches the old reset action and cannot be undone from here.',
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
+                appI18n.t('host.system_dialogs.generated_modal.delete_the_vrchat_registry_folder_this_matches_t'),
+            confirmText: appI18n.t('common.actions.delete'),
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -543,10 +544,9 @@ function RegistryBackupDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>VRChat Registry Backup</DialogTitle>
+                    <DialogTitle>{appI18n.t('dialog.system.generated.vrchat_registry_backup')}</DialogTitle>
                     <DialogDescription>
-                        Create, restore, or remove saved VRChat registry
-                        backups.
+                        {appI18n.t('dialog.system.generated.create_restore_or_remove_saved_vrchat_registry_backups')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
@@ -554,7 +554,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         <Field orientation="horizontal" data-disabled={loading}>
                             <FieldContent>
                                 <FieldLabel htmlFor="registry-auto-backup">
-                                    Auto backup
+                                    {appI18n.t('dialog.system.generated.auto_backup')}
                                 </FieldLabel>
                             </FieldContent>
                             <Switch
@@ -569,7 +569,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         <Field orientation="horizontal" data-disabled={loading}>
                             <FieldContent>
                                 <FieldLabel htmlFor="registry-ask-restore">
-                                    Ask to restore
+                                    {appI18n.t('dialog.system.generated.ask_to_restore')}
                                 </FieldLabel>
                             </FieldContent>
                             <Switch
@@ -611,8 +611,8 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                     </Select>
                     {selectedBackup ? (
                         <div className="bg-muted/30 rounded-md border p-3 text-sm">
-                            <div>Name: {selectedBackup.name}</div>
-                            <div>Date: {selectedBackup.date || 'Unknown'}</div>
+                            <div>{appI18n.t('dialog.system.generated.name')} {selectedBackup.name}</div>
+                            <div>{appI18n.t('dialog.system.generated.date')} {selectedBackup.date || 'Unknown'}</div>
                         </div>
                     ) : null}
                     {detail ? (
@@ -631,7 +631,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading}
                         onClick={() => void refreshBackups()}
                     >
-                        Refresh
+                        {appI18n.t('common.actions.refresh')}
                     </Button>
                     <Button
                         type="button"
@@ -639,7 +639,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading}
                         onClick={() => void handleCreateBackup()}
                     >
-                        Create Backup
+                        {appI18n.t('dialog.system.generated.create_backup')}
                     </Button>
                     <Button
                         type="button"
@@ -647,7 +647,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading || !selectedBackup}
                         onClick={() => void handleDeleteBackup()}
                     >
-                        Delete
+                        {appI18n.t('common.actions.delete')}
                     </Button>
                     <Button
                         type="button"
@@ -655,7 +655,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading || !selectedBackup}
                         onClick={() => void handleSaveBackupToFile()}
                     >
-                        Save To File
+                        {appI18n.t('dialog.system.generated.save_to_file')}
                     </Button>
                     <Button
                         type="button"
@@ -663,7 +663,7 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading}
                         onClick={() => void handleRestoreFromFile()}
                     >
-                        Restore From File
+                        {appI18n.t('dialog.system.generated.restore_from_file')}
                     </Button>
                     <Button
                         type="button"
@@ -671,14 +671,14 @@ function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading}
                         onClick={() => void handleDeleteRegistryFolder()}
                     >
-                        Reset
+                        {appI18n.t('common.actions.reset')}
                     </Button>
                     <Button
                         type="button"
                         disabled={loading || !selectedBackup}
                         onClick={() => void handleRestoreBackup()}
                     >
-                        Restore
+                        {appI18n.t('dialog.registry_backup.restore')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -724,7 +724,7 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
                 toast.error(
                     userFacingErrorMessage(
                         error,
-                        'Failed to load launch options.'
+                        appI18n.t('host.system_dialogs.generated_toast.failed_to_load_launch_options')
                     )
                 );
             })
@@ -765,11 +765,11 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
                 )
             ]);
             setLaunchArguments(normalizedArguments);
-            toast.success('Updated launch options');
+            toast.success(t('dialog.system.generated.updated_launch_options'));
             onOpenChange(false);
         } catch (error) {
             toast.error(
-                userFacingErrorMessage(error, 'Failed to save launch options.')
+                userFacingErrorMessage(error, appI18n.t('host.system_dialogs.generated_toast.failed_to_save_launch_options'))
             );
         } finally {
             setLoading(false);
@@ -790,10 +790,10 @@ function LaunchOptionsDialog({ open, onOpenChange }) {
                 </DialogHeader>
                 <FieldGroup>
                     <div className="bg-muted/30 text-muted-foreground rounded-md border p-3 text-xs">
-                        <div>--fps=144</div>
-                        <div>--enable-debug-gui</div>
-                        <div>--enable-sdk-log-levels</div>
-                        <div>--enable-udon-debug-logging</div>
+                        <div>{t('dialog.system.generated.fps_144')}</div>
+                        <div>{t('dialog.system.generated.enable_debug_gui')}</div>
+                        <div>{t('dialog.system.generated.enable_sdk_log_levels')}</div>
+                        <div>{t('dialog.system.generated.enable_udon_debug_logging')}</div>
                     </div>
                     <Field>
                         <FieldLabel htmlFor="launch-options-arguments">
@@ -969,7 +969,7 @@ function VRChatConfigDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    'Failed to load VRChat configuration.'
+                    appI18n.t('host.system_dialogs.generated_toast.failed_to_load_vrchat_configuration')
                 )
             );
         } finally {
@@ -988,7 +988,7 @@ function VRChatConfigDialog({ open, onOpenChange }) {
             .OpenFolderSelectorDialog(config[key] || '')
             .catch((error) => {
                 toast.error(
-                    userFacingErrorMessage(error, 'Failed to select folder.')
+                    userFacingErrorMessage(error, appI18n.t('host.system_dialogs.generated_toast.failed_to_select_folder'))
                 );
                 return '';
             });
@@ -1003,13 +1003,13 @@ function VRChatConfigDialog({ open, onOpenChange }) {
             const removed = await backend.assetBundle.SweepCache();
             toast.success(
                 Array.isArray(removed)
-                    ? `Removed ${removed.length} cache entries.`
+                    ? appI18n.t('host.system_dialogs.generated_toast.removed_value_cache_entries', { value: removed.length })
                     : t('message.cache.deleted')
             );
             await loadConfig();
         } catch (error) {
             toast.error(
-                userFacingErrorMessage(error, 'Failed to sweep asset cache.')
+                userFacingErrorMessage(error, appI18n.t('host.system_dialogs.generated_toast.failed_to_sweep_asset_cache'))
             );
         } finally {
             setLoading(false);
@@ -1034,7 +1034,7 @@ function VRChatConfigDialog({ open, onOpenChange }) {
             await loadConfig();
         } catch (error) {
             toast.error(
-                userFacingErrorMessage(error, 'Failed to delete asset cache.')
+                userFacingErrorMessage(error, appI18n.t('host.system_dialogs.generated_toast.failed_to_delete_asset_cache'))
             );
         } finally {
             setLoading(false);
@@ -1050,13 +1050,13 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                 '\t'
             );
             await backend.app.WriteConfigFile(json);
-            toast.success('Saved VRChat config.');
+            toast.success(t('dialog.system.generated.saved_vrchat_config'));
             onOpenChange(false);
         } catch (error) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    'Failed to save VRChat configuration.'
+                    appI18n.t('host.system_dialogs.generated_toast.failed_to_save_vrchat_configuration')
                 )
             );
         } finally {
@@ -1135,7 +1135,7 @@ function VRChatConfigDialog({ open, onOpenChange }) {
                                             void openFolderBrowser(key)
                                         }
                                     >
-                                        Browse
+                                        {t('dialog.screenshot_metadata.browse')}
                                     </Button>
                                 ) : null}
                             </div>
@@ -1376,7 +1376,7 @@ export function SystemDialogsHost() {
                                         void skipLegacyDatabaseMigration();
                                     }}
                                 >
-                                    Skip
+                                    {appI18n.t('message.database.migration_skip')}
                                 </Button>
                                 <Button
                                     type="button"
@@ -1384,7 +1384,7 @@ export function SystemDialogsHost() {
                                         void confirmLegacyDatabaseMigration();
                                     }}
                                 >
-                                    Migrate And Restart
+                                    {appI18n.t('dialog.system.generated.migrate_and_restart')}
                                 </Button>
                             </>
                         ) : (
@@ -1396,7 +1396,7 @@ export function SystemDialogsHost() {
                                     setDatabaseUpgradeState({ open: false })
                                 }
                             >
-                                Close
+                                {appI18n.t('common.actions.close')}
                             </Button>
                         )}
                     </DialogFooter>

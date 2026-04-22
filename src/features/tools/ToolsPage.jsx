@@ -30,6 +30,7 @@ import {
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { Button } from '@/ui/shadcn/button';
+import { appI18n } from '@/services/i18nService.js';
 
 const collapsibleCategories = toolCategories.map((category) => category.key);
 const configKey = 'VRCX_toolsCategoryCollapsed';
@@ -308,7 +309,7 @@ export function ToolsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to pin tool to navigation.'
+                    : appI18n.t('view.tools.generated_toast.failed_to_pin_tool_to_navigation')
             );
         }
     }
@@ -335,7 +336,7 @@ export function ToolsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to unpin tool from navigation.'
+                    : appI18n.t('view.tools.generated_toast.failed_to_unpin_tool_from_navigation')
             );
         }
     }

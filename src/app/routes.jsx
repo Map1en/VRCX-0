@@ -23,6 +23,7 @@ import { SettingsPage } from '@/features/settings/SettingsPage.jsx';
 import { GalleryPage } from '@/features/tools/GalleryPage.jsx';
 import { ScreenshotMetadataPage } from '@/features/tools/ScreenshotMetadataPage.jsx';
 import { ToolsPage } from '@/features/tools/ToolsPage.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 export const publicRoutes = [
     {
@@ -34,130 +35,130 @@ export const publicRoutes = [
 export const protectedRoutes = [
     {
         path: '/feed',
-        title: 'Feed',
-        description: 'Table-heavy social feed page.',
+        title: appI18n.t('app.routes.feed'),
+        description: appI18n.t('app.routes.table_heavy_social_feed_page'),
         element: <FeedPage />
     },
     {
         path: '/friends-locations',
-        title: 'Friend Locations',
-        description: 'Live friend location board for finding people.',
+        title: appI18n.t('app.routes.friend_locations'),
+        description: appI18n.t('app.routes.live_friend_location_board_for_finding_people'),
         element: <FriendsLocationsPage />
     },
     {
         path: '/game-log',
-        title: 'Game Log',
-        description: 'Table-heavy game event log.',
+        title: appI18n.t('app.routes.game_log'),
+        description: appI18n.t('app.routes.table_heavy_game_event_log'),
         element: <GameLogPage />
     },
     {
         path: '/player-list',
-        title: 'Current Players',
+        title: appI18n.t('app.routes.current_players'),
         description:
-            'Current-instance player roster rebuilt from local activity data.',
+            appI18n.t('app.routes.current_instance_player_roster_rebuilt_from_loca'),
         element: <PlayerListPage />
     },
     {
         path: '/search',
-        title: 'Search',
-        description: 'World and group search route.',
+        title: appI18n.t('app.routes.search'),
+        description: appI18n.t('app.routes.world_and_group_search_route'),
         element: <SearchPage />
     },
     {
         path: '/dashboard/:id',
-        title: 'Dashboard',
+        title: appI18n.t('app.routes.dashboard'),
         description:
-            'Dashboard shell with embedded widgets and supported page panels.',
+            appI18n.t('app.routes.dashboard_shell_with_embedded_widgets_and_suppor'),
         element: <DashboardPage />
     },
     {
         path: '/favorites/friends',
-        title: 'Favorite Friends',
-        description: 'Favorite friends groups and local cache view.',
+        title: appI18n.t('app.routes.favorite_friends'),
+        description: appI18n.t('app.routes.favorite_friends_groups_and_local_cache_view'),
         element: <FavoriteFriendsPage />
     },
     {
         path: '/favorites/worlds',
-        title: 'Favorite Worlds',
-        description: 'Favorite worlds groups and local cache view.',
+        title: appI18n.t('app.routes.favorite_worlds'),
+        description: appI18n.t('app.routes.favorite_worlds_groups_and_local_cache_view'),
         element: <FavoriteWorldsPage />
     },
     {
         path: '/favorites/avatars',
-        title: 'Favorite Avatars',
-        description: 'Favorite avatars groups and local cache view.',
+        title: appI18n.t('app.routes.favorite_avatars'),
+        description: appI18n.t('app.routes.favorite_avatars_groups_and_local_cache_view'),
         element: <FavoriteAvatarsPage />
     },
     {
         path: '/social/friend-log',
-        title: 'Friend History',
-        description: 'Friend relationship history table backed by local SQL.',
+        title: appI18n.t('app.routes.friend_history'),
+        description: appI18n.t('app.routes.friend_relationship_history_table_backed_by_loca'),
         element: <FriendLogPage />
     },
     {
         path: '/social/moderation',
-        title: 'Moderation',
-        description: 'Moderation history table.',
+        title: appI18n.t('app.routes.moderation'),
+        description: appI18n.t('app.routes.moderation_history_table'),
         element: <ModerationPage />
     },
     {
         path: '/my-avatars',
-        title: 'My Avatars',
-        description: 'My avatars browser with grid and table modes.',
+        title: appI18n.t('app.routes.my_avatars'),
+        description: appI18n.t('app.routes.my_avatars_browser_with_grid_and_table_modes'),
         element: <MyAvatarsPage />
     },
     {
         path: '/notification',
-        title: 'Notification',
-        description: 'Notification center table.',
+        title: appI18n.t('app.routes.notification'),
+        description: appI18n.t('app.routes.notification_center_table'),
         element: <VrcNotificationPage />
     },
     {
         path: '/social/friend-list',
-        title: 'Friends',
-        description: 'Friend management table and roster details.',
+        title: appI18n.t('app.routes.friends'),
+        description: appI18n.t('app.routes.friend_management_table_and_roster_details'),
         element: <FriendListPage />
     },
     {
         path: '/charts',
-        title: 'Charts',
-        description: 'Charts landing route.',
+        title: appI18n.t('app.routes.charts'),
+        description: appI18n.t('app.routes.charts_landing_route'),
         element: <Navigate to="/charts/instance" replace />
     },
     {
         path: '/charts/instance',
-        title: 'Charts Instance',
-        description: 'Instance activity timeline chart.',
+        title: appI18n.t('app.routes.charts_instance'),
+        description: appI18n.t('app.routes.instance_activity_timeline_chart'),
         element: <InstanceActivityPage />
     },
     {
         path: '/charts/mutual',
-        title: 'Charts Mutual',
-        description: 'Mutual-friends graph over cached data.',
+        title: appI18n.t('app.routes.charts_mutual'),
+        description: appI18n.t('app.routes.mutual_friends_graph_over_cached_data'),
         element: <MutualFriendsPage />
     },
     {
         path: '/tools',
-        title: 'Tools',
-        description: 'Tools landing route and folder shortcuts.',
+        title: appI18n.t('app.routes.tools'),
+        description: appI18n.t('app.routes.tools_landing_route_and_folder_shortcuts'),
         element: <ToolsPage />
     },
     {
         path: '/tools/gallery',
-        title: 'Gallery',
-        description: 'Gallery browser and media actions.',
+        title: appI18n.t('app.routes.gallery'),
+        description: appI18n.t('app.routes.gallery_browser_and_media_actions'),
         element: <GalleryPage />
     },
     {
         path: '/tools/screenshot-metadata',
-        title: 'Screenshot Metadata',
-        description: 'Screenshot metadata browser and file actions.',
+        title: appI18n.t('app.routes.screenshot_metadata'),
+        description: appI18n.t('app.routes.screenshot_metadata_browser_and_file_actions'),
         element: <ScreenshotMetadataPage />
     },
     {
         path: '/settings',
-        title: 'Settings',
-        description: 'Settings and diagnostics.',
+        title: appI18n.t('app.routes.settings'),
+        description: appI18n.t('app.routes.settings_and_diagnostics'),
         element: <SettingsPage />
     }
 ];

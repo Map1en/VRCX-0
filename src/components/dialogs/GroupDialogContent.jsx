@@ -23,6 +23,7 @@ import {
     normalizeEntityId
 } from './group-dialog/groupInstances.js';
 import { GroupDialogTabbedView } from './GroupDialogTabbedView.jsx';
+import { appI18n } from '@/services/i18nService.js';
 
 function GroupDialogEmptyState({ title, description, loading = false }) {
     return (
@@ -273,8 +274,8 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         return (
             <GroupDialogEmptyState
                 loading
-                title="Loading group profile"
-                description="Fetching the current VRChat group snapshot for this dialog."
+                title={appI18n.t('dialog.group.generated.loading_group_profile')}
+                description={appI18n.t('dialog.group.generated.fetching_the_current_vrchat_group_snapshot_for_this_dialog')}
             />
         );
     }
@@ -282,7 +283,7 @@ export function GroupDialogContent({ groupId, seedData = null }) {
     if (!group) {
         return (
             <GroupDialogEmptyState
-                title="Group profile unavailable"
+                title={appI18n.t('dialog.group.generated.group_profile_unavailable')}
                 description={
                     detail ||
                     'VRCX-0 could not resolve a group snapshot for this dialog.'
@@ -370,12 +371,12 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             });
             toast.success(
                 nextStatus === 'requested'
-                    ? 'Group join request sent.'
-                    : 'Group joined.'
+                    ? appI18n.t('dialog.group.generated_toast.group_join_request_sent')
+                    : appI18n.t('dialog.group.generated_toast.group_joined')
             );
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : 'Failed to join group.'
+                error instanceof Error ? error.message : appI18n.t('dialog.group.generated_toast.failed_to_join_group')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -391,11 +392,11 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         actionStatusRef.current = 'leave';
         setActionStatus('leave');
         const result = await confirm({
-            title: 'Leave group?',
-            description: `Leave ${group.name || group.id}?`,
+            title: appI18n.t('dialog.group.generated_modal.leave_group'),
+            description: appI18n.t('dialog.group.generated_dynamic.leave_value', { value: group.name || group.id }),
             destructive: true,
-            confirmText: 'Leave',
-            cancelText: 'Cancel'
+            confirmText: appI18n.t('dialog.group.generated_modal.leave'),
+            cancelText: appI18n.t('common.actions.cancel')
         });
 
         if (!result.ok) {
@@ -414,12 +415,12 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                     commitGroupSnapshot(response.json);
                 }
             });
-            toast.success('Group left.');
+            toast.success(appI18n.t('dialog.group.generated.group_left'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to leave group.'
+                    : appI18n.t('dialog.group.generated_toast.failed_to_leave_group')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -443,12 +444,12 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 endpoint: currentEndpoint
             });
             await refreshGroupProfile();
-            toast.success('Group join request cancelled.');
+            toast.success(appI18n.t('dialog.group.generated.group_join_request_cancelled'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to cancel group join request.'
+                    : appI18n.t('dialog.group.generated_toast.failed_to_cancel_group_join_request')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -465,12 +466,12 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         setActionStatus('refresh');
         try {
             await refreshGroupProfile();
-            toast.success('Group refreshed.');
+            toast.success(appI18n.t('dialog.group.generated.group_refreshed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to refresh group.'
+                    : appI18n.t('dialog.group.generated_toast.failed_to_refresh_group')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -493,13 +494,13 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             });
             await refreshGroupProfile();
             toast.success(
-                enabled ? 'Group represented.' : 'Group unrepresented.'
+                enabled ? appI18n.t('dialog.group.generated_toast.group_represented') : appI18n.t('dialog.group.generated_toast.group_unrepresented')
             );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update group representation.'
+                    : appI18n.t('dialog.group.generated_toast.failed_to_update_group_representation')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -527,7 +528,7 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update group member settings.'
+                    : appI18n.t('dialog.group.generated_toast.failed_to_update_group_member_settings')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -544,7 +545,7 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             title: enabled ? 'Block group?' : 'Unblock group?',
             description: group.name || group.id,
             confirmText: enabled ? 'Block' : 'Unblock',
-            cancelText: 'Cancel',
+            cancelText: appI18n.t('common.actions.cancel'),
             destructive: enabled
         });
         if (!result.ok) {
@@ -567,12 +568,12 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 });
             }
             await refreshGroupProfile();
-            toast.success(enabled ? 'Group blocked.' : 'Group unblocked.');
+            toast.success(enabled ? appI18n.t('dialog.group.generated_toast.group_blocked') : appI18n.t('dialog.group.generated_toast.group_unblocked'));
         } catch (error) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    'Failed to update group block state.'
+                    appI18n.t('dialog.group.generated_toast.failed_to_update_group_block_state')
                 )
             );
         } finally {

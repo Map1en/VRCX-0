@@ -438,7 +438,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Widget settings"
+                    aria-label={"Widget settings"}
                 >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
@@ -501,8 +501,8 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     if (!currentUserId) {
         return renderShell(
             <DashboardWidgetEmptyState
-                title="Feed unavailable"
-                description="Sign in before the dashboard can query feed rows."
+                title={t('view.dashboard.generated.feed_unavailable')}
+                description={t('view.dashboard.generated.sign_in_before_the_dashboard_can_query_feed_rows')}
             />
         );
     }
@@ -510,7 +510,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     if (loadStatus === 'error') {
         return renderShell(
             <DashboardWidgetEmptyState
-                title="Feed widget failed"
+                title={t('view.dashboard.generated.feed_widget_failed')}
                 description={userFacingErrorMessage(
                     detail,
                     'The local feed query did not complete.'
@@ -523,7 +523,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <div className="text-muted-foreground flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm">
                 <Spinner />
-                Loading feed widget
+                {t('view.dashboard.generated.loading_feed_widget')}
             </div>
         );
     }
@@ -531,8 +531,8 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     if (!annotatedRows.length) {
         return renderShell(
             <DashboardWidgetEmptyState
-                title="No feed rows"
-                description="The current filter set did not return any recent feed activity."
+                title={t('view.dashboard.generated.no_feed_rows')}
+                description={t('view.dashboard.generated.the_current_filter_set_did_not_return_any_recent_feed_activi')}
             />
         );
     }
@@ -540,13 +540,13 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     return renderShell(
         <>
             <div className="text-muted-foreground flex flex-wrap gap-2 px-3 pt-3 text-xs">
-                <span>{annotatedRows.length} recent rows</span>
+                <span>{annotatedRows.length} {t('view.dashboard.generated.recent_rows')}</span>
                 <span>
                     {Array.isArray(config.filters) && config.filters.length
                         ? `${config.filters.length} type filters`
                         : 'All feed types'}
                 </span>
-                {showType ? <span>Type column enabled</span> : null}
+                {showType ? <span>{t('view.dashboard.generated.type_column_enabled')}</span> : null}
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto">
@@ -588,7 +588,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                                                 className="shrink-0 gap-1 px-1.5"
                                             >
                                                 <HeartIcon className="size-3 fill-current" />
-                                                Favorite
+                                                {t('view.dashboard.generated.favorite')}
                                             </Badge>
                                         ) : null}
                                     </div>

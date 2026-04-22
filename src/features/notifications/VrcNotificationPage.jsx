@@ -114,6 +114,7 @@ import {
     sanitizeNotificationSorting as sanitizeSorting,
     writePersistedNotificationTableState as writePersistedState
 } from './notificationTableState.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function getResponseIcon(response, notificationType) {
     if (response?.type === 'link') {
@@ -371,14 +372,13 @@ function BoopReplyDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[90vh] max-w-[min(92vw,46rem)] flex-col">
                 <DialogHeader>
-                    <DialogTitle>Send boop</DialogTitle>
+                    <DialogTitle>{appI18n.t('view.notification.generated.send_boop')}</DialogTitle>
                     <DialogDescription>{displayName}</DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-3">
                     {!emojiId ? (
                         <div className="text-muted-foreground rounded-md border p-3 text-sm">
-                            No custom emoji selected. The default boop will be
-                            sent.
+                            {appI18n.t('view.notification.generated.no_custom_emoji_selected_the_default_boop_will_be_sent')}
                         </div>
                     ) : null}
                     {isLocalUserVrcPlusSupporter ? (
@@ -386,7 +386,7 @@ function BoopReplyDialog({
                             <div className="flex flex-wrap items-center gap-2">
                                 <Input
                                     value={emojiSearch}
-                                    placeholder="Search emoji"
+                                    placeholder={appI18n.t('view.notification.generated.search_emoji')}
                                     disabled={sending}
                                     className="h-9 min-w-48 flex-1"
                                     onChange={(event) =>
@@ -400,14 +400,14 @@ function BoopReplyDialog({
                                     disabled={sending || !emojiId}
                                     onClick={() => setEmojiId('')}
                                 >
-                                    Clear selection
+                                    {appI18n.t('view.notification.generated.clear_selection')}
                                 </Button>
                             </div>
                             <div className="max-h-[48vh] min-h-0 overflow-y-auto rounded-md border p-2">
                                 {loading ? (
                                     <div className="text-muted-foreground flex h-28 items-center justify-center gap-2 text-sm">
                                         <Spinner className="size-4" />
-                                        Loading emojis.
+                                        {appI18n.t('view.notification.generated.loading_emojis')}
                                     </div>
                                 ) : filteredEmojiRows.length ? (
                                     <div className="grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-2">
@@ -475,7 +475,7 @@ function BoopReplyDialog({
                             navigate('/tools/gallery');
                         }}
                     >
-                        Emoji manager
+                        {appI18n.t('view.notification.generated.emoji_manager')}
                     </Button>
                     <Button
                         type="button"
@@ -484,7 +484,7 @@ function BoopReplyDialog({
                         onClick={() => void loadEmojiRows()}
                     >
                         <RefreshCcwIcon data-icon="inline-start" />
-                        Refresh
+                        {appI18n.t('common.actions.refresh')}
                     </Button>
                     <Button
                         type="button"
@@ -492,7 +492,7 @@ function BoopReplyDialog({
                         disabled={sending}
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {appI18n.t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -504,7 +504,7 @@ function BoopReplyDialog({
                         ) : (
                             <SendIcon data-icon="inline-start" />
                         )}
-                        Send
+                        {appI18n.t('view.notification.generated.send')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -738,7 +738,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load notifications.'
+                    : appI18n.t('view.notifications.generated_toast.failed_to_load_notifications')
             );
         });
 
@@ -873,7 +873,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to mark notification as seen.'
+                    : appI18n.t('view.notifications.generated_toast.failed_to_mark_notification_as_seen')
             );
         }
     }
@@ -885,9 +885,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         try {
             if (!skipConfirm) {
                 const result = await modalStore.confirm({
-                    title: 'Delete notification log entry',
-                    description: `Delete the local ${notification.type || 'notification'} log entry?`,
-                    confirmText: 'Delete',
+                    title: appI18n.t('view.notifications.generated_modal.delete_notification_log_entry'),
+                    description: appI18n.t('view.notifications.generated_modal.delete_the_local_value_log_entry', { value: notification.type || 'notification' }),
+                    confirmText: appI18n.t('common.actions.delete'),
                     destructive: true
                 });
                 if (!result.ok) {
@@ -900,12 +900,12 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 version: notification.version
             });
             setReloadToken((value) => value + 1);
-            toast.success('Notification log entry deleted.');
+            toast.success(t('view.notification.generated.notification_log_entry_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to delete notification.'
+                    : appI18n.t('view.notifications.generated_toast.failed_to_delete_notification')
             );
         }
     }
@@ -921,8 +921,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     async function acceptFriendRequest(notification) {
         try {
             const result = await modalStore.confirm({
-                title: 'Accept friend request',
-                description: `Accept the friend request from ${notification.senderUsername || 'this user'}?`
+                title: appI18n.t('view.notifications.generated_modal.accept_friend_request'),
+                description: appI18n.t('view.notifications.generated_dynamic.accept_the_friend_request_from_value', { value: notification.senderUsername || 'this user' })
             });
             if (!result.ok) {
                 return;
@@ -932,7 +932,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success('Friend request accepted.');
+            toast.success(t('view.notification.generated.friend_request_accepted'));
         } catch (error) {
             if (error?.status === 404) {
                 await expireNotificationLocally(notification);
@@ -941,7 +941,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to accept friend request.'
+                    : appI18n.t('view.notifications.generated_toast.failed_to_accept_friend_request')
             );
         }
     }
@@ -953,9 +953,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         try {
             if (!skipConfirm) {
                 const result = await modalStore.confirm({
-                    title: 'Decline notification',
-                    description: `Decline the ${notification.type || 'notification'} notification?`,
-                    confirmText: 'Decline',
+                    title: appI18n.t('view.notifications.generated_modal.decline_notification'),
+                    description: appI18n.t('view.notifications.generated_dynamic.decline_the_value_notification', { value: notification.type || 'notification' }),
+                    confirmText: appI18n.t('view.notifications.generated_modal.decline'),
                     destructive: true
                 });
                 if (!result.ok) {
@@ -970,12 +970,12 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success('Notification declined.');
+            toast.success(t('view.notification.generated.notification_declined'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to decline notification.'
+                    : appI18n.t('view.notifications.generated_toast.failed_to_decline_notification')
             );
         }
     }
@@ -984,24 +984,24 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         try {
             if (!currentInviteLocation) {
                 toast.error(
-                    'Cannot invite: no current VRChat location is available.'
+                    t('view.notification.generated.cannot_invite_no_current_vrchat_location_is_available')
                 );
                 return;
             }
             if (!canInviteFromCurrentLocation) {
-                toast.error('Cannot invite from the current instance type.');
+                toast.error(t('view.notification.generated.cannot_invite_from_the_current_instance_type'));
                 return;
             }
             const parsedLocation = parseLocation(currentInviteLocation);
             if (!parsedLocation.worldId || !parsedLocation.instanceId) {
                 toast.error(
-                    'Cannot invite: current location is not a concrete instance.'
+                    t('view.notification.generated.cannot_invite_current_location_is_not_a_concrete_instance')
                 );
                 return;
             }
             const result = await modalStore.confirm({
-                title: 'Send invite',
-                description: `Send an invite to ${notification.senderUsername || 'this user'}?`
+                title: appI18n.t('view.notifications.generated_modal.send_invite'),
+                description: appI18n.t('view.notifications.generated_dynamic.send_an_invite_to_value', { value: notification.senderUsername || 'this user' })
             });
             if (!result.ok) {
                 return;
@@ -1031,12 +1031,12 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success('Invite sent.');
+            toast.success(t('view.notification.generated.invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send invite.'
+                    : appI18n.t('view.notifications.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -1044,7 +1044,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     function sendInviteResponseWithMessage(notification, messageType) {
         if (!currentUserId) {
             toast.error(
-                'Cannot send invite response: no current user session is available.'
+                t('view.notification.generated.cannot_send_invite_response_no_current_user_session_is_avail')
             );
             return;
         }
@@ -1096,7 +1096,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         });
         await expireNotificationLocally(notification);
         toast.success(
-            imageData ? 'Invite response photo sent.' : 'Invite response sent.'
+            imageData ? appI18n.t('view.notifications.generated_toast.invite_response_photo_sent') : appI18n.t('view.notifications.generated_toast.invite_response_sent')
         );
     }
 
@@ -1160,7 +1160,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             })
             .catch(() => {});
         await expireNotificationLocally(notification);
-        toast.success('Boop sent.');
+        toast.success(t('view.notification.generated.boop_sent'));
     }
 
     async function sendNotificationResponse(notification, response) {
@@ -1186,7 +1186,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success('Notification response sent.');
+            toast.success(t('view.notification.generated.notification_response_sent'));
         } catch (error) {
             if (notification.version >= 2) {
                 await expireNotificationLocally(notification);
@@ -1194,7 +1194,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to send notification response.'
+                    : appI18n.t('view.notifications.generated_toast.failed_to_send_notification_response')
             );
         }
     }
@@ -1501,8 +1501,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-xs"
-                                    aria-label="Accept friend request"
-                                    title="Accept"
+                                    aria-label={"Accept friend request"}
+                                    title={t('view.notification.actions.accept')}
                                     onClick={() =>
                                         void acceptFriendRequest(notification)
                                     }
@@ -1517,8 +1517,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-xs"
-                                    aria-label="Send invite"
-                                    title="Invite"
+                                    aria-label={"Send invite"}
+                                    title={t('view.notification.generated.invite')}
                                     onClick={() =>
                                         void acceptRequestInvite(notification)
                                     }
@@ -1532,8 +1532,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-xs"
-                                    aria-label="Decline with message"
-                                    title="Decline with message"
+                                    aria-label={"Decline with message"}
+                                    title={t('view.notification.actions.decline_with_message')}
                                     onClick={() =>
                                         void sendInviteResponseWithMessage(
                                             notification,
@@ -1550,8 +1550,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-xs"
-                                    aria-label="Decline with message"
-                                    title="Decline with message"
+                                    aria-label={"Decline with message"}
+                                    title={t('view.notification.actions.decline_with_message')}
                                     onClick={() =>
                                         void sendInviteResponseWithMessage(
                                             notification,
@@ -1595,8 +1595,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-xs"
-                                    aria-label="Decline notification"
-                                    title="Decline"
+                                    aria-label={"Decline notification"}
+                                    title={t('view.notification.actions.decline')}
                                     onClick={(event) =>
                                         void hideNotification(notification, {
                                             skipConfirm:
@@ -1618,8 +1618,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-xs"
-                                    aria-label="Mark notification seen"
-                                    title="Seen"
+                                    aria-label={"Mark notification seen"}
+                                    title={t('view.notification.generated.seen')}
                                     onClick={() => void markSeen(notification)}
                                 >
                                     <CheckIcon data-icon="inline-start" />
@@ -1630,8 +1630,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-xs"
-                                    aria-label="Delete notification log"
-                                    title="Delete log"
+                                    aria-label={"Delete notification log"}
+                                    title={t('view.notification.actions.delete_log')}
                                     onClick={(event) =>
                                         void deleteNotification(notification, {
                                             skipConfirm:
@@ -1718,14 +1718,14 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                     <Input
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder="Search"
+                        placeholder={t('common.actions.search')}
                         className="h-9 min-w-36 flex-1 sm:max-w-52"
                     />
                     <Button
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        aria-label="Refresh notifications"
+                        aria-label={"Refresh notifications"}
                         className="rounded-full"
                         disabled={loadStatus === 'running'}
                         onClick={() => setReloadToken((value) => value + 1)}
@@ -1744,7 +1744,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                             size="sm"
                             onClick={() => setActiveTypes([])}
                         >
-                            Clear
+                            {t('common.actions.clear')}
                         </Button>
                     ) : null}
                 </div>
@@ -1795,7 +1795,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
 
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="text-muted-foreground text-sm">
-                        {rows.length} notifications in view
+                        {rows.length} {t('view.notification.generated.notifications_in_view')}
                     </div>
                     <DataTablePagination
                         table={table}

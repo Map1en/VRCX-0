@@ -92,6 +92,7 @@ import {
     sanitizePlayerListSorting,
     writePersistedPlayerListState
 } from './playerListState.js';
+import { appI18n } from '@/services/i18nService.js';
 
 function CurrentWorldHeader({
     cacheInfo = defaultWorldCacheInfo(),
@@ -285,7 +286,7 @@ function CurrentWorldHeader({
             <div className="grid min-w-40 content-start gap-2 text-xs sm:grid-cols-3 md:grid-cols-1">
                 <div>
                     <span className="text-muted-foreground block">
-                        Capacity
+                        {t('dialog.world.info.capacity')}
                     </span>
                     <span className="font-medium">
                         {formatCount(
@@ -298,7 +299,7 @@ function CurrentWorldHeader({
                 </div>
                 <div>
                     <span className="text-muted-foreground block">
-                        Last updated
+                        {t('view.player_list.generated.last_updated')}
                     </span>
                     <span className="font-medium">
                         {fileAnalysis?.standalonewindows?.created_at
@@ -312,7 +313,7 @@ function CurrentWorldHeader({
                     </span>
                 </div>
                 <div>
-                    <span className="text-muted-foreground block">Created</span>
+                    <span className="text-muted-foreground block">{t('view.player_list.generated.created')}</span>
                     <span className="font-medium">
                         {world?.createdAt
                             ? formatDateFilter(world.createdAt, 'long')
@@ -969,7 +970,7 @@ export function PlayerListPage({ embedded = false } = {}) {
                 normalizeString(row?.id)
             ].filter(Boolean);
             if (!candidates.length) {
-                toast.info('No user id was found for this player row.');
+                toast.info(t('view.player_list.generated.no_user_id_was_found_for_this_player_row'));
                 return;
             }
             const response = await vrchatSearchRepository.getUsers({
@@ -994,12 +995,12 @@ export function PlayerListPage({ embedded = false } = {}) {
                 });
                 return;
             }
-            toast.info('No user id was found for this player row.');
+            toast.info(t('view.player_list.generated.no_user_id_was_found_for_this_player_row'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to look up this player.'
+                    : appI18n.t('view.player_list.generated_toast.failed_to_look_up_this_player')
             );
         }
     }
@@ -1147,26 +1148,26 @@ export function PlayerListPage({ embedded = false } = {}) {
                 cell: ({ row }) => (
                     <div className="flex items-center justify-center gap-1">
                         {row.original.isMaster ? (
-                            <span title="Instance Master">👑</span>
+                            <span title={t('view.player_list.generated.instance_master')}>👑</span>
                         ) : null}
                         {row.original.isModerator ? (
-                            <span title="Moderator">⚔️</span>
+                            <span title={t('view.player_list.generated.moderator')}>⚔️</span>
                         ) : null}
                         {row.original.isFavorite ? (
-                            <span title="Favorite">⭐</span>
+                            <span title={t('view.player_list.generated.favorite')}>⭐</span>
                         ) : null}
                         {!row.original.isFavorite && row.original.isFriend ? (
-                            <span title="Friend">💚</span>
+                            <span title={t('side_panel.notification_center.tab_friend')}>💚</span>
                         ) : null}
                         {row.original.isBlocked ? (
-                            <span className="text-destructive" title="Blocked">
+                            <span className="text-destructive" title={t('view.player_list.generated.blocked')}>
                                 ⛔
                             </span>
                         ) : null}
                         {row.original.isMuted ? (
                             <span
                                 className="text-muted-foreground"
-                                title="Muted"
+                                title={t('view.player_list.generated.muted')}
                             >
                                 🔇
                             </span>
@@ -1174,7 +1175,7 @@ export function PlayerListPage({ embedded = false } = {}) {
                         {row.original.isAvatarInteractionDisabled ? (
                             <span
                                 className="text-muted-foreground"
-                                title="Avatar interaction disabled"
+                                title={t('view.player_list.generated.avatar_interaction_disabled')}
                             >
                                 🚫
                             </span>
@@ -1182,20 +1183,20 @@ export function PlayerListPage({ embedded = false } = {}) {
                         {row.original.isChatBoxMuted ? (
                             <span
                                 className="text-muted-foreground"
-                                title="Chatbox muted"
+                                title={t('view.player_list.generated.chatbox_muted')}
                             >
                                 💬
                             </span>
                         ) : null}
                         {row.original.timeoutTime ? (
-                            <span className="text-destructive" title="Timeout">
-                                🔴{row.original.timeoutTime}s
+                            <span className="text-destructive" title={t('view.player_list.generated.timeout')}>
+                                🔴{row.original.timeoutTime}{t('common.time_units.s')}
                             </span>
                         ) : null}
                         {row.original.ageVerified ? (
                             <IdCardIcon
                                 className="x-tag-age-verification size-4"
-                                title="Age verified"
+                                title={t('view.player_list.generated.age_verified')}
                             />
                         ) : null}
                     </div>
@@ -1298,7 +1299,7 @@ export function PlayerListPage({ embedded = false } = {}) {
                                       type="button"
                                       variant="ghost"
                                       size="icon-xs"
-                                      aria-label={`${t('common.actions.open_link')}: ${link}`}
+                                      aria-label={`Open Link: ${link}`}
                                       title={link}
                                       onClick={(event) => {
                                           event.stopPropagation();
@@ -1404,10 +1405,10 @@ export function PlayerListPage({ embedded = false } = {}) {
                     />
                 </div>
                 {isLoading ? (
-                    <LoadingState label="Rebuilding the current instance roster from game-log history" />
+                    <LoadingState label={t('view.player_list.generated.rebuilding_the_current_instance_roster_from_game_log_history')} />
                 ) : isError ? (
                     <PlayerListEmptyState
-                        title="Current players failed to load"
+                        title={t('view.player_list.generated.current_players_failed_to_load')}
                         description={userFacingErrorMessage(
                             detail,
                             'Current players could not be rebuilt for the current instance.'
