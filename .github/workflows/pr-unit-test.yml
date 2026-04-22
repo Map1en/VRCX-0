@@ -1,7 +1,9 @@
-name: PR Unit Test
+name: Unit Test
 
 on:
     push:
+        branches:
+            - master
     pull_request:
         types:
             - opened
@@ -29,7 +31,7 @@ jobs:
             - run: npm ci
             - run: npm run test
 
-    backend:
+    tauri:
         runs-on: windows-latest
         defaults:
             run:
