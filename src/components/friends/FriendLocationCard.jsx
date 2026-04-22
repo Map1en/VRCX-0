@@ -15,7 +15,13 @@ import {
     parseLocation
 } from '@/shared/utils/location.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Card, CardContent } from '@/ui/shadcn/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle
+} from '@/ui/shadcn/card';
 import {
     ContextMenu,
     ContextMenuContent,
@@ -324,101 +330,100 @@ export function FriendLocationCard({
         <ContextMenu>
             <ContextMenuTrigger asChild>
                 <Card
-                    className="border-border/70 bg-card/80 hover:bg-muted/40 h-full cursor-pointer overflow-hidden backdrop-blur"
+                    size="sm"
+                    className="border-border/70 bg-card/80 hover:bg-muted/40 h-full cursor-pointer overflow-hidden gap-[var(--friend-card-gap)] py-[var(--friend-card-padding)] backdrop-blur"
                     onClick={onOpenUser}
                     style={{
-                        padding: `${12 * spacingScale}px`
+                        '--friend-card-padding': `${12 * spacingScale}px`,
+                        '--friend-card-gap': `${12 * spacingScale}px`,
+                        '--friend-card-inner-gap': `${8 * spacingScale}px`
                     }}
                 >
-                    <CardContent className="flex h-full min-h-0 flex-col gap-3 overflow-hidden p-0">
-                        <div className="flex items-start gap-3">
-                            <div className="relative shrink-0">
-                                {avatarUrl ? (
-                                    <img
-                                        src={avatarUrl}
-                                        alt={
-                                            friend?.displayName ||
-                                            friend?.id ||
-                                            'Friend avatar'
-                                        }
-                                        loading="lazy"
-                                        className="rounded-2xl object-cover"
-                                        style={{
-                                            width: `${52 * cardScale}px`,
-                                            height: `${52 * cardScale}px`
-                                        }}
-                                    />
-                                ) : (
-                                    <div
-                                        className="bg-muted text-muted-foreground flex items-center justify-center rounded-2xl"
-                                        style={{
-                                            width: `${52 * cardScale}px`,
-                                            height: `${52 * cardScale}px`
-                                        }}
-                                    >
-                                        <span className="text-sm font-semibold">
-                                            {getInitials(
-                                                friend?.displayName ||
-                                                    friend?.id
-                                            )}
-                                        </span>
-                                    </div>
-                                )}
-                                <span
-                                    className={cn(
-                                        'border-background absolute right-0 bottom-0 z-10 block rounded-full border-2',
-                                        tone.dotClassName
-                                    )}
+                    <CardHeader className="flex-row gap-[var(--friend-card-gap)] px-[var(--friend-card-padding)]">
+                        <div className="relative shrink-0">
+                            {avatarUrl ? (
+                                <img
+                                    src={avatarUrl}
+                                    alt={
+                                        friend?.displayName ||
+                                        friend?.id ||
+                                        'Friend avatar'
+                                    }
+                                    loading="lazy"
+                                    className="rounded-full object-cover"
                                     style={{
-                                        width: `${12 * cardScale}px`,
-                                        height: `${12 * cardScale}px`
+                                        width: `${52 * cardScale}px`,
+                                        height: `${52 * cardScale}px`
                                     }}
                                 />
-                            </div>
-
-                            <div className="flex min-w-0 flex-1 flex-col gap-1">
+                            ) : (
                                 <div
-                                    className="truncate font-semibold"
-                                    style={{ fontSize: `${16 * cardScale}px` }}
+                                    className="bg-muted text-muted-foreground flex items-center justify-center rounded-full"
+                                    style={{
+                                        width: `${52 * cardScale}px`,
+                                        height: `${52 * cardScale}px`
+                                    }}
                                 >
-                                    {friend?.displayName || ''}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex min-h-0 flex-col gap-2 overflow-hidden text-sm">
-                            {displayInstanceInfo ? (
-                                <div
-                                    className="text-muted-foreground w-full min-w-0 text-left"
-                                    onClick={(event) => event.stopPropagation()}
-                                >
-                                    <span className="text-foreground line-clamp-2 min-w-0 break-words">
-                                        {locationValue ? (
-                                            <Location
-                                                location={locationValue}
-                                                traveling={travelingValue}
-                                                hint={locationLabel}
-                                                grouphint={groupHint}
-                                                link={canOpenWorld}
-                                                stopPropagation
-                                                asButton={false}
-                                            />
-                                        ) : (
-                                            locationLabel || 'Offline'
+                                    <span className="text-sm font-semibold">
+                                        {getInitials(
+                                            friend?.displayName || friend?.id
                                         )}
                                     </span>
                                 </div>
-                            ) : null}
-
-                            <div className="text-muted-foreground flex items-start gap-2">
-                                {friend?.statusDescription ? (
-                                    <PencilIcon className="mt-0.5 size-4 shrink-0" />
-                                ) : null}
-                                <div className="text-muted-foreground line-clamp-2 min-w-0 text-xs leading-5 break-words">
-                                    {friend?.statusDescription || '\u00a0'}
-                                </div>
-                            </div>
+                            )}
+                            <span
+                                className={cn(
+                                    'border-background absolute right-0 bottom-0 z-10 block rounded-full border-2',
+                                    tone.dotClassName
+                                )}
+                                style={{
+                                    width: `${12 * cardScale}px`,
+                                    height: `${12 * cardScale}px`
+                                }}
+                            />
                         </div>
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
+                            <CardTitle
+                                className="truncate"
+                                style={{ fontSize: `${16 * cardScale}px` }}
+                            >
+                                {friend?.displayName || ''}
+                            </CardTitle>
+                        </div>
+                    </CardHeader>
+
+                    <CardContent className="flex min-h-0 flex-1 flex-col gap-[var(--friend-card-inner-gap)] overflow-hidden px-[var(--friend-card-padding)]">
+                        {displayInstanceInfo ? (
+                            <div
+                                className="text-muted-foreground w-full min-w-0 text-left"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <span className="text-foreground line-clamp-2 min-w-0 break-words">
+                                    {locationValue ? (
+                                        <Location
+                                            location={locationValue}
+                                            traveling={travelingValue}
+                                            hint={locationLabel}
+                                            grouphint={groupHint}
+                                            link={canOpenWorld}
+                                            stopPropagation
+                                            asButton={false}
+                                        />
+                                    ) : (
+                                        locationLabel || 'Offline'
+                                    )}
+                                </span>
+                            </div>
+                        ) : null}
+
+                        <CardDescription className="flex items-start gap-2">
+                            {friend?.statusDescription ? (
+                                <PencilIcon className="mt-0.5 size-4 shrink-0" />
+                            ) : null}
+                            <span className="line-clamp-2 min-w-0 text-xs leading-5 break-words">
+                                {friend?.statusDescription || '\u00a0'}
+                            </span>
+                        </CardDescription>
                     </CardContent>
                 </Card>
             </ContextMenuTrigger>
