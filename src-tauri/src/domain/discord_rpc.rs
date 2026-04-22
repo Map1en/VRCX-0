@@ -52,6 +52,7 @@ impl DiscordRpc {
                 inner.connection = None;
             }
         }
+        inner.connection = None;
         inner.is_active = false;
         Ok(false)
     }

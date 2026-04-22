@@ -225,8 +225,8 @@ function getCurrentLocationContext(runtimeState, currentUser) {
     };
 }
 
-async function setDiscordActiveState(active) {
-    if (active === isDiscordActive) {
+async function setDiscordActiveState(active, { force = false } = {}) {
+    if (!force && active === isDiscordActive) {
         return isDiscordActive;
     }
     try {
@@ -337,15 +337,24 @@ function buildAccessName({ parsed, groupName, platform, t }) {
     }
 }
 
-async function getPartySize({ currentUserId, currentLocation }) {
+async function getPartySize({ currentUserId, currentLocation, runtimeState }) {
+    const runtimePartySize = Array.isArray(
+        runtimeState?.gameState?.currentLocationPlayerIds
+    )
+        ? runtimeState.gameState.currentLocationPlayerIds.length
+        : 0;
+
     try {
         const snapshot = await playerListRepository.getCurrentInstanceSnapshot({
             currentUserId,
             currentLocation
         });
-        return Array.isArray(snapshot.players) ? snapshot.players.length : 0;
+        const snapshotPartySize = Array.isArray(snapshot.players)
+            ? snapshot.players.length
+            : 0;
+        return Math.max(runtimePartySize, snapshotPartySize);
     } catch {
-        return 0;
+        return runtimePartySize;
     }
 }
 
@@ -375,7 +384,7 @@ export async function refreshDiscordPresence({ force = false } = {}) {
 
     const runtimeState = useRuntimeStore.getState();
     if (runtimeState.gameState.isGameRunning !== true) {
-        await setDiscordActiveState(false);
+        await setDiscordActiveState(false, { force: true });
         return;
     }
 
@@ -386,7 +395,7 @@ export async function refreshDiscordPresence({ force = false } = {}) {
         getCurrentLocationContext(runtimeState, currentUser);
 
     if (!config.discordActive || !isRealInstance(currentLocation)) {
-        await setDiscordActiveState(false);
+        await setDiscordActiveState(false, { force });
         return;
     }
 
@@ -397,7 +406,7 @@ export async function refreshDiscordPresence({ force = false } = {}) {
     );
     const parsed = locationDetails.parsed;
     if (!parsed) {
-        await setDiscordActiveState(false);
+        await setDiscordActiveState(false, { force });
         return;
     }
 
@@ -455,7 +464,8 @@ export async function refreshDiscordPresence({ force = false } = {}) {
     let partyId = `${parsed.worldId}:${parsed.instanceName}`;
     let partySize = await getPartySize({
         currentUserId: auth.currentUserId,
-        currentLocation
+        currentLocation,
+        runtimeState
     });
     let partyMaxSize = locationDetails.worldCapacity;
     if (partySize > partyMaxSize) {
@@ -563,5 +573,5 @@ export async function refreshDiscordPresence({ force = false } = {}) {
 
 export async function disableDiscordPresence() {
     invalidateDiscordPresenceCache();
-    await setDiscordActiveState(false);
+    await setDiscordActiveState(false, { force: true });
 }
