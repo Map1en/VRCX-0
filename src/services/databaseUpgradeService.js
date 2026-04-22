@@ -133,10 +133,10 @@ async function runFullDatabaseUpgrade() {
             }
         }
 
-        let description = 'VRCX failed to apply a local database upgrade.';
+        let description = 'VRCX-0 failed to apply a local database upgrade.';
         if (upgradeCommitted) {
             description =
-                'VRCX upgraded the database, but failed to refresh local configuration. Please restart the application.';
+                'VRCX-0 upgraded the database, but failed to refresh local configuration. Please restart the application.';
         } else if (failedUpgrade) {
             description = failedUpgradeDescription(failedUpgrade);
         }

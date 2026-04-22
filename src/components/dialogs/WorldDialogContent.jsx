@@ -956,7 +956,7 @@ export function WorldDialogContent({
                 title="World profile unavailable"
                 description={
                     detail ||
-                    'VRCX could not resolve a world snapshot for this dialog.'
+                    'VRCX-0 could not resolve a world snapshot for this dialog.'
                 }
             />
         );

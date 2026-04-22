@@ -375,7 +375,7 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 title="Avatar profile unavailable"
                 description={
                     detail ||
-                    'VRCX could not resolve an avatar snapshot for this dialog.'
+                    'VRCX-0 could not resolve an avatar snapshot for this dialog.'
                 }
             />
         );

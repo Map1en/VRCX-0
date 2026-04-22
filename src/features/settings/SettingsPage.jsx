@@ -4194,7 +4194,7 @@ export function SettingsPage() {
                                             variant="outline"
                                             onClick={() =>
                                                 void backend.app.DesktopNotification(
-                                                    'VRCX',
+                                                    'VRCX-0',
                                                     t(
                                                         'view.settings.notifications.notifications.test_message'
                                                     )
@@ -5007,19 +5007,6 @@ export function SettingsPage() {
                                             }
                                         >
                                             {t('dialog.registry_backup.header')}
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() =>
-                                                void openExternalLink(
-                                                    'https://github.com/Myrkie/open-in-vrcx'
-                                                )
-                                            }
-                                        >
-                                            {t(
-                                                'view.settings.advanced.advanced.launch_commands.website_userscript'
-                                            )}
                                         </Button>
                                     </div>
                                 </CardContent>

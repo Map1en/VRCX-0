@@ -386,7 +386,7 @@ export async function logoutFromReactShell() {
         runtimeStore.setStartupTask(
             'auth',
             'completed',
-            'Reset VRCX without changing persisted auth state.'
+            'Reset VRCX-0 without changing persisted auth state.'
         );
         return true;
     }
@@ -413,7 +413,7 @@ export async function logoutFromReactShell() {
     });
     resetCurrentUserRuntimeAuth();
     applySavedAuthSnapshot(snapshot);
-    runtimeStore.setStartupTask('auth', 'completed', 'Signed out from VRCX.');
+    runtimeStore.setStartupTask('auth', 'completed', 'Signed out from VRCX-0.');
 
     if (currentUserDisplayName) {
         toast.success(

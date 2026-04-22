@@ -1467,7 +1467,7 @@ export function PlayerListPage({ embedded = false } = {}) {
                                     gameLogDisabled
                                         ? 'Enable game log ingestion in settings before the current instance player list can be reconstructed.'
                                         : !isGameRunning
-                                          ? 'Start VRChat and let VRCX receive game-log events before this page can rebuild the current instance.'
+                                          ? 'Start VRChat and let VRCX-0 receive game-log events before this page can rebuild the current instance.'
                                           : isPlayerListSourceUnavailable
                                             ? 'Stay in the instance until local join/leave events are recorded, then this table will populate automatically.'
                                             : parsedLocation.isTraveling

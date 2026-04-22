@@ -761,7 +761,7 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
         if (available) {
             useNotificationStore.getState().pushNotification({
                 level: 'info',
-                title: 'VRCX update available',
+                title: 'VRCX-0 update available',
                 message: 'An update is downloaded and ready to install.'
             });
             useRuntimeStore.getState().setSystemHostOpen('updaterOpen', true);
@@ -792,7 +792,7 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                     );
                     useNotificationStore.getState().pushNotification({
                         level: 'info',
-                        title: 'VRCX update available',
+                        title: 'VRCX-0 update available',
                         message: `Version ${displayVersion} is available on the ${branch} branch.`
                     });
 
@@ -812,7 +812,7 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                         });
                         useNotificationStore.getState().pushNotification({
                             level: 'info',
-                            title: 'VRCX update downloaded',
+                            title: 'VRCX-0 update downloaded',
                             message: `Version ${displayVersion} is ready to install.`
                         });
                         useRuntimeStore
@@ -821,7 +821,7 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                     }
                 }
             } catch (error) {
-                console.warn('Failed to check for VRCX updates:', error);
+                console.warn('Failed to check for VRCX-0 updates:', error);
                 useRuntimeStore.getState().setUpdateLoopState({
                     lastUpdaterCheckAt: new Date().toISOString(),
                     lastUpdaterCheckDetail:

@@ -3345,7 +3345,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 title="User profile unavailable"
                 description={
                     detail ||
-                    'VRCX could not resolve a user snapshot for this dialog.'
+                    'VRCX-0 could not resolve a user snapshot for this dialog.'
                 }
             />
         );

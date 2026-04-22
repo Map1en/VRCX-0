@@ -841,21 +841,7 @@
                 "browser": true
             },
             "globals": {
-                "VRCX": "readonly",
-                "VRCXStorage": "readonly",
-                "SQLite": "readonly",
-                "LogWatcher": "readonly",
-                "Discord": "readonly",
-                "AppApi": "readonly",
-                "AppApiVr": "readonly",
-                "WebApi": "readonly",
-                "AssetBundleManager": "readonly",
-                "WINDOWS": "readonly",
-                "VERSION": "readonly",
-                "NIGHTLY": "readonly",
-                "webApiService": "readonly",
-                "process": "readonly",
-                "AppDebug": "readonly"
+                "VERSION": "readonly"
             }
         },
         {

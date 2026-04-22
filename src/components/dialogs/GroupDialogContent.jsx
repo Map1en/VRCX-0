@@ -291,7 +291,7 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 title="Group profile unavailable"
                 description={
                     detail ||
-                    'VRCX could not resolve a group snapshot for this dialog.'
+                    'VRCX-0 could not resolve a group snapshot for this dialog.'
                 }
             />
         );

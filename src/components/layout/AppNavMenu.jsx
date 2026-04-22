@@ -1373,7 +1373,7 @@ export function AppNavMenu({ isCollapsed }) {
                                                     toast.error(
                                                         error instanceof Error
                                                             ? error.message
-                                                            : 'Failed to sign out of VRCX.'
+                                                            : 'Failed to sign out of VRCX-0.'
                                                     );
                                                 });
                                         }}

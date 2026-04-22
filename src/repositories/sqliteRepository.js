@@ -16,7 +16,7 @@ function showSQLiteErrorModal(error) {
     if (message.includes('database disk image is malformed')) {
         void modalStore.confirm({
             description:
-                'Please repair or delete your database file by following the VRCX database repair instructions.',
+                'Please repair or delete your database file by following the VRCX-0 database repair instructions.',
             title: 'Your database is corrupted'
         });
         return;

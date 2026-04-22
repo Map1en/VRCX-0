@@ -516,8 +516,7 @@
                     "launch_commands": {
                         "header": "Comandos de Lanzamiento (Enlaces Profundos)",
                         "show_confirmation_on_switch_avatar_enable": "Mostrar diálogo de confirmación antes de cambiar avatares",
-                        "show_confirmation_on_switch_avatar_tooltip": "Cuando está deshabilitado, VRCX-0 no se pondrá al frente al cambiar avatares y no pedirá confirmación",
-                        "website_userscript": "Userscript del Sitio Web de VRC"
+                        "show_confirmation_on_switch_avatar_tooltip": "Cuando está deshabilitado, VRCX-0 no se pondrá al frente al cambiar avatares y no pedirá confirmación"
                     },
                     "screenshot_helper": {
                         "header": "Asistente de Captura de Pantalla",

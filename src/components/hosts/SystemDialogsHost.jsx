@@ -179,7 +179,7 @@ function UpdaterDialog({ open, onOpenChange }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>VRCX Update</DialogTitle>
+                    <DialogTitle>VRCX-0 Update</DialogTitle>
                     <DialogDescription>
                         Current version{' '}
                         {formatReleaseDisplayVersion(VERSION || '') || '-'}.
@@ -248,7 +248,7 @@ function UpdaterDialog({ open, onOpenChange }) {
                         <div className="text-muted-foreground text-sm">
                             {userFacingErrorMessage(
                                 detail,
-                                'Failed to update VRCX.'
+                                'Failed to update VRCX-0.'
                             )}
                         </div>
                     ) : null}
@@ -1287,7 +1287,7 @@ function ResolutionSelect({ label, value, rows, onValueChange }) {
 function getDatabaseUpgradeTitle(phase) {
     switch (phase) {
         case 'confirm-legacy-migration':
-            return 'Legacy VRCX Migration';
+            return 'Legacy VRCX-0 Migration';
         case 'running':
             return 'Database Upgrade Running';
         case 'restarting':
