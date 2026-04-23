@@ -1,12 +1,6 @@
-import {
-    GlobeIcon,
-    ImageIcon,
-    UserIcon
-} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { userImage } from '@/lib/entityMedia.js';
 import {
     avatarProfileRepository,
     avatarLocalRepository,
@@ -25,10 +19,7 @@ import { openFavoriteImportDialog } from '@/services/favoriteImportService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
 import { setBoolConfigPreference } from '@/services/preferencesService.js';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
-import {
-    parseLocation,
-    resolveFriendPresenceLocation
-} from '@/shared/utils/location.js';
+import { parseLocation } from '@/shared/utils/location.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -39,10 +30,19 @@ import {
     favoriteGroupType,
     normalizeFavoriteEntityId as normalizeEntityId,
     normalizeFavoriteSearchValue as normalizeSearchValue,
-    resolveCurrentInviteLocation,
-    shrinkFavoriteImage as shrinkImage,
-    sortFavoriteItems as sortItems
+    resolveCurrentInviteLocation
 } from './favoritesItems.js';
+import {
+    buildFavoriteAvatarHistoryGroups,
+    buildFavoriteAvatarHistoryItems,
+    buildFavoriteGroupLabelByKey,
+    buildFavoriteLocalGroups,
+    buildFavoriteLocalItemsByGroup,
+    buildFavoriteRemoteGroups,
+    buildFavoriteRemoteItemsByGroup,
+    getFavoritesPageConfig,
+    resolveFavoritePresenceLocation
+} from './favoritesPageData.js';
 import {
     clearFavoriteRemoteDetailsCache,
     useFavoriteRemoteDetails
@@ -77,9 +77,6 @@ const CARD_SPACING_CONFIG_KEYS = {
 };
 const CARD_SCALE_SLIDER = { min: 0.6, max: 1, step: 0.01 };
 const CARD_SPACING_SLIDER = { min: 0.5, max: 1.5, step: 0.05 };
-function resolvePresenceLocation(profile) {
-    return resolveFriendPresenceLocation(profile);
-}
 
 function clampNumber(value, min, max, fallback) {
     const parsed = Number(value);
@@ -95,6 +92,15 @@ function normalizeSplitterSizePx(value) {
         return SPLITTER_DEFAULT_SIZE_PX;
     }
     return Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed));
+}
+
+function getFavoriteSearchResultsSubtitle(count) {
+    return appI18n.t(
+        count === 1
+            ? 'view.favorites.generated_dynamic.search_results_singular'
+            : 'view.favorites.generated_dynamic.search_results_plural',
+        { count }
+    );
 }
 
 import { FavoritesPageLayout } from './components/FavoritesPageLayout.jsx';
@@ -149,9 +155,6 @@ function FavoritesPage({ kind, embedded = false }) {
     );
     const favoriteAvatarIds = useFavoriteStore(
         (state) => state.favoriteAvatarIds
-    );
-    const favoriteFriendIds = useFavoriteStore(
-        (state) => state.favoriteFriendIds
     );
     const removeLocalFavorite = useFavoriteStore(
         (state) => state.removeLocalFavorite
@@ -491,7 +494,19 @@ function FavoritesPage({ kind, embedded = false }) {
             setRemovingFavoriteKey(item.key);
             const result = await confirm({
                 title: appI18n.t('view.favorites.generated_modal.remove_local_favorite'),
-                description: appI18n.t('view.favorites.generated_dynamic.remove_value_from_value', { value: item.title || 'favorite', value2: item.groupLabel || 'Favorites' }),
+                description: appI18n.t(
+                    'view.favorites.generated_dynamic.remove_value_from_value',
+                    {
+                        value:
+                            item.title ||
+                            appI18n.t('view.favorites.generated.favorite_fallback'),
+                        value2:
+                            item.groupLabel ||
+                            appI18n.t(
+                                'view.favorites.generated.favorites_fallback'
+                            )
+                    }
+                ),
                 destructive: true,
                 confirmText: appI18n.t('common.actions.remove'),
                 cancelText: appI18n.t('common.actions.cancel')
@@ -556,7 +571,19 @@ function FavoritesPage({ kind, embedded = false }) {
             setRemovingFavoriteKey(item.key);
             const result = await confirm({
                 title: appI18n.t('view.favorites.generated_modal.remove_vrchat_favorite'),
-                description: appI18n.t('view.favorites.generated_dynamic.remove_value_from_value', { value: item.title || 'favorite', value2: item.groupLabel || 'Favorites' }),
+                description: appI18n.t(
+                    'view.favorites.generated_dynamic.remove_value_from_value',
+                    {
+                        value:
+                            item.title ||
+                            appI18n.t('view.favorites.generated.favorite_fallback'),
+                        value2:
+                            item.groupLabel ||
+                            appI18n.t(
+                                'view.favorites.generated.favorites_fallback'
+                            )
+                    }
+                ),
                 destructive: true,
                 confirmText: appI18n.t('common.actions.remove'),
                 cancelText: appI18n.t('common.actions.cancel')
@@ -607,102 +634,27 @@ function FavoritesPage({ kind, embedded = false }) {
         return index;
     }, [favoritesSortOrder]);
 
-    const pageConfig = useMemo(() => {
-        if (kind === 'friend') {
-            return {
-                title: 'Favorite Friends',
-                description:
-                    'Favorite groups for VRChat and local friend favorites.',
-                icon: UserIcon,
-                remoteSectionTitle: 'VRChat Favorites',
-                localSectionTitle: 'Local Favorites',
-                searchPlaceholder: 'Search favorite friends',
-                remoteCount: favoriteFriendIds.length,
-                localCount: Object.values(localFriendFavorites).flat().length
-            };
-        }
-
-        if (kind === 'avatar') {
-            return {
-                title: 'Favorite Avatars',
-                description:
-                    'Remote avatar favorites with local cache fallback.',
-                icon: ImageIcon,
-                remoteSectionTitle: 'VRChat Favorites',
-                localSectionTitle: 'Local Favorites',
-                searchPlaceholder: 'Search favorite avatars',
-                remoteCount: favoriteAvatarIds.length,
-                localCount: Object.values(localAvatarFavorites).flat().length
-            };
-        }
-
-        return {
-            title: 'Favorite Worlds',
-            description: 'Remote world favorites with local cache fallback.',
-            icon: GlobeIcon,
-            remoteSectionTitle: 'VRChat Favorites',
-            localSectionTitle: 'Local Favorites',
-            searchPlaceholder: 'Search favorite worlds',
-            remoteCount: favoriteWorldIds.length,
-            localCount: Object.values(localWorldFavorites).flat().length
-        };
-    }, [
-        favoriteAvatarIds.length,
-        favoriteFriendIds.length,
-        favoriteWorldIds.length,
-        kind,
-        localAvatarFavorites,
-        localFriendFavorites,
-        localWorldFavorites
-    ]);
+    const pageConfig = useMemo(() => getFavoritesPageConfig(kind), [kind]);
 
     const remoteGroups = useMemo(() => {
-        const sourceGroups =
-            kind === 'friend'
-                ? favoriteFriendGroups
-                : kind === 'avatar'
-                  ? favoriteAvatarGroups
-                  : favoriteWorldGroups;
-
-        return sourceGroups.map((group) => ({
-            source: 'remote',
-            key: group.key,
-            name:
-                group.name ||
-                String(group.key || '')
-                    .split(':')
-                    .pop() ||
-                '',
-            type: group.type || favoriteGroupType(kind, group),
-            label: group.displayName || group.name || group.key,
-            count: Number(group.count) || 0,
-            capacity: Number(group.capacity) || 0,
-            visibility: group.visibility || ''
-        }));
+        return buildFavoriteRemoteGroups({
+            kind,
+            favoriteFriendGroups,
+            favoriteAvatarGroups,
+            favoriteWorldGroups
+        });
     }, [favoriteAvatarGroups, favoriteFriendGroups, favoriteWorldGroups, kind]);
 
     const localGroups = useMemo(() => {
-        const names =
-            kind === 'friend'
-                ? localFriendFavoriteGroups
-                : kind === 'avatar'
-                  ? localAvatarFavoriteGroups
-                  : localWorldFavoriteGroups;
-        const source =
-            kind === 'friend'
-                ? localFriendFavorites
-                : kind === 'avatar'
-                  ? localAvatarFavorites
-                  : localWorldFavorites;
-
-        return names.map((name) => ({
-            source: 'local',
-            key: name,
-            label: name,
-            count: Array.isArray(source[name]) ? source[name].length : 0,
-            capacity: 0,
-            visibility: ''
-        }));
+        return buildFavoriteLocalGroups({
+            kind,
+            localFriendFavoriteGroups,
+            localAvatarFavoriteGroups,
+            localWorldFavoriteGroups,
+            localFriendFavorites,
+            localAvatarFavorites,
+            localWorldFavorites
+        });
     }, [
         kind,
         localAvatarFavoriteGroups,
@@ -714,148 +666,30 @@ function FavoritesPage({ kind, embedded = false }) {
     ]);
 
     const avatarHistoryGroups = useMemo(() => {
-        if (kind !== 'avatar') {
-            return [];
-        }
-        return [
-            {
-                source: 'history',
-                key: 'local-history',
-                label: 'Local History',
-                count: avatarHistory.length,
-                capacity: 100,
-                visibility: ''
-            }
-        ];
+        return buildFavoriteAvatarHistoryGroups({
+            kind,
+            avatarHistoryLength: avatarHistory.length
+        });
     }, [avatarHistory.length, kind]);
 
     const remoteGroupLabelByKey = useMemo(
-        () =>
-            Object.fromEntries(
-                remoteGroups.map((group) => [group.key, group.label])
-            ),
+        () => buildFavoriteGroupLabelByKey(remoteGroups),
         [remoteGroups]
     );
 
     const remoteItemsByGroup = useMemo(() => {
-        const itemsByGroup = Object.create(null);
-        for (const group of remoteGroups) {
-            itemsByGroup[group.key] = [];
-        }
-
-        if (kind === 'friend') {
-            for (const group of remoteGroups) {
-                const ids = groupedFavoriteFriendIdsByGroupKey[group.key] || [];
-                const items = ids.map((friendId, index) => {
-                    const normalizedId = normalizeEntityId(friendId);
-                    const friend = friendsById[normalizedId];
-                    const status =
-                        friend?.stateBucket || friend?.state || 'offline';
-                    const location = resolvePresenceLocation(friend);
-                    const subtitle = friend
-                        ? location && location !== 'offline'
-                            ? location
-                            : friend?.statusDescription || ''
-                        : '';
-
-                    return {
-                        key: `remote:${group.key}:${normalizedId}`,
-                        kind,
-                        source: 'remote',
-                        groupKey: group.key,
-                        groupLabel: group.label,
-                        id: normalizedId,
-                        title:
-                            friend?.displayName || friend?.username || 'User',
-                        titleColor: friend?.$userColour || '',
-                        subtitle,
-                        detailText: '',
-                        location,
-                        travelingToLocation: friend?.travelingToLocation || '',
-                        imageUrl: friend ? userImage(friend, true) : '',
-                        statusLabel: status,
-                        statusVariant:
-                            status === 'online' || status === 'active'
-                                ? 'default'
-                                : 'secondary',
-                        seedData: friend || null,
-                        orderIndex: favoritesSortIndex[normalizedId] ?? index
-                    };
-                });
-                itemsByGroup[group.key] = sortItems(items, sortValue);
-            }
-
-            return itemsByGroup;
-        }
-
-        const remoteFavorites = Object.values(remoteFavoritesById).filter(
-            (favorite) => {
-                if (kind === 'avatar') {
-                    return favorite?.type === 'avatar';
-                }
-                return (
-                    favorite?.type === 'world' ||
-                    favorite?.type === 'vrcPlusWorld'
-                );
-            }
-        );
-
-        for (const favorite of remoteFavorites) {
-            const favoriteId = normalizeEntityId(favorite.favoriteId);
-            const groupKey = favorite.$groupKey;
-            if (!favoriteId || !groupKey || !itemsByGroup[groupKey]) {
-                continue;
-            }
-
-            const detail = remoteEntityDetails.data[favoriteId];
-            const isUnavailable =
-                remoteEntityDetails.status === 'ready' && !detail;
-            const playerCount = Number(detail?.occupants) || 0;
-            const subtitle =
-                kind === 'world'
-                    ? detail?.authorName
-                        ? playerCount
-                            ? `${detail.authorName} (${playerCount})`
-                            : detail.authorName
-                        : isUnavailable
-                          ? 'World details are unavailable.'
-                          : 'Loading world details.'
-                    : detail?.authorName ||
-                      (isUnavailable
-                          ? 'Avatar details are unavailable.'
-                          : 'Loading avatar details.');
-
-            itemsByGroup[groupKey].push({
-                key: `remote:${groupKey}:${favoriteId}`,
-                kind,
-                source: 'remote',
-                groupKey,
-                groupLabel: remoteGroupLabelByKey[groupKey] || 'Favorites',
-                id: favoriteId,
-                title: detail?.name || (kind === 'world' ? 'World' : 'Avatar'),
-                subtitle,
-                description: detail?.description || '',
-                seedData: detail || null,
-                imageUrl: shrinkImage(
-                    detail?.thumbnailImageUrl || detail?.imageUrl || ''
-                ),
-                isPrivate: detail?.releaseStatus === 'private',
-                isUnavailable,
-                tags: detail?.tags || [],
-                playerCount,
-                orderIndex:
-                    favoritesSortIndex[favoriteId] ?? Number.MAX_SAFE_INTEGER
-            });
-        }
-
-        for (const group of remoteGroups) {
-            itemsByGroup[group.key] = sortItems(
-                itemsByGroup[group.key] || [],
-                sortValue
-            );
-        }
-
-        return itemsByGroup;
+        return buildFavoriteRemoteItemsByGroup({
+            kind,
+            remoteGroups,
+            groupedFavoriteFriendIdsByGroupKey,
+            friendsById,
+            favoritesSortIndex,
+            sortValue,
+            remoteFavoritesById,
+            remoteEntityDetailsData: remoteEntityDetails.data,
+            remoteEntityDetailsStatus: remoteEntityDetails.status,
+            remoteGroupLabelByKey
+        });
     }, [
         favoritesSortIndex,
         friendsById,
@@ -870,97 +704,17 @@ function FavoritesPage({ kind, embedded = false }) {
     ]);
 
     const localItemsByGroup = useMemo(() => {
-        const itemsByGroup = Object.create(null);
-
-        if (kind === 'friend') {
-            for (const group of localGroups) {
-                const ids = Array.isArray(localFriendFavorites[group.key])
-                    ? localFriendFavorites[group.key]
-                    : [];
-                const items = ids.map((friendId, index) => {
-                    const normalizedId = normalizeEntityId(friendId);
-                    const friend = friendsById[normalizedId];
-                    const status =
-                        friend?.stateBucket || friend?.state || 'offline';
-                    const location = resolvePresenceLocation(friend);
-                    return {
-                        key: `local:${group.key}:${normalizedId}`,
-                        kind,
-                        source: 'local',
-                        groupKey: group.key,
-                        groupLabel: group.label,
-                        id: normalizedId,
-                        title:
-                            friend?.displayName || friend?.username || 'User',
-                        titleColor: friend?.$userColour || '',
-                        subtitle: friend
-                            ? location && location !== 'offline'
-                                ? location
-                                : friend?.statusDescription || ''
-                            : '',
-                        detailText: '',
-                        location,
-                        travelingToLocation: friend?.travelingToLocation || '',
-                        imageUrl: friend ? userImage(friend, true) : '',
-                        statusLabel: status,
-                        statusVariant:
-                            status === 'online' || status === 'active'
-                                ? 'default'
-                                : 'secondary',
-                        seedData: friend || null,
-                        orderIndex: index
-                    };
-                });
-                itemsByGroup[group.key] = sortItems(items, sortValue);
-            }
-
-            return itemsByGroup;
-        }
-
-        const localFavorites =
-            kind === 'avatar' ? localAvatarFavorites : localWorldFavorites;
-        const localDetailsById =
-            kind === 'avatar' ? localAvatarDetailsById : localWorldDetailsById;
-
-        for (const group of localGroups) {
-            const ids = Array.isArray(localFavorites[group.key])
-                ? localFavorites[group.key]
-                : [];
-            const items = ids.map((entityId, index) => {
-                const normalizedId = normalizeEntityId(entityId);
-                const detail = localDetailsById[normalizedId] || {
-                    id: normalizedId
-                };
-                const playerCount = Number(detail.occupants) || 0;
-                return {
-                    key: `local:${group.key}:${normalizedId}`,
-                    kind,
-                    source: 'local',
-                    groupKey: group.key,
-                    groupLabel: group.label,
-                    id: normalizedId,
-                    title:
-                        detail.name || (kind === 'world' ? 'World' : 'Avatar'),
-                    subtitle:
-                        kind === 'world'
-                            ? detail.authorName || ''
-                            : detail.authorName || '',
-                    description: detail.description || '',
-                    seedData: detail || null,
-                    imageUrl: shrinkImage(
-                        detail.thumbnailImageUrl || detail.imageUrl || ''
-                    ),
-                    isPrivate: detail.releaseStatus === 'private',
-                    isUnavailable: false,
-                    tags: detail.tags || [],
-                    playerCount,
-                    orderIndex: index
-                };
-            });
-            itemsByGroup[group.key] = sortItems(items, sortValue);
-        }
-
-        return itemsByGroup;
+        return buildFavoriteLocalItemsByGroup({
+            kind,
+            localGroups,
+            localFriendFavorites,
+            localAvatarFavorites,
+            localWorldFavorites,
+            localAvatarDetailsById,
+            localWorldDetailsById,
+            friendsById,
+            sortValue
+        });
     }, [
         friendsById,
         kind,
@@ -974,33 +728,7 @@ function FavoritesPage({ kind, embedded = false }) {
     ]);
 
     const avatarHistoryItems = useMemo(() => {
-        if (kind !== 'avatar') {
-            return EMPTY_ITEMS;
-        }
-
-        return avatarHistory.map((detail, index) => {
-            const normalizedId = normalizeEntityId(detail?.id);
-            return {
-                key: `history:local-history:${normalizedId || index}`,
-                kind: 'avatar',
-                source: 'history',
-                groupKey: 'local-history',
-                groupLabel: 'Local History',
-                id: normalizedId,
-                title: detail?.name || 'Avatar',
-                subtitle: detail?.authorName || '',
-                description: detail?.description || '',
-                seedData: detail || null,
-                imageUrl: shrinkImage(
-                    detail?.thumbnailImageUrl || detail?.imageUrl || ''
-                ),
-                isPrivate: detail?.releaseStatus === 'private',
-                isUnavailable: false,
-                tags: detail?.tags || [],
-                playerCount: 0,
-                orderIndex: index
-            };
-        });
+        return buildFavoriteAvatarHistoryItems({ kind, avatarHistory });
     }, [avatarHistory, kind]);
 
     const allItems = useMemo(
@@ -1186,7 +914,9 @@ function FavoritesPage({ kind, embedded = false }) {
             pattern: /\S+/,
             confirmText: appI18n.t('view.favorites.generated_modal.change'),
             cancelText: appI18n.t('common.actions.cancel'),
-            errorMessage: 'Group name is required.'
+            errorMessage: appI18n.t(
+                'view.favorites.generated_modal.group_name_required'
+            )
         });
         if (!result.ok) {
             return;
@@ -1277,7 +1007,9 @@ function FavoritesPage({ kind, embedded = false }) {
             pattern: /\S+/,
             confirmText: appI18n.t('common.actions.save'),
             cancelText: appI18n.t('common.actions.cancel'),
-            errorMessage: 'Group name is required.'
+            errorMessage: appI18n.t(
+                'view.favorites.generated_modal.group_name_required'
+            )
         });
         if (!result.ok) {
             return;
@@ -1412,7 +1144,7 @@ function FavoritesPage({ kind, embedded = false }) {
 
     async function launchFavoriteFriendLocation(item) {
         const friend = getFavoriteFriend(item);
-        const location = resolvePresenceLocation(friend);
+        const location = resolveFavoritePresenceLocation(friend);
         const parsedLocation = parseLocation(location);
         if (
             !parsedLocation.isRealInstance ||
@@ -1444,7 +1176,7 @@ function FavoritesPage({ kind, embedded = false }) {
 
     async function selfInviteFavoriteFriendLocation(item) {
         const friend = getFavoriteFriend(item);
-        const location = resolvePresenceLocation(friend);
+        const location = resolveFavoritePresenceLocation(friend);
         const parsedLocation = parseLocation(location);
         if (
             !parsedLocation.isRealInstance ||
@@ -1507,7 +1239,9 @@ function FavoritesPage({ kind, embedded = false }) {
 
         const result = await confirm({
             title: appI18n.t('view.favorites.generated_modal.send_invite'),
-            description: friend?.displayName || 'this user',
+            description:
+                friend?.displayName ||
+                appI18n.t('view.favorites.generated.this_user'),
             confirmText: appI18n.t('view.favorites.generated_modal.invite'),
             cancelText: appI18n.t('common.actions.cancel')
         });
@@ -1552,7 +1286,9 @@ function FavoritesPage({ kind, embedded = false }) {
 
         const result = await confirm({
             title: appI18n.t('view.favorites.generated_modal.request_invite'),
-            description: friend?.displayName || 'this user',
+            description:
+                friend?.displayName ||
+                appI18n.t('view.favorites.generated.this_user'),
             confirmText: appI18n.t('view.favorites.generated_modal.request_invite_2'),
             cancelText: appI18n.t('common.actions.cancel')
         });
@@ -1634,7 +1370,9 @@ function FavoritesPage({ kind, embedded = false }) {
         if (shouldConfirm) {
             const result = await confirm({
                 title: appI18n.t('view.favorites.generated_modal.select_avatar'),
-                description: item.title || 'Avatar',
+                description:
+                    item.title ||
+                    appI18n.t('view.favorites.generated.avatar_fallback'),
                 confirmText: appI18n.t('common.actions.select'),
                 cancelText: appI18n.t('common.actions.cancel')
             });
@@ -1881,12 +1619,12 @@ function FavoritesPage({ kind, embedded = false }) {
     const handleBulkRemoveSelectionEvent = useStableEvent(bulkRemoveSelection);
 
     const title = isSearchActive
-        ? 'Search'
+        ? pageConfig.searchPlaceholder
         : selectedGroup
           ? selectedGroup.label
-          : 'No Group Selected';
+          : appI18n.t('view.favorites.generated.no_group_selected');
     const subtitle = isSearchActive
-        ? `${contentItems.length} result${contentItems.length === 1 ? '' : 's'}`
+        ? getFavoriteSearchResultsSubtitle(contentItems.length)
         : selectedGroup
           ? selectedGroup.capacity
               ? `${selectedGroup.count}/${selectedGroup.capacity}`

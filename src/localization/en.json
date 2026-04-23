@@ -130,7 +130,16 @@
             "confirm": "Confirm",
             "cancel": "Cancel",
             "restore_default": "Restore Default",
-            "restore_default_confirm": "Restore navigation to its default order?"
+            "restore_default_confirm": "Restore navigation to its default order?",
+            "generated_dynamic": {
+                "drag_value": "Drag {value}",
+                "icon_for_value": "Icon for {value}",
+                "edit_value": "Edit {value}",
+                "delete_value": "Delete {value}",
+                "hide_value": "Hide {value}",
+                "remove_value": "Remove {value}",
+                "show_value": "Show {value}"
+            }
         }
     },
     "dashboard": {
@@ -582,6 +591,7 @@
                 "refresh_avatar_inventory": "Refresh avatar inventory",
                 "loading_the_avatar_inventory": "Loading the avatar inventory",
                 "avatar_inventory_failed_to_load": "Avatar inventory failed to load",
+                "avatar_request_did_not_complete": "The avatar request did not complete",
                 "showing": "Showing",
                 "of": "of",
                 "avatar": "avatar",
@@ -952,11 +962,16 @@
                 "mutual_friends_loaded": "Mutual friends loaded",
                 "loading_the_friend_roster_snapshot": "Loading the friend roster snapshot",
                 "friend_roster_failed_to_load": "Friend roster failed to load",
+                "roster_bootstrap_did_not_complete": "The roster bootstrap did not complete",
                 "showing": "Showing",
                 "of": "of",
                 "friend": "friend",
                 "no_friends_match_the_current_filters": "No friends match the current filters",
+                "try_turning_off_favorites_only_or_broadening_the_search_query": "Try turning off favorites-only or broadening the search query",
+                "the_current_search_filters_excluded_every_friend_in_the_roster": "The current search filters excluded every friend in the roster",
                 "loading_friend_details": "Loading friend details",
+                "cancelling": "Cancelling...",
+                "loading_mutual_friends_progress": "Loading mutual friends {current} / {total}",
                 "vrchat_launch_request_sent": "VRChat launch request sent",
                 "unable_to_open_this_instance_in_vrchat": "Unable to open this instance in VRChat",
                 "self_invite_sent": "Self invite sent",
@@ -970,6 +985,9 @@
                 "group": "Group",
                 "friends_location_settings": "Friends location settings",
                 "friend_locations_failed_to_load": "Friend locations failed to load"
+            },
+            "generated_dynamic": {
+                "open_value": "Open {value}"
             }
         },
         "charts": {
@@ -1990,7 +2008,9 @@
                 "refresh_value": "Refresh {value}",
                 "remove_value_from_value": "Remove {value} from {value2}?",
                 "local_group_value_already_exists": "Local group {value} already exists",
-                "removed_value_value_failed": "Removed {value}; {value2} failed"
+                "removed_value_value_failed": "Removed {value}; {value2} failed",
+                "search_results_singular": "{count} result",
+                "search_results_plural": "{count} results"
             },
             "generated_toast": {
                 "failed_to_copy_favorite_export_data": "Failed to copy favorite export data",
@@ -2020,6 +2040,7 @@
                 "change_favorite_group_name": "Change favorite group name",
                 "enter_the_new_display_name": "Enter the new display name",
                 "change": "Change",
+                "group_name_required": "Group name is required.",
                 "clear_favorite_group": "Clear favorite group?",
                 "remove_all_favorites_from_this_group": "Remove all favorites from this group?",
                 "rename_local_favorite_group": "Rename local favorite group",
@@ -2038,6 +2059,19 @@
                 "select_avatar": "Select avatar?",
                 "delete_value_favorites": "Delete {value} favorites?",
                 "this_action_cannot_be_undone": "This action cannot be undone"
+            },
+            "generated": {
+                "favorite_fallback": "favorite",
+                "favorites_fallback": "Favorites",
+                "this_user": "this user",
+                "user_fallback": "User",
+                "world_fallback": "World",
+                "avatar_fallback": "Avatar",
+                "no_group_selected": "No Group Selected",
+                "world_details_unavailable": "World details are unavailable.",
+                "loading_world_details": "Loading world details.",
+                "avatar_details_unavailable": "Avatar details are unavailable.",
+                "loading_avatar_details": "Loading avatar details."
             }
         },
         "friends": {

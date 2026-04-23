@@ -6,25 +6,13 @@ import {
 } from '@tanstack/react-table';
 import {
     CheckIcon,
-    ImageIcon,
-    LayoutGridIcon,
-    ListIcon,
-    RefreshCwIcon
+    ImageIcon
 } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import {
-    DataTableHeader,
-    DataTablePagination,
-    DataTableScrollArea,
-    DataTableSurface
-} from '@/components/data-table/DataTableView.jsx';
-import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { LoadingState } from '@/components/layout/PageScaffold.jsx';
-import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
@@ -46,20 +34,8 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuGroup,
-    ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuTrigger
-} from '@/ui/shadcn/context-menu';
 import { Input } from '@/ui/shadcn/input';
-import { Spinner } from '@/ui/shadcn/spinner';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 
-import { AvatarStylesDialog } from './AvatarStylesDialog.jsx';
-import { ManageAvatarTagsDialog } from './ManageAvatarTagsDialog.jsx';
 import {
     getMyAvatarPlatformInfo,
     resolveMyAvatarPerformanceLabel,
@@ -92,16 +68,16 @@ import {
 } from './myAvatarsState.js';
 import { appI18n } from '@/services/i18nService.js';
 import {
-    AvatarActionMenuItems,
     AvatarActionsDropdown,
-    GridSettingsMenu,
-    MyAvatarFilterPopover,
-    MyAvatarGridCard,
     MyAvatarsEmptyState,
     PlatformBadges,
     SortButton,
     openAvatarDetails
 } from './components/MyAvatarsViewParts.jsx';
+import { MyAvatarsToolbar } from './components/MyAvatarsToolbar.jsx';
+import { MyAvatarsTableView } from './components/MyAvatarsTableView.jsx';
+import { MyAvatarsGridView } from './components/MyAvatarsGridView.jsx';
+import { MyAvatarsDialogs } from './components/MyAvatarsDialogs.jsx';
 
 function isRuntimeAuthTarget(authTarget) {
     const runtimeAuth = useRuntimeStore.getState().auth;
@@ -830,7 +806,9 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 setDetail(
                     userFacingErrorMessage(
                         error,
-                        'Failed to load the avatar inventory.'
+                        t(
+                            'view.my_avatars.generated.avatar_inventory_failed_to_load'
+                        )
                     )
                 );
             });
@@ -1306,6 +1284,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         (platformFilter !== 'all' ? 1 : 0) +
         tagFilters.size;
 
+    function handleViewModeChange(nextViewMode) {
+        setViewMode(nextViewMode);
+        void configRepository.setString('MyAvatarsViewMode', nextViewMode);
+    }
+
     return (
         <div
             className={cn(
@@ -1321,105 +1304,42 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 onChange={(event) => void onAvatarImageFileChange(event)}
             />
             <div className="flex min-h-0 flex-1 flex-col gap-3">
-                <div className="flex flex-wrap items-center gap-2 px-0.5 pt-1.5">
-                    <div className="flex items-center gap-1">
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            variant={
-                                viewMode === 'grid' ? 'default' : 'outline'
-                            }
-                            aria-label={"Show avatar grid"}
-                            onClick={() => {
-                                setViewMode('grid');
-                                void configRepository.setString(
-                                    'MyAvatarsViewMode',
-                                    'grid'
-                                );
-                            }}
-                        >
-                            <LayoutGridIcon data-icon="inline-start" />
-                        </Button>
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            variant={
-                                viewMode === 'table' ? 'default' : 'outline'
-                            }
-                            aria-label={"Show avatar table"}
-                            onClick={() => {
-                                setViewMode('table');
-                                void configRepository.setString(
-                                    'MyAvatarsViewMode',
-                                    'table'
-                                );
-                            }}
-                        >
-                            <ListIcon data-icon="inline-start" />
-                        </Button>
-                    </div>
-
-                    <MyAvatarFilterPopover
-                        activeFilterCount={activeFilterCount}
-                        allTags={allTags}
-                        releaseStatusFilter={releaseStatusFilter}
-                        platformFilter={platformFilter}
-                        tagFilters={tagFilters}
-                        onReleaseStatusChange={setReleaseStatusFilter}
-                        onPlatformChange={setPlatformFilter}
-                        onTagFiltersChange={setTagFilters}
-                        onClearFilters={() => {
-                            setReleaseStatusFilter('all');
-                            setPlatformFilter('all');
-                            setTagFilters(new Set());
-                        }}
-                    />
-
-                    <div className="flex-1" />
-
-                    {loadStatus === 'running' ? (
-                        <span className="text-muted-foreground text-sm">
-                            {t('common.loading')}
-                        </span>
-                    ) : null}
-                    <Input
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder={t('common.actions.search')}
-                        className="w-80"
-                    />
-                    {viewMode === 'grid' ? (
-                        <GridSettingsMenu
-                            cardScale={cardScale}
-                            cardSpacing={cardSpacing}
-                            onCardScaleChange={setCardScale}
-                            onCardSpacingChange={setCardSpacing}
-                        />
-                    ) : null}
-                    {viewMode === 'table' ? (
-                        <TableColumnVisibilityMenu table={table} />
-                    ) : null}
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={"Refresh avatar inventory"}
-                        disabled={!currentUserId || loadStatus === 'running'}
-                        onClick={() => setRefreshToken((value) => value + 1)}
-                    >
-                        {loadStatus === 'running' ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCwIcon data-icon="inline-start" />
-                        )}
-                    </Button>
-                </div>
+                <MyAvatarsToolbar
+                    t={t}
+                    viewMode={viewMode}
+                    activeFilterCount={activeFilterCount}
+                    allTags={allTags}
+                    releaseStatusFilter={releaseStatusFilter}
+                    platformFilter={platformFilter}
+                    tagFilters={tagFilters}
+                    loadStatus={loadStatus}
+                    searchQuery={searchQuery}
+                    cardScale={cardScale}
+                    cardSpacing={cardSpacing}
+                    table={table}
+                    currentUserId={currentUserId}
+                    onViewModeChange={handleViewModeChange}
+                    onReleaseStatusChange={setReleaseStatusFilter}
+                    onPlatformChange={setPlatformFilter}
+                    onTagFiltersChange={setTagFilters}
+                    onClearFilters={() => {
+                        setReleaseStatusFilter('all');
+                        setPlatformFilter('all');
+                        setTagFilters(new Set());
+                    }}
+                    onSearchChange={setSearchQuery}
+                    onCardScaleChange={setCardScale}
+                    onCardSpacingChange={setCardSpacing}
+                    onRefresh={() => setRefreshToken((value) => value + 1)}
+                />
 
                 {detail ? (
                     <div className="text-muted-foreground text-sm">
                         {userFacingErrorMessage(
                             detail,
-                            'Failed to load the avatar inventory.'
+                            t(
+                                'view.my_avatars.generated.avatar_inventory_failed_to_load'
+                            )
                         )}
                     </div>
                 ) : null}
@@ -1430,218 +1350,53 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     <MyAvatarsEmptyState
                         title={t('view.my_avatars.generated.avatar_inventory_failed_to_load')}
                         description={
-                            detail || 'The avatar request did not complete.'
+                            detail ||
+                            t(
+                                'view.my_avatars.generated.avatar_request_did_not_complete'
+                            )
                         }
                     />
                 ) : hasRows ? (
                     viewMode === 'table' ? (
-                        <>
-                            <DataTableSurface>
-                                <DataTableScrollArea wideTable>
-                                    <Table className="w-max min-w-full">
-                                        <DataTableHeader table={table} />
-                                        <TableBody>
-                                            {table
-                                                .getRowModel()
-                                                .rows.map((row) => (
-                                                    <ContextMenu
-                                                        key={
-                                                            row.original?.id ||
-                                                            row.id
-                                                        }
-                                                    >
-                                                        <ContextMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <TableRow
-                                                                className={cn(
-                                                                    'cursor-pointer',
-                                                                    row.original
-                                                                        ?.id ===
-                                                                        currentAvatarId &&
-                                                                        'bg-primary/10'
-                                                                )}
-                                                                tabIndex={0}
-                                                                aria-label={`Open ${row.original?.name || row.original?.id || 'avatar'}`}
-                                                                onKeyDown={(
-                                                                    event
-                                                                ) => {
-                                                                    if (
-                                                                        event.key !==
-                                                                            'Enter' &&
-                                                                        event.key !==
-                                                                            ' '
-                                                                    ) {
-                                                                        return;
-                                                                    }
-                                                                    event.preventDefault();
-                                                                    openAvatarDetails(
-                                                                        row.original
-                                                                    );
-                                                                }}
-                                                                onClick={() =>
-                                                                    openAvatarDetails(
-                                                                        row.original
-                                                                    )
-                                                                }
-                                                            >
-                                                                {row
-                                                                    .getVisibleCells()
-                                                                    .map(
-                                                                        (
-                                                                            cell
-                                                                        ) => (
-                                                                            <ResizableTableCell
-                                                                                key={
-                                                                                    cell.id
-                                                                                }
-                                                                                cell={
-                                                                                    cell
-                                                                                }
-                                                                            />
-                                                                        )
-                                                                    )}
-                                                            </TableRow>
-                                                        </ContextMenuTrigger>
-                                                        <ContextMenuContent>
-                                                            <AvatarActionMenuItems
-                                                                avatar={
-                                                                    row.original
-                                                                }
-                                                                isActive={
-                                                                    row.original
-                                                                        ?.id ===
-                                                                    currentAvatarId
-                                                                }
-                                                                disabled={
-                                                                    updatingAvatarId ===
-                                                                        row
-                                                                            .original
-                                                                            ?.id ||
-                                                                    savingTagsAvatarId ===
-                                                                        row
-                                                                            .original
-                                                                            ?.id ||
-                                                                    uploadingImageAvatarId ===
-                                                                        row
-                                                                            .original
-                                                                            ?.id
-                                                                }
-                                                                Item={
-                                                                    ContextMenuItem
-                                                                }
-                                                                Group={
-                                                                    ContextMenuGroup
-                                                                }
-                                                                Separator={
-                                                                    ContextMenuSeparator
-                                                                }
-                                                                onAction={(
-                                                                    action,
-                                                                    avatar
-                                                                ) =>
-                                                                    void handleAvatarAction(
-                                                                        action,
-                                                                        avatar
-                                                                    )
-                                                                }
-                                                            />
-                                                        </ContextMenuContent>
-                                                    </ContextMenu>
-                                                ))}
-                                        </TableBody>
-                                    </Table>
-                                </DataTableScrollArea>
-                            </DataTableSurface>
-                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                <div className="text-muted-foreground text-sm">
-                                    {t('view.my_avatars.generated.showing')}{' '}
-                                    <span className="text-foreground font-medium">
-                                        {table.getRowModel().rows.length}
-                                    </span>{' '}
-                                    {t('view.my_avatars.generated.of')}{' '}
-                                    <span className="text-foreground font-medium">
-                                        {filteredAvatars.length}
-                                    </span>{' '}
-                                    {t('view.my_avatars.generated.avatar')}
-                                    {filteredAvatars.length === 1 ? '' : 's'}
-                                </div>
-                                <DataTablePagination
-                                    table={table}
-                                    pageIndex={pagination.pageIndex}
-                                    pageSize={pagination.pageSize}
-                                    pageSizes={pageSizes}
-                                    pageSizeLabel={t(
-                                        'table.pagination.rows_per_page'
-                                    )}
-                                    onPageSizeChange={(value) => {
-                                        const nextPageSize =
-                                            resolveMyAvatarsPageSize(
-                                                value,
-                                                pageSizes,
-                                                pagination.pageSize
-                                            );
-                                        setPagination({
-                                            pageIndex: 0,
-                                            pageSize: nextPageSize
-                                        });
-                                    }}
-                                />
-                            </div>
-                        </>
+                        <MyAvatarsTableView
+                            t={t}
+                            table={table}
+                            currentAvatarId={currentAvatarId}
+                            savingTagsAvatarId={savingTagsAvatarId}
+                            updatingAvatarId={updatingAvatarId}
+                            uploadingImageAvatarId={uploadingImageAvatarId}
+                            filteredCount={filteredAvatars.length}
+                            pageSizes={pageSizes}
+                            pagination={pagination}
+                            onAvatarAction={handleAvatarAction}
+                            onPageSizeChange={(value) => {
+                                const nextPageSize =
+                                    resolveMyAvatarsPageSize(
+                                        value,
+                                        pageSizes,
+                                        pagination.pageSize
+                                    );
+                                setPagination({
+                                    pageIndex: 0,
+                                    pageSize: nextPageSize
+                                });
+                            }}
+                        />
                     ) : (
-                        <div
-                            ref={gridScrollRef}
-                            className="min-h-0 flex-1 overflow-auto py-2"
-                        >
-                            <div
-                                className="relative p-1"
-                                style={{
-                                    height: `${gridTotalHeight}px`
-                                }}
-                            >
-                                {visibleGridRows.map((row) => (
-                                    <div
-                                        key={row.key}
-                                        className="absolute right-1 left-1 grid overflow-hidden"
-                                        style={{
-                                            height: `${row.height}px`,
-                                            gap: `${gridGap}px`,
-                                            gridTemplateColumns: `repeat(${gridColumnCount}, minmax(${gridMinWidth}px, 1fr))`,
-                                            transform: `translateY(${row.top}px)`
-                                        }}
-                                    >
-                                        {row.avatars.map((avatar) => (
-                                            <MyAvatarGridCard
-                                                key={avatar.id}
-                                                avatar={avatar}
-                                                currentAvatarId={
-                                                    currentAvatarId
-                                                }
-                                                cardScale={cardScale}
-                                                isUpdating={
-                                                    savingTagsAvatarId ===
-                                                        avatar.id ||
-                                                    updatingAvatarId ===
-                                                        avatar.id ||
-                                                    uploadingImageAvatarId ===
-                                                        avatar.id
-                                                }
-                                                onAction={(
-                                                    action,
-                                                    nextAvatar
-                                                ) =>
-                                                    void handleAvatarAction(
-                                                        action,
-                                                        nextAvatar
-                                                    )
-                                                }
-                                            />
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <MyAvatarsGridView
+                            gridScrollRef={gridScrollRef}
+                            gridTotalHeight={gridTotalHeight}
+                            visibleGridRows={visibleGridRows}
+                            gridGap={gridGap}
+                            gridColumnCount={gridColumnCount}
+                            gridMinWidth={gridMinWidth}
+                            currentAvatarId={currentAvatarId}
+                            cardScale={cardScale}
+                            savingTagsAvatarId={savingTagsAvatarId}
+                            updatingAvatarId={updatingAvatarId}
+                            uploadingImageAvatarId={uploadingImageAvatarId}
+                            onAvatarAction={handleAvatarAction}
+                        />
                     )
                 ) : (
                     <MyAvatarsEmptyState
@@ -1650,44 +1405,38 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                     />
                 )}
             </div>
-            <ImageCropDialog
-                open={Boolean(imageCropRequest)}
-                file={imageCropRequest?.file || null}
-                aspectRatio={4 / 3}
-                title={t('view.my_avatars.generated.change_avatar_image')}
-                onOpenChange={(open) => {
+            <MyAvatarsDialogs
+                t={t}
+                imageCropRequest={imageCropRequest}
+                manageTagsAvatar={manageTagsAvatar}
+                savingTagsAvatarId={savingTagsAvatarId}
+                stylesAvatar={stylesAvatar}
+                currentUserId={currentUserId}
+                currentEndpoint={currentEndpoint}
+                onImageCropOpenChange={(open) => {
                     if (!open) {
                         setImageCropRequest(null);
                         imageUploadAvatarRef.current = null;
                         imageUploadAuthTargetRef.current = null;
                     }
                 }}
-                onConfirm={(blob) => confirmAvatarImageUpload(blob)}
-            />
-            <ManageAvatarTagsDialog
-                open={Boolean(manageTagsAvatar)}
-                avatar={manageTagsAvatar}
-                saving={Boolean(savingTagsAvatarId)}
-                onOpenChange={(open) => {
+                onImageCropConfirm={(blob) => confirmAvatarImageUpload(blob)}
+                onManageTagsOpenChange={(open) => {
                     if (!open && !savingTagsAvatarId) {
                         setManageTagsAvatar(null);
                     }
                 }}
-                onSave={handleSaveAvatarTags}
-            />
-            <AvatarStylesDialog
-                open={Boolean(stylesAvatar)}
-                avatar={stylesAvatar}
-                currentUserId={currentUserId}
-                endpoint={currentEndpoint}
-                onOpenChange={(open) => {
+                onSaveTags={handleSaveAvatarTags}
+                onStylesOpenChange={(open) => {
                     if (!open) {
                         setStylesAvatar(null);
                     }
                 }}
-                onSaved={(nextAvatar) => {
+                onStylesSaved={(nextAvatar) => {
                     applyAvatarUpdate(nextAvatar);
-                    setDetail('Avatar styles updated.');
+                    setDetail(
+                        t('view.my_avatars.generated.avatar_styles_updated')
+                    );
                 }}
             />
         </div>

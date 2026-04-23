@@ -6,7 +6,6 @@ import {
 } from '@tanstack/react-table';
 import {
     EyeOffIcon,
-    StarIcon,
     UserIcon,
     UserMinusIcon
 } from 'lucide-react';
@@ -14,22 +13,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import {
-    DataTableHeader,
-    DataTablePagination,
-    DataTableScrollArea,
-    DataTableSurface
-} from '@/components/data-table/DataTableView.jsx';
-import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
-import {
-    LoadingState,
-    PageBody,
-    PageFooter,
-    PageScaffold,
-    PageToolbar,
-    PageToolbarRow
-} from '@/components/layout/PageScaffold.jsx';
+import { PageScaffold } from '@/components/layout/PageScaffold.jsx';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import {
     getNameColour,
@@ -58,17 +42,6 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/ui/shadcn/dialog';
-import { Input } from '@/ui/shadcn/input';
-import { Spinner } from '@/ui/shadcn/spinner';
-import { Switch } from '@/ui/shadcn/switch';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
@@ -95,11 +68,10 @@ import {
     writePersistedFriendListState as writePersistedState
 } from './friendListState.js';
 import { appI18n } from '@/services/i18nService.js';
-import {
-    FriendListEmptyState,
-    FriendListSearchFilterDropdown,
-    SortButton
-} from './components/FriendListViewParts.jsx';
+import { SortButton } from './components/FriendListViewParts.jsx';
+import { FriendListToolbar } from './components/FriendListToolbar.jsx';
+import { FriendListTable } from './components/FriendListTable.jsx';
+import { FriendListUserLoadDialog } from './components/FriendListUserLoadDialog.jsx';
 
 export function FriendListPage({ embedded = false } = {}) {
     const { t } = useI18n();
@@ -1417,269 +1389,84 @@ export function FriendListPage({ embedded = false } = {}) {
               )
           )
         : 0;
+    const toolbarDetail =
+        isMutualFetching
+            ? t('view.friend_list.generated.loading_mutual_friends_progress', {
+                  current: mutualProgress.current,
+                  total: mutualProgress.total
+              })
+            : friendDetail;
+
+    function openFriendDetails(friend) {
+        openUserDialog({
+            userId: friend?.id,
+            title: friend?.displayName || friend?.username || undefined
+        });
+    }
 
     return (
         <PageScaffold embedded={embedded}>
-            <PageToolbar>
-                <PageToolbarRow className="justify-between">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                            type="button"
-                            variant={favoritesOnly ? 'default' : 'outline'}
-                            size="icon"
-                            className="size-9"
-                            disabled={!isFavoritesLoaded}
-                            title={t('view.friend_list.favorites_only_tooltip')}
-                            aria-label={"Filter favorites only"}
-                            onClick={() =>
-                                setFavoritesOnly((current) => !current)
-                            }
-                        >
-                            <StarIcon
-                                data-icon="inline-start"
-                                className={cn(
-                                    favoritesOnly ? 'fill-current' : ''
-                                )}
-                            />
-                        </Button>
-                        <FriendListSearchFilterDropdown
-                            value={activeSearchFilterIds}
-                            onChange={setActiveSearchFilterIds}
-                        />
-                        <Input
-                            value={searchQuery}
-                            onChange={(event) =>
-                                setSearchQuery(event.target.value)
-                            }
-                            placeholder={t(
-                                'view.friend_list.search_placeholder'
-                            )}
-                            className="h-9 w-64"
-                        />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        {bulkUnfriendMode ? (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-9"
-                                disabled={
-                                    !selectedFriendIds.size || isBulkDeleting
-                                }
-                                onClick={() => void bulkUnfriendSelected()}
-                            >
-                                {t('view.friend_list.bulk_unfriend_selection')}
-                            </Button>
-                        ) : null}
-                        <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground text-xs">
-                                {t('view.friend_list.bulk_unfriend')}
-                            </span>
-                            <Switch
-                                aria-label={"Bulk Unfriend Mode"}
-                                checked={bulkUnfriendMode}
-                                disabled={!currentUserId || isBulkDeleting}
-                                onCheckedChange={setBulkUnfriendMode}
-                            />
-                        </div>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="h-9 gap-2"
-                            disabled={
-                                isMutualOptOut ||
-                                isMutualFetching ||
-                                !currentUserId
-                            }
-                            onClick={() => void loadMutualFriends()}
-                        >
-                            {isMutualFetching ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : null}
-                            {t('view.friend_list.load_mutual_friends')}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="h-9"
-                            disabled={isLoadingUserDetails || !currentUserId}
-                            onClick={() => void loadFriendUserDetails()}
-                        >
-                            {t('view.friend_list.load')}
-                        </Button>
-                        <TableColumnVisibilityMenu
-                            table={table}
-                            onResetLayout={resetFriendListTableLayout}
-                        />
-                    </div>
-                </PageToolbarRow>
+            <FriendListToolbar
+                t={t}
+                favoritesOnly={favoritesOnly}
+                isFavoritesLoaded={isFavoritesLoaded}
+                activeSearchFilterIds={activeSearchFilterIds}
+                searchQuery={searchQuery}
+                bulkUnfriendMode={bulkUnfriendMode}
+                selectedFriendCount={selectedFriendIds.size}
+                isBulkDeleting={isBulkDeleting}
+                isMutualOptOut={isMutualOptOut}
+                isMutualFetching={isMutualFetching}
+                currentUserId={currentUserId}
+                isLoadingUserDetails={isLoadingUserDetails}
+                table={table}
+                statusDetail={toolbarDetail}
+                onToggleFavoritesOnly={() =>
+                    setFavoritesOnly((current) => !current)
+                }
+                onSearchFilterChange={setActiveSearchFilterIds}
+                onSearchChange={setSearchQuery}
+                onBulkUnfriend={() => void bulkUnfriendSelected()}
+                onBulkUnfriendModeChange={setBulkUnfriendMode}
+                onLoadMutualFriends={() => void loadMutualFriends()}
+                onLoadFriendUserDetails={() => void loadFriendUserDetails()}
+                onResetTableLayout={resetFriendListTableLayout}
+            />
 
-                {friendDetail || isMutualFetching ? (
-                    <div className="text-muted-foreground text-xs">
-                        {isMutualFetching
-                            ? `Loading mutual friends ${mutualProgress.current} / ${mutualProgress.total}`
-                            : friendDetail}
-                    </div>
-                ) : null}
-            </PageToolbar>
+            <FriendListTable
+                t={t}
+                table={table}
+                pageCount={pageCount}
+                pageSizes={pageSizes}
+                pagination={pagination}
+                filteredRowsLength={filteredRows.length}
+                friendDetail={friendDetail}
+                favoritesOnly={favoritesOnly}
+                isLoading={isLoading}
+                isError={isError}
+                hasRows={hasRows}
+                onResetTableLayout={resetFriendListTableLayout}
+                onPageSizeChange={(value) => {
+                    const nextPageSize = resolvePageSize(
+                        value,
+                        pageSizes,
+                        pagination.pageSize
+                    );
+                    setPagination({
+                        pageIndex: 0,
+                        pageSize: nextPageSize
+                    });
+                }}
+                onOpenUser={openFriendDetails}
+            />
 
-            <PageBody>
-                {isLoading ? (
-                    <LoadingState label={t('view.friend_list.generated.loading_the_friend_roster_snapshot')} />
-                ) : isError ? (
-                    <FriendListEmptyState
-                        title={t('view.friend_list.generated.friend_roster_failed_to_load')}
-                        description={
-                            friendDetail ||
-                            'The roster bootstrap did not complete.'
-                        }
-                    />
-                ) : hasRows ? (
-                    <>
-                        <DataTableSurface>
-                            <DataTableScrollArea wideTable>
-                                <Table className="w-max min-w-full">
-                                    <DataTableHeader
-                                        table={table}
-                                        onResetLayout={
-                                            resetFriendListTableLayout
-                                        }
-                                    />
-                                    <TableBody>
-                                        {table.getRowModel().rows.map((row) => (
-                                            <TableRow
-                                                key={row.id}
-                                                className="cursor-pointer"
-                                                tabIndex={0}
-                                                aria-label={`Open ${row.original?.displayName || row.original?.username || 'friend'}`}
-                                                onKeyDown={(event) => {
-                                                    if (
-                                                        event.key !== 'Enter' &&
-                                                        event.key !== ' '
-                                                    ) {
-                                                        return;
-                                                    }
-                                                    event.preventDefault();
-                                                    openUserDialog({
-                                                        userId: row.original
-                                                            ?.id,
-                                                        title:
-                                                            row.original
-                                                                ?.displayName ||
-                                                            row.original
-                                                                ?.username ||
-                                                            undefined
-                                                    });
-                                                }}
-                                                onClick={() =>
-                                                    openUserDialog({
-                                                        userId: row.original
-                                                            ?.id,
-                                                        title:
-                                                            row.original
-                                                                ?.displayName ||
-                                                            row.original
-                                                                ?.username ||
-                                                            undefined
-                                                    })
-                                                }
-                                            >
-                                                {row
-                                                    .getVisibleCells()
-                                                    .map((cell) => (
-                                                        <ResizableTableCell
-                                                            key={cell.id}
-                                                            cell={cell}
-                                                        />
-                                                    ))}
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </DataTableScrollArea>
-                        </DataTableSurface>
-
-                        <PageFooter>
-                            <div className="text-muted-foreground text-sm">
-                                {t('view.friend_list.generated.showing')}{' '}
-                                <span className="text-foreground font-medium">
-                                    {table.getRowModel().rows.length}
-                                </span>{' '}
-                                {t('view.friend_list.generated.of')}{' '}
-                                <span className="text-foreground font-medium">
-                                    {filteredRows.length}
-                                </span>{' '}
-                                {t('view.friend_list.generated.friend')}{filteredRows.length === 1 ? '' : 's'}
-                            </div>
-                            <DataTablePagination
-                                table={table}
-                                pageIndex={pagination.pageIndex}
-                                pageCount={pageCount}
-                                pageSize={pagination.pageSize}
-                                pageSizes={pageSizes}
-                                pageSizeLabel={t(
-                                    'table.pagination.rows_per_page'
-                                )}
-                                onPageSizeChange={(value) => {
-                                    const nextPageSize = resolvePageSize(
-                                        value,
-                                        pageSizes,
-                                        pagination.pageSize
-                                    );
-                                    setPagination({
-                                        pageIndex: 0,
-                                        pageSize: nextPageSize
-                                    });
-                                }}
-                            />
-                        </PageFooter>
-                    </>
-                ) : (
-                    <FriendListEmptyState
-                        title={t('view.friend_list.generated.no_friends_match_the_current_filters')}
-                        description={
-                            favoritesOnly
-                                ? 'Try turning off favorites-only or broadening the search query.'
-                                : 'The current search filters excluded every friend in the roster.'
-                        }
-                    />
-                )}
-            </PageBody>
-
-            <Dialog
+            <FriendListUserLoadDialog
+                t={t}
                 open={userLoadProgress.open}
-                onOpenChange={(open) => !open && cancelFriendUserDetailsLoad()}
-            >
-                <DialogContent showCloseButton={false} className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{t('view.friend_list.generated.loading_friend_details')}</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex flex-col gap-2">
-                        <div className="bg-muted h-4 overflow-hidden rounded-full border">
-                            <div
-                                className="bg-primary h-full"
-                                style={{ width: `${userLoadPercent}%` }}
-                            />
-                        </div>
-                        <div className="text-muted-foreground text-right text-xs">
-                            {userLoadProgress.current} /{' '}
-                            {userLoadProgress.total}
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            disabled={userLoadProgress.cancelled}
-                            onClick={cancelFriendUserDetailsLoad}
-                        >
-                            {userLoadProgress.cancelled
-                                ? 'Cancelling...'
-                                : 'Cancel'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                progress={userLoadProgress}
+                percent={userLoadPercent}
+                onCancel={cancelFriendUserDetailsLoad}
+            />
         </PageScaffold>
     );
 }
