@@ -153,9 +153,10 @@ export function NotificationTypeFilterDropdown({
     getTypeLabel = (type) => type
 }) {
     const activeTypes = Array.isArray(value) ? value : [];
+    const filterLabel = appI18n.t('view.notification.filter_placeholder');
     const label = activeTypes.length
-        ? `${activeTypes.length} notification filters`
-        : 'Notification filters';
+        ? `${filterLabel} (${activeTypes.length})`
+        : filterLabel;
 
     return (
         <DropdownMenu>

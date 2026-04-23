@@ -4,30 +4,12 @@ import {
     getSortedRowModel,
     useReactTable
 } from '@tanstack/react-table';
-import {
-    CheckIcon,
-    RefreshCcwIcon,
-    SendIcon,
-    Trash2Icon,
-    XIcon
-} from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import {
-    DataTableHeader,
-    DataTablePagination
-} from '@/components/data-table/DataTableView.jsx';
-import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog.jsx';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
-import { formatDateFilter } from '@/lib/dateTime.js';
-import {
-    convertFileUrlToImageUrl,
-    openExternalLink
-} from '@/lib/entityMedia.js';
-import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
+import { openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import {
     configRepository,
@@ -47,25 +29,10 @@ import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
-import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
-import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableRow
-} from '@/ui/shadcn/table';
 
 import {
     buildCachedInstanceMap,
-    canDeclineNotification,
     filterNotificationRows,
-    getNotificationCreatedAt,
-    getNotificationGroupColumnLabel,
-    getNotificationMessage,
-    getResponseLabel,
     normalizeWorldTarget,
     resolveCurrentInviteLocation
 } from './notificationRows.js';
@@ -82,14 +49,11 @@ import {
     writePersistedNotificationTableState as writePersistedState
 } from './notificationTableState.js';
 import { appI18n } from '@/services/i18nService.js';
+import { buildNotificationColumns } from './components/NotificationPageColumns.jsx';
+import { NotificationPageTable } from './components/NotificationPageTable.jsx';
+import { NotificationPageToolbar } from './components/NotificationPageToolbar.jsx';
 import {
-    BoopReplyDialog,
-    NotificationLocationLink,
-    NotificationTypeFilterDropdown,
-    SortButton,
-    getNotificationLinkIcon,
-    getResponseIcon,
-    notificationLinkIsInternal
+    BoopReplyDialog
 } from './components/NotificationViewParts.jsx';
 
 export function VrcNotificationPage({ embedded = false } = {}) {
@@ -780,470 +744,27 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     }
 
     const columns = useMemo(
-        () => [
-            {
-                id: 'created_at',
-                accessorFn: (row) =>
-                    new Date(getNotificationCreatedAt(row) || 0).valueOf() || 0,
-                meta: { label: t('table.notification.date') },
-                header: ({ column }) => (
-                    <SortButton
-                        column={column}
-                        label={t('table.notification.date')}
-                    />
-                ),
-                cell: ({ row }) => {
-                    const createdAt = getNotificationCreatedAt(row.original);
-                    const shortText = formatDateFilter(createdAt, 'short');
-                    const longText = formatDateFilter(createdAt, 'long');
-                    return (
-                        <div
-                            className="text-muted-foreground min-w-32 text-sm"
-                            title={longText}
-                        >
-                            {shortText}
-                        </div>
-                    );
-                }
-            },
-            {
-                id: 'type',
-                accessorFn: (row) => String(row?.type || ''),
-                meta: { label: t('table.notification.type') },
-                header: ({ column }) => (
-                    <SortButton
-                        column={column}
-                        label={t('table.notification.type')}
-                    />
-                ),
-                cell: ({ row }) => {
-                    const notification = row.original;
-                    const label = notificationTypeLabel(notification.type);
-                    const badge = (
-                        <Badge
-                            variant={
-                                notification.expired ? 'secondary' : 'outline'
-                            }
-                        >
-                            {label}
-                        </Badge>
-                    );
-                    return notificationTypeIsClickable(notification) ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-0"
-                            onClick={() =>
-                                openNotificationTypeTarget(notification)
-                            }
-                        >
-                            {badge}
-                        </Button>
-                    ) : (
-                        badge
-                    );
-                }
-            },
-            {
-                id: 'senderUsername',
-                accessorFn: (row) =>
-                    String(row?.senderUsername || row?.senderUserId || ''),
-                meta: { label: t('table.notification.user') },
-                header: ({ column }) => (
-                    <SortButton
-                        column={column}
-                        label={t('table.notification.user')}
-                    />
-                ),
-                cell: ({ row }) => {
-                    const notification = row.original;
-                    if (
-                        notification.senderUserId &&
-                        !notification.senderUserId.startsWith('grp_')
-                    ) {
-                        return (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-auto max-w-48 justify-start p-0 text-left font-normal hover:text-primary"
-                                onClick={() =>
-                                    openUserDialog({
-                                        userId: notification.senderUserId,
-                                        title:
-                                            notification.senderUsername ||
-                                            undefined
-                                    })
-                                }
-                            >
-                                <span className="truncate">
-                                    {notification.senderUsername || 'User'}
-                                </span>
-                            </Button>
-                        );
-                    }
-                    if (notification.link?.startsWith('user:')) {
-                        const userId = notification.link.slice('user:'.length);
-                        return (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-auto max-w-48 justify-start p-0 text-left font-normal hover:text-primary"
-                                onClick={() =>
-                                    openUserDialog({
-                                        userId,
-                                        title:
-                                            notification.linkText ||
-                                            notification.senderUsername ||
-                                            undefined
-                                    })
-                                }
-                            >
-                                <span className="truncate">
-                                    {notification.linkText ||
-                                        notification.senderUsername ||
-                                        'User'}
-                                </span>
-                            </Button>
-                        );
-                    }
-                    if (
-                        notification.senderUsername &&
-                        !notification.senderUserId?.startsWith('grp_')
-                    ) {
-                        return (
-                            <div className="max-w-48 truncate text-sm">
-                                {notification.senderUsername}
-                            </div>
-                        );
-                    }
-                    return null;
-                }
-            },
-            {
-                id: 'groupName',
-                accessorFn: (row) => getNotificationGroupColumnLabel(row),
-                meta: { label: t('table.notification.group') },
-                header: t('table.notification.group'),
-                cell: ({ row }) => {
-                    const notification = row.original;
-                    const label = getNotificationGroupColumnLabel(notification);
-                    const groupId = notification.senderUserId?.startsWith(
-                        'grp_'
-                    )
-                        ? notification.senderUserId
-                        : notification.link?.startsWith('group:')
-                          ? notification.link.slice('group:'.length)
-                          : notification.link?.startsWith('event:')
-                            ? notification.link
-                                  .slice('event:'.length)
-                                  .split(',')[0]
-                            : '';
-                    if (!label) return null;
-                    return groupId ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="h-auto max-w-48 justify-start p-0 text-left font-normal hover:text-primary"
-                            onClick={() =>
-                                openGroupDialog({ groupId, title: label })
-                            }
-                        >
-                            <span className="truncate">{label}</span>
-                        </Button>
-                    ) : (
-                        <div className="max-w-48 truncate text-sm">{label}</div>
-                    );
-                }
-            },
-            {
-                id: 'photo',
-                enableSorting: false,
-                meta: { label: t('table.notification.photo') },
-                header: t('table.notification.photo'),
-                cell: ({ row }) => {
-                    const imageUrl =
-                        row.original.details?.imageUrl ||
-                        row.original.imageUrl ||
-                        '';
-                    if (!imageUrl || imageUrl.startsWith('default_'))
-                        return null;
-                    const previewLabel =
-                        getNotificationMessage(row.original) ||
-                        t('table.notification.photo');
-                    const previewAriaLabel =
-                        getNotificationMessage(row.original) || 'photo';
-                    return (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="h-auto p-1"
-                            aria-label={`Preview notification image: ${previewAriaLabel}`}
-                            onClick={() =>
-                                openNotificationImagePreview(row.original)
-                            }
-                        >
-                            <img
-                                src={convertFileUrlToImageUrl(imageUrl, 64)}
-                                alt={previewLabel}
-                                width={40}
-                                height={40}
-                                className="size-10 rounded-md object-cover"
-                            />
-                        </Button>
-                    );
-                }
-            },
-            {
-                id: 'message',
-                accessorFn: (row) => getNotificationMessage(row),
-                enableSorting: false,
-                meta: { label: t('table.notification.message') },
-                header: t('table.notification.message'),
-                cell: ({ row }) => {
-                    const notification = row.original;
-                    const message = getNotificationMessage(notification);
-                    const worldId =
-                        notification.details?.worldId ||
-                        notification.data?.worldId ||
-                        notification.location ||
-                        '';
-                    const notificationLink = notification.link || '';
-                    const internalLink =
-                        notificationLinkIsInternal(notificationLink);
-                    const LinkIcon = getNotificationLinkIcon(notificationLink);
-                    return (
-                        <div className="flex min-w-0 flex-col gap-1">
-                            {message ? (
-                                <div className="max-w-xl truncate text-sm">
-                                    {message}
-                                </div>
-                            ) : null}
-                            {worldId ? (
-                                <NotificationLocationLink
-                                    location={worldId}
-                                    worldName={
-                                        notification.details?.worldName ||
-                                        notification.worldName ||
-                                        ''
-                                    }
-                                    groupName={
-                                        notification.details?.groupName ||
-                                        notification.groupName ||
-                                        notification.data?.groupName ||
-                                        ''
-                                    }
-                                />
-                            ) : null}
-                            {notificationLink ? (
-                                <Button
-                                    type="button"
-                                    variant={internalLink ? 'ghost' : 'link'}
-                                    size="sm"
-                                    className={cn(
-                                        'h-auto max-w-xl justify-start p-0 text-left font-normal',
-                                        internalLink && 'hover:text-primary'
-                                    )}
-                                    onClick={() =>
-                                        openNotificationLink(notificationLink)
-                                    }
-                                >
-                                    <LinkIcon data-icon="inline-start" />
-                                    <span className="truncate">
-                                        {notification.linkText ||
-                                            notificationLink}
-                                    </span>
-                                </Button>
-                            ) : null}
-                        </div>
-                    );
-                }
-            },
-            {
-                id: 'action',
-                enableSorting: false,
-                meta: { label: t('table.notification.action') },
-                header: t('table.notification.action'),
-                cell: ({ row }) => {
-                    const notification = row.original;
-                    const remoteActionsVisible =
-                        notification.senderUserId !== currentUserId &&
-                        !notification.expired;
-                    const responses = Array.isArray(notification.responses)
-                        ? notification.responses
-                        : [];
-                    const localDeleteVisible =
-                        notification.type !== 'friendRequest' &&
-                        notification.type !== 'ignoredFriendRequest';
-                    return (
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                            {remoteActionsVisible &&
-                            notification.type === 'friendRequest' ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={"Accept friend request"}
-                                    title={t('view.notification.actions.accept')}
-                                    onClick={() =>
-                                        void acceptFriendRequest(notification)
-                                    }
-                                >
-                                    <CheckIcon data-icon="inline-start" />
-                                </Button>
-                            ) : null}
-                            {remoteActionsVisible &&
-                            notification.type === 'requestInvite' &&
-                            canInviteFromCurrentLocation ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={"Send invite"}
-                                    title={t('view.notification.generated.invite')}
-                                    onClick={() =>
-                                        void acceptRequestInvite(notification)
-                                    }
-                                >
-                                    <SendIcon data-icon="inline-start" />
-                                </Button>
-                            ) : null}
-                            {remoteActionsVisible &&
-                            notification.type === 'invite' ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={"Decline with message"}
-                                    title={t('view.notification.actions.decline_with_message')}
-                                    onClick={() =>
-                                        void sendInviteResponseWithMessage(
-                                            notification,
-                                            'response'
-                                        )
-                                    }
-                                >
-                                    <SendIcon data-icon="inline-start" />
-                                </Button>
-                            ) : null}
-                            {remoteActionsVisible &&
-                            notification.type === 'requestInvite' ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={"Decline with message"}
-                                    title={t('view.notification.actions.decline_with_message')}
-                                    onClick={() =>
-                                        void sendInviteResponseWithMessage(
-                                            notification,
-                                            'requestResponse'
-                                        )
-                                    }
-                                >
-                                    <SendIcon data-icon="inline-start" />
-                                </Button>
-                            ) : null}
-                            {remoteActionsVisible
-                                ? responses.map((response) => {
-                                      const label = getResponseLabel(response);
-                                      const ResponseIcon = getResponseIcon(
-                                          response,
-                                          notification.type
-                                      );
-                                      return (
-                                          <Button
-                                              key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
-                                              type="button"
-                                              variant="ghost"
-                                              size="icon-xs"
-                                              aria-label={label}
-                                              title={label}
-                                              onClick={() =>
-                                                  void sendNotificationResponse(
-                                                      notification,
-                                                      response
-                                                  )
-                                              }
-                                          >
-                                              <ResponseIcon data-icon="inline-start" />
-                                          </Button>
-                                      );
-                                  })
-                                : null}
-                            {remoteActionsVisible &&
-                            canDeclineNotification(notification) ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={"Decline notification"}
-                                    title={t('view.notification.actions.decline')}
-                                    onClick={(event) =>
-                                        void hideNotification(notification, {
-                                            skipConfirm:
-                                                shiftHeld || event.shiftKey
-                                        })
-                                    }
-                                >
-                                    <XIcon
-                                        data-icon="inline-start"
-                                        className={cn(
-                                            shiftHeld && 'text-destructive'
-                                        )}
-                                    />
-                                </Button>
-                            ) : null}
-                            {notification.version === 2 &&
-                            !notification.seen ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={"Mark notification seen"}
-                                    title={t('view.notification.generated.seen')}
-                                    onClick={() => void markSeen(notification)}
-                                >
-                                    <CheckIcon data-icon="inline-start" />
-                                </Button>
-                            ) : null}
-                            {localDeleteVisible ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={"Delete notification log"}
-                                    title={t('view.notification.actions.delete_log')}
-                                    onClick={(event) =>
-                                        void deleteNotification(notification, {
-                                            skipConfirm:
-                                                shiftHeld || event.shiftKey
-                                        })
-                                    }
-                                >
-                                    {shiftHeld ? (
-                                        <XIcon
-                                            data-icon="inline-start"
-                                            className="text-destructive"
-                                        />
-                                    ) : (
-                                        <Trash2Icon data-icon="inline-start" />
-                                    )}
-                                </Button>
-                            ) : null}
-                        </div>
-                    );
-                }
-            },
-            {
-                id: 'trailing',
-                enableSorting: false,
-                enableResizing: false,
-                header: () => null,
-                cell: () => null,
-                size: 5
-            }
-        ],
+        () =>
+            buildNotificationColumns({
+                t,
+                currentUserId,
+                canInviteFromCurrentLocation,
+                notificationTypeLabel,
+                shiftHeld,
+                onOpenTypeTarget: openNotificationTypeTarget,
+                isTypeClickable: notificationTypeIsClickable,
+                onOpenUser: openUserDialog,
+                onOpenGroup: openGroupDialog,
+                onOpenNotificationLink: openNotificationLink,
+                onOpenNotificationImagePreview: openNotificationImagePreview,
+                onAcceptFriendRequest: acceptFriendRequest,
+                onAcceptRequestInvite: acceptRequestInvite,
+                onSendInviteResponseWithMessage: sendInviteResponseWithMessage,
+                onSendNotificationResponse: sendNotificationResponse,
+                onHideNotification: hideNotification,
+                onMarkSeen: markSeen,
+                onDeleteNotification: deleteNotification
+            }),
         [
             canInviteFromCurrentLocation,
             currentInviteLocation,
@@ -1291,111 +812,33 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                         : 'x-container x-container--auto-height p-4 pb-0'
                 )}
             >
-                <div className="flex flex-wrap items-center gap-2">
-                    <NotificationTypeFilterDropdown
-                        value={activeTypes}
-                        onChange={setActiveTypes}
-                        getTypeLabel={notificationTypeLabel}
-                    />
-                    <Input
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder={t('common.actions.search')}
-                        className="h-9 min-w-36 flex-1 sm:max-w-52"
-                    />
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={"Refresh notifications"}
-                        className="rounded-full"
-                        disabled={loadStatus === 'running'}
-                        onClick={() => setReloadToken((value) => value + 1)}
-                    >
-                        {loadStatus === 'running' ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCcwIcon data-icon="inline-start" />
-                        )}
-                    </Button>
-                    <TableColumnVisibilityMenu table={table} />
-                    {activeTypes.length ? (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setActiveTypes([])}
-                        >
-                            {t('common.actions.clear')}
-                        </Button>
-                    ) : null}
-                </div>
-
-                {detail ? (
-                    <div className="text-muted-foreground text-sm">
-                        {userFacingErrorMessage(
-                            detail,
-                            'Failed to load notifications.'
-                        )}
-                    </div>
-                ) : null}
-
-                <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
-                    <div className="h-full overflow-auto">
-                        <Table className="app-data-table table-fixed">
-                            <DataTableHeader table={table} />
-                            <TableBody>
-                                {table.getRowModel().rows.length > 0 ? (
-                                    table.getRowModel().rows.map((row) => (
-                                        <TableRow key={row.id}>
-                                            {row
-                                                .getVisibleCells()
-                                                .map((cell) => (
-                                                    <ResizableTableCell
-                                                        key={cell.id}
-                                                        cell={cell}
-                                                    />
-                                                ))}
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={columns.length}
-                                            className="text-muted-foreground h-24 text-center"
-                                        >
-                                            {loadStatus === 'running'
-                                                ? 'Loading notifications...'
-                                                : 'No VRChat notifications match the current view.'}
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div className="text-muted-foreground text-sm">
-                        {rows.length} {t('view.notification.generated.notifications_in_view')}
-                    </div>
-                    <DataTablePagination
-                        table={table}
-                        pageIndex={pagination.pageIndex}
-                        pageCount={table.getPageCount() || 1}
-                        pageSize={pagination.pageSize}
-                        pageSizes={DEFAULT_PAGE_SIZES}
-                        pageSizeLabel={t('table.pagination.rows_per_page')}
-                        previousLabel={t('table.pagination.previous')}
-                        nextLabel={t('table.pagination.next')}
-                        onPageSizeChange={(value) =>
-                            setPagination({
-                                pageIndex: 0,
-                                pageSize: resolvePageSize(value)
-                            })
-                        }
-                    />
-                </div>
+                <NotificationPageToolbar
+                    activeTypes={activeTypes}
+                    searchQuery={searchQuery}
+                    notificationTypeLabel={notificationTypeLabel}
+                    loadStatus={loadStatus}
+                    table={table}
+                    onActiveTypesChange={setActiveTypes}
+                    onSearchQueryChange={setSearchQuery}
+                    onRefresh={() => setReloadToken((value) => value + 1)}
+                    onClearFilters={() => setActiveTypes([])}
+                    t={t}
+                />
+                <NotificationPageTable
+                    table={table}
+                    detail={detail}
+                    loadStatus={loadStatus}
+                    rowsCount={rows.length}
+                    pagination={pagination}
+                    pageSizes={DEFAULT_PAGE_SIZES}
+                    onPageSizeChange={(value) =>
+                        setPagination({
+                            pageIndex: 0,
+                            pageSize: resolvePageSize(value)
+                        })
+                    }
+                    t={t}
+                />
             </div>
             <InviteMessageDialog
                 open={Boolean(inviteResponseRequest)}

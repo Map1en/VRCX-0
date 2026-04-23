@@ -1,44 +1,21 @@
-import {
-    BellIcon,
-    CheckIcon,
-    ExternalLinkIcon,
-    MessageCircleIcon,
-    RefreshCcwIcon,
-    SendIcon,
-    Trash2Icon,
-    UserIcon,
-    UsersIcon,
-    XIcon
-} from 'lucide-react';
+import { BellIcon, RefreshCcwIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog.jsx';
-import {
-    convertFileUrlToImageUrl,
-    openExternalLink
-} from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     notificationRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
-import {
-    openAvatarDialog,
-    openGroupDialog,
-    openUserDialog,
-    openWorldDialog
-} from '@/services/dialogService.js';
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
-import { getNotificationTs } from '@/shared/utils/notificationCategory.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { Separator } from '@/ui/shadcn/separator';
 import {
     Sheet,
     SheetContent,
@@ -47,531 +24,23 @@ import {
 } from '@/ui/shadcn/sheet';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+
 import { appI18n } from '@/services/i18nService.js';
 
-const categoryOrder = ['friend', 'group', 'other'];
-
-function normalizeWorldTarget(value) {
-    const text =
-        typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-    const parsed = parseLocation(text);
-    if (parsed.isRealInstance && parsed.tag) {
-        return parsed.tag;
-    }
-    return parsed.worldId || text.split(':')[0] || text;
-}
-
-function getNotificationMessage(notification) {
-    return [
-        notification?.title,
-        notification?.message,
-        notification?.details?.inviteMessage,
-        notification?.details?.requestMessage,
-        notification?.details?.responseMessage,
-        notification?.details?.worldName
-    ]
-        .map((value) => String(value || '').trim())
-        .filter(Boolean)
-        .join(' ');
-}
-
-function getSenderName(notification) {
-    return (
-        notification?.title ||
-        notification?.senderUsername ||
-        notification?.data?.groupName ||
-        notification?.groupName ||
-        notification?.details?.groupName ||
-        notification?.type ||
-        'Notification'
-    );
-}
-
-function getImageUrl(notification) {
-    return (
-        notification?.details?.imageUrl ||
-        notification?.imageUrl ||
-        notification?.senderUserIcon ||
-        ''
-    );
-}
-
-function formatNotificationTime(notification) {
-    const timestamp = getNotificationTs(notification);
-    if (!timestamp) {
-        return '';
-    }
-    return new Intl.DateTimeFormat(undefined, {
-        month: 'short',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    }).format(new Date(timestamp));
-}
-
-function isNotificationExpired(notification) {
-    if (notification?.expired !== undefined) {
-        return Boolean(notification.expired);
-    }
-    if (!notification?.expiresAt) {
-        return false;
-    }
-    const expiresAt = Date.parse(notification.expiresAt);
-    return Number.isFinite(expiresAt) && expiresAt <= Date.now();
-}
-
-function canDeclineNotification(notification) {
-    const type = notification?.type || '';
-    const link = notification?.link || '';
-    return (
-        type !== 'requestInviteResponse' &&
-        type !== 'inviteResponse' &&
-        type !== 'message' &&
-        type !== 'boop' &&
-        type !== 'groupChange' &&
-        !type.includes('group.') &&
-        !type.includes('moderation.') &&
-        !type.includes('instance.') &&
-        !link.startsWith('economy.')
-    );
-}
-
-function shouldShowDeleteLog(notification) {
-    const type = notification?.type || '';
-    return type !== 'friendRequest' && type !== 'ignoredFriendRequest';
-}
-
-function getResponseLabel(response) {
-    return response?.text || response?.type || 'Respond';
-}
-
-function resolveCurrentInviteLocation(gameState, currentUserSnapshot) {
-    const currentLocation = String(gameState?.currentLocation || '').trim();
-    if (currentLocation === 'traveling') {
-        return String(gameState?.currentDestination || '').trim();
-    }
-    return (
-        currentLocation ||
-        String(gameState?.currentDestination || '').trim() ||
-        String(
-            currentUserSnapshot?.$locationTag ||
-                currentUserSnapshot?.location ||
-                ''
-        ).trim()
-    );
-}
-
-function openNotificationLink(link) {
-    const value = String(link || '').trim();
-    if (!value) {
-        return false;
-    }
-    if (value.startsWith('user:')) {
-        const userId = value.slice('user:'.length);
-        openUserDialog({ userId });
-        return true;
-    }
-    if (value.startsWith('group:')) {
-        const groupId = value.slice('group:'.length);
-        openGroupDialog({ groupId });
-        return true;
-    }
-    if (value.startsWith('event:')) {
-        const [groupId] = value.slice('event:'.length).split(',');
-        if (groupId) {
-            openGroupDialog({ groupId });
-            return true;
-        }
-    }
-    if (value.startsWith('world:')) {
-        const worldId = normalizeWorldTarget(value.slice('world:'.length));
-        openWorldDialog({ worldId });
-        return true;
-    }
-    if (value.startsWith('avatar:')) {
-        const avatarId = value.slice('avatar:'.length);
-        openAvatarDialog({ avatarId });
-        return true;
-    }
-    void openExternalLink(value);
-    return true;
-}
-
-function openSender(notification) {
-    const userId = String(notification?.senderUserId || '').trim();
-    if (
-        userId.startsWith('grp_') ||
-        notification?.type?.startsWith('group.') ||
-        notification?.type === 'groupChange'
-    ) {
-        const groupId = userId.startsWith('grp_')
-            ? userId
-            : notification?.data?.groupId ||
-              notification?.details?.groupId ||
-              '';
-        if (groupId) {
-            openGroupDialog({ groupId, title: getSenderName(notification) });
-            return;
-        }
-    }
-    if (userId) {
-        openUserDialog({
-            userId,
-            title: notification?.senderUsername || undefined
-        });
-        return;
-    }
-    if (!openNotificationLink(notification?.link)) {
-        toast.info(appI18n.t('view.notification.generated.this_notification_does_not_expose_a_navigable_sender'));
-    }
-}
-
-function NotificationAvatar({ notification }) {
-    const imageUrl = getImageUrl(notification);
-    const isGroup =
-        String(notification?.senderUserId || '').startsWith('grp_') ||
-        notification?.type?.startsWith('group.');
-    const Icon = isGroup ? UsersIcon : UserIcon;
-
-    if (imageUrl && !imageUrl.startsWith('default_')) {
-        return (
-            <img
-                src={convertFileUrlToImageUrl(imageUrl, 64)}
-                alt=""
-                className="size-9 shrink-0 rounded-md object-cover"
-            />
-        );
-    }
-
-    return (
-        <div className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-md border">
-            <Icon className="size-4" />
-        </div>
-    );
-}
-
-function NotificationRow({
-    notification,
-    isUnseen,
-    currentUserId,
-    canInviteFromCurrentLocation,
-    onAcceptFriendRequest,
-    onAcceptRequestInvite,
-    onSendInviteResponseWithMessage,
-    onSendNotificationResponse,
-    onHideNotification,
-    onDeleteNotification,
-    onMarkSeen
-}) {
-    const message = getNotificationMessage(notification);
-    const timeLabel = formatNotificationTime(notification);
-    const hasLink = Boolean(notification?.link);
-    const responses = Array.isArray(notification?.responses)
-        ? notification.responses
-        : [];
-    const remoteActionsVisible =
-        notification?.senderUserId !== currentUserId &&
-        !isNotificationExpired(notification);
-
-    return (
-        <div className="bg-card text-card-foreground mb-1.5 flex gap-2 rounded-md border p-2">
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-9 shrink-0 p-0"
-                onClick={() => openSender(notification)}
-            >
-                <NotificationAvatar notification={notification} />
-            </Button>
-            <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-center gap-2">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        className="h-auto min-w-0 flex-1 justify-start p-0 text-left text-sm font-medium"
-                        onClick={() => openSender(notification)}
-                    >
-                        <span className="truncate">
-                            {getSenderName(notification)}
-                        </span>
-                    </Button>
-                    <Badge variant="secondary" className="shrink-0 text-xs">
-                        {notification?.type || 'unknown'}
-                    </Badge>
-                    {isUnseen ? (
-                        <span className="bg-primary size-2 shrink-0 rounded-full" />
-                    ) : null}
-                </div>
-                {message ? (
-                    <div className="text-muted-foreground mt-1 truncate text-xs">
-                        {message}
-                    </div>
-                ) : null}
-                {notification?.details?.worldName ? (
-                    <div className="text-muted-foreground truncate text-xs">
-                        {notification.details.worldName}
-                    </div>
-                ) : null}
-            </div>
-            <div className="flex shrink-0 flex-col items-end justify-between gap-1">
-                {timeLabel ? (
-                    <span className="text-muted-foreground text-xs">
-                        {timeLabel}
-                    </span>
-                ) : null}
-                <div className="flex items-center gap-1">
-                    {remoteActionsVisible &&
-                    notification.type === 'friendRequest' ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={"Accept"}
-                            title={appI18n.t('view.notification.actions.accept')}
-                            onClick={() =>
-                                void onAcceptFriendRequest(notification)
-                            }
-                        >
-                            <CheckIcon data-icon="inline-start" />
-                        </Button>
-                    ) : null}
-                    {remoteActionsVisible &&
-                    notification.type === 'requestInvite' &&
-                    canInviteFromCurrentLocation ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={"Invite"}
-                            title={appI18n.t('view.notification.generated.invite')}
-                            onClick={() =>
-                                void onAcceptRequestInvite(notification)
-                            }
-                        >
-                            <SendIcon data-icon="inline-start" />
-                        </Button>
-                    ) : null}
-                    {remoteActionsVisible && notification.type === 'invite' ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={"Decline with message"}
-                            title={appI18n.t('view.notification.actions.decline_with_message')}
-                            onClick={() =>
-                                void onSendInviteResponseWithMessage(
-                                    notification,
-                                    'response'
-                                )
-                            }
-                        >
-                            <MessageCircleIcon data-icon="inline-start" />
-                        </Button>
-                    ) : null}
-                    {remoteActionsVisible &&
-                    notification.type === 'requestInvite' ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={"Decline with message"}
-                            title={appI18n.t('view.notification.actions.decline_with_message')}
-                            onClick={() =>
-                                void onSendInviteResponseWithMessage(
-                                    notification,
-                                    'requestResponse'
-                                )
-                            }
-                        >
-                            <MessageCircleIcon data-icon="inline-start" />
-                        </Button>
-                    ) : null}
-                    {remoteActionsVisible
-                        ? responses.map((response) => (
-                              <Button
-                                  key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  aria-label={getResponseLabel(response)}
-                                  title={getResponseLabel(response)}
-                                  onClick={() =>
-                                      void onSendNotificationResponse(
-                                          notification,
-                                          response
-                                      )
-                                  }
-                              >
-                                  {response?.type === 'link' ? (
-                                      <ExternalLinkIcon data-icon="inline-start" />
-                                  ) : (
-                                      <CheckIcon data-icon="inline-start" />
-                                  )}
-                              </Button>
-                          ))
-                        : null}
-                    {remoteActionsVisible &&
-                    canDeclineNotification(notification) ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={"Decline"}
-                            title={appI18n.t('view.notification.actions.decline')}
-                            onClick={() =>
-                                void onHideNotification(notification)
-                            }
-                        >
-                            <XIcon data-icon="inline-start" />
-                        </Button>
-                    ) : null}
-                    {hasLink ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={"Open notification link"}
-                            onClick={() =>
-                                openNotificationLink(notification.link)
-                            }
-                        >
-                            <ExternalLinkIcon data-icon="inline-start" />
-                        </Button>
-                    ) : null}
-                    {isUnseen ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={"Mark seen"}
-                            onClick={() => {
-                                void onMarkSeen(notification);
-                            }}
-                        >
-                            <CheckIcon data-icon="inline-start" />
-                        </Button>
-                    ) : null}
-                    {shouldShowDeleteLog(notification) ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={"Delete log"}
-                            title={appI18n.t('view.notification.actions.delete_log')}
-                            onClick={() =>
-                                void onDeleteNotification(notification)
-                            }
-                        >
-                            <Trash2Icon data-icon="inline-start" />
-                        </Button>
-                    ) : null}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function NotificationList({
-    unseen,
-    recent,
-    currentUserId,
-    canInviteFromCurrentLocation,
-    onAcceptFriendRequest,
-    onAcceptRequestInvite,
-    onSendInviteResponseWithMessage,
-    onSendNotificationResponse,
-    onHideNotification,
-    onDeleteNotification,
-    onMarkSeen,
-    onNavigateToTable,
-    t
-}) {
-    const rows = useMemo(
-        () => [
-            ...unseen.map((notification) => ({
-                key: `unseen:${notification.id}`,
-                notification,
-                isUnseen: true
-            })),
-            ...(recent.length ? [{ key: 'recent-header', section: true }] : []),
-            ...recent.map((notification) => ({
-                key: `recent:${notification.id}`,
-                notification,
-                isUnseen: false
-            }))
-        ],
-        [recent, unseen]
-    );
-
-    return (
-        <div className="flex h-full min-h-0 flex-col">
-            <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-                {rows.length ? (
-                    rows.map((row) =>
-                        row.section ? (
-                            <div
-                                key={row.key}
-                                className="flex items-center gap-2 px-2 py-2"
-                            >
-                                <Separator className="flex-1" />
-                                <span className="text-muted-foreground shrink-0 text-xs tracking-wider uppercase">
-                                    {t(
-                                        'side_panel.notification_center.past_notifications'
-                                    )}
-                                </span>
-                                <Separator className="flex-1" />
-                            </div>
-                        ) : (
-                            <NotificationRow
-                                key={row.key}
-                                notification={row.notification}
-                                isUnseen={row.isUnseen}
-                                currentUserId={currentUserId}
-                                canInviteFromCurrentLocation={
-                                    canInviteFromCurrentLocation
-                                }
-                                onAcceptFriendRequest={onAcceptFriendRequest}
-                                onAcceptRequestInvite={onAcceptRequestInvite}
-                                onSendInviteResponseWithMessage={
-                                    onSendInviteResponseWithMessage
-                                }
-                                onSendNotificationResponse={
-                                    onSendNotificationResponse
-                                }
-                                onHideNotification={onHideNotification}
-                                onDeleteNotification={onDeleteNotification}
-                                onMarkSeen={onMarkSeen}
-                            />
-                        )
-                    )
-                ) : (
-                    <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">
-                        {t(
-                            'side_panel.notification_center.no_new_notifications'
-                        )}
-                    </div>
-                )}
-            </div>
-            <div className="flex justify-center border-t p-3">
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={onNavigateToTable}
-                >
-                    {t('side_panel.notification_center.view_more')}
-                </Button>
-            </div>
-        </div>
-    );
-}
+import { NotificationList } from './vrc-notification-center/NotificationList.jsx';
+import {
+    buildCachedInstanceMap,
+    categoryOrder,
+    openNotificationLink,
+    resolveCurrentInviteLocation
+} from './vrc-notification-center/notificationCenterUtils.js';
 
 export function VrcNotificationCenterHost() {
     const { t } = useI18n();
     const modalStore = useModalStore();
     const runtimeAuth = useRuntimeStore((state) => state.auth);
     const gameState = useRuntimeStore((state) => state.gameState);
+    const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
     const isCenterOpen = useVrcNotificationStore((state) => state.isCenterOpen);
     const categories = useVrcNotificationStore((state) => state.categories);
     const unseenCount = useVrcNotificationStore((state) => state.unseenCount);
@@ -591,6 +60,10 @@ export function VrcNotificationCenterHost() {
     const [inviteResponseRequest, setInviteResponseRequest] = useState(null);
     const currentUserId = runtimeAuth.currentUserId;
     const endpoint = runtimeAuth.currentUserEndpoint;
+    const groupInstanceRows =
+        groupInstancesState.endpoint === endpoint
+            ? groupInstancesState.instances
+            : [];
     const currentInviteLocation = useMemo(
         () =>
             resolveCurrentInviteLocation(
@@ -599,14 +72,18 @@ export function VrcNotificationCenterHost() {
             ),
         [gameState, runtimeAuth.currentUserSnapshot]
     );
+    const cachedInstances = useMemo(
+        () => buildCachedInstanceMap(groupInstanceRows),
+        [groupInstanceRows]
+    );
     const canInviteFromCurrentLocation = useMemo(
         () =>
             checkCanInvite(currentInviteLocation, {
                 currentUserId,
                 lastLocationStr: currentInviteLocation,
-                cachedInstances: new Map()
+                cachedInstances
             }),
-        [currentInviteLocation, currentUserId]
+        [cachedInstances, currentInviteLocation, currentUserId]
     );
 
     useEffect(() => {
@@ -630,7 +107,9 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_mark_notifications_as_seen')
+                    : appI18n.t(
+                          'host.vrc_notification_center.generated_toast.failed_to_mark_notifications_as_seen'
+                      )
             );
         });
     }
@@ -665,8 +144,13 @@ export function VrcNotificationCenterHost() {
     async function acceptFriendRequest(notification) {
         try {
             const result = await modalStore.confirm({
-                title: appI18n.t('host.vrc_notification_center.generated_modal.accept_friend_request'),
-                description: appI18n.t('host.vrc_notification_center.generated_dynamic.accept_the_friend_request_from_value', { value: notification.senderUsername || 'this user' })
+                title: appI18n.t(
+                    'host.vrc_notification_center.generated_modal.accept_friend_request'
+                ),
+                description: appI18n.t(
+                    'host.vrc_notification_center.generated_dynamic.accept_the_friend_request_from_value',
+                    { value: notification.senderUsername || 'this user' }
+                )
             });
             if (!result.ok) {
                 return;
@@ -676,7 +160,9 @@ export function VrcNotificationCenterHost() {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success(t('view.notification.generated.friend_request_accepted'));
+            toast.success(
+                t('view.notification.generated.friend_request_accepted')
+            );
         } catch (error) {
             if (error?.status === 404) {
                 await expireNotificationLocally(notification);
@@ -685,7 +171,9 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_accept_friend_request')
+                    : appI18n.t(
+                          'host.vrc_notification_center.generated_toast.failed_to_accept_friend_request'
+                      )
             );
         }
     }
@@ -693,9 +181,16 @@ export function VrcNotificationCenterHost() {
     async function hideNotification(notification) {
         try {
             const result = await modalStore.confirm({
-                title: appI18n.t('host.vrc_notification_center.generated_modal.decline_notification'),
-                description: appI18n.t('host.vrc_notification_center.generated_dynamic.decline_the_value_notification', { value: notification.type || 'notification' }),
-                confirmText: appI18n.t('host.vrc_notification_center.generated_modal.decline'),
+                title: appI18n.t(
+                    'host.vrc_notification_center.generated_modal.decline_notification'
+                ),
+                description: appI18n.t(
+                    'host.vrc_notification_center.generated_dynamic.decline_the_value_notification',
+                    { value: notification.type || 'notification' }
+                ),
+                confirmText: appI18n.t(
+                    'host.vrc_notification_center.generated_modal.decline'
+                ),
                 destructive: true
             });
             if (!result.ok) {
@@ -709,12 +204,16 @@ export function VrcNotificationCenterHost() {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success(t('view.notification.generated.notification_declined'));
+            toast.success(
+                t('view.notification.generated.notification_declined')
+            );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_decline_notification')
+                    : appI18n.t(
+                          'host.vrc_notification_center.generated_toast.failed_to_decline_notification'
+                      )
             );
         }
     }
@@ -723,24 +222,37 @@ export function VrcNotificationCenterHost() {
         try {
             if (!currentInviteLocation) {
                 toast.error(
-                    t('view.notification.generated.cannot_invite_no_current_vrchat_location_is_available')
+                    t(
+                        'view.notification.generated.cannot_invite_no_current_vrchat_location_is_available'
+                    )
                 );
                 return;
             }
             if (!canInviteFromCurrentLocation) {
-                toast.error(t('view.notification.generated.cannot_invite_from_the_current_instance_type'));
+                toast.error(
+                    t(
+                        'view.notification.generated.cannot_invite_from_the_current_instance_type'
+                    )
+                );
                 return;
             }
             const parsedLocation = parseLocation(currentInviteLocation);
             if (!parsedLocation.worldId || !parsedLocation.instanceId) {
                 toast.error(
-                    t('view.notification.generated.cannot_invite_current_location_is_not_a_concrete_instance')
+                    t(
+                        'view.notification.generated.cannot_invite_current_location_is_not_a_concrete_instance'
+                    )
                 );
                 return;
             }
             const result = await modalStore.confirm({
-                title: appI18n.t('host.vrc_notification_center.generated_modal.send_invite'),
-                description: appI18n.t('host.vrc_notification_center.generated_dynamic.send_an_invite_to_value', { value: notification.senderUsername || 'this user' })
+                title: appI18n.t(
+                    'host.vrc_notification_center.generated_modal.send_invite'
+                ),
+                description: appI18n.t(
+                    'host.vrc_notification_center.generated_dynamic.send_an_invite_to_value',
+                    { value: notification.senderUsername || 'this user' }
+                )
             });
             if (!result.ok) {
                 return;
@@ -775,7 +287,9 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_send_invite')
+                    : appI18n.t(
+                          'host.vrc_notification_center.generated_toast.failed_to_send_invite'
+                      )
             );
         }
     }
@@ -783,7 +297,9 @@ export function VrcNotificationCenterHost() {
     function sendInviteResponseWithMessage(notification, messageType) {
         if (!currentUserId) {
             toast.error(
-                t('view.notification.generated.cannot_send_invite_response_no_current_user_session_is_avail')
+                t(
+                    'view.notification.generated.cannot_send_invite_response_no_current_user_session_is_avail'
+                )
             );
             return;
         }
@@ -820,7 +336,11 @@ export function VrcNotificationCenterHost() {
             }
             if (
                 notification.type === 'boop' &&
-                (responseType === 'reply' || responseType === 'boop')
+                (
+                    responseType === 'reply' ||
+                    responseType === 'boop' ||
+                    response?.icon === 'reply'
+                )
             ) {
                 await notificationRepository.sendBoop({
                     userId: notification.senderUserId,
@@ -846,7 +366,9 @@ export function VrcNotificationCenterHost() {
                 endpoint
             });
             await expireNotificationLocally(notification);
-            toast.success(t('view.notification.generated.notification_response_sent'));
+            toast.success(
+                t('view.notification.generated.notification_response_sent')
+            );
         } catch (error) {
             if (notification.version >= 2) {
                 await expireNotificationLocally(notification);
@@ -854,7 +376,9 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_send_notification_response')
+                    : appI18n.t(
+                          'host.vrc_notification_center.generated_toast.failed_to_send_notification_response'
+                      )
             );
         }
     }
@@ -862,8 +386,13 @@ export function VrcNotificationCenterHost() {
     async function deleteNotification(notification) {
         try {
             const result = await modalStore.confirm({
-                title: appI18n.t('host.vrc_notification_center.generated_modal.delete_notification_log_entry'),
-                description: appI18n.t('host.vrc_notification_center.generated_modal.delete_the_local_value_log_entry', { value: notification.type || 'notification' }),
+                title: appI18n.t(
+                    'host.vrc_notification_center.generated_modal.delete_notification_log_entry'
+                ),
+                description: appI18n.t(
+                    'host.vrc_notification_center.generated_modal.delete_the_local_value_log_entry',
+                    { value: notification.type || 'notification' }
+                ),
                 confirmText: appI18n.t('common.actions.delete'),
                 destructive: true
             });
@@ -876,12 +405,16 @@ export function VrcNotificationCenterHost() {
                 version: notification.version
             });
             await refreshCenter();
-            toast.success(t('view.notification.generated.notification_log_entry_deleted'));
+            toast.success(
+                t('view.notification.generated.notification_log_entry_deleted')
+            );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('host.vrc_notification_center.generated_toast.failed_to_delete_notification')
+                    : appI18n.t(
+                          'host.vrc_notification_center.generated_toast.failed_to_delete_notification'
+                      )
             );
         }
     }
@@ -893,101 +426,113 @@ export function VrcNotificationCenterHost() {
                     side="right"
                     className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
                 >
-                <SheetHeader className="border-b px-4 pt-4 pb-3">
-                    <div className="flex items-center justify-between gap-3 pr-8">
-                        <SheetTitle className="flex items-center gap-2">
-                            <BellIcon className="size-4" />
-                            {t('side_panel.notification_center.title')}
-                        </SheetTitle>
-                        <div className="flex items-center gap-2">
-                            <Badge
-                                variant={unseenCount ? 'default' : 'outline'}
-                            >
-                                {unseenCount}
-                            </Badge>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={"Refresh friends"}
-                                disabled={loadStatus === 'running'}
-                                onClick={() => {
-                                    void loadForCurrentUser().catch((error) => {
-                                        toast.error(
-                                            userFacingErrorMessage(
-                                                error,
-                                                appI18n.t('host.vrc_notification_center.generated_toast.failed_to_refresh_notifications')
-                                            )
+                    <SheetHeader className="border-b px-4 pt-4 pb-3">
+                        <div className="flex items-center justify-between gap-3 pr-8">
+                            <SheetTitle className="flex items-center gap-2">
+                                <BellIcon className="size-4" />
+                                {t('side_panel.notification_center.title')}
+                            </SheetTitle>
+                            <div className="flex items-center gap-2">
+                                <Badge
+                                    variant={unseenCount ? 'default' : 'outline'}
+                                >
+                                    {unseenCount}
+                                </Badge>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    aria-label={t(
+                                        'view.notification.refresh_tooltip'
+                                    )}
+                                    title={t('view.notification.refresh_tooltip')}
+                                    disabled={loadStatus === 'running'}
+                                    onClick={() => {
+                                        void loadForCurrentUser().catch(
+                                            (error) => {
+                                                toast.error(
+                                                    userFacingErrorMessage(
+                                                        error,
+                                                        appI18n.t(
+                                                            'host.vrc_notification_center.generated_toast.failed_to_refresh_notifications'
+                                                        )
+                                                    )
+                                                );
+                                            }
                                         );
-                                    });
-                                }}
-                            >
-                                {loadStatus === 'running' ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : (
-                                    <RefreshCcwIcon data-icon="inline-start" />
+                                    }}
+                                >
+                                    {loadStatus === 'running' ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : (
+                                        <RefreshCcwIcon data-icon="inline-start" />
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                        {detail ? (
+                            <div className="text-muted-foreground text-xs">
+                                {userFacingErrorMessage(
+                                    detail,
+                                    'Failed to load notifications.'
                                 )}
-                            </Button>
-                        </div>
-                    </div>
-                    {detail ? (
-                        <div className="text-muted-foreground text-xs">
-                            {userFacingErrorMessage(
-                                detail,
-                                'Failed to load notifications.'
-                            )}
-                        </div>
-                    ) : null}
-                </SheetHeader>
-                <Tabs
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    className="flex min-h-0 flex-1 flex-col"
-                >
-                    <TabsList className="mx-2 mt-2 grid grid-cols-3">
+                            </div>
+                        ) : null}
+                    </SheetHeader>
+                    <Tabs
+                        value={activeTab}
+                        onValueChange={setActiveTab}
+                        className="flex min-h-0 flex-1 flex-col"
+                    >
+                        <TabsList className="mx-2 mt-2 grid grid-cols-3">
+                            {categoryOrder.map((category) => (
+                                <TabsTrigger key={category} value={category}>
+                                    {t(
+                                        `side_panel.notification_center.tab_${category}`
+                                    )}
+                                    {categories[category]?.unseen?.length ? (
+                                        <span className="text-muted-foreground ml-1 text-xs">
+                                            (
+                                            {
+                                                categories[category].unseen
+                                                    .length
+                                            }
+                                            )
+                                        </span>
+                                    ) : null}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
                         {categoryOrder.map((category) => (
-                            <TabsTrigger key={category} value={category}>
-                                {t(
-                                    `side_panel.notification_center.tab_${category}`
-                                )}
-                                {categories[category]?.unseen?.length ? (
-                                    <span className="text-muted-foreground ml-1 text-xs">
-                                        ({categories[category].unseen.length})
-                                    </span>
-                                ) : null}
-                            </TabsTrigger>
+                            <TabsContent
+                                key={category}
+                                value={category}
+                                className="mt-0 min-h-0 flex-1 overflow-hidden"
+                            >
+                                <NotificationList
+                                    unseen={categories[category]?.unseen || []}
+                                    recent={categories[category]?.recent || []}
+                                    currentUserId={currentUserId}
+                                    canInviteFromCurrentLocation={
+                                        canInviteFromCurrentLocation
+                                    }
+                                    onAcceptFriendRequest={acceptFriendRequest}
+                                    onAcceptRequestInvite={acceptRequestInvite}
+                                    onSendInviteResponseWithMessage={
+                                        sendInviteResponseWithMessage
+                                    }
+                                    onSendNotificationResponse={
+                                        sendNotificationResponse
+                                    }
+                                    onHideNotification={hideNotification}
+                                    onDeleteNotification={deleteNotification}
+                                    onMarkSeen={markNotificationSeen}
+                                    onNavigateToTable={navigateToTable}
+                                    t={t}
+                                />
+                            </TabsContent>
                         ))}
-                    </TabsList>
-                    {categoryOrder.map((category) => (
-                        <TabsContent
-                            key={category}
-                            value={category}
-                            className="mt-0 min-h-0 flex-1 overflow-hidden"
-                        >
-                            <NotificationList
-                                unseen={categories[category]?.unseen || []}
-                                recent={categories[category]?.recent || []}
-                                currentUserId={currentUserId}
-                                canInviteFromCurrentLocation={
-                                    canInviteFromCurrentLocation
-                                }
-                                onAcceptFriendRequest={acceptFriendRequest}
-                                onAcceptRequestInvite={acceptRequestInvite}
-                                onSendInviteResponseWithMessage={
-                                    sendInviteResponseWithMessage
-                                }
-                                onSendNotificationResponse={
-                                    sendNotificationResponse
-                                }
-                                onHideNotification={hideNotification}
-                                onDeleteNotification={deleteNotification}
-                                onMarkSeen={markNotificationSeen}
-                                onNavigateToTable={navigateToTable}
-                                t={t}
-                            />
-                        </TabsContent>
-                    ))}
-                </Tabs>
+                    </Tabs>
                 </SheetContent>
             </Sheet>
             <InviteMessageDialog
