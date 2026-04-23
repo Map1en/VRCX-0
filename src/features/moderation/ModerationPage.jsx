@@ -5,7 +5,6 @@ import {
     useReactTable
 } from '@tanstack/react-table';
 import {
-    RefreshCwIcon,
     Trash2Icon,
     XIcon
 } from 'lucide-react';
@@ -13,20 +12,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import {
-    DataTableHeader,
-    DataTablePagination,
-    DataTableScrollArea,
-    DataTableSurface
-} from '@/components/data-table/DataTableView.jsx';
-import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
-import {
     LoadingState,
     PageBody,
-    PageFooter,
     PageScaffold,
-    PageToolbar,
-    PageToolbarRow
+    PageToolbar
 } from '@/components/layout/PageScaffold.jsx';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -42,13 +31,12 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 import { appI18n } from '@/services/i18nService.js';
+import { ModerationPageTable } from './components/ModerationPageTable.jsx';
+import { ModerationPageToolbar } from './components/ModerationPageToolbar.jsx';
 import {
     ModerationEmptyState,
-    ModerationTypeFilterDropdown,
     SortButton
 } from './components/ModerationViewParts.jsx';
 
@@ -914,44 +902,23 @@ export function ModerationPage({ embedded = false } = {}) {
     return (
         <PageScaffold embedded={embedded}>
             <PageToolbar>
-                <PageToolbarRow>
-                    <ModerationTypeFilterDropdown
-                        value={selectedTypes}
-                        onChange={setSelectedTypes}
-                        getTypeLabel={getModerationTypeLabel}
-                        sanitizeTypes={normalizeSelectedTypes}
-                    />
-                    <Input
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder={t('common.actions.search')}
-                        className="h-9 min-w-32 flex-1 sm:max-w-40"
-                    />
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={"Refresh moderation snapshot"}
-                        disabled={!currentUserId || loadStatus === 'running'}
-                        onClick={() => setRefreshToken((value) => value + 1)}
-                    >
-                        {loadStatus === 'running' ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCwIcon data-icon="inline-start" />
-                        )}
-                    </Button>
-                    <TableColumnVisibilityMenu table={table} />
-                </PageToolbarRow>
-
-                {detail ? (
-                    <div className="text-muted-foreground text-sm">
-                        {userFacingErrorMessage(
-                            detail,
-                            'Failed to load the moderation snapshot.'
-                        )}
-                    </div>
-                ) : null}
+                <ModerationPageToolbar
+                    selectedTypes={selectedTypes}
+                    onSelectedTypesChange={setSelectedTypes}
+                    getModerationTypeLabel={getModerationTypeLabel}
+                    normalizeSelectedTypes={normalizeSelectedTypes}
+                    searchQuery={searchQuery}
+                    onSearchQueryChange={setSearchQuery}
+                    detail={userFacingErrorMessage(
+                        detail,
+                        'Failed to load the moderation snapshot.'
+                    )}
+                    currentUserId={currentUserId}
+                    loadStatus={loadStatus}
+                    onRefresh={() => setRefreshToken((value) => value + 1)}
+                    table={table}
+                    t={t}
+                />
             </PageToolbar>
 
             <PageBody>
@@ -965,66 +932,24 @@ export function ModerationPage({ embedded = false } = {}) {
                         }
                     />
                 ) : hasRows ? (
-                    <>
-                        <DataTableSurface>
-                            <DataTableScrollArea>
-                                <Table className="app-data-table table-fixed">
-                                    <DataTableHeader table={table} />
-                                    <TableBody>
-                                        {table.getRowModel().rows.map((row) => (
-                                            <TableRow
-                                                key={row.original?.id || row.id}
-                                            >
-                                                {row
-                                                    .getVisibleCells()
-                                                    .map((cell) => (
-                                                        <ResizableTableCell
-                                                            key={cell.id}
-                                                            cell={cell}
-                                                        />
-                                                    ))}
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </DataTableScrollArea>
-                        </DataTableSurface>
-
-                        <PageFooter>
-                            <div className="text-muted-foreground text-sm">
-                                {t('view.moderation.generated.showing')}{' '}
-                                <span className="text-foreground font-medium">
-                                    {table.getRowModel().rows.length}
-                                </span>{' '}
-                                {t('view.moderation.generated.of')}{' '}
-                                <span className="text-foreground font-medium">
-                                    {filteredRows.length}
-                                </span>{' '}
-                                {t('view.moderation.generated.moderation_row')}
-                                {filteredRows.length === 1 ? '' : 's'}
-                            </div>
-                            <DataTablePagination
-                                table={table}
-                                pageIndex={pagination.pageIndex}
-                                pageSize={pagination.pageSize}
-                                pageSizes={pageSizes}
-                                pageSizeLabel={t(
-                                    'table.pagination.rows_per_page'
-                                )}
-                                onPageSizeChange={(value) => {
-                                    const nextPageSize = resolvePageSize(
-                                        value,
-                                        pageSizes,
-                                        pagination.pageSize
-                                    );
-                                    setPagination({
-                                        pageIndex: 0,
-                                        pageSize: nextPageSize
-                                    });
-                                }}
-                            />
-                        </PageFooter>
-                    </>
+                    <ModerationPageTable
+                        table={table}
+                        filteredRowsLength={filteredRows.length}
+                        pagination={pagination}
+                        pageSizes={pageSizes}
+                        onPageSizeChange={(value) => {
+                            const nextPageSize = resolvePageSize(
+                                value,
+                                pageSizes,
+                                pagination.pageSize
+                            );
+                            setPagination({
+                                pageIndex: 0,
+                                pageSize: nextPageSize
+                            });
+                        }}
+                        t={t}
+                    />
                 ) : (
                     <ModerationEmptyState
                         title={t('view.moderation.generated.no_moderation_rows_match_the_current_filters')}

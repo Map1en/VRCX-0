@@ -5,8 +5,6 @@ import {
     useReactTable
 } from '@tanstack/react-table';
 import {
-    RefreshCwIcon,
-    SearchIcon,
     Trash2Icon,
     XIcon
 } from 'lucide-react';
@@ -14,20 +12,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import {
-    DataTableHeader,
-    DataTablePagination,
-    DataTableScrollArea,
-    DataTableSurface
-} from '@/components/data-table/DataTableView.jsx';
-import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
-import {
     LoadingState,
     PageBody,
-    PageFooter,
     PageScaffold,
-    PageToolbar,
-    PageToolbarRow
+    PageToolbar
 } from '@/components/layout/PageScaffold.jsx';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -41,18 +29,13 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput
-} from '@/ui/shadcn/input-group';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 import { appI18n } from '@/services/i18nService.js';
+import { FriendLogPageTable } from './components/FriendLogPageTable.jsx';
+import { FriendLogPageToolbar } from './components/FriendLogPageToolbar.jsx';
 import {
     FRIEND_LOG_TYPES,
     FriendLogEmptyState,
-    FriendLogTypeFilterDropdown,
     SortButton,
     renderUserCell
 } from './components/FriendLogViewParts.jsx';
@@ -835,56 +818,21 @@ export function FriendLogPage({ embedded = false } = {}) {
     return (
         <PageScaffold embedded={embedded}>
             <PageToolbar>
-                <PageToolbarRow className="xl:justify-between">
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                        <FriendLogTypeFilterDropdown
-                            value={selectedTypes}
-                            onChange={setSelectedTypes}
-                        />
-                        <InputGroup className="min-w-56 flex-1">
-                            <InputGroupAddon>
-                                <SearchIcon />
-                            </InputGroupAddon>
-                            <InputGroupInput
-                                value={searchQuery}
-                                onChange={(event) =>
-                                    setSearchQuery(event.target.value)
-                                }
-                                placeholder={t(
-                                    'view.friend_log.search_placeholder'
-                                )}
-                            />
-                        </InputGroup>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            title={t('common.actions.refresh')}
-                            aria-label={"Refresh friend history"}
-                            disabled={
-                                !currentUserId || loadStatus === 'running'
-                            }
-                            onClick={() =>
-                                setRefreshToken((value) => value + 1)
-                            }
-                        >
-                            {loadStatus === 'running' ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : (
-                                <RefreshCwIcon data-icon="inline-start" />
-                            )}
-                        </Button>
-                    </div>
-                    <TableColumnVisibilityMenu table={table} />
-                </PageToolbarRow>
-                {detail ? (
-                    <div className="text-muted-foreground text-sm">
-                        {userFacingErrorMessage(
-                            detail,
-                            'Failed to load the friend history snapshot.'
-                        )}
-                    </div>
-                ) : null}
+                <FriendLogPageToolbar
+                    selectedTypes={selectedTypes}
+                    onSelectedTypesChange={setSelectedTypes}
+                    searchQuery={searchQuery}
+                    onSearchQueryChange={setSearchQuery}
+                    detail={userFacingErrorMessage(
+                        detail,
+                        'Failed to load the friend history snapshot.'
+                    )}
+                    currentUserId={currentUserId}
+                    loadStatus={loadStatus}
+                    onRefresh={() => setRefreshToken((value) => value + 1)}
+                    table={table}
+                    t={t}
+                />
             </PageToolbar>
 
             <PageBody>
@@ -898,68 +846,24 @@ export function FriendLogPage({ embedded = false } = {}) {
                         }
                     />
                 ) : hasRows ? (
-                    <>
-                        <DataTableSurface>
-                            <DataTableScrollArea wideTable>
-                                <Table className="w-max min-w-full">
-                                    <DataTableHeader table={table} />
-                                    <TableBody>
-                                        {table.getRowModel().rows.map((row) => (
-                                            <TableRow
-                                                key={
-                                                    row.original?.rowId ||
-                                                    row.id
-                                                }
-                                            >
-                                                {row
-                                                    .getVisibleCells()
-                                                    .map((cell) => (
-                                                        <ResizableTableCell
-                                                            key={cell.id}
-                                                            cell={cell}
-                                                        />
-                                                    ))}
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </DataTableScrollArea>
-                        </DataTableSurface>
-
-                        <PageFooter>
-                            <div className="text-muted-foreground text-sm">
-                                {t('view.friend_log.generated.showing')}{' '}
-                                <span className="text-foreground font-medium">
-                                    {table.getRowModel().rows.length}
-                                </span>{' '}
-                                {t('view.friend_log.generated.of')}{' '}
-                                <span className="text-foreground font-medium">
-                                    {orderedRows.length}
-                                </span>{' '}
-                                {t('view.friend_log.generated.log_row')}{orderedRows.length === 1 ? '' : 's'}
-                            </div>
-                            <DataTablePagination
-                                table={table}
-                                pageIndex={pagination.pageIndex}
-                                pageSize={pagination.pageSize}
-                                pageSizes={pageSizes}
-                                pageSizeLabel={t(
-                                    'table.pagination.rows_per_page'
-                                )}
-                                onPageSizeChange={(value) => {
-                                    const nextPageSize = resolvePageSize(
-                                        value,
-                                        pageSizes,
-                                        pagination.pageSize
-                                    );
-                                    setPagination({
-                                        pageIndex: 0,
-                                        pageSize: nextPageSize
-                                    });
-                                }}
-                            />
-                        </PageFooter>
-                    </>
+                    <FriendLogPageTable
+                        table={table}
+                        orderedRowsLength={orderedRows.length}
+                        pagination={pagination}
+                        pageSizes={pageSizes}
+                        onPageSizeChange={(value) => {
+                            const nextPageSize = resolvePageSize(
+                                value,
+                                pageSizes,
+                                pagination.pageSize
+                            );
+                            setPagination({
+                                pageIndex: 0,
+                                pageSize: nextPageSize
+                            });
+                        }}
+                        t={t}
+                    />
                 ) : (
                     <FriendLogEmptyState
                         title={t('view.friend_log.generated.no_friend_history_rows_match_the_current_filters')}

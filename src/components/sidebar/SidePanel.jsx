@@ -1,18 +1,4 @@
-import {
-    ArrowDownIcon,
-    ArrowUpIcon,
-    ChevronDownIcon,
-    MoreHorizontalIcon,
-    RefreshCwIcon
-} from 'lucide-react';
-import {
-    cloneElement,
-    forwardRef,
-    isValidElement,
-    useEffect,
-    useMemo,
-    useState
-} from 'react';
+import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
@@ -22,58 +8,13 @@ import { refreshCurrentUserFriendsAndFavorites } from '@/services/backgroundMain
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Button } from '@/ui/shadcn/button';
-import { Checkbox } from '@/ui/shadcn/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/ui/shadcn/dialog';
-import { Field, FieldContent, FieldLabel } from '@/ui/shadcn/field';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
-import { Separator } from '@/ui/shadcn/separator';
-import { Spinner } from '@/ui/shadcn/spinner';
-import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { FriendsSidebar } from './FriendsSidebar.jsx';
 import { GroupsSidebar } from './GroupsSidebar.jsx';
 import { appI18n } from '@/services/i18nService.js';
-
-const sortOptions = [
-    [
-        'Sort Alphabetically',
-        'view.settings.appearance.side_panel.sorting.alphabetical'
-    ],
-    ['Sort by Status', 'view.settings.appearance.side_panel.sorting.status'],
-    [
-        'Sort Private to Bottom',
-        'view.settings.appearance.side_panel.sorting.private_to_bottom'
-    ],
-    [
-        'Sort by Last Active',
-        'view.settings.appearance.side_panel.sorting.last_active'
-    ],
-    [
-        'Sort by Last Seen',
-        'view.settings.appearance.side_panel.sorting.last_seen'
-    ],
-    [
-        'Sort by Time in Instance',
-        'view.settings.appearance.side_panel.sorting.time_in_instance'
-    ],
-    ['Sort by Location', 'view.settings.appearance.side_panel.sorting.location']
-];
+import { SidePanelFavoriteGroupOrderDialog } from './side-panel/SidePanelFavoriteGroupOrderDialog.jsx';
+import { SidePanelSettingsPopover } from './side-panel/SidePanelSettingsPopover.jsx';
 
 const defaultPrefs = {
     sidebarGroupByInstance: true,
@@ -126,51 +67,6 @@ function moveArrayItem(values, index, delta) {
     return next;
 }
 
-function SettingRow({ id, label, children }) {
-    const control =
-        id && isValidElement(children)
-            ? cloneElement(children, { id })
-            : children;
-
-    return (
-        <Field orientation="horizontal" className="gap-3 text-xs">
-            <FieldContent>
-                <FieldLabel htmlFor={id} className="text-xs">
-                    {label}
-                </FieldLabel>
-            </FieldContent>
-            {control}
-        </Field>
-    );
-}
-
-function SortSelect({ value, disabled, onChange, placeholder = 'None', t }) {
-    return (
-        <Select
-            value={value || '__none__'}
-            disabled={disabled}
-            onValueChange={(nextValue) =>
-                onChange(nextValue === '__none__' ? '' : nextValue)
-            }
-        >
-            <SelectTrigger size="sm" className="w-full">
-                <SelectValue placeholder={placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectGroup>
-                    <SelectItem value="__none__">
-                        {t('dialog.gallery_select.none')}
-                    </SelectItem>
-                    {sortOptions.map(([option, labelKey]) => (
-                        <SelectItem key={option} value={option}>
-                            {t(labelKey)}
-                        </SelectItem>
-                    ))}
-                </SelectGroup>
-            </SelectContent>
-        </Select>
-    );
-}
 
 export const SidePanel = forwardRef(function SidePanel(
     { className = '', style = undefined },
@@ -457,276 +353,31 @@ export const SidePanel = forwardRef(function SidePanel(
                             </TabsTrigger>
                         ))}
                     </TabsList>
-                    <Popover
+                    <SidePanelSettingsPopover
                         open={settingsPopoverOpen}
                         onOpenChange={setSettingsPopoverOpen}
-                    >
-                        <PopoverTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="ml-auto"
-                                aria-label={"Display"}
-                            >
-                                {isRefreshing ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : (
-                                    <MoreHorizontalIcon data-icon="inline-start" />
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                            side="bottom"
-                            align="end"
-                            className="w-72 p-3"
-                        >
-                            <div className="flex flex-col gap-2.5">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full justify-start"
-                                    aria-label={"Refresh friends"}
-                                    disabled={isRefreshing}
-                                    onClick={() => {
-                                        setSettingsPopoverOpen(false);
-                                        void refreshFriends();
-                                    }}
-                                >
-                                    {isRefreshing ? (
-                                        <Spinner data-icon="inline-start" />
-                                    ) : (
-                                        <RefreshCwIcon data-icon="inline-start" />
-                                    )}
-                                    {t('side_panel.refresh_tooltip')}
-                                </Button>
-                                <Separator />
-                                <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                                    {t('side_panel.settings.display')}
-                                </span>
-                                <SettingRow
-                                    id="side-panel-group-by-instance"
-                                    label={t(
-                                        'side_panel.settings.group_by_instance'
-                                    )}
-                                >
-                                    <Switch
-                                        checked={prefs.sidebarGroupByInstance}
-                                        onCheckedChange={(value) =>
-                                            updateBoolPreference(
-                                                'sidebarGroupByInstance',
-                                                value
-                                            )
-                                        }
-                                    />
-                                </SettingRow>
-                                {prefs.sidebarGroupByInstance ? (
-                                    <>
-                                        <SettingRow
-                                            id="side-panel-hide-friends-in-same-instance"
-                                            label={t(
-                                                'side_panel.settings.hide_friends_in_same_instance'
-                                            )}
-                                        >
-                                            <Switch
-                                                checked={
-                                                    prefs.isHideFriendsInSameInstance
-                                                }
-                                                onCheckedChange={(value) =>
-                                                    updateBoolPreference(
-                                                        'isHideFriendsInSameInstance',
-                                                        value
-                                                    )
-                                                }
-                                            />
-                                        </SettingRow>
-                                        <SettingRow
-                                            id="side-panel-same-instance-above-favorites"
-                                            label={t(
-                                                'side_panel.settings.same_instance_above_favorites'
-                                            )}
-                                        >
-                                            <Switch
-                                                checked={
-                                                    prefs.isSameInstanceAboveFavorites
-                                                }
-                                                onCheckedChange={(value) =>
-                                                    updateBoolPreference(
-                                                        'isSameInstanceAboveFavorites',
-                                                        value
-                                                    )
-                                                }
-                                            />
-                                        </SettingRow>
-                                    </>
-                                ) : null}
-                                <SettingRow
-                                    id="side-panel-split-favorite-friends"
-                                    label={t(
-                                        'side_panel.settings.split_favorite_friends'
-                                    )}
-                                >
-                                    <Switch
-                                        checked={
-                                            prefs.isSidebarDivideByFriendGroup
-                                        }
-                                        onCheckedChange={(value) =>
-                                            updateBoolPreference(
-                                                'isSidebarDivideByFriendGroup',
-                                                value
-                                            )
-                                        }
-                                    />
-                                </SettingRow>
-                                <Separator />
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-muted-foreground hover:text-foreground h-auto w-full justify-between px-0 py-0.5 text-xs font-medium tracking-wide uppercase"
-                                    onClick={() =>
-                                        setIsAdvancedOpen((current) => !current)
-                                    }
-                                >
-                                    {t('side_panel.settings.advanced')}
-                                    <ChevronDownIcon
-                                        data-icon="inline-end"
-                                        className={cn(
-                                            'transition-transform',
-                                            isAdvancedOpen && 'rotate-180'
-                                        )}
-                                    />
-                                </Button>
-                                {isAdvancedOpen ? (
-                                    <div className="flex flex-col gap-2.5">
-                                        <span className="text-muted-foreground/70 text-xs font-medium tracking-wide uppercase">
-                                            {t('side_panel.settings.sorting')}
-                                        </span>
-                                        <SortSelect
-                                            value={prefs.sidebarSortMethod1}
-                                            onChange={(value) =>
-                                                updateStringPreference(
-                                                    'sidebarSortMethod1',
-                                                    value
-                                                )
-                                            }
-                                            placeholder={t(
-                                                'view.settings.appearance.side_panel.sorting.placeholder'
-                                            )}
-                                            t={t}
-                                        />
-                                        <SortSelect
-                                            value={prefs.sidebarSortMethod2}
-                                            disabled={!prefs.sidebarSortMethod1}
-                                            onChange={(value) =>
-                                                updateStringPreference(
-                                                    'sidebarSortMethod2',
-                                                    value
-                                                )
-                                            }
-                                            placeholder={t(
-                                                'side_panel.settings.sort_secondary'
-                                            )}
-                                            t={t}
-                                        />
-                                        <SortSelect
-                                            value={prefs.sidebarSortMethod3}
-                                            disabled={!prefs.sidebarSortMethod2}
-                                            onChange={(value) =>
-                                                updateStringPreference(
-                                                    'sidebarSortMethod3',
-                                                    value
-                                                )
-                                            }
-                                            placeholder={t(
-                                                'side_panel.settings.sort_tertiary'
-                                            )}
-                                            t={t}
-                                        />
-                                        <Separator />
-                                        <span className="text-muted-foreground/70 text-xs font-medium tracking-wide uppercase">
-                                            {t(
-                                                'side_panel.settings.favorites_section'
-                                            )}
-                                        </span>
-                                        <div className="rounded-md border">
-                                            <div className="text-muted-foreground border-b px-2 py-1.5 text-xs">
-                                                {selectedFavoriteGroupLabel ||
-                                                    t(
-                                                        'side_panel.settings.favorite_groups_placeholder'
-                                                    )}
-                                            </div>
-                                            <div className="max-h-[min(24rem,50vh)] overflow-auto p-1">
-                                                {favoriteGroupItems.length ? (
-                                                    favoriteGroupItems.map(
-                                                        (group) => (
-                                                            <Field
-                                                                key={group.key}
-                                                                orientation="horizontal"
-                                                                className="hover:bg-muted/50 cursor-pointer gap-2 rounded px-1.5 py-1 text-xs"
-                                                            >
-                                                                <Checkbox
-                                                                    id={`sidebar-favorite-${group.key}`}
-                                                                    checked={resolvedSidebarFavoriteGroups.includes(
-                                                                        group.key
-                                                                    )}
-                                                                    onCheckedChange={(
-                                                                        checked
-                                                                    ) =>
-                                                                        toggleFavoriteGroup(
-                                                                            group.key,
-                                                                            Boolean(
-                                                                                checked
-                                                                            )
-                                                                        )
-                                                                    }
-                                                                />
-                                                                <FieldLabel
-                                                                    htmlFor={`sidebar-favorite-${group.key}`}
-                                                                    className="min-w-0 flex-1 truncate text-xs"
-                                                                >
-                                                                    {
-                                                                        group.label
-                                                                    }
-                                                                </FieldLabel>
-                                                            </Field>
-                                                        )
-                                                    )
-                                                ) : (
-                                                    <div className="text-muted-foreground px-1.5 py-1 text-xs">
-                                                        {favoriteLoadStatus ===
-                                                        'running'
-                                                            ? 'Loading favorite groups.'
-                                                            : 'No favorite groups.'}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {prefs.isSidebarDivideByFriendGroup ? (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={
-                                                    !orderedFavoriteGroupItems.length
-                                                }
-                                                onClick={() =>
-                                                    setFavoriteGroupOrderDialogOpen(
-                                                        true
-                                                    )
-                                                }
-                                            >
-                                                {t(
-                                                    'side_panel.settings.edit_group_order'
-                                                )}
-                                            </Button>
-                                        ) : null}
-                                    </div>
-                                ) : null}
-                            </div>
-                        </PopoverContent>
-                    </Popover>
+                        isRefreshing={isRefreshing}
+                        onRefreshFriends={() => void refreshFriends()}
+                        prefs={prefs}
+                        onUpdateBoolPreference={updateBoolPreference}
+                        onUpdateStringPreference={updateStringPreference}
+                        isAdvancedOpen={isAdvancedOpen}
+                        onAdvancedOpenChange={setIsAdvancedOpen}
+                        favoriteGroupItems={favoriteGroupItems}
+                        favoriteLoadStatus={favoriteLoadStatus}
+                        selectedFavoriteGroupLabel={selectedFavoriteGroupLabel}
+                        resolvedSidebarFavoriteGroups={
+                            resolvedSidebarFavoriteGroups
+                        }
+                        onToggleFavoriteGroup={toggleFavoriteGroup}
+                        orderedFavoriteGroupItemsLength={
+                            orderedFavoriteGroupItems.length
+                        }
+                        onOpenFavoriteGroupOrderDialog={() =>
+                            setFavoriteGroupOrderDialogOpen(true)
+                        }
+                        t={t}
+                    />
                 </div>
                 <TabsContent
                     value="friends"
@@ -741,78 +392,19 @@ export const SidePanel = forwardRef(function SidePanel(
                     <GroupsSidebar />
                 </TabsContent>
             </Tabs>
-            <Dialog
+            <SidePanelFavoriteGroupOrderDialog
                 open={favoriteGroupOrderDialogOpen}
                 onOpenChange={setFavoriteGroupOrderDialogOpen}
-            >
-                <DialogContent className="max-h-[80vh] sm:max-w-sm">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t('side_panel.settings.edit_group_order')}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="flex max-h-[50vh] flex-col gap-1 overflow-auto py-2">
-                        {favoriteGroupOrderDraft.map((group, index) => (
-                            <div
-                                key={group.key}
-                                className="flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm"
-                            >
-                                <span className="min-w-0 flex-1 truncate">
-                                    {group.label}
-                                </span>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    aria-label={`Move ${group.label} up`}
-                                    disabled={index === 0}
-                                    onClick={() =>
-                                        setFavoriteGroupOrderDraft((current) =>
-                                            moveArrayItem(current, index, -1)
-                                        )
-                                    }
-                                >
-                                    <ArrowUpIcon data-icon="inline-start" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    aria-label={`Move ${group.label} down`}
-                                    disabled={
-                                        index ===
-                                        favoriteGroupOrderDraft.length - 1
-                                    }
-                                    onClick={() =>
-                                        setFavoriteGroupOrderDraft((current) =>
-                                            moveArrayItem(current, index, 1)
-                                        )
-                                    }
-                                >
-                                    <ArrowDownIcon data-icon="inline-start" />
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={resetFavoriteGroupOrder}
-                        >
-                            {t('common.actions.reset')}
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            onClick={confirmFavoriteGroupOrder}
-                        >
-                            {t('common.actions.confirm')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                favoriteGroupOrderDraft={favoriteGroupOrderDraft}
+                onMove={(index, delta) =>
+                    setFavoriteGroupOrderDraft((current) =>
+                        moveArrayItem(current, index, delta)
+                    )
+                }
+                onReset={resetFavoriteGroupOrder}
+                onConfirm={confirmFavoriteGroupOrder}
+                t={t}
+            />
         </aside>
     );
 });

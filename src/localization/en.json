@@ -3527,6 +3527,7 @@
             "section_location": "Location",
             "section_players": "Players",
             "section_file_info": "File Info",
+            "unknown_player": "Unknown player",
             "section_note": "Note",
             "section_actions": "Actions",
             "col_date": "Date",

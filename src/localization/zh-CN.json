@@ -2083,6 +2083,7 @@
             "section_location": "位置",
             "section_players": "玩家",
             "section_file_info": "文件信息",
+            "unknown_player": "未知玩家",
             "section_note": "备注",
             "section_actions": "操作",
             "col_date": "日期",
