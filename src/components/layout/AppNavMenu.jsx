@@ -1,19 +1,8 @@
-import {
-    HeartIcon,
-    LogOutIcon,
-    MoonIcon,
-    PlusIcon,
-    SettingsIcon,
-    PanelLeftCloseIcon,
-    PanelLeftOpenIcon,
-    SunIcon
-} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { openExternalLink } from '@/lib/entityMedia.js';
 import { logoutFromReactShell } from '@/services/authExecutionService.js';
 import {
     setSidebarCollapsedPreference,
@@ -24,7 +13,6 @@ import { triggerToolByKey } from '@/services/toolActionService.js';
 import {
     DASHBOARD_NAV_KEY_PREFIX
 } from '@/shared/constants/dashboard.js';
-import { links } from '@/shared/constants/link.js';
 import { formatReleaseDisplayVersion } from '@/shared/utils/releaseVersion.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -33,41 +21,19 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
-import { Button } from '@/ui/shadcn/button';
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu';
-import {
-    SidebarContent,
-    SidebarFooter,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem
-} from '@/ui/shadcn/sidebar';
 
 import { CustomNavDialog } from './CustomNavDialog.jsx';
 import {
     isDashboardEntry,
     isEntryActive,
     isToolEntry,
-    NavItemContextMenu,
-    NavMenuEntryItem,
-    NavMenuFolderItem,
     removeNavKeyFromLayout,
-    themeModeLabel
 } from './AppNavMenuParts.jsx';
+import {
+    AppNavCreateDashboardHeader,
+    AppNavFooter,
+    AppNavMenuContent
+} from './AppNavMenuSections.jsx';
 import {
     getPathForNavEntry,
     loadNavMenuModel,
@@ -76,19 +42,6 @@ import {
     saveNavMenuModel
 } from './navMenuModel.js';
 import { appI18n } from '@/services/i18nService.js';
-
-const themeModeOptions = ['system', 'light', 'dark'];
-const tableDensityOptions = [
-    {
-        value: 'standard',
-        labelKey: 'view.settings.appearance.appearance.table_density_standard'
-    },
-    {
-        value: 'compact',
-        labelKey: 'view.settings.appearance.appearance.table_density_compact'
-    }
-];
-const vrcxLogo = new URL('../../../images/VRCX-0.png', import.meta.url).href;
 
 function resolveActiveIndex(menuItems, pathname) {
     for (const item of menuItems) {
@@ -404,32 +357,40 @@ export function AppNavMenu({ isCollapsed }) {
         }
     }
 
+    async function handleLogout() {
+        try {
+            const didLogout = await logoutFromReactShell();
+            if (didLogout) {
+                navigate('/login', {
+                    replace: true
+                });
+            }
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_sign_out_of_vrcx_0')
+            );
+        }
+    }
+
     return (
         <>
-            {shouldShowCreateDashboard ? (
-                <SidebarHeader className="px-2 py-2">
-                    <SidebarMenu>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton
-                                type="button"
-                                tooltip={t('dashboard.new_dashboard')}
-                                disabled={isCreatingDashboard}
-                                className="border-primary/40 text-primary hover:bg-primary/10 border border-dashed"
-                                onClick={() => {
-                                    void handleCreateDashboard();
-                                }}
-                            >
-                                <PlusIcon />
-                                <span>{t('dashboard.new_dashboard')}</span>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </SidebarMenu>
-                </SidebarHeader>
-            ) : null}
+            <AppNavCreateDashboardHeader
+                visible={shouldShowCreateDashboard}
+                disabled={isCreatingDashboard}
+                onCreateDashboard={handleCreateDashboard}
+                t={t}
+            />
 
-            <NavItemContextMenu
+            <AppNavMenuContent
+                menuItems={menuItems}
+                isCollapsed={isCollapsed}
+                activeIndex={activeIndex}
+                pathname={location.pathname}
+                notifiedKeys={notifiedKeys}
                 hasNotifications={hasNotifications}
-                showCreateDashboard
+                onSelect={handleSelectEntry}
                 onMarkAllRead={handleMarkAllNotificationsRead}
                 onCreateDashboard={handleCreateDashboard}
                 onEditDashboard={handleEditDashboard}
@@ -437,267 +398,29 @@ export function AppNavMenu({ isCollapsed }) {
                 onUnpinTool={handleUnpinToolEntry}
                 onOpenCustomNav={() => setCustomNavDialogOpen(true)}
                 t={t}
-            >
-                <SidebarContent className="pt-2">
-                    <SidebarGroup>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                {menuItems.map((item) =>
-                                    item.children?.length ? (
-                                        <NavMenuFolderItem
-                                            key={item.index}
-                                            item={item}
-                                            isCollapsed={isCollapsed}
-                                            activeIndex={activeIndex}
-                                            pathname={location.pathname}
-                                            notifiedKeys={notifiedKeys}
-                                            hasNotifications={hasNotifications}
-                                            onSelect={handleSelectEntry}
-                                            onMarkAllRead={
-                                                handleMarkAllNotificationsRead
-                                            }
-                                            onEditDashboard={
-                                                handleEditDashboard
-                                            }
-                                            onDeleteDashboard={
-                                                handleDeleteDashboard
-                                            }
-                                            onUnpinTool={handleUnpinToolEntry}
-                                            onOpenCustomNav={() =>
-                                                setCustomNavDialogOpen(true)
-                                            }
-                                            t={t}
-                                        />
-                                    ) : (
-                                        <NavMenuEntryItem
-                                            key={item.index}
-                                            item={item}
-                                            activeIndex={activeIndex}
-                                            notifiedKeys={notifiedKeys}
-                                            hasNotifications={hasNotifications}
-                                            onSelect={handleSelectEntry}
-                                            onMarkAllRead={
-                                                handleMarkAllNotificationsRead
-                                            }
-                                            onEditDashboard={
-                                                handleEditDashboard
-                                            }
-                                            onDeleteDashboard={
-                                                handleDeleteDashboard
-                                            }
-                                            onUnpinTool={handleUnpinToolEntry}
-                                            onOpenCustomNav={() =>
-                                                setCustomNavDialogOpen(true)
-                                            }
-                                            t={t}
-                                        />
-                                    )
-                                )}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                </SidebarContent>
-            </NavItemContextMenu>
+            />
 
-            <SidebarFooter className="px-2 py-3">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            tooltip={t('nav_tooltip.toggle_theme')}
-                            onClick={() => {
-                                void setThemeModePreference(
-                                    themeMode === 'light' ? 'dark' : 'light'
-                                );
-                            }}
-                        >
-                            {themeMode === 'light' ? <MoonIcon /> : <SunIcon />}
-                            <span>{t('nav_tooltip.toggle_theme')}</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-
-                    <SidebarMenuItem>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton
-                                    tooltip={t('nav_tooltip.manage')}
-                                >
-                                    <span className="relative inline-flex size-4 items-center justify-center">
-                                        <SettingsIcon />
-                                    </span>
-                                    <span>{t('nav_tooltip.manage')}</span>
-                                </SidebarMenuButton>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                side="right"
-                                align="start"
-                                className="w-56"
-                            >
-                                <div className="flex items-center gap-2 px-2 py-1.5">
-                                    <img
-                                        className="size-6 cursor-pointer"
-                                        src={vrcxLogo}
-                                        alt={t('view.settings.advanced.advanced.vrcx_settings.header')}
-                                        onClick={() =>
-                                            void openExternalLink(links.github)
-                                        }
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="h-auto min-w-0 flex-col items-start gap-0 p-0 text-left font-normal"
-                                        onClick={() =>
-                                            void openExternalLink(links.github)
-                                        }
-                                    >
-                                        <span className="flex items-center gap-1 truncate text-sm font-medium">
-                                            {t('view.settings.advanced.advanced.vrcx_settings.header')}
-                                            <HeartIcon
-                                                data-icon="inline-end"
-                                                className="text-primary fill-current stroke-none"
-                                            />
-                                        </span>
-                                        <span className="text-muted-foreground text-xs">
-                                            {appVersion}
-                                        </span>
-                                    </Button>
-                                </div>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuGroup>
-                                    <DropdownMenuItem
-                                        onSelect={() =>
-                                            navigate(routePathByName.settings)
-                                        }
-                                    >
-                                        {t('nav_tooltip.settings')}
-                                    </DropdownMenuItem>
-                                </DropdownMenuGroup>
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
-                                        {t(
-                                            'view.settings.appearance.appearance.theme_mode'
-                                        )}
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent
-                                        side="right"
-                                        align="start"
-                                        className="w-48"
-                                    >
-                                        <DropdownMenuGroup>
-                                            {themeModeOptions.map((mode) => (
-                                                <DropdownMenuCheckboxItem
-                                                    key={mode}
-                                                    checked={themeMode === mode}
-                                                    onSelect={() => {
-                                                        void setThemeModePreference(
-                                                            mode
-                                                        );
-                                                    }}
-                                                >
-                                                    {themeModeLabel(mode, t)}
-                                                </DropdownMenuCheckboxItem>
-                                            ))}
-                                        </DropdownMenuGroup>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
-                                        {t(
-                                            'view.settings.appearance.appearance.table_density'
-                                        )}
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent
-                                        side="right"
-                                        align="start"
-                                        className="w-48"
-                                    >
-                                        <DropdownMenuGroup>
-                                            {tableDensityOptions.map(
-                                                (option) => (
-                                                    <DropdownMenuCheckboxItem
-                                                        key={option.value}
-                                                        checked={
-                                                            tableDensity ===
-                                                            option.value
-                                                        }
-                                                        onSelect={() => {
-                                                            void setTableDensityPreference(
-                                                                option.value
-                                                            );
-                                                        }}
-                                                    >
-                                                        {t(option.labelKey)}
-                                                    </DropdownMenuCheckboxItem>
-                                                )
-                                            )}
-                                        </DropdownMenuGroup>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-                                <DropdownMenuGroup>
-                                    <DropdownMenuItem
-                                        onSelect={() =>
-                                            setCustomNavDialogOpen(true)
-                                        }
-                                    >
-                                        {t('nav_menu.custom_nav.header')}
-                                    </DropdownMenuItem>
-                                </DropdownMenuGroup>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuGroup>
-                                    <DropdownMenuItem
-                                        variant="destructive"
-                                        disabled={!isLoggedIn}
-                                        onSelect={() => {
-                                            void logoutFromReactShell()
-                                                .then((didLogout) => {
-                                                    if (didLogout) {
-                                                        navigate('/login', {
-                                                            replace: true
-                                                        });
-                                                    }
-                                                })
-                                                .catch((error) => {
-                                                    toast.error(
-                                                        error instanceof Error
-                                                            ? error.message
-                                                            : appI18n.t('component.app_nav_menu.generated_toast.failed_to_sign_out_of_vrcx_0')
-                                                    );
-                                                });
-                                        }}
-                                    >
-                                        <LogOutIcon />
-                                        {t('dialog.user.actions.logout')}
-                                    </DropdownMenuItem>
-                                </DropdownMenuGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </SidebarMenuItem>
-
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            type="button"
-                            tooltip={
-                                sidebarOpen
-                                    ? t('nav_tooltip.collapse_menu')
-                                    : t('nav_tooltip.expand_menu')
-                            }
-                            onClick={() => {
-                                void setSidebarCollapsedPreference(sidebarOpen);
-                            }}
-                        >
-                            {sidebarOpen ? (
-                                <PanelLeftCloseIcon />
-                            ) : (
-                                <PanelLeftOpenIcon />
-                            )}
-                            <span>
-                                {sidebarOpen
-                                    ? t('nav_tooltip.collapse_menu')
-                                    : t('nav_tooltip.expand_menu')}
-                            </span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarFooter>
+            <AppNavFooter
+                appVersion={appVersion}
+                isLoggedIn={isLoggedIn}
+                sidebarOpen={sidebarOpen}
+                tableDensity={tableDensity}
+                themeMode={themeMode}
+                onLogout={handleLogout}
+                onNavigateSettings={() => navigate(routePathByName.settings)}
+                onOpenCustomNav={() => setCustomNavDialogOpen(true)}
+                onSetTableDensity={setTableDensityPreference}
+                onSetThemeMode={setThemeModePreference}
+                onToggleSidebar={() =>
+                    setSidebarCollapsedPreference(sidebarOpen)
+                }
+                onToggleTheme={() =>
+                    setThemeModePreference(
+                        themeMode === 'light' ? 'dark' : 'light'
+                    )
+                }
+                t={t}
+            />
             <CustomNavDialog
                 open={customNavDialogOpen}
                 layout={navLayout}

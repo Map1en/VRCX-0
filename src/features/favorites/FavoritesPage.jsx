@@ -7,7 +7,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { userImage } from '@/lib/entityMedia.js';
-import { cn } from '@/lib/utils.js';
 import {
     avatarProfileRepository,
     avatarLocalRepository,
@@ -35,11 +34,6 @@ import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import {
-    ResizableHandle,
-    ResizablePanel,
-    ResizablePanelGroup
-} from '@/ui/shadcn/resizable';
 
 import {
     favoriteGroupType,
@@ -103,15 +97,7 @@ function normalizeSplitterSizePx(value) {
     return Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed));
 }
 
-import {
-    FavoriteCard,
-    FavoriteExportDialog,
-    FavoritesContentHeader,
-    FavoritesEmptyState,
-    FavoritesLoadingState,
-    FavoritesToolbar,
-    GroupRailSection
-} from './components/FavoritesViewParts.jsx';
+import { FavoritesPageLayout } from './components/FavoritesPageLayout.jsx';
 
 function FavoritesPage({ kind, embedded = false }) {
     const favoriteLoadStatus = useFavoriteStore((state) => state.loadStatus);
@@ -1848,6 +1834,10 @@ function FavoritesPage({ kind, embedded = false }) {
         handleRemoveRemoteFavorite(entry)
     );
     const handleGroupRailRefresh = useStableEvent(() => refreshFavorites());
+    const handleImportFavorites = useStableEvent(() =>
+        openFavoriteImportDialog({ type: kind })
+    );
+    const handleExportFavorites = useStableEvent(() => exportCurrentFavorites());
     const handleGroupRailSelect = useStableEvent((group) => {
         setSearchQuery('');
         setSelectedSource(group.source);
@@ -1880,6 +1870,15 @@ function FavoritesPage({ kind, embedded = false }) {
     const handleLocalGroupDeleteEvent = useStableEvent(handleLocalGroupDelete);
     const handleSplitterResizeEvent = useStableEvent(handleSplitterResize);
     const persistSplitterLayoutEvent = useStableEvent(persistSplitterLayout);
+    const handleEditModeChange = useStableEvent((value) => {
+        setEditMode(value);
+        if (!value) {
+            setSelectedKeys([]);
+        }
+    });
+    const handleClearSelection = useStableEvent(() => setSelectedKeys([]));
+    const handleCopySelectionEvent = useStableEvent(copySelection);
+    const handleBulkRemoveSelectionEvent = useStableEvent(bulkRemoveSelection);
 
     const title = isSearchActive
         ? 'Search'
@@ -1895,281 +1894,111 @@ function FavoritesPage({ kind, embedded = false }) {
           : '';
 
     return (
-        <div
-            className={cn(
-                'flex h-full min-h-0 flex-1 flex-col',
-                embedded ? 'p-4 pb-0' : 'x-container pb-0'
-            )}
-        >
-            <FavoritesToolbar
-                kind={kind}
-                sortValue={sortValue}
-                searchQuery={searchQuery}
-                searchPlaceholder={pageConfig.searchPlaceholder}
-                searchMode={searchMode}
-                cardScale={cardScale}
-                cardSpacing={cardSpacing}
-                refreshing={refreshing || favoriteLoadStatus === 'running'}
-                onSortValueChange={handleSortValueChange}
-                onSearchChange={setSearchQuery}
-                onSearchModeChange={setSearchMode}
-                onCardScaleChange={handleCardScaleChange}
-                onCardSpacingChange={handleCardSpacingChange}
-                onRefresh={() => void refreshFavorites()}
-                onImport={() => openFavoriteImportDialog({ type: kind })}
-                onExport={() => void exportCurrentFavorites()}
-            />
-            <FavoriteExportDialog
-                open={exportDialogOpen}
-                onOpenChange={setExportDialogOpen}
-                kind={kind}
-                remoteGroups={remoteGroups}
-                localGroups={localGroups}
-                remoteItemsByGroup={remoteItemsByGroup}
-                localItemsByGroup={localItemsByGroup}
-            />
-
-            <div className="flex h-full min-h-0 min-w-0 flex-1">
-                <ResizablePanelGroup
-                    key={`${kind}:${splitterLayoutVersion}`}
-                    id={`favorites-${kind}-splitter`}
-                    orientation="horizontal"
-                    className="h-full min-h-0 min-w-0 flex-1"
-                    onLayoutChanged={persistSplitterLayoutEvent}
-                >
-                    <ResizablePanel
-                        id={`favorites-${kind}-groups`}
-                        defaultSize={splitterSizePx}
-                        minSize={SPLITTER_MIN_SIZE_PX}
-                        className="min-w-0"
-                        collapsible
-                        collapsedSize={0}
-                        groupResizeBehavior="preserve-pixel-size"
-                        onResize={handleSplitterResizeEvent}
-                    >
-                        <div className="flex h-full min-h-0 flex-col gap-3 overflow-auto p-2">
-                            <GroupRailSection
-                                title={pageConfig.remoteSectionTitle}
-                                groups={remoteGroups}
-                                selectedSource={
-                                    hasSearchInput ? '' : selectedSource
-                                }
-                                selectedGroupKey={
-                                    hasSearchInput ? '' : selectedGroupKey
-                                }
-                                loading={
-                                    favoriteLoadStatus === 'running' ||
-                                    refreshing
-                                }
-                                onRefresh={handleGroupRailRefresh}
-                                onSelect={handleGroupRailSelect}
-                                onRemoteRename={handleRemoteGroupRenameEvent}
-                                onRemoteVisibility={
-                                    handleRemoteGroupVisibilityEvent
-                                }
-                                onRemoteClear={handleRemoteGroupClearEvent}
-                                onLocalRename={handleLocalGroupRenameEvent}
-                                onLocalDelete={handleLocalGroupDeleteEvent}
-                            />
-                            <GroupRailSection
-                                title={pageConfig.localSectionTitle}
-                                groups={localGroups}
-                                selectedSource={
-                                    hasSearchInput ? '' : selectedSource
-                                }
-                                selectedGroupKey={
-                                    hasSearchInput ? '' : selectedGroupKey
-                                }
-                                loading={refreshing}
-                                creating={creatingLocalGroup}
-                                newGroupName={newLocalGroupName}
-                                showNewGroup={canCreateLocalGroup}
-                                onRefresh={handleGroupRailRefresh}
-                                onSelect={handleGroupRailSelect}
-                                onStartCreate={handleStartCreateLocalGroup}
-                                onNewGroupNameChange={setNewLocalGroupName}
-                                onConfirmCreate={handleConfirmCreateLocalGroup}
-                                onCancelCreate={handleCancelCreateLocalGroup}
-                                onRemoteRename={handleRemoteGroupRenameEvent}
-                                onRemoteVisibility={
-                                    handleRemoteGroupVisibilityEvent
-                                }
-                                onRemoteClear={handleRemoteGroupClearEvent}
-                                onLocalRename={handleLocalGroupRenameEvent}
-                                onLocalDelete={handleLocalGroupDeleteEvent}
-                            />
-                            {kind === 'avatar' ? (
-                                <GroupRailSection
-                                    title={appI18n.t('view.favorite.avatars.local_history')}
-                                    groups={avatarHistoryGroups}
-                                    selectedSource={
-                                        hasSearchInput ? '' : selectedSource
-                                    }
-                                    selectedGroupKey={
-                                        hasSearchInput ? '' : selectedGroupKey
-                                    }
-                                    loading={avatarHistoryLoading}
-                                    onRefresh={handleAvatarHistoryRefreshEvent}
-                                    onSelect={handleGroupRailSelect}
-                                    onRemoteRename={
-                                        handleRemoteGroupRenameEvent
-                                    }
-                                    onRemoteVisibility={
-                                        handleRemoteGroupVisibilityEvent
-                                    }
-                                    onRemoteClear={handleRemoteGroupClearEvent}
-                                    onLocalRename={handleLocalGroupRenameEvent}
-                                    onLocalDelete={handleLocalGroupDeleteEvent}
-                                    onHistoryClear={
-                                        handleAvatarHistoryClearEvent
-                                    }
-                                />
-                            ) : null}
-                        </div>
-                    </ResizablePanel>
-                    <ResizableHandle withHandle />
-                    <ResizablePanel
-                        id={`favorites-${kind}-content`}
-                        minSize={SPLITTER_CONTENT_MIN_SIZE_PX}
-                        className="min-w-0"
-                    >
-                        <div className="flex h-full min-h-0 min-w-0 flex-col pl-[26px]">
-                            <FavoritesContentHeader
-                                title={title}
-                                subtitle={subtitle}
-                                editMode={editMode}
-                                editModeDisabled={editModeDisabled}
-                                editModeVisible={
-                                    editMode &&
-                                    !isSearchActive &&
-                                    !avatarEditSelectionDisabled
-                                }
-                                isAllSelected={isAllSelected}
-                                hasSelection={hasSelection}
-                                showCopyButton={showCopyButton}
-                                onEditModeChange={(value) => {
-                                    setEditMode(value);
-                                    if (!value) {
-                                        setSelectedKeys([]);
-                                    }
-                                }}
-                                onToggleSelectAll={toggleSelectAll}
-                                onClearSelection={() => setSelectedKeys([])}
-                                onCopySelection={() => void copySelection()}
-                                onBulkRemove={() => void bulkRemoveSelection()}
-                            />
-                            <div className="min-h-0 min-w-0 flex-1 overflow-auto pr-2">
-                                {favoriteLoadStatus === 'running' &&
-                                !contentItems.length ? (
-                                    <FavoritesLoadingState title={appI18n.t('view.favorite.generated.loading_favorites_baseline')} />
-                                ) : favoriteLoadStatus === 'error' ? (
-                                    <FavoritesEmptyState
-                                        title={appI18n.t('view.favorite.generated.favorites_failed_to_load')}
-                                        description={
-                                            favoriteDetail ||
-                                            'The favorites baseline did not finish loading.'
-                                        }
-                                    />
-                                ) : kind !== 'friend' &&
-                                  remoteEntityDetails.status === 'running' &&
-                                  !Object.keys(remoteEntityDetails.data)
-                                      .length &&
-                                  selectedSource === 'remote' ? (
-                                    <FavoritesLoadingState
-                                        title={
-                                            kind === 'avatar'
-                                                ? 'Loading remote avatar details.'
-                                                : 'Loading remote world details.'
-                                        }
-                                    />
-                                ) : !contentItems.length ? (
-                                    <FavoritesEmptyState
-                                        title={
-                                            isSearchActive
-                                                ? 'No matches found'
-                                                : 'No data'
-                                        }
-                                        description={
-                                            isSearchActive
-                                                ? 'Try a different search term.'
-                                                : 'The selected group currently has no items.'
-                                        }
-                                    />
-                                ) : (
-                                    <div
-                                        className="grid min-w-0"
-                                        style={{
-                                            gap: `${Math.max(4, Math.round(8 * cardSpacing))}px`,
-                                            gridTemplateColumns: `repeat(auto-fill,minmax(${Math.round(260 * cardScale)}px,1fr))`
-                                        }}
-                                    >
-                                        {contentItems.map((item) => (
-                                            <FavoriteCard
-                                                key={item.key}
-                                                item={item}
-                                                editMode={
-                                                    editMode && !isSearchActive
-                                                }
-                                                selected={selectedKeysSet.has(
-                                                    item.key
-                                                )}
-                                                showGroupLabel={isSearchActive}
-                                                cardScale={cardScale}
-                                                cardSpacing={cardSpacing}
-                                                removing={
-                                                    removingFavoriteKey ===
-                                                    item.key
-                                                }
-                                                canSendInvite={canSendInvite}
-                                                canBoop={canBoop}
-                                                currentUserId={currentUserId}
-                                                currentAvatarId={
-                                                    currentUserSnapshot?.currentAvatar ||
-                                                    ''
-                                                }
-                                                onToggleSelect={
-                                                    handleCardToggleSelect
-                                                }
-                                                onRemoveLocal={
-                                                    handleCardRemoveLocalFavorite
-                                                }
-                                                onRemoveRemote={
-                                                    handleCardRemoveRemoteFavorite
-                                                }
-                                                onFriendLaunch={
-                                                    handleCardFriendLaunch
-                                                }
-                                                onFriendSelfInvite={
-                                                    handleCardFriendSelfInvite
-                                                }
-                                                onFriendInvite={
-                                                    handleCardFriendInvite
-                                                }
-                                                onFriendRequestInvite={
-                                                    handleCardFriendRequestInvite
-                                                }
-                                                onFriendBoop={
-                                                    handleCardFriendBoop
-                                                }
-                                                onWorldNewInstance={
-                                                    handleCardWorldNewInstance
-                                                }
-                                                onWorldSelfInvite={
-                                                    handleCardWorldSelfInvite
-                                                }
-                                                onAvatarSelect={
-                                                    handleCardAvatarSelect
-                                                }
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </ResizablePanel>
-                </ResizablePanelGroup>
-            </div>
-        </div>
+        <FavoritesPageLayout
+            embedded={embedded}
+            kind={kind}
+            pageConfig={pageConfig}
+            toolbar={{
+                sortValue,
+                searchQuery,
+                searchMode,
+                cardScale,
+                cardSpacing,
+                refreshing: refreshing || favoriteLoadStatus === 'running',
+                onSortValueChange: handleSortValueChange,
+                onSearchChange: setSearchQuery,
+                onSearchModeChange: setSearchMode,
+                onCardScaleChange: handleCardScaleChange,
+                onCardSpacingChange: handleCardSpacingChange,
+                onRefresh: handleGroupRailRefresh,
+                onImport: handleImportFavorites,
+                onExport: handleExportFavorites
+            }}
+            exportDialog={{
+                open: exportDialogOpen,
+                onOpenChange: setExportDialogOpen,
+                remoteItemsByGroup,
+                localItemsByGroup
+            }}
+            splitter={{
+                layoutVersion: splitterLayoutVersion,
+                sizePx: splitterSizePx,
+                minSizePx: SPLITTER_MIN_SIZE_PX,
+                contentMinSizePx: SPLITTER_CONTENT_MIN_SIZE_PX,
+                onResize: handleSplitterResizeEvent,
+                onLayoutChanged: persistSplitterLayoutEvent
+            }}
+            groupRail={{
+                remoteTitle: pageConfig.remoteSectionTitle,
+                localTitle: pageConfig.localSectionTitle,
+                remoteGroups,
+                localGroups,
+                avatarHistoryGroups,
+                selectedSource,
+                selectedGroupKey,
+                hasSearchInput,
+                remoteLoading: favoriteLoadStatus === 'running' || refreshing,
+                localLoading: refreshing,
+                creatingLocalGroup,
+                newLocalGroupName,
+                canCreateLocalGroup,
+                avatarHistoryLoading,
+                onRefresh: handleGroupRailRefresh,
+                onSelect: handleGroupRailSelect,
+                onStartCreateLocalGroup: handleStartCreateLocalGroup,
+                onNewGroupNameChange: setNewLocalGroupName,
+                onConfirmCreateLocalGroup: handleConfirmCreateLocalGroup,
+                onCancelCreateLocalGroup: handleCancelCreateLocalGroup,
+                onRemoteRename: handleRemoteGroupRenameEvent,
+                onRemoteVisibility: handleRemoteGroupVisibilityEvent,
+                onRemoteClear: handleRemoteGroupClearEvent,
+                onLocalRename: handleLocalGroupRenameEvent,
+                onLocalDelete: handleLocalGroupDeleteEvent,
+                onAvatarHistoryRefresh: handleAvatarHistoryRefreshEvent,
+                onAvatarHistoryClear: handleAvatarHistoryClearEvent
+            }}
+            content={{
+                title,
+                subtitle,
+                editMode,
+                editModeDisabled,
+                editModeVisible:
+                    editMode && !isSearchActive && !avatarEditSelectionDisabled,
+                isAllSelected,
+                hasSelection,
+                showCopyButton,
+                favoriteLoadStatus,
+                favoriteDetail,
+                remoteEntityDetails,
+                selectedSource,
+                isSearchActive,
+                items: contentItems,
+                selectedKeysSet,
+                cardScale,
+                cardSpacing,
+                removingFavoriteKey,
+                canSendInvite,
+                canBoop,
+                currentUserId,
+                currentAvatarId: currentUserSnapshot?.currentAvatar || '',
+                onEditModeChange: handleEditModeChange,
+                onToggleSelectAll: toggleSelectAll,
+                onClearSelection: handleClearSelection,
+                onCopySelection: handleCopySelectionEvent,
+                onBulkRemove: handleBulkRemoveSelectionEvent,
+                onToggleSelect: handleCardToggleSelect,
+                onRemoveLocal: handleCardRemoveLocalFavorite,
+                onRemoveRemote: handleCardRemoveRemoteFavorite,
+                onFriendLaunch: handleCardFriendLaunch,
+                onFriendSelfInvite: handleCardFriendSelfInvite,
+                onFriendInvite: handleCardFriendInvite,
+                onFriendRequestInvite: handleCardFriendRequestInvite,
+                onFriendBoop: handleCardFriendBoop,
+                onWorldNewInstance: handleCardWorldNewInstance,
+                onWorldSelfInvite: handleCardWorldSelfInvite,
+                onAvatarSelect: handleCardAvatarSelect
+            }}
+        />
     );
 }
 

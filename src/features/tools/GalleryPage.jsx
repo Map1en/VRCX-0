@@ -1,31 +1,14 @@
-import {
-    ArrowLeftIcon,
-    CheckIcon,
-    ExternalLinkIcon,
-    EyeIcon,
-    GiftIcon,
-    ImageIcon,
-    RefreshCwIcon,
-    Trash2Icon,
-    UploadIcon,
-    XIcon
-} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
-import { formatDateFilter } from '@/lib/dateTime.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
-import { cn } from '@/lib/utils.js';
 import { mediaRepository, vrchatAuthRepository } from '@/repositories/index.js';
 import userProfileRepository from '@/repositories/userProfileRepository.js';
 import { emojiAnimationStyleList } from '@/shared/constants/emoji.js';
-import { extractFileId } from '@/shared/utils/fileUtils.js';
-import { getPrintFileName } from '@/shared/utils/gallery.js';
 import {
-    IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
     validateImageUploadFile,
     withUploadTimeout
@@ -33,86 +16,16 @@ import {
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
-import { Checkbox } from '@/ui/shadcn/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/ui/shadcn/dialog';
-import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
-import { Input } from '@/ui/shadcn/input';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { appI18n } from '@/services/i18nService.js';
-import { EmptyState, LoadingState } from './components/GalleryViewParts.jsx';
-
-const FILE_TABS = {
-    gallery: {
-        tag: 'gallery',
-        titleKey: 'dialog.gallery_icons.gallery',
-        aspectClass: 'aspect-[4/3]',
-        max: 64
-    },
-    icons: {
-        tag: 'icon',
-        titleKey: 'dialog.gallery_icons.icons',
-        aspectClass: 'aspect-square',
-        max: 64
-    },
-    emojis: {
-        tag: 'emoji',
-        titleKey: 'dialog.gallery_icons.emojis',
-        aspectClass: 'aspect-square',
-        max: null
-    },
-    stickers: {
-        tag: 'sticker',
-        titleKey: 'dialog.gallery_icons.stickers',
-        aspectClass: 'aspect-square',
-        max: null
-    }
-};
-const TAB_ORDER = [
-    'gallery',
-    'icons',
-    'emojis',
-    'stickers',
-    'prints',
-    'inventory'
-];
-const EMPTY_ASSETS = {
-    gallery: [],
-    icons: [],
-    emojis: [],
-    stickers: [],
-    prints: [],
-    inventory: []
-};
+import { GalleryHeader } from './components/GalleryHeader.jsx';
+import { GalleryPreviewDialog } from './components/GalleryPreviewDialog.jsx';
+import { GalleryTabs } from './components/GalleryTabs.jsx';
+import {
+    EMPTY_ASSETS,
+    FILE_TABS,
+    UPLOAD_ASPECT_RATIOS
+} from './galleryConstants.js';
 const MAX_IMAGE_UPLOAD_BYTES = 20_000_000;
-const UPLOAD_ASPECT_RATIOS = {
-    gallery: 4 / 3,
-    icons: 1,
-    emojis: 1,
-    stickers: 1,
-    prints: 16 / 9
-};
-
-function getLatestFileUrl(file) {
-    const versions = Array.isArray(file?.versions) ? file.versions : [];
-    return versions.at(-1)?.file?.url ?? '';
-}
 
 function buildProfilePicOverride(endpoint, fileId) {
     if (!fileId) {
@@ -353,7 +266,9 @@ export function GalleryPage() {
                 );
             }
         } finally {
-            setTabLoading(tab, false);
+            if (isRuntimeAuthTarget(authTarget)) {
+                setTabLoading(tab, false);
+            }
         }
     }
 
@@ -385,7 +300,9 @@ export function GalleryPage() {
                 );
             }
         } finally {
-            setTabLoading('prints', false);
+            if (isRuntimeAuthTarget(authTarget)) {
+                setTabLoading('prints', false);
+            }
         }
     }
 
@@ -417,7 +334,9 @@ export function GalleryPage() {
                 );
             }
         } finally {
-            setTabLoading('inventory', false);
+            if (isRuntimeAuthTarget(authTarget)) {
+                setTabLoading('inventory', false);
+            }
         }
     }
 
@@ -879,819 +798,77 @@ export function GalleryPage() {
 
     return (
         <div className="gallery-page x-container flex min-h-0 flex-1 flex-col p-6">
-            <Input
-                ref={uploadInputRef}
-                type="file"
-                accept={IMAGE_UPLOAD_ACCEPT}
-                className="hidden"
-                onChange={(event) => void uploadSelectedFile(event)}
+            <GalleryHeader
+                t={t}
+                uploadInputRef={uploadInputRef}
+                uploadingTab={uploadingTab}
+                onUploadChange={(event) => void uploadSelectedFile(event)}
+                onBack={() => navigate('/tools')}
+                onRefreshAll={() => void refreshAll()}
             />
-            <div className="ml-2 flex items-center gap-2">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mr-3"
-                    onClick={() => navigate('/tools')}
-                >
-                    <ArrowLeftIcon data-icon="inline-start" />
-                    {t('nav_tooltip.tools')}
-                </Button>
-                <span className="header">
-                    {t('dialog.gallery_icons.header')}
-                </span>
-                {uploadingTab ? (
-                    <Badge variant="outline">{t('message.upload.loading')} {uploadingTab}</Badge>
-                ) : null}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="ml-auto"
-                    onClick={() => void refreshAll()}
-                >
-                    <RefreshCwIcon data-icon="inline-start" />
-                    {t('dialog.gallery_icons.refresh')}
-                </Button>
-            </div>
 
-            <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="min-h-0 flex-1"
-            >
-                <TabsList
-                    variant="line"
-                    className="flex h-auto w-full flex-wrap justify-start"
-                >
-                    {TAB_ORDER.map((tab) => (
-                        <TabsTrigger
-                            key={tab}
-                            value={tab}
-                            className="flex-none"
-                        >
-                            {FILE_TABS[tab]?.titleKey
-                                ? t(FILE_TABS[tab].titleKey)
-                                : t(`dialog.gallery_icons.${tab}`)}
-                            <span className="text-muted-foreground text-xs">
-                                {tabCounts[tab]}
-                            </span>
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
-
-                {Object.entries(FILE_TABS).map(([tab, definition]) => (
-                    <TabsContent key={tab} value={tab} className="min-h-0">
-                        <Card>
-                            <CardHeader className="gap-4">
-                                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                                    <div>
-                                        <CardTitle>
-                                            {t(definition.titleKey)}
-                                        </CardTitle>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => void refreshTab(tab)}
-                                        >
-                                            <RefreshCwIcon data-icon="inline-start" />
-                                            {t('dialog.gallery_icons.refresh')}
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={
-                                                !isVrcPlusSupporter ||
-                                                Boolean(uploadingTab)
-                                            }
-                                            onClick={() => beginUpload(tab)}
-                                        >
-                                            <UploadIcon data-icon="inline-start" />
-                                            {t('dialog.gallery_icons.upload')}
-                                        </Button>
-                                        {tab === 'gallery' ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={
-                                                    !profilePicOverride ||
-                                                    Boolean(mutatingKey)
-                                                }
-                                                onClick={() =>
-                                                    void setProfileField(
-                                                        'profilePicOverride',
-                                                        ''
-                                                    )
-                                                }
-                                            >
-                                                <XIcon data-icon="inline-start" />
-                                                {t(
-                                                    'dialog.gallery_icons.clear'
-                                                )}
-                                            </Button>
-                                        ) : null}
-                                        {tab === 'icons' ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={
-                                                    !userIcon ||
-                                                    Boolean(mutatingKey)
-                                                }
-                                                onClick={() =>
-                                                    void setProfileField(
-                                                        'userIcon',
-                                                        ''
-                                                    )
-                                                }
-                                            >
-                                                <XIcon data-icon="inline-start" />
-                                                {t(
-                                                    'dialog.gallery_icons.clear'
-                                                )}
-                                            </Button>
-                                        ) : null}
-                                    </div>
-                                </div>
-                                {tab === 'emojis' ? (
-                                    <FieldGroup className="bg-muted/20 flex-row flex-wrap items-end gap-3 rounded-lg border p-3">
-                                        <Field className="min-w-56">
-                                            <FieldLabel>
-                                                {t(
-                                                    'dialog.gallery_icons.emoji_animation_styles'
-                                                )}
-                                            </FieldLabel>
-                                            <Select
-                                                value={emojiAnimationStyle}
-                                                onValueChange={
-                                                    setEmojiAnimationStyle
-                                                }
-                                            >
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectGroup>
-                                                        {Object.keys(
-                                                            emojiAnimationStyleList
-                                                        ).map((styleName) => (
-                                                            <SelectItem
-                                                                key={styleName}
-                                                                value={
-                                                                    styleName
-                                                                }
-                                                            >
-                                                                {styleName}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectGroup>
-                                                </SelectContent>
-                                            </Select>
-                                        </Field>
-                                        <Field
-                                            orientation="horizontal"
-                                            className="h-9 w-auto"
-                                        >
-                                            <Checkbox
-                                                id="gallery-emoji-animation-type"
-                                                checked={emojiAnimType}
-                                                onCheckedChange={(value) =>
-                                                    setEmojiAnimType(
-                                                        Boolean(value)
-                                                    )
-                                                }
-                                            />
-                                            <FieldLabel htmlFor="gallery-emoji-animation-type">
-                                                {t(
-                                                    'dialog.gallery_icons.emoji_animation_type'
-                                                )}
-                                            </FieldLabel>
-                                        </Field>
-                                        {emojiAnimType ? (
-                                            <>
-                                                <Field className="w-28">
-                                                    <FieldLabel htmlFor="gallery-emoji-animation-fps">
-                                                        {t(
-                                                            'dialog.gallery_icons.emoji_animation_fps'
-                                                        )}
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="gallery-emoji-animation-fps"
-                                                        type="number"
-                                                        min={1}
-                                                        max={64}
-                                                        value={emojiAnimFps}
-                                                        onChange={(event) =>
-                                                            setEmojiAnimFps(
-                                                                event.target
-                                                                    .value
-                                                            )
-                                                        }
-                                                    />
-                                                </Field>
-                                                <Field className="w-28">
-                                                    <FieldLabel htmlFor="gallery-emoji-animation-frame-count">
-                                                        {t(
-                                                            'dialog.gallery_icons.emoji_animation_frame_count'
-                                                        )}
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="gallery-emoji-animation-frame-count"
-                                                        type="number"
-                                                        min={2}
-                                                        max={64}
-                                                        value={
-                                                            emojiAnimFrameCount
-                                                        }
-                                                        onChange={(event) =>
-                                                            setEmojiAnimFrameCount(
-                                                                event.target
-                                                                    .value
-                                                            )
-                                                        }
-                                                    />
-                                                </Field>
-                                                <Field
-                                                    orientation="horizontal"
-                                                    className="h-9 w-auto"
-                                                >
-                                                    <Checkbox
-                                                        id="gallery-emoji-loop-pingpong"
-                                                        checked={
-                                                            emojiAnimLoopPingPong
-                                                        }
-                                                        onCheckedChange={(
-                                                            value
-                                                        ) =>
-                                                            setEmojiAnimLoopPingPong(
-                                                                Boolean(value)
-                                                            )
-                                                        }
-                                                    />
-                                                    <FieldLabel htmlFor="gallery-emoji-loop-pingpong">
-                                                        {t(
-                                                            'dialog.gallery_icons.emoji_loop_pingpong'
-                                                        )}
-                                                    </FieldLabel>
-                                                </Field>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        void openExternalLink(
-                                                            'https://vrcemoji.com'
-                                                        )
-                                                    }
-                                                >
-                                                    <ExternalLinkIcon data-icon="inline-start" />
-                                                    {t(
-                                                        'dialog.gallery_icons.create_animated_emoji'
-                                                    )}
-                                                </Button>
-                                            </>
-                                        ) : null}
-                                    </FieldGroup>
-                                ) : null}
-                            </CardHeader>
-                            <CardContent>
-                                {loadingByTab[tab] ? (
-                                    <LoadingState />
-                                ) : assets[tab].length > 0 ? (
-                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                                        {assets[tab].map((file) => {
-                                            const imageUrl =
-                                                getLatestFileUrl(file);
-                                            const activeFileId =
-                                                tab === 'gallery'
-                                                    ? extractFileId(
-                                                          profilePicOverride
-                                                      )
-                                                    : extractFileId(userIcon);
-                                            const profileField =
-                                                tab === 'gallery'
-                                                    ? 'profilePicOverride'
-                                                    : tab === 'icons'
-                                                      ? 'userIcon'
-                                                      : '';
-                                            const isCurrent =
-                                                activeFileId === file.id;
-                                            const isMutating =
-                                                mutatingKey ===
-                                                `${tab}:${file.id}`;
-                                            return (
-                                                <Card
-                                                    key={file.id}
-                                                    className={cn(
-                                                        'overflow-hidden',
-                                                        isCurrent &&
-                                                            'ring-primary ring-2'
-                                                    )}
-                                                >
-                                                    {imageUrl ? (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            className="h-auto w-full rounded-none p-0"
-                                                            onClick={() =>
-                                                                setPreview({
-                                                                    id: file.id,
-                                                                    url: imageUrl
-                                                                })
-                                                            }
-                                                        >
-                                                            <img
-                                                                src={imageUrl}
-                                                                alt={file.id}
-                                                                loading="lazy"
-                                                                className={cn(
-                                                                    definition.aspectClass,
-                                                                    'w-full object-cover'
-                                                                )}
-                                                            />
-                                                        </Button>
-                                                    ) : (
-                                                        <div
-                                                            className={cn(
-                                                                'bg-muted text-muted-foreground flex w-full items-center justify-center',
-                                                                definition.aspectClass
-                                                            )}
-                                                        >
-                                                            <ImageIcon className="size-8" />
-                                                        </div>
-                                                    )}
-                                                    <CardContent className="flex flex-col gap-3 p-4">
-                                                        <div className="flex flex-col gap-1">
-                                                            <div className="line-clamp-1 text-sm font-medium">
-                                                                {file.displayName ||
-                                                                    file.name ||
-                                                                    file.id}
-                                                            </div>
-                                                            <div className="text-muted-foreground text-xs">
-                                                                {Array.isArray(
-                                                                    file.versions
-                                                                )
-                                                                    ? `${file.versions.length} version(s)`
-                                                                    : 'No version data'}
-                                                            </div>
-                                                            {tab ===
-                                                            'emojis' ? (
-                                                                <div className="text-muted-foreground flex flex-wrap gap-1 text-xs">
-                                                                    {file.loopStyle ? (
-                                                                        <Badge variant="outline">
-                                                                            {
-                                                                                file.loopStyle
-                                                                            }
-                                                                        </Badge>
-                                                                    ) : null}
-                                                                    {file.animationStyle ? (
-                                                                        <Badge variant="outline">
-                                                                            {
-                                                                                file.animationStyle
-                                                                            }
-                                                                        </Badge>
-                                                                    ) : null}
-                                                                    {file.framesOverTime ? (
-                                                                        <Badge variant="outline">
-                                                                            {
-                                                                                file.framesOverTime
-                                                                            }
-                                                                            {t('view.tools.generated.fps')}
-                                                                        </Badge>
-                                                                    ) : null}
-                                                                    {file.frames ? (
-                                                                        <Badge variant="outline">
-                                                                            {
-                                                                                file.frames
-                                                                            }
-                                                                            {t('view.tools.generated.frames')}
-                                                                        </Badge>
-                                                                    ) : null}
-                                                                </div>
-                                                            ) : null}
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                disabled={
-                                                                    !imageUrl
-                                                                }
-                                                                onClick={() =>
-                                                                    setPreview({
-                                                                        id: file.id,
-                                                                        url: imageUrl
-                                                                    })
-                                                                }
-                                                            >
-                                                                <EyeIcon data-icon="inline-start" />
-                                                                {t('view.tools.generated.preview')}
-                                                            </Button>
-                                                            {profileField ? (
-                                                                <Button
-                                                                    variant={
-                                                                        isCurrent
-                                                                            ? 'default'
-                                                                            : 'outline'
-                                                                    }
-                                                                    size="sm"
-                                                                    disabled={
-                                                                        !isVrcPlusSupporter ||
-                                                                        isMutating ||
-                                                                        !currentUserId
-                                                                    }
-                                                                    onClick={() =>
-                                                                        void setProfileField(
-                                                                            profileField,
-                                                                            file.id
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <CheckIcon data-icon="inline-start" />
-                                                                    {tab ===
-                                                                    'icons'
-                                                                        ? 'Icon'
-                                                                        : 'Profile'}
-                                                                </Button>
-                                                            ) : null}
-                                                            <Button
-                                                                variant="destructive"
-                                                                size="sm"
-                                                                disabled={
-                                                                    isMutating
-                                                                }
-                                                                onClick={() =>
-                                                                    void deleteFileAsset(
-                                                                        tab,
-                                                                        file.id
-                                                                    )
-                                                                }
-                                                            >
-                                                                <Trash2Icon data-icon="inline-start" />
-                                                                {t('common.actions.delete')}
-                                                            </Button>
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <EmptyState
-                                        title={appI18n.t('view.tools.generated_dynamic.no_value_loaded', { value: tab })}
-                                        description={appI18n.t('view.tools.generated_dynamic.refresh_this_tab_to_load_value_files', { value: definition.tag })}
-                                    />
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                ))}
-                <TabsContent value="prints" className="min-h-0">
-                    <Card>
-                        <CardHeader className="gap-4">
-                            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                                <div>
-                                    <CardTitle>
-                                        {t('dialog.gallery_icons.prints')}
-                                    </CardTitle>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            void refreshTab('prints')
-                                        }
-                                    >
-                                        <RefreshCwIcon data-icon="inline-start" />
-                                        {t('dialog.gallery_icons.refresh')}
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={
-                                            !isVrcPlusSupporter ||
-                                            Boolean(uploadingTab)
-                                        }
-                                        onClick={() => beginUpload('prints')}
-                                    >
-                                        <UploadIcon data-icon="inline-start" />
-                                        {t('dialog.gallery_icons.upload')}
-                                    </Button>
-                                </div>
-                            </div>
-                            <FieldGroup className="bg-muted/20 flex-row flex-wrap items-end gap-3 rounded-lg border p-3">
-                                <Field className="w-80 max-w-full">
-                                    <FieldLabel htmlFor="gallery-print-upload-note">
-                                        {t('dialog.gallery_icons.note')}
-                                    </FieldLabel>
-                                    <Input
-                                        id="gallery-print-upload-note"
-                                        maxLength={32}
-                                        value={printUploadNote}
-                                        onChange={(event) =>
-                                            setPrintUploadNote(
-                                                event.target.value
-                                            )
-                                        }
-                                        placeholder={t(
-                                            'dialog.gallery_icons.note'
-                                        )}
-                                    />
-                                </Field>
-                                <Field
-                                    orientation="horizontal"
-                                    className="h-9 w-auto"
-                                >
-                                    <Checkbox
-                                        id="gallery-print-crop-border"
-                                        checked={printCropBorder}
-                                        onCheckedChange={(value) =>
-                                            setPrintCropBorder(Boolean(value))
-                                        }
-                                    />
-                                    <FieldLabel htmlFor="gallery-print-crop-border">
-                                        {t(
-                                            'dialog.gallery_icons.crop_print_border'
-                                        )}
-                                    </FieldLabel>
-                                </Field>
-                            </FieldGroup>
-                        </CardHeader>
-                        <CardContent>
-                            {loadingByTab.prints ? (
-                                <LoadingState />
-                            ) : assets.prints.length > 0 ? (
-                                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                                    {assets.prints.map((print) => {
-                                        const imageUrl =
-                                            print?.files?.image || '';
-                                        const isMutating =
-                                            mutatingKey ===
-                                            `prints:${print.id}`;
-                                        return (
-                                            <Card
-                                                key={print.id}
-                                                className="overflow-hidden"
-                                            >
-                                                {imageUrl ? (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        className="h-auto w-full rounded-none p-0"
-                                                        onClick={() =>
-                                                            setPreview({
-                                                                id: print.id,
-                                                                url: imageUrl,
-                                                                title: getPrintFileName(
-                                                                    print
-                                                                )
-                                                            })
-                                                        }
-                                                    >
-                                                        <img
-                                                            src={imageUrl}
-                                                            alt={
-                                                                print.note ||
-                                                                print.id
-                                                            }
-                                                            loading="lazy"
-                                                            className="aspect-[16/9] w-full object-cover"
-                                                        />
-                                                    </Button>
-                                                ) : (
-                                                    <div className="bg-muted text-muted-foreground flex aspect-[16/9] w-full items-center justify-center">
-                                                        <ImageIcon className="size-8" />
-                                                    </div>
-                                                )}
-                                                <CardContent className="flex flex-col gap-3 p-4">
-                                                    <div className="flex flex-col gap-1">
-                                                        <div className="line-clamp-1 text-sm font-medium">
-                                                            {print.note ||
-                                                                print.id}
-                                                        </div>
-                                                        <div className="text-muted-foreground line-clamp-1 text-xs">
-                                                            {print.worldName ||
-                                                                print.worldId ||
-                                                                '\u00A0'}
-                                                        </div>
-                                                        <div className="text-muted-foreground line-clamp-1 font-mono text-xs">
-                                                            {print.authorName ||
-                                                                print.authorId ||
-                                                                '\u00A0'}
-                                                        </div>
-                                                        {print.createdAt ? (
-                                                            <div className="text-muted-foreground line-clamp-1 font-mono text-xs">
-                                                                {formatDateFilter(
-                                                                    print.createdAt,
-                                                                    'long'
-                                                                )}
-                                                            </div>
-                                                        ) : null}
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            disabled={!imageUrl}
-                                                            onClick={() =>
-                                                                setPreview({
-                                                                    id: print.id,
-                                                                    url: imageUrl,
-                                                                    title: getPrintFileName(
-                                                                        print
-                                                                    )
-                                                                })
-                                                            }
-                                                        >
-                                                            <EyeIcon data-icon="inline-start" />
-                                                            {t('view.tools.generated.preview')}
-                                                        </Button>
-                                                        <Button
-                                                            variant="destructive"
-                                                            size="sm"
-                                                            disabled={
-                                                                isMutating
-                                                            }
-                                                            onClick={() =>
-                                                                void deletePrint(
-                                                                    print.id
-                                                                )
-                                                            }
-                                                        >
-                                                            <Trash2Icon data-icon="inline-start" />
-                                                            {t('common.actions.delete')}
-                                                        </Button>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <EmptyState
-                                    title={t('view.tools.generated.no_prints_loaded')}
-                                    description={t('view.tools.generated.refresh_this_tab_to_load_your_vrchat_prints')}
-                                />
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="inventory" className="min-h-0">
-                    <Card>
-                        <CardHeader className="gap-4">
-                            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                                <div>
-                                    <CardTitle>
-                                        {t('dialog.gallery_icons.inventory')}
-                                    </CardTitle>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            void refreshTab('inventory')
-                                        }
-                                    >
-                                        <RefreshCwIcon data-icon="inline-start" />
-                                        {t('dialog.gallery_icons.refresh')}
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={
-                                            mutatingKey === 'inventory:redeem'
-                                        }
-                                        onClick={() => void redeemReward()}
-                                    >
-                                        <GiftIcon data-icon="inline-start" />
-                                        {t('dialog.gallery_icons.redeem')}
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {loadingByTab.inventory ? (
-                                <LoadingState />
-                            ) : assets.inventory.length > 0 ? (
-                                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                                    {assets.inventory.map((item) => {
-                                        const isMutating =
-                                            mutatingKey ===
-                                            `inventory:${item.id}`;
-                                        const typeLabel =
-                                            item.itemType === 'prop'
-                                                ? t('dialog.gallery_icons.item')
-                                                : item.itemType === 'sticker'
-                                                  ? t(
-                                                        'dialog.gallery_icons.sticker'
-                                                    )
-                                                  : item.itemType ===
-                                                      'droneskin'
-                                                    ? t(
-                                                          'dialog.gallery_icons.drone_skin'
-                                                      )
-                                                    : item.itemType === 'emoji'
-                                                      ? t(
-                                                            'dialog.gallery_icons.emoji'
-                                                        )
-                                                      : item.itemTypeLabel ||
-                                                        item.itemType ||
-                                                        'Item';
-                                        return (
-                                            <Card
-                                                key={item.id}
-                                                className="overflow-hidden"
-                                            >
-                                                {item.imageUrl ? (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        className="h-auto w-full rounded-none p-0"
-                                                        onClick={() =>
-                                                            setPreview({
-                                                                id: item.id,
-                                                                url: item.imageUrl,
-                                                                title:
-                                                                    item.name ||
-                                                                    item.id
-                                                            })
-                                                        }
-                                                    >
-                                                        <img
-                                                            src={item.imageUrl}
-                                                            alt={
-                                                                item.name ||
-                                                                item.id
-                                                            }
-                                                            loading="lazy"
-                                                            className="aspect-square w-full object-cover"
-                                                        />
-                                                    </Button>
-                                                ) : (
-                                                    <div className="bg-muted text-muted-foreground flex aspect-square w-full items-center justify-center">
-                                                        <ImageIcon className="size-8" />
-                                                    </div>
-                                                )}
-                                                <CardContent className="flex flex-col gap-3 p-4">
-                                                    <div className="flex flex-col gap-1">
-                                                        <div className="line-clamp-1 text-sm font-medium">
-                                                            {item.name ||
-                                                                item.id}
-                                                        </div>
-                                                        {item.description ? (
-                                                            <div className="text-muted-foreground line-clamp-1 text-xs">
-                                                                {
-                                                                    item.description
-                                                                }
-                                                            </div>
-                                                        ) : null}
-                                                        {item.created_at ? (
-                                                            <div className="text-muted-foreground line-clamp-1 font-mono text-xs">
-                                                                {formatDateFilter(
-                                                                    item.created_at,
-                                                                    'long'
-                                                                )}
-                                                            </div>
-                                                        ) : null}
-                                                        <Badge variant="outline">
-                                                            {typeLabel}
-                                                        </Badge>
-                                                    </div>
-                                                    {item.itemType ===
-                                                    'bundle' ? (
-                                                        <Button
-                                                            size="sm"
-                                                            disabled={
-                                                                isMutating
-                                                            }
-                                                            onClick={() =>
-                                                                void consumeInventoryBundle(
-                                                                    item.id
-                                                                )
-                                                            }
-                                                        >
-                                                            {t(
-                                                                'dialog.gallery_icons.consume_bundle'
-                                                            )}
-                                                        </Button>
-                                                    ) : null}
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <EmptyState
-                                    title={t('view.tools.generated.no_inventory_items_loaded')}
-                                    description={t('view.tools.generated.refresh_this_tab_to_load_inventory_items')}
-                                />
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+            <GalleryTabs
+                t={t}
+                activeTab={activeTab}
+                onActiveTabChange={setActiveTab}
+                tabCounts={tabCounts}
+                fileTab={{
+                    assets,
+                    loadingByTab,
+                    uploadingTab,
+                    mutatingKey,
+                    isVrcPlusSupporter,
+                    currentUserId,
+                    profilePicOverride,
+                    userIcon,
+                    emojiAnimType,
+                    emojiAnimationStyle,
+                    emojiAnimFps,
+                    emojiAnimFrameCount,
+                    emojiAnimLoopPingPong,
+                    onRefresh: (tab) => void refreshTab(tab),
+                    onBeginUpload: beginUpload,
+                    onClearProfileField: (fieldName, fileId) =>
+                        void setProfileField(fieldName, fileId),
+                    onEmojiAnimTypeChange: setEmojiAnimType,
+                    onEmojiAnimationStyleChange: setEmojiAnimationStyle,
+                    onEmojiAnimFpsChange: setEmojiAnimFps,
+                    onEmojiAnimFrameCountChange: setEmojiAnimFrameCount,
+                    onEmojiAnimLoopPingPongChange: setEmojiAnimLoopPingPong,
+                    onCreateAnimatedEmoji: () =>
+                        void openExternalLink('https://vrcemoji.com'),
+                    onPreview: setPreview,
+                    onSetProfileField: (fieldName, fileId) =>
+                        void setProfileField(fieldName, fileId),
+                    onDeleteFile: (tab, fileId) =>
+                        void deleteFileAsset(tab, fileId)
+                }}
+                printsTab={{
+                    prints: assets.prints,
+                    loading: loadingByTab.prints,
+                    uploadingTab,
+                    mutatingKey,
+                    isVrcPlusSupporter,
+                    printUploadNote,
+                    printCropBorder,
+                    onRefresh: (tab) => void refreshTab(tab),
+                    onBeginUpload: beginUpload,
+                    onPrintUploadNoteChange: setPrintUploadNote,
+                    onPrintCropBorderChange: setPrintCropBorder,
+                    onPreview: setPreview,
+                    onDeletePrint: (printId) => void deletePrint(printId)
+                }}
+                inventoryTab={{
+                    items: assets.inventory,
+                    loading: loadingByTab.inventory,
+                    mutatingKey,
+                    onRefresh: (tab) => void refreshTab(tab),
+                    onRedeem: () => void redeemReward(),
+                    onPreview: setPreview,
+                    onConsumeBundle: (inventoryId) =>
+                        void consumeInventoryBundle(inventoryId)
+                }}
+            />
 
             <ImageCropDialog
                 open={Boolean(cropRequest)}
@@ -1707,30 +884,11 @@ export function GalleryPage() {
                 onConfirm={(blob) => confirmCroppedUpload(blob)}
             />
 
-            <Dialog
-                open={Boolean(preview)}
-                onOpenChange={(open) => !open && setPreview(null)}
-            >
-                <DialogContent className="max-w-5xl">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {preview?.title ||
-                                preview?.id ||
-                                t('dialog.gallery_icons.gallery')}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {preview?.id || ''}
-                        </DialogDescription>
-                    </DialogHeader>
-                    {preview?.url ? (
-                        <img
-                            src={preview.url}
-                            alt={preview?.title || preview.id}
-                            className="max-h-[75vh] w-full rounded-lg object-contain"
-                        />
-                    ) : null}
-                </DialogContent>
-            </Dialog>
+            <GalleryPreviewDialog
+                t={t}
+                preview={preview}
+                onClose={() => setPreview(null)}
+            />
         </div>
     );
 }

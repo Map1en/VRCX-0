@@ -6,13 +6,6 @@ import {
     useReactTable
 } from '@tanstack/react-table';
 import {
-    ChevronDownIcon,
-    ChevronRightIcon,
-    CalendarIcon,
-    StarIcon,
-    XIcon
-} from 'lucide-react';
-import {
     useDeferredValue,
     useEffect,
     useMemo,
@@ -22,13 +15,10 @@ import {
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import {
     PageBody,
-    PageScaffold,
-    PageToolbar,
-    PageToolbarRow
+    PageScaffold
 } from '@/components/layout/PageScaffold.jsx';
 import {
     configRepository,
@@ -56,17 +46,6 @@ import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
-import { Calendar } from '@/ui/shadcn/calendar';
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupButton,
-    InputGroupInput
-} from '@/ui/shadcn/input-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     buildFeedFavoriteIdSet as buildFavoriteIdSet,
@@ -78,7 +57,6 @@ import {
     parseDateInput,
     resolveDisplayNameCandidate,
     resolveFeedCurrentInviteLocation as resolveCurrentInviteLocation,
-    resolveFeedUserDisplayName,
     resolveFeedUserId,
     toDateInputValue,
     toIsoRangeEnd,
@@ -98,14 +76,9 @@ import {
 } from './feedTableState.js';
 import { appI18n } from '@/services/i18nService.js';
 
-import {
-    FeedDetailCell,
-    FeedUserLink,
-    SortButton,
-    formatTimestamp,
-    formatTimestampLong
-} from './components/FeedTableParts.jsx';
+import { buildFeedColumns } from './components/FeedColumns.jsx';
 import { FeedTableShell } from './components/FeedTableShell.jsx';
+import { FeedToolbar } from './components/FeedToolbar.jsx';
 
 export function FeedPage({ embedded = false } = {}) {
     const { t } = useI18n();
@@ -960,133 +933,26 @@ export function FeedPage({ embedded = false } = {}) {
     }, [pagination.pageIndex, pagination.pageSize, rows.length]);
 
     const columns = useMemo(
-        () => [
-            {
-                id: 'expander',
-                size: 20,
-                enableSorting: false,
-                enableHiding: false,
-                meta: { label: '' },
-                header: () => null,
-                cell: ({ row }) =>
-                    row.getCanExpand() ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => row.toggleExpanded()}
-                        >
-                            {row.getIsExpanded() ? (
-                                <ChevronDownIcon data-icon="icon" />
-                            ) : (
-                                <ChevronRightIcon data-icon="icon" />
-                            )}
-                        </Button>
-                    ) : null
-            },
-            {
-                id: 'created_at',
-                accessorFn: (row) =>
-                    new Date(row?.created_at || 0).valueOf() || 0,
-                meta: { label: t('table.feed.date') },
-                header: ({ column }) => (
-                    <SortButton column={column} label={t('table.feed.date')} />
-                ),
-                cell: ({ row }) => (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <span className="text-muted-foreground text-sm">
-                                {formatTimestamp(row.original.created_at)}
-                            </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                            {formatTimestampLong(row.original.created_at)}
-                        </TooltipContent>
-                    </Tooltip>
-                )
-            },
-            {
-                id: 'type',
-                accessorFn: (row) => String(row?.type || ''),
-                meta: { label: t('table.feed.type') },
-                header: ({ column }) => (
-                    <SortButton column={column} label={t('table.feed.type')} />
-                ),
-                cell: ({ row }) => {
-                    const typeLabel = row.original.type
-                        ? t(`view.feed.filters.${row.original.type}`)
-                        : '';
-                    return <Badge variant="outline">{typeLabel}</Badge>;
-                }
-            },
-            {
-                id: 'displayName',
-                accessorFn: (row) =>
-                    resolveFeedUserDisplayName(
-                        row,
-                        friendsById?.[resolveFeedUserId(row)],
-                        friendLogNamesById?.[resolveFeedUserId(row)]
-                    ),
-                meta: { label: t('table.feed.user') },
-                header: ({ column }) => (
-                    <SortButton column={column} label={t('table.feed.user')} />
-                ),
-                cell: ({ row }) => (
-                    <FeedUserLink
-                        row={row.original}
-                        friend={friendsById?.[resolveFeedUserId(row.original)]}
-                        cachedDisplayName={
-                            friendLogNamesById?.[
-                                resolveFeedUserId(row.original)
-                            ]
-                        }
-                        endpoint={currentEndpoint}
-                        currentUserId={currentUserId}
-                        currentUserSnapshot={currentUserSnapshot}
-                        canSendInvite={canSendInviteFromFeed}
-                        canBoop={canBoopFromFeed}
-                        canUseFriendInstance={canUseFeedFriendLocation}
-                        actions={{
-                            launchLocation: launchFeedFriendLocation,
-                            selfInviteLocation: selfInviteFeedFriendLocation,
-                            sendInvite: sendFeedFriendInvite,
-                            requestInvite: requestFeedFriendInvite,
-                            sendBoop: sendFeedFriendBoop
-                        }}
-                    />
-                )
-            },
-            {
-                id: 'detail',
-                accessorFn: (row) =>
-                    [
-                        row?.location,
-                        row?.worldName,
-                        row?.statusDescription,
-                        row?.avatarName,
-                        row?.bio,
-                        row?.message
-                    ]
-                        .filter(Boolean)
-                        .join(' '),
-                enableSorting: false,
-                meta: { label: t('table.feed.detail') },
-                header: () => t('table.feed.detail'),
-                minSize: 100,
-                cell: ({ row }) => (
-                    <FeedDetailCell
-                        row={row.original}
-                        loadingHistoryKey={loadingPreviousInstancesKey}
-                        endpoint={currentEndpoint}
-                        onOpenPreviousInstances={
-                            openPreviousInstancesForLocation
-                        }
-                        onNewInstance={openFeedNewInstance}
-                    />
-                )
-            }
-        ],
+        () =>
+            buildFeedColumns({
+                canBoopFromFeed,
+                canSendInviteFromFeed,
+                canUseFeedFriendLocation,
+                currentEndpoint,
+                currentUserId,
+                currentUserSnapshot,
+                friendLogNamesById,
+                friendsById,
+                launchFeedFriendLocation,
+                loadingPreviousInstancesKey,
+                onNewInstance: openFeedNewInstance,
+                onOpenPreviousInstances: openPreviousInstancesForLocation,
+                requestFeedFriendInvite,
+                selfInviteFeedFriendLocation,
+                sendFeedFriendBoop,
+                sendFeedFriendInvite,
+                t
+            }),
         [
             canBoopFromFeed,
             canInviteFromCurrentLocation,
@@ -1104,7 +970,6 @@ export function FeedPage({ embedded = false } = {}) {
             t
         ]
     );
-
     const table = useReactTable({
         data: rows,
         columns,
@@ -1138,152 +1003,36 @@ export function FeedPage({ embedded = false } = {}) {
 
     return (
         <PageScaffold embedded={embedded} className={embedded ? '' : 'feed'}>
-            <PageToolbar>
-                <PageToolbarRow>
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                        <Popover
-                            open={dateFilterOpen}
-                            onOpenChange={setDateFilterOpen}
-                        >
-                            <PopoverTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon-sm"
-                                    className="relative"
-                                    title={t('view.feed.filter')}
-                                    aria-label={"Filter"}
-                                >
-                                    <CalendarIcon data-icon="icon" />
-                                    {activeFilterCount ? (
-                                        <Badge
-                                            variant="secondary"
-                                            className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[0.65rem] leading-none"
-                                        >
-                                            {activeFilterCount}
-                                        </Badge>
-                                    ) : null}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto" align="end">
-                                <Calendar
-                                    mode="range"
-                                    numberOfMonths={2}
-                                    selected={dateDraftRange}
-                                    disabled={{ after: todayDate }}
-                                    onSelect={(range) => {
-                                        setDateDraftFrom(
-                                            toDateInputValue(range?.from)
-                                        );
-                                        setDateDraftTo(
-                                            toDateInputValue(range?.to)
-                                        );
-                                    }}
-                                />
-                                <div className="flex items-center justify-between gap-4 px-3 pb-3">
-                                    <div className="text-muted-foreground min-w-0 text-xs">
-                                        {[
-                                            dateDraftFrom || '...',
-                                            dateDraftTo || '...'
-                                        ].join(' - ')}
-                                    </div>
-                                    <div className="flex justify-end gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={clearDateFilter}
-                                        >
-                                            {t('common.actions.clear')}
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            onClick={applyDateFilter}
-                                        >
-                                            {t('common.actions.confirm')}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                        <Button
-                            type="button"
-                            variant={favoritesOnly ? 'default' : 'outline'}
-                            size="icon-sm"
-                            title={t('view.feed.favorites_only_tooltip')}
-                            aria-label={"Filter favorites only"}
-                            onClick={() =>
-                                setFavoritesOnly((current) => !current)
-                            }
-                        >
-                            <StarIcon data-icon="icon" />
-                        </Button>
-                    </div>
-
-                    <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto">
-                        <Button
-                            type="button"
-                            variant={
-                                activeFilters.length === 0
-                                    ? 'default'
-                                    : 'outline'
-                            }
-                            size="sm"
-                            onClick={() => setFeedFilters([])}
-                        >
-                            {t('view.search.avatar.all')}
-                        </Button>
-                        {FEED_FILTER_TYPES.map((filter) => {
-                            const active = activeFilters.includes(filter);
-                            return (
-                                <Button
-                                    key={filter}
-                                    type="button"
-                                    variant={active ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => toggleFeedFilter(filter)}
-                                >
-                                    {t(`view.feed.filters.${filter}`)}
-                                </Button>
-                            );
-                        })}
-                    </div>
-
-                    <InputGroup className="h-9 min-w-0 flex-1 basis-0">
-                        <InputGroupInput
-                            value={searchDraft}
-                            onChange={(event) =>
-                                setSearchDraft(event.target.value)
-                            }
-                            onBlur={() => commitSearch()}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                    commitSearch(event.currentTarget.value);
-                                }
-                            }}
-                            placeholder={t('view.feed.search_placeholder')}
-                        />
-                        {searchDraft ? (
-                            <InputGroupAddon align="inline-end">
-                                <InputGroupButton
-                                    type="button"
-                                    size="icon-xs"
-                                    aria-label={"Clear search"}
-                                    onClick={clearSearch}
-                                >
-                                    <XIcon data-icon="icon" />
-                                </InputGroupButton>
-                            </InputGroupAddon>
-                        ) : null}
-                    </InputGroup>
-
-                    <div className="flex items-center gap-2">
-                        <TableColumnVisibilityMenu table={table} />
-                    </div>
-                </PageToolbarRow>
-            </PageToolbar>
-
+            <FeedToolbar
+                activeFilterCount={activeFilterCount}
+                activeFilters={activeFilters}
+                dateDraftFrom={dateDraftFrom}
+                dateDraftRange={dateDraftRange}
+                dateDraftTo={dateDraftTo}
+                dateFilterOpen={dateFilterOpen}
+                favoritesOnly={favoritesOnly}
+                feedFilterTypes={FEED_FILTER_TYPES}
+                onApplyDateFilter={applyDateFilter}
+                onClearDateFilter={clearDateFilter}
+                onClearFeedFilters={() => setFeedFilters([])}
+                onClearSearch={clearSearch}
+                onDateFilterOpenChange={setDateFilterOpen}
+                onDateRangeSelect={(range) => {
+                    setDateDraftFrom(toDateInputValue(range?.from));
+                    setDateDraftTo(toDateInputValue(range?.to));
+                }}
+                onSearchBlur={() => commitSearch()}
+                onSearchDraftChange={setSearchDraft}
+                onSearchEnter={(value) => commitSearch(value)}
+                onToggleFavoritesOnly={() =>
+                    setFavoritesOnly((current) => !current)
+                }
+                onToggleFeedFilter={toggleFeedFilter}
+                searchDraft={searchDraft}
+                t={t}
+                table={table}
+                todayDate={todayDate}
+            />
             <PageBody>
                 <FeedTableShell
                     table={table}

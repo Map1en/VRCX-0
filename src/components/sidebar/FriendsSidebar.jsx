@@ -5,7 +5,6 @@ import { useI18n } from '@/app/hooks/use-i18n.js';
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata.js';
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
-import { cn } from '@/lib/utils.js';
 import {
     configRepository,
     notificationRepository,
@@ -19,7 +18,7 @@ import {
     recordRecentAction,
     subscribeRecentActions
 } from '@/services/recentActionService.js';
-import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
+import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/location.js';
 import {
     buildCurrentUserPresenceView,
@@ -35,7 +34,9 @@ import { appI18n } from '@/services/i18nService.js';
 import {
     buildFavoriteIdSet,
     buildSameInstanceGroups,
+    normalizeLocationStatus,
     normalizeId,
+    readFriendStatusSource,
     resolveCurrentInviteLocation,
     resolveCurrentUserStateBucket,
     sortRows
@@ -43,10 +44,8 @@ import {
 import {
     buildSidebarLocationMetadataEntry,
     estimateFriendSidebarRowSize,
-    FriendRow,
-    FriendSectionHeader,
-    InstanceHeaderRow
 } from './friends-sidebar/FriendsSidebarRows.jsx';
+import { FriendsSidebarVirtualRow } from './friends-sidebar/FriendsSidebarVirtualRows.jsx';
 
 const groupToggleKeys = {
     me: 'isFriendsGroupMe',
@@ -1007,113 +1006,24 @@ export function FriendsSidebar({ prefs }) {
         { endpoint: currentEndpoint }
     );
 
-    function renderFriendVirtualRow(
-        friend,
-        isCurrentUser = false,
-        isGroupByInstance = false,
-        metadataKey = ''
-    ) {
-        const source = readFriendStatusSource(friend);
-        const state = normalizeLocationStatus(
-            source?.stateBucket || source?.state
-        );
-        const isOnlineFriend = onlineIdSet.has(friend.id) || state === 'online';
-        return (
-            <FriendRow
-                friend={friend}
-                isCurrentUser={isCurrentUser}
-                isGroupByInstance={isGroupByInstance}
-                canSendInvite={Boolean(
-                    gameState.isGameRunning &&
-                    currentInviteLocation &&
-                    canInviteFromCurrentLocation
-                )}
-                canRequestInvite={isOnlineFriend}
-                canBoop={Boolean(currentUser?.isBoopingEnabled)}
-                canUseFriendInstance={Boolean(
-                    isOnlineFriend &&
-                    checkCanInviteSelf(
-                        isCurrentUser
-                            ? resolvePresenceLocation(friend)
-                            : readFriendRefLocation(friend),
-                        {
-                            currentUserId,
-                            cachedInstances: new Map(),
-                            friends: friendsMap
-                        }
-                    )
-                )}
-                actions={{
-                    ...rowActions,
-                    open: () => openFriend(friend)
-                }}
-                t={t}
-                statusPresets={isCurrentUser ? statusPresets : []}
-                randomUserColours={randomUserColours}
-                isDarkMode={isDarkMode}
-                timeUnitLabels={timeUnitLabels}
-                trustColor={trustColor}
-                currentUserSnapshot={currentUser}
-                recentActionVersion={recentActionVersion}
-                locationMetadata={locationMetadataByKey.get(metadataKey)}
-                showInstanceIdInLocation={showInstanceIdInLocation}
-                ageGatedInstancesVisible={ageGatedInstancesVisible}
-            />
-        );
-    }
-
-    function renderVirtualRow(row) {
-        switch (row?.type) {
-            case 'section':
-                return (
-                    <FriendSectionHeader
-                        id={row.id}
-                        title={row.title}
-                        count={row.count}
-                        open={row.open}
-                        onToggle={toggleSection}
-                    />
-                );
-            case 'favorite-group-header':
-                return (
-                    <div className="text-muted-foreground flex w-full items-center px-1.5 py-1 text-left text-xs">
-                        {row.label} - {row.count}
-                    </div>
-                );
-            case 'instance-header':
-                return (
-                    <InstanceHeaderRow
-                        location={row.location}
-                        count={row.count}
-                        metadata={locationMetadataByKey.get(row.key)}
-                        t={t}
-                        showInstanceIdInLocation={showInstanceIdInLocation}
-                        ageGatedInstancesVisible={ageGatedInstancesVisible}
-                    />
-                );
-            case 'message':
-                return (
-                    <div
-                        className={cn(
-                            'text-muted-foreground rounded-md border border-dashed p-3 text-xs',
-                            row.className
-                        )}
-                    >
-                        {row.text}
-                    </div>
-                );
-            case 'footer':
-                return <div className="h-4" />;
-            case 'friend':
-            default:
-                return renderFriendVirtualRow(
-                    row.friend,
-                    row.isCurrentUser,
-                    row.isGroupByInstance,
-                    row.key
-                );
-        }
-    }
+    const virtualRowContext = {
+        ageGatedInstancesVisible,
+        canInviteFromCurrentLocation,
+        currentInviteLocation,
+        currentUser,
+        currentUserId,
+        friendsMap,
+        gameState,
+        isDarkMode,
+        locationMetadataByKey,
+        onlineIdSet,
+        randomUserColours,
+        recentActionVersion,
+        showInstanceIdInLocation,
+        statusPresets,
+        timeUnitLabels,
+        trustColor
+    };
 
     return (
         <div
@@ -1131,7 +1041,14 @@ export function FriendsSidebar({ prefs }) {
                             className="absolute top-0 left-0 w-full"
                             style={{ transform: `translateY(${item.start}px)` }}
                         >
-                            {renderVirtualRow(item.row)}
+                            <FriendsSidebarVirtualRow
+                                row={item.row}
+                                context={virtualRowContext}
+                                rowActions={rowActions}
+                                onOpenFriend={openFriend}
+                                onToggleSection={toggleSection}
+                                t={t}
+                            />
                         </div>
                     ))}
                 </div>

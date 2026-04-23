@@ -46,7 +46,6 @@ import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
-import { InviteMessageDialog } from './InviteMessageDialog.jsx';
 import {
     buildCachedInstanceMap,
     createLocationGroupRow,
@@ -64,6 +63,7 @@ import {
     resolvePresenceLocation,
     userDisplayName
 } from './user-dialog/userDialogContentHelpers.js';
+import { UserDialogContentDialogs } from './user-dialog/components/UserDialogContentDialogs.jsx';
 import { UserDialogEmptyState } from './user-dialog/components/UserDialogContentStates.jsx';
 import {
     cachePreviousInstances,
@@ -86,10 +86,6 @@ import {
     statusPresetsConfigKey
 } from './user-dialog/userProfileFields.js';
 import { UserDialogTabbedView } from './UserDialogTabbedView.jsx';
-import {
-    UserLanguageDialog,
-    UserSocialStatusDialog
-} from './user-dialog/UserSelfEditDialogs.jsx';
 import { appI18n } from '@/services/i18nService.js';
 
 export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
@@ -321,7 +317,13 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
     useLayoutEffect(() => {
         setInviteMessageRequest(null);
-    }, [currentEndpoint, normalizedCurrentUserId, profile?.id]);
+    }, [
+        currentEndpoint,
+        normalizedCurrentUserId,
+        normalizedUserId,
+        openNonce,
+        profile?.id
+    ]);
 
     useEffect(() => {
         setLanguageOptions([]);
@@ -2957,6 +2959,21 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                   friendCount: 0,
                   playerCount: 0
               };
+    const handleSocialStatusDialogOpenChange = (nextOpen) => {
+        if (nextOpen || actionStatusRef.current === 'idle') {
+            setSocialStatusDialogOpen(nextOpen);
+        }
+    };
+    const handleLanguageDialogOpenChange = (nextOpen) => {
+        if (nextOpen || actionStatusRef.current === 'idle') {
+            setLanguageDialogOpen(nextOpen);
+        }
+    };
+    const handleInviteMessageDialogOpenChange = (nextOpen) => {
+        if (!nextOpen && actionStatusRef.current === 'idle') {
+            setInviteMessageRequest(null);
+        }
+    };
 
     return (
         <>
@@ -3046,33 +3063,24 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                     void toggleBadgeShowcased(badge, showcased)
                 }
             />
-            <UserSocialStatusDialog
-                open={socialStatusDialogOpen}
-                onOpenChange={(nextOpen) => {
-                    if (nextOpen || actionStatusRef.current === 'idle') {
-                        setSocialStatusDialogOpen(nextOpen);
-                    }
-                }}
+            <UserDialogContentDialogs
                 actionStatus={actionStatus}
-                draft={socialStatusDraft}
-                setDraft={setSocialStatusDraft}
+                socialStatusDialogOpen={socialStatusDialogOpen}
+                onSocialStatusOpenChange={handleSocialStatusDialogOpenChange}
+                socialStatusDraft={socialStatusDraft}
+                setSocialStatusDraft={setSocialStatusDraft}
                 statusHistoryRows={statusHistoryRows}
-                statusOptions={selfStatusOptions}
+                selfStatusOptions={selfStatusOptions}
                 statusPresets={statusPresets}
-                statusLabelByValue={selfStatusLabelByValue}
-                onSavePreset={() => void saveSelfStatusPreset()}
-                onRemovePreset={(index) => void removeSelfStatusPreset(index)}
-                onCancel={() => setSocialStatusDialogOpen(false)}
-                onSave={() => void saveSelfSocialStatus()}
-            />
-            <UserLanguageDialog
-                open={languageDialogOpen}
-                onOpenChange={(nextOpen) => {
-                    if (nextOpen || actionStatusRef.current === 'idle') {
-                        setLanguageDialogOpen(nextOpen);
-                    }
-                }}
-                actionStatus={actionStatus}
+                selfStatusLabelByValue={selfStatusLabelByValue}
+                onSaveStatusPreset={() => void saveSelfStatusPreset()}
+                onRemoveStatusPreset={(index) =>
+                    void removeSelfStatusPreset(index)
+                }
+                onCancelSocialStatus={() => setSocialStatusDialogOpen(false)}
+                onSaveSocialStatus={() => void saveSelfSocialStatus()}
+                languageDialogOpen={languageDialogOpen}
+                onLanguageOpenChange={handleLanguageDialogOpenChange}
                 currentLanguageRows={currentLanguageRows}
                 availableLanguageOptions={availableLanguageOptions}
                 selectedLanguageToAdd={selectedLanguageToAdd}
@@ -3082,38 +3090,15 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 onRemoveLanguage={(languageKey) =>
                     void removeSelfLanguage(languageKey)
                 }
-            />            <InviteMessageDialog
-                open={Boolean(inviteMessageRequest)}
-                onOpenChange={(nextOpen) => {
-                    if (!nextOpen && actionStatusRef.current === 'idle') {
-                        setInviteMessageRequest(null);
-                    }
-                }}
-                currentUserId={
-                    inviteMessageRequest?.context?.messageOwnerUserId ||
-                    normalizedCurrentUserId
+                inviteMessageRequest={inviteMessageRequest}
+                onInviteMessageOpenChange={
+                    handleInviteMessageDialogOpenChange
                 }
-                endpoint={
-                    inviteMessageRequest?.context?.endpoint || currentEndpoint
-                }
-                messageType={inviteMessageRequest?.messageType || 'message'}
-                mode="select"
-                title={
-                    inviteMessageRequest?.kind === 'request'
-                        ? 'Request With Message'
-                        : 'Send With Message'
-                }
-                targetLabel={
-                    inviteMessageRequest?.context?.targetLabel ||
-                    profile?.displayName ||
-                    profile?.id ||
-                    'this user'
-                }
-                allowEdit={false}
-                allowImageUpload={false}
-                onUse={selectInviteMessage}
+                normalizedCurrentUserId={normalizedCurrentUserId}
+                currentEndpoint={currentEndpoint}
+                targetLabel={profile?.displayName || profile?.id}
+                onUseInviteMessage={selectInviteMessage}
             />
         </>
     );
 }
-

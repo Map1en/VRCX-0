@@ -3,11 +3,7 @@ import {
     CheckIcon,
     ClockIcon,
     CopyIcon,
-    DownloadIcon,
-    EyeIcon,
     ExternalLinkIcon,
-    LanguagesIcon,
-    LogOutIcon,
     MailIcon,
     MapPinIcon,
     MessageSquareIcon,
@@ -28,9 +24,6 @@ import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
 import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu.jsx';
-import { InstanceActionBar } from '@/components/instances/InstanceActionBar.jsx';
-import { Location } from '@/components/Location.jsx';
-import { LocationWorld } from '@/components/LocationWorld.jsx';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
@@ -63,51 +56,27 @@ import {
     getTranslationConfig,
     translateText
 } from '@/services/translationService.js';
-import { userDialogGroupSortingOptions } from '@/shared/constants/user.js';
 import { parseLocation } from '@/shared/utils/location.js';
-import { getFaviconUrl } from '@/shared/utils/urlUtils.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
-import { Spinner } from '@/ui/shadcn/spinner';
 
 import {
     EntityActionDropdown,
     EntityActionItem,
     EntityActionSeparator,
-    EntityBlank,
     EntityDialogHeader,
     EntityDialogScaffold,
-    EntityDialogTabContent,
-    EntityDialogTabs,
-    EntityInfoBlock,
-    EntityInfoGrid
+    EntityDialogTabs
 } from './EntityDialogScaffold.jsx';
 import {
     firstNonGroupIdText,
-    formatDate,
     formatStatsDate,
-    formatStatsDuration,
     groupIdForRow,
     isGroupId,
     isOfflineLikeValue,
@@ -126,10 +95,8 @@ import {
     buildUserDialogProfileSummary
 } from './user-dialog/userDialogViewData.js';
 import {
-    EntityList,
     PreviousDisplayNamesBadge,
     SelfPreferenceCheckboxItem,
-    UserGroupSection,
     UserTitleLanguages,
     downloadJsonFile
 } from './user-dialog/UserDialogViewParts.jsx';
@@ -142,7 +109,8 @@ import {
     UserDialogMutualTab,
     UserDialogWorldsTab
 } from './user-dialog/components/UserDialogDataTabs.jsx';
-import { UserDialogSearchHeader as SearchHeader } from './user-dialog/components/UserDialogSearchHeader.jsx';
+import { UserDialogGroupsTab } from './user-dialog/components/UserDialogGroupsTab.jsx';
+import { UserDialogInfoTab } from './user-dialog/components/UserDialogInfoTab.jsx';
 import { appI18n } from '@/services/i18nService.js';
 
 const userDialogTabServiceRepositories = Object.freeze({
@@ -1912,392 +1880,44 @@ export function UserDialogTabbedView({
                 onValueChange={changeTab}
                 tabs={tabs}
             >
-                <EntityDialogTabContent value="info">
-                    {visiblePresenceLocation ? (
-                        <div className="border-border mb-2 flex flex-col gap-2 border-b pb-2">
-                            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                                {visiblePresenceLocation.includes(':') ? (
-                                    <>
-                                        <LocationWorld
-                                            className="min-w-0"
-                                            locationObject={{
-                                                ...(locationInstance || {}),
-                                                tag: visiblePresenceLocation,
-                                                location:
-                                                    visiblePresenceLocation,
-                                                userId: locationOwnerId,
-                                                playerCount:
-                                                    locationPlayerCount,
-                                                capacity:
-                                                    locationInstance?.capacity ??
-                                                    locationInstance?.recommendedCapacity
-                                            }}
-                                            currentUserId={currentUserId}
-                                            grouphint={
-                                                locationInstance?.groupName ||
-                                                profile.$location?.groupName ||
-                                                ''
-                                            }
-                                            endpoint={currentEndpoint}
-                                            hint={locationWorldTitle}
-                                            instanceClickAction="world"
-                                        />
-                                        <InstanceActionBar
-                                            className="shrink-0"
-                                            location={visiblePresenceLocation}
-                                            launchLocation={
-                                                visiblePresenceLocation
-                                            }
-                                            inviteLocation={
-                                                visiblePresenceLocation
-                                            }
-                                            instanceLocation={
-                                                visiblePresenceLocation
-                                            }
-                                            instance={locationInstance}
-                                            worldName={locationWorldTitle}
-                                            friendCount={locationFriendCount}
-                                            playerCount={locationPlayerCount}
-                                            capacity={
-                                                locationInstance?.capacity ??
-                                                locationInstance?.recommendedCapacity
-                                            }
-                                            refreshTooltip={t(
-                                                'dialog.user.info.refresh_instance_info'
-                                            )}
-                                            showHistory={Boolean(
-                                                previousInstances.length
-                                            )}
-                                            onRefresh={onRefreshLocation}
-                                            onHistory={() =>
-                                                changeTab('instance-history')
-                                            }
-                                        />
-                                    </>
-                                ) : (
-                                    <Location
-                                        location={visiblePresenceLocation}
-                                        hint={locationWorldTitle}
-                                        enableContextMenu
-                                        showLaunchActions
-                                    />
-                                )}
-                            </div>
-                            {locationInstanceUsers.length ? (
-                                <div className="max-h-36 overflow-auto">
-                                    <EntityList
-                                        rows={locationInstanceUsers}
-                                        kind="user"
-                                    />
-                                </div>
-                            ) : null}
-                        </div>
-                    ) : null}
-                    <EntityInfoGrid>
-                        {profile.note && !hideUserNotes ? (
-                            <EntityInfoBlock
-                                label={t('dialog.user.generated.note')}
-                                full
-                                onClick={onEditMemo}
-                            >
-                                <pre className="text-muted-foreground max-h-52 font-sans text-xs whitespace-pre-wrap">
-                                    {profile.note}
-                                </pre>
-                            </EntityInfoBlock>
-                        ) : null}
-                        {memo && !hideUserMemos ? (
-                            <EntityInfoBlock
-                                label={t('dialog.user.generated.memo')}
-                                full
-                                onClick={onEditMemo}
-                            >
-                                <pre className="text-muted-foreground max-h-52 font-sans text-xs whitespace-pre-wrap">
-                                    {memo}
-                                </pre>
-                            </EntityInfoBlock>
-                        ) : null}
-                        <EntityInfoBlock label={t('dialog.user.info.avatar_info')} full>
-                            {currentAvatarTarget ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="hover:text-primary h-auto justify-start p-0 text-left text-xs"
-                                    onClick={() =>
-                                        openAvatarDialog(
-                                            currentAvatarDialogArgs
-                                        )
-                                    }
-                                >
-                                    <UserIcon data-icon="inline-start" />
-                                    {currentAvatarDisplayName || 'Avatar'}
-                                </Button>
-                            ) : (
-                                <span className="block truncate text-xs">
-                                    —
-                                </span>
-                            )}
-                        </EntityInfoBlock>
-                        <EntityInfoBlock label={t('dialog.user.info.represented_group')} full>
-                            {representedGroupStatus === 'running' ? (
-                                <span className="text-muted-foreground block text-xs">
-                                    {t('dialog.user.generated.loading')}
-                                </span>
-                            ) : representedGroup?.isRepresenting ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="hover:text-primary h-auto max-w-full justify-start gap-2 p-0 text-left text-xs font-normal whitespace-normal text-inherit"
-                                    onClick={() =>
-                                        openGroupDialog({
-                                            groupId: representedGroup.groupId,
-                                            title:
-                                                representedGroup.name ||
-                                                undefined,
-                                            seedData: {
-                                                ...representedGroup,
-                                                $memberId: representedGroup.id,
-                                                id: representedGroup.groupId,
-                                                myMember: {
-                                                    ...(representedGroup.myMember ||
-                                                        {}),
-                                                    id: representedGroup.id,
-                                                    groupId:
-                                                        representedGroup.groupId,
-                                                    isRepresenting: Boolean(
-                                                        representedGroup.isRepresenting
-                                                    ),
-                                                    isSubscribedToAnnouncements:
-                                                        Boolean(
-                                                            representedGroup.isSubscribedToAnnouncements
-                                                        ),
-                                                    visibility:
-                                                        representedGroup.visibility ||
-                                                        representedGroup.memberVisibility ||
-                                                        'visible',
-                                                    membershipStatus:
-                                                        representedGroup.membershipStatus ||
-                                                        ''
-                                                }
-                                            }
-                                        })
-                                    }
-                                >
-                                    {representedGroup.iconUrl ? (
-                                        <img
-                                            src={convertFileUrlToImageUrl(
-                                                representedGroup.iconUrl,
-                                                128
-                                            )}
-                                            alt=""
-                                            className="size-10 shrink-0 rounded-md object-cover"
-                                        />
-                                    ) : null}
-                                    <span className="min-w-0">
-                                        <span className="block truncate">
-                                            {representedGroup.ownerId ===
-                                            profile.id
-                                                ? 'Owner - '
-                                                : ''}
-                                            {representedGroup.name || 'Group'}
-                                        </span>
-                                        <span className="text-muted-foreground block truncate">
-                                            {representedGroup.memberCount
-                                                ? `${representedGroup.memberCount} members`
-                                                : ''}
-                                        </span>
-                                    </span>
-                                </Button>
-                            ) : (
-                                <span className="text-muted-foreground block text-xs">
-                                    —
-                                </span>
-                            )}
-                        </EntityInfoBlock>
-                        <EntityInfoBlock label={t('dialog.user.generated.bio')} full>
-                            <div className="flex items-start gap-2">
-                                <pre className="text-muted-foreground max-h-52 min-w-0 flex-1 overflow-auto font-sans text-xs whitespace-pre-wrap">
-                                    {visibleBio}
-                                </pre>
-                                {profile.bio ? (
-                                    <Button
-                                        type="button"
-                                        size="icon-xs"
-                                        variant="ghost"
-                                        className="shrink-0"
-                                        disabled={bioTranslationLoading}
-                                        title={
-                                            translatedBioActive
-                                                ? 'Show original bio'
-                                                : 'Translate bio'
-                                        }
-                                        aria-label={
-                                            translatedBioActive
-                                                ? 'Show original bio'
-                                                : 'Translate bio'
-                                        }
-                                        onClick={() =>
-                                            void toggleBioTranslation()
-                                        }
-                                    >
-                                        {bioTranslationLoading ? (
-                                            <Spinner data-icon="inline-start" />
-                                        ) : (
-                                            <LanguagesIcon data-icon="inline-start" />
-                                        )}
-                                    </Button>
-                                ) : null}
-                            </div>
-                            {bioLinks.length ? (
-                                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                    {bioLinks.map((link) => (
-                                        <Button
-                                            key={link}
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            title={link}
-                                            aria-label={`Open ${link}`}
-                                            onClick={() =>
-                                                openExternalLink(link)
-                                            }
-                                        >
-                                            {getFaviconUrl(link) ? (
-                                                <img
-                                                    src={getFaviconUrl(link)}
-                                                    alt=""
-                                                    className="size-4"
-                                                />
-                                            ) : (
-                                                <ExternalLinkIcon data-icon="inline-start" />
-                                            )}
-                                        </Button>
-                                    ))}
-                                </div>
-                            ) : null}
-                        </EntityInfoBlock>
-                        {!isCurrentUser ? (
-                            <EntityInfoBlock
-                                label={t('dialog.user.generated.last_seen')}
-                                value={formatStatsDate(lastSeen)}
-                            />
-                        ) : null}
-                        <EntityInfoBlock
-                            label={t('dialog.user.generated.last_login')}
-                            value={formatDate(
-                                profile.last_login || profile.last_activity
-                            )}
-                        />
-                        <EntityInfoBlock
-                            label={t('dialog.user.generated.last_activity')}
-                            value={formatDate(profile.last_activity)}
-                        />
-                        <EntityInfoBlock
-                            label={t('dialog.user.generated.date_joined')}
-                            value={profile.date_joined}
-                        />
-                        {isCurrentUser ? (
-                            <EntityInfoBlock
-                                label={t('dialog.user.info.play_time')}
-                                value={formatStatsDuration(userTimeSpent)}
-                                onClick={
-                                    previousInstances.length
-                                        ? () => changeTab('instance-history')
-                                        : undefined
-                                }
-                            />
-                        ) : (
-                            <>
-                                <EntityInfoBlock
-                                    label={t('dialog.user.generated.join_count')}
-                                    value={
-                                        userJoinCount
-                                            ? String(userJoinCount)
-                                            : '—'
-                                    }
-                                    onClick={
-                                        previousInstances.length
-                                            ? () =>
-                                                  changeTab('instance-history')
-                                            : undefined
-                                    }
-                                />
-                                <EntityInfoBlock
-                                    label={t('dialog.user.generated.time_together')}
-                                    value={formatStatsDuration(userTimeSpent)}
-                                />
-                            </>
-                        )}
-                        {!isCurrentUser ? (
-                            <EntityInfoBlock
-                                label={t('dialog.user.info.avatar_cloning')}
-                                value={
-                                    profile.allowAvatarCopying
-                                        ? 'Allow'
-                                        : 'Deny'
-                                }
-                            />
-                        ) : null}
-                        {visibleHomeLocationTarget ? (
-                            <EntityInfoBlock label={t('dialog.user.generated.home_location')} full>
-                                <Location
-                                    location={visibleHomeLocationTarget}
-                                    enableContextMenu
-                                    showLaunchActions
-                                />
-                            </EntityInfoBlock>
-                        ) : null}
-                        <EntityInfoBlock label={t('dialog.user.generated.user_id')} mono full>
-                            <span className="block truncate font-mono text-xs">
-                                {profile.id || '—'}
-                                {profile.id ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                type="button"
-                                                aria-label={"Open user copy menu"}
-                                                title={t('dialog.user.generated.copy_user_details')}
-                                                className="ml-1"
-                                                size="icon-xs"
-                                                variant="ghost"
-                                                onClick={(event) =>
-                                                    event.stopPropagation()
-                                                }
-                                            >
-                                                <CopyIcon data-icon="inline-start" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="start">
-                                            <DropdownMenuGroup>
-                                                <DropdownMenuItem
-                                                    onSelect={() =>
-                                                        void copyUserText(
-                                                            profile.id,
-                                                            'User ID'
-                                                        )
-                                                    }
-                                                >
-                                                    {t('dialog.user.generated.copy_user_id')}
-                                                </DropdownMenuItem>
-                                                {profile.displayName ? (
-                                                    <DropdownMenuItem
-                                                        onSelect={() =>
-                                                            void copyUserText(
-                                                                profile.displayName,
-                                                                'Display name'
-                                                            )
-                                                        }
-                                                    >
-                                                        {t('dialog.user.generated.copy_display_name')}
-                                                    </DropdownMenuItem>
-                                                ) : null}
-                                            </DropdownMenuGroup>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
-                            </span>
-                        </EntityInfoBlock>
-                    </EntityInfoGrid>
-                </EntityDialogTabContent>
+                <UserDialogInfoTab
+                    visiblePresenceLocation={visiblePresenceLocation}
+                    locationInstance={locationInstance}
+                    locationOwnerId={locationOwnerId}
+                    locationPlayerCount={locationPlayerCount}
+                    currentUserId={currentUserId}
+                    currentEndpoint={currentEndpoint}
+                    locationWorldTitle={locationWorldTitle}
+                    locationFriendCount={locationFriendCount}
+                    previousInstances={previousInstances}
+                    onRefreshLocation={onRefreshLocation}
+                    changeTab={changeTab}
+                    locationInstanceUsers={locationInstanceUsers}
+                    profile={profile}
+                    hideUserNotes={hideUserNotes}
+                    onEditMemo={onEditMemo}
+                    memo={memo}
+                    hideUserMemos={hideUserMemos}
+                    currentAvatarTarget={currentAvatarTarget}
+                    currentAvatarDialogArgs={currentAvatarDialogArgs}
+                    currentAvatarDisplayName={currentAvatarDisplayName}
+                    openAvatarDialog={openAvatarDialog}
+                    representedGroupStatus={representedGroupStatus}
+                    representedGroup={representedGroup}
+                    openGroupDialog={openGroupDialog}
+                    visibleBio={visibleBio}
+                    bioTranslationLoading={bioTranslationLoading}
+                    translatedBioActive={translatedBioActive}
+                    toggleBioTranslation={toggleBioTranslation}
+                    bioLinks={bioLinks}
+                    isCurrentUser={isCurrentUser}
+                    lastSeen={lastSeen}
+                    userTimeSpent={userTimeSpent}
+                    userJoinCount={userJoinCount}
+                    visibleHomeLocationTarget={visibleHomeLocationTarget}
+                    copyUserText={copyUserText}
+                    t={t}
+                />
                 <UserDialogMutualTab
                     mutualFriends={mutualFriends}
                     filteredMutualFriends={filteredMutualFriends}
@@ -2311,332 +1931,38 @@ export function UserDialogTabbedView({
                     setMutualSort={setMutualSort}
                     t={t}
                 />
-                <EntityDialogTabContent
-                    value="groups"
-                    className="flex flex-col gap-2"
-                >
-                    <SearchHeader
-                        searchKey="groups"
-                        tab="groups"
-                        rows={profileGroups}
-                        filteredRows={filteredProfileGroups}
-                        placeholder={t('dialog.user.generated.search_groups')}
-                        remoteStatus={remoteStatus}
-                        loadTab={loadTab}
-                        search={search}
-                        setSearch={setSearch}
-                        t={t}
-                    >
-                        {!groupEditMode ? (
-                            <>
-                                <span className="text-muted-foreground text-sm">
-                                    {t('dialog.user.generated.sort_by')}
-                                </span>
-                                <Select
-                                    value={effectiveGroupSort}
-                                    onValueChange={setGroupSort}
-                                    disabled={remoteStatus.groups === 'running'}
-                                >
-                                    <SelectTrigger size="sm" className="w-36">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {Object.entries(
-                                                userDialogGroupSortingOptions
-                                            ).map(([key, option]) => (
-                                                <SelectItem
-                                                    key={key}
-                                                    value={option.value}
-                                                    disabled={
-                                                        option.value ===
-                                                            'inGame' &&
-                                                        !isCurrentUser
-                                                    }
-                                                >
-                                                    {t(option.name)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </>
-                        ) : null}
-                        {isCurrentUser ? (
-                            <>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={
-                                        groupEditMode ? 'secondary' : 'outline'
-                                    }
-                                    disabled={
-                                        groupActionId === '__bulk_groups__'
-                                    }
-                                    onClick={() => {
-                                        const nextGroupEditMode =
-                                            !groupEditMode;
-                                        setGroupEditMode(nextGroupEditMode);
-                                        if (nextGroupEditMode) {
-                                            setGroupSort('inGame');
-                                        }
-                                        clearSelectedGroups();
-                                    }}
-                                >
-                                    {groupEditMode ? 'Done' : 'Edit'}
-                                </Button>
-                                {groupEditMode ? (
-                                    <>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            disabled={
-                                                groupActionId ===
-                                                    '__bulk_groups__' ||
-                                                !filteredProfileGroups.length
-                                            }
-                                            onClick={() =>
-                                                selectVisibleGroups(
-                                                    filteredProfileGroups
-                                                )
-                                            }
-                                        >
-                                            {t('dialog.user.generated.select_visible')}
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            disabled={
-                                                groupActionId ===
-                                                    '__bulk_groups__' ||
-                                                !selectedGroupCount
-                                            }
-                                            onClick={clearSelectedGroups}
-                                        >
-                                            {t('dialog.user.generated.clear_selected')}
-                                        </Button>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="outline"
-                                                    disabled={
-                                                        groupActionId ===
-                                                        '__bulk_groups__'
-                                                    }
-                                                >
-                                                    <SettingsIcon data-icon="inline-start" />
-                                                    {t('dialog.user.generated.bulk_actions')}
-                                                    {selectedGroupCount ? (
-                                                        <span className="text-muted-foreground text-xs">
-                                                            (
-                                                            {selectedGroupCount}
-                                                            )
-                                                        </span>
-                                                    ) : null}
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="start">
-                                                <DropdownMenuGroup>
-                                                    <DropdownMenuItem
-                                                        disabled={
-                                                            !selectedGroupCount
-                                                        }
-                                                        onSelect={() =>
-                                                            void changeSelectedGroupsVisibility(
-                                                                'visible'
-                                                            )
-                                                        }
-                                                    >
-                                                        <EyeIcon />
-                                                        {t('dialog.user.generated.set_selected_visible')}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        disabled={
-                                                            !selectedGroupCount
-                                                        }
-                                                        onSelect={() =>
-                                                            void changeSelectedGroupsVisibility(
-                                                                'hidden'
-                                                            )
-                                                        }
-                                                    >
-                                                        <EyeIcon />
-                                                        {t('dialog.user.generated.set_selected_hidden')}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        disabled={
-                                                            !selectedGroupCount
-                                                        }
-                                                        onSelect={() =>
-                                                            void changeSelectedGroupsVisibility(
-                                                                'friends'
-                                                            )
-                                                        }
-                                                    >
-                                                        <UsersIcon />
-                                                        {t('dialog.user.generated.set_selected_friends')}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onSelect={() =>
-                                                            exportUserGroups(
-                                                                selectedUserGroups
-                                                            )
-                                                        }
-                                                    >
-                                                        <DownloadIcon />
-                                                        {t('dialog.user.generated.export')}{' '}
-                                                        {selectedGroupCount
-                                                            ? 'Selected'
-                                                            : 'All'}{' '}
-                                                        {t('dialog.user.generated.groups')}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        variant="destructive"
-                                                        disabled={
-                                                            !selectedGroupCount
-                                                        }
-                                                        onSelect={() =>
-                                                            void leaveSelectedGroups()
-                                                        }
-                                                    >
-                                                        <LogOutIcon />
-                                                        {t('dialog.user.generated.leave_selected')}
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuGroup>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </>
-                                ) : null}
-                            </>
-                        ) : null}
-                    </SearchHeader>
-                    {remoteStatus.groups === 'running' ||
-                    remoteErrors.groups ? (
-                        <EntityList
-                            rows={filteredProfileGroups}
-                            kind="group"
-                            loading={remoteStatus.groups === 'running'}
-                            error={remoteErrors.groups}
-                        />
-                    ) : groupSearchActive ? (
-                        <EntityList
-                            rows={filteredProfileGroups}
-                            kind="group"
-                            editableGroups={isCurrentUser && groupEditMode}
-                            selectableGroups={groupEditMode}
-                            selectedGroupIds={selectedGroupIds}
-                            groupActionId={groupActionId}
-                            onGroupVisibilityChange={(group, visibility) =>
-                                void changeGroupVisibility(group, visibility)
-                            }
-                            onGroupLeave={(group) => void leaveUserGroup(group)}
-                            onGroupMove={
-                                groupEditMode
-                                    ? (group, direction) =>
-                                          void moveGroupInGameOrder(
-                                              group,
-                                              direction
-                                          )
-                                    : undefined
-                            }
-                            onGroupSelectionChange={setGroupSelected}
-                        />
-                    ) : userGroupSections.ownGroups.length ||
-                      userGroupSections.mutualGroups.length ||
-                      userGroupSections.remainingGroups.length ? (
-                        <div className="flex flex-col gap-4">
-                            <UserGroupSection
-                                title={t('dialog.user.groups.own_groups')}
-                                rows={userGroupSections.ownGroups}
-                                countText={ownGroupCountText}
-                                editableGroups={isCurrentUser && groupEditMode}
-                                selectableGroups={groupEditMode}
-                                selectedGroupIds={selectedGroupIds}
-                                groupActionId={groupActionId}
-                                onGroupVisibilityChange={(group, visibility) =>
-                                    void changeGroupVisibility(
-                                        group,
-                                        visibility
-                                    )
-                                }
-                                onGroupLeave={(group) =>
-                                    void leaveUserGroup(group)
-                                }
-                                onGroupMove={
-                                    groupEditMode
-                                        ? (group, direction) =>
-                                              void moveGroupInGameOrder(
-                                                  group,
-                                                  direction
-                                              )
-                                        : undefined
-                                }
-                                onGroupSelectionChange={setGroupSelected}
-                            />
-                            <UserGroupSection
-                                title={t('dialog.user.groups.mutual_groups')}
-                                rows={userGroupSections.mutualGroups}
-                                editableGroups={isCurrentUser && groupEditMode}
-                                selectableGroups={groupEditMode}
-                                selectedGroupIds={selectedGroupIds}
-                                groupActionId={groupActionId}
-                                onGroupVisibilityChange={(group, visibility) =>
-                                    void changeGroupVisibility(
-                                        group,
-                                        visibility
-                                    )
-                                }
-                                onGroupLeave={(group) =>
-                                    void leaveUserGroup(group)
-                                }
-                                onGroupMove={
-                                    groupEditMode
-                                        ? (group, direction) =>
-                                              void moveGroupInGameOrder(
-                                                  group,
-                                                  direction
-                                              )
-                                        : undefined
-                                }
-                                onGroupSelectionChange={setGroupSelected}
-                            />
-                            <UserGroupSection
-                                title={t('dialog.user.groups.groups')}
-                                rows={userGroupSections.remainingGroups}
-                                countText={remainingGroupCountText}
-                                editableGroups={isCurrentUser && groupEditMode}
-                                selectableGroups={groupEditMode}
-                                selectedGroupIds={selectedGroupIds}
-                                groupActionId={groupActionId}
-                                onGroupVisibilityChange={(group, visibility) =>
-                                    void changeGroupVisibility(
-                                        group,
-                                        visibility
-                                    )
-                                }
-                                onGroupLeave={(group) =>
-                                    void leaveUserGroup(group)
-                                }
-                                onGroupMove={
-                                    groupEditMode
-                                        ? (group, direction) =>
-                                              void moveGroupInGameOrder(
-                                                  group,
-                                                  direction
-                                              )
-                                        : undefined
-                                }
-                                onGroupSelectionChange={setGroupSelected}
-                            />
-                        </div>
-                    ) : (
-                        <EntityBlank />
-                    )}
-                </EntityDialogTabContent>
+                <UserDialogGroupsTab
+                    profileGroups={profileGroups}
+                    filteredProfileGroups={filteredProfileGroups}
+                    remoteStatus={remoteStatus}
+                    remoteErrors={remoteErrors}
+                    loadTab={loadTab}
+                    search={search}
+                    setSearch={setSearch}
+                    groupEditMode={groupEditMode}
+                    effectiveGroupSort={effectiveGroupSort}
+                    setGroupSort={setGroupSort}
+                    isCurrentUser={isCurrentUser}
+                    groupActionId={groupActionId}
+                    setGroupEditMode={setGroupEditMode}
+                    clearSelectedGroups={clearSelectedGroups}
+                    selectVisibleGroups={selectVisibleGroups}
+                    selectedGroupCount={selectedGroupCount}
+                    changeSelectedGroupsVisibility={changeSelectedGroupsVisibility}
+                    exportUserGroups={exportUserGroups}
+                    selectedUserGroups={selectedUserGroups}
+                    leaveSelectedGroups={leaveSelectedGroups}
+                    groupSearchActive={groupSearchActive}
+                    selectedGroupIds={selectedGroupIds}
+                    changeGroupVisibility={changeGroupVisibility}
+                    leaveUserGroup={leaveUserGroup}
+                    moveGroupInGameOrder={moveGroupInGameOrder}
+                    setGroupSelected={setGroupSelected}
+                    userGroupSections={userGroupSections}
+                    ownGroupCountText={ownGroupCountText}
+                    remainingGroupCountText={remainingGroupCountText}
+                    t={t}
+                />
                 <UserDialogWorldsTab
                     filteredProfileWorlds={filteredProfileWorlds}
                     profileWorlds={profileWorlds}
