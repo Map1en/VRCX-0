@@ -6,88 +6,67 @@ import {
 
 export function UserDialogContentDialogs({
     actionStatus,
-    socialStatusDialogOpen,
-    onSocialStatusOpenChange,
-    socialStatusDraft,
-    setSocialStatusDraft,
-    statusHistoryRows,
-    selfStatusOptions,
-    statusPresets,
-    selfStatusLabelByValue,
-    onSaveStatusPreset,
-    onRemoveStatusPreset,
-    onCancelSocialStatus,
-    onSaveSocialStatus,
-    languageDialogOpen,
-    onLanguageOpenChange,
-    currentLanguageRows,
-    availableLanguageOptions,
-    selectedLanguageToAdd,
-    languageOptionsStatus,
-    onSelectedLanguageChange,
-    onAddLanguage,
-    onRemoveLanguage,
-    inviteMessageRequest,
-    onInviteMessageOpenChange,
-    normalizedCurrentUserId,
-    currentEndpoint,
-    targetLabel,
-    onUseInviteMessage
+    socialStatusDialog,
+    languageDialog,
+    inviteMessageDialog
 }) {
     return (
         <>
             <UserSocialStatusDialog
-                open={socialStatusDialogOpen}
-                onOpenChange={onSocialStatusOpenChange}
+                open={socialStatusDialog.open}
+                onOpenChange={socialStatusDialog.onOpenChange}
                 actionStatus={actionStatus}
-                draft={socialStatusDraft}
-                setDraft={setSocialStatusDraft}
-                statusHistoryRows={statusHistoryRows}
-                statusOptions={selfStatusOptions}
-                statusPresets={statusPresets}
-                statusLabelByValue={selfStatusLabelByValue}
-                onSavePreset={onSaveStatusPreset}
-                onRemovePreset={onRemoveStatusPreset}
-                onCancel={onCancelSocialStatus}
-                onSave={onSaveSocialStatus}
+                draft={socialStatusDialog.draft}
+                setDraft={socialStatusDialog.setDraft}
+                statusHistoryRows={socialStatusDialog.statusHistoryRows}
+                statusOptions={socialStatusDialog.statusOptions}
+                statusPresets={socialStatusDialog.statusPresets}
+                statusLabelByValue={socialStatusDialog.statusLabelByValue}
+                onSavePreset={socialStatusDialog.onSavePreset}
+                onRemovePreset={socialStatusDialog.onRemovePreset}
+                onCancel={socialStatusDialog.onCancel}
+                onSave={socialStatusDialog.onSave}
             />
             <UserLanguageDialog
-                open={languageDialogOpen}
-                onOpenChange={onLanguageOpenChange}
+                open={languageDialog.open}
+                onOpenChange={languageDialog.onOpenChange}
                 actionStatus={actionStatus}
-                currentLanguageRows={currentLanguageRows}
-                availableLanguageOptions={availableLanguageOptions}
-                selectedLanguageToAdd={selectedLanguageToAdd}
-                languageOptionsStatus={languageOptionsStatus}
-                onSelectedLanguageChange={onSelectedLanguageChange}
-                onAddLanguage={onAddLanguage}
-                onRemoveLanguage={onRemoveLanguage}
+                currentLanguageRows={languageDialog.currentLanguageRows}
+                availableLanguageOptions={languageDialog.availableLanguageOptions}
+                selectedLanguageToAdd={languageDialog.selectedLanguageToAdd}
+                languageOptionsStatus={languageDialog.languageOptionsStatus}
+                onSelectedLanguageChange={languageDialog.onSelectedLanguageChange}
+                onAddLanguage={languageDialog.onAddLanguage}
+                onRemoveLanguage={languageDialog.onRemoveLanguage}
             />
             <InviteMessageDialog
-                open={Boolean(inviteMessageRequest)}
-                onOpenChange={onInviteMessageOpenChange}
+                open={Boolean(inviteMessageDialog.request)}
+                onOpenChange={inviteMessageDialog.onOpenChange}
                 currentUserId={
-                    inviteMessageRequest?.context?.messageOwnerUserId ||
-                    normalizedCurrentUserId
+                    inviteMessageDialog.request?.context?.messageOwnerUserId ||
+                    inviteMessageDialog.normalizedCurrentUserId
                 }
                 endpoint={
-                    inviteMessageRequest?.context?.endpoint || currentEndpoint
+                    inviteMessageDialog.request?.context?.endpoint ||
+                    inviteMessageDialog.currentEndpoint
                 }
-                messageType={inviteMessageRequest?.messageType || 'message'}
+                messageType={
+                    inviteMessageDialog.request?.messageType || 'message'
+                }
                 mode="select"
                 title={
-                    inviteMessageRequest?.kind === 'request'
+                    inviteMessageDialog.request?.kind === 'request'
                         ? 'Request With Message'
                         : 'Send With Message'
                 }
                 targetLabel={
-                    inviteMessageRequest?.context?.targetLabel ||
-                    targetLabel ||
+                    inviteMessageDialog.request?.context?.targetLabel ||
+                    inviteMessageDialog.targetLabel ||
                     'this user'
                 }
                 allowEdit={false}
                 allowImageUpload={false}
-                onUse={onUseInviteMessage}
+                onUse={inviteMessageDialog.onUse}
             />
         </>
     );

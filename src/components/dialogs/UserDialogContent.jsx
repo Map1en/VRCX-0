@@ -9,20 +9,14 @@ import {
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
-import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { backend } from '@/platform/index.js';
 import {
-    configRepository,
     gameLogRepository,
-    groupProfileRepository,
-    instanceRepository,
     memoRepository,
     notificationRepository,
-    playerListRepository,
     toolsRepository,
     userProfileRepository,
     userSessionRepository,
-    vrchatAuthRepository,
     vrchatFriendRepository,
     vrchatModerationRepository,
     vrchatSearchRepository
@@ -37,7 +31,6 @@ import {
     buildCurrentUserPresenceView,
     mergeCurrentUserPresenceFields
 } from '@/shared/utils/currentUserPresence.js';
-import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/location.js';
 import { useDialogStore } from '@/state/dialogStore.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
@@ -47,21 +40,10 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 import {
-    buildCachedInstanceMap,
-    createLocationGroupRow,
-    createLocationUserRow,
-    groupSeed,
-    hasGroupProfileDetails,
-    isGroupId,
     isSameLocationTag,
-    locationCacheKey,
-    mergeLocationUser,
-    pushLocationUserSource,
-    resolveCurrentInviteLocation,
     resolveFriendRequestState,
     resolvePlatformMeta,
-    resolvePresenceLocation,
-    userDisplayName
+    resolvePresenceLocation
 } from './user-dialog/userDialogContentHelpers.js';
 import { UserDialogContentDialogs } from './user-dialog/components/UserDialogContentDialogs.jsx';
 import { UserDialogEmptyState } from './user-dialog/components/UserDialogContentStates.jsx';
@@ -74,17 +56,13 @@ import {
 } from './user-dialog/userDialogCache.js';
 import {
     buildFavoriteIdSet,
-    fallbackLanguageOptions,
-    maxStatusPresets,
-    normalizeLanguageKey,
-    normalizeLanguageOptionsFromConfig,
-    normalizeProfileLanguageRows,
-    normalizeSelfStatusInput,
-    normalizeStatusHistoryRows,
-    normalizeUserId,
-    selfStatusBaseOptions,
-    statusPresetsConfigKey
+    normalizeUserId
 } from './user-dialog/userProfileFields.js';
+import {
+    createEmptyUserDialogLocationPanel,
+    useUserDialogLocationPanel
+} from './user-dialog/useUserDialogLocationPanel.js';
+import { useUserDialogSelfActions } from './user-dialog/useUserDialogSelfActions.js';
 import { UserDialogTabbedView } from './UserDialogTabbedView.jsx';
 import { appI18n } from '@/services/i18nService.js';
 
@@ -201,30 +179,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     const [representedGroup, setRepresentedGroup] = useState(null);
     const [representedGroupStatus, setRepresentedGroupStatus] =
         useState('idle');
-    const [locationPanel, setLocationPanel] = useState({
-        location: '',
-        instance: null,
-        ownerUser: null,
-        ownerGroup: null,
-        users: [],
-        friendCount: 0,
-        playerCount: 0
-    });
-    const [currentInviteInstance, setCurrentInviteInstance] = useState(null);
-    const [currentInviteInstanceStatus, setCurrentInviteInstanceStatus] =
-        useState('idle');
-    const [locationRefreshToken, setLocationRefreshToken] = useState(0);
     const [inviteMessageRequest, setInviteMessageRequest] = useState(null);
-    const [socialStatusDialogOpen, setSocialStatusDialogOpen] = useState(false);
-    const [socialStatusDraft, setSocialStatusDraft] = useState({
-        status: 'active',
-        statusDescription: ''
-    });
-    const [statusPresets, setStatusPresets] = useState([]);
-    const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
-    const [languageOptions, setLanguageOptions] = useState([]);
-    const [languageOptionsStatus, setLanguageOptionsStatus] = useState('idle');
-    const [selectedLanguageToAdd, setSelectedLanguageToAdd] = useState('');
     const actionStatusRef = useRef('idle');
     const memoRevisionRef = useRef(0);
     const moderationRevisionRef = useRef(0);
@@ -239,66 +194,27 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     const currentSnapshotLocation = normalizeUserId(
         currentUserSnapshot?.$locationTag || currentUserSnapshot?.location
     );
-    const currentInviteLocation = resolveCurrentInviteLocation(
-        gameState,
-        currentUserSnapshot
-    );
-    const groupInstances =
-        groupInstancesState.endpoint === currentEndpoint
-            ? groupInstancesState.instances
-            : [];
-    const groupInstancesRevision =
-        groupInstancesState.endpoint === currentEndpoint
-            ? groupInstancesState.lastLoadedAt ||
-              groupInstancesState.fetchedAt ||
-              groupInstancesState.status
-            : '';
     const hideUserNotes = usePreferencesStore((state) => state.hideUserNotes);
     const hideUserMemos = usePreferencesStore((state) => state.hideUserMemos);
     const appearanceSettings = useMemo(
         () => ({ hideUserNotes, hideUserMemos }),
         [hideUserMemos, hideUserNotes]
     );
-    const selfStatusOptions = useMemo(
-        () =>
-            profile?.$isModerator
-                ? [
-                      ...selfStatusBaseOptions,
-                      { value: 'offline', label: 'Offline' }
-                  ]
-                : selfStatusBaseOptions,
-        [profile?.$isModerator]
-    );
-    const languageOptionsMap = useMemo(
-        () => new Map(languageOptions.map((option) => [option.key, option])),
-        [languageOptions]
-    );
-    const currentLanguageRows = useMemo(
-        () => normalizeProfileLanguageRows(profile, languageOptionsMap),
-        [profile, languageOptionsMap]
-    );
-    const selectedLanguageKeys = useMemo(
-        () => new Set(currentLanguageRows.map((language) => language.key)),
-        [currentLanguageRows]
-    );
-    const availableLanguageOptions = useMemo(
-        () =>
-            languageOptions.filter(
-                (option) => !selectedLanguageKeys.has(option.key)
-            ),
-        [languageOptions, selectedLanguageKeys]
-    );
-    const statusHistoryRows = useMemo(
-        () => normalizeStatusHistoryRows(profile, currentUserSnapshot),
-        [currentUserSnapshot, profile]
-    );
-    const selfStatusLabelByValue = useMemo(
-        () =>
-            new Map(
-                selfStatusOptions.map((option) => [option.value, option.label])
-            ),
-        [selfStatusOptions]
-    );
+    const {
+        locationPanel,
+        currentInviteLocation,
+        canInviteFromCurrentLocation,
+        refreshLocationPanel
+    } = useUserDialogLocationPanel({
+        currentEndpoint,
+        currentUserId,
+        currentUserSnapshot,
+        gameState,
+        groupInstancesState,
+        friendsById,
+        profile,
+        reloadToken
+    });
 
     useEffect(() => {
         activeUserTargetRef.current = {
@@ -324,70 +240,6 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         openNonce,
         profile?.id
     ]);
-
-    useEffect(() => {
-        setLanguageOptions([]);
-        setLanguageOptionsStatus('idle');
-        setSelectedLanguageToAdd('');
-    }, [currentEndpoint]);
-
-    useEffect(() => {
-        let active = true;
-
-        configRepository
-            .getArray(statusPresetsConfigKey, [])
-            .then((presets) => {
-                if (active) {
-                    setStatusPresets(Array.isArray(presets) ? presets : []);
-                }
-            })
-            .catch(() => {
-                if (active) {
-                    setStatusPresets([]);
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, []);
-
-    useEffect(() => {
-        let active = true;
-
-        if (!languageDialogOpen || languageOptions.length) {
-            return () => {
-                active = false;
-            };
-        }
-
-        setLanguageOptionsStatus('running');
-        vrchatAuthRepository
-            .getConfig({ endpoint: currentEndpoint })
-            .then((response) => {
-                if (!active) {
-                    return;
-                }
-                const nextOptions = normalizeLanguageOptionsFromConfig(
-                    response.json
-                );
-                setLanguageOptions(
-                    nextOptions.length ? nextOptions : fallbackLanguageOptions()
-                );
-                setLanguageOptionsStatus('ready');
-            })
-            .catch(() => {
-                if (!active) {
-                    return;
-                }
-                setLanguageOptions(fallbackLanguageOptions());
-                setLanguageOptionsStatus('error');
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint, languageDialogOpen, languageOptions.length]);
 
     useEffect(() => {
         if (localSnapshot) {
@@ -851,536 +703,6 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         reloadToken
     ]);
 
-    useEffect(() => {
-        let active = true;
-        const emptyLocationPanel = {
-            location: '',
-            instance: null,
-            ownerUser: null,
-            ownerGroup: null,
-            users: [],
-            friendCount: 0,
-            playerCount: 0
-        };
-
-        const activeLocation = resolvePresenceLocation(profile);
-        const parsedLocation = parseLocation(activeLocation);
-        if (
-            !profile?.id ||
-            !activeLocation ||
-            parsedLocation.isOffline ||
-            parsedLocation.isPrivate ||
-            parsedLocation.isTraveling
-        ) {
-            setLocationPanel(emptyLocationPanel);
-            return () => {
-                active = false;
-            };
-        }
-
-        const currentLocation =
-            currentGameLocation === 'traveling'
-                ? currentGameDestination
-                : currentGameLocation ||
-                  currentGameDestination ||
-                  currentSnapshotLocation;
-        const currentLocationMatches = isSameLocationTag(
-            currentLocation,
-            activeLocation
-        );
-        const snapshotLocation =
-            currentLocationMatches && currentLocation
-                ? currentLocation
-                : activeLocation;
-        const rowsById = new Map();
-        const knownUsersById = new Map();
-
-        function addKnownUser(user) {
-            const userId = normalizeUserId(
-                user?.id ||
-                    user?.userId ||
-                    user?.user_id ||
-                    user?.targetUserId ||
-                    user?.target_user_id
-            );
-            if (userId && !knownUsersById.has(userId)) {
-                knownUsersById.set(userId, user);
-            }
-        }
-
-        function userIsAtLocation(user) {
-            if (!user) {
-                return false;
-            }
-            return isSameLocationTag(
-                resolvePresenceLocation(user),
-                activeLocation
-            );
-        }
-
-        addKnownUser(profile);
-        addKnownUser(currentUserSnapshot);
-        for (const friend of Object.values(friendsById)) {
-            addKnownUser(friend);
-        }
-
-        mergeLocationUser(rowsById, profile);
-        if (currentLocationMatches) {
-            mergeLocationUser(rowsById, currentUserSnapshot);
-        }
-
-        for (const friend of Object.values(friendsById)) {
-            if (!userIsAtLocation(friend)) {
-                continue;
-            }
-            if (friend?.state !== 'online' && friend?.location === 'private') {
-                continue;
-            }
-            mergeLocationUser(rowsById, friend);
-        }
-
-        const locationMetadata =
-            profile?.$location && typeof profile.$location === 'object'
-                ? profile.$location
-                : {};
-        pushLocationUserSource(
-            [
-                locationMetadata.users,
-                locationMetadata.players,
-                locationMetadata.friends
-            ],
-            (user) => mergeLocationUser(rowsById, user)
-        );
-
-        const canFetchInstance = Boolean(
-            parsedLocation.worldId && parsedLocation.instanceId
-        );
-        const ownerId = normalizeUserId(
-            parsedLocation.userId ||
-                locationMetadata.ownerUserId ||
-                locationMetadata.owner_user_id ||
-                locationMetadata.ownerId ||
-                locationMetadata.owner_id ||
-                locationMetadata.creatorUserId ||
-                locationMetadata.creator_user_id ||
-                locationMetadata.userId ||
-                locationMetadata.user_id ||
-                locationMetadata.ownerUser?.id ||
-                locationMetadata.ownerUser?.userId ||
-                locationMetadata.ownerUser?.user_id ||
-                locationMetadata.owner?.id ||
-                locationMetadata.owner?.userId ||
-                locationMetadata.owner?.user_id ||
-                locationMetadata.creatorUser?.id ||
-                locationMetadata.creatorUser?.userId ||
-                locationMetadata.creatorUser?.user_id ||
-                locationMetadata.user?.id ||
-                locationMetadata.user?.userId ||
-                locationMetadata.user?.user_id ||
-                locationMetadata.groupId ||
-                locationMetadata.group_id ||
-                locationMetadata.group?.id ||
-                locationMetadata.group?.groupId ||
-                locationMetadata.group?.group_id ||
-                parsedLocation.groupId
-        );
-        const ownerIsGroup = isGroupId(ownerId);
-        const ownerSeed = ownerId
-            ? ownerIsGroup
-                ? locationMetadata.group ||
-                  locationMetadata.ownerGroup ||
-                  locationMetadata.owner_group ||
-                  groupSeed(locationMetadata.owner) ||
-                  locationMetadata.creatorGroup ||
-                  locationMetadata.creator_group ||
-                  null
-                : locationMetadata.ownerUser ||
-                  locationMetadata.owner ||
-                  locationMetadata.creatorUser ||
-                  locationMetadata.user ||
-                  knownUsersById.get(ownerId)
-            : null;
-        const ownerPromise = ownerId
-            ? Promise.resolve(ownerSeed).then((cachedOwner) => {
-                  if (ownerIsGroup) {
-                      const groupFallback = {
-                          id: ownerId,
-                          name:
-                              locationMetadata.groupName ||
-                              locationMetadata.group_name
-                      };
-                      const cachedOwnerGroup = cachedOwner
-                          ? createLocationGroupRow(cachedOwner, groupFallback)
-                          : null;
-                      if (
-                          cachedOwner &&
-                          hasGroupProfileDetails(cachedOwner, groupFallback)
-                      ) {
-                          return {
-                              ownerUser: null,
-                              ownerGroup: cachedOwnerGroup
-                          };
-                      }
-                      return groupProfileRepository
-                          .getGroupProfile({
-                              groupId: ownerId,
-                              endpoint: currentEndpoint,
-                              includeRoles: false
-                          })
-                          .then((groupProfile) => ({
-                              ownerUser: null,
-                              ownerGroup: createLocationGroupRow(
-                                  groupProfile,
-                                  groupFallback
-                              )
-                          }))
-                          .catch(() => ({
-                              ownerUser: null,
-                              ownerGroup:
-                                  cachedOwnerGroup ||
-                                  createLocationGroupRow({
-                                      id: ownerId,
-                                      name:
-                                          locationMetadata.groupName ||
-                                          locationMetadata.group_name ||
-                                          ownerId
-                                  })
-                          }));
-                  }
-                  if (cachedOwner) {
-                      return {
-                          ownerUser: createLocationUserRow(cachedOwner),
-                          ownerGroup: null
-                      };
-                  }
-                  return userProfileRepository
-                      .getUserProfile({
-                          userId: ownerId,
-                          endpoint: currentEndpoint
-                      })
-                      .then((ownerProfile) => ({
-                          ownerUser: createLocationUserRow(ownerProfile),
-                          ownerGroup: null
-                      }))
-                      .catch(() => ({
-                          ownerUser: createLocationUserRow({
-                              id: ownerId,
-                              displayName: ownerId
-                          }),
-                          ownerGroup: null
-                      }));
-              })
-            : Promise.resolve({ ownerUser: null, ownerGroup: null });
-        const instancePromise = canFetchInstance
-            ? instanceRepository
-                  .getInstance({
-                      worldId: parsedLocation.worldId,
-                      instanceId: parsedLocation.instanceId,
-                      endpoint: currentEndpoint
-                  })
-                  .then((response) => response.json)
-                  .catch(() => null)
-            : Promise.resolve(null);
-        const playerSnapshotPromise = currentLocationMatches
-            ? playerListRepository
-                  .getCurrentInstanceSnapshot({
-                      currentUserId: normalizedCurrentUserId,
-                      currentLocation: snapshotLocation
-                  })
-                  .catch(() => null)
-            : Promise.resolve(null);
-
-        Promise.allSettled([
-            ownerPromise,
-            instancePromise,
-            playerSnapshotPromise
-        ])
-            .then(
-                async ([ownerResult, instanceResult, playerSnapshotResult]) => {
-                    if (!active) {
-                        return;
-                    }
-                    const ownerPayload =
-                        ownerResult.status === 'fulfilled'
-                            ? ownerResult.value
-                            : null;
-                    let ownerUser = ownerPayload?.ownerUser || null;
-                    let ownerGroup = ownerPayload?.ownerGroup || null;
-                    const instance =
-                        instanceResult.status === 'fulfilled'
-                            ? instanceResult.value
-                            : null;
-                    const playerSnapshot =
-                        playerSnapshotResult.status === 'fulfilled'
-                            ? playerSnapshotResult.value
-                            : null;
-                    const instanceOwnerId = normalizeUserId(
-                        instance?.ownerUserId ||
-                            instance?.owner_user_id ||
-                            instance?.ownerId ||
-                            instance?.owner_id ||
-                            instance?.userId ||
-                            instance?.user_id ||
-                            instance?.creatorUserId ||
-                            instance?.creator_user_id ||
-                            instance?.ownerUser?.id ||
-                            instance?.ownerUser?.userId ||
-                            instance?.ownerUser?.user_id ||
-                            instance?.owner?.id ||
-                            instance?.owner?.userId ||
-                            instance?.owner?.user_id ||
-                            instance?.creatorUser?.id ||
-                            instance?.creatorUser?.userId ||
-                            instance?.creatorUser?.user_id ||
-                            instance?.groupId ||
-                            instance?.group_id ||
-                            instance?.group?.id ||
-                            instance?.group?.groupId ||
-                            instance?.group?.group_id ||
-                            parsedLocation.groupId
-                    );
-                    const instanceOwnerIsGroup = isGroupId(instanceOwnerId);
-                    if (!ownerUser && !ownerGroup && instanceOwnerId) {
-                        const cachedOwner = instanceOwnerIsGroup
-                            ? instance?.group ||
-                              instance?.ownerGroup ||
-                              instance?.owner_group ||
-                              groupSeed(instance?.owner) ||
-                              instance?.creatorGroup ||
-                              instance?.creator_group ||
-                              null
-                            : instance?.ownerUser ||
-                              instance?.owner ||
-                              instance?.creatorUser ||
-                              instance?.user ||
-                              knownUsersById.get(instanceOwnerId);
-                        if (instanceOwnerIsGroup) {
-                            const groupFallback = {
-                                id: instanceOwnerId,
-                                name:
-                                    instance?.groupName ||
-                                    instance?.group_name ||
-                                    instance?.group?.name
-                            };
-                            const cachedOwnerGroup = cachedOwner
-                                ? createLocationGroupRow(
-                                      cachedOwner,
-                                      groupFallback
-                                  )
-                                : null;
-                            ownerGroup =
-                                cachedOwner &&
-                                hasGroupProfileDetails(
-                                    cachedOwner,
-                                    groupFallback
-                                )
-                                    ? cachedOwnerGroup
-                                    : await groupProfileRepository
-                                          .getGroupProfile({
-                                              groupId: instanceOwnerId,
-                                              endpoint: currentEndpoint,
-                                              includeRoles: false
-                                          })
-                                          .then((groupProfile) =>
-                                              createLocationGroupRow(
-                                                  groupProfile,
-                                                  groupFallback
-                                              )
-                                          )
-                                          .catch(
-                                              () =>
-                                                  cachedOwnerGroup ||
-                                                  createLocationGroupRow({
-                                                      id: instanceOwnerId,
-                                                      name:
-                                                          instance?.groupName ||
-                                                          instance?.group_name ||
-                                                          instance?.group
-                                                              ?.name ||
-                                                          instanceOwnerId
-                                                  })
-                                          );
-                        } else {
-                            ownerUser = cachedOwner
-                                ? createLocationUserRow(cachedOwner)
-                                : await userProfileRepository
-                                      .getUserProfile({
-                                          userId: instanceOwnerId,
-                                          endpoint: currentEndpoint
-                                      })
-                                      .then((ownerProfile) =>
-                                          createLocationUserRow(ownerProfile)
-                                      )
-                                      .catch(() =>
-                                          createLocationUserRow({
-                                              id: instanceOwnerId,
-                                              displayName: instanceOwnerId
-                                          })
-                                      );
-                        }
-                        if (!active) {
-                            return;
-                        }
-                    }
-                    pushLocationUserSource(
-                        [
-                            instance?.users,
-                            instance?.players,
-                            instance?.playerList,
-                            instance?.userList,
-                            instance?.userIds,
-                            instance?.usersById
-                        ],
-                        (user) => mergeLocationUser(rowsById, user)
-                    );
-                    for (const player of playerSnapshot?.players || []) {
-                        const playerId = normalizeUserId(
-                            player.userId ||
-                                player.user_id ||
-                                player.id ||
-                                player.targetUserId ||
-                                player.target_user_id
-                        );
-                        const knownUser = playerId
-                            ? knownUsersById.get(playerId)
-                            : null;
-                        mergeLocationUser(rowsById, knownUser || player, {
-                            id: playerId,
-                            userId: playerId,
-                            displayName:
-                                player.displayName || player.display_name,
-                            joinedAt: player.joinedAt || player.joined_at
-                        });
-                    }
-
-                    const users = Array.from(rowsById.values()).sort(
-                        (left, right) =>
-                            userDisplayName(left).localeCompare(
-                                userDisplayName(right),
-                                undefined,
-                                { sensitivity: 'base' }
-                            )
-                    );
-                    const friendCount = users.filter((user) => {
-                        const userId = normalizeUserId(
-                            user?.id || user?.userId
-                        );
-                        return Boolean(userId && friendsById[userId]);
-                    }).length;
-                    const instanceFriendCount =
-                        Number(
-                            instance?.friendCount ??
-                                instance?.friendsCount ??
-                                instance?.n_friends ??
-                                friendCount
-                        ) || friendCount;
-                    setLocationPanel({
-                        location: activeLocation,
-                        instance,
-                        ownerUser,
-                        ownerGroup,
-                        users,
-                        friendCount: instanceFriendCount,
-                        playerCount:
-                            Number(
-                                instance?.userCount ??
-                                    instance?.occupants ??
-                                    playerSnapshot?.context?.playerCount ??
-                                    users.length
-                            ) || users.length
-                    });
-                }
-            )
-            .catch(() => {
-                if (active) {
-                    setLocationPanel({
-                        ...emptyLocationPanel,
-                        location: activeLocation,
-                        users: Array.from(rowsById.values()),
-                        friendCount: Array.from(rowsById.values()).filter(
-                            (user) => {
-                                const userId = normalizeUserId(
-                                    user?.id || user?.userId
-                                );
-                                return Boolean(userId && friendsById[userId]);
-                            }
-                        ).length
-                    });
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [
-        currentEndpoint,
-        currentGameDestination,
-        currentGameLocation,
-        currentSnapshotLocation,
-        currentUserSnapshot,
-        friendsById,
-        locationRefreshToken,
-        normalizedCurrentUserId,
-        profile,
-        reloadToken
-    ]);
-
-    useEffect(() => {
-        let active = true;
-        const parsedLocation = parseLocation(currentInviteLocation);
-        if (
-            !parsedLocation.isRealInstance ||
-            !parsedLocation.worldId ||
-            !parsedLocation.instanceId
-        ) {
-            setCurrentInviteInstance(null);
-            setCurrentInviteInstanceStatus('idle');
-            return () => {
-                active = false;
-            };
-        }
-
-        setCurrentInviteInstance(null);
-        setCurrentInviteInstanceStatus('running');
-        instanceRepository
-            .getInstance({
-                worldId: parsedLocation.worldId,
-                instanceId: parsedLocation.instanceId,
-                endpoint: currentEndpoint
-            })
-            .then((response) => {
-                if (!active) {
-                    return;
-                }
-                setCurrentInviteInstance(response?.json || null);
-                setCurrentInviteInstanceStatus('ready');
-            })
-            .catch(() => {
-                if (!active) {
-                    return;
-                }
-                setCurrentInviteInstance(null);
-                setCurrentInviteInstanceStatus('error');
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint, currentInviteLocation, reloadToken]);
-
-    function refreshLocationPanel(requestLocation) {
-        const activeLocation = resolvePresenceLocation(profile);
-        if (
-            requestLocation &&
-            activeLocation &&
-            !isSameLocationTag(requestLocation, activeLocation)
-        ) {
-            return null;
-        }
-        setLocationRefreshToken((value) => value + 1);
-        return null;
-    }
-
     const favoriteFriendIds = useMemo(
         () => buildFavoriteIdSet(remoteFavoriteFriendIds, localFriendFavorites),
         [localFriendFavorites, remoteFavoriteFriendIds]
@@ -1412,62 +734,18 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
           )
         : '';
     const presenceLocation = resolvePresenceLocation(profile);
-    const inviteInstanceCache = useMemo(() => {
-        const cache = buildCachedInstanceMap(groupInstances);
-        function setCachedInstance(location, instance) {
-            if (!location || !instance) {
-                return;
-            }
-            const key = locationCacheKey(location);
-            const existing =
-                cache.get(location) || (key ? cache.get(key) : null);
-            const merged =
-                existing?.closedAt && !instance?.closedAt
-                    ? { ...instance, closedAt: existing.closedAt }
-                    : instance;
-            cache.set(location, merged);
-            if (key) {
-                cache.set(key, merged);
-            }
-        }
-        if (locationPanel.location && locationPanel.instance) {
-            setCachedInstance(locationPanel.location, locationPanel.instance);
-        }
-        if (
-            currentInviteLocation &&
-            isSameLocationTag(locationPanel.location, currentInviteLocation) &&
-            locationPanel.instance
-        ) {
-            setCachedInstance(currentInviteLocation, locationPanel.instance);
-        }
-        if (currentInviteLocation && currentInviteInstance) {
-            setCachedInstance(currentInviteLocation, currentInviteInstance);
-        }
-        const currentInviteKey = locationCacheKey(currentInviteLocation);
-        const cachedCurrentInviteInstance = currentInviteKey
-            ? cache.get(currentInviteKey)
-            : null;
-        if (currentInviteLocation && cachedCurrentInviteInstance) {
-            setCachedInstance(
-                currentInviteLocation,
-                cachedCurrentInviteInstance
-            );
-        }
-        return cache;
-    }, [
-        currentInviteLocation,
-        currentInviteInstance,
-        groupInstances,
-        groupInstancesRevision,
-        locationPanel.instance,
-        locationPanel.location
-    ]);
-    const canInviteFromCurrentLocation =
-        currentInviteInstanceStatus !== 'running' &&
-        checkCanInvite(currentInviteLocation, {
+    const { socialStatusDialog, languageDialog, actions: selfActions } =
+        useUserDialogSelfActions({
+            profile,
+            isCurrentUser,
             currentUserId,
-            lastLocationStr: '',
-            cachedInstances: inviteInstanceCache
+            currentUserSnapshot,
+            currentEndpoint,
+            baseProfile,
+            setBaseProfile,
+            actionStatusRef,
+            setActionStatus,
+            prompt
         });
 
     async function findIncomingFriendRequestNotification(rosterUserId) {
@@ -1624,410 +902,6 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
 
     async function refreshProfile() {
         setReloadToken((value) => value + 1);
-    }
-
-    function applyCurrentUserSnapshot(nextUser) {
-        const displayBaseUser = mergeCurrentUserPresenceFields(
-            nextUser,
-            baseProfile
-        );
-        const storeUser = mergeCurrentUserPresenceFields(
-            nextUser,
-            useRuntimeStore.getState().auth.currentUserSnapshot
-        );
-        setBaseProfile(displayBaseUser);
-        if (storeUser?.id) {
-            useRuntimeStore.getState().setAuthBootstrap({
-                currentUserId: storeUser.id,
-                currentUserDisplayName:
-                    storeUser.displayName || storeUser.username || storeUser.id,
-                currentUserSnapshot: storeUser
-            });
-        }
-    }
-
-    async function saveCurrentUserPatch(
-        patch,
-        { successMessage, errorMessage }
-    ) {
-        if (!isCurrentUser || actionStatusRef.current !== 'idle') {
-            return false;
-        }
-
-        actionStatusRef.current = 'self-profile';
-        setActionStatus('self-profile');
-        try {
-            const nextUser = await userProfileRepository.updateCurrentUser({
-                userId: currentUserId,
-                endpoint: currentEndpoint,
-                params: patch
-            });
-            applyCurrentUserSnapshot(nextUser);
-            toast.success(successMessage);
-            return true;
-        } catch (error) {
-            toast.error(userFacingErrorMessage(error, errorMessage));
-            return false;
-        } finally {
-            actionStatusRef.current = 'idle';
-            setActionStatus('idle');
-        }
-    }
-
-    function openSelfSocialStatusDialog() {
-        if (!isCurrentUser || actionStatusRef.current !== 'idle') {
-            return;
-        }
-        setSocialStatusDraft({
-            status: normalizeSelfStatusInput(profile.status) || 'active',
-            statusDescription: String(profile.statusDescription || '').slice(
-                0,
-                32
-            )
-        });
-        setSocialStatusDialogOpen(true);
-    }
-
-    async function editSelfStatus() {
-        openSelfSocialStatusDialog();
-    }
-
-    async function saveSelfSocialStatus() {
-        const nextStatus = normalizeSelfStatusInput(socialStatusDraft.status);
-        if (
-            !nextStatus ||
-            (!profile?.$isModerator && nextStatus === 'offline')
-        ) {
-            toast.warning(appI18n.t('dialog.user.generated.please_choose_a_valid_social_status'));
-            return;
-        }
-        const saved = await saveCurrentUserPatch(
-            {
-                status: nextStatus,
-                statusDescription: String(
-                    socialStatusDraft.statusDescription || ''
-                ).slice(0, 32)
-            },
-            {
-                successMessage: 'Status updated.',
-                errorMessage: 'Failed to update social status.'
-            }
-        );
-        if (saved) {
-            setSocialStatusDialogOpen(false);
-        }
-    }
-
-    async function saveSelfStatusPreset() {
-        const nextStatus = normalizeSelfStatusInput(socialStatusDraft.status);
-        if (!nextStatus) {
-            toast.warning(appI18n.t('dialog.user.generated.please_choose_a_valid_social_status'));
-            return;
-        }
-        const nextPreset = {
-            status: nextStatus,
-            statusDescription: String(
-                socialStatusDraft.statusDescription || ''
-            ).slice(0, 32)
-        };
-        if (
-            statusPresets.some(
-                (preset) =>
-                    preset?.status === nextPreset.status &&
-                    String(preset?.statusDescription || '') ===
-                        nextPreset.statusDescription
-            )
-        ) {
-            toast.info(appI18n.t('dialog.user.generated.status_preset_already_exists'));
-            return;
-        }
-        if (statusPresets.length >= maxStatusPresets) {
-            toast.warning(appI18n.t('dialog.user.generated_dynamic.status_presets_are_limited_to_value', { value: maxStatusPresets }));
-            return;
-        }
-
-        const nextPresets = [...statusPresets, nextPreset];
-        setStatusPresets(nextPresets);
-        try {
-            await configRepository.setArray(
-                statusPresetsConfigKey,
-                nextPresets
-            );
-            toast.success(appI18n.t('dialog.user.generated.status_preset_saved'));
-        } catch (error) {
-            setStatusPresets(statusPresets);
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_save_status_preset')
-            );
-        }
-    }
-
-    async function removeSelfStatusPreset(index) {
-        const nextPresets = statusPresets.filter(
-            (_, presetIndex) => presetIndex !== index
-        );
-        setStatusPresets(nextPresets);
-        try {
-            await configRepository.setArray(
-                statusPresetsConfigKey,
-                nextPresets
-            );
-        } catch (error) {
-            setStatusPresets(statusPresets);
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_remove_status_preset')
-            );
-        }
-    }
-
-    async function editSelfLanguages() {
-        if (!isCurrentUser || actionStatusRef.current !== 'idle') {
-            return;
-        }
-        setSelectedLanguageToAdd('');
-        setLanguageDialogOpen(true);
-    }
-
-    async function addSelfLanguage(languageKey) {
-        const key = normalizeLanguageKey(languageKey);
-        if (!isCurrentUser || actionStatusRef.current !== 'idle' || !key) {
-            return;
-        }
-        if (selectedLanguageKeys.has(key) || currentLanguageRows.length >= 3) {
-            return;
-        }
-
-        actionStatusRef.current = 'self-profile';
-        setActionStatus('self-profile');
-        try {
-            const nextUser = await userProfileRepository.addCurrentUserTags({
-                userId: currentUserId,
-                endpoint: currentEndpoint,
-                tags: [`language_${key}`]
-            });
-            applyCurrentUserSnapshot(nextUser);
-            setSelectedLanguageToAdd('');
-            toast.success(appI18n.t('dialog.user.generated.language_added'));
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_add_language')
-            );
-        } finally {
-            actionStatusRef.current = 'idle';
-            setActionStatus('idle');
-        }
-    }
-
-    async function removeSelfLanguage(languageKey) {
-        const key = normalizeLanguageKey(languageKey);
-        if (!isCurrentUser || actionStatusRef.current !== 'idle' || !key) {
-            return;
-        }
-
-        actionStatusRef.current = 'self-profile';
-        setActionStatus('self-profile');
-        try {
-            const nextUser = await userProfileRepository.removeCurrentUserTags({
-                userId: currentUserId,
-                endpoint: currentEndpoint,
-                tags: [`language_${key}`]
-            });
-            applyCurrentUserSnapshot(nextUser);
-            setSelectedLanguageToAdd('');
-            toast.success(appI18n.t('dialog.user.generated.language_removed'));
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_remove_language')
-            );
-        } finally {
-            actionStatusRef.current = 'idle';
-            setActionStatus('idle');
-        }
-    }
-
-    async function editSelfBio() {
-        const result = await prompt({
-            title: appI18n.t('dialog.user.generated_modal.edit_bio'),
-            inputValue: profile.bio || '',
-            multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
-        });
-        if (result.ok) {
-            await saveCurrentUserPatch(
-                { bio: result.value },
-                {
-                    successMessage: 'Bio updated.',
-                    errorMessage: 'Failed to update bio.'
-                }
-            );
-        }
-    }
-
-    async function editSelfBioLinks() {
-        const result = await prompt({
-            title: appI18n.t('dialog.user.generated_modal.edit_bio_links'),
-            description: appI18n.t('dialog.user.generated_modal.one_link_per_line_up_to_3'),
-            inputValue: Array.isArray(profile.bioLinks)
-                ? profile.bioLinks.join('\n')
-                : '',
-            multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
-        });
-        if (result.ok) {
-            await saveCurrentUserPatch(
-                {
-                    bioLinks: String(result.value || '')
-                        .split(/\r?\n/)
-                        .map((link) => link.trim())
-                        .filter(Boolean)
-                        .slice(0, 3)
-                },
-                {
-                    successMessage: 'Bio links updated.',
-                    errorMessage: 'Failed to update bio links.'
-                }
-            );
-        }
-    }
-
-    async function editSelfPronouns() {
-        const result = await prompt({
-            title: appI18n.t('dialog.user.generated_modal.edit_pronouns'),
-            inputValue: Array.isArray(profile.pronouns)
-                ? profile.pronouns.join(', ')
-                : profile.pronouns || '',
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
-        });
-        if (result.ok) {
-            await saveCurrentUserPatch(
-                { pronouns: result.value },
-                {
-                    successMessage: 'Pronouns updated.',
-                    errorMessage: 'Failed to update pronouns.'
-                }
-            );
-        }
-    }
-
-    async function toggleSelfAvatarCopying() {
-        await saveCurrentUserPatch(
-            { allowAvatarCopying: !profile.allowAvatarCopying },
-            {
-                successMessage: 'Avatar cloning setting updated.',
-                errorMessage: 'Failed to update avatar cloning setting.'
-            }
-        );
-    }
-
-    async function toggleSelfBooping() {
-        await saveCurrentUserPatch(
-            { isBoopingEnabled: profile.isBoopingEnabled === false },
-            {
-                successMessage: 'Booping setting updated.',
-                errorMessage: 'Failed to update booping setting.'
-            }
-        );
-    }
-
-    async function toggleSelfSharedConnections() {
-        await saveCurrentUserPatch(
-            { hasSharedConnectionsOptOut: !profile.hasSharedConnectionsOptOut },
-            {
-                successMessage: 'Shared connections setting updated.',
-                errorMessage: 'Failed to update shared connections setting.'
-            }
-        );
-    }
-
-    async function toggleSelfDiscordConnections() {
-        await saveCurrentUserPatch(
-            { hasDiscordFriendsOptOut: !profile.hasDiscordFriendsOptOut },
-            {
-                successMessage: 'Discord connections setting updated.',
-                errorMessage: 'Failed to update Discord connections setting.'
-            }
-        );
-    }
-
-    async function toggleBadgeVisibility(badge, hidden) {
-        if (
-            !isCurrentUser ||
-            actionStatusRef.current !== 'idle' ||
-            !badge?.badgeId
-        ) {
-            return;
-        }
-
-        actionStatusRef.current = 'self-profile';
-        setActionStatus('self-profile');
-        try {
-            const nextUser = await userProfileRepository.updateCurrentUserBadge(
-                {
-                    userId: currentUserId,
-                    endpoint: currentEndpoint,
-                    badgeId: badge.badgeId,
-                    hidden,
-                    showcased: hidden ? false : Boolean(badge.showcased)
-                }
-            );
-            applyCurrentUserSnapshot(nextUser);
-            toast.success(appI18n.t('dialog.user.generated.badge_updated'));
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_update_badge')
-            );
-        } finally {
-            actionStatusRef.current = 'idle';
-            setActionStatus('idle');
-        }
-    }
-
-    async function toggleBadgeShowcased(badge, showcased) {
-        if (
-            !isCurrentUser ||
-            actionStatusRef.current !== 'idle' ||
-            !badge?.badgeId
-        ) {
-            return;
-        }
-
-        actionStatusRef.current = 'self-profile';
-        setActionStatus('self-profile');
-        try {
-            const nextUser = await userProfileRepository.updateCurrentUserBadge(
-                {
-                    userId: currentUserId,
-                    endpoint: currentEndpoint,
-                    badgeId: badge.badgeId,
-                    hidden: showcased ? false : Boolean(badge.hidden),
-                    showcased
-                }
-            );
-            applyCurrentUserSnapshot(nextUser);
-            toast.success(appI18n.t('dialog.user.generated.badge_updated'));
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_update_badge')
-            );
-        } finally {
-            actionStatusRef.current = 'idle';
-            setActionStatus('idle');
-        }
     }
 
     async function unfriendUser() {
@@ -2951,24 +1825,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         (!presenceLocation ||
             isSameLocationTag(locationPanel.location, presenceLocation))
             ? locationPanel
-            : {
-                  location: '',
-                  instance: null,
-                  ownerUser: null,
-                  users: [],
-                  friendCount: 0,
-                  playerCount: 0
-              };
-    const handleSocialStatusDialogOpenChange = (nextOpen) => {
-        if (nextOpen || actionStatusRef.current === 'idle') {
-            setSocialStatusDialogOpen(nextOpen);
-        }
-    };
-    const handleLanguageDialogOpenChange = (nextOpen) => {
-        if (nextOpen || actionStatusRef.current === 'idle') {
-            setLanguageDialogOpen(nextOpen);
-        }
-    };
+            : createEmptyUserDialogLocationPanel();
     const handleInviteMessageDialogOpenChange = (nextOpen) => {
         if (!nextOpen && actionStatusRef.current === 'idle') {
             setInviteMessageRequest(null);
@@ -3019,8 +1876,8 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 locationFriendCount={activeLocationPanel.friendCount}
                 locationPlayerCount={activeLocationPanel.playerCount}
                 onRefreshLocation={refreshLocationPanel}
-                onRefresh={() => void refreshProfile()}
-                onEditMemo={() => void editMemo()}
+                onRefresh={refreshProfile}
+                onEditMemo={editMemo}
                 onFriendRequest={(action) => void updateFriendRequest(action)}
                 onInvite={() => void sendUserInvite()}
                 onInviteMessage={() =>
@@ -3043,61 +1900,34 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 }
                 onReportHacking={() => void reportHacking()}
                 onGroupModeration={() => void openGroupModerationForUser()}
-                onEditSelfStatus={() => void editSelfStatus()}
-                onEditSelfLanguages={() => void editSelfLanguages()}
-                onEditSelfBio={() => void editSelfBio()}
-                onEditSelfBioLinks={() => void editSelfBioLinks()}
-                onEditSelfPronouns={() => void editSelfPronouns()}
-                onToggleSelfAvatarCopying={() => void toggleSelfAvatarCopying()}
-                onToggleSelfBooping={() => void toggleSelfBooping()}
-                onToggleSelfSharedConnections={() =>
-                    void toggleSelfSharedConnections()
+                onEditSelfStatus={selfActions.editSelfStatus}
+                onEditSelfLanguages={selfActions.editSelfLanguages}
+                onEditSelfBio={selfActions.editSelfBio}
+                onEditSelfBioLinks={selfActions.editSelfBioLinks}
+                onEditSelfPronouns={selfActions.editSelfPronouns}
+                onToggleSelfAvatarCopying={selfActions.toggleSelfAvatarCopying}
+                onToggleSelfBooping={selfActions.toggleSelfBooping}
+                onToggleSelfSharedConnections={
+                    selfActions.toggleSelfSharedConnections
                 }
-                onToggleSelfDiscordConnections={() =>
-                    void toggleSelfDiscordConnections()
+                onToggleSelfDiscordConnections={
+                    selfActions.toggleSelfDiscordConnections
                 }
-                onToggleBadgeVisibility={(badge, hidden) =>
-                    void toggleBadgeVisibility(badge, hidden)
-                }
-                onToggleBadgeShowcased={(badge, showcased) =>
-                    void toggleBadgeShowcased(badge, showcased)
-                }
+                onToggleBadgeVisibility={selfActions.toggleBadgeVisibility}
+                onToggleBadgeShowcased={selfActions.toggleBadgeShowcased}
             />
             <UserDialogContentDialogs
                 actionStatus={actionStatus}
-                socialStatusDialogOpen={socialStatusDialogOpen}
-                onSocialStatusOpenChange={handleSocialStatusDialogOpenChange}
-                socialStatusDraft={socialStatusDraft}
-                setSocialStatusDraft={setSocialStatusDraft}
-                statusHistoryRows={statusHistoryRows}
-                selfStatusOptions={selfStatusOptions}
-                statusPresets={statusPresets}
-                selfStatusLabelByValue={selfStatusLabelByValue}
-                onSaveStatusPreset={() => void saveSelfStatusPreset()}
-                onRemoveStatusPreset={(index) =>
-                    void removeSelfStatusPreset(index)
-                }
-                onCancelSocialStatus={() => setSocialStatusDialogOpen(false)}
-                onSaveSocialStatus={() => void saveSelfSocialStatus()}
-                languageDialogOpen={languageDialogOpen}
-                onLanguageOpenChange={handleLanguageDialogOpenChange}
-                currentLanguageRows={currentLanguageRows}
-                availableLanguageOptions={availableLanguageOptions}
-                selectedLanguageToAdd={selectedLanguageToAdd}
-                languageOptionsStatus={languageOptionsStatus}
-                onSelectedLanguageChange={setSelectedLanguageToAdd}
-                onAddLanguage={(value) => void addSelfLanguage(value)}
-                onRemoveLanguage={(languageKey) =>
-                    void removeSelfLanguage(languageKey)
-                }
-                inviteMessageRequest={inviteMessageRequest}
-                onInviteMessageOpenChange={
-                    handleInviteMessageDialogOpenChange
-                }
-                normalizedCurrentUserId={normalizedCurrentUserId}
-                currentEndpoint={currentEndpoint}
-                targetLabel={profile?.displayName || profile?.id}
-                onUseInviteMessage={selectInviteMessage}
+                socialStatusDialog={socialStatusDialog}
+                languageDialog={languageDialog}
+                inviteMessageDialog={{
+                    request: inviteMessageRequest,
+                    onOpenChange: handleInviteMessageDialogOpenChange,
+                    normalizedCurrentUserId,
+                    currentEndpoint,
+                    targetLabel: profile?.displayName || profile?.id,
+                    onUse: selectInviteMessage
+                }}
             />
         </>
     );
