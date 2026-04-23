@@ -12,7 +12,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { LoadingState, PageScaffold } from '@/components/layout/PageScaffold.jsx';
 import { timeToText } from '@/lib/dateTime.js';
@@ -45,7 +44,6 @@ import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Button } from '@/ui/shadcn/button';
-import { TableRow } from '@/ui/shadcn/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
@@ -72,8 +70,8 @@ import {
 import { appI18n } from '@/services/i18nService.js';
 import {
     CurrentWorldHeader,
-    PlayerListEmptyRow,
     PlayerListEmptyState,
+    PlayerListRows,
     PlayerListTableShell,
     SortButton
 } from './components/PlayerListViewParts.jsx';
@@ -1111,64 +1109,35 @@ export function PlayerListPage({ embedded = false } = {}) {
                         table={table}
                         onResetLayout={resetPlayerListTableLayout}
                     >
-                        {hasRows ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    className="cursor-pointer"
-                                    tabIndex={0}
-                                    aria-label={`Open ${row.original?.displayName || row.original?.userId || 'player'}`}
-                                    onKeyDown={(event) => {
-                                        if (
-                                            event.key !== 'Enter' &&
-                                            event.key !== ' '
-                                        ) {
-                                            return;
-                                        }
-                                        event.preventDefault();
-                                        void openPlayerRow(row.original);
-                                    }}
-                                    onClick={() =>
-                                        void openPlayerRow(row.original)
-                                    }
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <ResizableTableCell
-                                            key={cell.id}
-                                            cell={cell}
-                                        />
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <PlayerListEmptyRow
-                                table={table}
-                                title={
-                                    gameLogDisabled
-                                        ? 'Game log is disabled'
-                                        : !isGameRunning
-                                          ? 'VRChat is not running'
-                                          : isPlayerListSourceUnavailable
-                                            ? 'Current players are not available yet'
-                                            : parsedLocation.isTraveling
-                                              ? 'Currently traveling between instances'
-                                              : parsedLocation.isOffline
-                                                ? 'No current instance detected'
-                                                : 'No players reconstructed for this instance yet'
-                                }
-                                description={
-                                    gameLogDisabled
-                                        ? 'Enable game log ingestion in settings before current players can be reconstructed.'
-                                        : !isGameRunning
-                                          ? 'Start VRChat and let VRCX-0 receive game-log events before this page can rebuild the current instance.'
-                                          : isPlayerListSourceUnavailable
-                                            ? 'Stay in the instance until local join/leave events are recorded, then this table will populate automatically.'
-                                            : parsedLocation.isTraveling
-                                              ? 'Current players follow live instance locations. They will repopulate after the next location event lands.'
-                                              : 'The local join/leave history does not have any current players for the active location yet.'
-                                }
-                            />
-                        )}
+                        <PlayerListRows
+                            table={table}
+                            hasRows={hasRows}
+                            onOpenPlayer={openPlayerRow}
+                            emptyTitle={
+                                gameLogDisabled
+                                    ? 'Game log is disabled'
+                                    : !isGameRunning
+                                      ? 'VRChat is not running'
+                                      : isPlayerListSourceUnavailable
+                                        ? 'Current players are not available yet'
+                                        : parsedLocation.isTraveling
+                                          ? 'Currently traveling between instances'
+                                          : parsedLocation.isOffline
+                                            ? 'No current instance detected'
+                                            : 'No players reconstructed for this instance yet'
+                            }
+                            emptyDescription={
+                                gameLogDisabled
+                                    ? 'Enable game log ingestion in settings before current players can be reconstructed.'
+                                    : !isGameRunning
+                                      ? 'Start VRChat and let VRCX-0 receive game-log events before this page can rebuild the current instance.'
+                                      : isPlayerListSourceUnavailable
+                                        ? 'Stay in the instance until local join/leave events are recorded, then this table will populate automatically.'
+                                        : parsedLocation.isTraveling
+                                          ? 'Current players follow live instance locations. They will repopulate after the next location event lands.'
+                                          : 'The local join/leave history does not have any current players for the active location yet.'
+                            }
+                        />
                     </PlayerListTableShell>
                 )}
             </div>

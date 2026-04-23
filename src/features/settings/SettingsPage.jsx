@@ -1,4 +1,4 @@
-import { ChevronDownIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { ChevronDownIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -112,14 +112,6 @@ import {
     CardTitle
 } from '@/ui/shadcn/card';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/ui/shadcn/dialog';
-import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
@@ -129,14 +121,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-import { Empty, EmptyHeader, EmptyTitle } from '@/ui/shadcn/empty';
 import { Input } from '@/ui/shadcn/input';
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupButton,
-    InputGroupInput
-} from '@/ui/shadcn/input-group';
 import {
     Select,
     SelectContent,
@@ -148,15 +133,13 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
-import { Textarea } from '@/ui/shadcn/textarea';
 
-import { OpenSourceNoticeDialog } from './components/OpenSourceNoticeDialog.jsx';
 import {
     Field,
-    FieldGroup,
     JsonTreeView,
     SegmentedPreference
 } from './components/SettingsField.jsx';
+import { SettingsDialogs } from './components/SettingsDialogs.jsx';
 import {
     buildOpenAiModelsEndpoint,
     DEFAULT_TRANSLATION_ENDPOINT,
@@ -169,10 +152,7 @@ import {
     TABLE_PAGE_SIZE_DEFAULTS
 } from './settingsValues.js';
 import { appI18n } from '@/services/i18nService.js';
-import {
-    SettingsTabContent,
-    TablePageSizesDialog
-} from './components/SettingsViewParts.jsx';
+import { SettingsTabContent } from './components/SettingsViewParts.jsx';
 
 const fontFamilyLabelKeys = {
     inter: 'view.settings.appearance.appearance.font_family_inter',
@@ -4682,827 +4662,82 @@ export function SettingsPage() {
                     </Card>
                 </SettingsTabContent>
             </Tabs>
-            <Dialog
-                open={customFontDialogOpen}
-                onOpenChange={setCustomFontDialogOpen}
-            >
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t(
-                                'view.settings.appearance.appearance.font_family_custom_dialog_title'
-                            )}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {t(
-                                'view.settings.appearance.appearance.font_family_custom_dialog_description'
-                            )}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <FieldGroup>
-                        <Field
-                            label={t(
-                                'view.settings.appearance.appearance.font_family_custom'
-                            )}
-                            controlId="settings-custom-font-family"
-                        >
-                            <Input
-                                id="settings-custom-font-family"
-                                value={customFontDraft}
-                                name="customFontFamily"
-                                placeholder="'My Font', Arial, sans-serif"
-                                onChange={(event) =>
-                                    setCustomFontDraft(event.target.value)
-                                }
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                        event.preventDefault();
-                                        void saveCustomFontFamily();
-                                    }
-                                }}
-                            />
-                        </Field>
-                    </FieldGroup>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setCustomFontDialogOpen(false)}
-                        >
-                            {t('dialog.alertdialog.cancel')}
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={() => void saveCustomFontFamily()}
-                        >
-                            {t('dialog.alertdialog.ok')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <Dialog
-                open={youtubeApiDialogOpen}
-                onOpenChange={setYoutubeApiDialogOpen}
-            >
-                <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t('dialog.youtube_api.header')}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {t('dialog.youtube_api.description')}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <FieldGroup>
-                        <Field
-                            label={t('dialog.youtube_api.header')}
-                            controlId="settings-youtube-api-key"
-                        >
-                            <Textarea
-                                id="settings-youtube-api-key"
-                                value={youtubeApiKeyDraft}
-                                name="youtubeApiKey"
-                                placeholder={t(
-                                    'dialog.youtube_api.placeholder'
-                                )}
-                                maxLength={39}
-                                rows={2}
-                                onChange={(event) =>
-                                    setYoutubeApiKeyDraft(event.target.value)
-                                }
-                            />
-                        </Field>
-                    </FieldGroup>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() =>
-                                void openExternalLink(
-                                    'https://smashballoon.com/doc/youtube-api-key/'
-                                )
-                            }
-                        >
-                            {t('dialog.youtube_api.guide')}
-                        </Button>
-                        <Button
-                            type="button"
-                            disabled={integrationStatus.youtube === 'running'}
-                            onClick={() => void saveYoutubeApiKey()}
-                        >
-                            {t('dialog.youtube_api.save')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <Dialog
-                open={translationApiDialogOpen}
-                onOpenChange={setTranslationApiDialogOpen}
-            >
-                <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t('dialog.translation_api.header')}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {t('dialog.translation_api.description')}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <FieldGroup>
-                        <Field
-                            label={t(
-                                'view.settings.appearance.appearance.bio_language'
-                            )}
-                            controlId="settings-translation-bio-language"
-                        >
-                            <Select
-                                value={translationDraft.bioLanguage || 'en'}
-                                onValueChange={(value) =>
-                                    setTranslationDraftValue(
-                                        'bioLanguage',
-                                        value
-                                    )
-                                }
-                            >
-                                <SelectTrigger
-                                    id="settings-translation-bio-language"
-                                    className="w-56"
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        {languageCodes.map((code) => (
-                                            <SelectItem key={code} value={code}>
-                                                {getLanguageName(code)}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                        <Field
-                            label={t('dialog.translation_api.mode')}
-                            controlId="settings-translation-mode"
-                        >
-                            <Select
-                                value={translationDraft.translationAPIType}
-                                onValueChange={(value) =>
-                                    setTranslationDraftValue(
-                                        'translationAPIType',
-                                        value
-                                    )
-                                }
-                            >
-                                <SelectTrigger
-                                    id="settings-translation-mode"
-                                    className="w-56"
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        {translationProviderOptions.map(
-                                            ([value, labelKey]) => (
-                                                <SelectItem
-                                                    key={value}
-                                                    value={value}
-                                                >
-                                                    {t(labelKey)}
-                                                </SelectItem>
-                                            )
-                                        )}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                        {translationDraft.translationAPIType === 'openai' ? (
-                            <>
-                                <Field
-                                    label={t(
-                                        'dialog.translation_api.openai.endpoint'
-                                    )}
-                                    controlId="settings-translation-endpoint"
-                                >
-                                    <Input
-                                        id="settings-translation-endpoint"
-                                        value={
-                                            translationDraft.translationAPIEndpoint
-                                        }
-                                        name="translationApiEndpoint"
-                                        placeholder={
-                                            DEFAULT_TRANSLATION_ENDPOINT
-                                        }
-                                        onChange={(event) =>
-                                            setTranslationDraftValue(
-                                                'translationAPIEndpoint',
-                                                event.target.value
-                                            )
-                                        }
-                                        className="w-96 max-w-full"
-                                    />
-                                </Field>
-                                <Field
-                                    label={t(
-                                        'dialog.translation_api.openai.model'
-                                    )}
-                                    controlId="settings-translation-model"
-                                >
-                                    <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row">
-                                        {availableTranslationModels.length ? (
-                                            <Select
-                                                value={
-                                                    translationDraft.translationAPIModel ||
-                                                    availableTranslationModels[0]
-                                                }
-                                                onValueChange={(value) =>
-                                                    setTranslationDraftValue(
-                                                        'translationAPIModel',
-                                                        value
-                                                    )
-                                                }
-                                            >
-                                                <SelectTrigger
-                                                    id="settings-translation-model"
-                                                    className="min-w-56"
-                                                >
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectGroup>
-                                                        {availableTranslationModels.map(
-                                                            (model) => (
-                                                                <SelectItem
-                                                                    key={model}
-                                                                    value={
-                                                                        model
-                                                                    }
-                                                                >
-                                                                    {model}
-                                                                </SelectItem>
-                                                            )
-                                                        )}
-                                                    </SelectGroup>
-                                                </SelectContent>
-                                            </Select>
-                                        ) : (
-                                            <Input
-                                                id="settings-translation-model"
-                                                name="translationApiModel"
-                                                value={
-                                                    translationDraft.translationAPIModel
-                                                }
-                                                placeholder={
-                                                    DEFAULT_TRANSLATION_MODEL
-                                                }
-                                                onChange={(event) =>
-                                                    setTranslationDraftValue(
-                                                        'translationAPIModel',
-                                                        event.target.value
-                                                    )
-                                                }
-                                            />
-                                        )}
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            disabled={
-                                                integrationStatus.models ===
-                                                'running'
-                                            }
-                                            onClick={() =>
-                                                void fetchTranslationModels()
-                                            }
-                                        >
-                                            {integrationStatus.models ===
-                                            'running'
-                                                ? t(
-                                                      'dialog.translation_api.fetching_models'
-                                                  )
-                                                : t(
-                                                      'dialog.translation_api.fetch_models'
-                                                  )}
-                                        </Button>
-                                    </div>
-                                </Field>
-                                <Field
-                                    label={t(
-                                        'dialog.translation_api.openai.prompt_optional'
-                                    )}
-                                    description={t(
-                                        'dialog.translation_api.openai.prompt_optional_description'
-                                    )}
-                                    controlId="settings-translation-prompt"
-                                >
-                                    <Textarea
-                                        id="settings-translation-prompt"
-                                        rows={3}
-                                        name="translationApiPrompt"
-                                        value={
-                                            translationDraft.translationAPIPrompt
-                                        }
-                                        onChange={(event) =>
-                                            setTranslationDraftValue(
-                                                'translationAPIPrompt',
-                                                event.target.value
-                                            )
-                                        }
-                                        className="w-96 max-w-full resize-none"
-                                    />
-                                </Field>
-                            </>
-                        ) : null}
-                        <Field
-                            label={
-                                translationDraft.translationAPIType === 'openai'
-                                    ? t('dialog.translation_api.openai.api_key')
-                                    : t('dialog.translation_api.description')
-                            }
-                            controlId="settings-translation-api-key"
-                        >
-                            <Input
-                                id="settings-translation-api-key"
-                                type="password"
-                                name="translationApiKey"
-                                value={translationDraft.translationAPIKey}
-                                placeholder={
-                                    translationDraft.translationAPIType ===
-                                    'openai'
-                                        ? 'sk-...'
-                                        : 'AIzaSy...'
-                                }
-                                onChange={(event) =>
-                                    setTranslationDraftValue(
-                                        'translationAPIKey',
-                                        event.target.value
-                                    )
-                                }
-                                className="w-96 max-w-full"
-                            />
-                        </Field>
-                    </FieldGroup>
-                    <DialogFooter>
-                        {translationDraft.translationAPIType === 'google' ? (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() =>
-                                    void openExternalLink(
-                                        'https://translatepress.com/docs/automatic-translation/generate-google-api-key/'
-                                    )
-                                }
-                            >
-                                {t('dialog.translation_api.guide')}
-                            </Button>
-                        ) : null}
-                        {translationDraft.translationAPIType === 'openai' ? (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={
-                                    integrationStatus.translation === 'running'
-                                }
-                                onClick={() => void testTranslationApiConfig()}
-                            >
-                                {t('dialog.translation_api.test')}
-                            </Button>
-                        ) : null}
-                        <Button
-                            type="button"
-                            disabled={
-                                integrationStatus.translation === 'running'
-                            }
-                            onClick={() => void saveTranslationApiConfig()}
-                        >
-                            {t('dialog.translation_api.save')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <TablePageSizesDialog
-                open={tablePageSizesDialogOpen}
-                onOpenChange={setTablePageSizesDialogOpen}
-                onSaved={(tablePageSizes) =>
-                    setPrefs((current) => ({ ...current, tablePageSizes }))
-                }
-            />
-            <Dialog
-                open={tableLimitsDialogOpen}
-                onOpenChange={setTableLimitsDialogOpen}
-            >
-                <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t('prompt.table_entries_settings.header')}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {t('prompt.table_entries_settings.description')}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <FieldGroup>
-                        <Field
-                            label={t(
-                                'prompt.table_entries_settings.table_max_entries'
-                            )}
-                            description={
-                                tableMaxSizeError
-                                    ? undefined
-                                    : t(
-                                          'prompt.table_entries_settings.table_max_entries_hint',
-                                          {
-                                              min: TABLE_MAX_SIZE_MIN,
-                                              max: TABLE_MAX_SIZE_MAX
-                                          }
-                                      )
-                            }
-                            controlId="settings-table-max-entries"
-                            error={tableMaxSizeError}
-                            invalid={Boolean(tableMaxSizeError)}
-                        >
-                            <Input
-                                id="settings-table-max-entries"
-                                type="number"
-                                name="maxTableSize"
-                                inputMode="numeric"
-                                min={TABLE_MAX_SIZE_MIN}
-                                max={TABLE_MAX_SIZE_MAX}
-                                value={tableLimitsDraft.maxTableSize}
-                                onChange={(event) =>
-                                    setTableLimitsDraft((current) => ({
-                                        ...current,
-                                        maxTableSize: event.target.value
-                                    }))
-                                }
-                            />
-                        </Field>
-                        <Field
-                            label={t(
-                                'prompt.table_entries_settings.search_limit_returns'
-                            )}
-                            description={
-                                searchLimitError ? (
-                                    t(
-                                        'prompt.table_entries_settings.search_limit_returns_warning'
-                                    )
-                                ) : (
-                                    <span className="flex flex-col gap-1">
-                                        <span>
-                                            {t(
-                                                'prompt.table_entries_settings.search_limit_returns_hint',
-                                                {
-                                                    min: SEARCH_LIMIT_MIN,
-                                                    max: SEARCH_LIMIT_MAX
-                                                }
-                                            )}
-                                        </span>
-                                        <span>
-                                            {t(
-                                                'prompt.table_entries_settings.search_limit_returns_warning'
-                                            )}
-                                        </span>
-                                    </span>
-                                )
-                            }
-                            controlId="settings-search-limit"
-                            error={searchLimitError}
-                            invalid={Boolean(searchLimitError)}
-                        >
-                            <Input
-                                id="settings-search-limit"
-                                type="number"
-                                name="searchLimit"
-                                inputMode="numeric"
-                                min={SEARCH_LIMIT_MIN}
-                                max={SEARCH_LIMIT_MAX}
-                                value={tableLimitsDraft.searchLimit}
-                                onChange={(event) =>
-                                    setTableLimitsDraft((current) => ({
-                                        ...current,
-                                        searchLimit: event.target.value
-                                    }))
-                                }
-                            />
-                        </Field>
-                    </FieldGroup>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setTableLimitsDialogOpen(false)}
-                        >
-                            {t('prompt.table_entries_settings.cancel')}
-                        </Button>
-                        <Button
-                            type="button"
-                            disabled={tableLimitsSaveDisabled}
-                            onClick={() => void saveTableLimitsDialog()}
-                        >
-                            {t('prompt.table_entries_settings.save')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <Dialog
-                open={avatarProviderDialogOpen}
-                onOpenChange={setAvatarProviderDialogOpen}
-            >
-                <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t('dialog.avatar_database_provider.header')}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {t('dialog.avatar_database_provider.description')}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <FieldGroup>
-                        {avatarProviderConfig.providerList.length > 0 ? (
-                            avatarProviderConfig.providerList.map(
-                                (provider, index) => (
-                                    <Field
-                                        key={`avatar-provider-dialog-${index}`}
-                                        label={appI18n.t('view.settings.generated_dynamic.value_value', { value: t('view.settings.advanced.advanced.remote_database.avatar_database_provider'), value2: index + 1 })}
-                                        controlId={`settings-avatar-provider-${index}`}
-                                    >
-                                        <InputGroup>
-                                            <InputGroupInput
-                                                id={`settings-avatar-provider-${index}`}
-                                                name={`avatarProvider${index}`}
-                                                value={provider}
-                                                onChange={(event) =>
-                                                    updateAvatarProvider(
-                                                        index,
-                                                        event.target.value
-                                                    )
-                                                }
-                                                onBlur={(event) =>
-                                                    saveAvatarProviderField(
-                                                        index,
-                                                        event.target.value
-                                                    )
-                                                }
-                                            />
-                                            <InputGroupAddon align="inline-end">
-                                                <InputGroupButton
-                                                    type="button"
-                                                    size="icon-xs"
-                                                    aria-label={"Remove"}
-                                                    onClick={() =>
-                                                        removeAvatarProvider(
-                                                            index
-                                                        )
-                                                    }
-                                                >
-                                                    <Trash2Icon data-icon="inline-start" />
-                                                </InputGroupButton>
-                                            </InputGroupAddon>
-                                        </InputGroup>
-                                    </Field>
-                                )
-                            )
-                        ) : (
-                            <Empty className="min-h-28">
-                                <EmptyHeader>
-                                    <EmptyTitle>
-                                        {t('search.avatar.no_provider')}
-                                    </EmptyTitle>
-                                </EmptyHeader>
-                            </Empty>
-                        )}
-                        <Field
-                            label={t(
-                                'dialog.avatar_database_provider.add_provider'
-                            )}
-                        >
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={addAvatarProvider}
-                            >
-                                <PlusIcon data-icon="inline-start" />
-                                {t(
-                                    'dialog.avatar_database_provider.add_provider'
-                                )}
-                            </Button>
-                        </Field>
-                    </FieldGroup>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setAvatarProviderDialogOpen(false)}
-                        >
-                            {t('dialog.alertdialog.ok')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <Dialog open={purgeDialogOpen} onOpenChange={setPurgeDialogOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t(
-                                'view.settings.advanced.advanced.database_cleanup.purge_confirm_title'
-                            )}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {t(
-                                'view.settings.advanced.advanced.database_cleanup.purge_confirm_alert'
-                            )}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="text-muted-foreground flex flex-col gap-4 text-sm">
-                        <p>
-                            {t(
-                                'view.settings.advanced.advanced.database_cleanup.purge_confirm_description_1'
-                            )}
-                        </p>
-                        <p>
-                            {t(
-                                'view.settings.advanced.advanced.database_cleanup.purge_confirm_description_2'
-                            )}
-                        </p>
-                        <p>
-                            {t(
-                                'view.settings.advanced.advanced.database_cleanup.purge_confirm_description_3'
-                            )}
-                        </p>
-                        <Field
-                            label={t(
-                                'view.settings.advanced.advanced.database_cleanup.purge_older_than'
-                            )}
-                            controlId="settings-purge-period"
-                        >
-                            <Select
-                                value={purgePeriod}
-                                onValueChange={setPurgePeriod}
-                            >
-                                <SelectTrigger
-                                    id="settings-purge-period"
-                                    className="w-36"
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="180">
-                                            {t(
-                                                'view.settings.advanced.advanced.database_cleanup.purge_option_180'
-                                            )}
-                                        </SelectItem>
-                                        <SelectItem value="365">
-                                            {t(
-                                                'view.settings.advanced.advanced.database_cleanup.purge_option_365'
-                                            )}
-                                        </SelectItem>
-                                        <SelectItem value="730">
-                                            {t(
-                                                'view.settings.advanced.advanced.database_cleanup.purge_option_730'
-                                            )}
-                                        </SelectItem>
-                                        <SelectItem value="all">
-                                            {t(
-                                                'view.settings.advanced.advanced.database_cleanup.purge_option_all'
-                                            )}
-                                        </SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={purgeInProgress}
-                            onClick={() => setPurgeDialogOpen(false)}
-                        >
-                            {t('confirm.cancel_button')}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            disabled={purgeInProgress}
-                            onClick={() => void purgeAvatarFeedData()}
-                        >
-                            <Trash2Icon data-icon="inline-start" />
-                            {t(
-                                'view.settings.advanced.advanced.database_cleanup.purge_confirm_button'
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <Dialog
-                open={feedFilterDialogOpen}
-                onOpenChange={setFeedFilterDialogOpen}
-            >
-                <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {feedFilterMode === 'noty'
-                                ? t('dialog.shared_feed_filters.notification')
-                                : t('dialog.shared_feed_filters.wrist')}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {t(
-                                'view.settings.notifications.notifications.notification_filter'
-                            )}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex flex-col gap-4 overflow-hidden">
-                        <Tabs
-                            value={feedFilterMode}
-                            onValueChange={setFeedFilterMode}
-                        >
-                            <div className="max-w-full overflow-x-auto">
-                                <TabsList>
-                                    <TabsTrigger value="noty">
-                                        {t(
-                                            'dialog.shared_feed_filters.notification'
-                                        )}
-                                    </TabsTrigger>
-                                    <TabsTrigger value="wrist">
-                                        {t('dialog.shared_feed_filters.wrist')}
-                                    </TabsTrigger>
-                                </TabsList>
-                            </div>
-                        </Tabs>
-                        <FieldGroup className="max-h-[60vh] overflow-y-auto pr-1">
-                            {currentSharedFeedFilterOptions.map((setting) => (
-                                <Field
-                                    key={`${feedFilterMode}:${setting.key}`}
-                                    label={setting.name}
-                                    description={setting.tooltip}
-                                    controlId={`settings-feed-filter-${feedFilterMode}-${setting.key}`}
-                                >
-                                    <Select
-                                        value={
-                                            sharedFeedFilters[feedFilterMode]?.[
-                                                setting.key
-                                            ] ||
-                                            sharedFeedFiltersDefaults[
-                                                feedFilterMode
-                                            ]?.[setting.key] ||
-                                            setting.options[0]?.label
-                                        }
-                                        onValueChange={(value) =>
-                                            updateSharedFeedFilter(
-                                                feedFilterMode,
-                                                setting.key,
-                                                value
-                                            )
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            id={`settings-feed-filter-${feedFilterMode}-${setting.key}`}
-                                            className="w-40"
-                                        >
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {setting.options.map(
-                                                    (option) => (
-                                                        <SelectItem
-                                                            key={option.label}
-                                                            value={option.label}
-                                                        >
-                                                            {t(option.textKey)}
-                                                        </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                </Field>
-                            ))}
-                        </FieldGroup>
-                        <div className="flex justify-end gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() =>
-                                    resetSharedFeedFilters(feedFilterMode)
-                                }
-                            >
-                                {t('dialog.shared_feed_filters.reset')}
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={() => setFeedFilterDialogOpen(false)}
-                            >
-                                {t('dialog.alertdialog.ok')}
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-            <OpenSourceNoticeDialog
-                open={openSourceNoticeOpen}
-                onOpenChange={setOpenSourceNoticeOpen}
+            <SettingsDialogs
                 t={t}
+                customFont={{
+                    open: customFontDialogOpen,
+                    setOpen: setCustomFontDialogOpen,
+                    draft: customFontDraft,
+                    setDraft: setCustomFontDraft,
+                    onSave: saveCustomFontFamily
+                }}
+                youtubeApi={{
+                    open: youtubeApiDialogOpen,
+                    setOpen: setYoutubeApiDialogOpen,
+                    draft: youtubeApiKeyDraft,
+                    setDraft: setYoutubeApiKeyDraft,
+                    integrationStatus,
+                    onSave: saveYoutubeApiKey
+                }}
+                translationApi={{
+                    open: translationApiDialogOpen,
+                    setOpen: setTranslationApiDialogOpen,
+                    draft: translationDraft,
+                    setDraftValue: setTranslationDraftValue,
+                    providerOptions: translationProviderOptions,
+                    fetchedModels: availableTranslationModels,
+                    integrationStatus,
+                    onFetchModels: fetchTranslationModels,
+                    onTest: testTranslationApiConfig,
+                    onSave: saveTranslationApiConfig
+                }}
+                tablePageSizes={{
+                    open: tablePageSizesDialogOpen,
+                    setOpen: setTablePageSizesDialogOpen,
+                    onSaved: (tablePageSizes) =>
+                        setPrefs((current) => ({ ...current, tablePageSizes }))
+                }}
+                tableLimits={{
+                    open: tableLimitsDialogOpen,
+                    setOpen: setTableLimitsDialogOpen,
+                    draft: tableLimitsDraft,
+                    setDraft: setTableLimitsDraft,
+                    tableMaxSizeError,
+                    searchLimitError,
+                    saveDisabled: tableLimitsSaveDisabled,
+                    onSave: saveTableLimitsDialog
+                }}
+                avatarProvider={{
+                    open: avatarProviderDialogOpen,
+                    setOpen: setAvatarProviderDialogOpen,
+                    config: avatarProviderConfig,
+                    onUpdate: updateAvatarProvider,
+                    onSaveField: saveAvatarProviderField,
+                    onRemove: removeAvatarProvider,
+                    onAdd: addAvatarProvider
+                }}
+                purge={{
+                    open: purgeDialogOpen,
+                    setOpen: setPurgeDialogOpen,
+                    period: purgePeriod,
+                    setPeriod: setPurgePeriod,
+                    inProgress: purgeInProgress,
+                    onConfirm: purgeAvatarFeedData
+                }}
+                feedFilter={{
+                    open: feedFilterDialogOpen,
+                    setOpen: setFeedFilterDialogOpen,
+                    mode: feedFilterMode,
+                    setMode: setFeedFilterMode,
+                    options: currentSharedFeedFilterOptions,
+                    filters: sharedFeedFilters,
+                    onUpdate: updateSharedFeedFilter,
+                    onReset: resetSharedFeedFilters
+                }}
+                openSourceNotice={{
+                    open: openSourceNoticeOpen,
+                    setOpen: setOpenSourceNoticeOpen
+                }}
             />
         </div>
     );

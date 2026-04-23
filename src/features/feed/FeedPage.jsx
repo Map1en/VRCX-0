@@ -13,7 +13,6 @@ import {
     XIcon
 } from 'lucide-react';
 import {
-    Fragment,
     useDeferredValue,
     useEffect,
     useMemo,
@@ -23,19 +22,10 @@ import {
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import {
-    DataTableHeader,
-    DataTableEmptyRow,
-    DataTablePagination,
-    DataTableScrollArea,
-    DataTableSurface
-} from '@/components/data-table/DataTableView.jsx';
-import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import {
     PageBody,
-    PageFooter,
     PageScaffold,
     PageToolbar,
     PageToolbarRow
@@ -76,8 +66,6 @@ import {
     InputGroupInput
 } from '@/ui/shadcn/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
-import { Spinner } from '@/ui/shadcn/spinner';
-import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
@@ -112,12 +100,12 @@ import { appI18n } from '@/services/i18nService.js';
 
 import {
     FeedDetailCell,
-    FeedExpandedRow,
     FeedUserLink,
     SortButton,
     formatTimestamp,
     formatTimestampLong
 } from './components/FeedTableParts.jsx';
+import { FeedTableShell } from './components/FeedTableShell.jsx';
 
 export function FeedPage({ embedded = false } = {}) {
     const { t } = useI18n();
@@ -1297,101 +1285,24 @@ export function FeedPage({ embedded = false } = {}) {
             </PageToolbar>
 
             <PageBody>
-                <DataTableSurface>
-                    <DataTableScrollArea>
-                        <Table className="table-fixed">
-                            <DataTableHeader table={table} />
-                            <TableBody>
-                                {table.getRowModel().rows.length > 0 ? (
-                                    table.getRowModel().rows.map((row) => (
-                                        <Fragment key={row.id}>
-                                            <TableRow>
-                                                {row
-                                                    .getVisibleCells()
-                                                    .map((cell) => (
-                                                        <ResizableTableCell
-                                                            key={cell.id}
-                                                            cell={cell}
-                                                        />
-                                                    ))}
-                                            </TableRow>
-                                            {row.getIsExpanded() ? (
-                                                <TableRow>
-                                                    <TableCell
-                                                        colSpan={
-                                                            row.getVisibleCells()
-                                                                .length
-                                                        }
-                                                    >
-                                                        <FeedExpandedRow
-                                                            row={row.original}
-                                                            loadingHistoryKey={
-                                                                loadingPreviousInstancesKey
-                                                            }
-                                                            endpoint={
-                                                                currentEndpoint
-                                                            }
-                                                            onOpenPreviousInstances={
-                                                                openPreviousInstancesForLocation
-                                                            }
-                                                            onNewInstance={
-                                                                openFeedNewInstance
-                                                            }
-                                                            onPreviewImage={
-                                                                openImagePreview
-                                                            }
-                                                        />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ) : null}
-                                        </Fragment>
-                                    ))
-                                ) : (
-                                    <DataTableEmptyRow colSpan={columns.length}>
-                                        {loadStatus === 'running' ? (
-                                            <span className="inline-flex items-center gap-2">
-                                                <Spinner />
-                                                {t('view.feed.generated.loading_feed_rows')}
-                                            </span>
-                                        ) : favoritesOnly &&
-                                          !isFavoritesLoaded ? (
-                                            'Favorites are still hydrating.'
-                                        ) : loadStatus === 'error' ? (
-                                            'Feed query failed.'
-                                        ) : (
-                                            'No feed rows match the current filters.'
-                                        )}
-                                    </DataTableEmptyRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </DataTableScrollArea>
-                </DataTableSurface>
-
-                <PageFooter>
-                    <div className="text-muted-foreground text-sm">
-                        {rows.length} {t('view.feed.generated.rows')}
-                        {favoritesOnly ? ' · Favorites only' : ''}
-                    </div>
-                    <DataTablePagination
-                        table={table}
-                        pageIndex={table.getState().pagination.pageIndex}
-                        pageCount={table.getPageCount() || 1}
-                        pageSize={pagination.pageSize}
-                        pageSizes={pageSizes}
-                        pageSizeLabel={t('table.pagination.rows_per_page')}
-                        onPageSizeChange={(value) =>
-                            setPagination({
-                                pageIndex: 0,
-                                pageSize: resolvePageSize(
-                                    value,
-                                    pageSizes,
-                                    pagination.pageSize
-                                )
-                            })
-                        }
-                    />
-                </PageFooter>
+                <FeedTableShell
+                    table={table}
+                    columns={columns}
+                    rows={rows}
+                    loadStatus={loadStatus}
+                    favoritesOnly={favoritesOnly}
+                    isFavoritesLoaded={isFavoritesLoaded}
+                    loadingPreviousInstancesKey={loadingPreviousInstancesKey}
+                    currentEndpoint={currentEndpoint}
+                    onOpenPreviousInstances={openPreviousInstancesForLocation}
+                    onNewInstance={openFeedNewInstance}
+                    onPreviewImage={openImagePreview}
+                    pagination={pagination}
+                    pageSizes={pageSizes}
+                    resolvePageSize={resolvePageSize}
+                    setPagination={setPagination}
+                    t={t}
+                />
             </PageBody>
             <PreviousInstancesTableDialog
                 open={previousInstancesOpen}

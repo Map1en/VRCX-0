@@ -12,6 +12,7 @@ import {
     DataTableScrollArea,
     DataTableSurface
 } from '@/components/data-table/DataTableView.jsx';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { EmptyState } from '@/components/layout/PageScaffold.jsx';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
@@ -21,7 +22,7 @@ import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { Table, TableBody } from '@/ui/shadcn/table';
+import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 
 import {
     fileAnalysisSizeForPlatform,
@@ -302,6 +303,45 @@ export function PlayerListTableShell({ table, onResetLayout, children }) {
             </DataTableScrollArea>
         </DataTableSurface>
     );
+}
+
+export function PlayerListRows({
+    table,
+    hasRows,
+    onOpenPlayer,
+    emptyTitle,
+    emptyDescription
+}) {
+    if (!hasRows) {
+        return (
+            <PlayerListEmptyRow
+                table={table}
+                title={emptyTitle}
+                description={emptyDescription}
+            />
+        );
+    }
+
+    return table.getRowModel().rows.map((row) => (
+        <TableRow
+            key={row.id}
+            className="cursor-pointer"
+            tabIndex={0}
+            aria-label={`Open ${row.original?.displayName || row.original?.userId || 'player'}`}
+            onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') {
+                    return;
+                }
+                event.preventDefault();
+                void onOpenPlayer(row.original);
+            }}
+            onClick={() => void onOpenPlayer(row.original)}
+        >
+            {row.getVisibleCells().map((cell) => (
+                <ResizableTableCell key={cell.id} cell={cell} />
+            ))}
+        </TableRow>
+    ));
 }
 
 export function PlayerListEmptyRow({ table, title, description }) {
