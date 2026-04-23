@@ -1,4 +1,4 @@
-import { ChevronDownIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react';
+import { ChevronDownIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -58,7 +58,6 @@ import {
     setStartAtWindowsStartupPreference,
     setStringConfigPreference,
     setTableLimitsPreference,
-    setTablePageSizesPreference,
     setTranslationApiConfigPreference,
     setTranslationApiEnabledPreference,
     setTrustColorPreference,
@@ -112,7 +111,6 @@ import {
     CardHeader,
     CardTitle
 } from '@/ui/shadcn/card';
-import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -132,10 +130,6 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Empty, EmptyHeader, EmptyTitle } from '@/ui/shadcn/empty';
-import {
-    Field as ShadcnField,
-    FieldLabel as ShadcnFieldLabel
-} from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import {
     InputGroup,
@@ -153,7 +147,7 @@ import {
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
 
 import { OpenSourceNoticeDialog } from './components/OpenSourceNoticeDialog.jsx';
@@ -165,19 +159,20 @@ import {
 } from './components/SettingsField.jsx';
 import {
     buildOpenAiModelsEndpoint,
-    buildTablePageSizeOptions,
     DEFAULT_TRANSLATION_ENDPOINT,
     DEFAULT_TRANSLATION_MODEL,
-    filterTablePageSizeOptions,
     formatByteSize,
     isValidFontFamilyList,
     normalizeSharedFeedFilters,
-    normalizeTablePageSizes,
     parseIntegerInput,
     parseWebJson,
     TABLE_PAGE_SIZE_DEFAULTS
 } from './settingsValues.js';
 import { appI18n } from '@/services/i18nService.js';
+import {
+    SettingsTabContent,
+    TablePageSizesDialog
+} from './components/SettingsViewParts.jsx';
 
 const fontFamilyLabelKeys = {
     inter: 'view.settings.appearance.appearance.font_family_inter',
@@ -310,217 +305,6 @@ const settingsTabs = [
     ['integrations', 'view.settings.category.integrations'],
     ['advanced', 'view.settings.category.advanced']
 ];
-function SettingsTabContent({ value, children }) {
-    return (
-        <TabsContent
-            value={value}
-            className="m-0 min-h-0 w-full min-w-0 gap-4 overflow-x-hidden overflow-y-auto pt-3 pb-4 data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col [&>[data-slot=card]]:shrink-0"
-        >
-            {children}
-        </TabsContent>
-    );
-}
-
-function TablePageSizesDialog({ open, onOpenChange, onSaved }) {
-    const { t } = useI18n();
-    const [draft, setDraft] = useState(() => [...TABLE_PAGE_SIZE_DEFAULTS]);
-    const [input, setInput] = useState('');
-    const options = useMemo(() => buildTablePageSizeOptions(draft), [draft]);
-    const filteredOptions = useMemo(
-        () => filterTablePageSizeOptions(options, input),
-        [input, options]
-    );
-
-    useEffect(() => {
-        if (!open) {
-            return;
-        }
-        setDraft(
-            normalizeTablePageSizes(
-                usePreferencesStore.getState().tablePageSizes
-            )
-        );
-        setInput('');
-    }, [open]);
-
-    async function persist(
-        nextSizes,
-        { close = false, showToast = false } = {}
-    ) {
-        const normalizedSizes = normalizeTablePageSizes(nextSizes);
-        setDraft(normalizedSizes);
-        try {
-            const saved = await setTablePageSizesPreference(normalizedSizes);
-            onSaved?.(saved);
-            if (close) {
-                onOpenChange(false);
-            }
-            if (showToast) {
-                toast.success(t('common.settings_saved'));
-            }
-            return true;
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_save_setting')
-            );
-            return false;
-        }
-    }
-
-    function addPageSize(value = input, opts = {}) {
-        const parsed = Number.parseInt(value, 10);
-        if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1000) {
-            toast.error(
-                t('view.settings.appearance.appearance.table_page_sizes_error')
-            );
-            return;
-        }
-        void persist([...draft, parsed], opts);
-        setInput('');
-    }
-
-    function removePageSize(value) {
-        const next = draft.filter((entry) => entry !== value);
-        void persist(next.length ? next : [...TABLE_PAGE_SIZE_DEFAULTS]);
-    }
-
-    function togglePageSize(value) {
-        if (draft.includes(value)) {
-            removePageSize(value);
-            return;
-        }
-        void persist([...draft, value]);
-    }
-
-    function save() {
-        if (input.trim()) {
-            addPageSize(input, {
-                close: true,
-                showToast: true
-            });
-            return;
-        }
-        onOpenChange(false);
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>
-                        {t(
-                            'view.settings.appearance.appearance.table_page_sizes'
-                        )}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {t(
-                            'view.settings.appearance.appearance.table_page_sizes_description'
-                        )}
-                    </DialogDescription>
-                </DialogHeader>
-                <FieldGroup>
-                    <div className="flex flex-wrap gap-2">
-                        {draft.map((size) => (
-                            <Badge
-                                key={size}
-                                variant="secondary"
-                                className="gap-2"
-                            >
-                                {size}
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={`Remove ${size}`}
-                                    onClick={() => removePageSize(size)}
-                                >
-                                    <XIcon data-icon="inline-start" />
-                                </Button>
-                            </Badge>
-                        ))}
-                    </div>
-                    <Field
-                        label={t(
-                            'view.settings.appearance.appearance.table_page_sizes'
-                        )}
-                        description="1-1000"
-                        controlId="settings-table-page-size-input"
-                    >
-                        <InputGroup>
-                            <InputGroupInput
-                                id="settings-table-page-size-input"
-                                type="number"
-                                name="tablePageSize"
-                                inputMode="numeric"
-                                min={1}
-                                max={1000}
-                                value={input}
-                                placeholder={t(
-                                    'view.settings.appearance.appearance.table_page_sizes'
-                                )}
-                                onChange={(event) =>
-                                    setInput(event.target.value)
-                                }
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                        event.preventDefault();
-                                        addPageSize();
-                                    }
-                                }}
-                            />
-                            <InputGroupAddon align="inline-end">
-                                <InputGroupButton
-                                    type="button"
-                                    size="icon-xs"
-                                    aria-label={"Table Page Sizes"}
-                                    onClick={() => addPageSize()}
-                                >
-                                    <PlusIcon data-icon="inline-start" />
-                                </InputGroupButton>
-                            </InputGroupAddon>
-                        </InputGroup>
-                    </Field>
-                    <div className="max-h-64 overflow-y-auto rounded-md border p-1">
-                        <FieldGroup>
-                            {filteredOptions.map((size) => {
-                                const optionId = `settings-table-page-size-option-${size}`;
-                                return (
-                                    <ShadcnField
-                                        key={size}
-                                        orientation="horizontal"
-                                        className="hover:bg-accent hover:text-accent-foreground rounded-sm px-2 py-1.5"
-                                    >
-                                        <Checkbox
-                                            id={optionId}
-                                            checked={draft.includes(size)}
-                                            onCheckedChange={() =>
-                                                togglePageSize(size)
-                                            }
-                                        />
-                                        <ShadcnFieldLabel
-                                            htmlFor={optionId}
-                                            className="w-full cursor-pointer"
-                                        >
-                                            {size}
-                                        </ShadcnFieldLabel>
-                                    </ShadcnField>
-                                );
-                            })}
-                        </FieldGroup>
-                    </div>
-                </FieldGroup>
-                <DialogFooter>
-                    <Button type="button" onClick={() => void save()}>
-                        {t('dialog.alertdialog.ok')}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 export function SettingsPage() {
     const { t } = useI18n();
     const locale = useShellStore((state) => state.locale);

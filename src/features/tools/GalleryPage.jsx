@@ -15,10 +15,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import {
-    EmptyState as AppEmptyState,
-    LoadingState as AppLoadingState
-} from '@/components/layout/PageScaffold.jsx';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
@@ -60,6 +56,7 @@ import {
 } from '@/ui/shadcn/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { appI18n } from '@/services/i18nService.js';
+import { EmptyState, LoadingState } from './components/GalleryViewParts.jsx';
 
 const FILE_TABS = {
     gallery: {
@@ -207,20 +204,6 @@ function validateImageFile(file, t) {
     }
 
     return true;
-}
-
-function EmptyState({ title, description }) {
-    return (
-        <AppEmptyState
-            className="min-h-72"
-            title={title}
-            description={description}
-        />
-    );
-}
-
-function LoadingState() {
-    return <AppLoadingState className="min-h-72" />;
 }
 
 export function GalleryPage() {

@@ -5,9 +5,6 @@ import {
     useReactTable
 } from '@tanstack/react-table';
 import {
-    ArrowDownIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon,
     RefreshCwIcon,
     Trash2Icon,
     XIcon
@@ -24,7 +21,6 @@ import {
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import {
-    EmptyState,
     LoadingState,
     PageBody,
     PageFooter,
@@ -46,17 +42,15 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 import { appI18n } from '@/services/i18nService.js';
+import {
+    ModerationEmptyState,
+    ModerationTypeFilterDropdown,
+    SortButton
+} from './components/ModerationViewParts.jsx';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
 const DEFAULT_SORTING = [{ id: 'created', desc: true }];
@@ -289,79 +283,6 @@ function isSameModerationRow(left, right) {
         left?.sourceUserId === right?.sourceUserId &&
         left?.targetUserId === right?.targetUserId &&
         left?.created === right?.created
-    );
-}
-
-function SortButton({ column, label }) {
-    const direction = column.getIsSorted();
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground h-auto justify-start px-0 py-0 text-left text-xs font-medium tracking-wide uppercase"
-            onClick={() => column.toggleSorting(direction === 'asc')}
-        >
-            <span>{label}</span>
-            {direction === 'asc' ? (
-                <ArrowUpIcon data-icon="inline-end" />
-            ) : direction === 'desc' ? (
-                <ArrowDownIcon data-icon="inline-end" />
-            ) : (
-                <ArrowUpDownIcon data-icon="inline-end" />
-            )}
-        </Button>
-    );
-}
-
-function ModerationEmptyState({ title, description }) {
-    return <EmptyState title={title} description={description} />;
-}
-
-function ModerationTypeFilterDropdown({
-    value,
-    onChange,
-    getTypeLabel = (type) => TYPE_LABELS[type] || type
-}) {
-    const selectedTypes = Array.isArray(value) ? value : [];
-    const label = selectedTypes.length
-        ? `${selectedTypes.length} moderation filters`
-        : 'Moderation filters';
-
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 min-w-0 flex-1 justify-start truncate"
-                >
-                    {label}
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuGroup>
-                    {moderationTypes.map((type) => (
-                        <DropdownMenuCheckboxItem
-                            key={type}
-                            checked={selectedTypes.includes(type)}
-                            onCheckedChange={(checked) => {
-                                const next = checked
-                                    ? [...selectedTypes, type]
-                                    : selectedTypes.filter(
-                                          (entry) => entry !== type
-                                      );
-                                onChange(normalizeSelectedTypes(next));
-                            }}
-                            onSelect={(event) => event.preventDefault()}
-                        >
-                            {getTypeLabel(type)}
-                        </DropdownMenuCheckboxItem>
-                    ))}
-                </DropdownMenuGroup>
-            </DropdownMenuContent>
-        </DropdownMenu>
     );
 }
 
@@ -998,6 +919,7 @@ export function ModerationPage({ embedded = false } = {}) {
                         value={selectedTypes}
                         onChange={setSelectedTypes}
                         getTypeLabel={getModerationTypeLabel}
+                        sanitizeTypes={normalizeSelectedTypes}
                     />
                     <Input
                         value={searchQuery}

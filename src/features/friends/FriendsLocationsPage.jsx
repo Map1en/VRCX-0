@@ -1,20 +1,13 @@
 import {
-    ChevronDownIcon,
-    GlobeIcon,
-    LayersIcon,
     SearchIcon,
     Settings2Icon,
-    UsersIcon
 } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { FriendLocationCard } from '@/components/friends/FriendLocationCard.jsx';
-import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
-import { Location } from '@/components/Location.jsx';
+import { LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
-import { cn } from '@/lib/utils.js';
 import {
     configRepository,
     notificationRepository,
@@ -29,16 +22,12 @@ import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
 import { getFriendsSortFunction } from '@/shared/utils/friend.js';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
-import {
-    parseLocation,
-    resolveFriendPresenceLocation
-} from '@/shared/utils/location.js';
+import { parseLocation } from '@/shared/utils/location.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import {
@@ -58,91 +47,27 @@ import {
 import {
     buildFriendsLocationsFavoriteIdSet as buildFavoriteIdSet,
     buildSameInstanceGroups,
-    isSentinelLocationValue,
-    isOnlineFriend,
     matchesFriendLocationSearch as matchesSearch,
     normalizeFriendsLocationId as normalizeId,
     resolveFriendsLocationsCurrentInviteLocation as resolveCurrentInviteLocation,
-    resolveFriendTravelingWorldName,
-    resolveFriendWorldName,
-    resolveFriendGroupName,
+    resolveLocationSummary,
     resolveLocationTarget,
-    resolveWorldIdCandidate,
+    resolveWorldDialogTarget,
     uniqueFriendsById
 } from './friendsLocationsRows.js';
 import { appI18n } from '@/services/i18nService.js';
+import {
+    FriendsLocationCardItem,
+    FriendsLocationsEmptyState,
+    FriendsLocationsFavoriteGroupHeader,
+    FriendsLocationsSectionHeader
+} from './components/FriendsLocationsViewParts.jsx';
 
 function formatOptionValue(value) {
     return Number(value)
         .toFixed(2)
         .replace(/\.00$/, '')
         .replace(/(\.\d)0$/, '$1');
-}
-
-function resolveLocationSummary(friend) {
-    const source =
-        friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
-    const travelingToLocation = [
-        source?.travelingToLocation,
-        source?.$travelingToLocation
-    ]
-        .map(normalizeId)
-        .find((value) => value && !isSentinelLocationValue(value));
-    if (travelingToLocation && !isSentinelLocationValue(travelingToLocation)) {
-        const parsedTraveling = parseLocation(travelingToLocation);
-        return {
-            label: resolveFriendTravelingWorldName(friend),
-            meta: parsedTraveling.instanceName || travelingToLocation
-        };
-    }
-
-    const location = resolveFriendPresenceLocation(friend, {
-        preferTraveling: false
-    });
-    const parsedLocation = parseLocation(location);
-
-    if (!location || parsedLocation.isOffline) {
-        return {
-            label: 'Offline',
-            meta: ''
-        };
-    }
-
-    if (parsedLocation.isPrivate) {
-        return {
-            label: 'Private',
-            meta: ''
-        };
-    }
-
-    if (parsedLocation.isTraveling) {
-        return {
-            label: 'Traveling',
-            meta: resolveFriendTravelingWorldName(friend) || location
-        };
-    }
-
-    return {
-        label: resolveFriendWorldName(friend),
-        meta: [
-            resolveFriendGroupName(friend),
-            parsedLocation.accessTypeName,
-            parsedLocation.instanceName
-        ]
-            .filter(Boolean)
-            .join(' · ')
-    };
-}
-
-function resolveWorldDialogTarget(target) {
-    const rawLocation = normalizeId(target?.rawLocation);
-    const worldId = normalizeId(target?.worldId);
-    const parsed = target?.parsed || parseLocation(rawLocation);
-    if (parsed?.isRealInstance && parsed?.tag) {
-        return parsed.tag;
-    }
-    const parsedWorldId = resolveWorldIdCandidate(parsed.worldId);
-    return resolveWorldIdCandidate(worldId, parsedWorldId, rawLocation);
 }
 
 function appendLabel(labelsByFriendId, friendId, label) {
@@ -439,11 +364,6 @@ function clampScale(value, min, max, fallback) {
     const parsed = parseScale(value, fallback);
     return Math.min(max, Math.max(min, parsed));
 }
-
-function FriendsLocationsEmptyState({ title, description }) {
-    return <EmptyState title={title} description={description} />;
-}
-
 export function FriendsLocationsPage({ embedded = false } = {}) {
     const { t } = useI18n();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -1466,172 +1386,40 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         }
     }
 
-    function renderSectionHeader(section) {
-        return (
-            <div className="bg-muted/20 flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-xl border px-3 py-2 md:flex-row md:items-center md:justify-between">
-                <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <LayersIcon className="text-muted-foreground size-4" />
-                        <div className="min-w-0 truncate font-medium">
-                            {section.rawLocation &&
-                            !section.key.startsWith('instance:offline') ? (
-                                <Location
-                                    location={section.rawLocation}
-                                    hint={section.title}
-                                    link={false}
-                                    asButton={false}
-                                    disableTooltip
-                                />
-                            ) : (
-                                section.title
-                            )}
-                        </div>
-                        <Badge variant="outline">
-                            {section.friends.length}
-                        </Badge>
-                    </div>
-                    {section.description ? (
-                        <div className="text-muted-foreground line-clamp-1 text-xs break-words">
-                            {section.description}
-                        </div>
-                    ) : null}
-                </div>
-                {section.worldId || section.groupId ? (
-                    <div className="flex shrink-0 flex-wrap gap-2">
-                        {section.worldId ? (
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                    openWorldDialog({
-                                        worldId:
-                                            resolveWorldDialogTarget(section),
-                                        title: section.title
-                                    })
-                                }
-                            >
-                                <GlobeIcon data-icon="inline-start" />
-                                {t('view.friend_list.generated.world')}
-                            </Button>
-                        ) : null}
-                        {section.groupId ? (
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                    openGroupDialog({
-                                        groupId: section.groupId,
-                                        title: undefined
-                                    })
-                                }
-                            >
-                                <UsersIcon data-icon="inline-start" />
-                                {t('view.friend_list.generated.group')}
-                            </Button>
-                        ) : null}
-                    </div>
-                ) : null}
-            </div>
-        );
+    function openSectionWorld(section) {
+        openWorldDialog({
+            worldId: resolveWorldDialogTarget(section),
+            title: section.title
+        });
     }
 
-    function renderFavoriteGroupHeader(section) {
-        return (
-            <Button
-                type="button"
-                variant="ghost"
-                className="h-auto w-full cursor-pointer justify-start gap-1.5 px-1 py-1.5 text-left text-sm font-semibold select-none"
-                onClick={() => toggleFavoriteGroup(section.groupKey)}
-            >
-                <ChevronDownIcon
-                    data-icon="inline-start"
-                    className={cn(
-                        'shrink-0 transition-transform duration-200 ease-in-out',
-                        section.collapsed && '-rotate-90'
-                    )}
-                />
-                <span className="min-w-0 truncate">{section.title}</span>
-                <span className="text-xs font-normal opacity-70">
-                    ({section.friends.length})
-                </span>
-            </Button>
-        );
+    function openSectionGroup(section) {
+        openGroupDialog({
+            groupId: section.groupId,
+            title: undefined
+        });
     }
 
-    function renderFriendCard(section, friend) {
-        const location = resolveLocationSummary(friend);
-        const target = resolveLocationTarget(friend);
-        const rawLocation = target.rawLocation;
-        const groupHint = resolveFriendGroupName(friend);
-        const source =
-            friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
-        const isTravelingLocation =
-            normalizeId(source?.location).toLowerCase() === 'traveling';
-        const travelingLocation =
-            source?.travelingToLocation || source?.$travelingToLocation || '';
-        const friendIsCurrentUser =
-            normalizeId(friend?.id || friend?.userId) ===
-            normalizeId(currentUserId);
-        const friendIsOnline = isOnlineFriend(friend);
-        const friendLocationAvailable = canUseFriendLocation(rawLocation);
+    function openFriendUser(friend) {
+        openUserDialog({
+            userId: friend?.id,
+            title: friend?.displayName || friend?.username || undefined,
+            seedData: friend
+        });
+    }
 
-        return (
-            <FriendLocationCard
-                key={`${section.key}:${friend.id}`}
-                friend={friend}
-                locationLabel={location.label}
-                groupHint={groupHint}
-                rawLocation={rawLocation}
-                isTraveling={isTravelingLocation}
-                travelingLocation={travelingLocation}
-                cardScale={cardScale}
-                spacingScale={spacingScale}
-                displayInstanceInfo={section.displayInstanceInfo !== false}
-                canUseFriendLocation={
-                    !friendIsCurrentUser && friendLocationAvailable
-                }
-                canSendInvite={!friendIsCurrentUser && canSendInvite}
-                canRequestInvite={!friendIsCurrentUser && friendIsOnline}
-                canBoop={!friendIsCurrentUser && canBoop}
-                onOpenUser={() =>
-                    openUserDialog({
-                        userId: friend?.id,
-                        title:
-                            friend?.displayName ||
-                            friend?.username ||
-                            undefined,
-                        seedData: friend
-                    })
-                }
-                onOpenWorld={
-                    target.worldId
-                        ? () =>
-                              openWorldDialog({
-                                  worldId: resolveWorldDialogTarget(target),
-                                  title: location.label || undefined
-                              })
-                        : undefined
-                }
-                onOpenGroup={
-                    target.groupId
-                        ? () =>
-                              openGroupDialog({
-                                  groupId: target.groupId,
-                                  title: undefined
-                              })
-                        : undefined
-                }
-                onLaunchLocation={() => void launchFriendLocation(rawLocation)}
-                onSelfInviteLocation={() =>
-                    void selfInviteFriendLocation(rawLocation)
-                }
-                onSendInvite={() => void sendFriendInvite(friend)}
-                onRequestInvite={() => void requestFriendInvite(friend)}
-                onSendBoop={() => void sendFriendBoop(friend)}
-            />
-        );
+    function openFriendWorld(target, location) {
+        openWorldDialog({
+            worldId: resolveWorldDialogTarget(target),
+            title: location.label || undefined
+        });
+    }
+
+    function openFriendGroup(target) {
+        openGroupDialog({
+            groupId: target.groupId,
+            title: undefined
+        });
     }
 
     return (
@@ -1809,9 +1597,17 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                 }}
                             >
                                 {row.type === 'header' ? (
-                                    renderSectionHeader(row.section)
+                                    <FriendsLocationsSectionHeader
+                                        section={row.section}
+                                        t={t}
+                                        onOpenWorld={openSectionWorld}
+                                        onOpenGroup={openSectionGroup}
+                                    />
                                 ) : row.type === 'group-header' ? (
-                                    renderFavoriteGroupHeader(row.section)
+                                    <FriendsLocationsFavoriteGroupHeader
+                                        section={row.section}
+                                        onToggle={toggleFavoriteGroup}
+                                    />
                                 ) : (
                                     <div
                                         className="grid overflow-hidden"
@@ -1822,10 +1618,51 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                                         }}
                                     >
                                         {row.friends.map((friend) =>
-                                            renderFriendCard(
-                                                row.section,
-                                                friend
-                                            )
+                                            <FriendsLocationCardItem
+                                                key={`${row.section.key}:${friend.id}`}
+                                                section={row.section}
+                                                friend={friend}
+                                                currentUserId={currentUserId}
+                                                cardScale={cardScale}
+                                                spacingScale={spacingScale}
+                                                canUseFriendLocation={
+                                                    canUseFriendLocation
+                                                }
+                                                canSendInvite={canSendInvite}
+                                                canBoop={canBoop}
+                                                onOpenUser={openFriendUser}
+                                                onOpenWorld={openFriendWorld}
+                                                onOpenGroup={openFriendGroup}
+                                                onLaunchLocation={(location) =>
+                                                    void launchFriendLocation(
+                                                        location
+                                                    )
+                                                }
+                                                onSelfInviteLocation={(
+                                                    location
+                                                ) =>
+                                                    void selfInviteFriendLocation(
+                                                        location
+                                                    )
+                                                }
+                                                onSendInvite={(nextFriend) =>
+                                                    void sendFriendInvite(
+                                                        nextFriend
+                                                    )
+                                                }
+                                                onRequestInvite={(
+                                                    nextFriend
+                                                ) =>
+                                                    void requestFriendInvite(
+                                                        nextFriend
+                                                    )
+                                                }
+                                                onSendBoop={(nextFriend) =>
+                                                    void sendFriendBoop(
+                                                        nextFriend
+                                                    )
+                                                }
+                                            />
                                         )}
                                     </div>
                                 )}
