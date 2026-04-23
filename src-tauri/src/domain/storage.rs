@@ -7,7 +7,6 @@ use crate::error::AppError;
 
 pub struct StorageService {
     data: Arc<RwLock<HashMap<String, String>>>,
-    #[allow(dead_code)]
     file_path: PathBuf,
     dirty_tx: mpsc::Sender<()>,
 }
@@ -56,7 +55,6 @@ impl StorageService {
         self.data.read().unwrap().clone()
     }
 
-    #[allow(dead_code)]
     pub fn save(&self) -> Result<(), AppError> {
         let data = self.data.read().unwrap();
         let json = serde_json::to_string_pretty(&*data)?;

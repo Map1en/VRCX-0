@@ -43,7 +43,6 @@ pub enum ChunkType {
     Unknown(String),
 }
 
-#[allow(dead_code)]
 impl ChunkType {
     fn from_str(s: &str) -> Self {
         match s {
@@ -56,16 +55,6 @@ impl ChunkType {
         }
     }
 
-    fn as_bytes(&self) -> &[u8] {
-        match self {
-            Self::IHDR => b"IHDR",
-            Self::SRGB => b"sRGB",
-            Self::ITXT => b"iTXt",
-            Self::IDAT => b"IDAT",
-            Self::IEND => b"IEND",
-            Self::Unknown(s) => s.as_bytes(),
-        }
-    }
 }
 
 #[derive(Clone, Debug)]

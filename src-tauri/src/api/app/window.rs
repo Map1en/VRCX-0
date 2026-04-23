@@ -9,7 +9,7 @@ use crate::error::AppError;
 const TRAY_ICON_DEFAULT: &[u8] = include_bytes!("../../../icons/icon.png");
 const TRAY_ICON_NOTIFY: &[u8] = include_bytes!("../../../icons/icon_notify.png");
 
-#[allow(dead_code)]
+#[cfg(not(debug_assertions))]
 fn spawn_current_exe(args: &[&str]) -> Result<(), AppError> {
     let exe = std::env::current_exe().map_err(|e| AppError::Custom(format!("current exe: {e}")))?;
     let mut cmd = std::process::Command::new(&exe);
@@ -129,7 +129,6 @@ pub fn app__set_startup(app_handle: AppHandle, _enabled: bool) -> Result<(), App
 }
 
 #[tauri::command]
-#[allow(unused_variables)]
 pub fn app__desktop_notification(
     app_handle: AppHandle,
     bold_text: String,

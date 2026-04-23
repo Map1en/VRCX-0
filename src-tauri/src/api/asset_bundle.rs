@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::api::app::app__get_vrchat_cache_location;
+use crate::api::app::paths::app__get_vrchat_cache_location;
 use crate::error::AppError;
 
 #[derive(Serialize)]
