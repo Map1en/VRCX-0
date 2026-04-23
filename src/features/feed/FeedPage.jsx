@@ -15,11 +15,6 @@ import {
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
-import {
-    PageBody,
-    PageScaffold
-} from '@/components/layout/PageScaffold.jsx';
 import {
     configRepository,
     FEED_FILTER_TYPES,
@@ -77,8 +72,7 @@ import {
 import { appI18n } from '@/services/i18nService.js';
 
 import { buildFeedColumns } from './components/FeedColumns.jsx';
-import { FeedTableShell } from './components/FeedTableShell.jsx';
-import { FeedToolbar } from './components/FeedToolbar.jsx';
+import { FeedPageView } from './components/FeedPageView.jsx';
 
 export function FeedPage({ embedded = false } = {}) {
     const { t } = useI18n();
@@ -1002,64 +996,52 @@ export function FeedPage({ embedded = false } = {}) {
     });
 
     return (
-        <PageScaffold embedded={embedded} className={embedded ? '' : 'feed'}>
-            <FeedToolbar
-                activeFilterCount={activeFilterCount}
-                activeFilters={activeFilters}
-                dateDraftFrom={dateDraftFrom}
-                dateDraftRange={dateDraftRange}
-                dateDraftTo={dateDraftTo}
-                dateFilterOpen={dateFilterOpen}
-                favoritesOnly={favoritesOnly}
-                feedFilterTypes={FEED_FILTER_TYPES}
-                onApplyDateFilter={applyDateFilter}
-                onClearDateFilter={clearDateFilter}
-                onClearFeedFilters={() => setFeedFilters([])}
-                onClearSearch={clearSearch}
-                onDateFilterOpenChange={setDateFilterOpen}
-                onDateRangeSelect={(range) => {
-                    setDateDraftFrom(toDateInputValue(range?.from));
-                    setDateDraftTo(toDateInputValue(range?.to));
-                }}
-                onSearchBlur={() => commitSearch()}
-                onSearchDraftChange={setSearchDraft}
-                onSearchEnter={(value) => commitSearch(value)}
-                onToggleFavoritesOnly={() =>
-                    setFavoritesOnly((current) => !current)
-                }
-                onToggleFeedFilter={toggleFeedFilter}
-                searchDraft={searchDraft}
-                t={t}
-                table={table}
-                todayDate={todayDate}
-            />
-            <PageBody>
-                <FeedTableShell
-                    table={table}
-                    columns={columns}
-                    rows={rows}
-                    loadStatus={loadStatus}
-                    favoritesOnly={favoritesOnly}
-                    isFavoritesLoaded={isFavoritesLoaded}
-                    loadingPreviousInstancesKey={loadingPreviousInstancesKey}
-                    currentEndpoint={currentEndpoint}
-                    onOpenPreviousInstances={openPreviousInstancesForLocation}
-                    onNewInstance={openFeedNewInstance}
-                    onPreviewImage={openImagePreview}
-                    pagination={pagination}
-                    pageSizes={pageSizes}
-                    resolvePageSize={resolvePageSize}
-                    setPagination={setPagination}
-                    t={t}
-                />
-            </PageBody>
-            <PreviousInstancesTableDialog
-                open={previousInstancesOpen}
-                onOpenChange={setPreviousInstancesOpen}
-                title={previousInstancesTitle}
-                instances={previousInstancesRows}
-                onRowsChange={setPreviousInstancesRows}
-            />
-        </PageScaffold>
+        <FeedPageView
+            activeFilterCount={activeFilterCount}
+            activeFilters={activeFilters}
+            columns={columns}
+            currentEndpoint={currentEndpoint}
+            dateDraftFrom={dateDraftFrom}
+            dateDraftRange={dateDraftRange}
+            dateDraftTo={dateDraftTo}
+            dateFilterOpen={dateFilterOpen}
+            embedded={embedded}
+            feedFilterTypes={FEED_FILTER_TYPES}
+            favoritesOnly={favoritesOnly}
+            isFavoritesLoaded={isFavoritesLoaded}
+            loadStatus={loadStatus}
+            loadingPreviousInstancesKey={loadingPreviousInstancesKey}
+            onApplyDateFilter={applyDateFilter}
+            onClearDateFilter={clearDateFilter}
+            onClearFeedFilters={() => setFeedFilters([])}
+            onClearSearch={clearSearch}
+            onDateFilterOpenChange={setDateFilterOpen}
+            onDateRangeSelect={(range) => {
+                setDateDraftFrom(toDateInputValue(range?.from));
+                setDateDraftTo(toDateInputValue(range?.to));
+            }}
+            onNewInstance={openFeedNewInstance}
+            onOpenPreviousInstances={openPreviousInstancesForLocation}
+            onPageSizeChange={setPagination}
+            onPreviousInstancesOpenChange={setPreviousInstancesOpen}
+            onPreviousInstancesRowsChange={setPreviousInstancesRows}
+            onPreviewImage={openImagePreview}
+            onSearchBlur={() => commitSearch()}
+            onSearchDraftChange={setSearchDraft}
+            onSearchEnter={(value) => commitSearch(value)}
+            onToggleFavoritesOnly={() => setFavoritesOnly((current) => !current)}
+            onToggleFeedFilter={toggleFeedFilter}
+            pageSizes={pageSizes}
+            pagination={pagination}
+            previousInstancesOpen={previousInstancesOpen}
+            previousInstancesRows={previousInstancesRows}
+            previousInstancesTitle={previousInstancesTitle}
+            resolvePageSize={resolvePageSize}
+            rows={rows}
+            searchDraft={searchDraft}
+            t={t}
+            table={table}
+            todayDate={todayDate}
+        />
     );
 }

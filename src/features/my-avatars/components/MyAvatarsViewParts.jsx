@@ -174,8 +174,8 @@ export function AvatarActionMenuItems({
                 >
                     <UserIcon />
                     {avatar?.releaseStatus === 'public'
-                        ? 'Make private'
-                        : 'Make public'}
+                        ? appI18n.t('view.my_avatars.generated.make_private')
+                        : appI18n.t('view.my_avatars.generated.make_public')}
                 </Item>
                 <Item
                     disabled={disabled}
@@ -239,7 +239,9 @@ export function AvatarActionsDropdown({
                     type="button"
                     variant="ghost"
                     size="icon-xs"
-                    aria-label="Open avatar actions"
+                    aria-label={appI18n.t(
+                        'view.my_avatars.generated.open_avatar_actions'
+                    )}
                     disabled={isUpdating}
                     onClick={(event) => event.stopPropagation()}
                 >
@@ -309,10 +311,10 @@ export function MyAvatarFilterPopover({
                                     }
                                 >
                                     {option === 'all'
-                                        ? 'All'
+                                        ? appI18n.t('search.avatar.all')
                                         : option === 'public'
-                                          ? 'Public'
-                                          : 'Private'}
+                                          ? appI18n.t('search.avatar.public')
+                                          : appI18n.t('search.avatar.private')}
                                 </Button>
                             ))}
                         </div>
@@ -335,7 +337,7 @@ export function MyAvatarFilterPopover({
                                     onClick={() => onPlatformChange(option)}
                                 >
                                     {option === 'all'
-                                        ? 'All'
+                                        ? appI18n.t('search.avatar.all')
                                         : option === 'pc'
                                           ? 'PC'
                                           : option === 'android'
@@ -450,7 +452,9 @@ export function GridSettingsMenu({
                     type="button"
                     size="icon-sm"
                     variant="ghost"
-                    aria-label="Grid settings"
+                    aria-label={appI18n.t(
+                        'view.my_avatars.generated.grid_settings'
+                    )}
                 >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
@@ -469,7 +473,9 @@ export function GridSettingsMenu({
                             min={0.4}
                             max={1.4}
                             step={0.05}
-                            aria-label="Avatar card scale"
+                            aria-label={appI18n.t(
+                                'view.my_avatars.generated.avatar_card_scale'
+                            )}
                             onValueChange={(value) => updateCardScale(value[0])}
                             onValueCommit={(value) => commitCardScale(value[0])}
                         />
@@ -488,7 +494,9 @@ export function GridSettingsMenu({
                             min={0.6}
                             max={2}
                             step={0.05}
-                            aria-label="Avatar card spacing"
+                            aria-label={appI18n.t(
+                                'view.my_avatars.generated.avatar_card_spacing'
+                            )}
                             onValueChange={(value) =>
                                 updateCardSpacing(value[0])
                             }
@@ -573,7 +581,10 @@ export function MyAvatarGridCard({
                                 fontSize: `${Math.max(9, Math.round(18 * cardScale))}px`
                             }}
                         >
-                            {avatar?.name || 'Untitled avatar'}
+                            {avatar?.name ||
+                                appI18n.t(
+                                    'view.my_avatars.generated.untitled_avatar'
+                                )}
                         </span>
                         {(avatar?.$tags || []).length ? (
                             <div

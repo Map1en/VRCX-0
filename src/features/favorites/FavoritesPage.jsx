@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -48,15 +48,9 @@ import {
     useFavoriteRemoteDetails
 } from './useFavoriteRemoteDetails.js';
 import { appI18n } from '@/services/i18nService.js';
+import { FavoritesPageView } from './components/FavoritesPageView.jsx';
 
 const EMPTY_ITEMS = Object.freeze([]);
-
-function useStableEvent(handler) {
-    const handlerRef = useRef(handler);
-    handlerRef.current = handler;
-
-    return useCallback((...args) => handlerRef.current?.(...args), []);
-}
 const SPLITTER_CONFIG_KEYS = {
     friend: 'VRCX_FavoritesFriendSplitter',
     world: 'VRCX_FavoritesWorldSplitter',
@@ -64,7 +58,6 @@ const SPLITTER_CONFIG_KEYS = {
 };
 const SPLITTER_DEFAULT_SIZE_PX = 260;
 const SPLITTER_MIN_SIZE_PX = 0;
-const SPLITTER_CONTENT_MIN_SIZE_PX = 320;
 const CARD_SCALE_CONFIG_KEYS = {
     friend: 'VRCX_FavoritesFriendCardScale',
     world: 'VRCX_FavoritesWorldCardScale',
@@ -93,17 +86,6 @@ function normalizeSplitterSizePx(value) {
     }
     return Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed));
 }
-
-function getFavoriteSearchResultsSubtitle(count) {
-    return appI18n.t(
-        count === 1
-            ? 'view.favorites.generated_dynamic.search_results_singular'
-            : 'view.favorites.generated_dynamic.search_results_plural',
-        { count }
-    );
-}
-
-import { FavoritesPageLayout } from './components/FavoritesPageLayout.jsx';
 
 function FavoritesPage({ kind, embedded = false }) {
     const favoriteLoadStatus = useFavoriteStore((state) => state.loadStatus);
@@ -862,15 +844,8 @@ function FavoritesPage({ kind, embedded = false }) {
     const isAllSelected =
         contentItems.length > 0 &&
         contentItems.every((item) => selectedKeysSet.has(item.key));
-    const hasSelection = selectedKeys.length > 0;
     const avatarEditSelectionDisabled =
         kind === 'avatar' && selectedSource !== 'remote';
-    const editModeDisabled =
-        isSearchActive ||
-        !selectedGroup ||
-        contentItems.length === 0 ||
-        avatarEditSelectionDisabled;
-    const showCopyButton = selectedSource !== 'local';
     const selectedContentItems = contentItems.filter((item) =>
         selectedKeysSet.has(item.key)
     );
@@ -1534,208 +1509,84 @@ function FavoritesPage({ kind, embedded = false }) {
         }
     }
 
-    const handleCardToggleSelect = useStableEvent((itemKey, checked) => {
-        setSelectedKeys((keys) =>
-            checked
-                ? Array.from(new Set([...keys, itemKey]))
-                : keys.filter((key) => key !== itemKey)
-        );
-    });
-    const handleCardFriendLaunch = useStableEvent((entry) =>
-        launchFavoriteFriendLocation(entry)
-    );
-    const handleCardFriendSelfInvite = useStableEvent((entry) =>
-        selfInviteFavoriteFriendLocation(entry)
-    );
-    const handleCardFriendInvite = useStableEvent((entry) =>
-        sendFavoriteFriendInvite(entry)
-    );
-    const handleCardFriendRequestInvite = useStableEvent((entry) =>
-        requestFavoriteFriendInvite(entry)
-    );
-    const handleCardFriendBoop = useStableEvent((entry) =>
-        sendFavoriteFriendBoop(entry)
-    );
-    const handleCardWorldNewInstance = useStableEvent((entry) =>
-        openWorldNewInstance(entry, false)
-    );
-    const handleCardWorldSelfInvite = useStableEvent((entry) =>
-        openWorldNewInstance(entry, true)
-    );
-    const handleCardAvatarSelect = useStableEvent((entry) =>
-        selectFavoriteAvatar(entry)
-    );
-    const handleCardRemoveLocalFavorite = useStableEvent((entry) =>
-        handleRemoveLocalFavorite(entry)
-    );
-    const handleCardRemoveRemoteFavorite = useStableEvent((entry) =>
-        handleRemoveRemoteFavorite(entry)
-    );
-    const handleGroupRailRefresh = useStableEvent(() => refreshFavorites());
-    const handleImportFavorites = useStableEvent(() =>
-        openFavoriteImportDialog({ type: kind })
-    );
-    const handleExportFavorites = useStableEvent(() => exportCurrentFavorites());
-    const handleGroupRailSelect = useStableEvent((group) => {
-        setSearchQuery('');
-        setSelectedSource(group.source);
-        setSelectedGroupKey(group.key);
-    });
-    const handleStartCreateLocalGroup = useStableEvent(() => {
-        setCreatingLocalGroup(true);
-        setNewLocalGroupName('');
-    });
-    const handleCancelCreateLocalGroup = useStableEvent(() => {
-        setCreatingLocalGroup(false);
-        setNewLocalGroupName('');
-    });
-    const handleConfirmCreateLocalGroup = useStableEvent(
-        confirmCreateLocalGroup
-    );
-    const handleAvatarHistoryRefreshEvent =
-        useStableEvent(refreshAvatarHistory);
-    const handleAvatarHistoryClearEvent = useStableEvent(
-        handleAvatarHistoryClear
-    );
-    const handleRemoteGroupRenameEvent = useStableEvent(
-        handleRemoteGroupRename
-    );
-    const handleRemoteGroupVisibilityEvent = useStableEvent(
-        handleRemoteGroupVisibility
-    );
-    const handleRemoteGroupClearEvent = useStableEvent(handleRemoteGroupClear);
-    const handleLocalGroupRenameEvent = useStableEvent(handleLocalGroupRename);
-    const handleLocalGroupDeleteEvent = useStableEvent(handleLocalGroupDelete);
-    const handleSplitterResizeEvent = useStableEvent(handleSplitterResize);
-    const persistSplitterLayoutEvent = useStableEvent(persistSplitterLayout);
-    const handleEditModeChange = useStableEvent((value) => {
-        setEditMode(value);
-        if (!value) {
-            setSelectedKeys([]);
-        }
-    });
-    const handleClearSelection = useStableEvent(() => setSelectedKeys([]));
-    const handleCopySelectionEvent = useStableEvent(copySelection);
-    const handleBulkRemoveSelectionEvent = useStableEvent(bulkRemoveSelection);
-
-    const title = isSearchActive
-        ? pageConfig.searchPlaceholder
-        : selectedGroup
-          ? selectedGroup.label
-          : appI18n.t('view.favorites.generated.no_group_selected');
-    const subtitle = isSearchActive
-        ? getFavoriteSearchResultsSubtitle(contentItems.length)
-        : selectedGroup
-          ? selectedGroup.capacity
-              ? `${selectedGroup.count}/${selectedGroup.capacity}`
-              : String(selectedGroup.count)
-          : '';
-
     return (
-        <FavoritesPageLayout
+        <FavoritesPageView
+            avatarEditSelectionDisabled={avatarEditSelectionDisabled}
+            avatarHistoryGroups={avatarHistoryGroups}
+            avatarHistoryLoading={avatarHistoryLoading}
+            bulkRemoveSelection={bulkRemoveSelection}
+            canBoop={canBoop}
+            canCreateLocalGroup={canCreateLocalGroup}
+            canSendInvite={canSendInvite}
+            cardScale={cardScale}
+            cardSpacing={cardSpacing}
+            confirmCreateLocalGroup={confirmCreateLocalGroup}
+            contentItems={contentItems}
+            copySelection={copySelection}
+            creatingLocalGroup={creatingLocalGroup}
+            currentAvatarId={currentUserSnapshot?.currentAvatar || ''}
+            currentUserId={currentUserId}
+            editMode={editMode}
             embedded={embedded}
+            exportCurrentFavorites={exportCurrentFavorites}
+            exportDialogOpen={exportDialogOpen}
+            favoriteDetail={favoriteDetail}
+            favoriteLoadStatus={favoriteLoadStatus}
+            handleCardScaleChange={handleCardScaleChange}
+            handleCardSpacingChange={handleCardSpacingChange}
+            handleLocalGroupDelete={handleLocalGroupDelete}
+            handleLocalGroupRename={handleLocalGroupRename}
+            handleRemoveLocalFavorite={handleRemoveLocalFavorite}
+            handleRemoveRemoteFavorite={handleRemoveRemoteFavorite}
+            handleRemoteGroupClear={handleRemoteGroupClear}
+            handleRemoteGroupRename={handleRemoteGroupRename}
+            handleRemoteGroupVisibility={handleRemoteGroupVisibility}
+            handleSortValueChange={handleSortValueChange}
+            hasSearchInput={hasSearchInput}
+            isAllSelected={isAllSelected}
+            isSearchActive={isSearchActive}
             kind={kind}
+            launchFavoriteFriendLocation={launchFavoriteFriendLocation}
+            localGroups={localGroups}
+            localItemsByGroup={localItemsByGroup}
+            newLocalGroupName={newLocalGroupName}
+            onHandleAvatarHistoryClear={handleAvatarHistoryClear}
+            onImportFavorites={() => openFavoriteImportDialog({ type: kind })}
+            onSplitterResize={handleSplitterResize}
+            openWorldNewInstance={openWorldNewInstance}
             pageConfig={pageConfig}
-            toolbar={{
-                sortValue,
-                searchQuery,
-                searchMode,
-                cardScale,
-                cardSpacing,
-                refreshing: refreshing || favoriteLoadStatus === 'running',
-                onSortValueChange: handleSortValueChange,
-                onSearchChange: setSearchQuery,
-                onSearchModeChange: setSearchMode,
-                onCardScaleChange: handleCardScaleChange,
-                onCardSpacingChange: handleCardSpacingChange,
-                onRefresh: handleGroupRailRefresh,
-                onImport: handleImportFavorites,
-                onExport: handleExportFavorites
-            }}
-            exportDialog={{
-                open: exportDialogOpen,
-                onOpenChange: setExportDialogOpen,
-                remoteItemsByGroup,
-                localItemsByGroup
-            }}
-            splitter={{
-                layoutVersion: splitterLayoutVersion,
-                sizePx: splitterSizePx,
-                minSizePx: SPLITTER_MIN_SIZE_PX,
-                contentMinSizePx: SPLITTER_CONTENT_MIN_SIZE_PX,
-                onResize: handleSplitterResizeEvent,
-                onLayoutChanged: persistSplitterLayoutEvent
-            }}
-            groupRail={{
-                remoteTitle: pageConfig.remoteSectionTitle,
-                localTitle: pageConfig.localSectionTitle,
-                remoteGroups,
-                localGroups,
-                avatarHistoryGroups,
-                selectedSource,
-                selectedGroupKey,
-                hasSearchInput,
-                remoteLoading: favoriteLoadStatus === 'running' || refreshing,
-                localLoading: refreshing,
-                creatingLocalGroup,
-                newLocalGroupName,
-                canCreateLocalGroup,
-                avatarHistoryLoading,
-                onRefresh: handleGroupRailRefresh,
-                onSelect: handleGroupRailSelect,
-                onStartCreateLocalGroup: handleStartCreateLocalGroup,
-                onNewGroupNameChange: setNewLocalGroupName,
-                onConfirmCreateLocalGroup: handleConfirmCreateLocalGroup,
-                onCancelCreateLocalGroup: handleCancelCreateLocalGroup,
-                onRemoteRename: handleRemoteGroupRenameEvent,
-                onRemoteVisibility: handleRemoteGroupVisibilityEvent,
-                onRemoteClear: handleRemoteGroupClearEvent,
-                onLocalRename: handleLocalGroupRenameEvent,
-                onLocalDelete: handleLocalGroupDeleteEvent,
-                onAvatarHistoryRefresh: handleAvatarHistoryRefreshEvent,
-                onAvatarHistoryClear: handleAvatarHistoryClearEvent
-            }}
-            content={{
-                title,
-                subtitle,
-                editMode,
-                editModeDisabled,
-                editModeVisible:
-                    editMode && !isSearchActive && !avatarEditSelectionDisabled,
-                isAllSelected,
-                hasSelection,
-                showCopyButton,
-                favoriteLoadStatus,
-                favoriteDetail,
-                remoteEntityDetails,
-                selectedSource,
-                isSearchActive,
-                items: contentItems,
-                selectedKeysSet,
-                cardScale,
-                cardSpacing,
-                removingFavoriteKey,
-                canSendInvite,
-                canBoop,
-                currentUserId,
-                currentAvatarId: currentUserSnapshot?.currentAvatar || '',
-                onEditModeChange: handleEditModeChange,
-                onToggleSelectAll: toggleSelectAll,
-                onClearSelection: handleClearSelection,
-                onCopySelection: handleCopySelectionEvent,
-                onBulkRemove: handleBulkRemoveSelectionEvent,
-                onToggleSelect: handleCardToggleSelect,
-                onRemoveLocal: handleCardRemoveLocalFavorite,
-                onRemoveRemote: handleCardRemoveRemoteFavorite,
-                onFriendLaunch: handleCardFriendLaunch,
-                onFriendSelfInvite: handleCardFriendSelfInvite,
-                onFriendInvite: handleCardFriendInvite,
-                onFriendRequestInvite: handleCardFriendRequestInvite,
-                onFriendBoop: handleCardFriendBoop,
-                onWorldNewInstance: handleCardWorldNewInstance,
-                onWorldSelfInvite: handleCardWorldSelfInvite,
-                onAvatarSelect: handleCardAvatarSelect
-            }}
+            persistSplitterLayout={persistSplitterLayout}
+            refreshAvatarHistory={refreshAvatarHistory}
+            refreshFavorites={refreshFavorites}
+            refreshing={refreshing}
+            remoteEntityDetails={remoteEntityDetails}
+            remoteGroups={remoteGroups}
+            remoteItemsByGroup={remoteItemsByGroup}
+            removingFavoriteKey={removingFavoriteKey}
+            requestFavoriteFriendInvite={requestFavoriteFriendInvite}
+            searchMode={searchMode}
+            searchQuery={searchQuery}
+            selectedGroup={selectedGroup}
+            selectedGroupKey={selectedGroupKey}
+            selectedKeysSet={selectedKeysSet}
+            selectedSource={selectedSource}
+            selectFavoriteAvatar={selectFavoriteAvatar}
+            selfInviteFavoriteFriendLocation={selfInviteFavoriteFriendLocation}
+            sendFavoriteFriendBoop={sendFavoriteFriendBoop}
+            sendFavoriteFriendInvite={sendFavoriteFriendInvite}
+            setCreatingLocalGroup={setCreatingLocalGroup}
+            setEditMode={setEditMode}
+            setExportDialogOpen={setExportDialogOpen}
+            setNewLocalGroupName={setNewLocalGroupName}
+            setSearchMode={setSearchMode}
+            setSearchQuery={setSearchQuery}
+            setSelectedGroupKey={setSelectedGroupKey}
+            setSelectedKeys={setSelectedKeys}
+            setSelectedSource={setSelectedSource}
+            sortValue={sortValue}
+            splitterLayoutVersion={splitterLayoutVersion}
+            splitterSizePx={splitterSizePx}
+            toggleSelectAll={toggleSelectAll}
         />
     );
 }

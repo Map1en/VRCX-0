@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { mediaRepository, vrchatAuthRepository } from '@/repositories/index.js';
 import userProfileRepository from '@/repositories/userProfileRepository.js';
@@ -17,9 +16,9 @@ import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { appI18n } from '@/services/i18nService.js';
+import { GalleryDialogs } from './components/GalleryDialogs.jsx';
 import { GalleryHeader } from './components/GalleryHeader.jsx';
-import { GalleryPreviewDialog } from './components/GalleryPreviewDialog.jsx';
-import { GalleryTabs } from './components/GalleryTabs.jsx';
+import { GalleryTabsSection } from './components/GalleryTabsSection.jsx';
 import {
     EMPTY_ASSETS,
     FILE_TABS,
@@ -807,87 +806,66 @@ export function GalleryPage() {
                 onRefreshAll={() => void refreshAll()}
             />
 
-            <GalleryTabs
+            <GalleryTabsSection
                 t={t}
-                activeTab={activeTab}
-                onActiveTabChange={setActiveTab}
-                tabCounts={tabCounts}
-                fileTab={{
-                    assets,
-                    loadingByTab,
-                    uploadingTab,
-                    mutatingKey,
-                    isVrcPlusSupporter,
-                    currentUserId,
-                    profilePicOverride,
-                    userIcon,
-                    emojiAnimType,
-                    emojiAnimationStyle,
-                    emojiAnimFps,
-                    emojiAnimFrameCount,
-                    emojiAnimLoopPingPong,
-                    onRefresh: (tab) => void refreshTab(tab),
+                handlers={{
+                    onActiveTabChange: setActiveTab,
                     onBeginUpload: beginUpload,
                     onClearProfileField: (fieldName, fileId) =>
                         void setProfileField(fieldName, fileId),
-                    onEmojiAnimTypeChange: setEmojiAnimType,
+                    onConsumeBundle: (inventoryId) =>
+                        void consumeInventoryBundle(inventoryId),
+                    onCreateAnimatedEmoji: () =>
+                        void openExternalLink('https://vrcemoji.com'),
+                    onDeleteFile: (tab, fileId) =>
+                        void deleteFileAsset(tab, fileId),
+                    onDeletePrint: (printId) => void deletePrint(printId),
                     onEmojiAnimationStyleChange: setEmojiAnimationStyle,
                     onEmojiAnimFpsChange: setEmojiAnimFps,
                     onEmojiAnimFrameCountChange: setEmojiAnimFrameCount,
                     onEmojiAnimLoopPingPongChange: setEmojiAnimLoopPingPong,
-                    onCreateAnimatedEmoji: () =>
-                        void openExternalLink('https://vrcemoji.com'),
+                    onEmojiAnimTypeChange: setEmojiAnimType,
                     onPreview: setPreview,
-                    onSetProfileField: (fieldName, fileId) =>
-                        void setProfileField(fieldName, fileId),
-                    onDeleteFile: (tab, fileId) =>
-                        void deleteFileAsset(tab, fileId)
-                }}
-                printsTab={{
-                    prints: assets.prints,
-                    loading: loadingByTab.prints,
-                    uploadingTab,
-                    mutatingKey,
-                    isVrcPlusSupporter,
-                    printUploadNote,
-                    printCropBorder,
-                    onRefresh: (tab) => void refreshTab(tab),
-                    onBeginUpload: beginUpload,
-                    onPrintUploadNoteChange: setPrintUploadNote,
                     onPrintCropBorderChange: setPrintCropBorder,
-                    onPreview: setPreview,
-                    onDeletePrint: (printId) => void deletePrint(printId)
-                }}
-                inventoryTab={{
-                    items: assets.inventory,
-                    loading: loadingByTab.inventory,
-                    mutatingKey,
-                    onRefresh: (tab) => void refreshTab(tab),
+                    onPrintUploadNoteChange: setPrintUploadNote,
                     onRedeem: () => void redeemReward(),
-                    onPreview: setPreview,
-                    onConsumeBundle: (inventoryId) =>
-                        void consumeInventoryBundle(inventoryId)
+                    onRefresh: (tab) => void refreshTab(tab),
+                    onSetProfileField: (fieldName, fileId) =>
+                        void setProfileField(fieldName, fileId)
+                }}
+                state={{
+                    activeTab,
+                    assets,
+                    currentUserId,
+                    emojiAnimFps,
+                    emojiAnimFrameCount,
+                    emojiAnimLoopPingPong,
+                    emojiAnimationStyle,
+                    emojiAnimType,
+                    galleryLimits,
+                    isVrcPlusSupporter,
+                    loadingByTab,
+                    mutatingKey,
+                    preview,
+                    printCropBorder,
+                    printUploadNote,
+                    profilePicOverride,
+                    tabCounts,
+                    uploadingTab,
+                    userIcon
                 }}
             />
 
-            <ImageCropDialog
-                open={Boolean(cropRequest)}
-                file={cropRequest?.file || null}
-                aspectRatio={cropRequest?.aspectRatio || 1}
-                title={t('dialog.change_content_image.upload')}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setCropRequest(null);
-                        uploadAuthTargetRef.current = null;
-                    }
+            <GalleryDialogs
+                cropRequest={cropRequest}
+                onClearCropRequest={() => setCropRequest(null)}
+                onConfirmCrop={(blob) => confirmCroppedUpload(blob)}
+                onResetUploadAuthTarget={() => {
+                    uploadAuthTargetRef.current = null;
                 }}
-                onConfirm={(blob) => confirmCroppedUpload(blob)}
-            />
-
-            <GalleryPreviewDialog
-                t={t}
+                onClosePreview={() => setPreview(null)}
                 preview={preview}
-                onClose={() => setPreview(null)}
+                t={t}
             />
         </div>
     );

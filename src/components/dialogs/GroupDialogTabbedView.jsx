@@ -1,85 +1,35 @@
-import {
-    BadgeCheckIcon,
-    BellIcon,
-    BellOffIcon,
-    CopyIcon,
-    DownloadIcon,
-    EyeIcon,
-    ExternalLinkIcon,
-    LogInIcon,
-    LogOutIcon,
-    MessageSquareIcon,
-    RefreshCwIcon,
-    Share2Icon,
-    SettingsIcon,
-    ShieldIcon,
-    ShieldOffIcon,
-    TicketIcon,
-    UserIcon,
-    UsersIcon,
-    XIcon
-} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { formatDateFilter } from '@/lib/dateTime.js';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
     openExternalLink
 } from '@/lib/entityMedia.js';
-import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     groupProfileRepository,
     vrchatAuthRepository
 } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
+import { appI18n } from '@/services/i18nService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
 
+import { EntityDialogScaffold } from './EntityDialogScaffold.jsx';
+import { GroupDialogHeaderSection } from './group-dialog/GroupDialogHeaderSection.jsx';
+import { GroupDialogTabPanels } from './group-dialog/GroupDialogTabPanels.jsx';
+import { GroupModerationToolsDialog } from './group-dialog/GroupModerationToolsDialog.jsx';
+import { GroupPostEditorDialog } from './group-dialog/GroupPostEditorDialog.jsx';
 import {
-    EntityActionDropdown,
-    EntityActionItem,
-    EntityActionSeparator,
-    EntityDialogHeader,
-    EntityDialogScaffold,
-    EntityDialogTabContent,
-    EntityDialogTabs,
-    EntityInfoBlock,
-    EntityInfoGrid,
-    EntityRawJson
-} from './EntityDialogScaffold.jsx';
-import { PreviousInstancesPanel } from './PreviousInstancesTableDialog.jsx';
-import {
-    normalizeLanguageOptionsFromConfig
-} from './user-dialog/userProfileFields.js';
-import { appI18n } from '@/services/i18nService.js';
-
-import {
-    GroupInstanceRows,
-    GroupModerationToolsDialog,
-    GroupPostEditorDialog,
-    GroupTitleLanguages,
-    RowList,
-    announcementRoleNames,
-    announcementTimestamp,
-    announcementUserId,
-    announcementUserLabel,
     downloadJsonFile,
     firstArray,
     hasGroupModerationPermission,
-    hasGroupPermission,
+    hasGroupPermission
+} from './group-dialog/groupDialogUtils.js';
+import {
+    normalizeLanguageOptionsFromConfig
+} from './user-dialog/userProfileFields.js';
+import {
     normalizeGroupLanguages,
     shouldShowGroupBadgeValue
 } from './group-dialog/GroupDialogViewParts.jsx';
@@ -637,885 +587,143 @@ export function GroupDialogTabbedView({
         }
     }
 
+    function previewImage(url, title) {
+        openImagePreview({ url, title });
+    }
+
+    function previewRowImage(url, title) {
+        openImagePreview({
+            url: convertFileUrlToImageUrl(url, 1024),
+            title
+        });
+    }
+
+    function handleSearchPostsChange(value) {
+        setSearch((current) => ({
+            ...current,
+            posts: value
+        }));
+    }
+
+    function handleSearchMembersChange(value) {
+        setSearch((current) => ({
+            ...current,
+            members: value
+        }));
+    }
+
+    function handleMemberRoleChange(value) {
+        setMemberRoleId(value === 'all' ? '' : value);
+    }
+
+    function handleOpenUser(userId, title, seedData = null) {
+        if (!userId) {
+            return;
+        }
+        openUserDialog({ userId, title, seedData });
+    }
+
+    const headerState = {
+        actionStatus,
+        canInviteToGroup,
+        canJoin,
+        canManagePosts,
+        canModerateGroup,
+        canSetVisibility,
+        detail,
+        group,
+        groupTitle,
+        groupUrl,
+        iconUrl,
+        isBlocked,
+        isMember,
+        isPrivateGroup,
+        isRepresenting,
+        isSubscribedToAnnouncements,
+        languageRows,
+        memberStatus,
+        memberVisibility,
+        ownerLinkLabel,
+        remoteStatus,
+        showMembershipBadge,
+        showPrivacyBadge
+    };
+    const headerHandlers = {
+        onBlockToggle: () => onBlock(!isBlocked),
+        onCancelRequest,
+        onCopyGroupId: () => copyGroupText(group.id, 'Group ID'),
+        onCopyGroupName: () => copyGroupText(group.name, 'Group name'),
+        onCopyGroupUrl: () => copyGroupText(groupUrl, 'Group URL'),
+        onCreateGroupPost: createGroupPost,
+        onJoin,
+        onLeave,
+        onOpenGroupPage: () => openExternalLink(groupUrl),
+        onOpenModeration: () => setModerationOpen(true),
+        onOpenOwner: openGroupOwner,
+        onPreviewIcon: () => previewImage(iconUrl, groupTitle),
+        onRefresh,
+        onRepresentToggle: () => onRepresent(!isRepresenting),
+        onSubscribeToggle: () =>
+            onSubscribe(!isSubscribedToAnnouncements),
+        onInviteUserToGroup: inviteUserToGroup,
+        onVisibilityChange: onVisibility
+    };
+    const tabState = {
+        activeInstances,
+        activeTab,
+        bannerUrl,
+        canManagePosts,
+        currentEndpoint,
+        currentUserId,
+        filteredMembers: {
+            rows: filteredMembers,
+            source: members
+        },
+        filteredPosts,
+        group,
+        groupTitle,
+        groupUrl,
+        joinState,
+        memberRoleId,
+        memberSort,
+        memberStatus,
+        ownerLabel,
+        photos,
+        posts,
+        previousInstances,
+        remoteErrors,
+        remoteStatus,
+        search,
+        tabs
+    };
+    const tabHandlers = {
+        onChangeTab: changeTab,
+        onCopyGroupUrl: () => copyGroupText(groupUrl, 'Group URL'),
+        onDeletePost: (post) => void deleteGroupPost(post),
+        onDownloadMembersJson: () =>
+            downloadJsonFile(`${group.id}_members.json`, members),
+        onEditPost: (post) => void editGroupPost(post),
+        onLoadAllMembers: () => void loadAllMembers(),
+        onMemberRoleChange: handleMemberRoleChange,
+        onMemberSortChange: setMemberSort,
+        onOpenLink: openExternalLink,
+        onOpenOwner: openGroupOwner,
+        onOpenUser: handleOpenUser,
+        onPreviousInstancesChange,
+        onPreviewImage: previewImage,
+        onPreviewRowImage: previewRowImage,
+        onRefreshMembers: () => void loadTab('members', { force: true }),
+        onSearchMembersChange: handleSearchMembersChange,
+        onSearchPostsChange: handleSearchPostsChange
+    };
+
     return (
         <EntityDialogScaffold>
-            <EntityDialogHeader
-                imageUrl={iconUrl}
-                imageAlt={group.name || 'Group'}
-                imageClassName="size-32"
-                imagePlaceholder={
-                    <UsersIcon className="text-muted-foreground size-8" />
-                }
-                onImageClick={
-                    iconUrl
-                        ? () =>
-                              openImagePreview({
-                                  url: iconUrl,
-                                  title: groupTitle
-                              })
-                        : null
-                }
-                title={groupTitle}
-                onTitleClick={
-                    group.name
-                        ? () => void copyGroupText(group.name, 'Group name')
-                        : undefined
-                }
-                titleMeta={<GroupTitleLanguages languages={languageRows} />}
-                subtitle={
-                    group.shortCode && group.discriminator
-                        ? `${group.shortCode}.${group.discriminator}`
-                        : group.url || ''
-                }
-                description={group.description}
-                detail={
-                    group.ownerId || detail ? (
-                        <div className="flex flex-col items-start gap-1">
-                            {group.ownerId ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-xs font-normal"
-                                    title={appI18n.t('dialog.group.generated.open_group_owner_profile')}
-                                    onClick={openGroupOwner}
-                                >
-                                    <UserIcon data-icon="inline-start" />
-                                    {appI18n.t('dialog.group.generated.owner')} {ownerLinkLabel}
-                                </Button>
-                            ) : null}
-                            {detail ? (
-                                <span>
-                                    {userFacingErrorMessage(
-                                        detail,
-                                        'Failed to load group details.'
-                                    )}
-                                </span>
-                            ) : null}
-                        </div>
-                    ) : null
-                }
-                badges={
-                    <>
-                        {showPrivacyBadge ? (
-                            <Badge variant="outline">
-                                <ShieldIcon data-icon="inline-start" />
-                                {group.privacy}
-                            </Badge>
-                        ) : null}
-                        {showMembershipBadge ? (
-                            <Badge variant="secondary">
-                                {group.membershipStatus}
-                            </Badge>
-                        ) : null}
-                        {group.isVerified ? (
-                            <Badge>
-                                <BadgeCheckIcon data-icon="inline-start" />
-                                {appI18n.t('dialog.group.tags.verified')}
-                            </Badge>
-                        ) : null}
-                        <Badge variant="outline">
-                            <UsersIcon data-icon="inline-start" />
-                            {group.memberCount} {appI18n.t('dialog.group.generated.members')}
-                        </Badge>
-                        {group.onlineMemberCount > 0 ? (
-                            <Badge variant="outline">
-                                <UsersIcon data-icon="inline-start" />
-                                {group.onlineMemberCount} {appI18n.t('dashboard.widget.feed_online')}
-                            </Badge>
-                        ) : null}
-                    </>
-                }
-                actions={
-                    <>
-                        {memberStatus === 'requested' ? (
-                            <Button
-                                type="button"
-                                size="icon-lg"
-                                variant="outline"
-                                className="rounded-full"
-                                aria-label={"Cancel join request"}
-                                disabled={actionStatus === 'cancel-request'}
-                                onClick={onCancelRequest}
-                            >
-                                <XIcon data-icon="inline-start" />
-                            </Button>
-                        ) : !isMember ? (
-                            <Button
-                                type="button"
-                                size="icon-lg"
-                                className="rounded-full"
-                                aria-label={"Join group"}
-                                disabled={!canJoin || actionStatus === 'join'}
-                                onClick={onJoin}
-                            >
-                                <LogInIcon data-icon="inline-start" />
-                            </Button>
-                        ) : null}
-                        <EntityActionDropdown busy={actionStatus !== 'idle'}>
-                            <EntityActionItem
-                                icon={RefreshCwIcon}
-                                disabled={actionStatus === 'refresh'}
-                                onSelect={onRefresh}
-                            >
-                                {appI18n.t('common.actions.refresh')}
-                            </EntityActionItem>
-                            {groupUrl ? (
-                                <>
-                                    <EntityActionItem
-                                        icon={Share2Icon}
-                                        onSelect={() =>
-                                            void copyGroupText(
-                                                groupUrl,
-                                                'Group URL'
-                                            )
-                                        }
-                                    >
-                                        {appI18n.t('dialog.group.generated.share_copy_url')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={ExternalLinkIcon}
-                                        onSelect={() =>
-                                            openExternalLink(groupUrl)
-                                        }
-                                    >
-                                        {appI18n.t('dialog.group.generated.open_group_page')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={CopyIcon}
-                                        onSelect={() =>
-                                            void copyGroupText(
-                                                group.id,
-                                                'Group ID'
-                                            )
-                                        }
-                                    >
-                                        {appI18n.t('dialog.group.generated.copy_group_id')}
-                                    </EntityActionItem>
-                                </>
-                            ) : null}
-                            {isMember ? (
-                                <>
-                                    <EntityActionSeparator />
-                                    <EntityActionItem
-                                        icon={ShieldIcon}
-                                        disabled={
-                                            actionStatus === 'represent' ||
-                                            isPrivateGroup
-                                        }
-                                        onSelect={() =>
-                                            onRepresent(!isRepresenting)
-                                        }
-                                    >
-                                        {isRepresenting
-                                            ? 'Unrepresent Group'
-                                            : 'Represent Group'}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={
-                                            isSubscribedToAnnouncements
-                                                ? BellOffIcon
-                                                : BellIcon
-                                        }
-                                        disabled={
-                                            actionStatus === 'member-props'
-                                        }
-                                        onSelect={() =>
-                                            onSubscribe(
-                                                !isSubscribedToAnnouncements
-                                            )
-                                        }
-                                    >
-                                        {isSubscribedToAnnouncements
-                                            ? 'Unsubscribe Announcements'
-                                            : 'Subscribe Announcements'}
-                                    </EntityActionItem>
-                                    {canInviteToGroup ? (
-                                        <EntityActionItem
-                                            icon={MessageSquareIcon}
-                                            disabled={
-                                                remoteStatus.members ===
-                                                'running'
-                                            }
-                                            onSelect={() =>
-                                                void inviteUserToGroup()
-                                            }
-                                        >
-                                            {appI18n.t('dialog.group.generated.invite_to_group')}
-                                        </EntityActionItem>
-                                    ) : null}
-                                    {canManagePosts ? (
-                                        <EntityActionItem
-                                            icon={TicketIcon}
-                                            disabled={
-                                                remoteStatus.posts === 'running'
-                                            }
-                                            onSelect={() =>
-                                                void createGroupPost()
-                                            }
-                                        >
-                                            {appI18n.t('dialog.group.generated.create_post')}
-                                        </EntityActionItem>
-                                    ) : null}
-                                    {canModerateGroup ? (
-                                        <EntityActionItem
-                                            icon={SettingsIcon}
-                                            onSelect={() =>
-                                                setModerationOpen(true)
-                                            }
-                                        >
-                                            {appI18n.t('dialog.group.generated.moderation_tools')}
-                                        </EntityActionItem>
-                                    ) : null}
-                                    {canSetVisibility ? (
-                                        <>
-                                            <EntityActionSeparator />
-                                            <EntityActionItem
-                                                icon={UserIcon}
-                                                disabled={
-                                                    actionStatus ===
-                                                    'member-props'
-                                                }
-                                                onSelect={() =>
-                                                    onVisibility('visible')
-                                                }
-                                            >
-                                                {memberVisibility === 'visible'
-                                                    ? 'Selected: '
-                                                    : ''}
-                                                {appI18n.t('dialog.group.actions.visibility_everyone')}
-                                            </EntityActionItem>
-                                            <EntityActionItem
-                                                icon={UserIcon}
-                                                disabled={
-                                                    actionStatus ===
-                                                    'member-props'
-                                                }
-                                                onSelect={() =>
-                                                    onVisibility('friends')
-                                                }
-                                            >
-                                                {memberVisibility === 'friends'
-                                                    ? 'Selected: '
-                                                    : ''}
-                                                {appI18n.t('dialog.group.actions.visibility_friends')}
-                                            </EntityActionItem>
-                                            <EntityActionItem
-                                                icon={UserIcon}
-                                                disabled={
-                                                    actionStatus ===
-                                                    'member-props'
-                                                }
-                                                onSelect={() =>
-                                                    onVisibility('hidden')
-                                                }
-                                            >
-                                                {memberVisibility === 'hidden'
-                                                    ? 'Selected: '
-                                                    : ''}
-                                                {appI18n.t('dialog.group.actions.visibility_hidden')}
-                                            </EntityActionItem>
-                                        </>
-                                    ) : null}
-                                    <EntityActionSeparator />
-                                    <EntityActionItem
-                                        icon={LogOutIcon}
-                                        destructive
-                                        disabled={actionStatus === 'leave'}
-                                        onSelect={onLeave}
-                                    >
-                                        {appI18n.t('dialog.group.generated.leave_group')}
-                                    </EntityActionItem>
-                                </>
-                            ) : (
-                                <>
-                                    <EntityActionSeparator />
-                                    <EntityActionItem
-                                        icon={
-                                            isBlocked
-                                                ? ShieldIcon
-                                                : ShieldOffIcon
-                                        }
-                                        destructive={isBlocked}
-                                        disabled={actionStatus === 'block'}
-                                        onSelect={() => onBlock(!isBlocked)}
-                                    >
-                                        {isBlocked
-                                            ? 'Unblock Group'
-                                            : 'Block Group'}
-                                    </EntityActionItem>
-                                </>
-                            )}
-                        </EntityActionDropdown>
-                    </>
-                }
+            <GroupDialogHeaderSection
+                state={headerState}
+                handlers={headerHandlers}
             />
-            <EntityDialogTabs
-                value={activeTab}
-                onValueChange={changeTab}
-                tabs={tabs}
-            >
-                <EntityDialogTabContent value="info">
-                    {bannerUrl ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="bg-muted mb-3 h-auto w-full overflow-hidden rounded-md p-0"
-                            aria-label={`Preview ${groupTitle} banner`}
-                            onClick={() =>
-                                openImagePreview({
-                                    url: bannerUrl,
-                                    title: groupTitle
-                                })
-                            }
-                        >
-                            <img
-                                src={bannerUrl}
-                                alt={group.name || 'Group banner'}
-                                className="aspect-[6/1] w-full object-cover"
-                            />
-                        </Button>
-                    ) : null}
-                    <EntityInfoGrid>
-                        <GroupInstanceRows
-                            instances={activeInstances}
-                            currentUserId={currentUserId}
-                            endpoint={currentEndpoint}
-                        />
-                        {group.announcement?.id || group.announcement?.title ? (
-                            <EntityInfoBlock label={appI18n.t('dialog.group.info.announcement')} full>
-                                <span className="block truncate text-sm">
-                                    {group.announcement.title || 'Announcement'}
-                                </span>
-                                {group.announcement.imageUrl ? (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="mt-1.5 mr-1.5 h-auto p-0 align-top"
-                                        aria-label={`Preview ${group.announcement.title || 'announcement'} image`}
-                                        onClick={() =>
-                                            openImagePreview({
-                                                url: convertFileUrlToImageUrl(
-                                                    group.announcement.imageUrl,
-                                                    1024
-                                                ),
-                                                title:
-                                                    group.announcement.title ||
-                                                    'Announcement'
-                                            })
-                                        }
-                                    >
-                                        <img
-                                            src={convertFileUrlToImageUrl(
-                                                group.announcement.imageUrl,
-                                                128
-                                            )}
-                                            alt=""
-                                            className="size-16 rounded-md object-cover"
-                                        />
-                                    </Button>
-                                ) : null}
-                                <pre className="text-muted-foreground inline-block align-top font-sans text-xs whitespace-pre-wrap">
-                                    {group.announcement.text || '—'}
-                                </pre>
-                                <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-                                    {announcementRoleNames(
-                                        group.announcement,
-                                        group
-                                    ).length ? (
-                                        <Badge
-                                            variant="outline"
-                                            className="max-w-full"
-                                            title={announcementRoleNames(
-                                                group.announcement,
-                                                group
-                                            ).join(', ')}
-                                        >
-                                            <EyeIcon data-icon="inline-start" />
-                                            <span className="truncate">
-                                                {announcementRoleNames(
-                                                    group.announcement,
-                                                    group
-                                                ).join(', ')}
-                                            </span>
-                                        </Badge>
-                                    ) : null}
-                                    {announcementUserId(
-                                        group.announcement,
-                                        'author'
-                                    ) ||
-                                    announcementUserLabel(
-                                        group.announcement,
-                                        'author'
-                                    ) ? (
-                                        announcementUserId(
-                                            group.announcement,
-                                            'author'
-                                        ) ? (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                className="hover:text-primary h-auto gap-1 p-0 text-xs font-normal"
-                                                onClick={() =>
-                                                    openUserDialog({
-                                                        userId: announcementUserId(
-                                                            group.announcement,
-                                                            'author'
-                                                        ),
-                                                        title:
-                                                            announcementUserLabel(
-                                                                group.announcement,
-                                                                'author'
-                                                            ) || undefined
-                                                    })
-                                                }
-                                            >
-                                                <span>{appI18n.t('dialog.group.generated.author')}</span>
-                                                <span className="text-foreground font-medium">
-                                                    {announcementUserLabel(
-                                                        group.announcement,
-                                                        'author'
-                                                    ) ||
-                                                        announcementUserId(
-                                                            group.announcement,
-                                                            'author'
-                                                        )}
-                                                </span>
-                                            </Button>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1">
-                                                <span>{appI18n.t('dialog.group.generated.author')}</span>
-                                                <span className="text-foreground font-medium">
-                                                    {announcementUserLabel(
-                                                        group.announcement,
-                                                        'author'
-                                                    )}
-                                                </span>
-                                            </span>
-                                        )
-                                    ) : null}
-                                    {announcementUserId(
-                                        group.announcement,
-                                        'editor'
-                                    ) ||
-                                    announcementUserLabel(
-                                        group.announcement,
-                                        'editor'
-                                    ) ? (
-                                        announcementUserId(
-                                            group.announcement,
-                                            'editor'
-                                        ) ? (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                className="hover:text-primary h-auto gap-1 p-0 text-xs font-normal"
-                                                onClick={() =>
-                                                    openUserDialog({
-                                                        userId: announcementUserId(
-                                                            group.announcement,
-                                                            'editor'
-                                                        ),
-                                                        title:
-                                                            announcementUserLabel(
-                                                                group.announcement,
-                                                                'editor'
-                                                            ) || undefined
-                                                    })
-                                                }
-                                            >
-                                                <span>{appI18n.t('dialog.group.posts.edited_by')}</span>
-                                                <span className="text-foreground font-medium">
-                                                    {announcementUserLabel(
-                                                        group.announcement,
-                                                        'editor'
-                                                    ) ||
-                                                        announcementUserId(
-                                                            group.announcement,
-                                                            'editor'
-                                                        )}
-                                                </span>
-                                            </Button>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1">
-                                                <span>{appI18n.t('dialog.group.posts.edited_by')}</span>
-                                                <span className="text-foreground font-medium">
-                                                    {announcementUserLabel(
-                                                        group.announcement,
-                                                        'editor'
-                                                    )}
-                                                </span>
-                                            </span>
-                                        )
-                                    ) : null}
-                                    {group.announcement.createdAt ? (
-                                        <span className="inline-flex items-center gap-1">
-                                            <span>{appI18n.t('dialog.group.generated.created')}</span>
-                                            <span className="text-foreground font-medium">
-                                                {announcementTimestamp(
-                                                    group.announcement.createdAt
-                                                )}
-                                            </span>
-                                        </span>
-                                    ) : null}
-                                    {group.announcement.updatedAt ? (
-                                        <span className="inline-flex items-center gap-1">
-                                            <span>{appI18n.t('dialog.group.generated.updated')}</span>
-                                            <span className="text-foreground font-medium">
-                                                {announcementTimestamp(
-                                                    group.announcement.updatedAt
-                                                )}
-                                            </span>
-                                        </span>
-                                    ) : null}
-                                </div>
-                            </EntityInfoBlock>
-                        ) : null}
-                        {group.rules ? (
-                            <EntityInfoBlock label={appI18n.t('dialog.group.info.rules')} full>
-                                <pre className="text-muted-foreground font-sans text-xs whitespace-pre-wrap">
-                                    {group.rules}
-                                </pre>
-                            </EntityInfoBlock>
-                        ) : null}
-                        <EntityInfoBlock
-                            label={appI18n.t('dialog.group.generated.members_2')}
-                            value={`${group.memberCount || 0} (${group.onlineMemberCount || 0})`}
-                        />
-                        <EntityInfoBlock
-                            label={appI18n.t('dialog.group.generated.created_at')}
-                            value={
-                                group.createdAt || group.created_at
-                                    ? formatDateFilter(
-                                          group.createdAt || group.created_at,
-                                          'long'
-                                      )
-                                    : '—'
-                            }
-                        />
-                        <EntityInfoBlock
-                            label={appI18n.t('dialog.group.generated.last_visited')}
-                            value={
-                                previousInstances[0]?.created_at ||
-                                previousInstances[0]?.createdAt
-                                    ? formatDateFilter(
-                                          previousInstances[0]?.created_at ||
-                                              previousInstances[0]?.createdAt,
-                                          'long'
-                                      )
-                                    : '—'
-                            }
-                            onClick={
-                                previousInstances.length
-                                    ? () => changeTab('instance-history')
-                                    : undefined
-                            }
-                        />
-                        <EntityInfoBlock
-                            label={appI18n.t('dialog.group.generated.join_state')}
-                            value={joinState || '—'}
-                        />
-                        <EntityInfoBlock
-                            label={appI18n.t('dialog.group.generated.membership')}
-                            value={
-                                memberStatus || group.membershipStatus || '—'
-                            }
-                        />
-                        <EntityInfoBlock
-                            label={appI18n.t('dialog.group.generated.languages')}
-                            value={group.languages.join(', ') || '—'}
-                        />
-                        <EntityInfoBlock
-                            label={appI18n.t('dialog.group.generated.privacy')}
-                            value={group.privacy || '—'}
-                        />
-                        {group.links.length ? (
-                            <EntityInfoBlock label={appI18n.t('dialog.group.info.links')} full>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {group.links.map((link) => (
-                                        <Button
-                                            key={link}
-                                            type="button"
-                                            variant="link"
-                                            size="xs"
-                                            className="h-auto max-w-full min-w-0 justify-start p-0 text-left break-all whitespace-normal"
-                                            onClick={() =>
-                                                openExternalLink(link)
-                                            }
-                                        >
-                                            <ExternalLinkIcon data-icon="inline-start" />
-                                            <span className="min-w-0 break-all">
-                                                {link}
-                                            </span>
-                                        </Button>
-                                    ))}
-                                </div>
-                            </EntityInfoBlock>
-                        ) : null}
-                        <EntityInfoBlock
-                            label="URL"
-                            value={groupUrl || '—'}
-                            mono
-                            wide
-                            onClick={
-                                groupUrl
-                                    ? () =>
-                                          void copyGroupText(
-                                              groupUrl,
-                                              'Group URL'
-                                          )
-                                    : undefined
-                            }
-                        />
-                        <EntityInfoBlock
-                            label={appI18n.t('dialog.group.info.id')}
-                            value={group.id}
-                            mono
-                            wide
-                        />
-                        <EntityInfoBlock
-                            label={appI18n.t('dialog.group.generated.owner_2')}
-                            value={ownerLabel || '—'}
-                            wide
-                            onClick={
-                                group.ownerId
-                                    ? () =>
-                                          openUserDialog({
-                                              userId: group.ownerId,
-                                              title: ownerLabel || undefined,
-                                              seedData: ownerLabel
-                                                  ? {
-                                                        id: group.ownerId,
-                                                        displayName: ownerLabel
-                                                    }
-                                                  : null
-                                          })
-                                    : undefined
-                            }
-                        />
-                        {group.tags.length ? (
-                            <EntityInfoBlock label={appI18n.t('dialog.avatar.info.tags')} full>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {group.tags.map((tag) => (
-                                        <Badge key={tag} variant="outline">
-                                            {tag}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </EntityInfoBlock>
-                        ) : null}
-                        {group.roles.length ? (
-                            <EntityInfoBlock label={appI18n.t('dialog.group.generated.roles')} full>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {group.roles.map((role) => (
-                                        <Badge
-                                            key={role.id || role.name}
-                                            variant="outline"
-                                        >
-                                            {role.name || 'Role'}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </EntityInfoBlock>
-                        ) : null}
-                    </EntityInfoGrid>
-                </EntityDialogTabContent>
-                <EntityDialogTabContent
-                    value="instance-history"
-                    className="flex min-h-0 flex-col"
-                >
-                    <PreviousInstancesPanel
-                        title={appI18n.t('dialog.previous_instances.header')}
-                        instances={previousInstances}
-                        variant="group"
-                        targetRef={group}
-                        onRowsChange={onPreviousInstancesChange}
-                        className="flex-1"
-                    />
-                </EntityDialogTabContent>
-                <EntityDialogTabContent
-                    value="posts"
-                    className="flex flex-col gap-2"
-                >
-                    <div className="flex items-center gap-2">
-                        <div className="text-muted-foreground text-sm">
-                            {filteredPosts.length}/{posts.length} {appI18n.t('dialog.group.generated.posts')}
-                        </div>
-                        <Input
-                            value={search.posts}
-                            onChange={(event) =>
-                                setSearch((current) => ({
-                                    ...current,
-                                    posts: event.target.value
-                                }))
-                            }
-                            placeholder={appI18n.t('dialog.group.generated.search_posts')}
-                            className="ml-auto h-8 max-w-64"
-                        />
-                    </div>
-                    <RowList
-                        rows={filteredPosts}
-                        group={group}
-                        kind="posts"
-                        loading={remoteStatus.posts === 'running'}
-                        error={remoteErrors.posts}
-                        canManagePosts={canManagePosts}
-                        onPreviewImage={(url, title) =>
-                            openImagePreview({
-                                url: convertFileUrlToImageUrl(url, 1024),
-                                title
-                            })
-                        }
-                        onEditPost={(post) => void editGroupPost(post)}
-                        onDeletePost={(post) => void deleteGroupPost(post)}
-                    />
-                </EntityDialogTabContent>
-                <EntityDialogTabContent
-                    value="members"
-                    className="flex flex-col gap-2"
-                >
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="text-muted-foreground text-sm">
-                            {filteredMembers.length}/
-                            {group.memberCount || members.length} {appI18n.t('dialog.group.generated.members')}
-                        </div>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={remoteStatus.members === 'running'}
-                            onClick={() =>
-                                void loadTab('members', { force: true })
-                            }
-                        >
-                            {appI18n.t('common.actions.refresh')}
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={remoteStatus.members === 'running'}
-                            onClick={() => void loadAllMembers()}
-                        >
-                            {appI18n.t('dialog.group.generated.load_all')}
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={!members.length}
-                            onClick={() =>
-                                downloadJsonFile(
-                                    `${group.id}_members.json`,
-                                    members
-                                )
-                            }
-                        >
-                            <DownloadIcon data-icon="inline-start" />
-                            JSON
-                        </Button>
-                        <Select
-                            value={memberSort}
-                            onValueChange={setMemberSort}
-                            disabled={remoteStatus.members === 'running'}
-                        >
-                            <SelectTrigger size="sm" className="w-44">
-                                <SelectValue placeholder={appI18n.t('side_panel.settings.sort')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem value="joinedAt:desc">
-                                        {appI18n.t('dialog.group.generated.joined_newest')}
-                                    </SelectItem>
-                                    <SelectItem value="joinedAt:asc">
-                                        {appI18n.t('dialog.group.generated.joined_oldest')}
-                                    </SelectItem>
-                                    <SelectItem value="user.displayName:asc">
-                                        {appI18n.t('dialog.group.generated.name_a_z')}
-                                    </SelectItem>
-                                    <SelectItem value="user.displayName:desc">
-                                        {appI18n.t('dialog.group.generated.name_z_a')}
-                                    </SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={memberRoleId || 'all'}
-                            onValueChange={(value) =>
-                                setMemberRoleId(value === 'all' ? '' : value)
-                            }
-                            disabled={remoteStatus.members === 'running'}
-                        >
-                            <SelectTrigger size="sm" className="w-48">
-                                <SelectValue placeholder={appI18n.t('dialog.group.generated.role')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem value="all">
-                                        {appI18n.t('dialog.group.generated.all_roles')}
-                                    </SelectItem>
-                                    {group.roles.map((role) => (
-                                        <SelectItem
-                                            key={role.id || role.name}
-                                            value={role.id || role.name}
-                                        >
-                                            {role.name || 'Role'}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <Input
-                            value={search.members}
-                            onChange={(event) =>
-                                setSearch((current) => ({
-                                    ...current,
-                                    members: event.target.value
-                                }))
-                            }
-                            placeholder={appI18n.t('dialog.group.generated.search_members')}
-                            className="ml-auto h-8 max-w-64"
-                        />
-                    </div>
-                    <RowList
-                        rows={filteredMembers}
-                        group={group}
-                        kind="members"
-                        loading={remoteStatus.members === 'running'}
-                        error={remoteErrors.members}
-                    />
-                </EntityDialogTabContent>
-                <EntityDialogTabContent
-                    value="photos"
-                    className="flex flex-col gap-2"
-                >
-                    <RowList
-                        rows={photos}
-                        group={group}
-                        kind="photos"
-                        loading={remoteStatus.photos === 'running'}
-                        error={remoteErrors.photos}
-                        onPreviewImage={(url, title) =>
-                            openImagePreview({
-                                url: convertFileUrlToImageUrl(url, 1024),
-                                title
-                            })
-                        }
-                    />
-                </EntityDialogTabContent>
-                <EntityDialogTabContent value="json">
-                    <EntityRawJson
-                        value={{
-                            group,
-                            posts,
-                            instances: activeInstances,
-                            members,
-                            galleries: firstArray(group.galleries),
-                            photos,
-                            activeInstances
-                        }}
-                    />
-                </EntityDialogTabContent>
-            </EntityDialogTabs>
+            <GroupDialogTabPanels state={tabState} handlers={tabHandlers} />
             <GroupPostEditorDialog
                 open={Boolean(postEditor)}
                 onOpenChange={(open) => {
@@ -1539,4 +747,3 @@ export function GroupDialogTabbedView({
         </EntityDialogScaffold>
     );
 }
-

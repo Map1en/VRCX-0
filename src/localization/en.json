@@ -531,7 +531,11 @@
                 "showing": "Showing",
                 "of": "of",
                 "game_log_row": "game log row",
-                "no_game_log_rows_match_the_current_filters": "No game log rows match the current filters"
+                "no_game_log_rows_match_the_current_filters": "No game log rows match the current filters",
+                "favorites_are_still_hydrating": "Favorites are still hydrating.",
+                "broaden_the_filters_or_search_query_to_see_more_recent_sessions": "Broaden the filters or search query to see more recent sessions.",
+                "broaden_the_filters_or_search_query_to_see_more_results": "Broaden the filters or search query to see more results.",
+                "no_authenticated_user_is_available_for_the_game_log_snapshot": "No authenticated user is available for the game log snapshot."
             },
             "generated_dynamic": {
                 "no_user_id_was_found_for_value": "No user id was found for {value}"
@@ -597,7 +601,15 @@
                 "avatar": "avatar",
                 "no_avatars_match_the_current_filters": "No avatars match the current filters",
                 "broaden_the_filters_or_search_query_to_see_more_avatars": "Broaden the filters or search query to see more avatars",
-                "change_avatar_image": "Change avatar image"
+                "change_avatar_image": "Change avatar image",
+                "make_public": "Make public",
+                "make_private": "Make private",
+                "avatar_renamed": "Avatar renamed",
+                "avatar_description_updated": "Avatar description updated",
+                "avatar_made_public": "Avatar made public",
+                "avatar_made_private": "Avatar made private",
+                "no_authenticated_user_is_available_for_the_avatar_inventory": "No authenticated user is available for the avatar inventory.",
+                "untitled_avatar": "Untitled avatar"
             },
             "generated_dynamic": {
                 "updated_local_tags_for_value": "Updated local tags for {value}",
@@ -607,7 +619,12 @@
             },
             "generated_toast": {
                 "failed_to_load_avatar_styles": "Failed to load avatar styles",
-                "failed_to_update_avatar_styles": "Failed to update avatar styles"
+                "failed_to_update_avatar_styles": "Failed to update avatar styles",
+                "failed_to_update_avatar_tags": "Failed to update avatar tags",
+                "failed_to_update_avatar": "Failed to update avatar",
+                "failed_to_select_avatar": "Failed to select avatar",
+                "failed_to_create_impostor": "Failed to create impostor",
+                "failed_to_upload_avatar_image": "Failed to upload avatar image"
             },
             "generated_modal": {
                 "rename_avatar": "Rename avatar",
@@ -615,7 +632,9 @@
                 "change_avatar_description": "Change avatar description",
                 "select_avatar_value": "Select avatar?\n{value}",
                 "create_impostor": "Create impostor?",
-                "create": "Create"
+                "create": "Create",
+                "make_avatar_public": "Make avatar public?",
+                "make_avatar_private": "Make avatar private?"
             }
         },
         "search": {
