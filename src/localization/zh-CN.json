@@ -1310,6 +1310,8 @@
                 "moderation_unmute": "取消静音",
                 "moderation_hide_avatar": "隐藏模型",
                 "moderation_show_avatar": "显示模型",
+                "reset_hidden_avatar": "重置隐藏模型",
+                "reset_shown_avatar": "重置显示模型",
                 "moderation_enable_avatar_interaction": "开启模型互动",
                 "moderation_disable_avatar_interaction": "关闭模型互动",
                 "moderation_enable_chatbox": "取消屏蔽聊天气泡",

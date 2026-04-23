@@ -1,12 +1,7 @@
-import {
-    SearchIcon,
-    Settings2Icon,
-} from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import {
     configRepository,
@@ -28,17 +23,6 @@ import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { Button } from '@/ui/shadcn/button';
-import { Field, FieldContent, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput
-} from '@/ui/shadcn/input-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
-import { Slider } from '@/ui/shadcn/slider';
-import { Switch } from '@/ui/shadcn/switch';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import {
     FRIENDS_LOCATIONS_SEGMENTS as SEGMENTS,
@@ -56,12 +40,8 @@ import {
     uniqueFriendsById
 } from './friendsLocationsRows.js';
 import { appI18n } from '@/services/i18nService.js';
-import {
-    FriendsLocationCardItem,
-    FriendsLocationsEmptyState,
-    FriendsLocationsFavoriteGroupHeader,
-    FriendsLocationsSectionHeader
-} from './components/FriendsLocationsViewParts.jsx';
+import { FriendsLocationsToolbar } from './components/FriendsLocationsToolbar.jsx';
+import { FriendsLocationsVirtualList } from './components/FriendsLocationsVirtualList.jsx';
 
 function formatOptionValue(value) {
     return Number(value)
@@ -559,6 +539,30 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             }
             return next;
         });
+    }
+
+    function changeShowSameInstance(value) {
+        const nextValue = Boolean(value);
+        setShowSameInstance(nextValue);
+        void configRepository.setBool('FriendLocationShowSameInstance', nextValue);
+    }
+
+    function changeCardScalePreference(value) {
+        const nextValue = clampScale(value, 0.5, 1, 1);
+        setCardScale(nextValue);
+        void configRepository.setString(
+            'FriendLocationCardScale',
+            formatOptionValue(nextValue)
+        );
+    }
+
+    function changeSpacingScalePreference(value) {
+        const nextValue = clampScale(value, 0.25, 1, 1);
+        setSpacingScale(nextValue);
+        void configRepository.setString(
+            'FriendLocationCardSpacing',
+            formatOptionValue(nextValue)
+        );
     }
 
     useEffect(() => {
@@ -1430,256 +1434,54 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
                     : 'friend-view x-container flex h-full min-h-0 flex-1 flex-col overflow-hidden p-4 pb-0'
             }
         >
-            <div className="friend-view__toolbar mb-3 flex shrink-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
-                    <Tabs
-                        value={activeSegment}
-                        onValueChange={setActiveSegment}
-                        className="gap-0"
-                    >
-                        <TabsList>
-                            {segmentOptions.map((segment) => (
-                                <TabsTrigger
-                                    key={segment.value}
-                                    value={segment.value}
-                                >
-                                    {t(segment.labelKey)}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
+            <FriendsLocationsToolbar
+                activeSegment={activeSegment}
+                segmentOptions={segmentOptions}
+                searchQuery={searchQuery}
+                showSameInstance={showSameInstance}
+                cardScale={cardScale}
+                spacingScale={spacingScale}
+                t={t}
+                onActiveSegmentChange={setActiveSegment}
+                onSearchQueryChange={setSearchQuery}
+                onShowSameInstanceChange={changeShowSameInstance}
+                onCardScaleChange={changeCardScalePreference}
+                onSpacingScaleChange={changeSpacingScalePreference}
+            />
 
-                    <InputGroup className="w-full max-w-md lg:ml-auto">
-                        <InputGroupAddon>
-                            <SearchIcon />
-                        </InputGroupAddon>
-                        <InputGroupInput
-                            value={searchQuery}
-                            onChange={(event) =>
-                                setSearchQuery(event.target.value)
-                            }
-                            placeholder={t(
-                                'view.friends_locations.search_placeholder'
-                            )}
-                        />
-                    </InputGroup>
-                </div>
-
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            variant="ghost"
-                            aria-label={"Friends location settings"}
-                        >
-                            <Settings2Icon data-icon="inline-start" />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-72" align="end">
-                        <FieldGroup>
-                            <Field orientation="horizontal">
-                                <FieldContent>
-                                    <FieldLabel htmlFor="friends-locations-same-instance">
-                                        {t(
-                                            'view.friends_locations.separate_same_instance_friends'
-                                        )}
-                                    </FieldLabel>
-                                </FieldContent>
-                                <Switch
-                                    id="friends-locations-same-instance"
-                                    checked={showSameInstance}
-                                    onCheckedChange={(value) => {
-                                        setShowSameInstance(Boolean(value));
-                                        void configRepository.setBool(
-                                            'FriendLocationShowSameInstance',
-                                            Boolean(value)
-                                        );
-                                    }}
-                                />
-                            </Field>
-                            <Field>
-                                <FieldContent>
-                                    <FieldLabel htmlFor="friends-locations-card-scale">
-                                        {t('view.friends_locations.scale')}
-                                    </FieldLabel>
-                                </FieldContent>
-                                <Slider
-                                    id="friends-locations-card-scale"
-                                    min={0.5}
-                                    max={1}
-                                    step={0.01}
-                                    value={[cardScale]}
-                                    onValueChange={([value]) => {
-                                        const nextValue = clampScale(
-                                            value,
-                                            0.5,
-                                            1,
-                                            1
-                                        );
-                                        setCardScale(nextValue);
-                                        void configRepository.setString(
-                                            'FriendLocationCardScale',
-                                            formatOptionValue(nextValue)
-                                        );
-                                    }}
-                                />
-                                <div className="text-muted-foreground text-sm">
-                                    {Math.round(cardScale * 100)}%
-                                </div>
-                            </Field>
-
-                            <Field>
-                                <FieldContent>
-                                    <FieldLabel htmlFor="friends-locations-card-spacing">
-                                        {t('view.friends_locations.spacing')}
-                                    </FieldLabel>
-                                </FieldContent>
-                                <Slider
-                                    id="friends-locations-card-spacing"
-                                    min={0.25}
-                                    max={1}
-                                    step={0.05}
-                                    value={[spacingScale]}
-                                    onValueChange={([value]) => {
-                                        const nextValue = clampScale(
-                                            value,
-                                            0.25,
-                                            1,
-                                            1
-                                        );
-                                        setSpacingScale(nextValue);
-                                        void configRepository.setString(
-                                            'FriendLocationCardSpacing',
-                                            formatOptionValue(nextValue)
-                                        );
-                                    }}
-                                />
-                                <div className="text-muted-foreground text-sm">
-                                    {Math.round(spacingScale * 100)}%
-                                </div>
-                            </Field>
-                        </FieldGroup>
-                    </PopoverContent>
-                </Popover>
-            </div>
-
-            <div
-                ref={scrollRef}
-                className="friend-view__scroll min-h-0 flex-1 overflow-auto"
-            >
-                {isLoading ? (
-                    <LoadingState
-                        label={t('view.friends_locations.loading_more')}
-                    />
-                ) : isError ? (
-                    <FriendsLocationsEmptyState
-                        title={t('view.friend_list.generated.friend_locations_failed_to_load')}
-                        description={
-                            rosterDetail ||
-                            'The roster bootstrap did not complete.'
-                        }
-                    />
-                ) : hasVisibleSections ? (
-                    <div
-                        className="relative"
-                        style={{
-                            height: `${positionedRows.totalHeight}px`
-                        }}
-                    >
-                        {visibleVirtualRows.map((row) => (
-                            <div
-                                key={row.key}
-                                className="absolute right-0 left-0"
-                                style={{
-                                    height: `${row.height}px`,
-                                    transform: `translateY(${row.top}px)`
-                                }}
-                            >
-                                {row.type === 'header' ? (
-                                    <FriendsLocationsSectionHeader
-                                        section={row.section}
-                                        t={t}
-                                        onOpenWorld={openSectionWorld}
-                                        onOpenGroup={openSectionGroup}
-                                    />
-                                ) : row.type === 'group-header' ? (
-                                    <FriendsLocationsFavoriteGroupHeader
-                                        section={row.section}
-                                        onToggle={toggleFavoriteGroup}
-                                    />
-                                ) : (
-                                    <div
-                                        className="grid overflow-hidden"
-                                        style={{
-                                            gap: `${cardGridGap}px`,
-                                            height: `${cardGridRowHeight}px`,
-                                            gridTemplateColumns: `repeat(${cardGridColumns}, minmax(${cardGridMinWidth}px, 1fr))`
-                                        }}
-                                    >
-                                        {row.friends.map((friend) =>
-                                            <FriendsLocationCardItem
-                                                key={`${row.section.key}:${friend.id}`}
-                                                section={row.section}
-                                                friend={friend}
-                                                currentUserId={currentUserId}
-                                                cardScale={cardScale}
-                                                spacingScale={spacingScale}
-                                                canUseFriendLocation={
-                                                    canUseFriendLocation
-                                                }
-                                                canSendInvite={canSendInvite}
-                                                canBoop={canBoop}
-                                                onOpenUser={openFriendUser}
-                                                onOpenWorld={openFriendWorld}
-                                                onOpenGroup={openFriendGroup}
-                                                onLaunchLocation={(location) =>
-                                                    void launchFriendLocation(
-                                                        location
-                                                    )
-                                                }
-                                                onSelfInviteLocation={(
-                                                    location
-                                                ) =>
-                                                    void selfInviteFriendLocation(
-                                                        location
-                                                    )
-                                                }
-                                                onSendInvite={(nextFriend) =>
-                                                    void sendFriendInvite(
-                                                        nextFriend
-                                                    )
-                                                }
-                                                onRequestInvite={(
-                                                    nextFriend
-                                                ) =>
-                                                    void requestFriendInvite(
-                                                        nextFriend
-                                                    )
-                                                }
-                                                onSendBoop={(nextFriend) =>
-                                                    void sendFriendBoop(
-                                                        nextFriend
-                                                    )
-                                                }
-                                            />
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <FriendsLocationsEmptyState
-                        title={t('view.friend_list.generated.no_friends_match_the_current_filters')}
-                        description={
-                            activeSegment === 'favorite' && !isFavoritesLoaded
-                                ? 'Favorites are still hydrating.'
-                                : 'Try a different segment or broaden the search query.'
-                        }
-                    />
-                )}
-            </div>
+            <FriendsLocationsVirtualList
+                scrollRef={scrollRef}
+                isLoading={isLoading}
+                isError={isError}
+                hasVisibleSections={hasVisibleSections}
+                rosterDetail={rosterDetail}
+                activeSegment={activeSegment}
+                isFavoritesLoaded={isFavoritesLoaded}
+                positionedRows={positionedRows}
+                visibleVirtualRows={visibleVirtualRows}
+                cardGridGap={cardGridGap}
+                cardGridMinWidth={cardGridMinWidth}
+                cardGridColumns={cardGridColumns}
+                cardGridRowHeight={cardGridRowHeight}
+                currentUserId={currentUserId}
+                cardScale={cardScale}
+                spacingScale={spacingScale}
+                canUseFriendLocation={canUseFriendLocation}
+                canSendInvite={canSendInvite}
+                canBoop={canBoop}
+                t={t}
+                onOpenSectionWorld={openSectionWorld}
+                onOpenSectionGroup={openSectionGroup}
+                onToggleFavoriteGroup={toggleFavoriteGroup}
+                onOpenFriendUser={openFriendUser}
+                onOpenFriendWorld={openFriendWorld}
+                onOpenFriendGroup={openFriendGroup}
+                onLaunchFriendLocation={launchFriendLocation}
+                onSelfInviteFriendLocation={selfInviteFriendLocation}
+                onSendFriendInvite={sendFriendInvite}
+                onRequestFriendInvite={requestFriendInvite}
+                onSendFriendBoop={sendFriendBoop}
+            />
         </div>
     );
 }

@@ -1,40 +1,20 @@
 import {
-    BanIcon,
-    CheckIcon,
     ClockIcon,
-    CopyIcon,
-    ExternalLinkIcon,
-    MailIcon,
-    MapPinIcon,
-    MessageSquareIcon,
-    MousePointerIcon,
-    PencilIcon,
-    RefreshCwIcon,
-    SettingsIcon,
-    Share2Icon,
-    ShieldCheckIcon,
-    UserIcon,
-    UserMinusIcon,
     UsersIcon,
-    VolumeXIcon,
-    XIcon
 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu.jsx';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
     openExternalLink,
-    userImage
 } from '@/lib/entityMedia.js';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import {
     userStatusIndicatorClassName
 } from '@/lib/userStatus.js';
-import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/tauri/backend.js';
 import {
     AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS,
@@ -60,23 +40,14 @@ import { parseLocation } from '@/shared/utils/location.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
-import { Checkbox } from '@/ui/shadcn/checkbox';
-import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 
 import {
-    EntityActionDropdown,
-    EntityActionItem,
-    EntityActionSeparator,
     EntityDialogHeader,
     EntityDialogScaffold,
     EntityDialogTabs
 } from './EntityDialogScaffold.jsx';
 import {
     firstNonGroupIdText,
-    formatStatsDate,
     groupIdForRow,
     isGroupId,
     isOfflineLikeValue,
@@ -96,7 +67,6 @@ import {
 } from './user-dialog/userDialogViewData.js';
 import {
     PreviousDisplayNamesBadge,
-    SelfPreferenceCheckboxItem,
     UserTitleLanguages,
     downloadJsonFile
 } from './user-dialog/UserDialogViewParts.jsx';
@@ -110,6 +80,11 @@ import {
     UserDialogWorldsTab
 } from './user-dialog/components/UserDialogDataTabs.jsx';
 import { UserDialogGroupsTab } from './user-dialog/components/UserDialogGroupsTab.jsx';
+import {
+    UserDialogHeaderBadges,
+    UserDialogHeaderMediaBadges
+} from './user-dialog/components/UserDialogHeaderBadges.jsx';
+import { UserDialogHeaderActions } from './user-dialog/components/UserDialogHeaderActions.jsx';
 import { UserDialogInfoTab } from './user-dialog/components/UserDialogInfoTab.jsx';
 import { appI18n } from '@/services/i18nService.js';
 
@@ -549,6 +524,7 @@ export function UserDialogTabbedView({
         profile.username && profile.username !== profile.id
             ? profile.username
             : '';
+    const profileTitle = profile.displayName || profile.username || 'User';
     const userSubtitle = username;
     const pronounsText = Array.isArray(profile.pronouns)
         ? profile.pronouns.join(', ')
@@ -1135,10 +1111,7 @@ export function UserDialogTabbedView({
                         ? () =>
                               openImagePreview({
                                   url: imageUrl,
-                                  title:
-                                      profile.displayName ||
-                                      profile.username ||
-                                      'User'
+                                  title: profileTitle
                               })
                         : null
                 }
@@ -1153,7 +1126,7 @@ export function UserDialogTabbedView({
                         />
                     ) : null
                 }
-                title={profile.displayName || profile.username || 'User'}
+                title={profileTitle}
                 onTitleClick={
                     profile.displayName || profile.username
                         ? () =>
@@ -1188,691 +1161,96 @@ export function UserDialogTabbedView({
                 description={profile.statusDescription}
                 detail={detail}
                 badges={
-                    <>
-                        {profile.$isModerator ? (
-                            <Badge variant="secondary">
-                                <ShieldCheckIcon data-icon="inline-start" />
-                                {t('dialog.user.generated.moderator')}
-                            </Badge>
-                        ) : null}
-                        {profile.$isTroll ? (
-                            <Badge variant="destructive">{t('view.settings.appearance.user_colors.trust_levels.nuisance')}</Badge>
-                        ) : null}
-                        {profile.$isProbableTroll ? (
-                            <Badge variant="outline">{t('view.favorite.avatars.almost_nuisance')}</Badge>
-                        ) : null}
-                        {profile.$customTag ? (
-                            <Badge
-                                variant="outline"
-                                style={
-                                    profile.$customTagColour
-                                        ? {
-                                              color: profile.$customTagColour,
-                                              borderColor:
-                                                  profile.$customTagColour
-                                          }
-                                        : undefined
-                                }
-                            >
-                                {profile.$customTag}
-                            </Badge>
-                        ) : null}
-                        {profile.ageVerified ? (
-                            <Badge variant="outline">18+</Badge>
-                        ) : null}
-                        {friendNumber ? (
-                            <Badge variant="outline">
-                                {t('dialog.user.generated.friend')}{friendNumber}
-                            </Badge>
-                        ) : null}
-                        {mutualFriendCount ? (
-                            <Badge variant="outline">
-                                {mutualFriendCount} {t('dialog.user.generated.mutual')}
-                            </Badge>
-                        ) : null}
-                        {moderationState.block ? (
-                            <Badge variant="destructive">{t('dialog.user.generated.blocked')}</Badge>
-                        ) : null}
-                        {moderationState.mute ? (
-                            <Badge variant="destructive">{t('dialog.user.generated.muted')}</Badge>
-                        ) : null}
-                        <Badge variant="outline">
-                            {profile.$trustLevel || 'Visitor'}
-                        </Badge>
-                        <Badge variant="outline">
-                            {PlatformIcon ? (
-                                <PlatformIcon data-icon="inline-start" />
-                            ) : null}
-                            {platform.label}
-                        </Badge>
-                        {profile.discordId ? (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="xs"
-                                className="h-5 rounded-4xl px-2 py-0.5 text-xs"
-                                onClick={() =>
-                                    void openDiscordProfile(profile.discordId)
-                                }
-                            >
-                                {t('dialog.user.generated.discord')}
-                            </Button>
-                        ) : null}
-                    </>
+                    <UserDialogHeaderBadges
+                        profile={profile}
+                        moderationState={moderationState}
+                        friendNumber={friendNumber}
+                        mutualFriendCount={mutualFriendCount}
+                        platform={platform}
+                        PlatformIcon={PlatformIcon}
+                        onOpenDiscordProfile={openDiscordProfile}
+                        t={t}
+                    />
                 }
                 mediaBadges={
-                    <>
-                        {Array.isArray(profile.badges)
-                            ? profile.badges
-                                  .filter((badge) => badge?.badgeImageUrl)
-                                  .map((badge) => (
-                                      <Popover
-                                          key={
-                                              badge.badgeId ||
-                                              badge.id ||
-                                              badge.badgeName
-                                          }
-                                      >
-                                          <PopoverTrigger asChild>
-                                              <Button
-                                                  type="button"
-                                                  variant="ghost"
-                                                  size="icon"
-                                                  title={appI18n.t('dialog.user.generated_dynamic.value_value', { value: badge.badgeName || 'Badge', value2: badge.hidden ? ' (Hidden)' : '' })}
-                                                  className="size-8 rounded-sm p-0"
-                                                  onClick={(event) =>
-                                                      event.stopPropagation()
-                                                  }
-                                              >
-                                                  <img
-                                                      src={badge.badgeImageUrl}
-                                                      alt={
-                                                          badge.badgeName || ''
-                                                      }
-                                                      className={cn(
-                                                          'size-8 rounded-sm object-cover',
-                                                          badge.hidden &&
-                                                              'grayscale'
-                                                      )}
-                                                  />
-                                              </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent
-                                              side="bottom"
-                                              className="flex w-72 flex-col gap-3"
-                                          >
-                                              <Button
-                                                  type="button"
-                                                  variant="ghost"
-                                                  className="h-auto w-full p-0"
-                                                  onClick={() =>
-                                                      badge.badgeImageUrl &&
-                                                      openImagePreview({
-                                                          url: badge.badgeImageUrl,
-                                                          title:
-                                                              badge.badgeName ||
-                                                              profile.displayName ||
-                                                              profile.username ||
-                                                              'Badge'
-                                                      })
-                                                  }
-                                              >
-                                                  <img
-                                                      src={badge.badgeImageUrl}
-                                                      alt={
-                                                          badge.badgeName || ''
-                                                      }
-                                                      className="max-h-56 w-full rounded-md object-contain"
-                                                  />
-                                              </Button>
-                                              <div className="flex flex-col gap-1 text-sm">
-                                                  <div className="font-medium">
-                                                      {badge.badgeName ||
-                                                          'Badge'}
-                                                      {badge.hidden ? (
-                                                          <span className="text-muted-foreground ml-1 text-xs">
-                                                              (Hidden)
-                                                          </span>
-                                                      ) : null}
-                                                  </div>
-                                                  {badge.badgeDescription ? (
-                                                      <div className="text-muted-foreground text-xs">
-                                                          {
-                                                              badge.badgeDescription
-                                                          }
-                                                      </div>
-                                                  ) : null}
-                                                  {badge.assignedAt ? (
-                                                      <div className="text-muted-foreground font-mono text-xs">
-                                                          {t('dialog.user.generated.assigned')}{' '}
-                                                          {formatStatsDate(
-                                                              badge.assignedAt
-                                                          )}
-                                                      </div>
-                                                  ) : null}
-                                              </div>
-                                              {isCurrentUser ? (
-                                                  <FieldGroup
-                                                      data-slot="checkbox-group"
-                                                      className="border-t pt-3 text-sm"
-                                                  >
-                                                      <Field orientation="horizontal">
-                                                          <Checkbox
-                                                              checked={Boolean(
-                                                                  badge.hidden
-                                                              )}
-                                                              disabled={
-                                                                  actionStatus !==
-                                                                      'idle' ||
-                                                                  !onToggleBadgeVisibility
-                                                              }
-                                                              aria-label={"Hidden"}
-                                                              onCheckedChange={(
-                                                                  checked
-                                                              ) =>
-                                                                  onToggleBadgeVisibility?.(
-                                                                      badge,
-                                                                      Boolean(
-                                                                          checked
-                                                                      )
-                                                                  )
-                                                              }
-                                                          />
-                                                          <FieldLabel>
-                                                              {t('dialog.user.generated.hidden')}
-                                                          </FieldLabel>
-                                                      </Field>
-                                                      <Field orientation="horizontal">
-                                                          <Checkbox
-                                                              checked={Boolean(
-                                                                  badge.showcased
-                                                              )}
-                                                              disabled={
-                                                                  actionStatus !==
-                                                                      'idle' ||
-                                                                  !onToggleBadgeShowcased
-                                                              }
-                                                              aria-label={"Showcased"}
-                                                              onCheckedChange={(
-                                                                  checked
-                                                              ) =>
-                                                                  onToggleBadgeShowcased?.(
-                                                                      badge,
-                                                                      Boolean(
-                                                                          checked
-                                                                      )
-                                                                  )
-                                                              }
-                                                          />
-                                                          <FieldLabel>
-                                                              {t('dialog.user.badges.showcased')}
-                                                          </FieldLabel>
-                                                      </Field>
-                                                  </FieldGroup>
-                                              ) : null}
-                                          </PopoverContent>
-                                      </Popover>
-                                  ))
-                            : null}
-                    </>
+                    <UserDialogHeaderMediaBadges
+                        profile={profile}
+                        profileTitle={profileTitle}
+                        actionStatus={actionStatus}
+                        isCurrentUser={isCurrentUser}
+                        onOpenImagePreview={openImagePreview}
+                        onToggleBadgeVisibility={onToggleBadgeVisibility}
+                        onToggleBadgeShowcased={onToggleBadgeShowcased}
+                        t={t}
+                    />
                 }
                 actions={
-                    <>
-                        {profile.userIcon ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="bg-muted size-[120px] shrink-0 overflow-hidden rounded-md border p-0"
-                                onClick={() =>
-                                    openImagePreview({
-                                        url: convertFileUrlToImageUrl(
-                                            profile.userIcon,
-                                            512
-                                        ),
-                                        title:
-                                            profile.displayName ||
-                                            profile.username ||
-                                            'User'
-                                    })
-                                }
-                            >
-                                <img
-                                    src={userImage(profile, true, '256', true)}
-                                    alt=""
-                                    className="size-full object-cover"
-                                />
-                            </Button>
-                        ) : null}
-                        {!isCurrentUser ? (
-                            <FavoriteActionMenu
-                                kind="friend"
-                                entityId={profile.id}
-                                entity={profile}
-                            />
-                        ) : null}
-                        <EntityActionDropdown
-                            busy={
-                                loadStatus === 'running' ||
-                                actionStatus !== 'idle'
-                            }
-                            dangerous={
-                                moderationState.block || moderationState.mute
-                            }
-                            indicator={
-                                friendRequestState.incoming ||
-                                friendRequestState.outgoing
-                            }
-                        >
-                            <EntityActionItem
-                                icon={RefreshCwIcon}
-                                disabled={loadStatus === 'running'}
-                                onSelect={onRefresh}
-                            >
-                                {t('common.actions.refresh')}
-                            </EntityActionItem>
-                            {userUrl ? (
-                                <>
-                                    <EntityActionItem
-                                        icon={Share2Icon}
-                                        onSelect={() =>
-                                            void copyUserText(
-                                                userUrl,
-                                                'User URL'
-                                            )
-                                        }
-                                    >
-                                        {t('dialog.user.generated.share_copy_url')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={ExternalLinkIcon}
-                                        onSelect={() =>
-                                            openExternalLink(userUrl)
-                                        }
-                                    >
-                                        {t('dialog.user.generated.open_vrchat_page')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={CopyIcon}
-                                        onSelect={() =>
-                                            void copyUserText(
-                                                profile.id,
-                                                'User ID'
-                                            )
-                                        }
-                                    >
-                                        {t('dialog.user.generated.copy_user_id')}
-                                    </EntityActionItem>
-                                    <EntityActionSeparator />
-                                </>
-                            ) : null}
-                            <EntityActionItem
-                                icon={UserIcon}
-                                onSelect={onEditMemo}
-                            >
-                                {t('dialog.user.generated.edit_note_memo')}
-                            </EntityActionItem>
-                            {currentAvatarTarget ? (
-                                <EntityActionItem
-                                    icon={UserIcon}
-                                    onSelect={() => void showAvatarAuthor()}
-                                >
-                                    {t('dialog.user.actions.show_avatar_author')}
-                                </EntityActionItem>
-                            ) : null}
-                            {fallbackAvatarTarget ? (
-                                <EntityActionItem
-                                    icon={UserIcon}
-                                    onSelect={() =>
-                                        openAvatarDialog(
-                                            fallbackAvatarDialogArgs
-                                        )
-                                    }
-                                >
-                                    {t('dialog.user.actions.show_fallback_avatar')}
-                                </EntityActionItem>
-                            ) : null}
-                            {isCurrentUser ? (
-                                <>
-                                    <EntityActionSeparator />
-                                    <EntityActionItem
-                                        icon={PencilIcon}
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={onEditSelfStatus}
-                                    >
-                                        {t('dialog.user.generated.edit_social_status_2')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={PencilIcon}
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={onEditSelfLanguages}
-                                    >
-                                        {t('dialog.user.generated.edit_language_2')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={PencilIcon}
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={onEditSelfBio}
-                                    >
-                                        {t('dialog.user.generated.edit_bio')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={PencilIcon}
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={onEditSelfBioLinks}
-                                    >
-                                        {t('dialog.user.generated.edit_bio_links')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={PencilIcon}
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={onEditSelfPronouns}
-                                    >
-                                        {t('dialog.user.generated.edit_pronouns')}
-                                    </EntityActionItem>
-                                    <EntityActionSeparator />
-                                    <SelfPreferenceCheckboxItem
-                                        label={t('dialog.user.info.avatar_cloning')}
-                                        checked={Boolean(
-                                            profile.allowAvatarCopying
-                                        )}
-                                        disabled={actionStatus !== 'idle'}
-                                        onToggle={onToggleSelfAvatarCopying}
-                                    />
-                                    <SelfPreferenceCheckboxItem
-                                        label={t('dialog.user.info.booping')}
-                                        checked={
-                                            profile.isBoopingEnabled !== false
-                                        }
-                                        disabled={actionStatus !== 'idle'}
-                                        onToggle={onToggleSelfBooping}
-                                    />
-                                    <SelfPreferenceCheckboxItem
-                                        label={t('dialog.user.info.show_mutual_friends')}
-                                        checked={
-                                            !profile.hasSharedConnectionsOptOut
-                                        }
-                                        disabled={actionStatus !== 'idle'}
-                                        onToggle={onToggleSelfSharedConnections}
-                                    />
-                                    <SelfPreferenceCheckboxItem
-                                        label={t('dialog.user.info.show_discord_connections')}
-                                        checked={
-                                            !profile.hasDiscordFriendsOptOut
-                                        }
-                                        disabled={actionStatus !== 'idle'}
-                                        onToggle={
-                                            onToggleSelfDiscordConnections
-                                        }
-                                    />
-                                </>
-                            ) : null}
-                            {!isCurrentUser ? (
-                                <>
-                                    <EntityActionSeparator />
-                                    {!isFriend &&
-                                    friendRequestState.incoming ? (
-                                        <>
-                                            <EntityActionItem
-                                                icon={CheckIcon}
-                                                disabled={
-                                                    actionStatus !== 'idle'
-                                                }
-                                                onSelect={() =>
-                                                    onFriendRequest('accept')
-                                                }
-                                            >
-                                                {t('dialog.user.actions.accept_friend_request')}
-                                            </EntityActionItem>
-                                            <EntityActionItem
-                                                icon={XIcon}
-                                                destructive
-                                                disabled={
-                                                    actionStatus !== 'idle'
-                                                }
-                                                onSelect={() =>
-                                                    onFriendRequest('decline')
-                                                }
-                                            >
-                                                {t('dialog.user.actions.decline_friend_request')}
-                                            </EntityActionItem>
-                                        </>
-                                    ) : !isFriend &&
-                                      friendRequestState.outgoing ? (
-                                        <EntityActionItem
-                                            icon={XIcon}
-                                            disabled={actionStatus !== 'idle'}
-                                            onSelect={() =>
-                                                onFriendRequest('cancel')
-                                            }
-                                        >
-                                            {t('dialog.user.actions.cancel_friend_request')}
-                                        </EntityActionItem>
-                                    ) : !isFriend ? (
-                                        <EntityActionItem
-                                            icon={UserIcon}
-                                            shortcut={recentDialogShortcut(
-                                                'Send Friend Request'
-                                            )}
-                                            disabled={actionStatus !== 'idle'}
-                                            onSelect={() =>
-                                                onFriendRequest('send')
-                                            }
-                                        >
-                                            {t('dialog.user.actions.send_friend_request')}
-                                        </EntityActionItem>
-                                    ) : null}
-                                    {isFriend ? (
-                                        <>
-                                            <EntityActionItem
-                                                icon={MessageSquareIcon}
-                                                shortcut={recentDialogShortcut(
-                                                    'Invite'
-                                                )}
-                                                disabled={
-                                                    actionStatus !== 'idle' ||
-                                                    !canInviteFromCurrentLocation
-                                                }
-                                                onSelect={onInvite}
-                                            >
-                                                {t('dialog.user.generated.send_invite')}
-                                            </EntityActionItem>
-                                            <EntityActionItem
-                                                icon={MessageSquareIcon}
-                                                shortcut={recentDialogShortcut(
-                                                    'Invite Message'
-                                                )}
-                                                disabled={
-                                                    actionStatus !== 'idle' ||
-                                                    !canInviteFromCurrentLocation
-                                                }
-                                                onSelect={onInviteMessage}
-                                            >
-                                                {t('dialog.invite_message.header')}
-                                            </EntityActionItem>
-                                            <EntityActionItem
-                                                icon={MailIcon}
-                                                shortcut={recentDialogShortcut(
-                                                    'Request Invite'
-                                                )}
-                                                disabled={
-                                                    actionStatus !== 'idle'
-                                                }
-                                                onSelect={onInviteRequest}
-                                            >
-                                                {t('dialog.user.generated.request_invite')}
-                                            </EntityActionItem>
-                                            <EntityActionItem
-                                                icon={MailIcon}
-                                                shortcut={recentDialogShortcut(
-                                                    'Request Invite Message'
-                                                )}
-                                                disabled={
-                                                    actionStatus !== 'idle'
-                                                }
-                                                onSelect={
-                                                    onInviteRequestMessage
-                                                }
-                                            >
-                                                {t('dialog.invite_request_message.header')}
-                                            </EntityActionItem>
-                                            <EntityActionItem
-                                                icon={MousePointerIcon}
-                                                disabled={
-                                                    actionStatus !== 'idle' ||
-                                                    !currentUserBoopingEnabled
-                                                }
-                                                onSelect={onBoop}
-                                            >
-                                                {t('dialog.user.generated.boop')}
-                                            </EntityActionItem>
-                                            <EntityActionItem
-                                                icon={UserMinusIcon}
-                                                destructive
-                                                disabled={
-                                                    actionStatus !== 'idle'
-                                                }
-                                                onSelect={onUnfriend}
-                                            >
-                                                {t('dialog.user.generated.unfriend')}
-                                            </EntityActionItem>
-                                        </>
-                                    ) : null}
-                                    <EntityActionItem
-                                        icon={UsersIcon}
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={() => void inviteToGroup()}
-                                    >
-                                        {t('dialog.user.generated.invite_to_group')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={SettingsIcon}
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={onGroupModeration}
-                                    >
-                                        {t('dialog.user.actions.group_moderation')}
-                                    </EntityActionItem>
-                                    <EntityActionSeparator />
-                                    <EntityActionItem
-                                        icon={MapPinIcon}
-                                        disabled={!previousInstances.length}
-                                        onSelect={() =>
-                                            changeTab('instance-history')
-                                        }
-                                    >
-                                        {t('dialog.previous_instances.header')}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={BanIcon}
-                                        destructive={moderationState.block}
-                                        disabled={
-                                            actionStatus !== 'idle' ||
-                                            (!moderationState.block &&
-                                                Boolean(profile.$isModerator))
-                                        }
-                                        onSelect={() =>
-                                            onModeration(
-                                                'block',
-                                                !moderationState.block
-                                            )
-                                        }
-                                    >
-                                        {moderationState.block
-                                            ? 'Unblock'
-                                            : 'Block'}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={VolumeXIcon}
-                                        destructive={moderationState.mute}
-                                        disabled={
-                                            actionStatus !== 'idle' ||
-                                            (!moderationState.mute &&
-                                                Boolean(profile.$isModerator))
-                                        }
-                                        onSelect={() =>
-                                            onModeration(
-                                                'mute',
-                                                !moderationState.mute
-                                            )
-                                        }
-                                    >
-                                        {moderationState.mute
-                                            ? 'Unmute'
-                                            : 'Mute'}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={UserIcon}
-                                        destructive={
-                                            avatarOverrideState.hideAvatar
-                                        }
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={() =>
-                                            onAvatarOverride?.('hideAvatar')
-                                        }
-                                    >
-                                        {avatarOverrideState.hideAvatar
-                                            ? 'Reset Hidden Avatar'
-                                            : 'Hide Avatar'}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={UserIcon}
-                                        destructive={
-                                            avatarOverrideState.showAvatar
-                                        }
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={() =>
-                                            onAvatarOverride?.('showAvatar')
-                                        }
-                                    >
-                                        {avatarOverrideState.showAvatar
-                                            ? 'Reset Shown Avatar'
-                                            : 'Show Avatar'}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={BanIcon}
-                                        destructive={
-                                            extendedModerationState.interactOff
-                                        }
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={() =>
-                                            onExtendedModeration?.(
-                                                'interactOff',
-                                                !extendedModerationState.interactOff
-                                            )
-                                        }
-                                    >
-                                        {extendedModerationState.interactOff
-                                            ? 'Enable Avatar Interaction'
-                                            : 'Disable Avatar Interaction'}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={VolumeXIcon}
-                                        destructive={
-                                            extendedModerationState.muteChat
-                                        }
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={() =>
-                                            onExtendedModeration?.(
-                                                'muteChat',
-                                                !extendedModerationState.muteChat
-                                            )
-                                        }
-                                    >
-                                        {extendedModerationState.muteChat
-                                            ? 'Enable Chatbox'
-                                            : 'Disable Chatbox'}
-                                    </EntityActionItem>
-                                    <EntityActionItem
-                                        icon={BanIcon}
-                                        destructive
-                                        disabled={actionStatus !== 'idle'}
-                                        onSelect={onReportHacking}
-                                    >
-                                        {t('dialog.user.generated.report_hacking')}
-                                    </EntityActionItem>
-                                </>
-                            ) : null}
-                        </EntityActionDropdown>
-                    </>
+                    <UserDialogHeaderActions
+                        profile={profile}
+                        loadStatus={loadStatus}
+                        actionStatus={actionStatus}
+                        moderationState={moderationState}
+                        extendedModerationState={extendedModerationState}
+                        avatarOverrideState={avatarOverrideState}
+                        isCurrentUser={isCurrentUser}
+                        isFriend={isFriend}
+                        friendRequestState={friendRequestState}
+                        canInviteFromCurrentLocation={canInviteFromCurrentLocation}
+                        currentUserBoopingEnabled={currentUserBoopingEnabled}
+                        currentAvatarTarget={currentAvatarTarget}
+                        fallbackAvatarTarget={fallbackAvatarTarget}
+                        previousInstances={previousInstances}
+                        userUrl={userUrl}
+                        recentDialogShortcut={recentDialogShortcut}
+                        onOpenUserIcon={() =>
+                            openImagePreview({
+                                url: convertFileUrlToImageUrl(
+                                    profile.userIcon,
+                                    512
+                                ),
+                                title: profileTitle
+                            })
+                        }
+                        onRefresh={onRefresh}
+                        onCopyUserUrl={() =>
+                            void copyUserText(userUrl, 'User URL')
+                        }
+                        onOpenUserUrl={() => openExternalLink(userUrl)}
+                        onCopyUserId={() =>
+                            void copyUserText(profile.id, 'User ID')
+                        }
+                        onEditMemo={onEditMemo}
+                        onShowAvatarAuthor={showAvatarAuthor}
+                        onOpenFallbackAvatar={() =>
+                            openAvatarDialog(fallbackAvatarDialogArgs)
+                        }
+                        onEditSelfStatus={onEditSelfStatus}
+                        onEditSelfLanguages={onEditSelfLanguages}
+                        onEditSelfBio={onEditSelfBio}
+                        onEditSelfBioLinks={onEditSelfBioLinks}
+                        onEditSelfPronouns={onEditSelfPronouns}
+                        onToggleSelfAvatarCopying={onToggleSelfAvatarCopying}
+                        onToggleSelfBooping={onToggleSelfBooping}
+                        onToggleSelfSharedConnections={onToggleSelfSharedConnections}
+                        onToggleSelfDiscordConnections={onToggleSelfDiscordConnections}
+                        onFriendRequest={onFriendRequest}
+                        onInvite={onInvite}
+                        onInviteMessage={onInviteMessage}
+                        onInviteRequest={onInviteRequest}
+                        onInviteRequestMessage={onInviteRequestMessage}
+                        onBoop={onBoop}
+                        onUnfriend={onUnfriend}
+                        onInviteToGroup={inviteToGroup}
+                        onGroupModeration={onGroupModeration}
+                        onShowInstanceHistory={() =>
+                            changeTab('instance-history')
+                        }
+                        onModeration={onModeration}
+                        onAvatarOverride={onAvatarOverride}
+                        onExtendedModeration={onExtendedModeration}
+                        onReportHacking={onReportHacking}
+                        t={t}
+                    />
                 }
             />
             <EntityDialogTabs

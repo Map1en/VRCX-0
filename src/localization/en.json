@@ -2155,6 +2155,8 @@
                 "moderation_unmute": "Unmute",
                 "moderation_hide_avatar": "Hide Avatar",
                 "moderation_show_avatar": "Show Avatar",
+                "reset_hidden_avatar": "Reset Hidden Avatar",
+                "reset_shown_avatar": "Reset Shown Avatar",
                 "moderation_enable_avatar_interaction": "Enable Avatar Interaction",
                 "moderation_disable_avatar_interaction": "Disable Avatar Interaction",
                 "moderation_enable_chatbox": "Unmute Chatbox",

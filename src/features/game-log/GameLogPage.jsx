@@ -5,17 +5,10 @@ import {
     useReactTable
 } from '@tanstack/react-table';
 import {
-    CalendarRangeIcon,
     CopyIcon,
     ExternalLinkIcon,
     FileTextIcon,
-    LogsIcon,
-    RefreshCwIcon,
-    SearchIcon,
-    StarIcon,
-    Table2Icon,
     Trash2Icon,
-    XIcon
 } from 'lucide-react';
 import {
     useDeferredValue,
@@ -33,7 +26,6 @@ import {
     DataTableSurface
 } from '@/components/data-table/DataTableView.jsx';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import {
     LoadingState,
@@ -45,7 +37,6 @@ import {
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { copyTextToClipboard, openExternalLink } from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
-import { cn } from '@/lib/utils.js';
 import {
     configRepository,
     GAME_LOG_FILTER_TYPES,
@@ -59,22 +50,12 @@ import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { Calendar } from '@/ui/shadcn/calendar';
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupButton,
-    InputGroupInput
-} from '@/ui/shadcn/input-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { TableBody, TableRow } from '@/ui/shadcn/table';
 
 import {
     clampGameLogSessionDateInputRange,
-    GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS,
     isoToGameLogDateInputValue,
     parseGameLogDateInput,
     toGameLogDateInputValue,
@@ -115,11 +96,10 @@ import {
     GameLogSessionsView,
     SESSION_FILTER_TYPES,
     SortButton,
-    TypeFilterDropdown,
-    TypeFilterToggleGroup,
     normalizeId,
     openGameLogUser
 } from './components/GameLogTableParts.jsx';
+import { GameLogToolbar } from './components/GameLogToolbar.jsx';
 
 function getGameLogColumnStyle(column) {
     if (column?.id !== GAME_LOG_STRETCH_COLUMN_ID) {
@@ -1276,246 +1256,66 @@ export function GameLogPage({ embedded = false } = {}) {
         setSessionDatePopoverOpen(false);
     }
 
-    function renderViewModeToggle() {
-        return (
-            <div className="flex shrink-0 rounded-md border p-0.5">
-                <Button
-                    type="button"
-                    size="icon"
-                    variant={savedViewMode === 'sessions' ? 'default' : 'ghost'}
-                    title={t('view.game_log.generated.sessions')}
-                    aria-label={"Show sessions"}
-                    onClick={() => {
-                        setSavedViewMode('sessions');
-                        void configRepository.setString(
-                            'gameLogViewMode',
-                            'sessions'
-                        );
-                    }}
-                >
-                    <LogsIcon data-icon="inline-start" />
-                </Button>
-                <Button
-                    type="button"
-                    size="icon"
-                    variant={savedViewMode === 'table' ? 'default' : 'ghost'}
-                    title={t('view.game_log.generated.table')}
-                    aria-label={"Show table"}
-                    onClick={() => {
-                        setSavedViewMode('table');
-                        void configRepository.setString(
-                            'gameLogViewMode',
-                            'table'
-                        );
-                    }}
-                >
-                    <Table2Icon data-icon="inline-start" />
-                </Button>
-            </div>
-        );
+    function changeViewMode(nextViewMode) {
+        setSavedViewMode(nextViewMode);
+        void configRepository.setString('gameLogViewMode', nextViewMode);
     }
 
-    function renderFavoritesToggle() {
-        return (
-            <Button
-                type="button"
-                variant={favoritesOnly ? 'default' : 'outline'}
-                size="icon"
-                title={t('view.game_log.generated.favorites_only')}
-                aria-label={"Favorites only"}
-                onClick={() => setActiveFavoritesOnly((current) => !current)}
-            >
-                <StarIcon data-icon="inline-start" />
-            </Button>
-        );
+    function toggleFavoritesOnly() {
+        setActiveFavoritesOnly((current) => !current);
     }
 
-    function renderSessionDateFilter() {
-        return (
-            <Popover
-                open={sessionDatePopoverOpen}
-                onOpenChange={(open) => {
-                    if (open) {
-                        syncSessionDateDraft();
-                    }
-                    setSessionDatePopoverOpen(open);
-                }}
-            >
-                <PopoverTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className={cn(
-                            'h-8 shrink-0 gap-1.5',
-                            (sessionDateFrom || sessionDateTo) &&
-                                'bg-accent text-accent-foreground'
-                        )}
-                        title={t('view.game_log.generated.session_date_range')}
-                        aria-label={"Session date range"}
-                    >
-                        <CalendarRangeIcon data-icon="inline-start" />
-                        {sessionDateFrom || sessionDateTo ? (
-                            <Badge
-                                variant="secondary"
-                                className="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs"
-                            >
-                                1
-                            </Badge>
-                        ) : null}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto" align="start">
-                    <Calendar
-                        mode="range"
-                        numberOfMonths={2}
-                        max={GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS}
-                        selected={sessionDateDraftRange}
-                        disabled={{ after: todayDate }}
-                        onSelect={updateSessionDateDraftRange}
-                    />
-                    <div className="flex items-center justify-between gap-4 px-3 pb-3">
-                        <div className="text-muted-foreground min-w-0 text-xs">
-                            {[
-                                sessionDateDraftFrom || '...',
-                                sessionDateDraftTo || '...'
-                            ].join(' - ')}
-                            <span className="ml-2">
-                                {t('view.game_log.generated.max')} {GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS} {t('view.game_log.generated.days')}
-                            </span>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={clearSessionDateRange}
-                            >
-                                {t('common.actions.clear')}
-                            </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={applySessionDateRange}
-                            >
-                                {t('common.actions.confirm')}
-                            </Button>
-                        </div>
-                    </div>
-                </PopoverContent>
-            </Popover>
-        );
+    function handleSessionDatePopoverChange(open) {
+        if (open) {
+            syncSessionDateDraft();
+        }
+        setSessionDatePopoverOpen(open);
     }
 
-    function renderSearchInput(className = 'min-w-56 flex-1') {
-        return (
-            <InputGroup className={className}>
-                <InputGroupAddon>
-                    <SearchIcon />
-                </InputGroupAddon>
-                <InputGroupInput
-                    value={searchDraft}
-                    onChange={(event) => setSearchDraft(event.target.value)}
-                    onBlur={commitSearchDraft}
-                    onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                            commitSearchDraft();
-                        }
-                    }}
-                    placeholder={t('common.actions.search')}
-                />
-                {searchDraft ? (
-                    <InputGroupAddon align="inline-end">
-                        <InputGroupButton
-                            type="button"
-                            size="icon-xs"
-                            aria-label={"Clear search"}
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => {
-                                setSearchDraft('');
-                                setSearchQuery('');
-                            }}
-                        >
-                            <XIcon data-icon="icon" />
-                        </InputGroupButton>
-                    </InputGroupAddon>
-                ) : null}
-            </InputGroup>
-        );
+    function clearSearch() {
+        setSearchDraft('');
+        setSearchQuery('');
     }
 
-    function renderTableControls() {
-        return (
-            <div className="flex shrink-0 items-center gap-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    title={t('common.actions.refresh')}
-                    aria-label={"Refresh game log"}
-                    disabled={
-                        !currentUserId ||
-                        gameLogDisabled ||
-                        loadStatus === 'running'
-                    }
-                    onClick={() => setRefreshToken((value) => value + 1)}
-                >
-                    {loadStatus === 'running' ? (
-                        <Spinner data-icon="inline-start" />
-                    ) : (
-                        <RefreshCwIcon data-icon="inline-start" />
-                    )}
-                </Button>
-                {savedViewMode === 'table' ? (
-                    <TableColumnVisibilityMenu table={table} />
-                ) : null}
-            </div>
-        );
+    function refreshGameLog() {
+        setRefreshToken((value) => value + 1);
     }
 
     return (
         <PageScaffold embedded={embedded}>
             <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
                 <PageToolbar>
-                    {savedViewMode === 'table' ? (
-                        <div className="overflow-hidden pb-1">
-                            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                <div className="flex shrink-0 items-center gap-2">
-                                    {renderViewModeToggle()}
-                                    {renderFavoritesToggle()}
-                                </div>
-                                <div className="min-w-44">
-                                    <TypeFilterDropdown
-                                        types={availableFilterTypes}
-                                        selectedTypes={queryFilterTypes}
-                                        onSelectedTypesChange={
-                                            setActiveSelectedTypes
-                                        }
-                                    />
-                                </div>
-                                {renderSearchInput('ml-auto w-60 shrink-0')}
-                                {renderTableControls()}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="overflow-hidden pb-1">
-                            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                {renderViewModeToggle()}
-                                {renderFavoritesToggle()}
-                                {renderSessionDateFilter()}
-                                <TypeFilterToggleGroup
-                                    types={availableFilterTypes}
-                                    selectedTypes={queryFilterTypes}
-                                    onSelectedTypesChange={
-                                        setActiveSelectedTypes
-                                    }
-                                    className="flex shrink-0 items-center gap-1"
-                                />
-                                {renderSearchInput('ml-auto w-60 shrink-0')}
-                                {renderTableControls()}
-                            </div>
-                        </div>
-                    )}
+                    <GameLogToolbar
+                        viewMode={savedViewMode}
+                        favoritesOnly={favoritesOnly}
+                        availableFilterTypes={availableFilterTypes}
+                        queryFilterTypes={queryFilterTypes}
+                        onViewModeChange={changeViewMode}
+                        onToggleFavoritesOnly={toggleFavoritesOnly}
+                        onSelectedTypesChange={setActiveSelectedTypes}
+                        sessionDatePopoverOpen={sessionDatePopoverOpen}
+                        onSessionDatePopoverOpenChange={
+                            handleSessionDatePopoverChange
+                        }
+                        sessionDateFrom={sessionDateFrom}
+                        sessionDateTo={sessionDateTo}
+                        sessionDateDraftFrom={sessionDateDraftFrom}
+                        sessionDateDraftTo={sessionDateDraftTo}
+                        sessionDateDraftRange={sessionDateDraftRange}
+                        todayDate={todayDate}
+                        onSessionDateRangeSelect={updateSessionDateDraftRange}
+                        onSessionDateClear={clearSessionDateRange}
+                        onSessionDateApply={applySessionDateRange}
+                        searchDraft={searchDraft}
+                        onSearchDraftChange={setSearchDraft}
+                        onSearchCommit={commitSearchDraft}
+                        onSearchClear={clearSearch}
+                        canRefresh={Boolean(currentUserId) && !gameLogDisabled}
+                        loadStatus={loadStatus}
+                        onRefresh={refreshGameLog}
+                        table={table}
+                        t={t}
+                    />
                     {detail ? (
                         <div className="text-muted-foreground text-sm">
                             {userFacingErrorMessage(
