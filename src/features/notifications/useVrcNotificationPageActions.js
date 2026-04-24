@@ -4,12 +4,13 @@ export function useVrcNotificationPageActions({
     currentInviteLocation,
     currentUserId,
     endpoint,
-    modalStore,
+    confirm,
     normalizeWorldTarget,
     notificationRepository,
     openAvatarDialog,
     openExternalLink,
     openGroupDialog,
+    openImagePreview,
     openUserDialog,
     openWorldDialog,
     parseLocation,
@@ -96,7 +97,7 @@ export function useVrcNotificationPageActions({
         if (!imageUrl || imageUrl.startsWith('default_')) {
             return;
         }
-        modalStore.openImagePreview({
+        openImagePreview({
             url: convertFileUrlToImageUrl(imageUrl, 1024),
             title:
                 notification.title ||
@@ -130,7 +131,7 @@ export function useVrcNotificationPageActions({
     ) {
         try {
             if (!skipConfirm) {
-                const result = await modalStore.confirm({
+                const result = await confirm({
                     title: t(
                         'view.notifications.generated_modal.delete_notification_log_entry'
                     ),
@@ -175,7 +176,7 @@ export function useVrcNotificationPageActions({
     }
     async function acceptFriendRequest(notification) {
         try {
-            const result = await modalStore.confirm({
+            const result = await confirm({
                 title: t(
                     'view.notifications.generated_modal.accept_friend_request'
                 ),
@@ -217,7 +218,7 @@ export function useVrcNotificationPageActions({
     ) {
         try {
             if (!skipConfirm) {
-                const result = await modalStore.confirm({
+                const result = await confirm({
                     title: t(
                         'view.notifications.generated_modal.decline_notification'
                     ),
@@ -284,7 +285,7 @@ export function useVrcNotificationPageActions({
                 );
                 return;
             }
-            const result = await modalStore.confirm({
+            const result = await confirm({
                 title: t('view.notifications.generated_modal.send_invite'),
                 description: t(
                     'view.notifications.generated_dynamic.send_an_invite_to_value',

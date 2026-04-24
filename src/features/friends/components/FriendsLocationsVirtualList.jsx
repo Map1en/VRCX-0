@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 
 import { LoadingState } from '@/components/layout/PageScaffold.jsx';
 
-import { useFriendsLocationsPage } from '../FriendsLocationsPageContext.jsx';
 import {
     FriendsLocationCardItem,
     FriendsLocationsEmptyState,
@@ -10,7 +9,7 @@ import {
     FriendsLocationsSectionHeader
 } from './FriendsLocationsViewParts.jsx';
 
-export function FriendsLocationsVirtualList() {
+export function FriendsLocationsVirtualList({ controller }) {
     const { t } = useTranslation();
     const {
         scrollRef,
@@ -43,7 +42,7 @@ export function FriendsLocationsVirtualList() {
         sendFriendInvite,
         requestFriendInvite,
         sendFriendBoop
-    } = useFriendsLocationsPage();
+    } = controller;
 
     return (
         <div

@@ -35,10 +35,29 @@ import {
 
 export function VrcNotificationCenterHost() {
     const { t } = useTranslation();
-    const modalStore = useModalStore();
-    const runtimeAuth = useRuntimeStore((state) => state.auth);
-    const gameState = useRuntimeStore((state) => state.gameState);
-    const groupInstancesState = useRuntimeStore((state) => state.groupInstances);
+    const confirm = useModalStore((state) => state.confirm);
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const endpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const currentUserLocationTag = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot?.$locationTag
+    );
+    const currentUserLocation = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot?.location
+    );
+    const currentLocation = useRuntimeStore(
+        (state) => state.gameState.currentLocation
+    );
+    const currentDestination = useRuntimeStore(
+        (state) => state.gameState.currentDestination
+    );
+    const groupInstancesEndpoint = useRuntimeStore(
+        (state) => state.groupInstances.endpoint
+    );
+    const groupInstances = useRuntimeStore(
+        (state) => state.groupInstances.instances
+    );
     const isCenterOpen = useVrcNotificationStore((state) => state.isCenterOpen);
     const categories = useVrcNotificationStore((state) => state.categories);
     const unseenCount = useVrcNotificationStore((state) => state.unseenCount);
@@ -56,19 +75,25 @@ export function VrcNotificationCenterHost() {
     const markAllSeen = useVrcNotificationStore((state) => state.markAllSeen);
     const [activeTab, setActiveTab] = useState('friend');
     const [inviteResponseRequest, setInviteResponseRequest] = useState(null);
-    const currentUserId = runtimeAuth.currentUserId;
-    const endpoint = runtimeAuth.currentUserEndpoint;
     const groupInstanceRows =
-        groupInstancesState.endpoint === endpoint
-            ? groupInstancesState.instances
-            : [];
+        groupInstancesEndpoint === endpoint ? groupInstances : [];
+    const gameState = useMemo(
+        () => ({
+            currentLocation,
+            currentDestination
+        }),
+        [currentDestination, currentLocation]
+    );
+    const currentUserSnapshot = useMemo(
+        () => ({
+            $locationTag: currentUserLocationTag,
+            location: currentUserLocation
+        }),
+        [currentUserLocation, currentUserLocationTag]
+    );
     const currentInviteLocation = useMemo(
-        () =>
-            resolveCurrentInviteLocation(
-                gameState,
-                runtimeAuth.currentUserSnapshot
-            ),
-        [gameState, runtimeAuth.currentUserSnapshot]
+        () => resolveCurrentInviteLocation(gameState, currentUserSnapshot),
+        [currentUserSnapshot, gameState]
     );
     const cachedInstances = useMemo(
         () => buildCachedInstanceMap(groupInstanceRows),
@@ -141,7 +166,7 @@ export function VrcNotificationCenterHost() {
 
     async function acceptFriendRequest(notification) {
         try {
-            const result = await modalStore.confirm({
+            const result = await confirm({
                 title: t(
                     'host.vrc_notification_center.generated_modal.accept_friend_request'
                 ),
@@ -178,7 +203,7 @@ export function VrcNotificationCenterHost() {
 
     async function hideNotification(notification) {
         try {
-            const result = await modalStore.confirm({
+            const result = await confirm({
                 title: t(
                     'host.vrc_notification_center.generated_modal.decline_notification'
                 ),
@@ -243,7 +268,7 @@ export function VrcNotificationCenterHost() {
                 );
                 return;
             }
-            const result = await modalStore.confirm({
+            const result = await confirm({
                 title: t(
                     'host.vrc_notification_center.generated_modal.send_invite'
                 ),
@@ -383,7 +408,7 @@ export function VrcNotificationCenterHost() {
 
     async function deleteNotification(notification) {
         try {
-            const result = await modalStore.confirm({
+            const result = await confirm({
                 title: t(
                     'host.vrc_notification_center.generated_modal.delete_notification_log_entry'
                 ),

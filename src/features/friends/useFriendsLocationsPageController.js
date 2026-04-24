@@ -1,4 +1,4 @@
-import { useDeferredValue, useRef, useState } from 'react';
+import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -38,7 +38,32 @@ export function useFriendsLocationsPageController({ embedded = false } = {}) {
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
-    const gameState = useRuntimeStore((state) => state.gameState);
+    const runtimeCurrentLocation = useRuntimeStore(
+        (state) => state.gameState.currentLocation
+    );
+    const runtimeCurrentDestination = useRuntimeStore(
+        (state) => state.gameState.currentDestination
+    );
+    const currentLocationPlayerIds = useRuntimeStore(
+        (state) => state.gameState.currentLocationPlayerIds
+    );
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning
+    );
+    const gameState = useMemo(
+        () => ({
+            currentLocation: runtimeCurrentLocation,
+            currentDestination: runtimeCurrentDestination,
+            currentLocationPlayerIds,
+            isGameRunning
+        }),
+        [
+            currentLocationPlayerIds,
+            isGameRunning,
+            runtimeCurrentDestination,
+            runtimeCurrentLocation
+        ]
+    );
     const isFavoritesLoaded = useSessionStore(
         (state) => state.isFavoritesLoaded
     );

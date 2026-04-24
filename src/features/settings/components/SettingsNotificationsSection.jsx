@@ -1,6 +1,4 @@
-import { useSettingsNotifications } from '../SettingsPageContext.jsx';
-
-export function SettingsNotificationsSection() {
+export function SettingsNotificationsSection({ notifications }) {
     const {
         SettingsNotificationsTab,
         t,
@@ -23,7 +21,7 @@ export function SettingsNotificationsSection() {
         setNotificationTtsTestVisible,
         setNotificationTtsTest,
         speakNotificationTts
-    } = useSettingsNotifications();
+    } = notifications;
 
     return (
         <SettingsNotificationsTab

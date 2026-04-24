@@ -1,16 +1,20 @@
-import {
-    useSettingsIntegrationsSection,
-    useSettingsInterface,
-    useSettingsMedia,
-    useSettingsShell,
-    useSettingsSocial
-} from '../SettingsPageContext.jsx';
 import { SettingsAdvancedSection } from './SettingsAdvancedSection.jsx';
 import { SettingsDialogsSection } from './SettingsDialogsSection.jsx';
 import { SettingsNotificationsSection } from './SettingsNotificationsSection.jsx';
 import { SettingsSystemSection } from './SettingsSystemSection.jsx';
 
-export function SettingsPageView() {
+export function SettingsPageView({ controller }) {
+    const {
+        shell,
+        system,
+        interface: settingsInterface,
+        media,
+        integrations,
+        social,
+        notifications,
+        advanced,
+        dialogs
+    } = controller;
     const {
         PageHeader,
         PageTitle,
@@ -23,7 +27,7 @@ export function SettingsPageView() {
         TabsTrigger,
         loading,
         Spinner
-    } = useSettingsShell();
+    } = shell;
     const {
         SettingsInterfaceTab,
         locale,
@@ -49,7 +53,7 @@ export function SettingsPageView() {
         resetTrustColors,
         saveTrustColor,
         setPrefs
-    } = useSettingsInterface();
+    } = settingsInterface;
     const {
         SettingsMediaTab,
         setScreenshotHelperPreference,
@@ -63,7 +67,7 @@ export function SettingsPageView() {
         handleCropInstancePrintsChange,
         setSaveInstanceStickersPreference,
         setSaveInstanceEmojiPreference
-    } = useSettingsMedia();
+    } = media;
     const {
         SettingsIntegrationsTab,
         discordPrefs,
@@ -80,7 +84,7 @@ export function SettingsPageView() {
         avatarProviderConfigRef,
         applyAvatarProviderConfig,
         setAvatarProviderDialogOpen
-    } = useSettingsIntegrationsSection();
+    } = integrations;
     const {
         SettingsSocialTab,
         selectedFavoriteFriendGroupLabel,
@@ -91,7 +95,7 @@ export function SettingsPageView() {
         setRecentActionCooldownEnabledPreference,
         setRecentActionCooldownMinutesPreference,
         toggleLocalFavoriteFriendsGroup
-    } = useSettingsSocial();
+    } = social;
 
     return (
         <div className="x-container flex flex-1 flex-col overflow-hidden p-4">
@@ -118,7 +122,7 @@ export function SettingsPageView() {
                         {t('view.settings.generated.loading_settings_snapshot')}
                     </div>
                 ) : null}
-                <SettingsSystemSection />
+                <SettingsSystemSection system={system} />
                 <SettingsInterfaceTab
                     t={t}
                     locale={locale}
@@ -563,10 +567,10 @@ export function SettingsPageView() {
                         void toggleLocalFavoriteFriendsGroup(groupId, checked)
                     }
                 />
-                <SettingsNotificationsSection />
-                <SettingsAdvancedSection />
+                <SettingsNotificationsSection notifications={notifications} />
+                <SettingsAdvancedSection advanced={advanced} />
             </Tabs>
-            <SettingsDialogsSection />
+            <SettingsDialogsSection dialogs={dialogs} />
         </div>
     );
 }

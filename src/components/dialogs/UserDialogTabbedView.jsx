@@ -34,6 +34,8 @@ import { useUserDialogGroupActions } from './user-dialog/useUserDialogGroupActio
 import { useUserDialogTabData } from './user-dialog/useUserDialogTabData.js';
 import { buildUserDialogProfileSummary } from './user-dialog/userDialogViewData.js';
 
+const VRC_PLUS_SUMMARY_SNAPSHOT = Object.freeze({ $isVRCPlus: true });
+
 export function UserDialogTabbedView({
     profile,
     memo,
@@ -103,8 +105,14 @@ export function UserDialogTabbedView({
         (state) => state.auth.currentUserEndpoint
     );
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentUserSnapshot = useRuntimeStore(
-        (state) => state.auth.currentUserSnapshot
+    const isLocalUserVrcPlusSupporter = useRuntimeStore((state) =>
+        Boolean(
+            state.auth.currentUserSnapshot?.$isVRCPlus ||
+                state.auth.currentUserSnapshot?.tags?.includes?.(
+                    'system_supporter'
+                ) ||
+                globalThis?.$debug?.debugVrcPlus
+        )
     );
     const inGameGroupOrder = useRuntimeStore(
         (state) => state.groupInstances.groupOrder
@@ -219,7 +227,9 @@ export function UserDialogTabbedView({
         mutualFriends,
         isCurrentUser,
         vrchatConfigConstants,
-        currentUserSnapshot
+        currentUserSnapshot: isLocalUserVrcPlusSupporter
+            ? VRC_PLUS_SUMMARY_SNAPSHOT
+            : null
     });
     const statusIndicatorClassName = userStatusIndicatorClassName(profile, {
         showOffline: true

@@ -47,9 +47,32 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
-    const gameState = useRuntimeStore((state) => state.gameState);
-    const groupInstancesState = useRuntimeStore(
-        (state) => state.groupInstances
+    const runtimeCurrentLocation = useRuntimeStore(
+        (state) => state.gameState.currentLocation
+    );
+    const runtimeCurrentDestination = useRuntimeStore(
+        (state) => state.gameState.currentDestination
+    );
+    const runtimeCurrentWorldId = useRuntimeStore(
+        (state) => state.gameState.currentWorldId
+    );
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning
+    );
+    const groupInstancesEndpoint = useRuntimeStore(
+        (state) => state.groupInstances.endpoint
+    );
+    const groupInstances = useRuntimeStore(
+        (state) => state.groupInstances.instances
+    );
+    const groupInstancesLastLoadedAt = useRuntimeStore(
+        (state) => state.groupInstances.lastLoadedAt
+    );
+    const groupInstancesFetchedAt = useRuntimeStore(
+        (state) => state.groupInstances.fetchedAt
+    );
+    const groupInstancesStatus = useRuntimeStore(
+        (state) => state.groupInstances.status
     );
     const normalizedCurrentUserId = normalizeUserId(currentUserId);
     const isTargetCurrentUser = Boolean(
@@ -80,6 +103,36 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         ? currentUserSnapshot
         : friendsById[normalizedUserId] || seedData || null;
     const targetKey = dialogTargetKey(currentEndpoint, normalizedUserId);
+    const gameState = useMemo(
+        () => ({
+            currentLocation: runtimeCurrentLocation,
+            currentDestination: runtimeCurrentDestination,
+            currentWorldId: runtimeCurrentWorldId,
+            isGameRunning
+        }),
+        [
+            isGameRunning,
+            runtimeCurrentDestination,
+            runtimeCurrentLocation,
+            runtimeCurrentWorldId
+        ]
+    );
+    const groupInstancesState = useMemo(
+        () => ({
+            endpoint: groupInstancesEndpoint,
+            instances: groupInstances,
+            lastLoadedAt: groupInstancesLastLoadedAt,
+            fetchedAt: groupInstancesFetchedAt,
+            status: groupInstancesStatus
+        }),
+        [
+            groupInstances,
+            groupInstancesEndpoint,
+            groupInstancesFetchedAt,
+            groupInstancesLastLoadedAt,
+            groupInstancesStatus
+        ]
+    );
     const actionStatusRef = useRef('idle');
     const [actionStatus, setActionStatus] = useState('idle');
     const [recentActionVersion, setRecentActionVersion] = useState(0);

@@ -112,7 +112,23 @@ export function useFavoritesPageController({ kind, embedded = false }) {
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
-    const gameState = useRuntimeStore((state) => state.gameState);
+    const runtimeCurrentLocation = useRuntimeStore(
+        (state) => state.gameState.currentLocation
+    );
+    const runtimeCurrentDestination = useRuntimeStore(
+        (state) => state.gameState.currentDestination
+    );
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning
+    );
+    const gameState = useMemo(
+        () => ({
+            currentLocation: runtimeCurrentLocation,
+            currentDestination: runtimeCurrentDestination,
+            isGameRunning
+        }),
+        [isGameRunning, runtimeCurrentDestination, runtimeCurrentLocation]
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);

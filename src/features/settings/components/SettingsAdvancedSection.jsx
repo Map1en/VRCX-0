@@ -1,6 +1,4 @@
-import { useSettingsAdvanced } from '../SettingsPageContext.jsx';
-
-export function SettingsAdvancedSection() {
+export function SettingsAdvancedSection({ advanced }) {
     const {
         SettingsAdvancedTab,
         t,
@@ -26,7 +24,7 @@ export function SettingsAdvancedSection() {
         refreshOnlineVisits,
         refreshConfigTreeData,
         setConfigTreeData
-    } = useSettingsAdvanced();
+    } = advanced;
 
     return (
         <SettingsAdvancedTab

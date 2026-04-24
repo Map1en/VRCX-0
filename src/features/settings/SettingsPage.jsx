@@ -1,10 +1,8 @@
 import { SettingsPageView } from './components/SettingsPageView.jsx';
-import { SettingsPageProvider } from './SettingsPageContext.jsx';
+import { useSettingsPageController } from './useSettingsPageController.js';
 
 export function SettingsPage() {
-    return (
-        <SettingsPageProvider>
-            <SettingsPageView />
-        </SettingsPageProvider>
-    );
+    const controller = useSettingsPageController();
+
+    return <SettingsPageView controller={controller} />;
 }

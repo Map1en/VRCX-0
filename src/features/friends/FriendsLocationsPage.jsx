@@ -1,15 +1,15 @@
 import { FriendsLocationsPageLayout } from './components/FriendsLocationsPageView.jsx';
 import { FriendsLocationsToolbar } from './components/FriendsLocationsToolbar.jsx';
 import { FriendsLocationsVirtualList } from './components/FriendsLocationsVirtualList.jsx';
-import { FriendsLocationsPageProvider } from './FriendsLocationsPageContext.jsx';
+import { useFriendsLocationsPageController } from './useFriendsLocationsPageController.js';
 
 export function FriendsLocationsPage({ embedded = false } = {}) {
+    const controller = useFriendsLocationsPageController({ embedded });
+
     return (
-        <FriendsLocationsPageProvider embedded={embedded}>
-            <FriendsLocationsPageLayout>
-                <FriendsLocationsToolbar />
-                <FriendsLocationsVirtualList />
-            </FriendsLocationsPageLayout>
-        </FriendsLocationsPageProvider>
+        <FriendsLocationsPageLayout embedded={controller.embedded}>
+            <FriendsLocationsToolbar controller={controller} />
+            <FriendsLocationsVirtualList controller={controller} />
+        </FriendsLocationsPageLayout>
     );
 }

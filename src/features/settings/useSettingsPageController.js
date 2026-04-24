@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useShallow } from 'zustand/react/shallow';
 
 import { PageHeader, PageTitle } from '@/components/layout/PageScaffold.jsx';
 import {
@@ -83,6 +84,7 @@ import { formatReleaseDisplayVersion } from '@/shared/utils/releaseVersion.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import {
+    DEFAULT_PREFERENCES,
     normalizePreferenceSnapshot,
     usePreferencesStore
 } from '@/state/preferencesStore.js';
@@ -121,14 +123,20 @@ import { useSettingsPageActions } from './useSettingsPageActions.js';
 import { useSettingsPageEffects } from './useSettingsPageEffects.js';
 
 const FEED_FILTER_OPTIONS = feedFiltersOptions();
+const SETTINGS_PREFERENCE_KEYS = Object.keys(DEFAULT_PREFERENCES);
 
 export function useSettingsPageController() {
     const { t } = useTranslation();
     const locale = useShellStore((state) => state.locale);
     const zoomLevel = useShellStore((state) => state.zoomLevel);
     const sidebarOpen = useShellStore((state) => state.sidebarOpen);
-    const auth = useRuntimeStore((state) => state.auth);
-    const gameState = useRuntimeStore((state) => state.gameState);
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const currentUserEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning
+    );
     const setSystemHostOpen = useRuntimeStore(
         (state) => state.setSystemHostOpen
     );
@@ -140,7 +148,30 @@ export function useSettingsPageController() {
     );
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
-    const preferenceState = usePreferencesStore();
+    const preferenceState = usePreferencesStore(
+        useShallow((state) => {
+            const snapshot = {
+                preferencesHydrated: state.preferencesHydrated
+            };
+            for (const key of SETTINGS_PREFERENCE_KEYS) {
+                snapshot[key] = state[key];
+            }
+            return snapshot;
+        })
+    );
+    const auth = useMemo(
+        () => ({
+            currentUserId,
+            currentUserEndpoint
+        }),
+        [currentUserEndpoint, currentUserId]
+    );
+    const gameState = useMemo(
+        () => ({
+            isGameRunning
+        }),
+        [isGameRunning]
+    );
     const [prefs, setPrefs] = useState(() => createDefaultSettingsPrefs());
     const [sqliteTableSizes, setSqliteTableSizes] = useState({});
     const [cacheStats, setCacheStats] = useState({

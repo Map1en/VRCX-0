@@ -1,6 +1,4 @@
-import { useSettingsSystem } from '../SettingsPageContext.jsx';
-
-export function SettingsSystemSection() {
+export function SettingsSystemSection({ system }) {
     const {
         SettingsSystemTab,
         t,
@@ -13,7 +11,7 @@ export function SettingsSystemSection() {
         setCloseToTrayPreference,
         promptProxySettings,
         setOpenSourceNoticeOpen
-    } = useSettingsSystem();
+    } = system;
 
     return (
         <SettingsSystemTab

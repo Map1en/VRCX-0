@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
@@ -156,16 +156,54 @@ export function AppStatusBar() {
         false,
         false
     ]);
-    const runtimeTransport = useRuntimeStore((state) => state.transport);
-    const runtimeGameState = useRuntimeStore((state) => state.gameState);
-    const nowPlaying = useRuntimeStore((state) => state.nowPlaying);
+    const transportMessageCount = useRuntimeStore(
+        (state) => state.transport.messageCount
+    );
+    const websocketConnected = useRuntimeStore(
+        (state) => state.transport.websocketConnected
+    );
+    const lastGameStartedAt = useRuntimeStore(
+        (state) => state.gameState.lastGameStartedAt
+    );
+    const currentLocationStartedAt = useRuntimeStore(
+        (state) => state.gameState.currentLocationStartedAt
+    );
+    const currentWorldName = useRuntimeStore(
+        (state) => state.gameState.currentWorldName
+    );
+    const currentWorldId = useRuntimeStore(
+        (state) => state.gameState.currentWorldId
+    );
+    const lastGameLogAt = useRuntimeStore(
+        (state) => state.gameState.lastGameLogAt
+    );
+    const lastGameLogType = useRuntimeStore(
+        (state) => state.gameState.lastGameLogType
+    );
+    const nowPlayingUrl = useRuntimeStore((state) => state.nowPlaying.url);
+    const nowPlayingName = useRuntimeStore((state) => state.nowPlaying.name);
+    const nowPlayingStartedAt = useRuntimeStore(
+        (state) => state.nowPlaying.startedAt
+    );
+    const nowPlayingPosition = useRuntimeStore(
+        (state) => state.nowPlaying.position
+    );
+    const nowPlayingLength = useRuntimeStore(
+        (state) => state.nowPlaying.length
+    );
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning
     );
     const isSteamVRRunning = useRuntimeStore(
         (state) => state.gameState.isSteamVRRunning
     );
-    const vrcStatus = useRuntimeStore((state) => state.vrcStatus);
+    const vrcStatusIndicator = useRuntimeStore(
+        (state) => state.vrcStatus.indicator
+    );
+    const vrcStatusSummary = useRuntimeStore(
+        (state) => state.vrcStatus.summary
+    );
+    const vrcStatusStatus = useRuntimeStore((state) => state.vrcStatus.status);
     const preferencesHydrated = usePreferencesStore(
         (state) => state.preferencesHydrated
     );
@@ -175,22 +213,68 @@ export function AppStatusBar() {
         0,
         Math.max(0, Math.min(3, Number(clockCount) || 0))
     );
-    const gameStartedAt = Date.parse(runtimeGameState.lastGameStartedAt || '');
-    const currentLocationStartedAt = Date.parse(
-        runtimeGameState.currentLocationStartedAt || ''
+    const runtimeTransport = useMemo(
+        () => ({
+            messageCount: transportMessageCount,
+            websocketConnected
+        }),
+        [transportMessageCount, websocketConnected]
+    );
+    const runtimeGameState = useMemo(
+        () => ({
+            lastGameStartedAt,
+            currentLocationStartedAt,
+            currentWorldName,
+            currentWorldId,
+            lastGameLogAt,
+            lastGameLogType
+        }),
+        [
+            currentLocationStartedAt,
+            currentWorldId,
+            currentWorldName,
+            lastGameLogAt,
+            lastGameLogType,
+            lastGameStartedAt
+        ]
+    );
+    const nowPlaying = useMemo(
+        () => ({
+            url: nowPlayingUrl,
+            name: nowPlayingName,
+            startedAt: nowPlayingStartedAt,
+            position: nowPlayingPosition,
+            length: nowPlayingLength
+        }),
+        [
+            nowPlayingLength,
+            nowPlayingName,
+            nowPlayingPosition,
+            nowPlayingStartedAt,
+            nowPlayingUrl
+        ]
+    );
+    const vrcStatus = useMemo(
+        () => ({
+            indicator: vrcStatusIndicator,
+            summary: vrcStatusSummary,
+            status: vrcStatusStatus
+        }),
+        [vrcStatusIndicator, vrcStatusStatus, vrcStatusSummary]
+    );
+    const gameStartedAt = Date.parse(lastGameStartedAt || '');
+    const currentLocationStartedTimestamp = Date.parse(
+        currentLocationStartedAt || ''
     );
     const gameDuration =
         isGameRunning && gameStartedAt
             ? formatDuration(nowMs - gameStartedAt)
             : '';
     const currentLocationDuration =
-        isGameRunning && currentLocationStartedAt
-            ? formatDuration(nowMs - currentLocationStartedAt)
+        isGameRunning && currentLocationStartedTimestamp
+            ? formatDuration(nowMs - currentLocationStartedTimestamp)
             : '';
-    const currentWorld =
-        runtimeGameState.currentWorldName ||
-        runtimeGameState.currentWorldId ||
-        '';
+    const currentWorld = currentWorldName || currentWorldId || '';
     const nowPlayingElapsed = nowPlaying.startedAt
         ? Math.max(
               0,
@@ -262,8 +346,8 @@ export function AppStatusBar() {
     }, []);
 
     useEffect(() => {
-        transportMessageCountRef.current = runtimeTransport.messageCount;
-    }, [runtimeTransport.messageCount]);
+        transportMessageCountRef.current = transportMessageCount;
+    }, [transportMessageCount]);
 
     useEffect(() => {
         const timer = window.setInterval(() => {

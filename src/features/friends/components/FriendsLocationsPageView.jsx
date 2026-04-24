@@ -1,8 +1,4 @@
-import { useFriendsLocationsPage } from '../FriendsLocationsPageContext.jsx';
-
-export function FriendsLocationsPageLayout({ children }) {
-    const { embedded } = useFriendsLocationsPage();
-
+export function FriendsLocationsPageLayout({ children, embedded = false }) {
     return (
         <div
             className={

@@ -7,8 +7,24 @@ import { UpdaterDialog } from './system-dialogs/UpdaterDialog.jsx';
 import { VRChatConfigDialog } from './system-dialogs/VRChatConfigDialog.jsx';
 
 export function SystemDialogsHost() {
-    const systemHosts = useRuntimeStore((state) => state.systemHosts);
-    const databaseUpgrade = useRuntimeStore((state) => state.databaseUpgrade);
+    const updaterOpen = useRuntimeStore(
+        (state) => state.systemHosts.updaterOpen
+    );
+    const registryBackupOpen = useRuntimeStore(
+        (state) => state.systemHosts.registryBackupOpen
+    );
+    const launchOptionsOpen = useRuntimeStore(
+        (state) => state.systemHosts.launchOptionsOpen
+    );
+    const vrchatConfigOpen = useRuntimeStore(
+        (state) => state.systemHosts.vrchatConfigOpen
+    );
+    const databaseUpgradeOpen = useRuntimeStore(
+        (state) => state.databaseUpgrade.open
+    );
+    const systemHostDatabaseUpgradeOpen = useRuntimeStore(
+        (state) => state.systemHosts.databaseUpgradeOpen
+    );
     const setSystemHostOpen = useRuntimeStore(
         (state) => state.setSystemHostOpen
     );
@@ -16,30 +32,30 @@ export function SystemDialogsHost() {
     return (
         <>
             <UpdaterDialog
-                open={Boolean(systemHosts.updaterOpen)}
+                open={Boolean(updaterOpen)}
                 onOpenChange={(open) => setSystemHostOpen('updaterOpen', open)}
             />
             <RegistryBackupDialog
-                open={Boolean(systemHosts.registryBackupOpen)}
+                open={Boolean(registryBackupOpen)}
                 onOpenChange={(open) =>
                     setSystemHostOpen('registryBackupOpen', open)
                 }
             />
             <LaunchOptionsDialog
-                open={Boolean(systemHosts.launchOptionsOpen)}
+                open={Boolean(launchOptionsOpen)}
                 onOpenChange={(open) =>
                     setSystemHostOpen('launchOptionsOpen', open)
                 }
             />
             <VRChatConfigDialog
-                open={Boolean(systemHosts.vrchatConfigOpen)}
+                open={Boolean(vrchatConfigOpen)}
                 onOpenChange={(open) =>
                     setSystemHostOpen('vrchatConfigOpen', open)
                 }
             />
             <DatabaseUpgradeDialog
                 open={Boolean(
-                    databaseUpgrade.open || systemHosts.databaseUpgradeOpen
+                    databaseUpgradeOpen || systemHostDatabaseUpgradeOpen
                 )}
             />
         </>

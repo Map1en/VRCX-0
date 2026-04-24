@@ -13,9 +13,7 @@ import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
-import { useFriendsLocationsPage } from '../FriendsLocationsPageContext.jsx';
-
-export function FriendsLocationsToolbar() {
+export function FriendsLocationsToolbar({ controller }) {
     const { t } = useTranslation();
     const {
         activeSegment,
@@ -29,7 +27,7 @@ export function FriendsLocationsToolbar() {
         changeShowSameInstance,
         changeCardScalePreference,
         changeSpacingScalePreference
-    } = useFriendsLocationsPage();
+    } = controller;
 
     return (
         <div className="friend-view__toolbar mb-3 flex shrink-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">

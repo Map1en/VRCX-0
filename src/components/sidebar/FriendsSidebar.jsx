@@ -40,12 +40,36 @@ export function FriendsSidebar({ prefs }) {
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
-    const gameState = useRuntimeStore((state) => state.gameState);
+    const runtimeCurrentLocation = useRuntimeStore(
+        (state) => state.gameState.currentLocation
+    );
+    const runtimeCurrentDestination = useRuntimeStore(
+        (state) => state.gameState.currentDestination
+    );
+    const currentLocationPlayerIds = useRuntimeStore(
+        (state) => state.gameState.currentLocationPlayerIds
+    );
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning
+    );
+    const gameState = useMemo(
+        () => ({
+            currentLocation: runtimeCurrentLocation,
+            currentDestination: runtimeCurrentDestination,
+            currentLocationPlayerIds,
+            isGameRunning
+        }),
+        [
+            currentLocationPlayerIds,
+            isGameRunning,
+            runtimeCurrentDestination,
+            runtimeCurrentLocation
+        ]
+    );
     const currentLocation =
-        gameState.currentLocation === 'traveling'
-            ? gameState.currentDestination
-            : gameState.currentLocation;
-    const currentLocationPlayerIds = gameState.currentLocationPlayerIds;
+        runtimeCurrentLocation === 'traveling'
+            ? runtimeCurrentDestination
+            : runtimeCurrentLocation;
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const orderedFriendIds = useFriendRosterStore(
         (state) => state.orderedFriendIds

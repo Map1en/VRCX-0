@@ -62,9 +62,33 @@ import {
 import { useVrcNotificationPageActions } from './useVrcNotificationPageActions.js';
 export function useVrcNotificationPageController({ embedded = false } = {}) {
     const { t } = useTranslation();
-    const runtimeAuth = useRuntimeStore((state) => state.auth);
-    const gameState = useRuntimeStore((state) => state.gameState);
-    const modalStore = useModalStore();
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const endpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const currentUserLocationTag = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot?.$locationTag
+    );
+    const currentUserLocation = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot?.location
+    );
+    const isLocalUserVrcPlusSupporter = useRuntimeStore((state) =>
+        Boolean(
+            state.auth.currentUserSnapshot?.$isVRCPlus ||
+                state.auth.currentUserSnapshot?.tags?.includes?.(
+                    'system_supporter'
+                ) ||
+                globalThis?.$debug?.debugVrcPlus
+        )
+    );
+    const currentLocation = useRuntimeStore(
+        (state) => state.gameState.currentLocation
+    );
+    const currentDestination = useRuntimeStore(
+        (state) => state.gameState.currentDestination
+    );
+    const confirm = useModalStore((state) => state.confirm);
+    const openImagePreview = useModalStore((state) => state.openImagePreview);
     const notificationRows = useVrcNotificationStore((state) => state.rows);
     const notificationLoadStatus = useVrcNotificationStore(
         (state) => state.loadStatus
@@ -73,20 +97,27 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
     const loadNotificationsForCurrentUser = useVrcNotificationStore(
         (state) => state.loadForCurrentUser
     );
-    const groupInstancesState = useRuntimeStore(
-        (state) => state.groupInstances
+    const groupInstancesEndpoint = useRuntimeStore(
+        (state) => state.groupInstances.endpoint
     );
-    const currentUserId = runtimeAuth.currentUserId;
-    const endpoint = runtimeAuth.currentUserEndpoint;
+    const groupInstances = useRuntimeStore(
+        (state) => state.groupInstances.instances
+    );
     const groupInstanceRows =
-        groupInstancesState.endpoint === endpoint
-            ? groupInstancesState.instances
-            : [];
-    const currentUserSnapshot = runtimeAuth.currentUserSnapshot;
-    const isLocalUserVrcPlusSupporter = Boolean(
-        currentUserSnapshot?.$isVRCPlus ||
-        currentUserSnapshot?.tags?.includes?.('system_supporter') ||
-        globalThis?.$debug?.debugVrcPlus
+        groupInstancesEndpoint === endpoint ? groupInstances : [];
+    const gameState = useMemo(
+        () => ({
+            currentLocation,
+            currentDestination
+        }),
+        [currentDestination, currentLocation]
+    );
+    const currentUserSnapshot = useMemo(
+        () => ({
+            $locationTag: currentUserLocationTag,
+            location: currentUserLocation
+        }),
+        [currentUserLocation, currentUserLocationTag]
     );
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUserSnapshot),
@@ -328,12 +359,13 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
         currentInviteLocation,
         currentUserId,
         endpoint,
-        modalStore,
         normalizeWorldTarget,
         notificationRepository,
+        confirm,
         openAvatarDialog,
         openExternalLink,
         openGroupDialog,
+        openImagePreview,
         openUserDialog,
         openWorldDialog,
         parseLocation,
