@@ -3,9 +3,9 @@ import {
     MoreHorizontalIcon,
     RefreshCwIcon
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
+import { isValidElement, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
@@ -89,7 +89,7 @@ function EntityDialogHeader({
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        className="h-auto min-w-0 justify-start p-0 text-left text-lg font-semibold break-words whitespace-normal hover:text-primary"
+                                        className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left text-lg font-semibold break-words whitespace-normal"
                                         onClick={onTitleClick}
                                     >
                                         {title}
@@ -106,7 +106,7 @@ function EntityDialogHeader({
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        className="text-muted-foreground h-auto justify-start p-0 text-left font-mono text-sm break-all whitespace-normal hover:text-primary"
+                                        className="text-muted-foreground hover:text-primary h-auto justify-start p-0 text-left font-mono text-sm break-all whitespace-normal"
                                         onClick={onSubtitleClick}
                                     >
                                         {subtitle}
@@ -146,10 +146,12 @@ function EntityDialogHeader({
 
                         {detail ? (
                             <div className="text-muted-foreground text-xs">
-                                {userFacingErrorMessage(
-                                    detail,
-                                    'The requested data could not be loaded.'
-                                )}
+                                {isValidElement(detail)
+                                    ? detail
+                                    : userFacingErrorMessage(
+                                          detail,
+                                          'The requested data could not be loaded.'
+                                      )}
                             </div>
                         ) : null}
                     </div>
@@ -270,7 +272,7 @@ function EntityActionDropdown({
                     type="button"
                     size="icon-lg"
                     variant={dangerous ? 'destructive' : 'outline'}
-                    aria-label={"Open entity actions"}
+                    aria-label={'Open entity actions'}
                     className="relative"
                 >
                     {busy ? (

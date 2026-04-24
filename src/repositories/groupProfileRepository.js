@@ -9,9 +9,17 @@ import { createDefaultGroupRef } from '@/shared/utils/groupTransforms.js';
 import { executeVrchatRequest } from './vrchatRequest.js';
 
 function normalizeEntityId(value) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+    const normalize = (text) => {
+        const normalized = text.trim();
+        return normalized === '[object Object]' ? '' : normalized;
+    };
+    if (typeof value === 'string') {
+        return normalize(value);
+    }
+    if (typeof value === 'number' || typeof value === 'bigint') {
+        return normalize(String(value));
+    }
+    return '';
 }
 
 function normalizeString(value) {
@@ -19,9 +27,14 @@ function normalizeString(value) {
 }
 
 function normalizeText(value) {
-    return typeof value === 'string' && value
-        ? replaceBioSymbols(value).trim()
-        : '';
+    if (typeof value !== 'string' || !value) {
+        return '';
+    }
+    const rawText = value.trim();
+    if (rawText === '[object Object]') {
+        return '';
+    }
+    return replaceBioSymbols(rawText).trim();
 }
 
 function normalizeArray(values) {
@@ -63,6 +76,17 @@ function normalizeGroupProfile(group) {
     const base = createDefaultGroupRef(group ?? {});
     const shortCode = normalizeString(base.shortCode);
     const discriminator = normalizeString(base.discriminator);
+    const ownerId =
+        normalizeEntityId(base.ownerId) ||
+        normalizeEntityId(base.owner?.id) ||
+        normalizeEntityId(base.owner?.userId) ||
+        normalizeEntityId(base.owner?.user_id);
+    const ownerDisplayName =
+        normalizeText(base.ownerDisplayName) ||
+        normalizeText(base.ownerName) ||
+        normalizeText(base.owner?.displayName) ||
+        normalizeText(base.owner?.username) ||
+        normalizeText(base.owner?.name);
     const groupUrl =
         shortCode && discriminator
             ? `https://vrc.group/${shortCode}.${discriminator}`
@@ -82,7 +106,8 @@ function normalizeGroupProfile(group) {
         updatedAt: base.updatedAt || '',
         memberCount: parseInteger(base.memberCount),
         onlineMemberCount: parseInteger(base.onlineMemberCount),
-        ownerId: normalizeEntityId(base.ownerId),
+        ownerId,
+        ownerDisplayName,
         privacy: normalizeString(base.privacy),
         membershipStatus: normalizeString(base.membershipStatus),
         memberCountSyncedAt: base.memberCountSyncedAt || '',
