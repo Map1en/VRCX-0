@@ -114,7 +114,7 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
         },
         [t]
     );
-    const persistedState = useMemo(() => readPersistedState(), []);
+    const [persistedState] = useState(() => readPersistedState());
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenColumnVisibilityRef = useRef(false);

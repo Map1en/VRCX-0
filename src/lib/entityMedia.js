@@ -240,7 +240,12 @@ async function openDirectAccessTarget(input) {
     }
 
     if (value.startsWith('https://vrchat.')) {
-        const url = new URL(value);
+        let url;
+        try {
+            url = new URL(value);
+        } catch {
+            return false;
+        }
         const urlPathSplit = url.pathname.split('/');
         if (urlPathSplit[2] === 'launch') {
             const worldId = url.searchParams.get('worldId');

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import {
@@ -110,13 +110,6 @@ export function ImageCropDialog({
         );
     }, [aspectRatio, imageBitmap, offsetX, offsetY, zoom]);
 
-    const frameStyle = useMemo(
-        () => ({
-            aspectRatio: String(aspectRatio || 1)
-        }),
-        [aspectRatio]
-    );
-
     async function confirmCrop() {
         if (!file || !validateImageUploadFile(file).ok) {
             return;
@@ -145,7 +138,7 @@ export function ImageCropDialog({
                 <div className="flex flex-col gap-4">
                     <div
                         className="bg-muted relative max-h-[60vh] overflow-hidden rounded-lg border"
-                        style={frameStyle}
+                        style={{ aspectRatio: String(aspectRatio || 1) }}
                     >
                         {imageBitmap ? (
                             <canvas

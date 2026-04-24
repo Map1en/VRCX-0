@@ -104,7 +104,7 @@ export function useGalleryAssetActions({
                     endpoint: currentEndpoint
                 }
             );
-            const rows = Array.isArray(json) ? json : [];
+            const rows = Array.isArray(json) ? [...json] : [];
             rows.sort(
                 (left, right) =>
                     new Date(

@@ -18,15 +18,16 @@ const SAFE_RASTER_IMAGE_TYPES = new Set([
  * @param promise
  */
 export function withUploadTimeout(promise) {
-    return Promise.race([
-        promise,
-        new Promise((_, reject) =>
-            setTimeout(
-                () => reject(new Error('Upload timed out')),
-                UPLOAD_TIMEOUT_MS
-            )
-        )
-    ]);
+    let timeoutId;
+    const timeout = new Promise((_, reject) => {
+        timeoutId = setTimeout(
+            () => reject(new Error('Upload timed out')),
+            UPLOAD_TIMEOUT_MS
+        );
+    });
+    return Promise.race([promise, timeout]).finally(() => {
+        clearTimeout(timeoutId);
+    });
 }
 
 export async function readBlobAsBytes(blob) {

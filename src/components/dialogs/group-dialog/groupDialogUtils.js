@@ -118,18 +118,6 @@ export function getGroupRowImage(row, kind) {
     return convertFileUrlToImageUrl(getGroupRowRawImage(row), 256);
 }
 
-export function downloadJsonFile(fileName, value) {
-    const blob = new Blob([JSON.stringify(value ?? null, null, 2)], {
-        type: 'application/json'
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    link.click();
-    URL.revokeObjectURL(url);
-}
-
 export function hasGroupPermission(group, permission) {
     const direct = Array.isArray(group?.myMember?.permissions)
         ? group.myMember.permissions

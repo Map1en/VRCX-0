@@ -5,7 +5,7 @@ export {
     labelForEntry,
     removeNavKeyFromLayout,
     themeModeLabel
-} from './app-nav-menu/AppNavMenuUtils.jsx';
+} from './app-nav-menu/AppNavMenuUtils.js';
 export {
     DashboardEntryAction,
     NavItemContextMenu

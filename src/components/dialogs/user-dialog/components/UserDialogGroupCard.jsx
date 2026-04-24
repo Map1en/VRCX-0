@@ -31,7 +31,8 @@ import {
     groupMemberVisibility
 } from '../userDialogGroupRows.js';
 import { groupDisplayName } from '../userDialogRows.js';
-import { openRow, rowImage } from './userDialogEntityListUtils.js';
+import { rowImage } from './userDialogEntityImages.js';
+import { openRow } from './userDialogEntityNavigation.js';
 
 function visibilityLabel(visibility) {
     if (visibility === 'friends') {

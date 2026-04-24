@@ -1,4 +1,4 @@
-import { sortStatus } from './friend';
+import { sortStatus } from './friendStatus.js';
 
 /**
  *

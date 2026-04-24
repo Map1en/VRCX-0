@@ -35,7 +35,7 @@ import {
     getNextDashboardWidgetFilterConfig,
     isDashboardWidgetFilterActive,
     normalizeString
-} from './shared.js';
+} from './dashboardWidgetUtils.js';
 
 const FEED_WIDGET_MAX_ROWS = 100;
 

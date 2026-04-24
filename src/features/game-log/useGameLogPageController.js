@@ -118,7 +118,7 @@ export function useGameLogPageController({ embedded = false } = {}) {
     const tablePageSizesPreference = usePreferencesStore(
         (state) => state.tablePageSizes
     );
-    const persistedState = useMemo(() => readPersistedGameLogState(), []);
+    const [persistedState] = useState(() => readPersistedGameLogState());
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);

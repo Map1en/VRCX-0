@@ -1,4 +1,5 @@
 import { replaceBioSymbols } from './base/string';
+import { getPlatformInfo } from './avatarPlatform.js';
 
 /**
  *
@@ -39,54 +40,6 @@ function parseAvatarUrl(avatar) {
         return avatarId;
     }
     return null;
-}
-
-/**
- *
- * @param {object} unityPackages
- * @returns
- */
-function getPlatformInfo(unityPackages) {
-    let pc = {};
-    let android = {};
-    let ios = {};
-    if (typeof unityPackages === 'object') {
-        for (const unityPackage of unityPackages) {
-            if (
-                unityPackage.variant &&
-                unityPackage.variant !== 'standard' &&
-                unityPackage.variant !== 'security'
-            ) {
-                continue;
-            }
-            if (unityPackage.platform === 'standalonewindows') {
-                if (
-                    unityPackage.performanceRating === 'None' &&
-                    pc.performanceRating
-                ) {
-                    continue;
-                }
-                pc = unityPackage;
-            } else if (unityPackage.platform === 'android') {
-                if (
-                    unityPackage.performanceRating === 'None' &&
-                    android.performanceRating
-                ) {
-                    continue;
-                }
-                android = unityPackage;
-            } else if (unityPackage.platform === 'ios') {
-                if (
-                    unityPackage.performanceRating === 'None' &&
-                    ios.performanceRating
-                ) {
-                    continue;
-                }
-                ios = unityPackage;
-            }
-        }
-    }
-    return { pc, android, ios };
 }
 
 /**

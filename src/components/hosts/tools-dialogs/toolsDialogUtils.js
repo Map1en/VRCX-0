@@ -1,5 +1,6 @@
 import dayjs from '@/lib/dayjs.js';
 import { memoRepository } from '@/repositories/index.js';
+import { formatCsvField } from '@/shared/utils/csv.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 export const statusOptions = ['join me', 'active', 'ask me', 'busy'];
@@ -37,15 +38,7 @@ export function getFriendIds(orderedFriendIds) {
 }
 
 export function csvEscape(value) {
-    const text = String(value ?? '');
-    const needsEscaping =
-        text.includes(',') ||
-        text.includes('"') ||
-        Array.from(text).some((char) => char.charCodeAt(0) <= 31);
-    if (needsEscaping) {
-        return `"${text.replace(/"/g, '""')}"`;
-    }
-    return text;
+    return formatCsvField(value);
 }
 
 export function parseJsonArray(value) {

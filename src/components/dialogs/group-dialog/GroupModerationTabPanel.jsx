@@ -23,7 +23,7 @@ import {
 } from '@/ui/shadcn/table';
 import { TabsContent } from '@/ui/shadcn/tabs';
 
-import { downloadJsonFile } from './groupDialogUtils.js';
+import { downloadJsonFile } from './groupDialogDownloads.js';
 import { GroupListState } from './GroupListState.jsx';
 import {
     getGroupModerationActions,

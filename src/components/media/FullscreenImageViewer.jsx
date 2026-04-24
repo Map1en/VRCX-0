@@ -20,10 +20,12 @@ import { Spinner } from '@/ui/shadcn/spinner';
 
 import {
     deriveImageFileName,
-    fetchImageBlob,
-    getDownloadImageBase64,
     toFullSizeImageUrl
 } from './fullscreenImageViewerUtils.js';
+import {
+    fetchImageBlob,
+    getDownloadImageBase64
+} from './fullscreenImageDownload.js';
 import { useFullscreenImageTransform } from './useFullscreenImageTransform.js';
 
 export function FullscreenImageViewer({

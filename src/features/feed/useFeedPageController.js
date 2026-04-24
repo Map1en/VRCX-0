@@ -101,7 +101,7 @@ export function useFeedPageController({ embedded = false } = {}) {
     const favoriteGroupFilterIds = usePreferencesStore(
         (state) => state.localFavoriteFriendsGroups
     );
-    const persistedState = useMemo(() => readPersistedState(), []);
+    const [persistedState] = useState(() => readPersistedState());
     const persistedPageSize = Number.parseInt(persistedState.pageSize, 10);
     const initialPageSizes = useMemo(
         () => sanitizePageSizes([...DEFAULT_PAGE_SIZES, persistedPageSize]),

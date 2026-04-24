@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { vrchatAuthRepository } from '@/repositories/index.js';
 
@@ -27,13 +27,11 @@ export function useGroupDialogLanguageRows({ currentEndpoint, group }) {
         };
     }, [currentEndpoint]);
 
-    return useMemo(() => {
-        const languageOptions = normalizeLanguageOptionsFromConfig({
-            constants: vrchatConfigConstants
-        });
-        const languageOptionsMap = new Map(
-            languageOptions.map((option) => [option.key, option])
-        );
-        return normalizeGroupLanguages(group, languageOptionsMap);
-    }, [group, vrchatConfigConstants]);
+    const languageOptions = normalizeLanguageOptionsFromConfig({
+        constants: vrchatConfigConstants
+    });
+    const languageOptionsMap = new Map(
+        languageOptions.map((option) => [option.key, option])
+    );
+    return normalizeGroupLanguages(group, languageOptionsMap);
 }

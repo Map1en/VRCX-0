@@ -433,7 +433,6 @@ export function SearchPage() {
         isGroupLoading,
         isUserLoading,
         isWorldLoading,
-        runAvatarSearch,
         runGroupSearch,
         runUserSearch,
         runWorldSearch,

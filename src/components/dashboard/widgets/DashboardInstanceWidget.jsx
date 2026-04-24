@@ -43,7 +43,7 @@ import {
     buildFavoriteIdSet,
     joinCompactParts,
     normalizeString
-} from './shared.js';
+} from './dashboardWidgetUtils.js';
 
 const ALL_COLUMNS = DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
     (column) => column.key

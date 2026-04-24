@@ -186,6 +186,32 @@ export function useSettingsPageController() {
     });
     const [avatarProviderDialogOpen, setAvatarProviderDialogOpen] =
         useState(false);
+    const tableMaxSizeValue = Number.parseInt(
+        tableLimitsDraft.maxTableSize,
+        10
+    );
+    const tableMaxSizeError =
+        !Number.isFinite(tableMaxSizeValue) ||
+        tableMaxSizeValue < TABLE_MAX_SIZE_MIN ||
+        tableMaxSizeValue > TABLE_MAX_SIZE_MAX
+            ? t('prompt.table_entries_settings.table_max_entries_error', {
+                  min: TABLE_MAX_SIZE_MIN,
+                  max: TABLE_MAX_SIZE_MAX
+              })
+            : '';
+    const searchLimitValue = Number.parseInt(tableLimitsDraft.searchLimit, 10);
+    const searchLimitError =
+        !Number.isFinite(searchLimitValue) ||
+        searchLimitValue < SEARCH_LIMIT_MIN ||
+        searchLimitValue > SEARCH_LIMIT_MAX
+            ? t('prompt.table_entries_settings.search_limit_returns_error', {
+                  min: SEARCH_LIMIT_MIN,
+                  max: SEARCH_LIMIT_MAX
+              })
+            : '';
+    const tableLimitsSaveDisabled = Boolean(
+        tableMaxSizeError || searchLimitError
+    );
     const {
         applyPreferenceSnapshotToLocalState,
         commit,
@@ -352,32 +378,6 @@ export function useSettingsPageController() {
             .map((group) => group.label)
             .join(', ') ||
         t('view.settings.general.favorites.group_placeholder');
-    const tableMaxSizeValue = Number.parseInt(
-        tableLimitsDraft.maxTableSize,
-        10
-    );
-    const tableMaxSizeError =
-        !Number.isFinite(tableMaxSizeValue) ||
-        tableMaxSizeValue < TABLE_MAX_SIZE_MIN ||
-        tableMaxSizeValue > TABLE_MAX_SIZE_MAX
-            ? t('prompt.table_entries_settings.table_max_entries_error', {
-                  min: TABLE_MAX_SIZE_MIN,
-                  max: TABLE_MAX_SIZE_MAX
-              })
-            : '';
-    const searchLimitValue = Number.parseInt(tableLimitsDraft.searchLimit, 10);
-    const searchLimitError =
-        !Number.isFinite(searchLimitValue) ||
-        searchLimitValue < SEARCH_LIMIT_MIN ||
-        searchLimitValue > SEARCH_LIMIT_MAX
-            ? t('prompt.table_entries_settings.search_limit_returns_error', {
-                  min: SEARCH_LIMIT_MIN,
-                  max: SEARCH_LIMIT_MAX
-              })
-            : '';
-    const tableLimitsSaveDisabled = Boolean(
-        tableMaxSizeError || searchLimitError
-    );
     const {
         addAvatarProvider,
         applyAvatarProviderConfig,

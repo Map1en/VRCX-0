@@ -18,7 +18,7 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { SidebarMenuAction } from '@/ui/shadcn/sidebar';
 
-import { isDashboardEntry, isToolEntry } from './AppNavMenuUtils.jsx';
+import { isDashboardEntry, isToolEntry } from './AppNavMenuUtils.js';
 
 function DashboardEntryAction({
     entry,

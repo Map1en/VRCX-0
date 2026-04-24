@@ -43,7 +43,7 @@ import {
     getNextDashboardWidgetFilterConfig,
     isDashboardWidgetFilterActive,
     normalizeString
-} from './shared.js';
+} from './dashboardWidgetUtils.js';
 
 const GAME_LOG_WIDGET_MAX_ROWS = 200;
 

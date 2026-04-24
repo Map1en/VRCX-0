@@ -23,15 +23,15 @@ import {
 } from '@/ui/shadcn/sidebar';
 
 import { DashboardEntryAction, NavItemContextMenu } from './AppNavItemContextMenu.jsx';
+import { NotifiedNavIcon } from './AppNavMenuIcons.jsx';
 import {
-    NotifiedNavIcon,
     isDashboardEntry,
     isEntryActive,
     isEntryNotified,
     isNavItemNotified,
     isToolEntry,
     labelForEntry
-} from './AppNavMenuUtils.jsx';
+} from './AppNavMenuUtils.js';
 import { getPathForNavEntry } from '../navMenuModel.js';
 
 function CollapsedFolderDropdownEntry({

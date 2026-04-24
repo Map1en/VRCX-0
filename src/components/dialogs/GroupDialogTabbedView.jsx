@@ -20,8 +20,8 @@ import {
 } from './group-dialog/groupDialogFilters.js';
 import { GroupDialogHeaderSection } from './group-dialog/GroupDialogHeaderSection.jsx';
 import { GroupDialogTabPanels } from './group-dialog/GroupDialogTabPanels.jsx';
+import { downloadJsonFile } from './group-dialog/groupDialogDownloads.js';
 import {
-    downloadJsonFile,
     firstArray,
     hasGroupModerationPermission,
     hasGroupPermission

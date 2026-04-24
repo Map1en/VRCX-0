@@ -82,7 +82,7 @@ export function useFriendListPageController({ embedded = false } = {}) {
     const applyFriendPatches = useFriendRosterStore(
         (state) => state.applyFriendPatches
     );
-    const persistedState = useMemo(() => readPersistedState(), []);
+    const [persistedState] = useState(() => readPersistedState());
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);

@@ -78,7 +78,7 @@ export function useMyAvatarsPageController({ embedded = false } = {}) {
     const currentAvatarId = currentUserSnapshot?.currentAvatar || '';
     const previousAvatarSwapTime =
         Number(currentUserSnapshot?.$previousAvatarSwapTime) || 0;
-    const persistedState = useMemo(() => readPersistedMyAvatarsState(), []);
+    const [persistedState] = useState(() => readPersistedMyAvatarsState());
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);

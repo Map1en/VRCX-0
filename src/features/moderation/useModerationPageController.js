@@ -241,7 +241,7 @@ export function useModerationPageController({ embedded = false } = {}) {
         (state) => state.auth.currentUserEndpoint
     );
     const confirm = useModalStore((state) => state.confirm);
-    const persistedState = useMemo(() => readPersistedState(), []);
+    const [persistedState] = useState(() => readPersistedState());
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);

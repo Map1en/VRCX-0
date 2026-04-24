@@ -15,7 +15,8 @@ import {
     worldOccupantSubtitle
 } from '../userDialogRows.js';
 import { EntityListState } from './UserDialogEntityListState.jsx';
-import { openRow, rowImage } from './userDialogEntityListUtils.js';
+import { rowImage } from './userDialogEntityImages.js';
+import { openRow } from './userDialogEntityNavigation.js';
 import { UserGroupCard } from './UserDialogGroupCard.jsx';
 
 export function EntityList({

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { Button } from '@/ui/shadcn/button';
 
-import { normalizeString } from './shared.js';
+import { normalizeString } from './dashboardWidgetUtils.js';
 
 const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
 
