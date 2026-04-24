@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
-    configRepository,
     userProfileRepository,
     vrchatAuthRepository
 } from '@/repositories/index.js';
@@ -13,15 +12,14 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 import {
     fallbackLanguageOptions,
-    maxStatusPresets,
     normalizeLanguageKey,
     normalizeLanguageOptionsFromConfig,
     normalizeProfileLanguageRows,
     normalizeSelfStatusInput,
     normalizeStatusHistoryRows,
-    selfStatusBaseOptions,
-    statusPresetsConfigKey
+    selfStatusBaseOptions
 } from './userProfileFields.js';
+import { useSelfStatusPresets } from './useSelfStatusPresets.js';
 
 function setSelfActionStatus(actionStatusRef, setActionStatus, nextStatus) {
     actionStatusRef.current = nextStatus;
@@ -47,7 +45,6 @@ export function useUserDialogSelfActions({
         status: 'active',
         statusDescription: ''
     });
-    const [statusPresets, setStatusPresets] = useState([]);
     const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
     const [languageOptions, setLanguageOptions] = useState([]);
     const [languageOptionsStatus, setLanguageOptionsStatus] = useState('idle');
@@ -93,33 +90,17 @@ export function useUserDialogSelfActions({
             ),
         [selfStatusOptions]
     );
+    const {
+        onRemovePreset: removeSelfStatusPreset,
+        onSavePreset: saveSelfStatusPreset,
+        statusPresets
+    } = useSelfStatusPresets({ socialStatusDraft, t });
 
     useEffect(() => {
         setLanguageOptions([]);
         setLanguageOptionsStatus('idle');
         setSelectedLanguageToAdd('');
     }, [currentEndpoint]);
-
-    useEffect(() => {
-        let active = true;
-
-        configRepository
-            .getArray(statusPresetsConfigKey, [])
-            .then((presets) => {
-                if (active) {
-                    setStatusPresets(Array.isArray(presets) ? presets : []);
-                }
-            })
-            .catch(() => {
-                if (active) {
-                    setStatusPresets([]);
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, []);
 
     useEffect(() => {
         let active = true;
@@ -181,7 +162,10 @@ export function useUserDialogSelfActions({
         }
     }
 
-    async function saveCurrentUserPatch(patch, { successMessage, errorMessage }) {
+    async function saveCurrentUserPatch(
+        patch,
+        { successMessage, errorMessage }
+    ) {
         if (!isCurrentUser || actionStatusRef.current !== 'idle') {
             return false;
         }
@@ -258,9 +242,7 @@ export function useUserDialogSelfActions({
             (!profile?.$isModerator && nextStatus === 'offline')
         ) {
             toast.warning(
-                t(
-                    'dialog.user.generated.please_choose_a_valid_social_status'
-                )
+                t('dialog.user.generated.please_choose_a_valid_social_status')
             );
             return;
         }
@@ -282,84 +264,6 @@ export function useUserDialogSelfActions({
         }
     }
 
-    async function saveSelfStatusPreset() {
-        const nextStatus = normalizeSelfStatusInput(socialStatusDraft.status);
-        if (!nextStatus) {
-            toast.warning(
-                t(
-                    'dialog.user.generated.please_choose_a_valid_social_status'
-                )
-            );
-            return;
-        }
-
-        const nextPreset = {
-            status: nextStatus,
-            statusDescription: String(
-                socialStatusDraft.statusDescription || ''
-            ).slice(0, 32)
-        };
-        if (
-            statusPresets.some(
-                (preset) =>
-                    preset?.status === nextPreset.status &&
-                    String(preset?.statusDescription || '') ===
-                        nextPreset.statusDescription
-            )
-        ) {
-            toast.info(
-                t('dialog.user.generated.status_preset_already_exists')
-            );
-            return;
-        }
-        if (statusPresets.length >= maxStatusPresets) {
-            toast.warning(
-                t(
-                    'dialog.user.generated_dynamic.status_presets_are_limited_to_value',
-                    { value: maxStatusPresets }
-                )
-            );
-            return;
-        }
-
-        const previousPresets = statusPresets;
-        const nextPresets = [...previousPresets, nextPreset];
-        setStatusPresets(nextPresets);
-        try {
-            await configRepository.setArray(statusPresetsConfigKey, nextPresets);
-            toast.success(t('dialog.user.generated.status_preset_saved'));
-        } catch (error) {
-            setStatusPresets(previousPresets);
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.user.generated_toast.failed_to_save_status_preset'
-                      )
-            );
-        }
-    }
-
-    async function removeSelfStatusPreset(index) {
-        const previousPresets = statusPresets;
-        const nextPresets = previousPresets.filter(
-            (_, presetIndex) => presetIndex !== index
-        );
-        setStatusPresets(nextPresets);
-        try {
-            await configRepository.setArray(statusPresetsConfigKey, nextPresets);
-        } catch (error) {
-            setStatusPresets(previousPresets);
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.user.generated_toast.failed_to_remove_status_preset'
-                      )
-            );
-        }
-    }
-
     function editSelfLanguages() {
         if (!isCurrentUser || actionStatusRef.current !== 'idle') {
             return;
@@ -371,7 +275,11 @@ export function useUserDialogSelfActions({
 
     async function addSelfLanguage(languageKey) {
         const key = normalizeLanguageKey(languageKey);
-        if (!key || selectedLanguageKeys.has(key) || currentLanguageRows.length >= 3) {
+        if (
+            !key ||
+            selectedLanguageKeys.has(key) ||
+            currentLanguageRows.length >= 3
+        ) {
             return;
         }
 
@@ -525,8 +433,7 @@ export function useUserDialogSelfActions({
     async function toggleSelfSharedConnections() {
         await saveCurrentUserPatch(
             {
-                hasSharedConnectionsOptOut:
-                    !profile?.hasSharedConnectionsOptOut
+                hasSharedConnectionsOptOut: !profile?.hasSharedConnectionsOptOut
             },
             {
                 successMessage: 'Shared connections setting updated.',

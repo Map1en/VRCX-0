@@ -1,10 +1,9 @@
 import { ImageIcon, PencilIcon, RefreshCcwIcon, SendIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
-import { toolsRepository } from '@/repositories/index.js';
 import {
     IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
@@ -25,139 +24,24 @@ import {
 } from '@/ui/shadcn/table';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-export const INVITE_MESSAGE_TYPES = [
-    { type: 'message', label: 'Invite' },
-    { type: 'request', label: 'Request Invite' },
-    { type: 'requestResponse', label: 'Request Invite Response' },
-    { type: 'response', label: 'Invite Response' }
-];
+import {
+    dialogDescription,
+    dialogTitle,
+    isInviteMessageOnCooldown,
+    normalizeInviteMessageRows,
+    primaryActionLabel,
+    rowUpdatedAt,
+    saveInviteMessage,
+    validModes
+} from './inviteMessagePanelData.js';
 
-const validModes = new Set(['select', 'manage', 'respond']);
-
-export function normalizeInviteMessageRows(value, messageType) {
-    const rows = Array.isArray(value)
-        ? value
-        : Array.isArray(value?.messages)
-          ? value.messages
-          : value && typeof value === 'object'
-            ? Object.values(value).filter(
-                  (row) => row && typeof row === 'object'
-              )
-            : [];
-
-    return rows
-        .map((row, index) => ({
-            ...row,
-            slot: Number.parseInt(
-                row?.slot ?? row?.messageSlot ?? row?.requestSlot ?? index,
-                10
-            ),
-            message: String(row?.message || row?.text || ''),
-            messageType
-        }))
-        .filter((row) => Number.isFinite(row.slot))
-        .sort((left, right) => left.slot - right.slot);
-}
-
-export function getInviteCooldownLabel(updatedAt, nowMs) {
-    if (!updatedAt) {
-        return '';
-    }
-    const updatedTime = new Date(updatedAt).getTime();
-    if (!Number.isFinite(updatedTime)) {
-        return String(updatedAt);
-    }
-    const remainingMs = updatedTime + 60 * 60 * 1000 - Number(nowMs);
-    if (remainingMs <= 0) {
-        return '';
-    }
-    const minutes = Math.ceil(remainingMs / 60000);
-    return minutes >= 60
-        ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-        : `${minutes}m`;
-}
-
-function isInviteMessageOnCooldown(row, nowMs) {
-    return Boolean(getInviteCooldownLabel(rowUpdatedAt(row), nowMs));
-}
-
-function rowUpdatedAt(row) {
-    return row?.updatedAt || row?.updated_at || '';
-}
-
-function messageTypeLabel(messageType) {
-    return (
-        INVITE_MESSAGE_TYPES.find((entry) => entry.type === messageType)
-            ?.label || 'Invite'
-    );
-}
-
-export function dialogTitle(mode, messageType) {
-    if (mode === 'manage') {
-        return 'Message Templates';
-    }
-    if (mode === 'respond') {
-        return messageType === 'requestResponse'
-            ? 'Request Invite Response'
-            : 'Invite Response';
-    }
-    return messageType === 'request'
-        ? 'Request With Message'
-        : 'Send With Message';
-}
-
-export function dialogDescription(mode, messageType, targetLabel) {
-    if (mode === 'manage') {
-        return 'Edit reusable invite and request message templates.';
-    }
-    if (mode === 'respond') {
-        return `Choose a ${messageTypeLabel(messageType).toLowerCase()} template${targetLabel ? ` for ${targetLabel}` : ''}.`;
-    }
-    return `Choose a message template${targetLabel ? ` for ${targetLabel}` : ''}.`;
-}
-
-function primaryActionLabel(mode, messageType) {
-    if (mode === 'manage') {
-        return 'Save';
-    }
-    if (mode === 'select' && messageType === 'request') {
-        return 'Request';
-    }
-    return 'Send';
-}
-
-async function saveInviteMessage({
-    currentUserId,
-    endpoint,
-    messageType,
-    row,
-    message
-}) {
-    const slot = Number.parseInt(row?.slot, 10);
-    if (!currentUserId || !Number.isFinite(slot)) {
-        throw new Error('Invite message slot must be a number.');
-    }
-
-    const previousMessage = String(row?.message || '');
-    if (message === previousMessage) {
-        return null;
-    }
-
-    const json = await toolsRepository.editInviteMessage(
-        {
-            currentUserId,
-            messageType,
-            slot,
-            message
-        },
-        { endpoint }
-    );
-    if (json?.[slot]?.message === previousMessage) {
-        throw new Error('Invite message update failed.');
-    }
-    return json;
-}
-
+export {
+    dialogDescription,
+    dialogTitle,
+    getInviteCooldownLabel,
+    INVITE_MESSAGE_TYPES,
+    normalizeInviteMessageRows
+} from './inviteMessagePanelData.js';
 export function InviteMessagePanel({
     currentUserId,
     endpoint,
@@ -403,7 +287,9 @@ export function InviteMessagePanel({
                             }}
                         >
                             <ImageIcon data-icon="inline-start" />
-                            {t('dialog.invite_message.generated.clear_image')}{' '}
+                            {t(
+                                'dialog.invite_message.generated.clear_image'
+                            )}{' '}
                             {imageName}
                         </Button>
                     ) : null}
@@ -434,7 +320,9 @@ export function InviteMessagePanel({
                             </TableHead>
                             {showActionColumn ? (
                                 <TableHead className="w-28 text-right">
-                                    {t('dialog.invite_message.generated.action')}
+                                    {t(
+                                        'dialog.invite_message.generated.action'
+                                    )}
                                 </TableHead>
                             ) : null}
                         </TableRow>
@@ -467,7 +355,9 @@ export function InviteMessagePanel({
                                 return (
                                     <TableRow
                                         key={`${resolvedMessageType}:${row.slot}`}
-                                        className={cn(selected && 'bg-muted/70')}
+                                        className={cn(
+                                            selected && 'bg-muted/70'
+                                        )}
                                     >
                                         <TableCell className="font-mono text-xs">
                                             {row.slot}
@@ -491,7 +381,9 @@ export function InviteMessagePanel({
                                                                 sending ||
                                                                 editDisabled
                                                             }
-                                                            onClick={(event) => {
+                                                            onClick={(
+                                                                event
+                                                            ) => {
                                                                 event.stopPropagation();
                                                                 beginEdit(row);
                                                             }}
@@ -499,29 +391,39 @@ export function InviteMessagePanel({
                                                             <PencilIcon data-icon="inline-start" />
                                                         </Button>
                                                     ) : null}
-                                                    {resolvedMode === 'select' ? (
+                                                    {resolvedMode ===
+                                                    'select' ? (
                                                         <Button
                                                             type="button"
                                                             variant="outline"
                                                             size="sm"
                                                             disabled={sending}
-                                                            onClick={(event) => {
+                                                            onClick={(
+                                                                event
+                                                            ) => {
                                                                 event.stopPropagation();
-                                                                void useRow(row);
+                                                                void useRow(
+                                                                    row
+                                                                );
                                                             }}
                                                         >
                                                             {actionLabel}
                                                         </Button>
                                                     ) : null}
-                                                    {resolvedMode === 'respond' ? (
+                                                    {resolvedMode ===
+                                                    'respond' ? (
                                                         <Button
                                                             type="button"
                                                             variant="outline"
                                                             size="sm"
                                                             disabled={sending}
                                                             onClick={() => {
-                                                                setEditingRow(null);
-                                                                setConfirmRow(row);
+                                                                setEditingRow(
+                                                                    null
+                                                                );
+                                                                setConfirmRow(
+                                                                    row
+                                                                );
                                                             }}
                                                         >
                                                             {actionLabel}

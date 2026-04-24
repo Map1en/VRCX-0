@@ -1,40 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
-import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold.jsx';
-import {
-    convertFileUrlToImageUrl,
-    openExternalLink
-} from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     gameLogRepository,
-    groupProfileRepository,
-    userProfileRepository
+    groupProfileRepository
 } from '@/repositories/index.js';
 import { useDialogStore } from '@/state/dialogStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
-import { Spinner } from '@/ui/shadcn/spinner';
+import { GroupDialogEmptyState } from './group-dialog/GroupDialogEmptyState.jsx';
+import { buildGroupDialogViewState } from './group-dialog/groupDialogViewState.js';
 import {
     mergeGroupInstances,
     normalizeEntityId
 } from './group-dialog/groupInstances.js';
+import { useGroupOwnerProfile } from './group-dialog/useGroupOwnerProfile.js';
 import { GroupDialogTabbedView } from './GroupDialogTabbedView.jsx';
-
-function GroupDialogEmptyState({ title, description, loading = false }) {
-    return (
-        <AppEmptyState
-            className="min-h-56"
-            title={title}
-            description={description}
-            icon={loading ? Spinner : undefined}
-        />
-    );
-}
 
 export function GroupDialogContent({ groupId, seedData = null }) {
     const { t } = useTranslation();
@@ -63,7 +48,6 @@ export function GroupDialogContent({ groupId, seedData = null }) {
     );
     const [actionStatus, setActionStatus] = useState('idle');
     const [detail, setDetail] = useState('');
-    const [ownerProfile, setOwnerProfile] = useState(null);
     const [previousInstances, setPreviousInstances] = useState([]);
     const [rawActiveInstances, setRawActiveInstances] = useState([]);
     const actionStatusRef = useRef('idle');
@@ -87,6 +71,11 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             rawActiveInstances
         ]
     );
+    const ownerProfile = useGroupOwnerProfile({
+        currentEndpoint,
+        friendsById,
+        group
+    });
 
     useEffect(() => {
         setGroup(seedData ? groupProfileRepository.normalize(seedData) : null);
@@ -109,38 +98,6 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             title: group.name
         });
     }, [group?.id, group?.name, updateEntityDialogMetadata]);
-
-    useEffect(() => {
-        let active = true;
-        const ownerId = normalizeEntityId(group?.ownerId);
-        setOwnerProfile(null);
-
-        if (!ownerId || friendsById[ownerId]?.displayName) {
-            return () => {
-                active = false;
-            };
-        }
-
-        userProfileRepository
-            .getUserProfile({
-                userId: ownerId,
-                endpoint: currentEndpoint
-            })
-            .then((profile) => {
-                if (active) {
-                    setOwnerProfile(profile);
-                }
-            })
-            .catch(() => {
-                if (active) {
-                    setOwnerProfile(null);
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint, friendsById, group?.ownerId]);
 
     useEffect(() => {
         let active = true;
@@ -277,7 +234,9 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             <GroupDialogEmptyState
                 loading
                 title={t('dialog.group.generated.loading_group_profile')}
-                description={t('dialog.group.generated.fetching_the_current_vrchat_group_snapshot_for_this_dialog')}
+                description={t(
+                    'dialog.group.generated.fetching_the_current_vrchat_group_snapshot_for_this_dialog'
+                )}
             />
         );
     }
@@ -294,38 +253,24 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         );
     }
 
-    const bannerUrl = convertFileUrlToImageUrl(group.bannerUrl, 1024);
-    const iconUrl = convertFileUrlToImageUrl(group.iconUrl, 256);
-    const memberStatus = normalizeEntityId(
-        group.myMember?.membershipStatus || group.membershipStatus
-    ).toLowerCase();
-    const isMember = memberStatus === 'member';
-    const isBlocked = memberStatus === 'userblocked';
-    const isRepresenting = Boolean(group.myMember?.isRepresenting);
-    const isSubscribedToAnnouncements = Boolean(
-        group.myMember?.isSubscribedToAnnouncements
-    );
-    const memberVisibility =
-        normalizeEntityId(group.myMember?.visibility || 'visible') || 'visible';
-    const joinState = normalizeEntityId(group.joinState).toLowerCase();
-    const ownerDisplayName =
-        normalizeEntityId(
-            group.ownerDisplayName ||
-                group.ownerName ||
-                group.owner?.displayName ||
-                ownerProfile?.displayName ||
-                ownerProfile?.username ||
-                ownerProfile?.name
-        ) ||
-        normalizeEntityId(friendsById[group.ownerId]?.displayName) ||
-        normalizeEntityId(group.ownerId);
-    const canJoin =
-        !isMember &&
-        memberStatus !== 'requested' &&
-        memberStatus !== 'userblocked' &&
-        (joinState === 'open' ||
-            joinState === 'request' ||
-            memberStatus === 'invited');
+    const {
+        bannerUrl,
+        canJoin,
+        iconUrl,
+        isBlocked,
+        isMember,
+        isRepresenting,
+        isSubscribedToAnnouncements,
+        joinState,
+        memberStatus,
+        memberVisibility,
+        ownerDisplayName
+    } = buildGroupDialogViewState({
+        currentUserId,
+        friendsById,
+        group,
+        ownerProfile
+    });
 
     async function refreshGroupProfile() {
         const nextGroup = await groupProfileRepository.getGroupProfile({
@@ -378,7 +323,9 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             );
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : t('dialog.group.generated_toast.failed_to_join_group')
+                error instanceof Error
+                    ? error.message
+                    : t('dialog.group.generated_toast.failed_to_join_group')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -395,7 +342,9 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         setActionStatus('leave');
         const result = await confirm({
             title: t('dialog.group.generated_modal.leave_group'),
-            description: t('dialog.group.generated_dynamic.leave_value', { value: group.name || group.id }),
+            description: t('dialog.group.generated_dynamic.leave_value', {
+                value: group.name || group.id
+            }),
             destructive: true,
             confirmText: t('dialog.group.generated_modal.leave'),
             cancelText: t('common.actions.cancel')
@@ -446,12 +395,16 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 endpoint: currentEndpoint
             });
             await refreshGroupProfile();
-            toast.success(t('dialog.group.generated.group_join_request_cancelled'));
+            toast.success(
+                t('dialog.group.generated.group_join_request_cancelled')
+            );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('dialog.group.generated_toast.failed_to_cancel_group_join_request')
+                    : t(
+                          'dialog.group.generated_toast.failed_to_cancel_group_join_request'
+                      )
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -496,13 +449,17 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             });
             await refreshGroupProfile();
             toast.success(
-                enabled ? t('dialog.group.generated_toast.group_represented') : t('dialog.group.generated_toast.group_unrepresented')
+                enabled
+                    ? t('dialog.group.generated_toast.group_represented')
+                    : t('dialog.group.generated_toast.group_unrepresented')
             );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('dialog.group.generated_toast.failed_to_update_group_representation')
+                    : t(
+                          'dialog.group.generated_toast.failed_to_update_group_representation'
+                      )
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -530,7 +487,9 @@ export function GroupDialogContent({ groupId, seedData = null }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('dialog.group.generated_toast.failed_to_update_group_member_settings')
+                    : t(
+                          'dialog.group.generated_toast.failed_to_update_group_member_settings'
+                      )
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -570,12 +529,18 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 });
             }
             await refreshGroupProfile();
-            toast.success(enabled ? t('dialog.group.generated_toast.group_blocked') : t('dialog.group.generated_toast.group_unblocked'));
+            toast.success(
+                enabled
+                    ? t('dialog.group.generated_toast.group_blocked')
+                    : t('dialog.group.generated_toast.group_unblocked')
+            );
         } catch (error) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    t('dialog.group.generated_toast.failed_to_update_group_block_state')
+                    t(
+                        'dialog.group.generated_toast.failed_to_update_group_block_state'
+                    )
                 )
             );
         } finally {
@@ -623,7 +588,6 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 )
             }
             onBlock={(enabled) => void updateGroupBlock(enabled)}
-            onOpenPage={() => openExternalLink(group.url)}
         />
     );
 }

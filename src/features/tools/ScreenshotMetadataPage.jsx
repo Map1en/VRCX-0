@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { convertFileSrc } from '@/platform/tauri/index.js';
 import { mediaRepository } from '@/repositories/index.js';
 import { withUploadTimeout } from '@/shared/utils/imageUpload.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
+import {
+    ScreenshotMetadataDetailsCard,
+    ScreenshotMetadataHeader,
+    ScreenshotMetadataPreviewCard,
+    ScreenshotMetadataResultsTable,
+    ScreenshotMetadataToolbar
+} from './components/ScreenshotMetadataSections.jsx';
 import {
     buildScreenshotSearchRow,
     DEFAULT_SCREENSHOT_SEARCH_SORT,
@@ -18,13 +25,7 @@ import {
     sortScreenshotRowsByNewest,
     sortScreenshotSearchRows
 } from './screenshotMetadataValues.js';
-import {
-    ScreenshotMetadataDetailsCard,
-    ScreenshotMetadataHeader,
-    ScreenshotMetadataPreviewCard,
-    ScreenshotMetadataResultsTable,
-    ScreenshotMetadataToolbar
-} from './components/ScreenshotMetadataSections.jsx';
+import { useScreenshotMetadataNavigation } from './useScreenshotMetadataNavigation.js';
 
 function openSearchResult(
     row,
@@ -211,28 +212,13 @@ export function ScreenshotMetadataPage() {
         void loadLastScreenshot();
     }, []);
 
-    useEffect(() => {
-        function handleKeyDown(event) {
-            if (!event.altKey) {
-                return;
-            }
-
-            if (event.key === 'ArrowLeft') {
-                event.preventDefault();
-                void navigatePrev();
-            }
-
-            if (event.key === 'ArrowRight') {
-                event.preventDefault();
-                void navigateNext();
-            }
-        }
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [metadata, searchNavigationPaths, selectedPath]);
+    const { navigateNext, navigatePrev } = useScreenshotMetadataNavigation({
+        loadScreenshot,
+        metadata,
+        searchNavigationPaths,
+        selectedPath,
+        setSelectedPath
+    });
 
     async function browseForScreenshot() {
         try {
@@ -253,7 +239,9 @@ export function ScreenshotMetadataPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.tools.generated_toast.failed_to_open_screenshot_picker')
+                    : t(
+                          'view.tools.generated_toast.failed_to_open_screenshot_picker'
+                      )
             );
         }
     }
@@ -287,7 +275,9 @@ export function ScreenshotMetadataPage() {
             toast.success(t('message.image.copied_to_clipboard'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : t('view.tools.generated_toast.failed_to_copy_image')
+                error instanceof Error
+                    ? error.message
+                    : t('view.tools.generated_toast.failed_to_copy_image')
             );
         }
     }
@@ -490,7 +480,11 @@ export function ScreenshotMetadataPage() {
         event.preventDefault();
         const filePath = getDroppedScreenshotPath(event);
         if (!filePath) {
-            toast.error(t('view.tools.generated.dropped_screenshot_path_is_not_available'));
+            toast.error(
+                t(
+                    'view.tools.generated.dropped_screenshot_path_is_not_available'
+                )
+            );
             return;
         }
         resetSearchContext({ clearQuery: true });
@@ -501,44 +495,6 @@ export function ScreenshotMetadataPage() {
         event.preventDefault();
         if (event.dataTransfer) {
             event.dataTransfer.dropEffect = 'copy';
-        }
-    }
-
-    async function navigatePrev() {
-        if (searchNavigationPaths.length && selectedPath) {
-            const currentIndex = searchNavigationPaths.indexOf(selectedPath);
-            if (currentIndex !== -1) {
-                const prevIndex =
-                    currentIndex > 0
-                        ? currentIndex - 1
-                        : searchNavigationPaths.length - 1;
-                setSelectedPath(searchNavigationPaths[prevIndex]);
-                await loadScreenshot(searchNavigationPaths[prevIndex], false);
-                return;
-            }
-        }
-
-        if (metadata?.previousFilePath) {
-            await loadScreenshot(metadata.previousFilePath, true);
-        }
-    }
-
-    async function navigateNext() {
-        if (searchNavigationPaths.length && selectedPath) {
-            const currentIndex = searchNavigationPaths.indexOf(selectedPath);
-            if (currentIndex !== -1) {
-                const nextIndex =
-                    currentIndex < searchNavigationPaths.length - 1
-                        ? currentIndex + 1
-                        : 0;
-                setSelectedPath(searchNavigationPaths[nextIndex]);
-                await loadScreenshot(searchNavigationPaths[nextIndex], false);
-                return;
-            }
-        }
-
-        if (metadata?.nextFilePath) {
-            await loadScreenshot(metadata.nextFilePath, true);
         }
     }
 
@@ -603,7 +559,8 @@ export function ScreenshotMetadataPage() {
                         onImagePreview={() =>
                             openImagePreview({
                                 url: imageUrl,
-                                title: metadata?.fileName || 'Screenshot preview',
+                                title:
+                                    metadata?.fileName || 'Screenshot preview',
                                 fileName: metadata?.fileName || '',
                                 sourcePath: metadata?.filePath || ''
                             })

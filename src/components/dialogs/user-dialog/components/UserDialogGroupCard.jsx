@@ -9,8 +9,8 @@ import {
     UsersIcon
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
 import { useTranslation } from 'react-i18next';
+
 import { cn } from '@/lib/utils.js';
 import { groupProfileRepository } from '@/repositories/index.js';
 import { Button } from '@/ui/shadcn/button';
@@ -27,10 +27,10 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 
 import {
-    groupDisplayName,
     groupIdForRow,
     groupMemberVisibility
-} from '../userDialogRows.js';
+} from '../userDialogGroupRows.js';
+import { groupDisplayName } from '../userDialogRows.js';
 import { openRow, rowImage } from './userDialogEntityListUtils.js';
 
 function visibilityLabel(visibility) {
@@ -153,9 +153,7 @@ export function UserGroupCard({
                         {group?.isRepresenting || group?.is_representing ? (
                             <TagIcon
                                 className="mr-1.5 shrink-0"
-                                aria-label={t(
-                                    'dialog.group.info.representing'
-                                )}
+                                aria-label={t('dialog.group.info.representing')}
                             />
                         ) : null}
                         {visibility !== 'visible' ? (
@@ -192,20 +190,20 @@ export function UserGroupCard({
                             <>
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem
-                                        onSelect={() => void onMove(group, 'top')}
+                                        onSelect={() =>
+                                            void onMove(group, 'top')
+                                        }
                                     >
                                         <DownloadIcon className="rotate-180" />
-                                        {t(
-                                            'dialog.user.generated.move_top'
-                                        )}
+                                        {t('dialog.user.generated.move_top')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        onSelect={() => void onMove(group, 'up')}
+                                        onSelect={() =>
+                                            void onMove(group, 'up')
+                                        }
                                     >
                                         <ArrowUpIcon />
-                                        {t(
-                                            'dialog.user.generated.move_up'
-                                        )}
+                                        {t('dialog.user.generated.move_up')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onSelect={() =>
@@ -213,9 +211,7 @@ export function UserGroupCard({
                                         }
                                     >
                                         <ArrowDownIcon />
-                                        {t(
-                                            'dialog.user.generated.move_down'
-                                        )}
+                                        {t('dialog.user.generated.move_down')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onSelect={() =>
@@ -223,9 +219,7 @@ export function UserGroupCard({
                                         }
                                     >
                                         <DownloadIcon />
-                                        {t(
-                                            'dialog.user.generated.move_bottom'
-                                        )}
+                                        {t('dialog.user.generated.move_bottom')}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />

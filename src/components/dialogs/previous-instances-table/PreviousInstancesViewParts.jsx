@@ -1,19 +1,14 @@
 import { ArrowLeftIcon } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { timeToText } from '@/lib/dateTime.js';
 import {
     gameLogRepository,
     userProfileRepository
 } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
-import { getResolvedThemeMode } from '@/services/themeService.js';
-import { useFavoriteStore } from '@/state/favoriteStore.js';
-import { useFriendRosterStore } from '@/state/friendRosterStore.js';
-import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { useShellStore } from '@/state/shellStore.js';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -31,15 +26,10 @@ import {
     TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+
+import { PreviousInstanceInfoChart } from './PreviousInstanceInfoChart.jsx';
 import {
-    INFO_CHART_BAR_WIDTH,
-    buildInfoChartOption,
-    buildInfoChartTooltipParts
-} from './previousInstancesChart.js';
-import {
-    normalizeInfoChartRows,
     normalizePlayerRows,
     playerDisplayName,
     playerUserId,
@@ -85,28 +75,6 @@ export function DialogErrorState({ children }) {
     );
 }
 
-function createInfoChartTooltipElement(detailEntry, hour12) {
-    const parts = buildInfoChartTooltipParts(detailEntry, hour12);
-    const container = document.createElement('div');
-    container.className = 'min-w-44';
-
-    const title = document.createElement('div');
-    title.style.fontWeight = '600';
-    title.style.marginBottom = '4px';
-    title.textContent = parts.title;
-    container.appendChild(title);
-
-    const timeRange = document.createElement('div');
-    timeRange.textContent = parts.timeRange;
-    container.appendChild(timeRange);
-
-    const duration = document.createElement('div');
-    duration.textContent = parts.duration;
-    container.appendChild(duration);
-
-    return container;
-}
-
 export function InstanceOwnerCell({ userId, location = '', endpoint = '' }) {
     const [displayName, setDisplayName] = useState(userId || '');
 
@@ -148,7 +116,7 @@ export function InstanceOwnerCell({ userId, location = '', endpoint = '' }) {
         <Button
             type="button"
             variant="ghost"
-            className="h-auto max-w-full flex-col items-start justify-start gap-0 p-0 text-left text-xs hover:text-primary"
+            className="hover:text-primary h-auto max-w-full flex-col items-start justify-start gap-0 p-0 text-left text-xs"
             title={[displayName || userId, userId, location]
                 .filter(Boolean)
                 .join('\n')}
@@ -163,176 +131,6 @@ export function InstanceOwnerCell({ userId, location = '', endpoint = '' }) {
                 </span>
             ) : null}
         </Button>
-    );
-}
-
-function PreviousInstanceInfoChart({ rows }) {
-    const { t } = useTranslation();
-
-    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const favoriteFriendIds = useFavoriteStore(
-        (state) => state.favoriteFriendIds
-    );
-    const localFriendFavoritesList = useFavoriteStore(
-        (state) => state.localFriendFavoritesList
-    );
-    const shellThemeMode = useShellStore((state) => state.themeMode);
-    const resolvedTheme = getResolvedThemeMode(shellThemeMode);
-    const hour12 = usePreferencesStore((state) => state.dtHour12);
-
-    const [chartElement, setChartElement] = useState(null);
-    const chartElementRef = useRef(null);
-    const chartInstanceRef = useRef(null);
-    const chartThemeRef = useRef(null);
-    const echartsRef = useRef(null);
-    const resizeObserverRef = useRef(null);
-
-    const favoriteIdSet = useMemo(
-        () =>
-            new Set(
-                [
-                    ...(favoriteFriendIds || []),
-                    ...(localFriendFavoritesList || [])
-                ].filter(Boolean)
-            ),
-        [favoriteFriendIds, localFriendFavoritesList]
-    );
-    const chartRows = useMemo(
-        () =>
-            normalizeInfoChartRows(
-                rows,
-                currentUserId,
-                friendsById,
-                favoriteIdSet
-            ),
-        [currentUserId, favoriteIdSet, friendsById, rows]
-    );
-    const chartPayload = useMemo(
-        () =>
-            buildInfoChartOption({
-                rows: chartRows,
-                hour12,
-                tooltipFormatter: createInfoChartTooltipElement
-            }),
-        [chartRows, hour12]
-    );
-
-    const setInfoChartElementRef = useCallback((node) => {
-        if (chartElementRef.current && chartElementRef.current !== node) {
-            resizeObserverRef.current?.disconnect();
-            chartInstanceRef.current?.dispose();
-            resizeObserverRef.current = null;
-            chartInstanceRef.current = null;
-            chartThemeRef.current = null;
-        }
-        chartElementRef.current = node;
-        setChartElement(node);
-    }, []);
-
-    useEffect(
-        () => () => {
-            resizeObserverRef.current?.disconnect();
-            chartInstanceRef.current?.dispose();
-            resizeObserverRef.current = null;
-            chartInstanceRef.current = null;
-            chartThemeRef.current = null;
-        },
-        []
-    );
-
-    useEffect(() => {
-        if (!chartElement) {
-            return;
-        }
-
-        let cancelled = false;
-
-        async function renderChart() {
-            const echarts =
-                echartsRef.current || (await import('echarts'));
-            if (cancelled || chartElementRef.current !== chartElement) {
-                return;
-            }
-            echartsRef.current = echarts;
-
-            const themeName = resolvedTheme === 'dark' ? 'dark' : null;
-            let chart = chartInstanceRef.current;
-
-            if (!chart || chartThemeRef.current !== themeName) {
-                resizeObserverRef.current?.disconnect();
-                chart?.dispose();
-
-                chart = echarts.init(chartElement, themeName || undefined, {
-                    useDirtyRect: chartRows.length > 80
-                });
-                chartInstanceRef.current = chart;
-                chartThemeRef.current = themeName;
-
-                resizeObserverRef.current = new ResizeObserver(() => {
-                    chart.resize();
-                });
-                resizeObserverRef.current.observe(chartElement);
-            }
-
-            const chartRowCount =
-                chartPayload?.firstEntries.length || chartRows.length;
-            const chartHeight = Math.max(
-                220,
-                chartRowCount * (INFO_CHART_BAR_WIDTH + 10) + 200
-            );
-            chartElement.style.height = `${chartHeight}px`;
-            chart.resize({ height: chartHeight });
-            chart.off('click');
-
-            if (!chartPayload) {
-                chart.clear();
-                return;
-            }
-
-            chart.clear();
-            chart.setOption(chartPayload.option, { notMerge: true });
-            chart.on('click', (params) => {
-                if (params.componentType !== 'yAxis') {
-                    return;
-                }
-                const entry = chartPayload.firstEntries[params.dataIndex];
-                if (entry?.userId) {
-                    openUserDialog({
-                        userId: entry.userId,
-                        title: entry.displayName || undefined
-                    });
-                }
-            });
-        }
-
-        renderChart().catch((error) => {
-            console.error(
-                '[PreviousInstancesTableDialog] Failed to load chart renderer.',
-                error
-            );
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [chartElement, chartPayload, chartRows.length, resolvedTheme]);
-
-    if (!chartRows.length) {
-        return (
-            <DialogEmptyState
-                title={t(
-                    'dialog.previous_instances.generated.no_player_detail_rows'
-                )}
-                description={t(
-                    'dialog.previous_instances.generated.there_are_no_timeline_rows_for_this_instance'
-                )}
-            />
-        );
-    }
-
-    return (
-        <div ref={setInfoChartElementRef} className="w-full bg-transparent" />
     );
 }
 
@@ -459,9 +257,7 @@ export function PreviousInstanceDetailsPanel({
                             onClick={onBack}
                         >
                             <ArrowLeftIcon data-icon="inline-start" />
-                            {t(
-                                'dialog.previous_instances.generated.back'
-                            )}
+                            {t('dialog.previous_instances.generated.back')}
                         </Button>
                     ) : null}
                 </div>
@@ -469,17 +265,13 @@ export function PreviousInstanceDetailsPanel({
             <div className="grid gap-2 text-sm sm:grid-cols-2">
                 <div>
                     <span className="text-muted-foreground">
-                        {t(
-                            'dialog.previous_instances.generated.created'
-                        )}
+                        {t('dialog.previous_instances.generated.created')}
                     </span>
                     <div>{formatDate(row?.created_at || row?.createdAt)}</div>
                 </div>
                 <div>
                     <span className="text-muted-foreground">
-                        {t(
-                            'dialog.previous_instances.generated.duration'
-                        )}
+                        {t('dialog.previous_instances.generated.duration')}
                     </span>
                     <div>{rowDuration(row)}</div>
                 </div>
@@ -497,9 +289,7 @@ export function PreviousInstanceDetailsPanel({
                 </div>
                 <div>
                     <span className="text-muted-foreground">
-                        {t(
-                            'dialog.previous_instances.generated.creator'
-                        )}
+                        {t('dialog.previous_instances.generated.creator')}
                     </span>
                     <div>
                         <InstanceOwnerCell
@@ -518,9 +308,7 @@ export function PreviousInstanceDetailsPanel({
                 <div className="flex items-center justify-between gap-3">
                     <TabsList variant="line">
                         <TabsTrigger value="players">
-                            {t(
-                                'dialog.previous_instances.generated.players'
-                            )}
+                            {t('dialog.previous_instances.generated.players')}
                         </TabsTrigger>
                         <TabsTrigger value="timeline">
                             {t('dialog.previous_instances.chart_view')}
@@ -562,9 +350,7 @@ export function PreviousInstanceDetailsPanel({
                                                 )}
                                             </TableHead>
                                             <TableHead className="w-24">
-                                                {t(
-                                                    'dialog.world.info.visits'
-                                                )}
+                                                {t('dialog.world.info.visits')}
                                             </TableHead>
                                             <TableHead className="w-28">
                                                 {t(
@@ -640,7 +426,9 @@ export function PreviousInstanceDetailsPanel({
                             value="timeline"
                             className="mt-2 max-h-[52vh] overflow-auto rounded-md border p-2"
                         >
-                            <PreviousInstanceInfoChart rows={infoData.details} />
+                            <PreviousInstanceInfoChart
+                                rows={infoData.details}
+                            />
                         </TabsContent>
                     </>
                 ) : null}
@@ -648,9 +436,7 @@ export function PreviousInstanceDetailsPanel({
             {detailsViewMode === 'players' && infoData.details.length ? (
                 <details className="rounded-md border p-3">
                     <summary className="cursor-pointer text-sm font-medium">
-                        {t(
-                            'dialog.previous_instances.generated.leave_details'
-                        )}{' '}
+                        {t('dialog.previous_instances.generated.leave_details')}{' '}
                         ({infoData.details.length})
                     </summary>
                     <div className="mt-3 max-h-48 overflow-auto">

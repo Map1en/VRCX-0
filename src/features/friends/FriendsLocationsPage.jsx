@@ -1,8 +1,15 @@
-import { FriendsLocationsPageView } from './components/FriendsLocationsPageView.jsx';
-import { useFriendsLocationsPageController } from './useFriendsLocationsPageController.js';
+import { FriendsLocationsPageLayout } from './components/FriendsLocationsPageView.jsx';
+import { FriendsLocationsToolbar } from './components/FriendsLocationsToolbar.jsx';
+import { FriendsLocationsVirtualList } from './components/FriendsLocationsVirtualList.jsx';
+import { FriendsLocationsPageProvider } from './FriendsLocationsPageContext.jsx';
 
 export function FriendsLocationsPage({ embedded = false } = {}) {
-    const viewProps = useFriendsLocationsPageController({ embedded });
-
-    return <FriendsLocationsPageView {...viewProps} />;
+    return (
+        <FriendsLocationsPageProvider embedded={embedded}>
+            <FriendsLocationsPageLayout>
+                <FriendsLocationsToolbar />
+                <FriendsLocationsVirtualList />
+            </FriendsLocationsPageLayout>
+        </FriendsLocationsPageProvider>
+    );
 }

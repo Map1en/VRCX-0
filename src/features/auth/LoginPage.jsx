@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
-import { executeReactAutoLogin } from '@/services/authAutoLoginService.js';
 import {
     executeManualLogin,
     executeSavedCredentialLogin
@@ -24,11 +23,6 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 
-import {
-    getLoginErrorMessage as getErrorMessage,
-    getLoginUserDisplayName as getUserDisplayName
-} from './loginDisplay.js';
-import { getSnapshotLoginParams } from './loginSession.js';
 import { DeleteSavedAccountDialog } from './components/DeleteSavedAccountDialog.jsx';
 import { LoginAutoLoginAlert } from './components/LoginAutoLoginAlert.jsx';
 import { LoginFormCard } from './components/LoginFormCard.jsx';
@@ -36,6 +30,12 @@ import { LoginPageFooter } from './components/LoginPageFooter.jsx';
 import { LoginPageHeader } from './components/LoginPageHeader.jsx';
 import { LoginProxySettingsDialog } from './components/LoginProxySettingsDialog.jsx';
 import { SavedAccountsCard } from './components/SavedAccountsCard.jsx';
+import {
+    getLoginErrorMessage as getErrorMessage,
+    getLoginUserDisplayName as getUserDisplayName
+} from './loginDisplay.js';
+import { getSnapshotLoginParams } from './loginSession.js';
+import { useLoginAutoLogin } from './useLoginAutoLogin.js';
 
 export function LoginPage() {
     const navigate = useNavigate();
@@ -58,12 +58,6 @@ export function LoginPage() {
     const [isUpdatingEndpointSetting, setIsUpdatingEndpointSetting] =
         useState(false);
     const [activeSavedUserId, setActiveSavedUserId] = useState('');
-    const [autoLoginState, setAutoLoginState] = useState({
-        status: 'idle',
-        remainingSeconds: 0,
-        detail: '',
-        userId: ''
-    });
     const [loginForm, setLoginForm] = useState({
         username: '',
         password: '',
@@ -76,26 +70,10 @@ export function LoginPage() {
         username: '',
         password: ''
     });
-    const autoLoginSuppressedKeyRef = useRef('');
-    const autoLoginAbortRef = useRef(null);
 
     useEffect(() => {
         setProxyInput(proxyServer || '');
     }, [proxyServer]);
-
-    const isDatabaseBlocked = !databaseReady;
-    const isAutoLoginActive =
-        autoLoginState.status === 'scheduled' ||
-        autoLoginState.status === 'running';
-    const isAutoLoginStartBlocked =
-        isDatabaseBlocked || isSubmitting || Boolean(activeSavedUserId);
-    const isAuthBusy =
-        isDatabaseBlocked ||
-        isSubmitting ||
-        Boolean(activeSavedUserId) ||
-        isAutoLoginActive ||
-        sessionPhase === 'authenticating' ||
-        sessionPhase === 'bootstrapping';
 
     function applySnapshot(nextSnapshot) {
         const loginParams = getSnapshotLoginParams(nextSnapshot);
@@ -112,63 +90,30 @@ export function LoginPage() {
         }));
         return nextSnapshot;
     }
-
-    function getAutoLoginSnapshotKey(nextSnapshot = snapshot) {
-        const userId = nextSnapshot?.lastUserLoggedIn || '';
-        const savedCredential = userId
-            ? nextSnapshot?.savedCredentials?.[userId]
-            : null;
-        if (!userId) {
-            return '';
-        }
-
-        return JSON.stringify({
-            userId,
-            endpoint: savedCredential?.loginParams?.endpoint || '',
-            username: savedCredential?.loginParams?.username || '',
-            hasCookies: Boolean(savedCredential?.cookies),
-            hasSavedCredential: Boolean(savedCredential),
-            autoLoginStatus: nextSnapshot.autoLoginStatus,
-            autoLoginDelayEnabled: Boolean(nextSnapshot.autoLoginDelayEnabled),
-            autoLoginDelaySeconds: nextSnapshot.autoLoginDelaySeconds || 0
-        });
-    }
-
-    function cancelPendingAutoLogin(
-        detail = t('view.auth.auto_login.skipped')
-    ) {
-        const controller = autoLoginAbortRef.current;
-        if (controller) {
-            controller.abort();
-            autoLoginAbortRef.current = null;
-        }
-
-        setAutoLoginState((current) => {
-            if (
-                current.status !== 'scheduled' &&
-                current.status !== 'running'
-            ) {
-                return current;
-            }
-
-            return {
-                ...current,
-                status: 'cancelled',
-                remainingSeconds: 0,
-                detail
-            };
-        });
-    }
-
-    function retryAutoLogin() {
-        autoLoginSuppressedKeyRef.current = '';
-        setAutoLoginState({
-            status: 'idle',
-            remainingSeconds: 0,
-            detail: '',
-            userId: ''
-        });
-    }
+    const {
+        autoLoginAlertVariant,
+        autoLoginState,
+        autoLoginTarget,
+        cancelPendingAutoLogin,
+        isAutoLoginActive,
+        retryAutoLogin,
+        shouldShowAutoLogin
+    } = useLoginAutoLogin({
+        activeSavedUserId,
+        applySnapshot,
+        databaseReady,
+        isLoading,
+        isSubmitting,
+        snapshot
+    });
+    const isDatabaseBlocked = !databaseReady;
+    const isAuthBusy =
+        isDatabaseBlocked ||
+        isSubmitting ||
+        Boolean(activeSavedUserId) ||
+        isAutoLoginActive ||
+        sessionPhase === 'authenticating' ||
+        sessionPhase === 'bootstrapping';
 
     useEffect(() => {
         let active = true;
@@ -183,7 +128,9 @@ export function LoginPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t('view.auth.generated_toast.failed_to_load_saved_auth_snapshot')
+                        : t(
+                              'view.auth.generated_toast.failed_to_load_saved_auth_snapshot'
+                          )
                 );
             })
             .finally(() => {
@@ -196,197 +143,6 @@ export function LoginPage() {
             active = false;
         };
     }, []);
-
-    useEffect(() => {
-        const shouldAttemptCookieRestore = Boolean(snapshot?.lastUserLoggedIn);
-        const shouldAttemptSavedCredentialFallback =
-            snapshot?.autoLoginStatus === 'available';
-
-        if (
-            isLoading ||
-            isAutoLoginStartBlocked ||
-            !databaseReady ||
-            (!shouldAttemptCookieRestore &&
-                !shouldAttemptSavedCredentialFallback)
-        ) {
-            return undefined;
-        }
-
-        const userId = snapshot?.lastUserLoggedIn;
-        const savedCredential = userId
-            ? snapshot?.savedCredentials?.[userId]
-            : null;
-        const autoLoginDisplayName = savedCredential
-            ? getUserDisplayName(savedCredential.user)
-            : userId;
-        const autoLoginSnapshotKey = getAutoLoginSnapshotKey(snapshot);
-        if (
-            !userId ||
-            !autoLoginSnapshotKey ||
-            autoLoginSuppressedKeyRef.current === autoLoginSnapshotKey
-        ) {
-            return undefined;
-        }
-
-        autoLoginSuppressedKeyRef.current = autoLoginSnapshotKey;
-        const controller = new AbortController();
-        autoLoginAbortRef.current = controller;
-        let active = true;
-
-        setAutoLoginState({
-            status:
-                snapshot.autoLoginDelayEnabled &&
-                snapshot.autoLoginDelaySeconds > 0
-                    ? 'scheduled'
-                    : 'running',
-            remainingSeconds:
-                snapshot.autoLoginDelayEnabled &&
-                snapshot.autoLoginDelaySeconds > 0
-                    ? snapshot.autoLoginDelaySeconds
-                    : 0,
-            detail: savedCredential
-                ? t('view.auth.auto_login.preparing_login_for', {
-                      name: autoLoginDisplayName
-                  })
-                : t('view.auth.auto_login.preparing_restore_for', {
-                      userId
-                  }),
-            userId
-        });
-
-        executeReactAutoLogin(snapshot, {
-            signal: controller.signal,
-            onCountdown(remainingSeconds) {
-                if (!active) {
-                    return;
-                }
-
-                setAutoLoginState((current) => ({
-                    ...current,
-                    status: remainingSeconds > 0 ? 'scheduled' : 'running',
-                    remainingSeconds,
-                    detail:
-                        remainingSeconds > 0
-                            ? t('view.auth.auto_login.starts_in', {
-                                  seconds: remainingSeconds
-                              })
-                            : savedCredential
-                              ? t('view.auth.auto_login.authenticating', {
-                                    name: autoLoginDisplayName
-                                })
-                              : t('view.auth.auto_login.restoring_session_for', {
-                                    name: autoLoginDisplayName
-                                })
-                }));
-            }
-        })
-            .then((result) => {
-                if (!active) {
-                    return;
-                }
-
-                autoLoginAbortRef.current = null;
-                if (result.snapshot) {
-                    applySnapshot(result.snapshot);
-                }
-
-                switch (result.status) {
-                    case 'success':
-                        setAutoLoginState({
-                            status: 'success',
-                            remainingSeconds: 0,
-                            detail: savedCredential
-                                ? t('view.auth.auto_login.logged_in_as', {
-                                      name: autoLoginDisplayName
-                                  })
-                                : t('view.auth.auto_login.restored_session_for', {
-                                      name: autoLoginDisplayName
-                                  }),
-                            userId
-                        });
-                        break;
-                    case 'cancelled':
-                        setAutoLoginState({
-                            status: 'cancelled',
-                            remainingSeconds: 0,
-                            detail: t(
-                                'view.auth.auto_login.skipped_before_request'
-                            ),
-                            userId
-                        });
-                        break;
-                    case 'throttled':
-                        setAutoLoginState({
-                            status: 'throttled',
-                            remainingSeconds: 0,
-                            detail: t('view.auth.auto_login.throttled'),
-                            userId
-                        });
-                        break;
-                    case 'expired':
-                        setAutoLoginState({
-                            status: 'expired',
-                            remainingSeconds: 0,
-                            detail: t('view.auth.auto_login.expired'),
-                            userId
-                        });
-                        break;
-                    case 'failed':
-                        setAutoLoginState({
-                            status: 'failed',
-                            remainingSeconds: 0,
-                            detail: t('view.auth.auto_login.failed_manual'),
-                            userId
-                        });
-                        break;
-                    default:
-                        setAutoLoginState({
-                            status: 'idle',
-                            remainingSeconds: 0,
-                            detail: '',
-                            userId: ''
-                        });
-                        break;
-                }
-            })
-            .catch((error) => {
-                if (!active) {
-                    return;
-                }
-
-                autoLoginAbortRef.current = null;
-                setAutoLoginState({
-                    status: 'failed',
-                    remainingSeconds: 0,
-                    detail: getErrorMessage(
-                        error,
-                        t('view.auth.auto_login.failed_unexpectedly')
-                    ),
-                    userId
-                });
-                toast.error(
-                    getErrorMessage(
-                        error,
-                        t('view.auth.generated_toast.automatic_login_failed_unexpectedly')
-                    )
-                );
-            });
-
-        return () => {
-            active = false;
-            controller.abort();
-            if (autoLoginAbortRef.current === controller) {
-                autoLoginAbortRef.current = null;
-            }
-        };
-    }, [databaseReady, isAutoLoginStartBlocked, isLoading, snapshot, t]);
-
-    useEffect(
-        () => () => {
-            autoLoginAbortRef.current?.abort();
-        },
-        []
-    );
 
     useEffect(() => {
         if (sessionPhase === 'ready') {
@@ -414,7 +170,9 @@ export function LoginPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t('view.auth.generated_toast.failed_to_load_proxy_settings')
+                        : t(
+                              'view.auth.generated_toast.failed_to_load_proxy_settings'
+                          )
                 );
             }
         }
@@ -438,7 +196,9 @@ export function LoginPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.auth.generated_toast.failed_to_save_proxy_settings')
+                    : t(
+                          'view.auth.generated_toast.failed_to_save_proxy_settings'
+                      )
             );
         } finally {
             setIsSavingProxySettings(false);
@@ -446,9 +206,7 @@ export function LoginPage() {
     }
 
     async function handleCustomEndpointToggle(checked) {
-        cancelPendingAutoLogin(
-            t('view.auth.auto_login.skipped_form_changed')
-        );
+        cancelPendingAutoLogin(t('view.auth.auto_login.skipped_form_changed'));
         const previousValue = Boolean(snapshot?.enableCustomEndpoint);
         const nextValue = checked === true;
 
@@ -472,7 +230,12 @@ export function LoginPage() {
                 websocket: previousValue ? current.websocket : ''
             }));
             toast.error(
-                getErrorMessage(error, t('view.auth.generated_toast.failed_to_update_endpoint_preference'))
+                getErrorMessage(
+                    error,
+                    t(
+                        'view.auth.generated_toast.failed_to_update_endpoint_preference'
+                    )
+                )
             );
         } finally {
             setIsUpdatingEndpointSetting(false);
@@ -495,7 +258,9 @@ export function LoginPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.auth.generated_toast.failed_to_remove_saved_account')
+                    : t(
+                          'view.auth.generated_toast.failed_to_remove_saved_account'
+                      )
             );
         } finally {
             setIsDeleting(false);
@@ -521,7 +286,11 @@ export function LoginPage() {
         event.preventDefault();
 
         if (!databaseReady) {
-            toast.error(t('common.generated.generated.database_initialization_is_still_pending'));
+            toast.error(
+                t(
+                    'common.generated.generated.database_initialization_is_still_pending'
+                )
+            );
             return;
         }
 
@@ -546,12 +315,21 @@ export function LoginPage() {
                 saveCredentials: loginForm.saveCredentials
             });
             applySnapshot(nextSnapshot);
-            toast.success(t('common.generated.generated.authenticated_and_prepared_the_session'));
+            toast.success(
+                t(
+                    'common.generated.generated.authenticated_and_prepared_the_session'
+                )
+            );
         } catch (error) {
             if (error?.authSnapshot) {
                 applySnapshot(error.authSnapshot);
             }
-            toast.error(getErrorMessage(error, t('view.auth.generated_toast.failed_to_authenticate')));
+            toast.error(
+                getErrorMessage(
+                    error,
+                    t('view.auth.generated_toast.failed_to_authenticate')
+                )
+            );
         } finally {
             setIsSubmitting(false);
         }
@@ -564,7 +342,11 @@ export function LoginPage() {
         }
 
         if (!databaseReady) {
-            toast.error(t('common.generated.generated.database_initialization_is_still_pending'));
+            toast.error(
+                t(
+                    'common.generated.generated.database_initialization_is_still_pending'
+                )
+            );
             return;
         }
 
@@ -576,14 +358,22 @@ export function LoginPage() {
             const nextSnapshot = await executeSavedCredentialLogin(entry);
             applySnapshot(nextSnapshot);
             toast.success(
-                t('view.auth.generated_dynamic.authenticated_and_prepared_the_session_for_value', { value: getUserDisplayName(entry.user) })
+                t(
+                    'view.auth.generated_dynamic.authenticated_and_prepared_the_session_for_value',
+                    { value: getUserDisplayName(entry.user) }
+                )
             );
         } catch (error) {
             if (error?.authSnapshot) {
                 applySnapshot(error.authSnapshot);
             }
             toast.error(
-                getErrorMessage(error, t('view.auth.generated_toast.failed_to_restore_the_saved_account'))
+                getErrorMessage(
+                    error,
+                    t(
+                        'view.auth.generated_toast.failed_to_restore_the_saved_account'
+                    )
+                )
             );
         } finally {
             setActiveSavedUserId('');
@@ -592,23 +382,6 @@ export function LoginPage() {
 
     const savedAccounts = snapshot?.savedCredentialsList || [];
     const hasSavedAccounts = !isLoading && savedAccounts.length > 0;
-    const shouldShowAutoLogin =
-        !isLoading &&
-        (Boolean(snapshot?.lastUserLoggedIn) ||
-            snapshot?.autoLoginStatus === 'available' ||
-            autoLoginState.status !== 'idle');
-    const autoLoginTarget = snapshot?.savedCredentials?.[
-        snapshot?.lastUserLoggedIn
-    ]?.user
-        ? getUserDisplayName(
-              snapshot.savedCredentials[snapshot.lastUserLoggedIn].user
-          )
-        : snapshot?.lastUserLoggedIn || t('status_bar.game_last_session');
-    const autoLoginAlertVariant =
-        autoLoginState.status === 'failed' ||
-        autoLoginState.status === 'expired'
-            ? 'destructive'
-            : 'default';
 
     return (
         <div className="bg-background relative flex min-h-full w-full flex-col overflow-y-auto p-6">

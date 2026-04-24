@@ -1,13 +1,9 @@
-import { DownloadIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
-import { formatDateFilter } from '@/lib/dateTime.js';
 import { groupProfileRepository } from '@/repositories/index.js';
-import { openUserDialog } from '@/services/dialogService.js';
 import { useModalStore } from '@/state/modalStore.js';
-import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
@@ -15,140 +11,14 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Input } from '@/ui/shadcn/input';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+
 import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/ui/shadcn/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
-
-import { GroupListState } from './GroupListState.jsx';
-import {
-    downloadJsonFile,
-    getGroupRoleNameMap
-} from './groupDialogUtils.js';
-
-const moderationTabs = [
-    {
-        value: 'members',
-        label: t('dialog.group.moderation_tabs.members')
-    },
-    { value: 'bans', label: t('dialog.group.moderation_tabs.bans') },
-    {
-        value: 'invites',
-        label: t('dialog.group.moderation_tabs.invites')
-    },
-    {
-        value: 'requests',
-        label: t('dialog.group.moderation_tabs.join_requests')
-    },
-    {
-        value: 'blocked',
-        label: t('dialog.group.moderation_tabs.blocked_requests')
-    },
-    { value: 'logs', label: t('dialog.group.moderation_tabs.logs') }
-];
-
-function moderationRowUserId(row) {
-    return (
-        row?.userId || row?.targetUserId || row?.user?.id || row?.actorId || ''
-    );
-}
-
-function moderationRowLabel(row) {
-    if (!row || typeof row !== 'object') {
-        return String(row ?? '—');
-    }
-    return (
-        row?.user?.displayName ||
-        row?.displayName ||
-        row?.targetDisplayName ||
-        row?.actorDisplayName ||
-        row?.userId ||
-        row?.targetUserId ||
-        row?.actorId ||
-        row?.id ||
-        '—'
-    );
-}
-
-function moderationRowSubtitle(row) {
-    return [
-        row?.roleIds?.length ? row.roleIds.join(', ') : '',
-        row?.action ||
-            row?.eventType ||
-            row?.type ||
-            row?.membershipStatus ||
-            '',
-        row?.createdAt || row?.updatedAt || row?.joinedAt || ''
-    ]
-        .filter(Boolean)
-        .join(' | ');
-}
-
-function moderationRowRoles(row, group) {
-    const roles = getGroupRoleNameMap(group);
-    const roleIds = Array.isArray(row?.roleIds)
-        ? row.roleIds
-        : Array.isArray(row?.user?.roleIds)
-          ? row.user.roleIds
-          : [];
-    return roleIds
-        .map((roleId) => roles.get(roleId) || 'Role')
-        .filter(Boolean)
-        .join(', ');
-}
-
-function moderationRowStatus(row) {
-    return (
-        row?.action ||
-        row?.eventType ||
-        row?.type ||
-        row?.membershipStatus ||
-        row?.visibility ||
-        '—'
-    );
-}
-
-function moderationRowDate(row) {
-    return (
-        row?.createdAt ||
-        row?.created_at ||
-        row?.updatedAt ||
-        row?.updated_at ||
-        row?.joinedAt ||
-        row?.joined_at ||
-        ''
-    );
-}
-
-function moderationRowSearchText(row, group) {
-    return [
-        moderationRowLabel(row),
-        moderationRowUserId(row),
-        moderationRowRoles(row, group),
-        moderationRowStatus(row),
-        moderationRowDate(row),
-        row?.description,
-        row?.note,
-        row?.managerNotes
-    ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-}
+    getGroupModerationTabs,
+    moderationRowLabel,
+    moderationRowUserId
+} from './groupModerationRows.js';
+import { GroupModerationTabPanel } from './GroupModerationTabPanel.jsx';
 
 export function GroupModerationToolsDialog({
     open,
@@ -157,7 +27,6 @@ export function GroupModerationToolsDialog({
     endpoint
 }) {
     const { t } = useTranslation();
-
     const confirm = useModalStore((state) => state.confirm);
     const [activeTab, setActiveTab] = useState('members');
     const [rowsByTab, setRowsByTab] = useState({});
@@ -168,6 +37,10 @@ export function GroupModerationToolsDialog({
     const [pageIndex, setPageIndex] = useState(0);
     const [reloadToken, setReloadToken] = useState(0);
     const [actionKey, setActionKey] = useState('');
+    const moderationTabs = getGroupModerationTabs(t);
+    const rows = rowsByTab[activeTab] || [];
+    const loading = statusByTab[activeTab] === 'running';
+    const error = errorsByTab[activeTab] || '';
 
     useEffect(() => {
         if (!open) {
@@ -230,20 +103,20 @@ export function GroupModerationToolsDialog({
                           });
 
         request
-            .then((rows) => {
+            .then((nextRows) => {
                 if (!active) {
                     return;
                 }
                 setRowsByTab((current) => ({
                     ...current,
-                    [activeTab]: Array.isArray(rows) ? rows : []
+                    [activeTab]: Array.isArray(nextRows) ? nextRows : []
                 }));
                 setStatusByTab((current) => ({
                     ...current,
                     [activeTab]: 'ready'
                 }));
             })
-            .catch((error) => {
+            .catch((requestError) => {
                 if (!active) {
                     return;
                 }
@@ -254,8 +127,8 @@ export function GroupModerationToolsDialog({
                 setErrorsByTab((current) => ({
                     ...current,
                     [activeTab]:
-                        error instanceof Error
-                            ? error.message
+                        requestError instanceof Error
+                            ? requestError.message
                             : 'Failed to load moderation data.'
                 }));
             });
@@ -264,86 +137,6 @@ export function GroupModerationToolsDialog({
             active = false;
         };
     }, [activeTab, endpoint, group.id, open, reloadToken]);
-
-    const rows = rowsByTab[activeTab] || [];
-    const loading = statusByTab[activeTab] === 'running';
-    const error = errorsByTab[activeTab] || '';
-    const filteredRows = rows.filter((row) => {
-        const query = search.trim().toLowerCase();
-        return !query || moderationRowSearchText(row, group).includes(query);
-    });
-    const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
-    const currentPageIndex = Math.min(pageIndex, totalPages - 1);
-    const visibleRows = filteredRows.slice(
-        currentPageIndex * pageSize,
-        currentPageIndex * pageSize + pageSize
-    );
-
-    function moderationActions(row) {
-        const userId = moderationRowUserId(row);
-        if (!userId) {
-            return [];
-        }
-        if (activeTab === 'members') {
-            return [
-                {
-                    key: 'kick',
-                    label: t('dialog.group.moderation_tabs.kick'),
-                    destructive: true
-                },
-                {
-                    key: 'ban',
-                    label: t('dialog.group.moderation_tabs.ban'),
-                    destructive: true
-                }
-            ];
-        }
-        if (activeTab === 'bans') {
-            return [
-                {
-                    key: 'unban',
-                    label: t('dialog.group.moderation_tabs.unban')
-                }
-            ];
-        }
-        if (activeTab === 'invites') {
-            return [
-                {
-                    key: 'delete-invite',
-                    label: t('dialog.group.moderation_tabs.delete'),
-                    destructive: true
-                }
-            ];
-        }
-        if (activeTab === 'requests') {
-            return [
-                {
-                    key: 'accept-request',
-                    label: t('dialog.group.moderation_tabs.accept')
-                },
-                {
-                    key: 'reject-request',
-                    label: t('dialog.group.moderation_tabs.reject'),
-                    destructive: true
-                },
-                {
-                    key: 'block-request',
-                    label: t('dialog.group.moderation_tabs.block'),
-                    destructive: true
-                }
-            ];
-        }
-        if (activeTab === 'blocked') {
-            return [
-                {
-                    key: 'delete-blocked',
-                    label: t('dialog.group.moderation_tabs.delete'),
-                    destructive: true
-                }
-            ];
-        }
-        return [];
-    }
 
     async function runModerationAction(action, row) {
         const userId = moderationRowUserId(row);
@@ -436,10 +229,10 @@ export function GroupModerationToolsDialog({
                     value: action.label
                 })
             );
-        } catch (error) {
+        } catch (actionError) {
             toast.error(
-                error instanceof Error
-                    ? error.message
+                actionError instanceof Error
+                    ? actionError.message
                     : t('dialog.group.generated_toast.value_failed', {
                           value: action.label
                       })
@@ -480,330 +273,32 @@ export function GroupModerationToolsDialog({
                         ))}
                     </TabsList>
                     {moderationTabs.map((tab) => (
-                        <TabsContent
+                        <GroupModerationTabPanel
                             key={tab.value}
-                            value={tab.value}
-                            className="m-0 max-h-[65vh] overflow-auto pt-4"
-                        >
-                            <div className="mb-3 flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={loading}
-                                        onClick={() =>
-                                            setReloadToken((value) => value + 1)
-                                        }
-                                    >
-                                        <RefreshCwIcon data-icon="inline-start" />
-                                        {t('common.actions.refresh')}
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={!rows.length}
-                                        onClick={() =>
-                                            downloadJsonFile(
-                                                `${group.id}_${activeTab}.json`,
-                                                rows
-                                            )
-                                        }
-                                    >
-                                        <DownloadIcon data-icon="inline-start" />
-                                        JSON
-                                    </Button>
-                                    <span className="text-muted-foreground text-sm">
-                                        {filteredRows.length}/{rows.length}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        value={search}
-                                        onChange={(event) => {
-                                            setSearch(event.target.value);
-                                            setPageIndex(0);
-                                        }}
-                                        placeholder={t(
-                                            'dialog.group.generated_dynamic.search_value',
-                                            { value: tab.label.toLowerCase() }
-                                        )}
-                                        className="h-8 w-64"
-                                    />
-                                    <Select
-                                        value={String(pageSize)}
-                                        onValueChange={(value) => {
-                                            setPageSize(
-                                                Number.parseInt(value, 10) || 25
-                                            );
-                                            setPageIndex(0);
-                                        }}
-                                    >
-                                        <SelectTrigger
-                                            size="sm"
-                                            className="w-24"
-                                        >
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {[10, 25, 50, 100].map(
-                                                    (size) => (
-                                                        <SelectItem
-                                                            key={size}
-                                                            value={String(size)}
-                                                        >
-                                                            {size}
-                                                        </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            {loading ? (
-                                <GroupListState
-                                    title={t(
-                                        'dialog.group.generated_dynamic.no_value',
-                                        { value: tab.label.toLowerCase() }
-                                    )}
-                                    loading
-                                />
-                            ) : null}
-                            {error ? (
-                                <GroupListState
-                                    title={t(
-                                        'dialog.group.generated_dynamic.no_value',
-                                        { value: tab.label.toLowerCase() }
-                                    )}
-                                    error={error}
-                                />
-                            ) : null}
-                            {!loading && !error ? (
-                                <div className="overflow-auto rounded-md border">
-                                    <Table>
-                                        <TableHeader className="bg-background sticky top-0">
-                                            <TableRow>
-                                                <TableHead className="w-56">
-                                                    {t(
-                                                        'dialog.group.generated.user'
-                                                    )}
-                                                </TableHead>
-                                                <TableHead>
-                                                    {t(
-                                                        'dialog.group.generated.roles_description'
-                                                    )}
-                                                </TableHead>
-                                                <TableHead className="w-44">
-                                                    {t(
-                                                        'dialog.group.generated.status'
-                                                    )}
-                                                </TableHead>
-                                                <TableHead className="w-44">
-                                                    {t(
-                                                        'dialog.group.generated.date'
-                                                    )}
-                                                </TableHead>
-                                                <TableHead className="w-48 text-right">
-                                                    {t(
-                                                        'dialog.group.generated.actions'
-                                                    )}
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {visibleRows.length ? (
-                                                visibleRows.map(
-                                                    (row, index) => {
-                                                        const userId =
-                                                            moderationRowUserId(
-                                                                row
-                                                            );
-                                                        const label =
-                                                            moderationRowLabel(
-                                                                row
-                                                            );
-                                                        const date =
-                                                            moderationRowDate(
-                                                                row
-                                                            );
-                                                        const actions =
-                                                            moderationActions(
-                                                                row
-                                                            );
-                                                        return (
-                                                            <TableRow
-                                                                key={`${label}:${date}:${index}`}
-                                                            >
-                                                                <TableCell className="align-top">
-                                                                    {userId ? (
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="ghost"
-                                                                            className="hover:text-primary h-auto max-w-52 justify-start truncate p-0 text-left font-medium"
-                                                                            onClick={() =>
-                                                                                openUserDialog(
-                                                                                    {
-                                                                                        userId,
-                                                                                        title: label,
-                                                                                        seedData:
-                                                                                            row?.user ||
-                                                                                            null
-                                                                                    }
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            {
-                                                                                label
-                                                                            }
-                                                                        </Button>
-                                                                    ) : (
-                                                                        <span className="font-medium">
-                                                                            {
-                                                                                label
-                                                                            }
-                                                                        </span>
-                                                                    )}
-                                                                    <div className="text-muted-foreground truncate font-mono text-xs">
-                                                                        {userId ||
-                                                                            row?.id ||
-                                                                            '—'}
-                                                                    </div>
-                                                                </TableCell>
-                                                                <TableCell className="text-muted-foreground align-top text-xs whitespace-normal">
-                                                                    {moderationRowRoles(
-                                                                        row,
-                                                                        group
-                                                                    ) ||
-                                                                        row?.description ||
-                                                                        row?.note ||
-                                                                        row?.managerNotes ||
-                                                                        moderationRowSubtitle(
-                                                                            row
-                                                                        ) ||
-                                                                        '—'}
-                                                                </TableCell>
-                                                                <TableCell className="align-top text-xs whitespace-normal">
-                                                                    {moderationRowStatus(
-                                                                        row
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell className="text-muted-foreground align-top text-xs">
-                                                                    {date
-                                                                        ? formatDateFilter(
-                                                                              date,
-                                                                              'long'
-                                                                          )
-                                                                        : '—'}
-                                                                </TableCell>
-                                                                <TableCell className="align-top">
-                                                                    <div className="flex justify-end gap-2">
-                                                                        {actions.map(
-                                                                            (
-                                                                                action
-                                                                            ) => {
-                                                                                const nextActionKey = `${activeTab}:${action.key}:${userId}`;
-                                                                                return (
-                                                                                    <Button
-                                                                                        key={
-                                                                                            action.key
-                                                                                        }
-                                                                                        type="button"
-                                                                                        size="sm"
-                                                                                        variant={
-                                                                                            action.destructive
-                                                                                                ? 'outline'
-                                                                                                : 'secondary'
-                                                                                        }
-                                                                                        disabled={Boolean(
-                                                                                            actionKey
-                                                                                        )}
-                                                                                        onClick={() =>
-                                                                                            void runModerationAction(
-                                                                                                action,
-                                                                                                row
-                                                                                            )
-                                                                                        }
-                                                                                    >
-                                                                                        {actionKey ===
-                                                                                        nextActionKey
-                                                                                            ? '...'
-                                                                                            : action.label}
-                                                                                    </Button>
-                                                                                );
-                                                                            }
-                                                                        )}
-                                                                    </div>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        );
-                                                    }
-                                                )
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell
-                                                        colSpan={5}
-                                                        className="text-muted-foreground py-8 text-center text-sm"
-                                                    >
-                                                        {t(
-                                                            'dialog.group.generated.no_rows'
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            ) : null}
-                            {!loading && !error ? (
-                                <div className="mt-3 flex items-center justify-between">
-                                    <span className="text-muted-foreground text-sm">
-                                        {t(
-                                            'dialog.group.generated.page'
-                                        )}{' '}
-                                        {currentPageIndex + 1} / {totalPages}
-                                    </span>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            disabled={currentPageIndex <= 0}
-                                            onClick={() =>
-                                                setPageIndex((value) =>
-                                                    Math.max(0, value - 1)
-                                                )
-                                            }
-                                        >
-                                            {t(
-                                                'table.pagination.previous'
-                                            )}
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            disabled={
-                                                currentPageIndex >=
-                                                totalPages - 1
-                                            }
-                                            onClick={() =>
-                                                setPageIndex((value) =>
-                                                    Math.min(
-                                                        totalPages - 1,
-                                                        value + 1
-                                                    )
-                                                )
-                                            }
-                                        >
-                                            {t('table.pagination.next')}
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : null}
-                        </TabsContent>
+                            actionKey={actionKey}
+                            activeTab={activeTab}
+                            error={error}
+                            group={group}
+                            loading={loading}
+                            onPageIndexChange={setPageIndex}
+                            onPageSizeChange={(nextPageSize) => {
+                                setPageSize(nextPageSize);
+                                setPageIndex(0);
+                            }}
+                            onReload={() =>
+                                setReloadToken((value) => value + 1)
+                            }
+                            onRunAction={runModerationAction}
+                            onSearchChange={(nextSearch) => {
+                                setSearch(nextSearch);
+                                setPageIndex(0);
+                            }}
+                            pageIndex={pageIndex}
+                            pageSize={pageSize}
+                            rows={rows}
+                            search={search}
+                            tab={tab}
+                        />
                     ))}
                 </Tabs>
             </DialogContent>

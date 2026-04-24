@@ -1,18 +1,20 @@
 import {
+    groupIdForRow,
+    normalizeUserGroupMembershipRows,
+    sortUserGroupRows,
+    splitUserGroups
+} from './userDialogGroupRows.js';
+import {
     filterRows,
     firstArray,
     formatCountText,
     formatStatsDate,
-    groupIdForRow,
     hydrateMutualFriendRows,
     normalizePreviousDisplayNames,
-    normalizeUserGroupMembershipRows,
     normalizedText,
     resolveStatusStateText,
     sortAvatarRows,
-    sortMutualFriendRows,
-    sortUserGroupRows,
-    splitUserGroups
+    sortMutualFriendRows
 } from './userDialogRows.js';
 import {
     normalizeLanguageOptionsFromConfig,
@@ -28,7 +30,10 @@ export function buildUserDialogTabs({
 
     return [
         { value: 'info', label: translate('dialog.user.tabs.info') },
-        { value: 'instance-history', label: translate('dialog.user.tabs.instance_history') },
+        {
+            value: 'instance-history',
+            label: translate('dialog.user.tabs.instance_history')
+        },
         ...(!isCurrentUser && !currentUserHasSharedConnectionsOptOut
             ? [{ value: 'mutual', label: translate('dialog.user.tabs.mutual') }]
             : []),
@@ -36,8 +41,14 @@ export function buildUserDialogTabs({
         { value: 'worlds', label: translate('dialog.user.tabs.worlds') },
         ...(!isCurrentUser
             ? [
-                  { value: 'favorite-worlds', label: translate('dialog.user.tabs.favorite_worlds') },
-                  { value: 'avatars', label: translate('dialog.user.tabs.avatars') }
+                  {
+                      value: 'favorite-worlds',
+                      label: translate('dialog.user.tabs.favorite_worlds')
+                  },
+                  {
+                      value: 'avatars',
+                      label: translate('dialog.user.tabs.avatars')
+                  }
               ]
             : []),
         { value: 'activity', label: translate('dialog.user.tabs.activity') },

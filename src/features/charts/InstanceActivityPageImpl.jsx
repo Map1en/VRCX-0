@@ -1,18 +1,11 @@
 import * as echarts from 'echarts';
-import {
-    CalendarDaysIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    RefreshCcwIcon,
-    Settings2Icon
-} from 'lucide-react';
+import { RefreshCcwIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
 import { useTranslation } from 'react-i18next';
+
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import { timeToText } from '@/lib/dateTime.js';
 import {
-    configRepository,
     instanceActivityRepository,
     worldProfileRepository
 } from '@/repositories/index.js';
@@ -24,13 +17,20 @@ import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
 import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Separator } from '@/ui/shadcn/separator';
-import { Slider } from '@/ui/shadcn/slider';
-import { Switch } from '@/ui/shadcn/switch';
 
+import { InstanceActivityDateControls } from './components/InstanceActivityDateControls.jsx';
+import { InstanceActivitySettingsPopover } from './components/InstanceActivitySettingsPopover.jsx';
+import {
+    ChartEmptyState,
+    ChartLoadingState,
+    InstanceActivityDetailChart
+} from './components/InstanceActivityViewParts.jsx';
 import { buildChartOption } from './instance-activity/instanceActivityChart.js';
+import {
+    getTodayKey,
+    toLocalDayKey
+} from './instance-activity/instanceActivityDate.js';
 import {
     buildChartRows,
     buildDetailGroups,
@@ -39,13 +39,7 @@ import {
     getDetailGroupKeys,
     getLocalDayBounds
 } from './instance-activity/instanceActivityRows.js';
-import {
-    ChartEmptyState,
-    ChartLoadingState,
-    InstanceActivityDetailChart
-} from './components/InstanceActivityViewParts.jsx';
-
-const DEFAULT_BAR_WIDTH = 25;
+import { useInstanceActivitySettings } from './instance-activity/useInstanceActivitySettings.js';
 
 function hasWorldName(world) {
     return Boolean(String(world?.name || '').trim());
@@ -81,38 +75,6 @@ async function loadMissingWorldProfiles(worldIds, worldDetailsById, endpoint) {
     return nextWorldDetailsById;
 }
 
-function getTodayKey() {
-    return toLocalDayKey(new Date());
-}
-
-function toLocalDayKey(value) {
-    const date = value instanceof Date ? value : new Date(value);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function parseLocalDayKey(dayKey) {
-    const [year, month, day] = String(dayKey || '')
-        .split('-')
-        .map((value) => Number.parseInt(value, 10) || 0);
-    return new Date(year, Math.max(0, month - 1), day || 1, 0, 0, 0, 0);
-}
-
-function formatDateLabel(dayKey) {
-    try {
-        return new Intl.DateTimeFormat(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            weekday: 'short'
-        }).format(parseLocalDayKey(dayKey));
-    } catch {
-        return dayKey;
-    }
-}
-
 export function InstanceActivityPage() {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -136,11 +98,6 @@ export function InstanceActivityPage() {
     const [dataDetail, setDataDetail] = useState('');
     const [rawRows, setRawRows] = useState([]);
     const [worldDetailsById, setWorldDetailsById] = useState({});
-    const [barWidth, setBarWidth] = useState(DEFAULT_BAR_WIDTH);
-    const [isDetailVisible, setIsDetailVisible] = useState(true);
-    const [isSoloInstanceVisible, setIsSoloInstanceVisible] = useState(true);
-    const [isNoFriendInstanceVisible, setIsNoFriendInstanceVisible] =
-        useState(true);
     const [reloadToken, setReloadToken] = useState(0);
     const [previousInstanceOpen, setPreviousInstanceOpen] = useState(false);
     const [previousInstanceRows, setPreviousInstanceRows] = useState([]);
@@ -154,6 +111,17 @@ export function InstanceActivityPage() {
     const resizeObserverRef = useRef(null);
     const detailGroupRefs = useRef(new Map());
 
+    const {
+        barWidth,
+        isDetailVisible,
+        isSoloInstanceVisible,
+        isNoFriendInstanceVisible,
+        handleBarWidthCommit,
+        setDetailVisible,
+        setSoloInstanceVisible,
+        setNoFriendInstanceVisible
+    } = useInstanceActivitySettings();
+
     const setMainChartElementRef = useCallback((node) => {
         if (chartElementRef.current && chartElementRef.current !== node) {
             resizeObserverRef.current?.disconnect();
@@ -164,55 +132,6 @@ export function InstanceActivityPage() {
         }
         chartElementRef.current = node;
         setMainChartElement(node);
-    }, []);
-
-    useEffect(() => {
-        let active = true;
-
-        Promise.all([
-            configRepository.getInt(
-                'InstanceActivityBarWidth',
-                DEFAULT_BAR_WIDTH
-            ),
-            configRepository.getBool(
-                'VRCX_InstanceActivityDetailVisible',
-                true
-            ),
-            configRepository.getBool(
-                'VRCX_InstanceActivitySoloInstanceVisible',
-                true
-            ),
-            configRepository.getBool(
-                'VRCX_InstanceActivityNoFriendInstanceVisible',
-                true
-            )
-        ])
-            .then(
-                ([
-                    nextBarWidth,
-                    nextDetailVisible,
-                    nextSoloVisible,
-                    nextNoFriendVisible
-                ]) => {
-                    if (!active) {
-                        return;
-                    }
-
-                    setBarWidth(
-                        Number.isFinite(nextBarWidth)
-                            ? Math.min(50, Math.max(1, nextBarWidth))
-                            : DEFAULT_BAR_WIDTH
-                    );
-                    setIsDetailVisible(Boolean(nextDetailVisible));
-                    setIsSoloInstanceVisible(Boolean(nextSoloVisible));
-                    setIsNoFriendInstanceVisible(Boolean(nextNoFriendVisible));
-                }
-            )
-            .catch(() => {});
-
-        return () => {
-            active = false;
-        };
     }, []);
 
     useEffect(() => {
@@ -392,30 +311,6 @@ export function InstanceActivityPage() {
         [chartRows]
     );
 
-    const sortedDatesDesc = useMemo(
-        () =>
-            [...availableDates].sort((left, right) =>
-                right.localeCompare(left)
-            ),
-        [availableDates]
-    );
-
-    const earliestDate = sortedDatesDesc[sortedDatesDesc.length - 1] || null;
-    const latestDate = sortedDatesDesc[0] || null;
-    const selectedDateIndex = sortedDatesDesc.findIndex(
-        (value) => value === selectedDate
-    );
-    const dateOptions = useMemo(() => {
-        const options = [...sortedDatesDesc];
-        if (selectedDate && !options.includes(selectedDate)) {
-            options.unshift(selectedDate);
-        }
-        return options;
-    }, [selectedDate, sortedDatesDesc]);
-
-    const isNextDayDisabled = !latestDate || selectedDate >= latestDate;
-    const isPrevDayDisabled = !earliestDate || selectedDate === earliestDate;
-
     useEffect(() => {
         if (!mainChartElement) {
             return;
@@ -485,45 +380,8 @@ export function InstanceActivityPage() {
         t
     ]);
 
-    function handleDateStep(isNext = false) {
-        if (!sortedDatesDesc.length) {
-            return;
-        }
-
-        if (selectedDateIndex === -1 && !isNext) {
-            const earlierDate = sortedDatesDesc.find(
-                (value) => value < selectedDate
-            );
-            if (earlierDate) {
-                setSelectedDate(earlierDate);
-                return;
-            }
-        }
-
-        if (selectedDateIndex !== -1) {
-            const nextIndex = isNext
-                ? selectedDateIndex - 1
-                : selectedDateIndex + 1;
-            if (nextIndex >= 0 && nextIndex < sortedDatesDesc.length) {
-                setSelectedDate(sortedDatesDesc[nextIndex]);
-                return;
-            }
-        }
-
-        setSelectedDate(isNext ? latestDate : earliestDate);
-    }
-
     function handleRefresh() {
         setReloadToken((value) => value + 1);
-    }
-
-    function handleBarWidthCommit(value) {
-        const nextValue = Math.min(
-            50,
-            Math.max(1, Number.parseInt(value, 10) || DEFAULT_BAR_WIDTH)
-        );
-        setBarWidth(nextValue);
-        void configRepository.setInt('InstanceActivityBarWidth', nextValue);
     }
 
     function openPreviousInstanceInfo(row) {
@@ -553,183 +411,31 @@ export function InstanceActivityPage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label={"Refresh instance activity"}
+                            aria-label={'Refresh instance activity'}
                             onClick={handleRefresh}
                         >
                             <RefreshCcwIcon data-icon="inline-start" />
                         </Button>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={"Instance activity settings"}
-                                >
-                                    <Settings2Icon data-icon="inline-start" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                                side="bottom"
-                                align="end"
-                                className="flex w-72 flex-col gap-3"
-                            >
-                                <div className="flex h-8 items-center justify-between gap-4 text-sm">
-                                    <span className="shrink-0">
-                                        {t(
-                                            'view.charts.instance_activity.settings.bar_width'
-                                        )}
-                                    </span>
-                                    <Slider
-                                        min={1}
-                                        max={50}
-                                        step={1}
-                                        value={[barWidth]}
-                                        onValueChange={([value]) =>
-                                            handleBarWidthCommit(value)
-                                        }
-                                        className="w-40"
-                                    />
-                                </div>
-                                <div className="flex h-8 items-center justify-between gap-4 text-sm">
-                                    <span className="shrink-0">
-                                        {t(
-                                            'view.charts.instance_activity.settings.show_detail'
-                                        )}
-                                    </span>
-                                    <Switch
-                                        checked={isDetailVisible}
-                                        onCheckedChange={(value) => {
-                                            setIsDetailVisible(value);
-                                            void configRepository.setBool(
-                                                'VRCX_InstanceActivityDetailVisible',
-                                                value
-                                            );
-                                        }}
-                                    />
-                                </div>
-                                {isDetailVisible ? (
-                                    <>
-                                        <div className="flex h-8 items-center justify-between gap-4 text-sm">
-                                            <span className="shrink-0">
-                                                {t(
-                                                    'view.charts.instance_activity.settings.show_solo_instance'
-                                                )}
-                                            </span>
-                                            <Switch
-                                                checked={isSoloInstanceVisible}
-                                                onCheckedChange={(value) => {
-                                                    setIsSoloInstanceVisible(
-                                                        value
-                                                    );
-                                                    void configRepository.setBool(
-                                                        'VRCX_InstanceActivitySoloInstanceVisible',
-                                                        value
-                                                    );
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="flex h-8 items-center justify-between gap-4 text-sm">
-                                            <span className="shrink-0">
-                                                {t(
-                                                    'view.charts.instance_activity.settings.show_no_friend_instance'
-                                                )}
-                                            </span>
-                                            <Switch
-                                                checked={
-                                                    isNoFriendInstanceVisible
-                                                }
-                                                onCheckedChange={(value) => {
-                                                    setIsNoFriendInstanceVisible(
-                                                        value
-                                                    );
-                                                    void configRepository.setBool(
-                                                        'VRCX_InstanceActivityNoFriendInstanceVisible',
-                                                        value
-                                                    );
-                                                }}
-                                            />
-                                        </div>
-                                    </>
-                                ) : null}
-                            </PopoverContent>
-                        </Popover>
-                        <div className="mr-2 flex items-center">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={"Previous day"}
-                                disabled={isPrevDayDisabled}
-                                onClick={() => handleDateStep(false)}
-                            >
-                                <ChevronLeftIcon data-icon="inline-start" />
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={"Next day"}
-                                disabled={isNextDayDisabled}
-                                onClick={() => handleDateStep(true)}
-                            >
-                                <ChevronRightIcon data-icon="inline-start" />
-                            </Button>
-                        </div>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-52 justify-start text-left font-normal"
-                                    disabled={dataStatus === 'running'}
-                                >
-                                    <CalendarDaysIcon data-icon="inline-start" />
-                                    {selectedDate}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent align="end" className="w-72 p-3">
-                                <div className="grid gap-3">
-                                    <Input
-                                        type="date"
-                                        value={selectedDate}
-                                        onChange={(event) =>
-                                            setSelectedDate(
-                                                event.target.value ||
-                                                    getTodayKey()
-                                            )
-                                        }
-                                    />
-                                    {dateOptions.length ? (
-                                        <div className="grid max-h-56 gap-1 overflow-y-auto">
-                                            {dateOptions.map((dayKey) => (
-                                                <Button
-                                                    key={dayKey}
-                                                    type="button"
-                                                    variant={
-                                                        dayKey === selectedDate
-                                                            ? 'default'
-                                                            : 'ghost'
-                                                    }
-                                                    size="sm"
-                                                    className="justify-start"
-                                                    onClick={() =>
-                                                        setSelectedDate(dayKey)
-                                                    }
-                                                >
-                                                    {formatDateLabel(dayKey)}
-                                                    {availableDates.includes(
-                                                        dayKey
-                                                    )
-                                                        ? ''
-                                                        : ' (no activity)'}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    ) : null}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
+                        <InstanceActivitySettingsPopover
+                            barWidth={barWidth}
+                            isDetailVisible={isDetailVisible}
+                            isSoloInstanceVisible={isSoloInstanceVisible}
+                            isNoFriendInstanceVisible={
+                                isNoFriendInstanceVisible
+                            }
+                            onBarWidthCommit={handleBarWidthCommit}
+                            onDetailVisibleChange={setDetailVisible}
+                            onSoloInstanceVisibleChange={setSoloInstanceVisible}
+                            onNoFriendInstanceVisibleChange={
+                                setNoFriendInstanceVisible
+                            }
+                        />
+                        <InstanceActivityDateControls
+                            selectedDate={selectedDate}
+                            onSelectedDateChange={setSelectedDate}
+                            availableDates={availableDates}
+                            dataStatus={dataStatus}
+                        />
                     </div>
                 </div>
 
@@ -749,7 +455,9 @@ export function InstanceActivityPage() {
                         <ChartLoadingState />
                     ) : dataStatus === 'error' ? (
                         <ChartEmptyState
-                            title={t('view.charts.generated.instance_activity_failed_to_load')}
+                            title={t(
+                                'view.charts.generated.instance_activity_failed_to_load'
+                            )}
                             description={
                                 dataDetail ||
                                 'The chart adapter could not read game-log instance activity for the selected day.'
@@ -763,7 +471,9 @@ export function InstanceActivityPage() {
                             />
                             {!chartRows.length ? (
                                 <ChartEmptyState
-                                    title={t('view.charts.generated.no_instance_activity_on_this_day')}
+                                    title={t(
+                                        'view.charts.generated.no_instance_activity_on_this_day'
+                                    )}
                                     description={
                                         availableDates.includes(selectedDate)
                                             ? 'The selected day exists in the activity index, but the timeline query returned no current-user instance rows.'
@@ -833,8 +543,12 @@ export function InstanceActivityPage() {
                                 })
                             ) : (
                                 <ChartEmptyState
-                                    title={t('view.charts.generated.no_detail_charts_match_the_current_filters')}
-                                    description={t('view.charts.generated.turn_on_solo_or_no_friend_instances_to_show_the_hidden_detai')}
+                                    title={t(
+                                        'view.charts.generated.no_detail_charts_match_the_current_filters'
+                                    )}
+                                    description={t(
+                                        'view.charts.generated.turn_on_solo_or_no_friend_instances_to_show_the_hidden_detai'
+                                    )}
                                 />
                             )}
                         </div>

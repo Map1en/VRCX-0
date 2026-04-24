@@ -7,16 +7,16 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 
+import { groupIdForRow } from '../userDialogGroupRows.js';
 import {
-    groupIdForRow,
     summarizeEntityRow,
     userRowSubtitle,
     userTravelingTimestamp,
     worldOccupantSubtitle
 } from '../userDialogRows.js';
-import { UserGroupCard } from './UserDialogGroupCard.jsx';
 import { EntityListState } from './UserDialogEntityListState.jsx';
 import { openRow, rowImage } from './userDialogEntityListUtils.js';
+import { UserGroupCard } from './UserDialogGroupCard.jsx';
 
 export function EntityList({
     rows,
@@ -63,8 +63,8 @@ export function EntityList({
                             selected={Boolean(selectedGroupIds?.has(groupId))}
                             busy={Boolean(
                                 groupActionId &&
-                                    (groupActionId === groupId ||
-                                        groupActionId === '__bulk_groups__')
+                                (groupActionId === groupId ||
+                                    groupActionId === '__bulk_groups__')
                             )}
                             onVisibilityChange={onGroupVisibilityChange}
                             onLeave={onGroupLeave}
@@ -150,7 +150,9 @@ export function EntityList({
                                         data-icon="inline-start"
                                         className="mr-1 inline-block"
                                     />
-                                    {timeToText(Date.now() - travelingTimestamp)}
+                                    {timeToText(
+                                        Date.now() - travelingTimestamp
+                                    )}
                                 </span>
                             ) : subtitle ? (
                                 <span className="text-muted-foreground block truncate text-xs">

@@ -1,18 +1,13 @@
 import {
-    FolderPlusIcon,
-    PlusIcon,
-    RotateCcwIcon
-} from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-
-import {
     KeyboardSensor,
     PointerSensor,
     useSensor,
     useSensors
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+
 import {
     DASHBOARD_NAV_KEY_PREFIX,
     DEFAULT_DASHBOARD_ICON
@@ -24,14 +19,15 @@ import {
 import { isToolNavKey } from '@/shared/constants/tools.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { useModalStore } from '@/state/modalStore.js';
-import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
     DialogContent,
-    DialogFooter,
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
+
+import { CustomNavDialogFooter } from './custom-nav-dialog/CustomNavDialogFooter.jsx';
+import { CustomNavDialogLayoutEditor } from './custom-nav-dialog/CustomNavDialogLayoutEditor.jsx';
 import {
     buildHiddenPlacementMap,
     buildVisibleNodes,
@@ -51,7 +47,6 @@ import {
     resolveDragNode,
     sameDragNode
 } from './custom-nav-dialog/customNavLayout.js';
-import { CustomNavDialogLayoutEditor } from './custom-nav-dialog/CustomNavDialogLayoutEditor.jsx';
 
 export function CustomNavDialog({
     open,
@@ -446,7 +441,9 @@ export function CustomNavDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('component.custom_nav.generated_toast.failed_to_create_dashboard')
+                    : t(
+                          'component.custom_nav.generated_toast.failed_to_create_dashboard'
+                      )
             );
         }
     }
@@ -484,7 +481,9 @@ export function CustomNavDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('component.custom_nav.generated_toast.failed_to_update_dashboard')
+                    : t(
+                          'component.custom_nav.generated_toast.failed_to_update_dashboard'
+                      )
             );
         }
     }
@@ -511,7 +510,9 @@ export function CustomNavDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('component.custom_nav.generated_toast.failed_to_delete_dashboard')
+                    : t(
+                          'component.custom_nav.generated_toast.failed_to_delete_dashboard'
+                      )
             );
         }
     }
@@ -565,47 +566,14 @@ export function CustomNavDialog({
                         onShowItem={showItem}
                     />
                 </div>
-                <DialogFooter className="items-center justify-between sm:justify-between">
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => void addFolder()}
-                        >
-                            <FolderPlusIcon data-icon="inline-start" />
-                            {t('nav_menu.custom_nav.new_folder')}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => void addDashboard()}
-                        >
-                            <PlusIcon data-icon="inline-start" />
-                            {t('dashboard.new_dashboard')}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="text-destructive"
-                            onClick={resetLayout}
-                        >
-                            <RotateCcwIcon data-icon="inline-start" />
-                            {t('nav_menu.custom_nav.restore_default')}
-                        </Button>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            {t('nav_menu.custom_nav.cancel')}
-                        </Button>
-                        <Button type="button" onClick={() => void save()}>
-                            {t('common.actions.confirm')}
-                        </Button>
-                    </div>
-                </DialogFooter>
+                <CustomNavDialogFooter
+                    onAddDashboard={addDashboard}
+                    onAddFolder={addFolder}
+                    onCancel={() => onOpenChange(false)}
+                    onReset={resetLayout}
+                    onSave={save}
+                    t={t}
+                />
             </DialogContent>
         </Dialog>
     );

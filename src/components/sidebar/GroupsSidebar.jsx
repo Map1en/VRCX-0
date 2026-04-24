@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
-import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
+import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { openGroupDialog } from '@/services/dialogService.js';

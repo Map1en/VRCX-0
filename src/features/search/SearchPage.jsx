@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { AvatarProviderSettingsDialog } from '@/components/search/AvatarProviderSettingsDialog.jsx';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import {
@@ -14,6 +14,13 @@ import {
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { Tabs } from '@/ui/shadcn/tabs';
 
+import { SearchPageToolbar } from './components/SearchPageToolbar.jsx';
+import {
+    SearchAvatarTabPanel,
+    SearchGroupTabPanel,
+    SearchUserTabPanel,
+    SearchWorldTabPanel
+} from './components/SearchTabPanels.jsx';
 import {
     buildAvatarSearchRequest,
     buildGroupSearchRequest,
@@ -22,13 +29,7 @@ import {
     SEARCH_PAGE_SIZE as PAGE_SIZE
 } from './searchRequests.js';
 import { dedupeById, emptyArray } from './searchResults.js';
-import {
-    SearchAvatarTabPanel,
-    SearchGroupTabPanel,
-    SearchUserTabPanel,
-    SearchWorldTabPanel
-} from './components/SearchTabPanels.jsx';
-import { SearchPageToolbar } from './components/SearchPageToolbar.jsx';
+import { useSearchPagination } from './useSearchPagination.js';
 
 export function SearchPage() {
     const { t } = useTranslation();
@@ -96,7 +97,9 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t('view.search.generated_toast.failed_to_load_world_categories')
+                        : t(
+                              'view.search.generated_toast.failed_to_load_world_categories'
+                          )
                 );
             });
 
@@ -139,7 +142,9 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t('view.search.generated_toast.failed_to_load_avatar_providers')
+                        : t(
+                              'view.search.generated_toast.failed_to_load_avatar_providers'
+                          )
                 );
             });
 
@@ -214,7 +219,9 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t('view.search.generated_toast.failed_to_search_users')
+                        : t(
+                              'view.search.generated_toast.failed_to_search_users'
+                          )
                 );
             }
         } finally {
@@ -248,7 +255,9 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t('view.search.generated_toast.failed_to_search_worlds')
+                        : t(
+                              'view.search.generated_toast.failed_to_search_worlds'
+                          )
                 );
             }
         } finally {
@@ -277,7 +286,9 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t('view.search.generated_toast.failed_to_search_groups')
+                        : t(
+                              'view.search.generated_toast.failed_to_search_groups'
+                          )
                 );
             }
         } finally {
@@ -309,7 +320,9 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t('view.search.generated_toast.failed_to_search_avatars')
+                        : t(
+                              'view.search.generated_toast.failed_to_search_avatars'
+                          )
                 );
             }
         } finally {
@@ -394,7 +407,9 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t('view.search.generated_toast.failed_to_save_avatar_provider')
+                        : t(
+                              'view.search.generated_toast.failed_to_save_avatar_provider'
+                          )
                 );
             });
     }
@@ -408,176 +423,26 @@ export function SearchPage() {
         );
     }
 
-    const pagination = useMemo(() => {
-        if (activeTab === 'user') {
-            return {
-                show: userResults.length > 0 && !isUserLoading,
-                prevDisabled: !userRequest?.params?.offset,
-                nextDisabled:
-                    userResults.length < (userRequest?.params?.n ?? PAGE_SIZE),
-                onPrev() {
-                    if (!userRequest) {
-                        return;
-                    }
-                    const offset = Math.max(
-                        0,
-                        (userRequest.params.offset ?? 0) -
-                            (userRequest.params.n ?? PAGE_SIZE)
-                    );
-                    void runUserSearch({
-                        ...userRequest,
-                        params: {
-                            ...userRequest.params,
-                            offset
-                        }
-                    });
-                },
-                onNext() {
-                    if (!userRequest) {
-                        return;
-                    }
-                    const step = userRequest.params.n ?? PAGE_SIZE;
-                    void runUserSearch({
-                        ...userRequest,
-                        params: {
-                            ...userRequest.params,
-                            offset: (userRequest.params.offset ?? 0) + step
-                        }
-                    });
-                }
-            };
-        }
-
-        if (activeTab === 'world') {
-            return {
-                show: worldResults.length > 0 && !isWorldLoading,
-                prevDisabled: !worldRequest?.params?.offset,
-                nextDisabled:
-                    worldResults.length <
-                    (worldRequest?.params?.n ?? PAGE_SIZE),
-                onPrev() {
-                    if (!worldRequest) {
-                        return;
-                    }
-                    const offset = Math.max(
-                        0,
-                        (worldRequest.params.offset ?? 0) -
-                            (worldRequest.params.n ?? PAGE_SIZE)
-                    );
-                    void runWorldSearch({
-                        ...worldRequest,
-                        params: {
-                            ...worldRequest.params,
-                            offset
-                        }
-                    });
-                },
-                onNext() {
-                    if (!worldRequest) {
-                        return;
-                    }
-                    const step = worldRequest.params.n ?? PAGE_SIZE;
-                    void runWorldSearch({
-                        ...worldRequest,
-                        params: {
-                            ...worldRequest.params,
-                            offset: (worldRequest.params.offset ?? 0) + step
-                        }
-                    });
-                }
-            };
-        }
-
-        if (activeTab === 'group') {
-            return {
-                show: groupResults.length > 0 && !isGroupLoading,
-                prevDisabled: !groupRequest?.params?.offset,
-                nextDisabled:
-                    groupResults.length <
-                    (groupRequest?.params?.n ?? PAGE_SIZE),
-                onPrev() {
-                    if (!groupRequest) {
-                        return;
-                    }
-                    const offset = Math.max(
-                        0,
-                        (groupRequest.params.offset ?? 0) -
-                            (groupRequest.params.n ?? PAGE_SIZE)
-                    );
-                    void runGroupSearch({
-                        ...groupRequest,
-                        params: {
-                            ...groupRequest.params,
-                            offset
-                        }
-                    });
-                },
-                onNext() {
-                    if (!groupRequest) {
-                        return;
-                    }
-                    const step = groupRequest.params.n ?? PAGE_SIZE;
-                    void runGroupSearch({
-                        ...groupRequest,
-                        params: {
-                            ...groupRequest.params,
-                            offset: (groupRequest.params.offset ?? 0) + step
-                        }
-                    });
-                }
-            };
-        }
-
-        if (activeTab === 'avatar') {
-            const offset = avatarRequest?.offset ?? 0;
-            return {
-                show: avatarResults.length > 0 && !isAvatarLoading,
-                prevDisabled: offset <= 0,
-                nextDisabled: offset + PAGE_SIZE >= avatarResults.length,
-                onPrev() {
-                    if (!avatarRequest) {
-                        return;
-                    }
-                    setAvatarRequest({
-                        ...avatarRequest,
-                        offset: Math.max(0, offset - PAGE_SIZE)
-                    });
-                },
-                onNext() {
-                    if (!avatarRequest) {
-                        return;
-                    }
-                    setAvatarRequest({
-                        ...avatarRequest,
-                        offset: offset + PAGE_SIZE
-                    });
-                }
-            };
-        }
-
-        return {
-            show: false,
-            prevDisabled: true,
-            nextDisabled: true,
-            onPrev() {},
-            onNext() {}
-        };
-    }, [
+    const pagination = useSearchPagination({
         activeTab,
         avatarRequest,
-        avatarResults.length,
+        avatarResults,
         groupRequest,
-        groupResults.length,
+        groupResults,
         isAvatarLoading,
         isGroupLoading,
         isUserLoading,
         isWorldLoading,
+        runAvatarSearch,
+        runGroupSearch,
+        runUserSearch,
+        runWorldSearch,
+        setAvatarRequest,
         userRequest,
-        userResults.length,
+        userResults,
         worldRequest,
-        worldResults.length
-    ]);
-
+        worldResults
+    });
     const avatarPageResults = useMemo(() => {
         const offset = avatarRequest?.offset ?? 0;
         return avatarResults.slice(offset, offset + PAGE_SIZE);
@@ -602,9 +467,7 @@ export function SearchPage() {
                     t={t}
                     searchUserByBio={searchUserByBio}
                     onSearchUserByBioChange={setSearchUserByBio}
-                    searchUserSortByLastLoggedIn={
-                        searchUserSortByLastLoggedIn
-                    }
+                    searchUserSortByLastLoggedIn={searchUserSortByLastLoggedIn}
                     onSearchUserSortByLastLoggedInChange={
                         setSearchUserSortByLastLoggedIn
                     }

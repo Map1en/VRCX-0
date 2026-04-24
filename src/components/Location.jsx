@@ -1,18 +1,10 @@
-import {
-    AlertTriangleIcon,
-    CopyIcon,
-    ExternalLinkIcon,
-    FlagIcon,
-    HistoryIcon,
-    LockIcon,
-    MessageSquareIcon,
-    Share2Icon
-} from 'lucide-react';
+import { AlertTriangleIcon, LockIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
+import { LocationContextMenu } from '@/components/location/LocationContextMenu.jsx';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge.jsx';
 import {
     normalizeString,
@@ -34,14 +26,6 @@ import {
 import { useLaunchStore } from '@/state/launchStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { Button } from '@/ui/shadcn/button';
-import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuGroup,
-    ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuTrigger
-} from '@/ui/shadcn/context-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -250,6 +234,10 @@ export function Location({
         toast.success(t('message.world.url_copied'));
     }
 
+    function copyCurrentLocation() {
+        void copyTextToClipboard(currentLocation);
+    }
+
     function launchCurrentInstance() {
         if (!canUseCurrentInstance) {
             return;
@@ -274,7 +262,9 @@ export function Location({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('component.location.generated_toast.failed_to_send_self_invite')
+                    : t(
+                          'component.location.generated_toast.failed_to_send_self_invite'
+                      )
             );
         }
     }
@@ -364,7 +354,9 @@ export function Location({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('component.location.generated_toast.failed_to_load_instance_history')
+                    : t(
+                          'component.location.generated_toast.failed_to_load_instance_history'
+                      )
             );
         } finally {
             setPreviousInstancesLoading(false);
@@ -498,105 +490,27 @@ export function Location({
     }
 
     return (
-        <>
-            <ContextMenu>
-                <ContextMenuTrigger asChild>
-                    <span className="inline-flex max-w-full min-w-0">
-                        {content}
-                    </span>
-                </ContextMenuTrigger>
-                <ContextMenuContent className="w-56">
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            disabled={!canOpenWorld}
-                            onSelect={openWorld}
-                        >
-                            <ExternalLinkIcon />
-                            {t('common.actions.view_details')}
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                            disabled={!shareUrl}
-                            onSelect={copyShareLink}
-                        >
-                            <Share2Icon />
-                            {t('dialog.world.actions.share')}
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                            disabled={!currentLocation}
-                            onSelect={() =>
-                                void copyTextToClipboard(currentLocation)
-                            }
-                        >
-                            <CopyIcon />
-                            {t('common.generated.generated.copy_location')}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                    <ContextMenuSeparator />
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            disabled={!parsedLocation.worldId}
-                            onSelect={() => newInstance(false)}
-                        >
-                            <FlagIcon />
-                            {t('dialog.world.actions.new_instance')}
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                            disabled={!parsedLocation.worldId}
-                            onSelect={() => newInstance(true)}
-                        >
-                            <MessageSquareIcon />
-                            {t(
-                                'dialog.world.actions.new_instance_and_self_invite'
-                            )}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                    <ContextMenuSeparator />
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            disabled={
-                                previousInstancesDisabled ||
-                                previousInstancesLoading ||
-                                (!parsedLocation.worldId &&
-                                    !isOpenPreviousInstanceInfoDialog)
-                            }
-                            onSelect={() => {
-                                if (isOpenPreviousInstanceInfoDialog) {
-                                    showExactPreviousInstanceInfo();
-                                    return;
-                                }
-                                void showPreviousInstances();
-                            }}
-                        >
-                            <HistoryIcon />
-                            {t('dialog.world.actions.show_previous_instances')}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                    {showLaunchActions ? (
-                        <>
-                            <ContextMenuSeparator />
-                            <ContextMenuGroup>
-                                <ContextMenuItem
-                                    disabled={!canUseCurrentInstance}
-                                    onSelect={launchCurrentInstance}
-                                >
-                                    <ExternalLinkIcon />
-                                    {t('common.generated.generated.launch_in_vrchat')}
-                                </ContextMenuItem>
-                                <ContextMenuItem
-                                    disabled={!canUseCurrentInstance}
-                                    onSelect={() =>
-                                        void selfInviteCurrentInstance()
-                                    }
-                                >
-                                    <MessageSquareIcon />
-                                    {t('common.generated.generated.self_invite')}
-                                </ContextMenuItem>
-                            </ContextMenuGroup>
-                        </>
-                    ) : null}
-                </ContextMenuContent>
-            </ContextMenu>
-            {previousInstancesDialog}
-        </>
+        <LocationContextMenu
+            canOpenWorld={canOpenWorld}
+            canUseCurrentInstance={canUseCurrentInstance}
+            currentLocation={currentLocation}
+            isOpenPreviousInstanceInfoDialog={isOpenPreviousInstanceInfoDialog}
+            onCopyCurrentLocation={copyCurrentLocation}
+            onCopyShareLink={copyShareLink}
+            onLaunchCurrentInstance={launchCurrentInstance}
+            onNewInstance={newInstance}
+            onOpenWorld={openWorld}
+            onSelfInviteCurrentInstance={selfInviteCurrentInstance}
+            onShowExactPreviousInstanceInfo={showExactPreviousInstanceInfo}
+            onShowPreviousInstances={showPreviousInstances}
+            previousInstancesDialog={previousInstancesDialog}
+            previousInstancesDisabled={previousInstancesDisabled}
+            previousInstancesLoading={previousInstancesLoading}
+            shareUrl={shareUrl}
+            showLaunchActions={showLaunchActions}
+            worldId={parsedLocation.worldId}
+        >
+            {content}
+        </LocationContextMenu>
     );
 }

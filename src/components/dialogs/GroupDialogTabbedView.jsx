@@ -1,38 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
     openExternalLink
 } from '@/lib/entityMedia.js';
-import {
-    groupProfileRepository,
-    vrchatAuthRepository
-} from '@/repositories/index.js';
+import { groupProfileRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 import { EntityDialogScaffold } from './EntityDialogScaffold.jsx';
+import {
+    filterGroupMembers,
+    filterGroupPosts,
+    getGroupDialogTabs
+} from './group-dialog/groupDialogFilters.js';
 import { GroupDialogHeaderSection } from './group-dialog/GroupDialogHeaderSection.jsx';
 import { GroupDialogTabPanels } from './group-dialog/GroupDialogTabPanels.jsx';
-import { GroupModerationToolsDialog } from './group-dialog/GroupModerationToolsDialog.jsx';
-import { GroupPostEditorDialog } from './group-dialog/GroupPostEditorDialog.jsx';
 import {
     downloadJsonFile,
     firstArray,
     hasGroupModerationPermission,
     hasGroupPermission
 } from './group-dialog/groupDialogUtils.js';
-import {
-    normalizeLanguageOptionsFromConfig
-} from './user-dialog/userProfileFields.js';
-import {
-    normalizeGroupLanguages,
-    shouldShowGroupBadgeValue
-} from './group-dialog/GroupDialogViewParts.jsx';
+import { shouldShowGroupBadgeValue } from './group-dialog/GroupDialogViewParts.jsx';
+import { GroupModerationToolsDialog } from './group-dialog/GroupModerationToolsDialog.jsx';
+import { GroupPostEditorDialog } from './group-dialog/GroupPostEditorDialog.jsx';
+import { useGroupDialogLanguageRows } from './group-dialog/useGroupDialogLanguageRows.js';
+import { useGroupDialogPosts } from './group-dialog/useGroupDialogPosts.js';
 let lastGroupDialogTab = 'info';
 
 function resolveGroupDialogTab(tabs, preferred, fallback = 'info') {
@@ -87,9 +85,6 @@ export function GroupDialogTabbedView({
     const [memberSort, setMemberSort] = useState('joinedAt:desc');
     const [memberRoleId, setMemberRoleId] = useState('');
     const [moderationOpen, setModerationOpen] = useState(false);
-    const [postEditor, setPostEditor] = useState(null);
-    const [postEditorSubmitting, setPostEditorSubmitting] = useState(false);
-    const [vrchatConfigConstants, setVrchatConfigConstants] = useState(null);
     const gallerySignature = Array.isArray(group.galleries)
         ? group.galleries
               .map((gallery) => gallery?.id || '')
@@ -101,14 +96,7 @@ export function GroupDialogTabbedView({
         groupId: group.id,
         gallerySignature
     });
-    const tabs = [
-        { value: 'info', label: t('dialog.group.moderation_tabs.info') },
-        { value: 'instance-history', label: t('dialog.group.moderation_tabs.instance_history') },
-        { value: 'posts', label: t('dialog.group.moderation_tabs.posts') },
-        { value: 'members', label: t('dialog.group.moderation_tabs.members') },
-        { value: 'photos', label: t('dialog.group.moderation_tabs.photos') },
-        { value: 'json', label: t('dialog.group.moderation_tabs.json') }
-    ];
+    const tabs = getGroupDialogTabs(t);
     const posts =
         remoteStatus.posts === 'ready'
             ? remoteData.posts
@@ -125,13 +113,10 @@ export function GroupDialogTabbedView({
             ? remoteData.photos
             : firstArray(group.gallery, group.photos);
     const isPrivateGroup = group.privacy === 'private';
-    const languageOptions = normalizeLanguageOptionsFromConfig({
-        constants: vrchatConfigConstants
+    const languageRows = useGroupDialogLanguageRows({
+        currentEndpoint,
+        group
     });
-    const languageOptionsMap = new Map(
-        languageOptions.map((option) => [option.key, option])
-    );
-    const languageRows = normalizeGroupLanguages(group, languageOptionsMap);
     const canSetVisibility = group.privacy === 'default';
     const isGroupOwner = group.ownerId === currentUserId;
     const canManagePosts =
@@ -139,33 +124,8 @@ export function GroupDialogTabbedView({
     const canInviteToGroup =
         isGroupOwner || hasGroupPermission(group, 'group-invites-manage');
     const canModerateGroup = hasGroupModerationPermission(group);
-    const filteredPosts = posts.filter((post) => {
-        const query = search.posts.trim().toLowerCase();
-        if (!query) {
-            return true;
-        }
-        return [post?.title, post?.text, post?.authorId].some((value) =>
-            String(value || '')
-                .toLowerCase()
-                .includes(query)
-        );
-    });
-    const filteredMembers = members.filter((member) => {
-        const query = search.members.trim().toLowerCase();
-        if (!query) {
-            return true;
-        }
-        return [
-            member?.user?.displayName,
-            member?.displayName,
-            member?.userId,
-            member?.user?.id
-        ].some((value) =>
-            String(value || '')
-                .toLowerCase()
-                .includes(query)
-        );
-    });
+    const filteredPosts = filterGroupPosts(posts, search.posts);
+    const filteredMembers = filterGroupMembers(members, search.members);
 
     useEffect(() => {
         loadContextRef.current = {
@@ -185,25 +145,6 @@ export function GroupDialogTabbedView({
         lastGroupDialogTab = nextTab;
         setActiveTab(nextTab);
     }, [currentEndpoint, group.id]);
-
-    useEffect(() => {
-        let active = true;
-        vrchatAuthRepository
-            .getConfig({ endpoint: currentEndpoint })
-            .then((response) => {
-                if (active) {
-                    setVrchatConfigConstants(response?.json?.constants || null);
-                }
-            })
-            .catch(() => {
-                if (active) {
-                    setVrchatConfigConstants(null);
-                }
-            });
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint]);
 
     useEffect(() => {
         loadContextRef.current = {
@@ -420,7 +361,9 @@ export function GroupDialogTabbedView({
 
     async function copyGroupText(text, label) {
         await copyTextToClipboard(text);
-        toast.success(t('dialog.group.generated_dynamic.value_copied', { value: label }));
+        toast.success(
+            t('dialog.group.generated_dynamic.value_copied', { value: label })
+        );
     }
 
     function openGroupOwner() {
@@ -439,89 +382,12 @@ export function GroupDialogTabbedView({
         });
     }
 
-    function createGroupPost() {
-        setPostEditor({
-            mode: 'create',
-            post: null,
-            title: '',
-            text: '',
-            sendNotification: true,
-            visibility: 'group',
-            roleIds: [],
-            imageId: ''
-        });
-    }
-
-    async function submitGroupPost(form) {
-        if (!form || postEditorSubmitting) {
-            return;
-        }
-        const title = String(form.title || '').trim();
-        const text = String(form.text || '').trim();
-        if (!title || !text) {
-            toast.warning(t('dialog.group.generated.title_and_text_are_required'));
-            return;
-        }
-
-        setPostEditorSubmitting(true);
-        try {
-            const roleIds =
-                form.visibility === 'group' && Array.isArray(form.roleIds)
-                    ? form.roleIds
-                    : [];
-            if (form.mode === 'edit') {
-                await groupProfileRepository.editGroupPost({
-                    groupId: group.id,
-                    postId: form.post?.id,
-                    endpoint: currentEndpoint,
-                    params: {
-                        title,
-                        text,
-                        visibility: form.visibility || 'group',
-                        roleIds,
-                        sendNotification: Boolean(form.sendNotification),
-                        imageId: form.imageId || null
-                    }
-                });
-            } else {
-                await groupProfileRepository.createGroupPost({
-                    groupId: group.id,
-                    endpoint: currentEndpoint,
-                    params: {
-                        title,
-                        text,
-                        sendNotification: Boolean(form.sendNotification),
-                        visibility: form.visibility || 'group',
-                        roleIds,
-                        imageId: form.imageId || null
-                    }
-                });
-            }
-            setRemoteStatus((current) => ({ ...current, posts: '' }));
-            await loadTab('posts', { force: true });
-            lastGroupDialogTab = 'posts';
-            setActiveTab('posts');
-            setPostEditor(null);
-            toast.success(
-                form.mode === 'edit'
-                    ? t('dialog.group.generated_toast.group_post_updated')
-                    : t('dialog.group.generated_toast.group_post_created')
-            );
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.group.generated_toast.failed_to_save_group_post')
-            );
-        } finally {
-            setPostEditorSubmitting(false);
-        }
-    }
-
     async function inviteUserToGroup() {
         const result = await prompt({
             title: t('dialog.group.generated_modal.invite_to_group'),
-            description: t('dialog.group.generated_modal.enter_the_vrchat_user_id_to_invite'),
+            description: t(
+                'dialog.group.generated_modal.enter_the_vrchat_user_id_to_invite'
+            ),
             inputValue: '',
             confirmText: t('dialog.group.generated_modal.invite'),
             cancelText: t('common.actions.cancel')
@@ -540,51 +406,9 @@ export function GroupDialogTabbedView({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('dialog.group.generated_toast.failed_to_send_group_invite')
-            );
-        }
-    }
-
-    function editGroupPost(post) {
-        setPostEditor({
-            mode: 'edit',
-            post,
-            title: post?.title || '',
-            text: post?.text || '',
-            sendNotification: Boolean(post?.sendNotification),
-            visibility: post?.visibility || 'group',
-            roleIds: Array.isArray(post?.roleIds) ? post.roleIds : [],
-            imageId: post?.imageId || ''
-        });
-    }
-
-    async function deleteGroupPost(post) {
-        const result = await confirm({
-            title: t('dialog.group.generated_modal.delete_group_post'),
-            description: post?.title || group.name || 'Group',
-            confirmText: t('common.actions.delete'),
-            cancelText: t('common.actions.cancel'),
-            destructive: true
-        });
-        if (!result.ok) {
-            return;
-        }
-        try {
-            await groupProfileRepository.deleteGroupPost({
-                groupId: group.id,
-                postId: post.id,
-                endpoint: currentEndpoint
-            });
-            setRemoteData((current) => ({
-                ...current,
-                posts: current.posts.filter((row) => row.id !== post.id)
-            }));
-            toast.success(t('dialog.group.generated.group_post_deleted'));
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.group.generated_toast.failed_to_delete_group_post')
+                    : t(
+                          'dialog.group.generated_toast.failed_to_send_group_invite'
+                      )
             );
         }
     }
@@ -624,6 +448,27 @@ export function GroupDialogTabbedView({
         }
         openUserDialog({ userId, title, seedData });
     }
+    const {
+        createGroupPost,
+        deleteGroupPost,
+        editGroupPost,
+        postEditor,
+        postEditorSubmitting,
+        setPostEditor,
+        submitGroupPost
+    } = useGroupDialogPosts({
+        confirm,
+        currentEndpoint,
+        group,
+        loadTab,
+        onPostsSaved: () => {
+            lastGroupDialogTab = 'posts';
+            setActiveTab('posts');
+        },
+        setRemoteData,
+        setRemoteStatus,
+        t
+    });
 
     const headerState = {
         actionStatus,
@@ -665,8 +510,7 @@ export function GroupDialogTabbedView({
         onPreviewIcon: () => previewImage(iconUrl, groupTitle),
         onRefresh,
         onRepresentToggle: () => onRepresent(!isRepresenting),
-        onSubscribeToggle: () =>
-            onSubscribe(!isSubscribedToAnnouncements),
+        onSubscribeToggle: () => onSubscribe(!isSubscribedToAnnouncements),
         onInviteUserToGroup: inviteUserToGroup,
         onVisibilityChange: onVisibility
     };

@@ -1,166 +1,82 @@
-export function SettingsPageView({
-    PageHeader,
-    PageTitle,
-    t,
-    Tabs,
-    activeSettingsTab,
-    setActiveSettingsTab,
-    TabsList,
-    settingsTabs,
-    TabsTrigger,
-    loading,
-    Spinner,
-    SettingsSystemTab,
-    formatReleaseDisplayVersion,
-    prefs,
-    openExternalLink,
-    savePreferenceValue,
-    setStartAtWindowsStartupPreference,
-    setStartAsMinimizedPreference,
-    setCloseToTrayPreference,
-    promptProxySettings,
-    setOpenSourceNoticeOpen,
-    SettingsInterfaceTab,
-    locale,
-    zoomInput,
-    zoomLevel,
-    commit,
-    setAppLanguagePreference,
-    openCustomFontDialog,
-    saveFontFamilyPreference,
-    selectCjkFontPack,
-    setZoomInput,
-    setZoomLevelPreference,
-    saveBoolPreference,
-    setDataTableStripedPreference,
-    setPointerOnHoverPreference,
-    setAccessibleStatusIndicatorsPreference,
-    setShowNewDashboardButtonPreference,
-    openTablePageSizesDialog,
-    openTableLimitsDialog,
-    setIntConfigPreference,
-    resetTrustColors,
-    saveTrustColor,
-    setPrefs,
-    SettingsMediaTab,
-    setScreenshotHelperPreference,
-    setScreenshotHelperModifyFilenamePreference,
-    setScreenshotHelperCopyToClipboardPreference,
-    deleteAllScreenshotMetadata,
-    backend,
-    openUgcFolderSelector,
-    resetUgcFolder,
-    setSaveInstancePrintsPreference,
-    handleCropInstancePrintsChange,
-    setSaveInstanceStickersPreference,
-    setSaveInstanceEmojiPreference,
-    SettingsIntegrationsTab,
-    discordPrefs,
-    integrationPrefs,
-    avatarProviderConfig,
-    setSystemHostOpen,
-    saveDiscordBoolPreference,
-    setTranslationApiEnabledPreference,
-    setIntegrationValue,
-    openTranslationApiDialog,
-    setYoutubeApiEnabledPreference,
-    openYoutubeApiDialog,
-    saveAvatarProviderConfig,
-    avatarProviderConfigRef,
-    applyAvatarProviderConfig,
-    setAvatarProviderDialogOpen,
-    SettingsSocialTab,
-    selectedFavoriteFriendGroupLabel,
-    favoriteFriendGroupOptions,
-    remoteFavoriteFriendGroupOptions,
-    localFavoriteFriendGroupOptions,
-    localFavoriteFriendsGroups,
-    setRecentActionCooldownEnabledPreference,
-    setRecentActionCooldownMinutesPreference,
-    toggleLocalFavoriteFriendsGroup,
-    SettingsNotificationsTab,
-    notificationLayoutOptions,
-    desktopToastOptions,
-    notificationTtsOptions,
-    ttsVoices,
-    notificationTtsTestVisible,
-    notificationTtsTest,
-    setNotificationLayoutPreference,
-    setFeedFilterDialogOpen,
-    saveStringPreference,
-    saveNotificationTtsMode,
-    saveNotificationTtsVoice,
-    setNotificationTtsTestVisible,
-    setNotificationTtsTest,
-    speakNotificationTts,
-    SettingsAdvancedTab,
-    cacheStats,
-    avatarAutoCleanupOptions,
-    sqliteTableSizes,
-    sqliteTableSizeRows,
-    onlineVisitCount,
-    configTreeData,
-    promptAutoLoginDelaySeconds,
-    saveAppLauncherField,
-    clearVrcxCache,
-    promptAutoClearVrcxCacheFrequency,
-    refreshCacheSize,
-    handleGameLogDisabledChange,
-    setPurgeDialogOpen,
-    refreshSqliteTableSizes,
-    refreshOnlineVisits,
-    refreshConfigTreeData,
-    setConfigTreeData,
-    SettingsDialogs,
-    customFontDialogOpen,
-    setCustomFontDialogOpen,
-    customFontDraft,
-    setCustomFontDraft,
-    saveCustomFontFamily,
-    youtubeApiDialogOpen,
-    setYoutubeApiDialogOpen,
-    youtubeApiKeyDraft,
-    setYoutubeApiKeyDraft,
-    integrationStatus,
-    saveYoutubeApiKey,
-    translationApiDialogOpen,
-    setTranslationApiDialogOpen,
-    translationDraft,
-    setTranslationDraftValue,
-    translationProviderOptions,
-    availableTranslationModels,
-    fetchTranslationModels,
-    testTranslationApiConfig,
-    saveTranslationApiConfig,
-    tablePageSizesDialogOpen,
-    setTablePageSizesDialogOpen,
-    tableLimitsDialogOpen,
-    setTableLimitsDialogOpen,
-    tableLimitsDraft,
-    setTableLimitsDraft,
-    tableMaxSizeError,
-    searchLimitError,
-    tableLimitsSaveDisabled,
-    saveTableLimitsDialog,
-    avatarProviderDialogOpen,
-    updateAvatarProvider,
-    saveAvatarProviderField,
-    removeAvatarProvider,
-    addAvatarProvider,
-    purgeDialogOpen,
-    purgePeriod,
-    setPurgePeriod,
-    purgeInProgress,
-    purgeAvatarFeedData,
-    feedFilterDialogOpen,
-    feedFilterMode,
-    setFeedFilterMode,
-    currentSharedFeedFilterOptions,
-    sharedFeedFilters,
-    updateSharedFeedFilter,
-    resetSharedFeedFilters,
-    openSourceNoticeOpen
-}) {
+import { useSettingsPage } from '../SettingsPageContext.jsx';
+import { SettingsAdvancedSection } from './SettingsAdvancedSection.jsx';
+import { SettingsDialogsSection } from './SettingsDialogsSection.jsx';
+import { SettingsNotificationsSection } from './SettingsNotificationsSection.jsx';
+import { SettingsSystemSection } from './SettingsSystemSection.jsx';
+
+export function SettingsPageView() {
+    const {
+        PageHeader,
+        PageTitle,
+        t,
+        Tabs,
+        activeSettingsTab,
+        setActiveSettingsTab,
+        TabsList,
+        settingsTabs,
+        TabsTrigger,
+        loading,
+        Spinner,
+        SettingsInterfaceTab,
+        locale,
+        zoomInput,
+        zoomLevel,
+        commit,
+        setAppLanguagePreference,
+        openCustomFontDialog,
+        saveFontFamilyPreference,
+        selectCjkFontPack,
+        setZoomInput,
+        setZoomLevelPreference,
+        saveBoolPreference,
+        setDataTableStripedPreference,
+        setPointerOnHoverPreference,
+        setAccessibleStatusIndicatorsPreference,
+        setShowNewDashboardButtonPreference,
+        openTablePageSizesDialog,
+        openTableLimitsDialog,
+        setIntConfigPreference,
+        resetTrustColors,
+        saveTrustColor,
+        setPrefs,
+        SettingsMediaTab,
+        setScreenshotHelperPreference,
+        setScreenshotHelperModifyFilenamePreference,
+        setScreenshotHelperCopyToClipboardPreference,
+        deleteAllScreenshotMetadata,
+        backend,
+        openUgcFolderSelector,
+        resetUgcFolder,
+        setSaveInstancePrintsPreference,
+        handleCropInstancePrintsChange,
+        setSaveInstanceStickersPreference,
+        setSaveInstanceEmojiPreference,
+        SettingsIntegrationsTab,
+        discordPrefs,
+        integrationPrefs,
+        avatarProviderConfig,
+        setSystemHostOpen,
+        saveDiscordBoolPreference,
+        setTranslationApiEnabledPreference,
+        setIntegrationValue,
+        openTranslationApiDialog,
+        setYoutubeApiEnabledPreference,
+        openYoutubeApiDialog,
+        saveAvatarProviderConfig,
+        avatarProviderConfigRef,
+        applyAvatarProviderConfig,
+        setAvatarProviderDialogOpen,
+        SettingsSocialTab,
+        selectedFavoriteFriendGroupLabel,
+        favoriteFriendGroupOptions,
+        remoteFavoriteFriendGroupOptions,
+        localFavoriteFriendGroupOptions,
+        localFavoriteFriendsGroups,
+        setRecentActionCooldownEnabledPreference,
+        setRecentActionCooldownMinutesPreference,
+        toggleLocalFavoriteFriendsGroup
+    } = useSettingsPage();
+
     return (
         <div className="x-container flex flex-1 flex-col overflow-hidden p-4">
             <PageHeader>
@@ -186,46 +102,7 @@ export function SettingsPageView({
                         {t('view.settings.generated.loading_settings_snapshot')}
                     </div>
                 ) : null}
-                <SettingsSystemTab
-                    t={t}
-                    versionText={
-                        formatReleaseDisplayVersion(VERSION || '') || '-'
-                    }
-                    isStartAtWindowsStartup={prefs.isStartAtWindowsStartup}
-                    isStartAsMinimizedState={prefs.isStartAsMinimizedState}
-                    isCloseToTray={prefs.isCloseToTray}
-                    onOpenRepository={() =>
-                        void openExternalLink(
-                            'https://github.com/Map1en/VRCX-0'
-                        )
-                    }
-                    onOpenSupport={() =>
-                        void openExternalLink(
-                            'https://github.com/Map1en/VRCX-0/issues'
-                        )
-                    }
-                    onStartAtWindowsStartupChange={(checked) =>
-                        void savePreferenceValue(
-                            'isStartAtWindowsStartup',
-                            checked,
-                            () => setStartAtWindowsStartupPreference(checked)
-                        )
-                    }
-                    onStartAsMinimizedChange={(checked) =>
-                        void savePreferenceValue(
-                            'isStartAsMinimizedState',
-                            checked,
-                            () => setStartAsMinimizedPreference(checked)
-                        )
-                    }
-                    onCloseToTrayChange={(checked) =>
-                        void savePreferenceValue('isCloseToTray', checked, () =>
-                            setCloseToTrayPreference(checked)
-                        )
-                    }
-                    onProxySettings={() => void promptProxySettings()}
-                    onOpenSourceNotice={() => setOpenSourceNoticeOpen(true)}
-                />
+                <SettingsSystemSection />
                 <SettingsInterfaceTab
                     t={t}
                     locale={locale}
@@ -670,292 +547,10 @@ export function SettingsPageView({
                         void toggleLocalFavoriteFriendsGroup(groupId, checked)
                     }
                 />
-                <SettingsNotificationsTab
-                    t={t}
-                    prefs={prefs}
-                    notificationLayoutOptions={notificationLayoutOptions}
-                    desktopToastOptions={desktopToastOptions}
-                    notificationTtsOptions={notificationTtsOptions}
-                    ttsVoices={ttsVoices}
-                    notificationTtsTestVisible={notificationTtsTestVisible}
-                    notificationTtsTest={notificationTtsTest}
-                    onNotificationLayoutChange={(value) =>
-                        void commit(
-                            async () => {
-                                const nextLayout =
-                                    await setNotificationLayoutPreference(
-                                        value
-                                    );
-                                setPrefs((current) => ({
-                                    ...current,
-                                    notificationLayout: nextLayout
-                                }));
-                            },
-                            () => {
-                                const previous = prefs.notificationLayout;
-                                setPrefs((current) => ({
-                                    ...current,
-                                    notificationLayout: value
-                                }));
-                                return () =>
-                                    setPrefs((current) => ({
-                                        ...current,
-                                        notificationLayout: previous
-                                    }));
-                            }
-                        )
-                    }
-                    onOpenFeedFilterDialog={() => setFeedFilterDialogOpen(true)}
-                    onTestDesktopNotification={() =>
-                        void backend.app.DesktopNotification(
-                            'VRCX-0',
-                            t(
-                                'view.settings.notifications.notifications.test_message'
-                            )
-                        )
-                    }
-                    onDesktopToastChange={(value) =>
-                        void saveStringPreference(
-                            'desktopToast',
-                            'desktopToast',
-                            value
-                        )
-                    }
-                    onAfkDesktopToastChange={(checked) =>
-                        void saveBoolPreference(
-                            'afkDesktopToast',
-                            'afkDesktopToast',
-                            checked
-                        )
-                    }
-                    onNotificationTtsModeChange={(value) =>
-                        void saveNotificationTtsMode(value)
-                    }
-                    onNotificationTtsVoiceChange={(value) =>
-                        void saveNotificationTtsVoice(value)
-                    }
-                    onNotificationTtsNicknameChange={(checked) =>
-                        void saveBoolPreference(
-                            'notificationTTSNickName',
-                            'notificationTTSNickName',
-                            checked
-                        )
-                    }
-                    onNotificationTtsTestVisibleChange={
-                        setNotificationTtsTestVisible
-                    }
-                    onNotificationTtsTestChange={setNotificationTtsTest}
-                    onSpeakNotificationTts={(message) =>
-                        speakNotificationTts(message)
-                    }
-                />
-                <SettingsAdvancedTab
-                    t={t}
-                    prefs={prefs}
-                    cacheStats={cacheStats}
-                    avatarAutoCleanupOptions={avatarAutoCleanupOptions}
-                    sqliteTableSizes={sqliteTableSizes}
-                    sqliteTableSizeRows={sqliteTableSizeRows}
-                    onlineVisitCount={onlineVisitCount}
-                    configTreeData={configTreeData}
-                    gameLogDisabledLabel={t(
-                        'view.settings.generated_dynamic.value_value',
-                        {
-                            value: t(
-                                'view.settings.advanced.advanced.cache_debug.disable_gamelog'
-                            ),
-                            value2: t(
-                                'view.settings.advanced.advanced.cache_debug.disable_gamelog_notice'
-                            )
-                        }
-                    )}
-                    onRelaunchVRChatAfterCrashChange={(checked) =>
-                        void saveBoolPreference(
-                            'relaunchVRChatAfterCrash',
-                            'VRCX_relaunchVRChatAfterCrash',
-                            checked
-                        )
-                    }
-                    onVrcQuitFixChange={(checked) =>
-                        void saveBoolPreference(
-                            'vrcQuitFix',
-                            'vrcQuitFix',
-                            checked
-                        )
-                    }
-                    onAutoSweepVRChatCacheChange={(checked) =>
-                        void saveBoolPreference(
-                            'autoSweepVRChatCache',
-                            'VRCX_autoSweepVRChatCache',
-                            checked
-                        )
-                    }
-                    onUdonExceptionLoggingChange={(checked) =>
-                        void saveBoolPreference(
-                            'udonExceptionLogging',
-                            'VRCX_udonExceptionLogging',
-                            checked
-                        )
-                    }
-                    onLogResourceLoadChange={(checked) =>
-                        void saveBoolPreference(
-                            'logResourceLoad',
-                            'logResourceLoad',
-                            checked
-                        )
-                    }
-                    onLogEmptyAvatarsChange={(checked) =>
-                        void saveBoolPreference(
-                            'logEmptyAvatars',
-                            'logEmptyAvatars',
-                            checked
-                        )
-                    }
-                    onAutoLoginDelayEnabledChange={(checked) =>
-                        void saveBoolPreference(
-                            'autoLoginDelayEnabled',
-                            'VRCX_autoLoginDelayEnabled',
-                            checked
-                        )
-                    }
-                    onPromptAutoLoginDelaySeconds={() =>
-                        void promptAutoLoginDelaySeconds()
-                    }
-                    onOpenShortcutFolder={() =>
-                        void backend.app.OpenShortcutFolder()
-                    }
-                    onEnableAppLauncherChange={(checked) =>
-                        void saveAppLauncherField('enableAppLauncher', checked)
-                    }
-                    onEnableAppLauncherAutoCloseChange={(checked) =>
-                        void saveAppLauncherField(
-                            'enableAppLauncherAutoClose',
-                            checked
-                        )
-                    }
-                    onEnableAppLauncherRunProcessOnceChange={(checked) =>
-                        void saveAppLauncherField(
-                            'enableAppLauncherRunProcessOnce',
-                            checked
-                        )
-                    }
-                    onShowConfirmationOnSwitchAvatarChange={(checked) =>
-                        void saveBoolPreference(
-                            'showConfirmationOnSwitchAvatar',
-                            'showConfirmationOnSwitchAvatar',
-                            checked
-                        )
-                    }
-                    onClearVrcxCache={() => void clearVrcxCache()}
-                    onPromptAutoClearVrcxCacheFrequency={() =>
-                        void promptAutoClearVrcxCacheFrequency()
-                    }
-                    onRefreshCacheSize={() => void refreshCacheSize()}
-                    onGameLogDisabledChange={(checked) =>
-                        void handleGameLogDisabledChange(checked)
-                    }
-                    onAvatarAutoCleanupChange={(value) =>
-                        void saveStringPreference(
-                            'avatarAutoCleanup',
-                            'avatarAutoCleanup',
-                            value
-                        )
-                    }
-                    onOpenPurgeDialog={() => setPurgeDialogOpen(true)}
-                    onOpenLaunchOptions={() =>
-                        setSystemHostOpen('launchOptionsOpen', true)
-                    }
-                    onOpenRegistryBackup={() =>
-                        setSystemHostOpen('registryBackupOpen', true)
-                    }
-                    onRefreshSqliteTableSizes={() =>
-                        void refreshSqliteTableSizes()
-                    }
-                    onRefreshOnlineVisits={() => void refreshOnlineVisits()}
-                    onRefreshConfigTreeData={() => void refreshConfigTreeData()}
-                    onClearConfigTreeData={() => setConfigTreeData({})}
-                />
+                <SettingsNotificationsSection />
+                <SettingsAdvancedSection />
             </Tabs>
-            <SettingsDialogs
-                t={t}
-                customFont={{
-                    open: customFontDialogOpen,
-                    setOpen: setCustomFontDialogOpen,
-                    draft: customFontDraft,
-                    setDraft: setCustomFontDraft,
-                    onSave: saveCustomFontFamily
-                }}
-                youtubeApi={{
-                    open: youtubeApiDialogOpen,
-                    setOpen: setYoutubeApiDialogOpen,
-                    draft: youtubeApiKeyDraft,
-                    setDraft: setYoutubeApiKeyDraft,
-                    integrationStatus,
-                    onSave: saveYoutubeApiKey
-                }}
-                translationApi={{
-                    open: translationApiDialogOpen,
-                    setOpen: setTranslationApiDialogOpen,
-                    draft: translationDraft,
-                    setDraftValue: setTranslationDraftValue,
-                    providerOptions: translationProviderOptions,
-                    fetchedModels: availableTranslationModels,
-                    integrationStatus,
-                    onFetchModels: fetchTranslationModels,
-                    onTest: testTranslationApiConfig,
-                    onSave: saveTranslationApiConfig
-                }}
-                tablePageSizes={{
-                    open: tablePageSizesDialogOpen,
-                    setOpen: setTablePageSizesDialogOpen,
-                    onSaved: (tablePageSizes) =>
-                        setPrefs((current) => ({
-                            ...current,
-                            tablePageSizes
-                        }))
-                }}
-                tableLimits={{
-                    open: tableLimitsDialogOpen,
-                    setOpen: setTableLimitsDialogOpen,
-                    draft: tableLimitsDraft,
-                    setDraft: setTableLimitsDraft,
-                    tableMaxSizeError,
-                    searchLimitError,
-                    saveDisabled: tableLimitsSaveDisabled,
-                    onSave: saveTableLimitsDialog
-                }}
-                avatarProvider={{
-                    open: avatarProviderDialogOpen,
-                    setOpen: setAvatarProviderDialogOpen,
-                    config: avatarProviderConfig,
-                    onUpdate: updateAvatarProvider,
-                    onSaveField: saveAvatarProviderField,
-                    onRemove: removeAvatarProvider,
-                    onAdd: addAvatarProvider
-                }}
-                purge={{
-                    open: purgeDialogOpen,
-                    setOpen: setPurgeDialogOpen,
-                    period: purgePeriod,
-                    setPeriod: setPurgePeriod,
-                    inProgress: purgeInProgress,
-                    onConfirm: purgeAvatarFeedData
-                }}
-                feedFilter={{
-                    open: feedFilterDialogOpen,
-                    setOpen: setFeedFilterDialogOpen,
-                    mode: feedFilterMode,
-                    setMode: setFeedFilterMode,
-                    options: currentSharedFeedFilterOptions,
-                    filters: sharedFeedFilters,
-                    onUpdate: updateSharedFeedFilter,
-                    onReset: resetSharedFeedFilters
-                }}
-                openSourceNotice={{
-                    open: openSourceNoticeOpen,
-                    setOpen: setOpenSourceNoticeOpen
-                }}
-            />
+            <SettingsDialogsSection />
         </div>
     );
 }

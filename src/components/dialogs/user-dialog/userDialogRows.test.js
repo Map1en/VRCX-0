@@ -3,25 +3,27 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { useShellStore } from '@/state/shellStore.js';
 
 import {
+    groupIdForRow,
+    groupMemberVisibility,
+    normalizeUserGroupMembershipRows,
+    sortUserGroupRows,
+    splitUserGroups
+} from './userDialogGroupRows.js';
+import {
     filterRows,
     formatCountText,
     formatDate,
     formatStatsDate,
     formatStatsDuration,
     groupDisplayName,
-    groupIdForRow,
-    groupMemberVisibility,
     hydrateMutualFriendRows,
     isOfflineLikeValue,
     normalizeLanguageRows,
     normalizePreviousDisplayNames,
-    normalizeUserGroupMembershipRows,
     resolveStatusStateText,
     resolveTabValue,
     sortAvatarRows,
     sortMutualFriendRows,
-    sortUserGroupRows,
-    splitUserGroups,
     summarizeEntityRow,
     userIdForRow,
     userTravelingTimestamp,

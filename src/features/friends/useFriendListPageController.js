@@ -4,7 +4,7 @@ import {
     getSortedRowModel,
     useReactTable
 } from '@tanstack/react-table';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -49,6 +49,8 @@ import {
     sanitizeFriendListSorting as sanitizeSorting,
     writePersistedFriendListState as writePersistedState
 } from './friendListState.js';
+import { useFriendListPageActions } from './useFriendListPageActions.js';
+import { useFriendListPageEffects } from './useFriendListPageEffects.js';
 export function useFriendListPageController({ embedded = false } = {}) {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -142,139 +144,52 @@ export function useFriendListPageController({ embedded = false } = {}) {
             DEFAULT_PAGE_SIZES[1]
         )
     }));
-    useEffect(() => {
-        let active = true;
-        Promise.all([
-            getTablePageSizesPreference(DEFAULT_PAGE_SIZES),
-            configRepository.getInt('tablePageSize', DEFAULT_PAGE_SIZES[1])
-        ])
-            .then(([nextPageSizes, nextPageSize]) => {
-                if (!active) {
-                    return;
-                }
-                const resolvedPageSizes = sanitizePageSizes(nextPageSizes);
-                const parsedPersistedPageSize = Number.parseInt(
-                    persistedState.pageSize,
-                    10
-                );
-                const hasPersistedPageSize =
-                    Number.isFinite(parsedPersistedPageSize) &&
-                    parsedPersistedPageSize > 0;
-                const resolvedConfiguredPageSize = resolvePageSize(
-                    nextPageSize,
-                    resolvedPageSizes,
-                    DEFAULT_PAGE_SIZES[1]
-                );
-                const resolvedActivePageSize = hasPersistedPageSize
-                    ? resolvePageSize(
-                          parsedPersistedPageSize,
-                          resolvedPageSizes,
-                          resolvedConfiguredPageSize
-                      )
-                    : resolvedConfiguredPageSize;
-                setPageSizes((current) =>
-                    sanitizePageSizes([
-                        ...current,
-                        ...resolvedPageSizes,
-                        resolvedConfiguredPageSize,
-                        resolvedActivePageSize
-                    ])
-                );
-                setPagination((current) => ({
-                    ...current,
-                    pageSize: resolvedActivePageSize
-                }));
-            })
-            .catch(() => {});
-        return () => {
-            active = false;
-        };
-    }, [persistedState.pageSize]);
-    useEffect(() => {
-        if (!preferencesHydrated) {
-            return;
-        }
-        const resolvedPageSizes = sanitizePageSizes(tablePageSizesPreference);
-        setPageSizes(resolvedPageSizes);
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0,
-            pageSize: resolvePageSize(current.pageSize, resolvedPageSizes)
-        }));
-    }, [preferencesHydrated, tablePageSizesPreference]);
-    useEffect(() => {
-        if (!hasWrittenSortingRef.current) {
-            hasWrittenSortingRef.current = true;
-            return;
-        }
-        writePersistedState({
-            sorting: sanitizeSorting(sorting)
-        });
-    }, [sorting]);
-    useEffect(() => {
-        if (!hasWrittenPageSizeRef.current) {
-            hasWrittenPageSizeRef.current = true;
-            return;
-        }
-        writePersistedState({
-            pageSize: pagination.pageSize
-        });
-    }, [pagination.pageSize]);
-    useEffect(() => {
-        if (!hasWrittenTableStateRef.current) {
-            hasWrittenTableStateRef.current = true;
-            return;
-        }
-        writePersistedState({
-            columnVisibility: sanitizeColumnVisibility(columnVisibility),
-            columnOrder: sanitizeColumnOrder(columnOrder),
-            columnSizing: sanitizeColumnSizing(columnSizing),
-            columnOrderLocked
-        });
-    }, [columnOrder, columnOrderLocked, columnSizing, columnVisibility]);
-    useEffect(() => {
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0
-        }));
-    }, [searchQuery, favoritesOnly, activeSearchFilterIds]);
-    useEffect(() => {
-        if (!isFavoritesLoaded && favoritesOnly) {
-            setFavoritesOnly(false);
-        }
-    }, [favoritesOnly, isFavoritesLoaded]);
-    useEffect(() => {
-        let active = true;
-        Promise.all([
-            memoRepository.getAllUserMemos(),
-            memoRepository.getAllUserNotes(currentUserId)
-        ])
-            .then(([memoRows, noteRows]) => {
-                if (!active) {
-                    return;
-                }
-                const nextMemos = new Map();
-                for (const row of Array.isArray(memoRows) ? memoRows : []) {
-                    const userId = normalizeId(row?.userId);
-                    if (userId) {
-                        nextMemos.set(userId, row?.memo || '');
-                    }
-                }
-                const nextNotes = new Map();
-                for (const row of Array.isArray(noteRows) ? noteRows : []) {
-                    const userId = normalizeId(row?.userId);
-                    if (userId) {
-                        nextNotes.set(userId, row?.note || '');
-                    }
-                }
-                setUserMemoById(nextMemos);
-                setUserNoteById(nextNotes);
-            })
-            .catch(() => {});
-        return () => {
-            active = false;
-        };
-    }, [currentUserId]);
+    useFriendListPageEffects({
+        DEFAULT_PAGE_SIZES,
+        activeSearchFilterIds,
+        applyFriendPatches,
+        buildUserStatsById,
+        bulkUnfriendMode,
+        columnOrder,
+        columnOrderLocked,
+        columnSizing,
+        columnVisibility,
+        configRepository,
+        currentUserId,
+        favoritesOnly,
+        filteredRows,
+        gameLogRepository,
+        getTablePageSizesPreference,
+        hasWrittenPageSizeRef,
+        hasWrittenSortingRef,
+        hasWrittenTableStateRef,
+        isFavoritesLoaded,
+        memoRepository,
+        mutualGraphRepository,
+        normalizeId,
+        pagination,
+        persistedState,
+        preferencesHydrated,
+        resolvePageSize,
+        rosterRows,
+        rosterStatsKey,
+        sanitizeColumnOrder,
+        sanitizeColumnSizing,
+        sanitizeColumnVisibility,
+        sanitizePageSizes,
+        sanitizeSorting,
+        searchQuery,
+        setFavoritesOnly,
+        setPageSizes,
+        setPagination,
+        setSelectedFriendIds,
+        setUserMemoById,
+        setUserNoteById,
+        sorting,
+        statsHydrationRequestRef,
+        tablePageSizesPreference,
+        writePersistedState
+    });
     const favoriteFriendIds = useMemo(
         () => buildFavoriteIdSet(remoteFavoriteFriendIds, localFriendFavorites),
         [localFriendFavorites, remoteFavoriteFriendIds]
@@ -314,101 +229,6 @@ export function useFriendListPageController({ embedded = false } = {}) {
                 .join('\u0001'),
         [rosterRows]
     );
-    useEffect(() => {
-        if (!rosterRows.length) {
-            return undefined;
-        }
-        let active = true;
-        const requestId = statsHydrationRequestRef.current + 1;
-        statsHydrationRequestRef.current = requestId;
-        const userIds = rosterRows
-            .map((friend) => normalizeId(friend?.id))
-            .filter(Boolean);
-        const displayNames = rosterRows
-            .map((friend) => String(friend?.displayName || '').trim())
-            .filter(Boolean);
-        const mutualSnapshotPromise = currentUserId
-            ? mutualGraphRepository
-                  .getSnapshot(currentUserId)
-                  .then(({ snapshot, meta }) => {
-                      const countMap = new Map();
-                      for (const [friendId, mutualIds] of snapshot) {
-                          countMap.set(friendId, mutualIds.length);
-                      }
-                      return [countMap, meta];
-                  })
-            : Promise.resolve([new Map(), new Map()]);
-        Promise.all([
-            gameLogRepository.getAllUserStats({
-                userIds,
-                displayNames
-            }),
-            mutualSnapshotPromise
-        ])
-            .then(([statsRows, [mutualCountMap, mutualMetaMap]]) => {
-                if (!active || statsHydrationRequestRef.current !== requestId) {
-                    return;
-                }
-                const statsById = buildUserStatsById(statsRows, rosterRows);
-                const patches = [];
-                for (const friend of rosterRows) {
-                    const friendId = normalizeId(friend?.id);
-                    if (!friendId) {
-                        continue;
-                    }
-                    const stats = statsById.get(friendId);
-                    const mutualCount =
-                        Number.parseInt(
-                            mutualCountMap instanceof Map
-                                ? mutualCountMap.get(friendId)
-                                : 0,
-                            10
-                        ) || 0;
-                    const mutualOptedOut = Boolean(
-                        mutualMetaMap instanceof Map
-                            ? mutualMetaMap.get(friendId)?.optedOut
-                            : false
-                    );
-                    const patch = {
-                        $mutualCount: mutualCount,
-                        $mutualOptedOut: mutualOptedOut
-                    };
-                    if (stats) {
-                        patch.$joinCount = stats.joinCount;
-                        patch.$lastSeen = stats.lastSeen;
-                        patch.$timeSpent = stats.timeSpent;
-                    }
-                    if (
-                        (stats &&
-                            (friend.$joinCount !== patch.$joinCount ||
-                                friend.$lastSeen !== patch.$lastSeen ||
-                                friend.$timeSpent !== patch.$timeSpent)) ||
-                        (Number.parseInt(friend.$mutualCount ?? 0, 10) || 0) !==
-                            mutualCount ||
-                        Boolean(friend.$mutualOptedOut) !== mutualOptedOut
-                    ) {
-                        patches.push({
-                            userId: friendId,
-                            patch,
-                            stateBucket:
-                                friend.stateBucket || friend.state || 'offline'
-                        });
-                    }
-                }
-                if (patches.length) {
-                    applyFriendPatches(patches);
-                }
-            })
-            .catch((error) => {
-                console.warn(
-                    '[FriendListPage] Failed to hydrate friend stats',
-                    error
-                );
-            });
-        return () => {
-            active = false;
-        };
-    }, [applyFriendPatches, currentUserId, rosterStatsKey]);
     const filteredRows = useMemo(() => {
         return filterFriendListRows({
             rosterRows,
@@ -428,409 +248,48 @@ export function useFriendListPageController({ embedded = false } = {}) {
         userMemoById,
         userNoteById
     ]);
-    useEffect(() => {
-        const maxPageIndex = Math.max(
-            0,
-            Math.ceil(filteredRows.length / pagination.pageSize) - 1
-        );
-        if (pagination.pageIndex > maxPageIndex) {
-            setPagination((current) => ({
-                ...current,
-                pageIndex: maxPageIndex
-            }));
-        }
-    }, [filteredRows.length, pagination.pageIndex, pagination.pageSize]);
-    useEffect(() => {
-        if (!bulkUnfriendMode) {
-            setSelectedFriendIds(new Set());
-        }
-    }, [bulkUnfriendMode]);
-    useEffect(() => {
-        const visibleFriendIds = new Set(
-            filteredRows
-                .map((friend) => normalizeId(friend?.id))
-                .filter(Boolean)
-        );
-        setSelectedFriendIds((current) => {
-            const next = new Set(
-                [...current].filter((friendId) =>
-                    visibleFriendIds.has(friendId)
-                )
-            );
-            return next.size === current.size ? current : next;
-        });
-    }, [filteredRows]);
-    function setFriendDeleting(userId, isDeleting) {
-        const normalizedUserId = normalizeId(userId);
-        if (!normalizedUserId) {
-            return;
-        }
-        setDeletingFriendIds((current) => {
-            const next = new Set(current);
-            if (isDeleting) {
-                next.add(normalizedUserId);
-            } else {
-                next.delete(normalizedUserId);
-            }
-            return next;
-        });
-    }
-    function toggleSelectedFriend(userId) {
-        const normalizedUserId = normalizeId(userId);
-        if (!normalizedUserId) {
-            return;
-        }
-        setSelectedFriendIds((current) => {
-            const next = new Set(current);
-            if (next.has(normalizedUserId)) {
-                next.delete(normalizedUserId);
-            } else {
-                next.add(normalizedUserId);
-            }
-            return next;
-        });
-    }
-    async function deleteFriendById(userId) {
-        const normalizedUserId = normalizeId(userId);
-        const friend = friendsById[normalizedUserId];
-        if (!normalizedUserId || !friend || !currentUserId) {
-            return {
-                stale: false,
-                deleted: false
-            };
-        }
-        setFriendDeleting(normalizedUserId, true);
-        try {
-            const result = await friendRelationshipService.deleteFriend({
-                friend,
-                userId: normalizedUserId,
-                endpoint: currentEndpoint,
-                currentUserId
-            });
-            if (!result.stale) {
-                setSelectedFriendIds((current) => {
-                    const next = new Set(current);
-                    next.delete(normalizedUserId);
-                    return next;
-                });
-                toast.success(
-                    t('view.friends.generated_dynamic.unfriended_value', {
-                        value: friend.displayName || normalizedUserId
-                    })
-                );
-            }
-            return {
-                ...result,
-                deleted: !result.stale
-            };
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.friends.generated_toast.failed_to_unfriend_value',
-                          {
-                              value: friend.displayName || normalizedUserId
-                          }
-                      )
-            );
-            return {
-                stale: false,
-                deleted: false
-            };
-        } finally {
-            setFriendDeleting(normalizedUserId, false);
-        }
-    }
-    async function confirmDeleteFriend(friend) {
-        const normalizedUserId = normalizeId(friend?.id);
-        if (!normalizedUserId) {
-            return;
-        }
-        const result = await confirm({
-            title: t('view.friends.generated_modal.unfriend_user'),
-            description: friend?.displayName || normalizedUserId,
-            confirmText: t('view.friends.generated_modal.unfriend'),
-            cancelText: t('common.actions.cancel'),
-            destructive: true
-        });
-        if (!result.ok) {
-            return;
-        }
-        await deleteFriendById(normalizedUserId);
-    }
-    async function bulkUnfriendSelected() {
-        const selectedRows = filteredRows.filter((friend) =>
-            selectedFriendIds.has(normalizeId(friend?.id))
-        );
-        if (!selectedRows.length) {
-            return;
-        }
-        const result = await confirm({
-            title: t('view.friends.generated_dynamic.unfriend_value_friends', {
-                value: selectedRows.length
-            }),
-            description: selectedRows
-                .map((friend) => friend.displayName || friend.id)
-                .slice(0, 30)
-                .join('\n'),
-            confirmText: t('view.friends.generated_modal.unfriend'),
-            cancelText: t('common.actions.cancel'),
-            destructive: true
-        });
-        if (!result.ok) {
-            return;
-        }
-        setIsBulkDeleting(true);
-        try {
-            let deletedCount = 0;
-            for (const friend of selectedRows) {
-                const deleteResult = await deleteFriendById(friend.id);
-                if (deleteResult.stale) {
-                    break;
-                }
-                if (deleteResult.deleted) {
-                    deletedCount += 1;
-                }
-            }
-            if (deletedCount > 0) {
-                toast.success(
-                    t(
-                        'view.friends.generated_dynamic.unfriended_value_friends',
-                        {
-                            value: deletedCount
-                        }
-                    )
-                );
-            }
-        } finally {
-            setIsBulkDeleting(false);
-        }
-    }
-    async function loadFriendUserDetails() {
-        if (isLoadingUserDetails) {
-            return;
-        }
-        const rowsToFetch = rosterRows.filter(
-            (friend) => normalizeId(friend?.id) && !friend?.date_joined
-        );
-        if (!rowsToFetch.length) {
-            toast.success(
-                t(
-                    'view.friend_list.generated.friend_details_are_already_loaded'
-                )
-            );
-            return;
-        }
-        cancelUserLoadRef.current = false;
-        setIsLoadingUserDetails(true);
-        setUserLoadProgress({
-            current: 0,
-            total: rowsToFetch.length,
-            open: true,
-            cancelled: false
-        });
-        let loadedCount = 0;
-        try {
-            for (const friend of rowsToFetch) {
-                if (cancelUserLoadRef.current) {
-                    break;
-                }
-                const friendId = normalizeId(friend?.id);
-                try {
-                    const response = await vrchatFriendRepository.getUser({
-                        userId: friendId,
-                        endpoint: currentEndpoint
-                    });
-                    if (response?.json?.id) {
-                        applyFriendPatch({
-                            userId: friendId,
-                            patch: response.json,
-                            stateBucket:
-                                friend.stateBucket || friend.state || 'offline'
-                        });
-                        loadedCount += 1;
-                    }
-                } catch (error) {
-                    console.warn(
-                        '[FriendListPage] Failed to load friend profile',
-                        friendId,
-                        error
-                    );
-                } finally {
-                    setUserLoadProgress((current) => ({
-                        ...current,
-                        current: Math.min(current.total, current.current + 1)
-                    }));
-                }
-            }
-            if (cancelUserLoadRef.current) {
-                toast.warning(
-                    t(
-                        'view.friend_list.generated.friend_detail_loading_cancelled'
-                    )
-                );
-                return;
-            }
-            toast.success(
-                t(
-                    'view.friends.generated_dynamic.loaded_value_friend_profiles',
-                    {
-                        value: loadedCount
-                    }
-                )
-            );
-        } finally {
-            setIsLoadingUserDetails(false);
-            if (!cancelUserLoadRef.current) {
-                setUserLoadProgress((current) => ({
-                    ...current,
-                    open: false
-                }));
-            }
-        }
-    }
-    function cancelFriendUserDetailsLoad() {
-        cancelUserLoadRef.current = true;
-        setUserLoadProgress((current) => ({
-            ...current,
-            open: false,
-            cancelled: true
-        }));
-    }
-    async function fetchMutualFriendIds(friendId, rateLimiter) {
-        const collected = [];
-        let offset = 0;
-        while (true) {
-            await rateLimiter.wait();
-            const response = await executeWithBackoff(
-                () =>
-                    mutualGraphRepository.getMutualFriends({
-                        friendId,
-                        offset,
-                        n: 100
-                    }),
-                {
-                    maxRetries: 4,
-                    baseDelay: 500,
-                    shouldRetry: (error) =>
-                        error?.status === 429 ||
-                        String(error?.message || '').includes('429')
-                }
-            );
-            const rows = Array.isArray(response?.json) ? response.json : [];
-            collected.push(
-                ...rows
-                    .map((entry) =>
-                        normalizeId(
-                            typeof entry === 'string' ? entry : entry?.id
-                        )
-                    )
-                    .filter(Boolean)
-            );
-            if (rows.length < 100) {
-                break;
-            }
-            offset += rows.length;
-        }
-        return collected;
-    }
-    async function loadMutualFriends() {
-        if (!currentUserId || isMutualFetching) {
-            return;
-        }
-        if (currentUserSnapshot?.hasSharedConnectionsOptOut) {
-            toast.warning(
-                t(
-                    'view.friend_list.generated.shared_connections_are_opted_out_for_the_current_account'
-                )
-            );
-            return;
-        }
-        const friendSnapshot = rosterRows.filter((friend) =>
-            normalizeId(friend?.id)
-        );
-        if (!friendSnapshot.length) {
-            toast.info(
-                t(
-                    'view.friend_list.generated.no_friends_are_available_for_mutual_friends_loading'
-                )
-            );
-            return;
-        }
-        const rateLimiter = createRateLimiter({
-            limitPerInterval: 5,
-            intervalMs: 1000
-        });
-        const entries = new Map();
-        const metaEntries = new Map();
-        setIsMutualFetching(true);
-        setMutualProgress({
-            current: 0,
-            total: friendSnapshot.length
-        });
-        try {
-            for (let index = 0; index < friendSnapshot.length; index += 1) {
-                const friend = friendSnapshot[index];
-                const friendId = normalizeId(friend?.id);
-                try {
-                    const mutualIds = await fetchMutualFriendIds(
-                        friendId,
-                        rateLimiter
-                    );
-                    entries.set(friendId, mutualIds);
-                    metaEntries.set(friendId, {
-                        optedOut: false
-                    });
-                    applyFriendPatch({
-                        userId: friendId,
-                        patch: {
-                            $mutualCount: mutualIds.length,
-                            $mutualOptedOut: false
-                        },
-                        stateBucket:
-                            friend.stateBucket || friend.state || 'offline'
-                    });
-                } catch (error) {
-                    if (error?.status === 403 || error?.status === 404) {
-                        metaEntries.set(friendId, {
-                            optedOut: true
-                        });
-                        applyFriendPatch({
-                            userId: friendId,
-                            patch: {
-                                $mutualCount: 0,
-                                $mutualOptedOut: true
-                            },
-                            stateBucket:
-                                friend.stateBucket || friend.state || 'offline'
-                        });
-                    } else {
-                        console.warn(
-                            '[FriendListPage] Skipping mutual friend fetch',
-                            friendId,
-                            error
-                        );
-                    }
-                } finally {
-                    setMutualProgress({
-                        current: index + 1,
-                        total: friendSnapshot.length
-                    });
-                }
-            }
-            await mutualGraphRepository.bulkUpsertMeta(
-                currentUserId,
-                metaEntries
-            );
-            await mutualGraphRepository.saveSnapshot(currentUserId, entries);
-            toast.success(
-                t('view.friend_list.generated.mutual_friends_loaded')
-            );
-        } finally {
-            setIsMutualFetching(false);
-        }
-    }
+    const {
+        toggleSelectedFriend,
+        confirmDeleteFriend,
+        bulkUnfriendSelected,
+        loadFriendUserDetails,
+        cancelFriendUserDetailsLoad,
+        loadMutualFriends,
+        resetFriendListTableLayout,
+        openFriendDetails
+    } = useFriendListPageActions({
+        applyFriendPatch,
+        cancelUserLoadRef,
+        confirm,
+        createRateLimiter,
+        currentEndpoint,
+        currentUserId,
+        currentUserSnapshot,
+        executeWithBackoff,
+        filteredRows,
+        friendRelationshipService,
+        friendsById,
+        isLoadingUserDetails,
+        isMutualFetching,
+        mutualGraphRepository,
+        normalizeId,
+        openUserDialog,
+        rosterRows,
+        selectedFriendIds,
+        setColumnOrder,
+        setColumnSizing,
+        setColumnVisibility,
+        setDeletingFriendIds,
+        setIsBulkDeleting,
+        setIsLoadingUserDetails,
+        setIsMutualFetching,
+        setMutualProgress,
+        setSelectedFriendIds,
+        setUserLoadProgress,
+        t,
+        toast,
+        vrchatFriendRepository
+    });
     const tableColumns = useMemo(
         () =>
             buildFriendListColumns({
@@ -881,11 +340,6 @@ export function useFriendListPageController({ embedded = false } = {}) {
             setColumnOrderLocked
         }
     });
-    function resetFriendListTableLayout() {
-        setColumnVisibility({});
-        setColumnOrder([]);
-        setColumnSizing({});
-    }
     const pageCount = Math.max(1, table.getPageCount());
     const hasRows = filteredRows.length > 0;
     const isLoading = friendLoadStatus === 'running' && rosterRows.length === 0;
@@ -907,12 +361,6 @@ export function useFriendListPageController({ embedded = false } = {}) {
               total: mutualProgress.total
           })
         : friendDetail;
-    function openFriendDetails(friend) {
-        openUserDialog({
-            userId: friend?.id,
-            title: friend?.displayName || friend?.username || undefined
-        });
-    }
     return {
         PageScaffold,
         embedded,

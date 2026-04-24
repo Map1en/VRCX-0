@@ -1,18 +1,9 @@
-import {
-    BoxIcon,
-    HeartIcon,
-    MapPinIcon,
-    PencilIcon,
-    SettingsIcon
-} from 'lucide-react';
+import { HeartIcon, SettingsIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-
 import { useTranslation } from 'react-i18next';
-import { Location } from '@/components/Location.jsx';
+
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
-import { cn } from '@/lib/utils.js';
 import { FEED_FILTER_TYPES, feedRepository } from '@/repositories/index.js';
-import { openUserDialog } from '@/services/dialogService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFeedLiveStore } from '@/state/feedLiveStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
@@ -30,6 +21,11 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
 
+import {
+    FeedEntryContent,
+    getFeedRowId,
+    getFeedRowKey
+} from './DashboardFeedEntryContent.jsx';
 import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
 import { DashboardWidgetHeader } from './DashboardWidgetHeader.jsx';
 import {
@@ -42,34 +38,6 @@ import {
 } from './shared.js';
 
 const FEED_WIDGET_MAX_ROWS = 100;
-const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
-
-function resolveFeedUserDisplayName(row, friend) {
-    const userId = normalizeString(row?.userId);
-    const rowDisplayName = normalizeString(row?.displayName);
-    const friendDisplayName = normalizeString(
-        friend?.displayName || friend?.username
-    );
-    if (rowDisplayName) {
-        return rowDisplayName;
-    }
-    if (friendDisplayName) {
-        return friendDisplayName;
-    }
-    return userId || UNKNOWN_FEED_USER_DISPLAY_NAME;
-}
-
-function openFeedUser(row, friend) {
-    const userId = normalizeString(row?.userId);
-    if (!userId) {
-        return;
-    }
-    openUserDialog({
-        userId,
-        title: resolveFeedUserDisplayName(row, friend) || undefined,
-        seedData: row
-    });
-}
 
 function feedEntryMatchesWidget(row, { currentUserId, filters }) {
     if (!row || typeof row !== 'object') {
@@ -81,35 +49,6 @@ function feedEntryMatchesWidget(row, { currentUserId, filters }) {
     return (
         !Array.isArray(filters) || !filters.length || filters.includes(row.type)
     );
-}
-
-function getFeedRowId(row) {
-    if (row?.id != null) {
-        return `id:${row.id}`;
-    }
-    if (row?.rowId != null) {
-        return `row:${row.rowId}`;
-    }
-    const type = row?.type ?? '';
-    const createdAt = row?.created_at ?? row?.createdAt ?? '';
-    const userId = row?.userId ?? row?.senderUserId ?? '';
-    const location = row?.location ?? row?.details?.location ?? '';
-    const message = row?.message ?? '';
-    return `${type}:${createdAt}:${userId}:${location}:${message}`;
-}
-
-function getFeedRowKey(row) {
-    return [
-        getFeedRowId(row),
-        row?.type ?? '',
-        row?.created_at ?? row?.createdAt ?? '',
-        row?.userId ?? row?.senderUserId ?? '',
-        row?.location ?? row?.details?.location ?? '',
-        row?.status ?? '',
-        row?.avatarName ?? '',
-        row?.bio ?? '',
-        row?.message ?? ''
-    ].join(':');
 }
 
 function collectMatchingLiveFeedEntries(entries, minSequence, context) {
@@ -145,146 +84,6 @@ function mergeLiveFeedEntries(rows, matchingEntries, maxRows) {
         }
     }
     return Array.from(nextRowsById.values()).slice(0, maxRows);
-}
-
-function FeedUserName({ row, friend, className = '' }) {
-    const displayName = resolveFeedUserDisplayName(row, friend);
-    const userId = normalizeString(row?.userId);
-    if (!userId) {
-        return <span className={className}>{displayName}</span>;
-    }
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            className={cn(
-                'h-auto shrink-0 cursor-pointer justify-start p-0 text-left font-normal hover:text-primary',
-                className
-            )}
-            onClick={() => openFeedUser(row, friend)}
-        >
-            {displayName}
-        </Button>
-    );
-}
-
-function FeedLocation({ row }) {
-    if (!row?.location) {
-        return null;
-    }
-    return (
-        <div className="min-w-0 flex-1 truncate">
-            <Location
-                location={row.location}
-                hint={row.worldName || ''}
-                grouphint={row.groupName || ''}
-                enableContextMenu
-                disableTooltip
-            />
-        </div>
-    );
-}
-
-function FeedStatusDot({ status = '' }) {
-    const normalizedStatus = String(status || '').toLowerCase();
-    const className =
-        normalizedStatus === 'active'
-            ? 'bg-[var(--status-online)]'
-            : normalizedStatus === 'online'
-              ? 'bg-[var(--status-online)]'
-              : normalizedStatus === 'join me'
-                ? 'bg-[var(--status-joinme)]'
-                : normalizedStatus === 'ask me'
-                  ? 'bg-[var(--status-askme)]'
-                  : normalizedStatus === 'busy'
-                    ? 'bg-[var(--status-busy)]'
-                    : '';
-
-    return className ? (
-        <span
-            className={cn(
-                'mt-1 mr-1 size-2.5 shrink-0 rounded-full',
-                className
-            )}
-        />
-    ) : null;
-}
-
-function FeedEntryContent({ row, friend, t }) {
-    switch (row?.type) {
-        case 'GPS':
-            return (
-                <div className="flex min-w-0 items-center">
-                    <MapPinIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
-                    <FeedUserName row={row} friend={friend} />
-                    <span className="text-muted-foreground mx-1 shrink-0">
-                        →
-                    </span>
-                    <FeedLocation row={row} />
-                </div>
-            );
-        case 'Online':
-            return (
-                <div className="flex min-w-0 items-center">
-                    <FeedStatusDot status="online" />
-                    <FeedUserName row={row} friend={friend} />
-                    {row?.location ? (
-                        <>
-                            <span className="text-muted-foreground mx-1 shrink-0">
-                                →
-                            </span>
-                            <FeedLocation row={row} />
-                        </>
-                    ) : null}
-                </div>
-            );
-        case 'Offline':
-            return (
-                <div className="flex min-w-0 items-center">
-                    <FeedUserName row={row} friend={friend} />
-                </div>
-            );
-        case 'Status':
-            return (
-                <div className="flex min-w-0 items-center">
-                    <FeedStatusDot status={row?.status} />
-                    <FeedUserName row={row} friend={friend} />
-                    <span className="text-muted-foreground ml-1 min-w-0 truncate">
-                        {row?.statusDescription || ''}
-                    </span>
-                </div>
-            );
-        case 'Avatar':
-            return (
-                <div className="flex min-w-0 items-center">
-                    <BoxIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
-                    <FeedUserName row={row} friend={friend} />
-                    <span className="text-muted-foreground ml-1 min-w-0 truncate">
-                        {row?.avatarName ? `→ ${row.avatarName}` : ''}
-                    </span>
-                </div>
-            );
-        case 'Bio':
-            return (
-                <div className="flex min-w-0 items-center">
-                    <PencilIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
-                    <FeedUserName row={row} friend={friend} />
-                    <span className="text-muted-foreground ml-1">
-                        {t('dashboard.widget.feed_bio')}
-                    </span>
-                </div>
-            );
-        default:
-            return (
-                <div className="flex min-w-0 items-center">
-                    <FeedUserName row={row} friend={friend} />
-                    <span className="text-muted-foreground ml-1 min-w-0 truncate">
-                        {row?.type || ''}
-                    </span>
-                </div>
-            );
-    }
 }
 
 export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
@@ -438,7 +237,7 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={"Widget settings"}
+                    aria-label={'Widget settings'}
                 >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
@@ -502,7 +301,9 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <DashboardWidgetEmptyState
                 title={t('view.dashboard.generated.feed_unavailable')}
-                description={t('view.dashboard.generated.sign_in_before_the_dashboard_can_query_feed_rows')}
+                description={t(
+                    'view.dashboard.generated.sign_in_before_the_dashboard_can_query_feed_rows'
+                )}
             />
         );
     }
@@ -532,7 +333,9 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <DashboardWidgetEmptyState
                 title={t('view.dashboard.generated.no_feed_rows')}
-                description={t('view.dashboard.generated.the_current_filter_set_did_not_return_any_recent_feed_activi')}
+                description={t(
+                    'view.dashboard.generated.the_current_filter_set_did_not_return_any_recent_feed_activi'
+                )}
             />
         );
     }
@@ -540,13 +343,20 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     return renderShell(
         <>
             <div className="text-muted-foreground flex flex-wrap gap-2 px-3 pt-3 text-xs">
-                <span>{annotatedRows.length} {t('view.dashboard.generated.recent_rows')}</span>
+                <span>
+                    {annotatedRows.length}{' '}
+                    {t('view.dashboard.generated.recent_rows')}
+                </span>
                 <span>
                     {Array.isArray(config.filters) && config.filters.length
                         ? `${config.filters.length} type filters`
                         : 'All feed types'}
                 </span>
-                {showType ? <span>{t('view.dashboard.generated.type_column_enabled')}</span> : null}
+                {showType ? (
+                    <span>
+                        {t('view.dashboard.generated.type_column_enabled')}
+                    </span>
+                ) : null}
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto">
@@ -588,7 +398,9 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                                                 className="shrink-0 gap-1 px-1.5"
                                             >
                                                 <HeartIcon className="size-3 fill-current" />
-                                                {t('view.dashboard.generated.favorite')}
+                                                {t(
+                                                    'view.dashboard.generated.favorite'
+                                                )}
                                             </Badge>
                                         ) : null}
                                     </div>

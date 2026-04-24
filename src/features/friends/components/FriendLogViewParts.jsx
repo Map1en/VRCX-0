@@ -5,8 +5,8 @@ import {
     ArrowUpIcon
 } from 'lucide-react';
 import { useMemo } from 'react';
-
 import { useTranslation } from 'react-i18next';
+
 import { EmptyState } from '@/components/layout/PageScaffold.jsx';
 import { openUserDialog } from '@/services/dialogService.js';
 import { Button } from '@/ui/shadcn/button';
@@ -56,7 +56,7 @@ export function FriendLogEmptyState({ title, description }) {
     return <EmptyState title={title} description={description} />;
 }
 
-function friendLogTypeLabel(type, t) {
+export function friendLogTypeLabel(type, t) {
     return type ? t(`view.friend_log.filters.${type}`) : '';
 }
 

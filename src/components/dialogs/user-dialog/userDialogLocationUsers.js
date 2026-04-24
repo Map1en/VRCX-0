@@ -1,6 +1,6 @@
+import { groupIdForRow } from './userDialogGroupRows.js';
 import {
     firstNonGroupIdText,
-    groupIdForRow,
     isGroupId,
     normalizedText,
     userIdForRow
@@ -90,8 +90,8 @@ export function buildUserDialogLocationUsers({
     const locationOwnerGroupId = groupIdForRow(locationOwnerGroup);
     const locationOwnerIsGroup = Boolean(
         locationOwnerGroupId ||
-            isGroupId(locationOwnerFallbackId) ||
-            isGroupId(locationOwnerUserId)
+        isGroupId(locationOwnerFallbackId) ||
+        isGroupId(locationOwnerUserId)
     );
     const locationOwnerId =
         locationOwnerGroupId ||

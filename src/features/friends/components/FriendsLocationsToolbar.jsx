@@ -1,7 +1,5 @@
-import {
-    SearchIcon,
-    Settings2Icon,
-} from 'lucide-react';
+import { SearchIcon, Settings2Icon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/ui/shadcn/button';
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
@@ -15,26 +13,30 @@ import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
-export function FriendsLocationsToolbar({
-    activeSegment,
-    segmentOptions,
-    searchQuery,
-    showSameInstance,
-    cardScale,
-    spacingScale,
-    t,
-    onActiveSegmentChange,
-    onSearchQueryChange,
-    onShowSameInstanceChange,
-    onCardScaleChange,
-    onSpacingScaleChange
-}) {
+import { useFriendsLocationsPage } from '../FriendsLocationsPageContext.jsx';
+
+export function FriendsLocationsToolbar() {
+    const { t } = useTranslation();
+    const {
+        activeSegment,
+        segmentOptions,
+        searchQuery,
+        showSameInstance,
+        cardScale,
+        spacingScale,
+        setActiveSegment,
+        setSearchQuery,
+        changeShowSameInstance,
+        changeCardScalePreference,
+        changeSpacingScalePreference
+    } = useFriendsLocationsPage();
+
     return (
         <div className="friend-view__toolbar mb-3 flex shrink-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
                 <Tabs
                     value={activeSegment}
-                    onValueChange={onActiveSegmentChange}
+                    onValueChange={setActiveSegment}
                     className="gap-0"
                 >
                     <TabsList>
@@ -55,10 +57,10 @@ export function FriendsLocationsToolbar({
                     </InputGroupAddon>
                     <InputGroupInput
                         value={searchQuery}
-                        onChange={(event) =>
-                            onSearchQueryChange(event.target.value)
-                        }
-                        placeholder={t('view.friends_locations.search_placeholder')}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder={t(
+                            'view.friends_locations.search_placeholder'
+                        )}
                     />
                 </InputGroup>
             </div>
@@ -88,7 +90,7 @@ export function FriendsLocationsToolbar({
                             <Switch
                                 id="friends-locations-same-instance"
                                 checked={showSameInstance}
-                                onCheckedChange={onShowSameInstanceChange}
+                                onCheckedChange={changeShowSameInstance}
                             />
                         </Field>
                         <Field>
@@ -104,7 +106,7 @@ export function FriendsLocationsToolbar({
                                 step={0.01}
                                 value={[cardScale]}
                                 onValueChange={([value]) =>
-                                    onCardScaleChange(value)
+                                    changeCardScalePreference(value)
                                 }
                             />
                             <div className="text-muted-foreground text-sm">
@@ -125,7 +127,7 @@ export function FriendsLocationsToolbar({
                                 step={0.05}
                                 value={[spacingScale]}
                                 onValueChange={([value]) =>
-                                    onSpacingScaleChange(value)
+                                    changeSpacingScalePreference(value)
                                 }
                             />
                             <div className="text-muted-foreground text-sm">

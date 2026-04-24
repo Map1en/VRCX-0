@@ -2,11 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
     buildFavoriteGroupLabelsByFriendId,
-    buildFriendsLocationsFavoriteIdSet,
     buildSameInstanceGroups,
     compareFavoriteGroups,
     isOnlineFriend,
-    matchesFriendLocationSearch,
     normalizeDisplayText,
     normalizeFriendsLocationId,
     resolveDisplayWorldName,
@@ -17,6 +15,10 @@ import {
     resolveWorldDialogTarget,
     uniqueFriendsById
 } from './friendsLocationsRows.js';
+import {
+    buildFriendsLocationsFavoriteIdSet,
+    matchesFriendLocationSearch
+} from './friendsLocationsSearch.js';
 
 describe('friends locations row helpers', () => {
     it('normalizes ids and display text from strings and location-like objects', () => {

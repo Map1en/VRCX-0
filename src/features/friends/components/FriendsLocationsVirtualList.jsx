@@ -1,5 +1,8 @@
+import { useTranslation } from 'react-i18next';
+
 import { LoadingState } from '@/components/layout/PageScaffold.jsx';
 
+import { useFriendsLocationsPage } from '../FriendsLocationsPageContext.jsx';
 import {
     FriendsLocationCardItem,
     FriendsLocationsEmptyState,
@@ -7,39 +10,41 @@ import {
     FriendsLocationsSectionHeader
 } from './FriendsLocationsViewParts.jsx';
 
-export function FriendsLocationsVirtualList({
-    scrollRef,
-    isLoading,
-    isError,
-    hasVisibleSections,
-    rosterDetail,
-    activeSegment,
-    isFavoritesLoaded,
-    positionedRows,
-    visibleVirtualRows,
-    cardGridGap,
-    cardGridMinWidth,
-    cardGridColumns,
-    cardGridRowHeight,
-    currentUserId,
-    cardScale,
-    spacingScale,
-    canUseFriendLocation,
-    canSendInvite,
-    canBoop,
-    t,
-    onOpenSectionWorld,
-    onOpenSectionGroup,
-    onToggleFavoriteGroup,
-    onOpenFriendUser,
-    onOpenFriendWorld,
-    onOpenFriendGroup,
-    onLaunchFriendLocation,
-    onSelfInviteFriendLocation,
-    onSendFriendInvite,
-    onRequestFriendInvite,
-    onSendFriendBoop
-}) {
+export function FriendsLocationsVirtualList() {
+    const { t } = useTranslation();
+    const {
+        scrollRef,
+        isLoading,
+        isError,
+        hasVisibleSections,
+        rosterDetail,
+        activeSegment,
+        isFavoritesLoaded,
+        positionedRows,
+        visibleVirtualRows,
+        cardGridGap,
+        cardGridMinWidth,
+        cardGridColumns,
+        cardGridRowHeight,
+        currentUserId,
+        cardScale,
+        spacingScale,
+        canUseFriendLocation,
+        canSendInvite,
+        canBoop,
+        openSectionWorld,
+        openSectionGroup,
+        toggleFavoriteGroup,
+        openFriendUser,
+        openFriendWorld,
+        openFriendGroup,
+        launchFriendLocation,
+        selfInviteFriendLocation,
+        sendFriendInvite,
+        requestFriendInvite,
+        sendFriendBoop
+    } = useFriendsLocationsPage();
+
     return (
         <div
             ref={scrollRef}
@@ -51,7 +56,9 @@ export function FriendsLocationsVirtualList({
                 />
             ) : isError ? (
                 <FriendsLocationsEmptyState
-                    title={t('view.friend_list.generated.friend_locations_failed_to_load')}
+                    title={t(
+                        'view.friend_list.generated.friend_locations_failed_to_load'
+                    )}
                     description={
                         rosterDetail || 'The roster bootstrap did not complete.'
                     }
@@ -76,13 +83,13 @@ export function FriendsLocationsVirtualList({
                                 <FriendsLocationsSectionHeader
                                     section={row.section}
                                     t={t}
-                                    onOpenWorld={onOpenSectionWorld}
-                                    onOpenGroup={onOpenSectionGroup}
+                                    onOpenWorld={openSectionWorld}
+                                    onOpenGroup={openSectionGroup}
                                 />
                             ) : row.type === 'group-header' ? (
                                 <FriendsLocationsFavoriteGroupHeader
                                     section={row.section}
-                                    onToggle={onToggleFavoriteGroup}
+                                    onToggle={toggleFavoriteGroup}
                                 />
                             ) : (
                                 <div
@@ -106,20 +113,20 @@ export function FriendsLocationsVirtualList({
                                             }
                                             canSendInvite={canSendInvite}
                                             canBoop={canBoop}
-                                            onOpenUser={onOpenFriendUser}
-                                            onOpenWorld={onOpenFriendWorld}
-                                            onOpenGroup={onOpenFriendGroup}
+                                            onOpenUser={openFriendUser}
+                                            onOpenWorld={openFriendWorld}
+                                            onOpenGroup={openFriendGroup}
                                             onLaunchLocation={
-                                                onLaunchFriendLocation
+                                                launchFriendLocation
                                             }
                                             onSelfInviteLocation={
-                                                onSelfInviteFriendLocation
+                                                selfInviteFriendLocation
                                             }
-                                            onSendInvite={onSendFriendInvite}
+                                            onSendInvite={sendFriendInvite}
                                             onRequestInvite={
-                                                onRequestFriendInvite
+                                                requestFriendInvite
                                             }
-                                            onSendBoop={onSendFriendBoop}
+                                            onSendBoop={sendFriendBoop}
                                         />
                                     ))}
                                 </div>
@@ -129,7 +136,9 @@ export function FriendsLocationsVirtualList({
                 </div>
             ) : (
                 <FriendsLocationsEmptyState
-                    title={t('view.friend_list.generated.no_friends_match_the_current_filters')}
+                    title={t(
+                        'view.friend_list.generated.no_friends_match_the_current_filters'
+                    )}
                     description={
                         activeSegment === 'favorite' && !isFavoritesLoaded
                             ? 'Favorites are still hydrating.'
