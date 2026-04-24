@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -109,13 +109,10 @@ export function AppNavMenu({ isCollapsed }) {
     );
     const [isCreatingDashboard, setIsCreatingDashboard] = useState(false);
     const appVersion = formatReleaseDisplayVersion(VERSION || '') || '-';
-    const notifiedKeys = useMemo(() => {
-        const keys = new Set(notifiedMenus);
-        if (vrcUnseenNotificationCount > 0) {
-            keys.add('notification');
-        }
-        return keys;
-    }, [notifiedMenus, vrcUnseenNotificationCount]);
+    const notifiedKeys = new Set(notifiedMenus);
+    if (vrcUnseenNotificationCount > 0) {
+        notifiedKeys.add('notification');
+    }
     const hasNotifications = notifiedKeys.size > 0;
 
     useEffect(() => {

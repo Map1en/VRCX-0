@@ -39,66 +39,96 @@ import {
     DashboardReadRow
 } from './components/DashboardViewParts.jsx';
 
-export function DashboardPage() {
+function DashboardAddRowControl({ onAddRow }) {
     const { t } = useTranslation();
+    const [showOptions, setShowOptions] = useState(false);
 
-    const { id = '' } = useParams();
-    const navigate = useNavigate();
-    const dashboards = useDashboardStore((state) => state.dashboards);
-    const loaded = useDashboardStore((state) => state.loaded);
-    const loadStatus = useDashboardStore((state) => state.loadStatus);
-    const detail = useDashboardStore((state) => state.detail);
-    const ensureLoaded = useDashboardStore((state) => state.ensureLoaded);
-    const createDashboard = useDashboardStore((state) => state.createDashboard);
-    const updateDashboard = useDashboardStore((state) => state.updateDashboard);
-    const deleteDashboard = useDashboardStore((state) => state.deleteDashboard);
-    const consumeEditingDashboardId = useDashboardStore(
-        (state) => state.consumeEditingDashboardId
-    );
-    const setEditingDashboardId = useDashboardStore(
-        (state) => state.setEditingDashboardId
-    );
-    const confirm = useModalStore((state) => state.confirm);
+    function addRow(panelCount, direction) {
+        onAddRow(panelCount, direction);
+        setShowOptions(false);
+    }
 
+    if (!showOptions) {
+        return (
+            <Button
+                type="button"
+                variant="ghost"
+                className="border-muted-foreground/20 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 mt-auto flex min-h-[80px] flex-1 items-center justify-center rounded-md border-2 border-dashed transition-colors"
+                aria-label={"Show add row options"}
+                onClick={() => setShowOptions(true)}
+            >
+                <PlusIcon data-icon="icon" className="opacity-50" />
+            </Button>
+        );
+    }
+
+    return (
+        <div className="border-muted-foreground/20 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 mt-auto flex min-h-[80px] flex-1 items-start justify-center rounded-md border-2 border-dashed p-4 transition-colors">
+            <div className="flex flex-wrap items-center gap-3">
+                <span className="text-muted-foreground text-xs">
+                    {t('view.dashboard.generated.add_row')}
+                </span>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-16 border-2 border-dashed"
+                    title={t('dashboard.actions.add_full_row')}
+                    aria-label={"Add full row"}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        addRow(1);
+                    }}
+                >
+                    <div className="bg-muted-foreground/20 h-6 w-12 rounded" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-16 gap-1 border-2 border-dashed"
+                    title={t('dashboard.actions.add_split_row')}
+                    aria-label={"Add split row"}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        addRow(2);
+                    }}
+                >
+                    <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
+                    <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-16 gap-1 border-2 border-dashed"
+                    title={t('dashboard.actions.add_vertical_row')}
+                    aria-label={"Add vertical row"}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        addRow(2, 'vertical');
+                    }}
+                >
+                    <div className="flex flex-col gap-0.5">
+                        <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
+                        <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
+                    </div>
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+function useDashboardEditorController({ dashboard, updateDashboard, t }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
     const [editRows, setEditRows] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
-    const [showAddRowOptions, setShowAddRowOptions] = useState(false);
 
-    const dashboard = useMemo(
-        () => dashboards.find((entry) => entry.id === id) || null,
-        [dashboards, id]
-    );
-    const dashboardRowPanelIds = useMemo(
-        () =>
-            (Array.isArray(dashboard?.rows) ? dashboard.rows : []).map(
-                (row) => `dashboard-${id}-row-panel-${getDashboardRowKey(row)}`
-            ),
-        [dashboard?.rows, id]
-    );
-    const dashboardLayout = useDefaultLayout({
-        id: `dashboard-${id || 'empty'}`,
-        panelIds: dashboardRowPanelIds
-    });
-
-    useEffect(() => {
-        void ensureLoaded().catch(() => {});
-    }, [ensureLoaded]);
-
-    useEffect(() => {
-        if (!loaded || !id) {
-            return;
-        }
-
-        if (consumeEditingDashboardId(id)) {
-            setIsEditing(true);
-            return;
-        }
-
-        setIsEditing(false);
-        setShowAddRowOptions(false);
-    }, [consumeEditingDashboardId, id, loaded]);
+    function resetEditDraft() {
+        setEditName(dashboard?.name || '');
+        setEditRows(cloneDashboardRows(dashboard?.rows));
+    }
 
     useEffect(() => {
         if (!dashboard) {
@@ -108,8 +138,7 @@ export function DashboardPage() {
             return;
         }
 
-        setEditName(dashboard.name || '');
-        setEditRows(cloneDashboardRows(dashboard.rows));
+        resetEditDraft();
     }, [dashboard]);
 
     const handleAddRow = (panelCount, direction = 'horizontal') => {
@@ -121,7 +150,6 @@ export function DashboardPage() {
                 panels: Array.from({ length: panelCount }, () => null)
             }
         ]);
-        setShowAddRowOptions(false);
     };
 
     const handleUpdatePanel = (rowIndex, panelIndex, nextPanel) => {
@@ -172,25 +200,6 @@ export function DashboardPage() {
         );
     };
 
-    const handleLiveUpdatePanel = async (rowIndex, panelIndex, nextPanel) => {
-        if (!dashboard?.rows?.[rowIndex]?.panels) {
-            return;
-        }
-
-        const rows = cloneDashboardRows(dashboard.rows);
-        rows[rowIndex].panels[panelIndex] = nextPanel;
-
-        try {
-            await updateDashboard(dashboard.id, { rows });
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.dashboard.generated_toast.failed_to_update_dashboard_panel')
-            );
-        }
-    };
-
     const handleDirectionChange = (rowIndex, direction) => {
         setEditRows((current) =>
             current.map((row, index) =>
@@ -228,6 +237,117 @@ export function DashboardPage() {
             );
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    function cancelEditing() {
+        setIsEditing(false);
+        resetEditDraft();
+    }
+
+    return {
+        cancelEditing,
+        editName,
+        editRows,
+        handleAddRow,
+        handleDirectionChange,
+        handleRemovePanel,
+        handleRemoveRow,
+        handleSave,
+        handleUpdatePanel,
+        isEditing,
+        isSaving,
+        setEditName,
+        setIsEditing
+    };
+}
+
+export function DashboardPage() {
+    const { t } = useTranslation();
+
+    const { id = '' } = useParams();
+    const navigate = useNavigate();
+    const dashboards = useDashboardStore((state) => state.dashboards);
+    const loaded = useDashboardStore((state) => state.loaded);
+    const loadStatus = useDashboardStore((state) => state.loadStatus);
+    const detail = useDashboardStore((state) => state.detail);
+    const ensureLoaded = useDashboardStore((state) => state.ensureLoaded);
+    const createDashboard = useDashboardStore((state) => state.createDashboard);
+    const updateDashboard = useDashboardStore((state) => state.updateDashboard);
+    const deleteDashboard = useDashboardStore((state) => state.deleteDashboard);
+    const consumeEditingDashboardId = useDashboardStore(
+        (state) => state.consumeEditingDashboardId
+    );
+    const setEditingDashboardId = useDashboardStore(
+        (state) => state.setEditingDashboardId
+    );
+    const confirm = useModalStore((state) => state.confirm);
+
+    const dashboard = dashboards.find((entry) => entry.id === id) || null;
+    const {
+        cancelEditing,
+        editName,
+        editRows,
+        handleAddRow,
+        handleDirectionChange,
+        handleRemovePanel,
+        handleRemoveRow,
+        handleSave,
+        handleUpdatePanel,
+        isEditing,
+        isSaving,
+        setEditName,
+        setIsEditing
+    } = useDashboardEditorController({
+        dashboard,
+        updateDashboard,
+        t
+    });
+    const dashboardRowPanelIds = useMemo(
+        () =>
+            (Array.isArray(dashboard?.rows) ? dashboard.rows : []).map(
+                (row) => `dashboard-${id}-row-panel-${getDashboardRowKey(row)}`
+            ),
+        [dashboard?.rows, id]
+    );
+    const dashboardLayout = useDefaultLayout({
+        id: `dashboard-${id || 'empty'}`,
+        panelIds: dashboardRowPanelIds
+    });
+
+    useEffect(() => {
+        void ensureLoaded().catch(() => {});
+    }, [ensureLoaded]);
+
+    useEffect(() => {
+        if (!loaded || !id) {
+            return;
+        }
+
+        if (consumeEditingDashboardId(id)) {
+            setIsEditing(true);
+            return;
+        }
+
+        setIsEditing(false);
+    }, [consumeEditingDashboardId, id, loaded]);
+
+    const handleLiveUpdatePanel = async (rowIndex, panelIndex, nextPanel) => {
+        if (!dashboard?.rows?.[rowIndex]?.panels) {
+            return;
+        }
+
+        const rows = cloneDashboardRows(dashboard.rows);
+        rows[rowIndex].panels[panelIndex] = nextPanel;
+
+        try {
+            await updateDashboard(dashboard.id, { rows });
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('view.dashboard.generated_toast.failed_to_update_dashboard_panel')
+            );
         }
     };
 
@@ -374,12 +494,7 @@ export function DashboardPage() {
                             type="button"
                             variant="secondary"
                             size="sm"
-                            onClick={() => {
-                                setIsEditing(false);
-                                setShowAddRowOptions(false);
-                                setEditName(dashboard.name || '');
-                                setEditRows(cloneDashboardRows(dashboard.rows));
-                            }}
+                            onClick={cancelEditing}
                         >
                             <XIcon data-icon="inline-start" />
                             {t('common.actions.cancel')}
@@ -442,74 +557,7 @@ export function DashboardPage() {
                             </div>
                         )}
 
-                        {showAddRowOptions ? (
-                            <div className="border-muted-foreground/20 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 mt-auto flex min-h-[80px] flex-1 items-start justify-center rounded-md border-2 border-dashed p-4 transition-colors">
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <span className="text-muted-foreground text-xs">
-                                        {t('view.dashboard.generated.add_row')}
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-10 w-16 border-2 border-dashed"
-                                        title={t('dashboard.actions.add_full_row')}
-                                        aria-label={"Add full row"}
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            handleAddRow(1);
-                                        }}
-                                    >
-                                        <div className="bg-muted-foreground/20 h-6 w-12 rounded" />
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-10 w-16 gap-1 border-2 border-dashed"
-                                        title={t('dashboard.actions.add_split_row')}
-                                        aria-label={"Add split row"}
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            handleAddRow(2);
-                                        }}
-                                    >
-                                        <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
-                                        <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-10 w-16 gap-1 border-2 border-dashed"
-                                        title={t('dashboard.actions.add_vertical_row')}
-                                        aria-label={"Add vertical row"}
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            handleAddRow(2, 'vertical');
-                                        }}
-                                    >
-                                        <div className="flex flex-col gap-0.5">
-                                            <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
-                                            <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
-                                        </div>
-                                    </Button>
-                                </div>
-                            </div>
-                        ) : (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="border-muted-foreground/20 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 mt-auto flex min-h-[80px] flex-1 items-center justify-center rounded-md border-2 border-dashed transition-colors"
-                                aria-label={"Show add row options"}
-                                onClick={() => setShowAddRowOptions(true)}
-                            >
-                                <PlusIcon
-                                    data-icon="icon"
-                                    className="opacity-50"
-                                />
-                            </Button>
-                        )}
+                        <DashboardAddRowControl onAddRow={handleAddRow} />
                     </>
                 ) : rowCount ? (
                     <ResizablePanelGroup

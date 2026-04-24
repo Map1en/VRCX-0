@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 import { useTranslation } from 'react-i18next';
 import { FullscreenImageViewer } from '@/components/media/FullscreenImageViewer.jsx';
 import { useModalStore } from '@/state/modalStore.js';
@@ -58,35 +56,6 @@ export function ModalHost() {
     const promptValueIsValid = matchesPromptPattern(
         promptDialog.inputPattern,
         promptDialog.value
-    );
-
-    const promptFooter = useMemo(
-        () => (
-            <DialogFooter>
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => handlePromptCancel(promptDialog.value)}
-                >
-                    {promptDialog.cancelText}
-                </Button>
-                <Button
-                    type="button"
-                    disabled={!promptValueIsValid}
-                    onClick={() => handlePromptOk(promptDialog.value)}
-                >
-                    {promptDialog.confirmText}
-                </Button>
-            </DialogFooter>
-        ),
-        [
-            handlePromptCancel,
-            handlePromptOk,
-            promptDialog.cancelText,
-            promptDialog.confirmText,
-            promptValueIsValid,
-            promptDialog.value
-        ]
     );
 
     return (
@@ -164,7 +133,22 @@ export function ModalHost() {
                             placeholder={t('dialog.tools.generated.prompt_value')}
                         />
                     )}
-                    {promptFooter}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handlePromptCancel(promptDialog.value)}
+                        >
+                            {promptDialog.cancelText}
+                        </Button>
+                        <Button
+                            type="button"
+                            disabled={!promptValueIsValid}
+                            onClick={() => handlePromptOk(promptDialog.value)}
+                        >
+                            {promptDialog.confirmText}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
             <Dialog

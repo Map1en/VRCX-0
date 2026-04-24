@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { configRepository } from '@/repositories/index.js';
 
@@ -55,28 +55,28 @@ export function useInstanceActivitySettings() {
         };
     }, []);
 
-    const handleBarWidthCommit = useCallback((value) => {
+    function handleBarWidthCommit(value) {
         const nextValue = normalizeBarWidth(
             Number.parseInt(value, 10) || DEFAULT_BAR_WIDTH
         );
         setBarWidth(nextValue);
         void configRepository.setInt(BAR_WIDTH_KEY, nextValue);
-    }, []);
+    }
 
-    const setDetailVisible = useCallback((value) => {
+    function setDetailVisible(value) {
         setIsDetailVisible(value);
         void configRepository.setBool(DETAIL_VISIBLE_KEY, value);
-    }, []);
+    }
 
-    const setSoloInstanceVisible = useCallback((value) => {
+    function setSoloInstanceVisible(value) {
         setIsSoloInstanceVisible(value);
         void configRepository.setBool(SOLO_INSTANCE_VISIBLE_KEY, value);
-    }, []);
+    }
 
-    const setNoFriendInstanceVisible = useCallback((value) => {
+    function setNoFriendInstanceVisible(value) {
         setIsNoFriendInstanceVisible(value);
         void configRepository.setBool(NO_FRIEND_INSTANCE_VISIBLE_KEY, value);
-    }, []);
+    }
 
     return {
         barWidth,

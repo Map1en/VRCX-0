@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
+import { getPlatformInfo } from '@/lib/avatarPlatform.js';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
@@ -27,6 +28,12 @@ function firstArray(...values) {
     return values.find((value) => Array.isArray(value)) || [];
 }
 
+function normalizeEntityId(value) {
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
+}
+
 let lastAvatarDialogTab = 'info';
 
 function resolveAvatarDialogTab(tabs, preferred, fallback = 'info') {
@@ -45,14 +52,7 @@ export function AvatarDialogTabbedView({
     canManageAvatar,
     canSelectAvatar,
     canSelectFallbackAvatar,
-    platformInfo,
     fileAnalysis = {},
-    localTags,
-    contentTags,
-    authorTags,
-    otherTags,
-    hasImposter,
-    imposterVersion,
     onRefresh,
     onSelect,
     onSelectFallback,
@@ -109,6 +109,25 @@ export function AvatarDialogTabbedView({
     const currentGalleryImage = currentGalleryRawImage
         ? convertFileUrlToImageUrl(currentGalleryRawImage, 1024)
         : '';
+    const platformInfo = getPlatformInfo(avatar.unityPackages);
+    const localTags = Array.isArray(avatar.$tags) ? avatar.$tags : [];
+    const remoteTags = Array.isArray(avatar.tags) ? avatar.tags : [];
+    const contentTags = remoteTags.filter((tag) => tag.startsWith('content_'));
+    const authorTags = remoteTags.filter((tag) =>
+        tag.startsWith('author_tag_')
+    );
+    const otherTags = remoteTags.filter(
+        (tag) => !tag.startsWith('content_') && !tag.startsWith('author_tag_')
+    );
+    const imposterPackage = Array.isArray(avatar.unityPackages)
+        ? avatar.unityPackages.find(
+              (unityPackage) => unityPackage?.variant === 'impostor'
+          )
+        : null;
+    const hasImposter = Boolean(imposterPackage);
+    const imposterVersion = normalizeEntityId(
+        imposterPackage?.impostorizerVersion
+    );
 
     useEffect(() => {
         setGalleryIndex((index) =>

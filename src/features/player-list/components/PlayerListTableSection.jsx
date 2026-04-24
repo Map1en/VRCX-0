@@ -42,7 +42,7 @@ export function PlayerListTableSection({
     const randomUserColours = usePreferencesStore(
         (state) => state.randomUserColours
     );
-    const persistedState = useMemo(() => readPersistedPlayerListState(), []);
+    const [persistedState] = useState(() => readPersistedPlayerListState());
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);
 

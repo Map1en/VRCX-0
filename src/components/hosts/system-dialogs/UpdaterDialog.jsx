@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -44,13 +44,9 @@ export function UpdaterDialog({ open, onOpenChange }) {
     const [downloading, setDownloading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [detail, setDetail] = useState('');
-    const selectedRelease = useMemo(
-        () =>
-            releases.find(
-                (release) => release.canonicalVersion === releaseVersion
-            ) || null,
-        [releaseVersion, releases]
-    );
+    const selectedRelease =
+        releases.find((release) => release.canonicalVersion === releaseVersion) ||
+        null;
 
     useEffect(() => {
         if (!open) {

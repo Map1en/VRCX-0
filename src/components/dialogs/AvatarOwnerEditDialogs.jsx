@@ -1,5 +1,5 @@
 import { UserIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -148,14 +148,8 @@ export function AvatarContentTagsDialog({
     const [ownAvatars, setOwnAvatars] = useState([]);
     const [selectedAvatarIds, setSelectedAvatarIds] = useState([]);
     const [selectedTagsCsv, setSelectedTagsCsv] = useState('');
-    const selectedTags = useMemo(
-        () => contentTagsFromCsv(selectedTagsCsv),
-        [selectedTagsCsv]
-    );
-    const selectedTagsSet = useMemo(
-        () => new Set(selectedTags),
-        [selectedTags]
-    );
+    const selectedTags = contentTagsFromCsv(selectedTagsCsv);
+    const selectedTagsSet = new Set(selectedTags);
 
     useEffect(() => {
         let active = true;

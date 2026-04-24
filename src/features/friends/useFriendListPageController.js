@@ -304,11 +304,13 @@ export function useFriendListPageController({ embedded = false } = {}) {
             }),
         [
             bulkUnfriendMode,
+            confirmDeleteFriend,
             currentUserId,
             deletingFriendIds,
             randomUserColours,
             selectedFriendIds,
-            t
+            t,
+            toggleSelectedFriend
         ]
     );
     const table = useReactTable({

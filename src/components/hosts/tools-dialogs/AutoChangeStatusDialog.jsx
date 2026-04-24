@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
@@ -58,38 +58,34 @@ export function AutoChangeStatusDialog({ open, onOpenChange }) {
     });
     const [loading, setLoading] = useState(false);
 
-    const groupOptions = useMemo(() => {
-        const remote = (favoriteFriendGroups || []).map((group) => ({
-            value: group.key,
-            label: group.displayName || group.name || group.key
-        }));
-        const local = (localFriendFavoriteGroups || []).map((group) => ({
-            value: `local:${group}`,
-            label: group
-        }));
-        return [...remote, ...local].filter((group) => group.value);
-    }, [favoriteFriendGroups, localFriendFavoriteGroups]);
-
-    const instanceOptions = useMemo(
-        () =>
-            instanceTypes.map((type) => {
-                const mapKey = type === 'groupOnly' ? 'groupMembers' : type;
-                const localeKey = accessTypeLocaleKeyMap[mapKey];
-                const groupKey = accessTypeLocaleKeyMap.group;
-                return {
-                    value: type,
-                    label:
-                        mapKey === 'groupPublic' ||
-                        mapKey === 'groupPlus' ||
-                        mapKey === 'groupMembers'
-                            ? `${t(groupKey)} ${t(localeKey)}`
-                            : localeKey
-                              ? t(localeKey)
-                              : type
-                };
-            }),
-        [t]
+    const remoteGroupOptions = (favoriteFriendGroups || []).map((group) => ({
+        value: group.key,
+        label: group.displayName || group.name || group.key
+    }));
+    const localGroupOptions = (localFriendFavoriteGroups || []).map((group) => ({
+        value: `local:${group}`,
+        label: group
+    }));
+    const groupOptions = [...remoteGroupOptions, ...localGroupOptions].filter(
+        (group) => group.value
     );
+
+    const instanceOptions = instanceTypes.map((type) => {
+        const mapKey = type === 'groupOnly' ? 'groupMembers' : type;
+        const localeKey = accessTypeLocaleKeyMap[mapKey];
+        const groupKey = accessTypeLocaleKeyMap.group;
+        return {
+            value: type,
+            label:
+                mapKey === 'groupPublic' ||
+                mapKey === 'groupPlus' ||
+                mapKey === 'groupMembers'
+                    ? `${t(groupKey)} ${t(localeKey)}`
+                    : localeKey
+                      ? t(localeKey)
+                      : type
+        };
+    });
 
     useEffect(() => {
         if (!open) {

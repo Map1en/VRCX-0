@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -53,10 +53,8 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
     const [detail, setDetail] = useState('');
     const [autoBackup, setAutoBackup] = useState(false);
     const [askRestore, setAskRestore] = useState(false);
-    const selectedBackup = useMemo(
-        () => backups.find((backup) => backup.key === selectedKey) || null,
-        [backups, selectedKey]
-    );
+    const selectedBackup =
+        backups.find((backup) => backup.key === selectedKey) || null;
 
     async function refreshBackups() {
         const requestId = refreshRequestRef.current + 1;

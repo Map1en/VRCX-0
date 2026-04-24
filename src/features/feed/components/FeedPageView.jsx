@@ -8,102 +8,71 @@ import { FeedTableShell } from './FeedTableShell.jsx';
 import { FeedToolbar } from './FeedToolbar.jsx';
 
 export function FeedPageView({
-    activeFilterCount,
-    activeFilters,
-    currentEndpoint,
-    dateDraftFrom,
-    dateDraftRange,
-    dateDraftTo,
-    dateFilterOpen,
     embedded,
-    feedFilterTypes,
-    favoritesOnly,
-    isFavoritesLoaded,
-    loadStatus,
-    loadingPreviousInstancesKey,
-    onApplyDateFilter,
-    onClearDateFilter,
-    onClearFeedFilters,
-    onClearSearch,
-    onDateFilterOpenChange,
-    onDateRangeSelect,
-    onNewInstance,
-    onOpenPreviousInstances,
-    onPageSizeChange,
-    onPreviousInstancesOpenChange,
-    onPreviousInstancesRowsChange,
-    onPreviewImage,
-    onSearchBlur,
-    onSearchDraftChange,
-    onSearchEnter,
-    onToggleFavoritesOnly,
-    onToggleFeedFilter,
-    pageSizes,
-    pagination,
-    previousInstancesOpen,
-    previousInstancesRows,
-    previousInstancesTitle,
-    resolvePageSize,
-    rows,
-    searchDraft,
     t,
-    table,
-    columns,
-    todayDate
+    toolbarState,
+    toolbarActions,
+    tableState,
+    tableActions,
+    previousInstancesDialog
 }) {
     return (
         <PageScaffold embedded={embedded} className={embedded ? '' : 'feed'}>
             <FeedToolbar
-                activeFilterCount={activeFilterCount}
-                activeFilters={activeFilters}
-                dateDraftFrom={dateDraftFrom}
-                dateDraftRange={dateDraftRange}
-                dateDraftTo={dateDraftTo}
-                dateFilterOpen={dateFilterOpen}
-                favoritesOnly={favoritesOnly}
-                feedFilterTypes={feedFilterTypes}
-                onApplyDateFilter={onApplyDateFilter}
-                onClearDateFilter={onClearDateFilter}
-                onClearFeedFilters={onClearFeedFilters}
-                onClearSearch={onClearSearch}
-                onDateFilterOpenChange={onDateFilterOpenChange}
-                onDateRangeSelect={onDateRangeSelect}
-                onSearchBlur={onSearchBlur}
-                onSearchDraftChange={onSearchDraftChange}
-                onSearchEnter={onSearchEnter}
-                onToggleFavoritesOnly={onToggleFavoritesOnly}
-                onToggleFeedFilter={onToggleFeedFilter}
-                searchDraft={searchDraft}
+                activeFilterCount={toolbarState.activeFilterCount}
+                activeFilters={toolbarState.activeFilters}
+                dateDraftFrom={toolbarState.dateDraftFrom}
+                dateDraftRange={toolbarState.dateDraftRange}
+                dateDraftTo={toolbarState.dateDraftTo}
+                dateFilterOpen={toolbarState.dateFilterOpen}
+                favoritesOnly={toolbarState.favoritesOnly}
+                feedFilterTypes={toolbarState.feedFilterTypes}
+                onApplyDateFilter={toolbarActions.onApplyDateFilter}
+                onClearDateFilter={toolbarActions.onClearDateFilter}
+                onClearFeedFilters={toolbarActions.onClearFeedFilters}
+                onClearSearch={toolbarActions.onClearSearch}
+                onDateFilterOpenChange={toolbarActions.onDateFilterOpenChange}
+                onDateRangeSelect={toolbarActions.onDateRangeSelect}
+                onSearchBlur={toolbarActions.onSearchBlur}
+                onSearchDraftChange={toolbarActions.onSearchDraftChange}
+                onSearchEnter={toolbarActions.onSearchEnter}
+                onToggleFavoritesOnly={toolbarActions.onToggleFavoritesOnly}
+                onToggleFeedFilter={toolbarActions.onToggleFeedFilter}
+                searchDraft={toolbarState.searchDraft}
                 t={t}
-                table={table}
-                todayDate={todayDate}
+                table={toolbarState.table}
+                todayDate={toolbarState.todayDate}
             />
             <PageBody>
                 <FeedTableShell
-                    table={table}
-                    columns={columns}
-                    rows={rows}
-                    loadStatus={loadStatus}
-                    favoritesOnly={favoritesOnly}
-                    isFavoritesLoaded={isFavoritesLoaded}
-                    loadingPreviousInstancesKey={loadingPreviousInstancesKey}
-                    currentEndpoint={currentEndpoint}
-                    onOpenPreviousInstances={onOpenPreviousInstances}
-                    onNewInstance={onNewInstance}
-                    onPreviewImage={onPreviewImage}
-                    pagination={pagination}
-                    pageSizes={pageSizes}
-                    resolvePageSize={resolvePageSize}
-                    setPagination={onPageSizeChange}
+                    table={tableState.table}
+                    columns={tableState.columns}
+                    rows={tableState.rows}
+                    loadStatus={tableState.loadStatus}
+                    favoritesOnly={tableState.favoritesOnly}
+                    isFavoritesLoaded={tableState.isFavoritesLoaded}
+                    loadingPreviousInstancesKey={
+                        tableState.loadingPreviousInstancesKey
+                    }
+                    currentEndpoint={tableState.currentEndpoint}
+                    onOpenPreviousInstances={
+                        tableActions.onOpenPreviousInstances
+                    }
+                    onNewInstance={tableActions.onNewInstance}
+                    onPreviewImage={tableActions.onPreviewImage}
+                    pagination={tableState.pagination}
+                    pageSizes={tableState.pageSizes}
+                    resolvePageSize={tableState.resolvePageSize}
+                    setPagination={tableActions.onPageSizeChange}
                     t={t}
                 />
             </PageBody>
             <PreviousInstancesTableDialog
-                open={previousInstancesOpen}
-                onOpenChange={onPreviousInstancesOpenChange}
-                title={previousInstancesTitle}
-                instances={previousInstancesRows}
-                onRowsChange={onPreviousInstancesRowsChange}
+                open={previousInstancesDialog.open}
+                onOpenChange={previousInstancesDialog.onOpenChange}
+                title={previousInstancesDialog.title}
+                instances={previousInstancesDialog.rows}
+                onRowsChange={previousInstancesDialog.onRowsChange}
             />
         </PageScaffold>
     );

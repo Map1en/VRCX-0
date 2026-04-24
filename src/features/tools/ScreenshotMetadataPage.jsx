@@ -73,13 +73,10 @@ export function ScreenshotMetadataPage() {
     const [isDeletingMetadata, setIsDeletingMetadata] = useState(false);
     const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
 
-    const currentSearchType = useMemo(
-        () =>
-            SCREENSHOT_METADATA_SEARCH_TYPES.find(
-                (type) => type.value === searchType
-            ) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0],
-        [searchType]
-    );
+    const currentSearchType =
+        SCREENSHOT_METADATA_SEARCH_TYPES.find(
+            (type) => type.value === searchType
+        ) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0];
 
     const sortedSearchRows = useMemo(
         () => sortScreenshotSearchRows(searchRows, searchSort),
@@ -90,10 +87,7 @@ export function ScreenshotMetadataPage() {
         () => sortedSearchRows.map((row) => row.filePath),
         [sortedSearchRows]
     );
-    const selectedPathIndex = useMemo(
-        () => searchNavigationPaths.indexOf(selectedPath),
-        [searchNavigationPaths, selectedPath]
-    );
+    const selectedPathIndex = searchNavigationPaths.indexOf(selectedPath);
 
     function resetSearchContext({
         clearQuery = false,

@@ -175,6 +175,225 @@ function getNextColumnConfig(config, activeColumns, columnKey) {
     return { ...config, columns };
 }
 
+function DashboardInstanceSettingsMenu({ config, configUpdater, activeColumns, t }) {
+    if (!configUpdater) {
+        return null;
+    }
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={"Widget settings"}
+                >
+                    <SettingsIcon data-icon="inline-start" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuGroup>
+                    {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
+                        (column) => (
+                            <DropdownMenuCheckboxItem
+                                key={column.key}
+                                checked={activeColumns.includes(column.key)}
+                                disabled={column.required}
+                                onSelect={(event) => event.preventDefault()}
+                                onCheckedChange={() =>
+                                    configUpdater(
+                                        getNextColumnConfig(
+                                            config,
+                                            activeColumns,
+                                            column.key
+                                        )
+                                    )
+                                }
+                            >
+                                {getDashboardInstanceWidgetColumnLabel(
+                                    column,
+                                    t
+                                )}
+                            </DropdownMenuCheckboxItem>
+                        )
+                    )}
+                </DropdownMenuGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+function DashboardInstanceWidgetShell({ children, settingsMenu, t }) {
+    return (
+        <div className="flex h-full min-h-0 flex-col">
+            <DashboardWidgetHeader
+                title={t('dashboard.widget.instance')}
+                icon="ri-group-3-line"
+                path="/player-list"
+            >
+                {settingsMenu}
+            </DashboardWidgetHeader>
+            {children}
+        </div>
+    );
+}
+
+function DashboardInstanceSummary({
+    context,
+    currentUserId,
+    enrichedRows,
+    parsedLocation,
+    t
+}) {
+    const sourceText = joinCompactParts([
+        context.source === 'database' ? 'Local game log' : 'Runtime fallback',
+        context.createdAt || ''
+    ]);
+
+    return (
+        <div className="bg-muted/10 text-muted-foreground mx-3 mt-3 rounded-md border px-3 py-2 text-xs">
+            <div className="text-foreground truncate font-medium">
+                {context.location ? (
+                    <LocationWorld
+                        locationObject={context.location}
+                        currentUserId={currentUserId}
+                        worldDialogShortName={parsedLocation.shortName || ''}
+                        grouphint={context.groupName || ''}
+                        hint={context.worldName || ''}
+                    />
+                ) : (
+                    context.worldName || 'Current instance'
+                )}
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                <span>
+                    {context.playerCount || enrichedRows.length}{' '}
+                    {t('dashboard.widget.instance_players')}
+                </span>
+                {parsedLocation.instanceName ? (
+                    <span>#{parsedLocation.instanceName}</span>
+                ) : null}
+                {parsedLocation.accessTypeName ? (
+                    <span>{parsedLocation.accessTypeName}</span>
+                ) : null}
+                {context.groupName ? <span>{context.groupName}</span> : null}
+                {sourceText ? <span>{sourceText}</span> : null}
+            </div>
+        </div>
+    );
+}
+
+function DashboardInstancePlayersTable({ activeColumns, rows }) {
+    return (
+        <div className="min-h-0 flex-1 overflow-auto">
+            <Table className="app-data-table table-fixed">
+                <TableBody>
+                    {rows.map((row) => (
+                        <TableRow key={row.id}>
+                            {activeColumns.includes('icon') ? (
+                                <TableCell className="w-20 align-top">
+                                    <div className="flex items-center gap-1">
+                                        {row.isFavorite ? (
+                                            <Badge
+                                                variant="default"
+                                                className="px-1.5"
+                                            >
+                                                <HeartIcon className="size-3 fill-current" />
+                                            </Badge>
+                                        ) : null}
+                                        {row.isFriend ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="px-1.5"
+                                            >
+                                                <ShieldIcon className="size-3" />
+                                            </Badge>
+                                        ) : null}
+                                        {!row.isFavorite && !row.isFriend ? (
+                                            <Badge
+                                                variant="outline"
+                                                className="px-1.5"
+                                            >
+                                                <UserIcon className="size-3" />
+                                            </Badge>
+                                        ) : null}
+                                    </div>
+                                </TableCell>
+                            ) : null}
+                            <TableCell className="align-top">
+                                <div className="flex flex-col gap-1">
+                                    <div className="text-sm font-medium">
+                                        {row.displayName}
+                                    </div>
+                                    <div className="text-muted-foreground flex flex-wrap gap-2 text-xs">
+                                        {activeColumns.includes('rank') ? (
+                                            <span>{row.trustLevel || ''}</span>
+                                        ) : null}
+                                        {activeColumns.includes('status') ? (
+                                            row.statusValue ? (
+                                                <span
+                                                    title={row.statusValue}
+                                                    className="bg-muted-foreground/70 inline-block size-2.5 rounded-full border"
+                                                />
+                                            ) : null
+                                        ) : null}
+                                    </div>
+                                </div>
+                            </TableCell>
+                            {activeColumns.includes('timer') ? (
+                                <TableCell className="text-muted-foreground w-24 text-right align-top text-xs tabular-nums">
+                                    {row.joinedAtMs > 0
+                                        ? timeToText(row.timerMs, true)
+                                        : ''}
+                                </TableCell>
+                            ) : null}
+                            {activeColumns.includes('platform') ? (
+                                <TableCell className="w-24 align-top">
+                                    {(() => {
+                                        const PlatformIcon = row.platformIcon;
+                                        return (
+                                            <div
+                                                className={cn(
+                                                    'flex items-center gap-1.5 text-xs',
+                                                    row.platformClassName
+                                                )}
+                                            >
+                                                {PlatformIcon ? (
+                                                    <PlatformIcon className="size-3.5" />
+                                                ) : null}
+                                                <span>{row.platformLabel}</span>
+                                            </div>
+                                        );
+                                    })()}
+                                </TableCell>
+                            ) : null}
+                            {activeColumns.includes('language') ? (
+                                <TableCell className="text-muted-foreground w-28 align-top text-xs">
+                                    <span className="inline-flex items-center gap-1">
+                                        {row.languageEntries
+                                            .slice(0, 2)
+                                            .map((entry) => (
+                                                <span
+                                                    key={`${row.id}:${entry.key}`}
+                                                    title={
+                                                        entry.value || entry.key
+                                                    }
+                                                >
+                                                    {entry.flag}
+                                                </span>
+                                            ))}
+                                    </span>
+                                </TableCell>
+                            ) : null}
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    );
+}
+
 export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -210,7 +429,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
     const [detail, setDetail] = useState('');
     const [clockNow, setClockNow] = useState(() => Date.now());
 
-    const activeColumns = useMemo(() => getActiveColumns(config), [config]);
+    const activeColumns = getActiveColumns(config);
     const favoriteIdSet = useMemo(
         () => buildFavoriteIdSet(remoteFavoriteFriendIds, localFriendFavorites),
         [localFriendFavorites, remoteFavoriteFriendIds]
@@ -338,260 +557,75 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
         [clockNow, favoriteIdSet, friendsById, rows]
     );
 
-    const settingsMenu = configUpdater ? (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={"Widget settings"}
-                >
-                    <SettingsIcon data-icon="inline-start" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuGroup>
-                    {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
-                        (column) => (
-                            <DropdownMenuCheckboxItem
-                                key={column.key}
-                                checked={activeColumns.includes(column.key)}
-                                disabled={column.required}
-                                onSelect={(event) => event.preventDefault()}
-                                onCheckedChange={() =>
-                                    configUpdater(
-                                        getNextColumnConfig(
-                                            config,
-                                            activeColumns,
-                                            column.key
-                                        )
-                                    )
-                                }
-                            >
-                                {getDashboardInstanceWidgetColumnLabel(column, t)}
-                            </DropdownMenuCheckboxItem>
-                        )
-                    )}
-                </DropdownMenuGroup>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    ) : null;
-    const renderShell = (children) => (
-        <div className="flex h-full min-h-0 flex-col">
-            <DashboardWidgetHeader
-                title={t('dashboard.widget.instance')}
-                icon="ri-group-3-line"
-                path="/player-list"
-            >
-                {settingsMenu}
-            </DashboardWidgetHeader>
-            {children}
-        </div>
+    const settingsMenu = (
+        <DashboardInstanceSettingsMenu
+            activeColumns={activeColumns}
+            config={config}
+            configUpdater={configUpdater}
+            t={t}
+        />
     );
 
     if (!isGameRunning) {
-        return renderShell(
-            <DashboardWidgetEmptyState
-                title={t('view.dashboard.generated.instance_widget_idle')}
-                description={t('view.dashboard.generated.start_vrchat_before_the_dashboard_can_rebuild_the_current_in')}
-            />
+        return (
+            <DashboardInstanceWidgetShell settingsMenu={settingsMenu} t={t}>
+                <DashboardWidgetEmptyState
+                    title={t('view.dashboard.generated.instance_widget_idle')}
+                    description={t('view.dashboard.generated.start_vrchat_before_the_dashboard_can_rebuild_the_current_in')}
+                />
+            </DashboardInstanceWidgetShell>
         );
     }
 
     if (loadStatus === 'error') {
-        return renderShell(
-            <DashboardWidgetEmptyState
-                title={t('view.dashboard.generated.instance_widget_failed')}
-                description={userFacingErrorMessage(
-                    detail,
-                    'Current players did not finish loading.'
-                )}
-            />
+        return (
+            <DashboardInstanceWidgetShell settingsMenu={settingsMenu} t={t}>
+                <DashboardWidgetEmptyState
+                    title={t('view.dashboard.generated.instance_widget_failed')}
+                    description={userFacingErrorMessage(
+                        detail,
+                        'Current players did not finish loading.'
+                    )}
+                />
+            </DashboardInstanceWidgetShell>
         );
     }
 
     if (loadStatus === 'running' && enrichedRows.length === 0) {
-        return renderShell(
-            <div className="text-muted-foreground flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm">
-                <Spinner />
-                {t('view.dashboard.generated.loading_instance_widget')}
-            </div>
+        return (
+            <DashboardInstanceWidgetShell settingsMenu={settingsMenu} t={t}>
+                <div className="text-muted-foreground flex min-h-[180px] flex-1 items-center justify-center gap-2 text-sm">
+                    <Spinner />
+                    {t('view.dashboard.generated.loading_instance_widget')}
+                </div>
+            </DashboardInstanceWidgetShell>
         );
     }
 
     if (!enrichedRows.length) {
-        return renderShell(
-            <DashboardWidgetEmptyState
-                title={t('view.dashboard.generated.instance_widget_idle')}
-                description={t('view.dashboard.generated.current_players_are_not_available_yet')}
-            />
+        return (
+            <DashboardInstanceWidgetShell settingsMenu={settingsMenu} t={t}>
+                <DashboardWidgetEmptyState
+                    title={t('view.dashboard.generated.instance_widget_idle')}
+                    description={t('view.dashboard.generated.current_players_are_not_available_yet')}
+                />
+            </DashboardInstanceWidgetShell>
         );
     }
 
-    return renderShell(
-        <>
-            <div className="bg-muted/10 text-muted-foreground mx-3 mt-3 rounded-md border px-3 py-2 text-xs">
-                <div className="text-foreground truncate font-medium">
-                    {context.location ? (
-                        <LocationWorld
-                            locationObject={context.location}
-                            currentUserId={currentUserId}
-                            worldDialogShortName={
-                                parsedLocation.shortName || ''
-                            }
-                            grouphint={context.groupName || ''}
-                            hint={context.worldName || ''}
-                        />
-                    ) : (
-                        context.worldName || 'Current instance'
-                    )}
-                </div>
-                <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1">
-                    <span>
-                        {context.playerCount || enrichedRows.length} {t('dashboard.widget.instance_players')}
-                    </span>
-                    {parsedLocation.instanceName ? (
-                        <span>#{parsedLocation.instanceName}</span>
-                    ) : null}
-                    {parsedLocation.accessTypeName ? (
-                        <span>{parsedLocation.accessTypeName}</span>
-                    ) : null}
-                    {context.groupName ? (
-                        <span>{context.groupName}</span>
-                    ) : null}
-                    {joinCompactParts([
-                        context.source === 'database'
-                            ? 'Local game log'
-                            : 'Runtime fallback',
-                        context.createdAt || ''
-                    ]) ? (
-                        <span>
-                            {joinCompactParts([
-                                context.source === 'database'
-                                    ? 'Local game log'
-                                    : 'Runtime fallback',
-                                context.createdAt || ''
-                            ])}
-                        </span>
-                    ) : null}
-                </div>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-auto">
-                <Table className="app-data-table table-fixed">
-                    <TableBody>
-                        {enrichedRows.map((row) => (
-                            <TableRow key={row.id}>
-                                {activeColumns.includes('icon') ? (
-                                    <TableCell className="w-20 align-top">
-                                        <div className="flex items-center gap-1">
-                                            {row.isFavorite ? (
-                                                <Badge
-                                                    variant="default"
-                                                    className="px-1.5"
-                                                >
-                                                    <HeartIcon className="size-3 fill-current" />
-                                                </Badge>
-                                            ) : null}
-                                            {row.isFriend ? (
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="px-1.5"
-                                                >
-                                                    <ShieldIcon className="size-3" />
-                                                </Badge>
-                                            ) : null}
-                                            {!row.isFavorite &&
-                                            !row.isFriend ? (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="px-1.5"
-                                                >
-                                                    <UserIcon className="size-3" />
-                                                </Badge>
-                                            ) : null}
-                                        </div>
-                                    </TableCell>
-                                ) : null}
-                                <TableCell className="align-top">
-                                    <div className="flex flex-col gap-1">
-                                        <div className="text-sm font-medium">
-                                            {row.displayName}
-                                        </div>
-                                        <div className="text-muted-foreground flex flex-wrap gap-2 text-xs">
-                                            {activeColumns.includes('rank') ? (
-                                                <span>
-                                                    {row.trustLevel || ''}
-                                                </span>
-                                            ) : null}
-                                            {activeColumns.includes(
-                                                'status'
-                                            ) ? (
-                                                row.statusValue ? (
-                                                    <span
-                                                        title={row.statusValue}
-                                                        className="bg-muted-foreground/70 inline-block size-2.5 rounded-full border"
-                                                    />
-                                                ) : null
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                </TableCell>
-                                {activeColumns.includes('timer') ? (
-                                    <TableCell className="text-muted-foreground w-24 text-right align-top text-xs tabular-nums">
-                                        {row.joinedAtMs > 0
-                                            ? timeToText(row.timerMs, true)
-                                            : ''}
-                                    </TableCell>
-                                ) : null}
-                                {activeColumns.includes('platform') ? (
-                                    <TableCell className="w-24 align-top">
-                                        {(() => {
-                                            const PlatformIcon =
-                                                row.platformIcon;
-                                            return (
-                                                <div
-                                                    className={cn(
-                                                        'flex items-center gap-1.5 text-xs',
-                                                        row.platformClassName
-                                                    )}
-                                                >
-                                                    {PlatformIcon ? (
-                                                        <PlatformIcon className="size-3.5" />
-                                                    ) : null}
-                                                    <span>
-                                                        {row.platformLabel}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })()}
-                                    </TableCell>
-                                ) : null}
-                                {activeColumns.includes('language') ? (
-                                    <TableCell className="text-muted-foreground w-28 align-top text-xs">
-                                        <span className="inline-flex items-center gap-1">
-                                            {row.languageEntries
-                                                .slice(0, 2)
-                                                .map((entry) => (
-                                                    <span
-                                                        key={`${row.id}:${entry.key}`}
-                                                        title={
-                                                            entry.value ||
-                                                            entry.key
-                                                        }
-                                                    >
-                                                        {entry.flag}
-                                                    </span>
-                                                ))}
-                                        </span>
-                                    </TableCell>
-                                ) : null}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
-        </>
+    return (
+        <DashboardInstanceWidgetShell settingsMenu={settingsMenu} t={t}>
+            <DashboardInstanceSummary
+                context={context}
+                currentUserId={currentUserId}
+                enrichedRows={enrichedRows}
+                parsedLocation={parsedLocation}
+                t={t}
+            />
+            <DashboardInstancePlayersTable
+                activeColumns={activeColumns}
+                rows={enrichedRows}
+            />
+        </DashboardInstanceWidgetShell>
     );
 }

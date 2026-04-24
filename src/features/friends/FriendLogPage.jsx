@@ -51,7 +51,7 @@ export function FriendLogPage({ embedded = false } = {}) {
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const confirm = useModalStore((state) => state.confirm);
 
-    const persistedState = useMemo(() => readPersistedState(), []);
+    const [persistedState] = useState(() => readPersistedState());
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
     instanceRepository,
@@ -414,22 +414,19 @@ export function useUserDialogLocationPanel({
         };
     }, [currentEndpoint, currentInviteLocation, reloadToken]);
 
-    const refreshLocationPanel = useCallback(
-        (requestLocation) => {
-            const activeLocation = resolvePresenceLocation(profile);
-            if (
-                requestLocation &&
-                activeLocation &&
-                !isSameLocationTag(requestLocation, activeLocation)
-            ) {
-                return null;
-            }
-
-            setLocationRefreshToken((value) => value + 1);
+    function refreshLocationPanel(requestLocation) {
+        const activeLocation = resolvePresenceLocation(profile);
+        if (
+            requestLocation &&
+            activeLocation &&
+            !isSameLocationTag(requestLocation, activeLocation)
+        ) {
             return null;
-        },
-        [profile]
-    );
+        }
+
+        setLocationRefreshToken((value) => value + 1);
+        return null;
+    }
 
     const inviteInstanceCache = useMemo(() => {
         const cache = buildCachedInstanceMap(groupInstances);

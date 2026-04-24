@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -14,10 +14,8 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 import { GroupDialogEmptyState } from './group-dialog/GroupDialogEmptyState.jsx';
 import { buildGroupDialogViewState } from './group-dialog/groupDialogViewState.js';
-import {
-    mergeGroupInstances,
-    normalizeEntityId
-} from './group-dialog/groupInstances.js';
+import { normalizeEntityId } from './group-dialog/groupInstances.js';
+import { useGroupDialogActiveInstances } from './group-dialog/useGroupDialogActiveInstances.js';
 import { useGroupOwnerProfile } from './group-dialog/useGroupOwnerProfile.js';
 import { GroupDialogTabbedView } from './GroupDialogTabbedView.jsx';
 
@@ -49,28 +47,18 @@ export function GroupDialogContent({ groupId, seedData = null }) {
     const [actionStatus, setActionStatus] = useState('idle');
     const [detail, setDetail] = useState('');
     const [previousInstances, setPreviousInstances] = useState([]);
-    const [rawActiveInstances, setRawActiveInstances] = useState([]);
     const actionStatusRef = useRef('idle');
     const activeGroupTargetRef = useRef({
         groupId: normalizedGroupId,
         endpoint: currentEndpoint
     });
-    const activeInstances = useMemo(
-        () =>
-            mergeGroupInstances(rawActiveInstances, {
-                groupId: normalizedGroupId,
-                friendsById,
-                currentUserSnapshot,
-                currentLocation
-            }),
-        [
-            currentLocation,
-            currentUserSnapshot,
+    const { activeInstances, setRawActiveInstances } =
+        useGroupDialogActiveInstances({
+            groupId: normalizedGroupId,
             friendsById,
-            normalizedGroupId,
-            rawActiveInstances
-        ]
-    );
+            currentUserSnapshot,
+            currentLocation
+        });
     const ownerProfile = useGroupOwnerProfile({
         currentEndpoint,
         friendsById,

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold.jsx';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
-import { getPlatformInfo } from '@/lib/avatarPlatform.js';
+import { getAvailablePlatforms } from '@/lib/avatarPlatform.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis.js';
 import {
@@ -375,30 +375,12 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         avatar.imageUrl || avatar.thumbnailImageUrl,
         512
     );
-    const platformInfo = getPlatformInfo(avatar.unityPackages);
     const isCurrentAvatar =
         normalizeEntityId(currentAvatarId) === normalizeEntityId(avatar.id);
     const isFavorite = favoriteAvatarIds.has(normalizeEntityId(avatar.id));
     const canManageAvatar =
         normalizeEntityId(avatar.authorId) === normalizeEntityId(currentUserId);
-    const localTags = Array.isArray(avatar.$tags) ? avatar.$tags : [];
-    const remoteTags = Array.isArray(avatar.tags) ? avatar.tags : [];
-    const contentTags = remoteTags.filter((tag) => tag.startsWith('content_'));
-    const authorTags = remoteTags.filter((tag) =>
-        tag.startsWith('author_tag_')
-    );
-    const otherTags = remoteTags.filter(
-        (tag) => !tag.startsWith('content_') && !tag.startsWith('author_tag_')
-    );
-    const imposterPackage = Array.isArray(avatar.unityPackages)
-        ? avatar.unityPackages.find(
-              (unityPackage) => unityPackage?.variant === 'impostor'
-          )
-        : null;
-    const hasImposter = Boolean(imposterPackage);
-    const imposterVersion = normalizeEntityId(
-        imposterPackage?.impostorizerVersion
-    );
+    const availablePlatforms = getAvailablePlatforms(avatar.unityPackages);
     const canSelectAvatar =
         !avatarBlocked &&
         !isCurrentAvatar &&
@@ -408,7 +390,7 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 normalizeEntityId(currentUserId));
     const canSelectFallbackAvatar = Boolean(
         avatar.id &&
-        (platformInfo?.android?.platform || platformInfo?.ios?.platform)
+        (availablePlatforms.isQuest || availablePlatforms.isIos)
     );
     const avatarForView = {
         ...avatar,
@@ -490,14 +472,7 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 canManageAvatar={canManageAvatar}
                 canSelectAvatar={canSelectAvatar}
                 canSelectFallbackAvatar={canSelectFallbackAvatar}
-                platformInfo={platformInfo}
                 fileAnalysis={avatarSideData.fileAnalysis}
-                localTags={localTags}
-                contentTags={contentTags}
-                authorTags={authorTags}
-                otherTags={otherTags}
-                hasImposter={hasImposter}
-                imposterVersion={imposterVersion}
                 onRefresh={() => void avatarActions.refreshAvatarProfile()}
                 onSelect={() => void avatarActions.selectAvatar()}
                 onSelectFallback={() => void avatarActions.selectFallbackAvatar()}

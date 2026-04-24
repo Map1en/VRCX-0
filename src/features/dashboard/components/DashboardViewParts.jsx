@@ -1,5 +1,5 @@
 import { Trash2Icon, XIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 
 import { useTranslation } from 'react-i18next';
@@ -227,10 +227,7 @@ export function DashboardPanelSelectorDialog({
 }) {
     const { t } = useTranslation();
 
-    const options = useMemo(
-        () => createDashboardPanelSelectOptions(currentPanelKey, t),
-        [currentPanelKey, t]
-    );
+    const options = createDashboardPanelSelectOptions(currentPanelKey, t);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

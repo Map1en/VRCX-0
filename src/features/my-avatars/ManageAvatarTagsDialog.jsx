@@ -1,5 +1,5 @@
 import { PlusIcon, SaveIcon, XIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import { TAG_COLORS, getTagColor } from '@/shared/constants/tags.js';
@@ -79,10 +79,7 @@ export function ManageAvatarTagsDialog({
         }
     }, [avatar, open]);
 
-    const tagNames = useMemo(
-        () => new Set(tagEntries.map((entry) => entry.tag)),
-        [tagEntries]
-    );
+    const tagNames = new Set(tagEntries.map((entry) => entry.tag));
 
     function addTag() {
         const tag = normalizeTagName(newTagName);

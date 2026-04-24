@@ -1,5 +1,5 @@
 import { PlusIcon, XIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
@@ -51,11 +51,8 @@ export function TablePageSizesDialog({ open, onOpenChange, onSaved }) {
     const { t } = useTranslation();
     const [draft, setDraft] = useState(() => [...TABLE_PAGE_SIZE_DEFAULTS]);
     const [input, setInput] = useState('');
-    const options = useMemo(() => buildTablePageSizeOptions(draft), [draft]);
-    const filteredOptions = useMemo(
-        () => filterTablePageSizeOptions(options, input),
-        [input, options]
-    );
+    const options = buildTablePageSizeOptions(draft);
+    const filteredOptions = filterTablePageSizeOptions(options, input);
 
     useEffect(() => {
         if (!open) {

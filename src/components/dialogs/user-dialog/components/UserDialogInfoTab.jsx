@@ -33,21 +33,98 @@ import {
     formatStatsDate,
     formatStatsDuration
 } from '../userDialogRows.js';
+import { useUserBioTranslation } from '../useUserBioTranslation.js';
 import { EntityList } from '../UserDialogViewParts.jsx';
 
+function UserDialogPresenceSection({ presence, presenceActions, profile, t }) {
+    const {
+        visiblePresenceLocation = '',
+        locationInstance = null,
+        locationOwnerId = '',
+        locationPlayerCount = 0,
+        currentUserId = '',
+        currentEndpoint = '',
+        locationWorldTitle = '',
+        locationFriendCount = 0,
+        previousInstances = [],
+        locationInstanceUsers = []
+    } = presence || {};
+
+    if (!visiblePresenceLocation) {
+        return null;
+    }
+
+    return (
+        <div className="border-border mb-2 flex flex-col gap-2 border-b pb-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                {visiblePresenceLocation.includes(':') ? (
+                    <>
+                        <LocationWorld
+                            className="min-w-0"
+                            locationObject={{
+                                ...(locationInstance || {}),
+                                tag: visiblePresenceLocation,
+                                location: visiblePresenceLocation,
+                                userId: locationOwnerId,
+                                playerCount: locationPlayerCount,
+                                capacity:
+                                    locationInstance?.capacity ??
+                                    locationInstance?.recommendedCapacity
+                            }}
+                            currentUserId={currentUserId}
+                            grouphint={
+                                locationInstance?.groupName ||
+                                profile.$location?.groupName ||
+                                ''
+                            }
+                            endpoint={currentEndpoint}
+                            hint={locationWorldTitle}
+                            instanceClickAction="world"
+                        />
+                        <InstanceActionBar
+                            className="shrink-0"
+                            location={visiblePresenceLocation}
+                            launchLocation={visiblePresenceLocation}
+                            inviteLocation={visiblePresenceLocation}
+                            instanceLocation={visiblePresenceLocation}
+                            instance={locationInstance}
+                            worldName={locationWorldTitle}
+                            friendCount={locationFriendCount}
+                            playerCount={locationPlayerCount}
+                            capacity={
+                                locationInstance?.capacity ??
+                                locationInstance?.recommendedCapacity
+                            }
+                            refreshTooltip={t(
+                                'dialog.user.info.refresh_instance_info'
+                            )}
+                            showHistory={Boolean(previousInstances.length)}
+                            onRefresh={presenceActions?.onRefreshLocation}
+                            onHistory={presenceActions?.onShowInstanceHistory}
+                        />
+                    </>
+                ) : (
+                    <Location
+                        location={visiblePresenceLocation}
+                        hint={locationWorldTitle}
+                        enableContextMenu
+                        showLaunchActions
+                    />
+                )}
+            </div>
+            {locationInstanceUsers.length ? (
+                <div className="max-h-36 overflow-auto">
+                    <EntityList rows={locationInstanceUsers} kind="user" />
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
 export function UserDialogInfoTab({
-    visiblePresenceLocation,
-    locationInstance,
-    locationOwnerId,
-    locationPlayerCount,
-    currentUserId,
-    currentEndpoint,
-    locationWorldTitle,
-    locationFriendCount,
-    previousInstances,
-    onRefreshLocation,
+    presence,
+    presenceActions,
     changeTab,
-    locationInstanceUsers,
     profile,
     hideUserNotes,
     onEditMemo,
@@ -60,10 +137,6 @@ export function UserDialogInfoTab({
     representedGroupStatus,
     representedGroup,
     openGroupDialog,
-    visibleBio,
-    bioTranslationLoading,
-    translatedBioActive,
-    toggleBioTranslation,
     bioLinks,
     isCurrentUser,
     lastSeen,
@@ -73,80 +146,22 @@ export function UserDialogInfoTab({
     copyUserText,
     t
 }) {
+    const {
+        visibleBio,
+        bioTranslationLoading,
+        translatedBioActive,
+        toggleBioTranslation
+    } = useUserBioTranslation({ profile, t });
+    const previousInstances = presence?.previousInstances || [];
+
     return (
         <EntityDialogTabContent value="info">
-            {visiblePresenceLocation ? (
-                <div className="border-border mb-2 flex flex-col gap-2 border-b pb-2">
-                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                        {visiblePresenceLocation.includes(':') ? (
-                            <>
-                                <LocationWorld
-                                    className="min-w-0"
-                                    locationObject={{
-                                        ...(locationInstance || {}),
-                                        tag: visiblePresenceLocation,
-                                        location: visiblePresenceLocation,
-                                        userId: locationOwnerId,
-                                        playerCount: locationPlayerCount,
-                                        capacity:
-                                            locationInstance?.capacity ??
-                                            locationInstance?.recommendedCapacity
-                                    }}
-                                    currentUserId={currentUserId}
-                                    grouphint={
-                                        locationInstance?.groupName ||
-                                        profile.$location?.groupName ||
-                                        ''
-                                    }
-                                    endpoint={currentEndpoint}
-                                    hint={locationWorldTitle}
-                                    instanceClickAction="world"
-                                />
-                                <InstanceActionBar
-                                    className="shrink-0"
-                                    location={visiblePresenceLocation}
-                                    launchLocation={visiblePresenceLocation}
-                                    inviteLocation={visiblePresenceLocation}
-                                    instanceLocation={visiblePresenceLocation}
-                                    instance={locationInstance}
-                                    worldName={locationWorldTitle}
-                                    friendCount={locationFriendCount}
-                                    playerCount={locationPlayerCount}
-                                    capacity={
-                                        locationInstance?.capacity ??
-                                        locationInstance?.recommendedCapacity
-                                    }
-                                    refreshTooltip={t(
-                                        'dialog.user.info.refresh_instance_info'
-                                    )}
-                                    showHistory={Boolean(
-                                        previousInstances.length
-                                    )}
-                                    onRefresh={onRefreshLocation}
-                                    onHistory={() =>
-                                        changeTab('instance-history')
-                                    }
-                                />
-                            </>
-                        ) : (
-                            <Location
-                                location={visiblePresenceLocation}
-                                hint={locationWorldTitle}
-                                enableContextMenu
-                                showLaunchActions
-                            />
-                        )}
-                    </div>
-                    {locationInstanceUsers.length ? (
-                        <div className="max-h-36 overflow-auto">
-                            <EntityList
-                                rows={locationInstanceUsers}
-                                kind="user"
-                            />
-                        </div>
-                    ) : null}
-                </div>
-            ) : null}
+            <UserDialogPresenceSection
+                presence={presence}
+                presenceActions={presenceActions}
+                profile={profile}
+                t={t}
+            />
             <EntityInfoGrid>
                 {profile.note && !hideUserNotes ? (
                     <EntityInfoBlock

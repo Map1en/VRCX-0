@@ -5,7 +5,6 @@ import {
     useReactTable
 } from '@tanstack/react-table';
 import {
-    useCallback,
     useDeferredValue,
     useMemo,
     useRef,
@@ -30,6 +29,7 @@ import {
 } from '@/components/layout/PageScaffold.jsx';
 import { copyTextToClipboard } from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
+import { useTodayDate } from '@/lib/useTodayDate.js';
 import {
     configRepository,
     GAME_LOG_FILTER_TYPES,
@@ -188,7 +188,7 @@ export function useGameLogPageController({ embedded = false } = {}) {
               }
             : undefined;
     }, [sessionDateDraftFrom, sessionDateDraftTo]);
-    const todayDate = useMemo(() => new Date(), []);
+    const todayDate = useTodayDate();
     const favoriteIdSet = useMemo(
         () => buildFavoriteIdSet(localFriendFavorites),
         [localFriendFavorites]
@@ -385,10 +385,6 @@ export function useGameLogPageController({ embedded = false } = {}) {
         userFacingErrorMessage,
         writePersistedGameLogState
     });
-    const handleOpenGameLogUser = useCallback(
-        (row) => openGameLogUser(row, t),
-        [t]
-    );
     const columns = useMemo(
         () =>
             buildGameLogColumns({
@@ -397,7 +393,7 @@ export function useGameLogPageController({ embedded = false } = {}) {
                 onCopyDetail: copyGameLogDetail,
                 onDeleteRow: deleteGameLogRow,
                 onOpenPreviousInstances: openPreviousInstancesForRow,
-                onOpenUser: handleOpenGameLogUser,
+                onOpenUser: (row) => openGameLogUser(row, t),
                 shiftHeld,
                 t
             }),
@@ -405,7 +401,6 @@ export function useGameLogPageController({ embedded = false } = {}) {
             copyGameLogDetail,
             deleteGameLogRow,
             deletingGameLogKey,
-            handleOpenGameLogUser,
             loadingPreviousInstancesKey,
             openPreviousInstancesForRow,
             shiftHeld,

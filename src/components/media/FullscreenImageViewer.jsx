@@ -8,7 +8,7 @@ import {
     ZoomInIcon,
     ZoomOutIcon
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -20,6 +20,7 @@ import { Spinner } from '@/ui/shadcn/spinner';
 
 import {
     deriveImageFileName,
+    fetchImageBlob,
     getDownloadImageBase64,
     toFullSizeImageUrl
 } from './fullscreenImageViewerUtils.js';
@@ -52,19 +53,20 @@ export function FullscreenImageViewer({
         zoomOut
     } = useFullscreenImageTransform({ open, url });
 
-    const fullSizeUrl = useMemo(() => toFullSizeImageUrl(url), [url]);
+    const fullSizeUrl = toFullSizeImageUrl(url);
     const resolvedTitle = title || t('message.image.preview_title');
-    const resolvedFileName = useMemo(
-        () => deriveImageFileName({ fileName, sourcePath, url: fullSizeUrl }),
-        [fileName, fullSizeUrl, sourcePath]
-    );
+    const resolvedFileName = deriveImageFileName({
+        fileName,
+        sourcePath,
+        url: fullSizeUrl
+    });
 
     useEffect(() => {
         setImageLoadError(false);
         setImageLoading(Boolean(open && fullSizeUrl));
     }, [fullSizeUrl, open]);
 
-    const copyImage = useCallback(async () => {
+    async function copyImage() {
         if ((!url && !sourcePath) || copying) {
             return;
         }
@@ -98,9 +100,9 @@ export function FullscreenImageViewer({
             setCopying(false);
             toast.dismiss(toastId);
         }
-    }, [copying, fullSizeUrl, sourcePath, t, url]);
+    }
 
-    const downloadImage = useCallback(async () => {
+    async function downloadImage() {
         if ((!url && !sourcePath) || downloading) {
             return;
         }
@@ -127,7 +129,7 @@ export function FullscreenImageViewer({
             setDownloading(false);
             toast.dismiss(toastId);
         }
-    }, [downloading, fullSizeUrl, resolvedFileName, sourcePath, t, url]);
+    }
 
     useEffect(() => {
         if (!open) {

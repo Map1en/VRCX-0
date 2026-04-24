@@ -4,7 +4,14 @@ import {
     getSortedRowModel,
     useReactTable
 } from '@tanstack/react-table';
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useDeferredValue,
+    useEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -98,8 +105,8 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
             }),
         [cachedInstances, currentInviteLocation, currentUserId]
     );
-    const notificationTypeLabel = useMemo(
-        () => (type) => {
+    const notificationTypeLabel = useCallback(
+        (type) => {
             const fallback = type || 'unknown';
             const key = `view.notification.filters.${fallback}`;
             const label = t(key);
@@ -361,11 +368,24 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
                 onDeleteNotification: deleteNotification
             }),
         [
+            acceptFriendRequest,
+            acceptRequestInvite,
             canInviteFromCurrentLocation,
             currentInviteLocation,
             currentUserId,
+            deleteNotification,
             endpoint,
+            hideNotification,
+            markSeen,
             notificationTypeLabel,
+            notificationTypeIsClickable,
+            openGroupDialog,
+            openNotificationImagePreview,
+            openNotificationLink,
+            openNotificationTypeTarget,
+            openUserDialog,
+            sendNotificationResponse,
+            sendInviteResponseWithMessage,
             shiftHeld,
             t
         ]

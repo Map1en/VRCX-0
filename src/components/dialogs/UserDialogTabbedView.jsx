@@ -27,10 +27,6 @@ import {
     openUserDialog
 } from '@/services/dialogService.js';
 import { isActionRecent } from '@/services/recentActionService.js';
-import {
-    getTranslationConfig,
-    translateText
-} from '@/services/translationService.js';
 import { parseLocation } from '@/shared/utils/location.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -203,12 +199,6 @@ export function UserDialogTabbedView({
         isCurrentUser ? 'inGame' : 'alphabetical'
     );
     const [vrchatConfigConstants, setVrchatConfigConstants] = useState(null);
-    const [bioTranslation, setBioTranslation] = useState({
-        userId: '',
-        source: '',
-        text: ''
-    });
-    const [bioTranslationLoading, setBioTranslationLoading] = useState(false);
     const [groupActionId, setGroupActionId] = useState('');
     const [groupEditMode, setGroupEditMode] = useState(false);
     const [selectedGroupIds, setSelectedGroupIds] = useState(() => new Set());
@@ -496,15 +486,6 @@ export function UserDialogTabbedView({
     );
 
     useEffect(() => {
-        setBioTranslation({
-            userId: profile.id || '',
-            source: profile.bio || '',
-            text: ''
-        });
-        setBioTranslationLoading(false);
-    }, [profile.id, profile.bio]);
-
-    useEffect(() => {
         setGroupEditMode(false);
         setSelectedGroupIds(new Set());
         setMutualSort('alphabetical');
@@ -591,14 +572,6 @@ export function UserDialogTabbedView({
             profile.$location?.name ||
             profile.$location?.world?.name
     );
-    const translatedBioActive = Boolean(
-        bioTranslation.userId === profile.id &&
-        bioTranslation.source === (profile.bio || '') &&
-        bioTranslation.text
-    );
-    const visibleBio = translatedBioActive
-        ? bioTranslation.text
-        : profile.bio || '—';
     const { locationInstanceUsers, locationOwnerId } =
         buildUserDialogLocationUsers({
             locationInstance,
@@ -628,46 +601,6 @@ export function UserDialogTabbedView({
                           'dialog.user.generated_toast.failed_to_open_discord_profile'
                       )
             );
-        }
-    }
-
-    async function toggleBioTranslation() {
-        if (!profile.bio || bioTranslationLoading) {
-            return;
-        }
-        if (translatedBioActive) {
-            setBioTranslation({
-                userId: profile.id || '',
-                source: profile.bio || '',
-                text: ''
-            });
-            return;
-        }
-
-        setBioTranslationLoading(true);
-        try {
-            const config = await getTranslationConfig();
-            const translated = await translateText(
-                profile.bio,
-                config.bioLanguage,
-                config
-            );
-            if (!translated) {
-                throw new Error('No translation returned.');
-            }
-            setBioTranslation({
-                userId: profile.id || '',
-                source: profile.bio || '',
-                text: translated
-            });
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.generated_toast.translation_failed')
-            );
-        } finally {
-            setBioTranslationLoading(false);
         }
     }
 
@@ -1184,18 +1117,24 @@ export function UserDialogTabbedView({
                 tabs={tabs}
             >
                 <UserDialogInfoTab
-                    visiblePresenceLocation={visiblePresenceLocation}
-                    locationInstance={locationInstance}
-                    locationOwnerId={locationOwnerId}
-                    locationPlayerCount={locationPlayerCount}
-                    currentUserId={currentUserId}
-                    currentEndpoint={currentEndpoint}
-                    locationWorldTitle={locationWorldTitle}
-                    locationFriendCount={locationFriendCount}
-                    previousInstances={previousInstances}
-                    onRefreshLocation={onRefreshLocation}
+                    presence={{
+                        visiblePresenceLocation,
+                        locationInstance,
+                        locationOwnerId,
+                        locationPlayerCount,
+                        currentUserId,
+                        currentEndpoint,
+                        locationWorldTitle,
+                        locationFriendCount,
+                        previousInstances,
+                        locationInstanceUsers
+                    }}
+                    presenceActions={{
+                        onRefreshLocation,
+                        onShowInstanceHistory: () =>
+                            changeTab('instance-history')
+                    }}
                     changeTab={changeTab}
-                    locationInstanceUsers={locationInstanceUsers}
                     profile={profile}
                     hideUserNotes={hideUserNotes}
                     onEditMemo={onEditMemo}
@@ -1208,10 +1147,6 @@ export function UserDialogTabbedView({
                     representedGroupStatus={representedGroupStatus}
                     representedGroup={representedGroup}
                     openGroupDialog={openGroupDialog}
-                    visibleBio={visibleBio}
-                    bioTranslationLoading={bioTranslationLoading}
-                    translatedBioActive={translatedBioActive}
-                    toggleBioTranslation={toggleBioTranslation}
                     bioLinks={bioLinks}
                     isCurrentUser={isCurrentUser}
                     lastSeen={lastSeen}

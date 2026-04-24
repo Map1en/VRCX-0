@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
@@ -93,6 +93,11 @@ function formatUtcHour(offset) {
     return `UTC${normalized >= 0 ? '+' : ''}${normalized}`;
 }
 
+const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_, index) => {
+    const value = index - 12;
+    return { value, label: formatUtcHour(value) };
+});
+
 function formatClock(nowMs, offset) {
     const shifted = new Date(nowMs + normalizeUtcHour(offset) * 60 * 60 * 1000);
     const hours = String(shifted.getUTCHours()).padStart(2, '0');
@@ -166,10 +171,9 @@ export function AppStatusBar() {
     );
     const proxyServer = usePreferencesStore((state) => state.proxyServer);
     const prompt = useModalStore((state) => state.prompt);
-    const visibleClocks = useMemo(
-        () =>
-            clocks.slice(0, Math.max(0, Math.min(3, Number(clockCount) || 0))),
-        [clocks, clockCount]
+    const visibleClocks = clocks.slice(
+        0,
+        Math.max(0, Math.min(3, Number(clockCount) || 0))
     );
     const gameStartedAt = Date.parse(runtimeGameState.lastGameStartedAt || '');
     const currentLocationStartedAt = Date.parse(
@@ -197,14 +201,7 @@ export function AppStatusBar() {
     const nowPlayingProgress = nowPlaying.length
         ? `${formatDuration(nowPlayingElapsed * 1000)} / ${formatDuration(Number(nowPlaying.length) * 1000)}`
         : '';
-    const timezoneOptions = useMemo(
-        () =>
-            Array.from({ length: 27 }, (_, index) => {
-                const value = index - 12;
-                return { value, label: formatUtcHour(value) };
-            }),
-        []
-    );
+    const timezoneOptions = TIMEZONE_OPTIONS;
 
     useEffect(() => {
         let active = true;

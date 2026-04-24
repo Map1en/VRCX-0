@@ -4,7 +4,6 @@ import {
     ArrowUpDownIcon,
     ArrowUpIcon
 } from 'lucide-react';
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/components/layout/PageScaffold.jsx';
@@ -62,7 +61,7 @@ export function friendLogTypeLabel(type, t) {
 
 export function FriendLogTypeFilterDropdown({ value, onChange }) {
     const { t } = useTranslation();
-    const valueSet = useMemo(() => new Set(value), [value]);
+    const valueSet = new Set(value);
     const label = value.length
         ? value
               .map((type) => friendLogTypeLabel(type, t))

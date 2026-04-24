@@ -1,10 +1,4 @@
-import {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState
-} from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
@@ -100,35 +94,20 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     );
     const localSnapshotRef = useRef(localSnapshot);
     localSnapshotRef.current = localSnapshot;
-    const currentUserPresenceRef = useRef({
-        isTargetCurrentUser,
-        currentUserSnapshot,
-        gameState,
-        gameLogDisabled
-    });
-    currentUserPresenceRef.current = {
-        isTargetCurrentUser,
-        currentUserSnapshot,
-        gameState,
-        gameLogDisabled
-    };
-    const withCurrentUserPresence = useCallback((nextProfile) => {
-        const context = currentUserPresenceRef.current;
-        if (!context.isTargetCurrentUser) {
-            return nextProfile;
-        }
-        return buildCurrentUserPresenceView(nextProfile, context);
-    }, []);
-    const targetKey = useMemo(
-        () => dialogTargetKey(currentEndpoint, normalizedUserId),
-        [currentEndpoint, normalizedUserId]
-    );
+    const targetKey = dialogTargetKey(currentEndpoint, normalizedUserId);
 
     const [baseProfile, setBaseProfile] = useState(() =>
         localSnapshot ? userProfileRepository.normalize(localSnapshot) : null
     );
     const profile = useMemo(
-        () => withCurrentUserPresence(baseProfile),
+        () =>
+            isTargetCurrentUser
+                ? buildCurrentUserPresenceView(baseProfile, {
+                      currentUserSnapshot,
+                      gameState,
+                      gameLogDisabled
+                  })
+                : baseProfile,
         [
             baseProfile,
             currentUserSnapshot,
@@ -137,8 +116,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
             gameState?.currentWorldId,
             gameState?.isGameRunning,
             gameLogDisabled,
-            isTargetCurrentUser,
-            withCurrentUserPresence
+            isTargetCurrentUser
         ]
     );
     const [memo, setMemo] = useState('');
@@ -188,10 +166,6 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     );
     const hideUserNotes = usePreferencesStore((state) => state.hideUserNotes);
     const hideUserMemos = usePreferencesStore((state) => state.hideUserMemos);
-    const appearanceSettings = useMemo(
-        () => ({ hideUserNotes, hideUserMemos }),
-        [hideUserMemos, hideUserNotes]
-    );
     const {
         locationPanel,
         currentInviteLocation,
@@ -932,8 +906,8 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                 previousInstances={previousInstances}
                 representedGroup={representedGroup}
                 representedGroupStatus={representedGroupStatus}
-                hideUserNotes={appearanceSettings.hideUserNotes}
-                hideUserMemos={appearanceSettings.hideUserMemos}
+                hideUserNotes={hideUserNotes}
+                hideUserMemos={hideUserMemos}
                 onPreviousInstancesChange={setPreviousInstances}
                 sameInstanceUsers={activeLocationPanel.users}
                 locationOwnerUser={activeLocationPanel.ownerUser}

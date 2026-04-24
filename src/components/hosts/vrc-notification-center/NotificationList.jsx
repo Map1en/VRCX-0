@@ -8,7 +8,6 @@ import {
     UsersIcon,
     XIcon
 } from 'lucide-react';
-import { useMemo } from 'react';
 
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -307,22 +306,19 @@ export function NotificationList({
     onNavigateToTable,
     t
 }) {
-    const rows = useMemo(
-        () => [
-            ...unseen.map((notification) => ({
-                key: `unseen:${notification.id}`,
-                notification,
-                isUnseen: true
-            })),
-            ...(recent.length ? [{ key: 'recent-header', section: true }] : []),
-            ...recent.map((notification) => ({
-                key: `recent:${notification.id}`,
-                notification,
-                isUnseen: false
-            }))
-        ],
-        [recent, unseen]
-    );
+    const rows = [
+        ...unseen.map((notification) => ({
+            key: `unseen:${notification.id}`,
+            notification,
+            isUnseen: true
+        })),
+        ...(recent.length ? [{ key: 'recent-header', section: true }] : []),
+        ...recent.map((notification) => ({
+            key: `recent:${notification.id}`,
+            notification,
+            isUnseen: false
+        }))
+    ];
 
     return (
         <div className="flex h-full min-h-0 flex-col">

@@ -119,6 +119,9 @@ import { useAvatarProviderConfig } from './useAvatarProviderConfig.js';
 import { useSettingsIntegrations } from './useSettingsIntegrations.js';
 import { useSettingsPageActions } from './useSettingsPageActions.js';
 import { useSettingsPageEffects } from './useSettingsPageEffects.js';
+
+const FEED_FILTER_OPTIONS = feedFiltersOptions();
+
 export function useSettingsPageController() {
     const { t } = useTranslation();
     const locale = useShellStore((state) => state.locale);
@@ -311,7 +314,7 @@ export function useSettingsPageController() {
         toast,
         zoomLevel
     });
-    const feedFilterOptions = useMemo(() => feedFiltersOptions(), []);
+    const feedFilterOptions = FEED_FILTER_OPTIONS;
     const currentSharedFeedFilterOptions =
         feedFilterMode === 'noty'
             ? feedFilterOptions.notyFeedFiltersOptions
@@ -349,37 +352,29 @@ export function useSettingsPageController() {
             .map((group) => group.label)
             .join(', ') ||
         t('view.settings.general.favorites.group_placeholder');
-    const tableMaxSizeError = useMemo(() => {
-        const value = Number.parseInt(tableLimitsDraft.maxTableSize, 10);
-        if (
-            !Number.isFinite(value) ||
-            value < TABLE_MAX_SIZE_MIN ||
-            value > TABLE_MAX_SIZE_MAX
-        ) {
-            return t('prompt.table_entries_settings.table_max_entries_error', {
-                min: TABLE_MAX_SIZE_MIN,
-                max: TABLE_MAX_SIZE_MAX
-            });
-        }
-        return '';
-    }, [t, tableLimitsDraft.maxTableSize]);
-    const searchLimitError = useMemo(() => {
-        const value = Number.parseInt(tableLimitsDraft.searchLimit, 10);
-        if (
-            !Number.isFinite(value) ||
-            value < SEARCH_LIMIT_MIN ||
-            value > SEARCH_LIMIT_MAX
-        ) {
-            return t(
-                'prompt.table_entries_settings.search_limit_returns_error',
-                {
-                    min: SEARCH_LIMIT_MIN,
-                    max: SEARCH_LIMIT_MAX
-                }
-            );
-        }
-        return '';
-    }, [t, tableLimitsDraft.searchLimit]);
+    const tableMaxSizeValue = Number.parseInt(
+        tableLimitsDraft.maxTableSize,
+        10
+    );
+    const tableMaxSizeError =
+        !Number.isFinite(tableMaxSizeValue) ||
+        tableMaxSizeValue < TABLE_MAX_SIZE_MIN ||
+        tableMaxSizeValue > TABLE_MAX_SIZE_MAX
+            ? t('prompt.table_entries_settings.table_max_entries_error', {
+                  min: TABLE_MAX_SIZE_MIN,
+                  max: TABLE_MAX_SIZE_MAX
+              })
+            : '';
+    const searchLimitValue = Number.parseInt(tableLimitsDraft.searchLimit, 10);
+    const searchLimitError =
+        !Number.isFinite(searchLimitValue) ||
+        searchLimitValue < SEARCH_LIMIT_MIN ||
+        searchLimitValue > SEARCH_LIMIT_MAX
+            ? t('prompt.table_entries_settings.search_limit_returns_error', {
+                  min: SEARCH_LIMIT_MIN,
+                  max: SEARCH_LIMIT_MAX
+              })
+            : '';
     const tableLimitsSaveDisabled = Boolean(
         tableMaxSizeError || searchLimitError
     );

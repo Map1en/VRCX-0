@@ -11,7 +11,7 @@ function useStableEvent(handler) {
     return useCallback((...args) => handlerRef.current?.(...args), []);
 }
 
-function getFavoriteSearchResultsSubtitle(count) {
+function getFavoriteSearchResultsSubtitle(t, count) {
     return t(
         count === 1
             ? 'view.favorites.generated_dynamic.search_results_singular'
@@ -113,7 +113,7 @@ export function FavoritesPageView({
           ? selectedGroup.label
           : t('view.favorites.generated.no_group_selected');
     const subtitle = isSearchActive
-        ? getFavoriteSearchResultsSubtitle(contentItems.length)
+        ? getFavoriteSearchResultsSubtitle(t, contentItems.length)
         : selectedGroup
           ? selectedGroup.capacity
               ? `${selectedGroup.count}/${selectedGroup.capacity}`

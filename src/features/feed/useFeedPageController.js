@@ -9,6 +9,7 @@ import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { useTodayDate } from '@/lib/useTodayDate.js';
 import {
     configRepository,
     FEED_FILTER_TYPES,
@@ -173,7 +174,7 @@ export function useFeedPageController({ embedded = false } = {}) {
               }
             : undefined;
     }, [dateDraftFrom, dateDraftTo]);
-    const todayDate = useMemo(() => new Date(), []);
+    const todayDate = useTodayDate();
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUserSnapshot),
         [gameState, currentUserSnapshot]
@@ -342,8 +343,15 @@ export function useFeedPageController({ embedded = false } = {}) {
             friendsById,
             friendLogNamesById,
             friendsMap,
+            launchFeedFriendLocation,
             loadingPreviousInstancesKey,
+            openFeedNewInstance,
+            openPreviousInstancesForLocation,
             prompt,
+            requestFeedFriendInvite,
+            selfInviteFeedFriendLocation,
+            sendFeedFriendBoop,
+            sendFeedFriendInvite,
             t
         ]
     );
@@ -378,50 +386,63 @@ export function useFeedPageController({ embedded = false } = {}) {
         }
     });
     return {
-        activeFilterCount: activeFilterCount,
-        activeFilters: activeFilters,
-        columns: columns,
-        currentEndpoint: currentEndpoint,
-        dateDraftFrom: dateDraftFrom,
-        dateDraftRange: dateDraftRange,
-        dateDraftTo: dateDraftTo,
-        dateFilterOpen: dateFilterOpen,
-        embedded: embedded,
-        feedFilterTypes: FEED_FILTER_TYPES,
-        favoritesOnly: favoritesOnly,
-        isFavoritesLoaded: isFavoritesLoaded,
-        loadStatus: loadStatus,
-        loadingPreviousInstancesKey: loadingPreviousInstancesKey,
-        onApplyDateFilter: applyDateFilter,
-        onClearDateFilter: clearDateFilter,
-        onClearFeedFilters: () => setFeedFilters([]),
-        onClearSearch: clearSearch,
-        onDateFilterOpenChange: setDateFilterOpen,
-        onDateRangeSelect: (range) => {
-            setDateDraftFrom(toDateInputValue(range?.from));
-            setDateDraftTo(toDateInputValue(range?.to));
+        embedded,
+        t,
+        toolbarState: {
+            activeFilterCount,
+            activeFilters,
+            dateDraftFrom,
+            dateDraftRange,
+            dateDraftTo,
+            dateFilterOpen,
+            feedFilterTypes: FEED_FILTER_TYPES,
+            favoritesOnly,
+            searchDraft,
+            table,
+            todayDate
         },
-        onNewInstance: openFeedNewInstance,
-        onOpenPreviousInstances: openPreviousInstancesForLocation,
-        onPageSizeChange: setPagination,
-        onPreviousInstancesOpenChange: setPreviousInstancesOpen,
-        onPreviousInstancesRowsChange: setPreviousInstancesRows,
-        onPreviewImage: openImagePreview,
-        onSearchBlur: () => commitSearch(),
-        onSearchDraftChange: setSearchDraft,
-        onSearchEnter: (value) => commitSearch(value),
-        onToggleFavoritesOnly: () => setFavoritesOnly((current) => !current),
-        onToggleFeedFilter: toggleFeedFilter,
-        pageSizes: pageSizes,
-        pagination: pagination,
-        previousInstancesOpen: previousInstancesOpen,
-        previousInstancesRows: previousInstancesRows,
-        previousInstancesTitle: previousInstancesTitle,
-        resolvePageSize: resolvePageSize,
-        rows: rows,
-        searchDraft: searchDraft,
-        t: t,
-        table: table,
-        todayDate: todayDate
+        toolbarActions: {
+            onApplyDateFilter: applyDateFilter,
+            onClearDateFilter: clearDateFilter,
+            onClearFeedFilters: () => setFeedFilters([]),
+            onClearSearch: clearSearch,
+            onDateFilterOpenChange: setDateFilterOpen,
+            onDateRangeSelect: (range) => {
+                setDateDraftFrom(toDateInputValue(range?.from));
+                setDateDraftTo(toDateInputValue(range?.to));
+            },
+            onSearchBlur: () => commitSearch(),
+            onSearchDraftChange: setSearchDraft,
+            onSearchEnter: (value) => commitSearch(value),
+            onToggleFavoritesOnly: () =>
+                setFavoritesOnly((current) => !current),
+            onToggleFeedFilter: toggleFeedFilter
+        },
+        tableState: {
+            columns,
+            currentEndpoint,
+            favoritesOnly,
+            isFavoritesLoaded,
+            loadStatus,
+            loadingPreviousInstancesKey,
+            pageSizes,
+            pagination,
+            resolvePageSize,
+            rows,
+            table
+        },
+        tableActions: {
+            onNewInstance: openFeedNewInstance,
+            onOpenPreviousInstances: openPreviousInstancesForLocation,
+            onPageSizeChange: setPagination,
+            onPreviewImage: openImagePreview
+        },
+        previousInstancesDialog: {
+            open: previousInstancesOpen,
+            rows: previousInstancesRows,
+            title: previousInstancesTitle,
+            onOpenChange: setPreviousInstancesOpen,
+            onRowsChange: setPreviousInstancesRows
+        }
     };
 }

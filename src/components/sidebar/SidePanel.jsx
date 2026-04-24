@@ -66,6 +66,109 @@ function moveArrayItem(values, index, delta) {
     return next;
 }
 
+function useSidePanelSettingsState({
+    allFavoriteGroupKeys,
+    orderedFavoriteGroupItems,
+    prefs,
+    resolvedSidebarFavoriteGroups,
+    setPrefs
+}) {
+    const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
+    const [favoriteGroupOrderDialogOpen, setFavoriteGroupOrderDialogOpen] =
+        useState(false);
+    const [favoriteGroupOrderDraft, setFavoriteGroupOrderDraft] = useState([]);
+    const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+
+    useEffect(() => {
+        if (favoriteGroupOrderDialogOpen) {
+            setFavoriteGroupOrderDraft(orderedFavoriteGroupItems);
+        }
+    }, [favoriteGroupOrderDialogOpen, orderedFavoriteGroupItems]);
+
+    function updateBoolPreference(key, value) {
+        setPrefs((current) => ({
+            ...current,
+            [key]: Boolean(value)
+        }));
+        void configRepository.setBool(key, Boolean(value));
+    }
+
+    function updateStringPreference(key, value) {
+        setPrefs((current) => ({
+            ...current,
+            [key]: value || ''
+        }));
+        void configRepository.setString(key, value || '');
+    }
+
+    function updateArrayPreference(key, value) {
+        const nextValue = Array.isArray(value) ? value : [];
+        setPrefs((current) => ({
+            ...current,
+            [key]: nextValue
+        }));
+        void configRepository.setString(key, JSON.stringify(nextValue));
+    }
+
+    function updateFavoriteGroupSelection(nextKeys) {
+        updateArrayPreference(
+            'sidebarFavoriteGroups',
+            normalizeFavoriteGroupsChange(nextKeys, allFavoriteGroupKeys)
+        );
+    }
+
+    function toggleFavoriteGroup(key, checked) {
+        const selected = new Set(resolvedSidebarFavoriteGroups);
+        if (checked) {
+            selected.add(key);
+        } else {
+            selected.delete(key);
+        }
+        updateFavoriteGroupSelection(
+            [...selected].filter((value) =>
+                allFavoriteGroupKeys.includes(value)
+            )
+        );
+    }
+
+    function confirmFavoriteGroupOrder() {
+        const nextOrder = favoriteGroupOrderDraft.map((group) => group.key);
+        for (const key of prefs.sidebarFavoriteGroupOrder || []) {
+            if (!nextOrder.includes(key)) {
+                nextOrder.push(key);
+            }
+        }
+        updateArrayPreference('sidebarFavoriteGroupOrder', nextOrder);
+        setFavoriteGroupOrderDialogOpen(false);
+    }
+
+    function resetFavoriteGroupOrder() {
+        updateArrayPreference('sidebarFavoriteGroupOrder', []);
+        setFavoriteGroupOrderDraft(orderedFavoriteGroupItems);
+    }
+
+    function moveFavoriteGroupOrder(index, delta) {
+        setFavoriteGroupOrderDraft((current) =>
+            moveArrayItem(current, index, delta)
+        );
+    }
+
+    return {
+        favoriteGroupOrderDialogOpen,
+        favoriteGroupOrderDraft,
+        isAdvancedOpen,
+        moveFavoriteGroupOrder,
+        resetFavoriteGroupOrder,
+        confirmFavoriteGroupOrder,
+        settingsPopoverOpen,
+        setFavoriteGroupOrderDialogOpen,
+        setIsAdvancedOpen,
+        setSettingsPopoverOpen,
+        toggleFavoriteGroup,
+        updateBoolPreference,
+        updateStringPreference
+    };
+}
 
 export const SidePanel = forwardRef(function SidePanel(
     { className = '', style = undefined },
@@ -94,11 +197,6 @@ export const SidePanel = forwardRef(function SidePanel(
     const [activeTab, setActiveTab] = useState('friends');
     const [prefs, setPrefs] = useState(defaultPrefs);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
-    const [favoriteGroupOrderDialogOpen, setFavoriteGroupOrderDialogOpen] =
-        useState(false);
-    const [favoriteGroupOrderDraft, setFavoriteGroupOrderDraft] = useState([]);
-    const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const totalFriendCount = Object.keys(friendsById || {}).length;
 
     useEffect(() => {
@@ -238,73 +336,27 @@ export const SidePanel = forwardRef(function SidePanel(
         resolvedSidebarFavoriteGroups
     ]);
 
-    useEffect(() => {
-        if (favoriteGroupOrderDialogOpen) {
-            setFavoriteGroupOrderDraft(orderedFavoriteGroupItems);
-        }
-    }, [favoriteGroupOrderDialogOpen, orderedFavoriteGroupItems]);
-
-    function updateBoolPreference(key, value) {
-        setPrefs((current) => ({
-            ...current,
-            [key]: Boolean(value)
-        }));
-        void configRepository.setBool(key, Boolean(value));
-    }
-
-    function updateStringPreference(key, value) {
-        setPrefs((current) => ({
-            ...current,
-            [key]: value || ''
-        }));
-        void configRepository.setString(key, value || '');
-    }
-
-    function updateArrayPreference(key, value) {
-        const nextValue = Array.isArray(value) ? value : [];
-        setPrefs((current) => ({
-            ...current,
-            [key]: nextValue
-        }));
-        void configRepository.setString(key, JSON.stringify(nextValue));
-    }
-
-    function updateFavoriteGroupSelection(nextKeys) {
-        updateArrayPreference(
-            'sidebarFavoriteGroups',
-            normalizeFavoriteGroupsChange(nextKeys, allFavoriteGroupKeys)
-        );
-    }
-
-    function toggleFavoriteGroup(key, checked) {
-        const selected = new Set(resolvedSidebarFavoriteGroups);
-        if (checked) {
-            selected.add(key);
-        } else {
-            selected.delete(key);
-        }
-        updateFavoriteGroupSelection(
-            [...selected].filter((value) =>
-                allFavoriteGroupKeys.includes(value)
-            )
-        );
-    }
-
-    function confirmFavoriteGroupOrder() {
-        const nextOrder = favoriteGroupOrderDraft.map((group) => group.key);
-        for (const key of prefs.sidebarFavoriteGroupOrder || []) {
-            if (!nextOrder.includes(key)) {
-                nextOrder.push(key);
-            }
-        }
-        updateArrayPreference('sidebarFavoriteGroupOrder', nextOrder);
-        setFavoriteGroupOrderDialogOpen(false);
-    }
-
-    function resetFavoriteGroupOrder() {
-        updateArrayPreference('sidebarFavoriteGroupOrder', []);
-        setFavoriteGroupOrderDraft(orderedFavoriteGroupItems);
-    }
+    const {
+        favoriteGroupOrderDialogOpen,
+        favoriteGroupOrderDraft,
+        isAdvancedOpen,
+        moveFavoriteGroupOrder,
+        resetFavoriteGroupOrder,
+        confirmFavoriteGroupOrder,
+        settingsPopoverOpen,
+        setFavoriteGroupOrderDialogOpen,
+        setIsAdvancedOpen,
+        setSettingsPopoverOpen,
+        toggleFavoriteGroup,
+        updateBoolPreference,
+        updateStringPreference
+    } = useSidePanelSettingsState({
+        allFavoriteGroupKeys,
+        orderedFavoriteGroupItems,
+        prefs,
+        resolvedSidebarFavoriteGroups,
+        setPrefs
+    });
 
     async function refreshFriends() {
         if (isRefreshing) {
@@ -395,11 +447,7 @@ export const SidePanel = forwardRef(function SidePanel(
                 open={favoriteGroupOrderDialogOpen}
                 onOpenChange={setFavoriteGroupOrderDialogOpen}
                 favoriteGroupOrderDraft={favoriteGroupOrderDraft}
-                onMove={(index, delta) =>
-                    setFavoriteGroupOrderDraft((current) =>
-                        moveArrayItem(current, index, delta)
-                    )
-                }
+                onMove={moveFavoriteGroupOrder}
                 onReset={resetFavoriteGroupOrder}
                 onConfirm={confirmFavoriteGroupOrder}
                 t={t}

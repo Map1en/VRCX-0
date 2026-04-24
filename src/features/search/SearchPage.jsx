@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -443,10 +443,11 @@ export function SearchPage() {
         worldRequest,
         worldResults
     });
-    const avatarPageResults = useMemo(() => {
-        const offset = avatarRequest?.offset ?? 0;
-        return avatarResults.slice(offset, offset + PAGE_SIZE);
-    }, [avatarRequest, avatarResults]);
+    const avatarOffset = avatarRequest?.offset ?? 0;
+    const avatarPageResults = avatarResults.slice(
+        avatarOffset,
+        avatarOffset + PAGE_SIZE
+    );
 
     return (
         <div className="x-container flex min-h-0 flex-1 flex-col overflow-hidden p-4">

@@ -107,7 +107,7 @@ async function fetchImageBlobViaBackend(url) {
     return dataUrlToBlob(dataUrl);
 }
 
-async function fetchImageBlob(url) {
+export async function fetchImageBlob(url) {
     if (!url) {
         throw new Error('Missing image URL');
     }

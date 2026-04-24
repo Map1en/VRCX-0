@@ -4,7 +4,7 @@ import {
     getSortedRowModel,
     useReactTable
 } from '@tanstack/react-table';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -261,8 +261,8 @@ export function useModerationPageController({ embedded = false } = {}) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTypes, setSelectedTypes] = useState([]);
     const [pageSizes, setPageSizes] = useState(DEFAULT_PAGE_SIZES);
-    const getModerationTypeLabel = useMemo(
-        () => (type) => resolveModerationTypeLabel(type, t),
+    const getModerationTypeLabel = useCallback(
+        (type) => resolveModerationTypeLabel(type, t),
         [t]
     );
     const [sorting, setSorting] = useState(() =>
