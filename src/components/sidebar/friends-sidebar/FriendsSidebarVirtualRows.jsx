@@ -1,14 +1,18 @@
 import { cn } from '@/lib/utils.js';
 import { checkCanInviteSelf } from '@/shared/utils/invite.js';
+import { Skeleton } from '@/ui/shadcn/skeleton';
 
+import { FriendRow } from './FriendsSidebarFriendRow.jsx';
+import {
+    FriendSectionHeader,
+    InstanceHeaderRow
+} from './FriendsSidebarHeaders.jsx';
 import {
     normalizeLocationStatus,
     readFriendRefLocation,
     readFriendStatusSource,
     resolvePresenceLocation
 } from './friendsSidebarModel.js';
-import { FriendRow } from './FriendsSidebarFriendRow.jsx';
-import { FriendSectionHeader, InstanceHeaderRow } from './FriendsSidebarHeaders.jsx';
 
 function FavoriteGroupHeaderRow({ label, count }) {
     return (
@@ -27,6 +31,18 @@ function SidebarMessageRow({ className = '', text }) {
             )}
         >
             {text}
+        </div>
+    );
+}
+
+function SidebarSkeletonRow() {
+    return (
+        <div className="flex items-center gap-2 rounded-md px-1.5 py-1.5">
+            <Skeleton className="size-8 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1">
+                <Skeleton className="h-3.5 w-3/5" />
+                <Skeleton className="mt-2 h-3 w-4/5" />
+            </div>
         </div>
     );
 }
@@ -53,23 +69,23 @@ function FriendVirtualRow({
             isGroupByInstance={isGroupByInstance}
             canSendInvite={Boolean(
                 context.gameState.isGameRunning &&
-                    context.currentInviteLocation &&
-                    context.canInviteFromCurrentLocation
+                context.currentInviteLocation &&
+                context.canInviteFromCurrentLocation
             )}
             canRequestInvite={isOnlineFriend}
             canBoop={Boolean(context.currentUser?.isBoopingEnabled)}
             canUseFriendInstance={Boolean(
                 isOnlineFriend &&
-                    checkCanInviteSelf(
-                        isCurrentUser
-                            ? resolvePresenceLocation(friend)
-                            : readFriendRefLocation(friend),
-                        {
-                            currentUserId: context.currentUserId,
-                            cachedInstances: new Map(),
-                            friends: context.friendsMap
-                        }
-                    )
+                checkCanInviteSelf(
+                    isCurrentUser
+                        ? resolvePresenceLocation(friend)
+                        : readFriendRefLocation(friend),
+                    {
+                        currentUserId: context.currentUserId,
+                        cachedInstances: new Map(),
+                        friends: context.friendsMap
+                    }
+                )
             )}
             actions={{
                 ...rowActions,
@@ -126,11 +142,10 @@ function FriendsSidebarVirtualRow({
             );
         case 'message':
             return (
-                <SidebarMessageRow
-                    className={row.className}
-                    text={row.text}
-                />
+                <SidebarMessageRow className={row.className} text={row.text} />
             );
+        case 'skeleton':
+            return <SidebarSkeletonRow />;
         case 'footer':
             return <div className="h-4" />;
         case 'friend':

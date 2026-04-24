@@ -36,6 +36,15 @@ function pushFriendRows(
     }
 }
 
+function pushSkeletonRows(nextRows, key, count = 6) {
+    for (let index = 0; index < count; index += 1) {
+        nextRows.push({
+            type: 'skeleton',
+            key: `skeleton:${key}:${index}`
+        });
+    }
+}
+
 function pushFavoriteRows(
     nextRows,
     { currentUserId, favoriteGroupSections, favoriteRows, prefs }
@@ -61,7 +70,6 @@ export function buildFriendsSidebarVirtualRows({
     activeRows,
     currentUser,
     currentUserId,
-    detail,
     favoriteGroupSections,
     favoriteRows,
     gameState,
@@ -77,12 +85,9 @@ export function buildFriendsSidebarVirtualRows({
     const nextRows = [];
 
     if (loadStatus === 'running' && !rowsLength) {
-        nextRows.push({
-            type: 'message',
-            key: 'message:loading',
-            className: '',
-            text: detail || 'Loading friends'
-        });
+        pushSkeletonRows(nextRows, 'loading');
+        nextRows.push({ type: 'footer', key: 'footer' });
+        return nextRows;
     }
 
     pushSection(nextRows, {
@@ -109,12 +114,7 @@ export function buildFriendsSidebarVirtualRows({
                 { currentUserId, isCurrentUser: true }
             );
         } else {
-            nextRows.push({
-                type: 'message',
-                key: 'message:me',
-                className: 'px-2 py-1',
-                text: 'No current user snapshot.'
-            });
+            pushSkeletonRows(nextRows, 'me', 1);
         }
     }
 
@@ -204,12 +204,7 @@ export function buildFriendsSidebarVirtualRows({
     }
 
     if (!rowsLength && loadStatus !== 'running') {
-        nextRows.push({
-            type: 'message',
-            key: 'message:empty',
-            className: 'mt-4',
-            text: detail || 'No friend roster snapshot.'
-        });
+        pushSkeletonRows(nextRows, 'empty', 4);
     }
 
     nextRows.push({ type: 'footer', key: 'footer' });

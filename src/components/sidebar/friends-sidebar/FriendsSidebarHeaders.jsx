@@ -21,6 +21,7 @@ export function estimateFriendSidebarRowSize(row) {
         case 'favorite-group-header':
             return FAVORITE_GROUP_HEADER_ROW_SIZE;
         case 'message':
+        case 'skeleton':
             return SIDEBAR_MESSAGE_ROW_SIZE;
         case 'footer':
             return SIDEBAR_FOOTER_ROW_SIZE;

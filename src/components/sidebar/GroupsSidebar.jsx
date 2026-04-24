@@ -1,8 +1,8 @@
 import { ChevronDownIcon, UsersIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
@@ -23,6 +23,7 @@ import {
     ContextMenuItem,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { Skeleton } from '@/ui/shadcn/skeleton';
 
 const GROUP_HEADER_ROW_SIZE = 38;
 const GROUP_INSTANCE_ROW_SIZE = 49;
@@ -34,6 +35,7 @@ function estimateGroupSidebarRowSize(row) {
         case 'group-header':
             return GROUP_HEADER_ROW_SIZE;
         case 'message':
+        case 'skeleton':
             return GROUP_MESSAGE_ROW_SIZE;
         case 'footer':
             return GROUP_FOOTER_ROW_SIZE;
@@ -193,15 +195,21 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
                 endpoint
             );
             if (opened) {
-                toast.success(t('side_panel.generated.vrchat_launch_request_sent'));
+                toast.success(
+                    t('side_panel.generated.vrchat_launch_request_sent')
+                );
                 return;
             }
-            toast.error(t('side_panel.generated.unable_to_open_this_instance_in_vrchat'));
+            toast.error(
+                t('side_panel.generated.unable_to_open_this_instance_in_vrchat')
+            );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('component.groups_sidebar.generated_toast.failed_to_launch_instance')
+                    : t(
+                          'component.groups_sidebar.generated_toast.failed_to_launch_instance'
+                      )
             );
         }
     }
@@ -221,7 +229,9 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('component.groups_sidebar.generated_toast.failed_to_send_self_invite')
+                    : t(
+                          'component.groups_sidebar.generated_toast.failed_to_send_self_invite'
+                      )
             );
         }
     }
@@ -390,14 +400,20 @@ export function GroupsSidebar() {
         });
 
         if (!groups.length) {
-            nextRows.push({
-                type: 'message',
-                key: 'message:empty',
-                text:
-                    status === 'error'
-                        ? error || 'Failed to load group instances.'
-                        : 'No group instances snapshot.'
-            });
+            if (status === 'error') {
+                nextRows.push({
+                    type: 'message',
+                    key: 'message:empty',
+                    text: error || 'Failed to load group instances.'
+                });
+            } else {
+                for (let index = 0; index < 4; index += 1) {
+                    nextRows.push({
+                        type: 'skeleton',
+                        key: `skeleton:group-instances:${index}`
+                    });
+                }
+            }
         }
 
         nextRows.push({ type: 'footer', key: 'footer' });
@@ -439,6 +455,16 @@ export function GroupsSidebar() {
                 return (
                     <div className="text-muted-foreground rounded-md border border-dashed p-3 text-xs">
                         {row.text}
+                    </div>
+                );
+            case 'skeleton':
+                return (
+                    <div className="flex items-center gap-2 rounded-md px-1.5 py-1.5">
+                        <Skeleton className="size-8 shrink-0 rounded-md" />
+                        <div className="min-w-0 flex-1">
+                            <Skeleton className="h-3.5 w-2/3" />
+                            <Skeleton className="mt-2 h-3 w-4/5" />
+                        </div>
                     </div>
                 );
             case 'footer':

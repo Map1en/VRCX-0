@@ -357,8 +357,8 @@
             "invite_request_sent": "Invite request sent",
             "boop_sent": "Boop sent",
             "cannot_update_profile_no_current_user_session_is_available": "Cannot update profile: no current user session is available",
-            "no_authenticated_user_snapshot_is_available": "No authenticated user snapshot is available",
-            "friend_and_favorite_snapshots_refreshed": "Friend and favorite snapshots refreshed"
+            "no_authenticated_user_snapshot_is_available": "Sign in before refreshing friends",
+            "friend_and_favorite_snapshots_refreshed": "Friends and favorites refreshed"
         }
     },
     "view": {

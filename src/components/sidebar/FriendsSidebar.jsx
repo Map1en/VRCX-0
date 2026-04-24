@@ -78,7 +78,6 @@ export function FriendsSidebar({ prefs }) {
     const activeIds = useFriendRosterStore((state) => state.activeIds);
     const offlineIds = useFriendRosterStore((state) => state.offlineIds);
     const loadStatus = useFriendRosterStore((state) => state.loadStatus);
-    const detail = useFriendRosterStore((state) => state.detail);
     const favoriteFriendIds = useFavoriteStore(
         (state) => state.favoriteFriendIds
     );
@@ -433,7 +432,6 @@ export function FriendsSidebar({ prefs }) {
             activeRows,
             currentUser,
             currentUserId,
-            detail,
             favoriteGroupSections,
             favoriteRows,
             gameState,
@@ -450,7 +448,6 @@ export function FriendsSidebar({ prefs }) {
         activeRows,
         currentUser,
         currentUserId,
-        detail,
         favoriteGroupSections,
         favoriteRows,
         gameState,
