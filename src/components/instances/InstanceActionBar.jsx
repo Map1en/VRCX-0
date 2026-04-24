@@ -284,7 +284,7 @@ export function InstanceActionBar({
     );
     const userCount = instanceUserCount(instanceInfo);
     const providedPlayerCount = finiteNumber(playerCount);
-    const resolvedUserCount = userCount ?? providedPlayerCount ?? 0;
+    const resolvedUserCount = userCount ?? providedPlayerCount;
     const capacity =
         instanceCapacity(instanceInfo) ?? finiteNumber(providedCapacity) ?? 0;
     const hasUserCount = userCount !== null || providedPlayerCount !== null;
@@ -498,7 +498,7 @@ export function InstanceActionBar({
                     <div className="text-muted-foreground inline-flex items-center gap-1 text-xs">
                         {hasUserCount || capacity ? (
                             <span>
-                                {resolvedUserCount}
+                                {hasUserCount ? resolvedUserCount : '—'}
                                 {capacity ? `/${capacity}` : ''}
                             </span>
                         ) : null}

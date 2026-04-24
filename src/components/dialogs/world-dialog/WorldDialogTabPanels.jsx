@@ -21,6 +21,15 @@ import {
     resolveLaunchLocation
 } from './WorldDialogViewParts.jsx';
 
+function firstKnownValue(...values) {
+    for (const value of values) {
+        if (value !== null && typeof value !== 'undefined' && value !== '') {
+            return value;
+        }
+    }
+    return undefined;
+}
+
 export function WorldDialogTabPanels({ handlers, helpers, state, t }) {
     const {
         activeTab,
@@ -78,6 +87,20 @@ export function WorldDialogTabPanels({ handlers, helpers, state, t }) {
                             const shortName = instance.shortName || '';
                             const launchToken =
                                 instance.shortName || instance.secureName || '';
+                            const playerCount = firstKnownValue(
+                                instance.playerCount,
+                                instance.userCount,
+                                instance.occupants,
+                                Array.isArray(instance.users)
+                                    ? instance.users.length
+                                    : undefined
+                            );
+                            const capacity = firstKnownValue(
+                                instance.capacity,
+                                instance.ref?.capacity,
+                                instance.ref?.world?.capacity,
+                                world.capacity
+                            );
                             return (
                                 <div
                                     key={instance.id}
@@ -102,6 +125,8 @@ export function WorldDialogTabPanels({ handlers, helpers, state, t }) {
                                                 instance.group?.name ||
                                                 ''
                                             }
+                                            playerCount={playerCount}
+                                            capacity={capacity}
                                             hint={
                                                 world.name ||
                                                 instance.worldName ||
@@ -126,11 +151,8 @@ export function WorldDialogTabPanels({ handlers, helpers, state, t }) {
                                                 Number(instance.friendCount) ||
                                                 undefined
                                             }
-                                            playerCount={
-                                                instance.playerCount ??
-                                                instance.userCount ??
-                                                instance.occupants
-                                            }
+                                            playerCount={playerCount}
+                                            capacity={capacity}
                                             showHistory={Boolean(
                                                 previousInstances.length
                                             )}

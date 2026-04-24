@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -30,6 +30,7 @@ import {
     isGroupId,
     normalizeInstanceGroup,
     resolveInstanceRows,
+    resolveLaunchLocation,
     sameLocationTag
 } from './world-dialog/WorldDialogViewParts.jsx';
 function formatDate(value) {
@@ -60,6 +61,15 @@ function authorWorldTags(tags = []) {
         .filter((tag) => String(tag).startsWith('author_tag_'))
         .map((tag) => String(tag).replace(/^author_tag_/, ''))
         .filter(Boolean);
+}
+
+function firstKnownValue(...values) {
+    for (const value of values) {
+        if (value !== null && typeof value !== 'undefined' && value !== '') {
+            return value;
+        }
+    }
+    return undefined;
 }
 
 const visibleWorldFeatureTags = [
@@ -206,9 +216,79 @@ export function WorldDialogTabbedView({
         ownerGroup: null,
         playerSnapshot: null
     });
+    const [instanceDetailsByLocation, setInstanceDetailsByLocation] = useState({});
     const [creatorGroupsById, setCreatorGroupsById] = useState({});
     const openImagePreview = useModalStore((state) => state.openImagePreview);
-    const instanceRows = resolveInstanceRows(world);
+    const instanceRows = useMemo(
+        () => resolveInstanceRows(world),
+        [world?.id, world?.instances]
+    );
+    const instanceDetailTargets = useMemo(() => {
+        const targetsByLocation = new Map();
+        for (const instance of instanceRows) {
+            const location = resolveLaunchLocation(world, instance);
+            const parsedLocation = parseLocation(location);
+            if (
+                parsedLocation.isRealInstance &&
+                parsedLocation.worldId &&
+                parsedLocation.instanceId
+            ) {
+                targetsByLocation.set(location, {
+                    location,
+                    worldId: parsedLocation.worldId,
+                    instanceId: parsedLocation.instanceId
+                });
+            }
+        }
+        return Array.from(targetsByLocation.values());
+    }, [instanceRows, world?.id]);
+    const instanceDetailTargetKey = instanceDetailTargets
+        .map((target) => target.location)
+        .sort()
+        .join('|');
+    const hydratedInstanceRows = instanceRows.map((instance) => {
+        const location = resolveLaunchLocation(world, instance);
+        const cachedDetail = instanceDetailsByLocation[location];
+        if (
+            !cachedDetail ||
+            cachedDetail.endpoint !== currentEndpoint ||
+            !cachedDetail.instance
+        ) {
+            return instance;
+        }
+        const detail = cachedDetail.instance;
+        return {
+            ...instance,
+            ref: detail,
+            userCount: firstKnownValue(
+                detail.userCount,
+                detail.occupants,
+                detail.n_users,
+                instance.userCount
+            ),
+            occupants: firstKnownValue(
+                detail.userCount,
+                detail.occupants,
+                detail.n_users,
+                instance.occupants
+            ),
+            playerCount: firstKnownValue(
+                detail.userCount,
+                detail.occupants,
+                detail.n_users,
+                Array.isArray(detail.users) ? detail.users.length : undefined,
+                instance.playerCount,
+                instance.userCount,
+                instance.occupants
+            ),
+            capacity: firstKnownValue(
+                detail.capacity,
+                detail.world?.capacity,
+                instance.capacity,
+                world.capacity
+            )
+        };
+    });
     const currentResolvedLocation =
         currentGameLocation === 'traveling'
             ? currentGameDestination
@@ -218,7 +298,7 @@ export function WorldDialogTabbedView({
             creatorGroupsById,
             currentInstanceDetails,
             friendsById,
-            instanceRows,
+            instanceRows: hydratedInstanceRows,
             isInstanceLocation,
             normalizedWorldId,
             world,
@@ -235,6 +315,62 @@ export function WorldDialogTabbedView({
         lastWorldDialogTab = resolveWorldDialogTab(tabs, tab);
         setActiveTab(lastWorldDialogTab);
     }
+
+    useEffect(() => {
+        if (!instanceDetailTargets.length) {
+            setInstanceDetailsByLocation({});
+            return undefined;
+        }
+
+        let active = true;
+        const targetLocations = new Set(
+            instanceDetailTargets.map((target) => target.location)
+        );
+
+        Promise.all(
+            instanceDetailTargets.map((target) =>
+                instanceRepository
+                    .getInstance({
+                        worldId: target.worldId,
+                        instanceId: target.instanceId,
+                        endpoint: currentEndpoint,
+                        force: true
+                    })
+                    .then((response) => ({
+                        location: target.location,
+                        instance: response.json
+                    }))
+                    .catch(() => null)
+            )
+        ).then((entries) => {
+            if (!active) {
+                return;
+            }
+            setInstanceDetailsByLocation((current) => {
+                const next = {};
+                for (const location of targetLocations) {
+                    const currentEntry = current[location];
+                    if (currentEntry?.endpoint === currentEndpoint) {
+                        next[location] = currentEntry;
+                    }
+                }
+                for (const entry of entries) {
+                    if (!entry?.instance) {
+                        continue;
+                    }
+                    next[entry.location] = {
+                        endpoint: currentEndpoint,
+                        instance: entry.instance
+                    };
+                }
+                return next;
+            });
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [currentEndpoint, instanceDetailTargetKey, instanceDetailTargets]);
 
     useEffect(() => {
         const groupIds = creatorGroupKey

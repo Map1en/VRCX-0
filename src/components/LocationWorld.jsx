@@ -182,7 +182,7 @@ export function LocationWorld({
         Number.isFinite(resolvedCapacity) && resolvedCapacity > 0;
     const playerSummary =
         hasPlayerCount || hasCapacity
-            ? `${hasPlayerCount ? resolvedPlayerCount : 0}${hasCapacity ? `/${resolvedCapacity}` : ''}`
+            ? `${hasPlayerCount ? resolvedPlayerCount : '—'}${hasCapacity ? `/${resolvedCapacity}` : ''}`
             : '';
     const locationLabel =
         [worldName, accessTypeName || locObj.accessTypeName || '']
