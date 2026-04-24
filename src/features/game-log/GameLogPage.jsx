@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import {
     DataTableHeader,
     DataTablePagination,
@@ -74,7 +74,6 @@ import {
     safeJsonParse,
     writePersistedGameLogState
 } from './gameLogState.js';
-import { appI18n } from '@/services/i18nService.js';
 
 import {
     GameLogEmptyState,
@@ -95,7 +94,7 @@ function getGameLogColumnStyle(column) {
 }
 
 export function GameLogPage({ embedded = false } = {}) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.backendEvents.addGameLogEvent.count
@@ -678,10 +677,10 @@ export function GameLogPage({ embedded = false } = {}) {
         if (!skipConfirm) {
             const detailValue = describeGameLogDetail(row);
             const result = await confirm({
-                title: appI18n.t('view.game_log.generated_modal.delete_game_log_row'),
+                title: t('view.game_log.generated_modal.delete_game_log_row'),
                 description: detailValue.primary || row.type || row.created_at,
-                confirmText: appI18n.t('common.actions.delete'),
-                cancelText: appI18n.t('common.actions.cancel'),
+                confirmText: t('common.actions.delete'),
+                cancelText: t('common.actions.cancel'),
                 destructive: true
             });
 
@@ -703,7 +702,7 @@ export function GameLogPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.game_log.generated_toast.failed_to_delete_game_log_row')
+                    : t('view.game_log.generated_toast.failed_to_delete_game_log_row')
             );
         } finally {
             setDeletingGameLogKey('');
@@ -747,7 +746,7 @@ export function GameLogPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.game_log.generated_toast.failed_to_load_instance_history')
+                    : t('view.game_log.generated_toast.failed_to_load_instance_history')
             );
         } finally {
             setLoadingPreviousInstancesKey('');

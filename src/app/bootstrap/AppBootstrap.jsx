@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import {
+    startI18nLanguageSync,
     startAuthenticatedRuntimeServices,
     startReactRuntimeServices,
     startThemeModeSync
@@ -8,6 +9,7 @@ import {
 
 export function AppBootstrap() {
     useEffect(() => startReactRuntimeServices(), []);
+    useEffect(() => startI18nLanguageSync(), []);
     useEffect(() => startThemeModeSync(), []);
     useEffect(() => startAuthenticatedRuntimeServices(), []);
 

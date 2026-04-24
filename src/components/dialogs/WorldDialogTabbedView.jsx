@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
@@ -21,7 +21,6 @@ import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 import { EntityDialogScaffold } from './EntityDialogScaffold.jsx';
-import { appI18n } from '@/services/i18nService.js';
 import { WorldDialogHeaderSection } from './world-dialog/WorldDialogHeaderSection.jsx';
 import { WorldDialogTabPanels } from './world-dialog/WorldDialogTabPanels.jsx';
 
@@ -191,7 +190,7 @@ export function WorldDialogTabbedView({
     onPreviousInstancesChange,
     hasPersistData = false
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -663,7 +662,7 @@ export function WorldDialogTabbedView({
 
     async function copyWorldText(text, label) {
         await copyTextToClipboard(text);
-        toast.success(appI18n.t('dialog.world.generated_dynamic.value_copied', { value: label }));
+        toast.success(t('dialog.world.generated_dynamic.value_copied', { value: label }));
     }
 
     const headerState = {

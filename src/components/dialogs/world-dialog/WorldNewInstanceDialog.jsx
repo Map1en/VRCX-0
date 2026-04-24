@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -20,9 +21,8 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
-import { appI18n } from '@/services/i18nService.js';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { buildLegacyCreatedInstance } from './worldInstances.js';
 
@@ -56,6 +56,8 @@ export function WorldNewInstanceDialog({
     onLaunch,
     onOpenInGame
 }) {
+    const { t } = useTranslation();
+
     const [form, setForm] = useState({
         selectedTab: 'Normal',
         accessType: 'public',
@@ -128,13 +130,13 @@ export function WorldNewInstanceDialog({
                     onValueChange={(value) => patchForm({ selectedTab: value })}
                 >
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="Normal">{appI18n.t('dialog.new_instance.normal')}</TabsTrigger>
-                        <TabsTrigger value="Legacy">{appI18n.t('dialog.new_instance.legacy')}</TabsTrigger>
+                        <TabsTrigger value="Normal">{t('dialog.new_instance.normal')}</TabsTrigger>
+                        <TabsTrigger value="Legacy">{t('dialog.new_instance.legacy')}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="Normal">
                         <FieldGroup className="gap-4">
                             <Field>
-                                <FieldLabel>{appI18n.t('dialog.world.generated.access')}</FieldLabel>
+                                <FieldLabel>{t('dialog.world.generated.access')}</FieldLabel>
                                 <Select
                                     value={form.accessType}
                                     disabled={Boolean(request?.created)}
@@ -160,7 +162,7 @@ export function WorldNewInstanceDialog({
                                 </Select>
                             </Field>
                             <Field>
-                                <FieldLabel>{appI18n.t('dialog.new_instance.region')}</FieldLabel>
+                                <FieldLabel>{t('dialog.new_instance.region')}</FieldLabel>
                                 <Select
                                     value={form.region}
                                     disabled={Boolean(request?.created)}
@@ -189,7 +191,7 @@ export function WorldNewInstanceDialog({
                                 <>
                                     <Field>
                                         <FieldLabel htmlFor="world-instance-group-id">
-                                            {appI18n.t('dialog.group.info.id')}
+                                            {t('dialog.group.info.id')}
                                         </FieldLabel>
                                         <Input
                                             id="world-instance-group-id"
@@ -203,7 +205,7 @@ export function WorldNewInstanceDialog({
                                         />
                                     </Field>
                                     <Field>
-                                        <FieldLabel>{appI18n.t('dialog.new_instance.group_access_type')}</FieldLabel>
+                                        <FieldLabel>{t('dialog.new_instance.group_access_type')}</FieldLabel>
                                         <Select
                                             value={form.groupAccessType}
                                             disabled={Boolean(request?.created)}
@@ -239,7 +241,7 @@ export function WorldNewInstanceDialog({
                                     {form.groupAccessType === 'members' ? (
                                         <Field>
                                             <FieldLabel htmlFor="world-instance-role-ids">
-                                                {appI18n.t('dialog.world.generated.role_ids')}
+                                                {t('dialog.world.generated.role_ids')}
                                             </FieldLabel>
                                             <Input
                                                 id="world-instance-role-ids"
@@ -277,7 +279,7 @@ export function WorldNewInstanceDialog({
                                                 }
                                             />
                                             <FieldLabel htmlFor="world-instance-queue-enabled">
-                                                {appI18n.t('dialog.world.generated.queue_enabled')}
+                                                {t('dialog.world.generated.queue_enabled')}
                                             </FieldLabel>
                                         </Field>
                                         <Field
@@ -299,7 +301,7 @@ export function WorldNewInstanceDialog({
                                                 }
                                             />
                                             <FieldLabel htmlFor="world-instance-age-gate">
-                                                {appI18n.t('dialog.world.generated.age_gate')}
+                                                {t('dialog.world.generated.age_gate')}
                                             </FieldLabel>
                                         </Field>
                                     </FieldGroup>
@@ -307,7 +309,7 @@ export function WorldNewInstanceDialog({
                             ) : null}
                             <Field>
                                 <FieldLabel htmlFor="world-instance-display-name">
-                                    {appI18n.t('dialog.world.generated.display_name')}
+                                    {t('dialog.world.generated.display_name')}
                                 </FieldLabel>
                                 <Input
                                     id="world-instance-display-name"
@@ -325,7 +327,7 @@ export function WorldNewInstanceDialog({
                     <TabsContent value="Legacy">
                         <FieldGroup className="gap-4">
                             <Field>
-                                <FieldLabel>{appI18n.t('dialog.world.generated.access')}</FieldLabel>
+                                <FieldLabel>{t('dialog.world.generated.access')}</FieldLabel>
                                 <Select
                                     value={form.accessType}
                                     onValueChange={(value) =>
@@ -350,7 +352,7 @@ export function WorldNewInstanceDialog({
                                 </Select>
                             </Field>
                             <Field>
-                                <FieldLabel>{appI18n.t('dialog.new_instance.region')}</FieldLabel>
+                                <FieldLabel>{t('dialog.new_instance.region')}</FieldLabel>
                                 <Select
                                     value={form.region}
                                     onValueChange={(value) =>
@@ -376,7 +378,7 @@ export function WorldNewInstanceDialog({
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="world-launch-instance-name">
-                                    {appI18n.t('table.previous_instances.instance_name')}
+                                    {t('table.previous_instances.instance_name')}
                                 </FieldLabel>
                                 <Input
                                     id="world-launch-instance-name"
@@ -396,7 +398,7 @@ export function WorldNewInstanceDialog({
                             form.accessType !== 'group' ? (
                                 <Field>
                                     <FieldLabel htmlFor="world-launch-user-id">
-                                        {appI18n.t('dialog.world.generated.user_id')}
+                                        {t('dialog.world.generated.user_id')}
                                     </FieldLabel>
                                     <Input
                                         id="world-launch-user-id"
@@ -413,7 +415,7 @@ export function WorldNewInstanceDialog({
                                 <>
                                     <Field>
                                         <FieldLabel htmlFor="world-launch-group-id">
-                                            {appI18n.t('dialog.group.info.id')}
+                                            {t('dialog.group.info.id')}
                                         </FieldLabel>
                                         <Input
                                             id="world-launch-group-id"
@@ -426,7 +428,7 @@ export function WorldNewInstanceDialog({
                                         />
                                     </Field>
                                     <Field>
-                                        <FieldLabel>{appI18n.t('dialog.new_instance.group_access_type')}</FieldLabel>
+                                        <FieldLabel>{t('dialog.new_instance.group_access_type')}</FieldLabel>
                                         <Select
                                             value={form.groupAccessType}
                                             onValueChange={(value) =>
@@ -472,7 +474,7 @@ export function WorldNewInstanceDialog({
                                         }
                                     />
                                     <FieldLabel htmlFor="world-launch-age-gate">
-                                        {appI18n.t('dialog.world.generated.age_gate')}
+                                        {t('dialog.world.generated.age_gate')}
                                     </FieldLabel>
                                 </Field>
                             ) : null}
@@ -489,7 +491,7 @@ export function WorldNewInstanceDialog({
                                         }
                                     />
                                     <FieldLabel htmlFor="world-launch-strict">
-                                        {appI18n.t('dialog.world.generated.strict')}
+                                        {t('dialog.world.generated.strict')}
                                     </FieldLabel>
                                 </Field>
                             ) : null}
@@ -500,7 +502,7 @@ export function WorldNewInstanceDialog({
                     <FieldGroup className="gap-4">
                         <Field>
                             <FieldLabel htmlFor="world-created-location">
-                                {appI18n.t('dialog.world.generated.location')}
+                                {t('dialog.world.generated.location')}
                             </FieldLabel>
                             <Input
                                 id="world-created-location"
@@ -534,7 +536,7 @@ export function WorldNewInstanceDialog({
                             disabled={submitting}
                             onClick={() => onCopy?.(activeCreated)}
                         >
-                            {appI18n.t('dialog.world.generated.copy_url')}
+                            {t('dialog.world.generated.copy_url')}
                         </Button>
                         <Button
                             type="button"
@@ -542,7 +544,7 @@ export function WorldNewInstanceDialog({
                             disabled={submitting}
                             onClick={() => onSelfInvite?.(activeCreated)}
                         >
-                            {appI18n.t('dialog.world.generated.self_invite')}
+                            {t('dialog.world.generated.self_invite')}
                         </Button>
                         <Button
                             type="button"
@@ -550,7 +552,7 @@ export function WorldNewInstanceDialog({
                             disabled={submitting || inviteDisabled}
                             onClick={() => onInvite?.(activeCreated)}
                         >
-                            {appI18n.t('dialog.world.generated.invite')}
+                            {t('dialog.world.generated.invite')}
                         </Button>
                         <Button
                             type="button"
@@ -558,14 +560,14 @@ export function WorldNewInstanceDialog({
                             disabled={submitting}
                             onClick={() => onLaunch?.(activeCreated)}
                         >
-                            {appI18n.t('dialog.world.generated.launch')}
+                            {t('dialog.world.generated.launch')}
                         </Button>
                         <Button
                             type="button"
                             disabled={submitting}
                             onClick={() => onOpenInGame?.(activeCreated)}
                         >
-                            {appI18n.t('dialog.world.generated.open_in_game')}
+                            {t('dialog.world.generated.open_in_game')}
                         </Button>
                     </DialogFooter>
                 ) : (
@@ -576,7 +578,7 @@ export function WorldNewInstanceDialog({
                             disabled={submitting}
                             onClick={() => onOpenChange(false)}
                         >
-                            {appI18n.t('common.actions.cancel')}
+                            {t('common.actions.cancel')}
                         </Button>
                         <Button
                             type="button"

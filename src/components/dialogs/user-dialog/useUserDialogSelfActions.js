@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
@@ -21,7 +22,6 @@ import {
     selfStatusBaseOptions,
     statusPresetsConfigKey
 } from './userProfileFields.js';
-import { appI18n } from '@/services/i18nService.js';
 
 function setSelfActionStatus(actionStatusRef, setActionStatus, nextStatus) {
     actionStatusRef.current = nextStatus;
@@ -40,6 +40,8 @@ export function useUserDialogSelfActions({
     setActionStatus,
     prompt
 }) {
+    const { t } = useTranslation();
+
     const [socialStatusDialogOpen, setSocialStatusDialogOpen] = useState(false);
     const [socialStatusDraft, setSocialStatusDraft] = useState({
         status: 'active',
@@ -256,7 +258,7 @@ export function useUserDialogSelfActions({
             (!profile?.$isModerator && nextStatus === 'offline')
         ) {
             toast.warning(
-                appI18n.t(
+                t(
                     'dialog.user.generated.please_choose_a_valid_social_status'
                 )
             );
@@ -284,7 +286,7 @@ export function useUserDialogSelfActions({
         const nextStatus = normalizeSelfStatusInput(socialStatusDraft.status);
         if (!nextStatus) {
             toast.warning(
-                appI18n.t(
+                t(
                     'dialog.user.generated.please_choose_a_valid_social_status'
                 )
             );
@@ -306,13 +308,13 @@ export function useUserDialogSelfActions({
             )
         ) {
             toast.info(
-                appI18n.t('dialog.user.generated.status_preset_already_exists')
+                t('dialog.user.generated.status_preset_already_exists')
             );
             return;
         }
         if (statusPresets.length >= maxStatusPresets) {
             toast.warning(
-                appI18n.t(
+                t(
                     'dialog.user.generated_dynamic.status_presets_are_limited_to_value',
                     { value: maxStatusPresets }
                 )
@@ -325,13 +327,13 @@ export function useUserDialogSelfActions({
         setStatusPresets(nextPresets);
         try {
             await configRepository.setArray(statusPresetsConfigKey, nextPresets);
-            toast.success(appI18n.t('dialog.user.generated.status_preset_saved'));
+            toast.success(t('dialog.user.generated.status_preset_saved'));
         } catch (error) {
             setStatusPresets(previousPresets);
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t(
+                    : t(
                           'dialog.user.generated_toast.failed_to_save_status_preset'
                       )
             );
@@ -351,7 +353,7 @@ export function useUserDialogSelfActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t(
+                    : t(
                           'dialog.user.generated_toast.failed_to_remove_status_preset'
                       )
             );
@@ -380,8 +382,8 @@ export function useUserDialogSelfActions({
                     endpoint: currentEndpoint,
                     tags: [`language_${key}`]
                 }),
-            successMessage: appI18n.t('dialog.user.generated.language_added'),
-            fallbackErrorMessage: appI18n.t(
+            successMessage: t('dialog.user.generated.language_added'),
+            fallbackErrorMessage: t(
                 'dialog.user.generated_toast.failed_to_add_language'
             ),
             onSuccess: (nextProfile) => {
@@ -406,8 +408,8 @@ export function useUserDialogSelfActions({
                     endpoint: currentEndpoint,
                     tags: [`language_${key}`]
                 }),
-            successMessage: appI18n.t('dialog.user.generated.language_removed'),
-            fallbackErrorMessage: appI18n.t(
+            successMessage: t('dialog.user.generated.language_removed'),
+            fallbackErrorMessage: t(
                 'dialog.user.generated_toast.failed_to_remove_language'
             ),
             onSuccess: (nextProfile) => {
@@ -425,11 +427,11 @@ export function useUserDialogSelfActions({
         }
 
         const result = await prompt({
-            title: appI18n.t('dialog.user.generated_modal.edit_bio'),
+            title: t('dialog.user.generated_modal.edit_bio'),
             inputValue: profile.bio || '',
             multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (result.ok) {
             await saveCurrentUserPatch(
@@ -448,16 +450,16 @@ export function useUserDialogSelfActions({
         }
 
         const result = await prompt({
-            title: appI18n.t('dialog.user.generated_modal.edit_bio_links'),
-            description: appI18n.t(
+            title: t('dialog.user.generated_modal.edit_bio_links'),
+            description: t(
                 'dialog.user.generated_modal.one_link_per_line_up_to_3'
             ),
             inputValue: Array.isArray(profile.bioLinks)
                 ? profile.bioLinks.join('\n')
                 : '',
             multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (result.ok) {
             await saveCurrentUserPatch(
@@ -482,12 +484,12 @@ export function useUserDialogSelfActions({
         }
 
         const result = await prompt({
-            title: appI18n.t('dialog.user.generated_modal.edit_pronouns'),
+            title: t('dialog.user.generated_modal.edit_pronouns'),
             inputValue: Array.isArray(profile.pronouns)
                 ? profile.pronouns.join(', ')
                 : profile.pronouns || '',
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (result.ok) {
             await saveCurrentUserPatch(
@@ -557,8 +559,8 @@ export function useUserDialogSelfActions({
                     hidden,
                     showcased: hidden ? false : Boolean(badge.showcased)
                 }),
-            successMessage: appI18n.t('dialog.user.generated.badge_updated'),
-            fallbackErrorMessage: appI18n.t(
+            successMessage: t('dialog.user.generated.badge_updated'),
+            fallbackErrorMessage: t(
                 'dialog.user.generated_toast.failed_to_update_badge'
             ),
             onSuccess: (nextProfile) => {
@@ -581,8 +583,8 @@ export function useUserDialogSelfActions({
                     hidden: showcased ? false : Boolean(badge.hidden),
                     showcased
                 }),
-            successMessage: appI18n.t('dialog.user.generated.badge_updated'),
-            fallbackErrorMessage: appI18n.t(
+            successMessage: t('dialog.user.generated.badge_updated'),
+            fallbackErrorMessage: t(
                 'dialog.user.generated_toast.failed_to_update_badge'
             ),
             onSuccess: (nextProfile) => {

@@ -8,7 +8,6 @@ import {
     mediaRepository,
     vrchatAuthRepository
 } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     readFileAsBase64,
     validateImageUploadFile,
@@ -58,7 +57,8 @@ export function createAvatarDialogActions({
     setDetail,
     setImageCropRequest,
     setMemo,
-    setOwnerEditor
+    setOwnerEditor,
+    t
 }) {
     async function refreshAvatarProfile() {
         if (actionStatusRef.current !== 'idle') {
@@ -75,12 +75,12 @@ export function createAvatarDialogActions({
                 allowLocalFallback: false
             });
             applyCurrentAvatarUpdate(nextAvatar);
-            toast.success(appI18n.t('dialog.avatar.generated.avatar_refreshed'));
+            toast.success(t('dialog.avatar.generated.avatar_refreshed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_refresh_avatar')
+                    : t('dialog.avatar.generated_toast.failed_to_refresh_avatar')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -120,12 +120,12 @@ export function createAvatarDialogActions({
                     currentUserSnapshot: nextUser
                 });
             }
-            toast.success(appI18n.t('dialog.avatar.generated.avatar_selected'));
+            toast.success(t('dialog.avatar.generated.avatar_selected'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_select_avatar')
+                    : t('dialog.avatar.generated_toast.failed_to_select_avatar')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -160,10 +160,10 @@ export function createAvatarDialogActions({
         actionStatusRef.current = 'fallback';
         setActionStatus('fallback');
         const result = await confirm({
-            title: appI18n.t('dialog.avatar.generated_modal.select_fallback_avatar'),
-            description: appI18n.t('dialog.avatar.generated_dynamic.use_value_as_your_vrchat_fallback_avatar', { value: avatar.name || avatar.id }),
-            confirmText: appI18n.t('dialog.avatar.generated_modal.select_fallback'),
-            cancelText: appI18n.t('common.actions.cancel')
+            title: t('dialog.avatar.generated_modal.select_fallback_avatar'),
+            description: t('dialog.avatar.generated_dynamic.use_value_as_your_vrchat_fallback_avatar', { value: avatar.name || avatar.id }),
+            confirmText: t('dialog.avatar.generated_modal.select_fallback'),
+            cancelText: t('common.actions.cancel')
         });
 
         if (!result.ok) {
@@ -178,12 +178,12 @@ export function createAvatarDialogActions({
                 endpoint: currentEndpoint
             });
             await refreshCurrentUserSnapshot();
-            toast.success(appI18n.t('dialog.avatar.generated.fallback_avatar_updated'));
+            toast.success(t('dialog.avatar.generated.fallback_avatar_updated'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_select_fallback_avatar')
+                    : t('dialog.avatar.generated_toast.failed_to_select_fallback_avatar')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -203,7 +203,7 @@ export function createAvatarDialogActions({
             title: isPublic ? 'Make avatar public?' : 'Make avatar private?',
             description: avatar.name || avatar.id,
             confirmText: isPublic ? 'Make Public' : 'Make Private',
-            cancelText: appI18n.t('common.actions.cancel'),
+            cancelText: t('common.actions.cancel'),
             destructive: !isPublic
         });
 
@@ -228,13 +228,13 @@ export function createAvatarDialogActions({
                     : { ...avatar, releaseStatus: nextStatus }
             );
             toast.success(
-                isPublic ? appI18n.t('dialog.avatar.generated_toast.avatar_made_public') : appI18n.t('dialog.avatar.generated_toast.avatar_made_private')
+                isPublic ? t('dialog.avatar.generated_toast.avatar_made_public') : t('dialog.avatar.generated_toast.avatar_made_private')
             );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_update_avatar_release_status')
+                    : t('dialog.avatar.generated_toast.failed_to_update_avatar_release_status')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -248,11 +248,11 @@ export function createAvatarDialogActions({
         }
 
         const result = await prompt({
-            title: appI18n.t('dialog.avatar.generated_modal.rename_avatar'),
+            title: t('dialog.avatar.generated_modal.rename_avatar'),
             description: avatar.name || avatar.id,
             inputValue: avatar.name || '',
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -274,12 +274,12 @@ export function createAvatarDialogActions({
                     ? response.json
                     : { ...avatar, name: result.value }
             );
-            toast.success(appI18n.t('dialog.avatar.generated.avatar_renamed'));
+            toast.success(t('dialog.avatar.generated.avatar_renamed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_rename_avatar')
+                    : t('dialog.avatar.generated_toast.failed_to_rename_avatar')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -293,12 +293,12 @@ export function createAvatarDialogActions({
         }
 
         const result = await prompt({
-            title: appI18n.t('dialog.avatar.generated_modal.change_avatar_description'),
+            title: t('dialog.avatar.generated_modal.change_avatar_description'),
             description: avatar.name || avatar.id,
             inputValue: avatar.description || '',
             multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -320,12 +320,12 @@ export function createAvatarDialogActions({
                     ? response.json
                     : { ...avatar, description: result.value }
             );
-            toast.success(appI18n.t('dialog.avatar.generated.avatar_description_updated'));
+            toast.success(t('dialog.avatar.generated.avatar_description_updated'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_update_avatar_description')
+                    : t('dialog.avatar.generated_toast.failed_to_update_avatar_description')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -353,10 +353,10 @@ export function createAvatarDialogActions({
         }
 
         const result = await confirm({
-            title: appI18n.t('dialog.avatar.generated_modal.delete_avatar'),
+            title: t('dialog.avatar.generated_modal.delete_avatar'),
             description: avatar.name || avatar.id,
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -378,8 +378,8 @@ export function createAvatarDialogActions({
             }
             toast.success(
                 refreshFailed
-                    ? appI18n.t('dialog.avatar.generated_toast.avatar_deleted_but_current_user_snapshot_refresh')
-                    : appI18n.t('dialog.avatar.generated_toast.avatar_deleted')
+                    ? t('dialog.avatar.generated_toast.avatar_deleted_but_current_user_snapshot_refresh')
+                    : t('dialog.avatar.generated_toast.avatar_deleted')
             );
             const dialogState = useDialogStore.getState();
             if (dialogState.breadcrumbs.length > 1) {
@@ -391,7 +391,7 @@ export function createAvatarDialogActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_delete_avatar')
+                    : t('dialog.avatar.generated_toast.failed_to_delete_avatar')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -495,9 +495,9 @@ export function createAvatarDialogActions({
             );
             setAvatar(currentAvatar);
             setDetail(
-                appI18n.t('dialog.avatar.generated_dynamic.avatar_image_updated_for_value', { value: selectedAvatar.name || avatarId })
+                t('dialog.avatar.generated_dynamic.avatar_image_updated_for_value', { value: selectedAvatar.name || avatarId })
             );
-            toast.success(appI18n.t('dialog.avatar.generated.avatar_image_updated'));
+            toast.success(t('dialog.avatar.generated.avatar_image_updated'));
         } catch (error) {
             const message =
                 error instanceof Error
@@ -520,43 +520,43 @@ export function createAvatarDialogActions({
 
         const labels = {
             create: {
-                title: appI18n.t(
+                title: t(
                     'dialog.avatar.generated_modal.create_impostor_title'
                 ),
-                confirmText: appI18n.t(
+                confirmText: t(
                     'dialog.avatar.generated_modal.create'
                 ),
-                success: appI18n.t(
+                success: t(
                     'dialog.avatar.generated_toast.impostor_queued_for_creation'
                 ),
-                error: appI18n.t(
+                error: t(
                     'dialog.avatar.generated_toast.failed_to_create_impostor'
                 )
             },
             delete: {
-                title: appI18n.t(
+                title: t(
                     'dialog.avatar.generated_modal.delete_impostor_title'
                 ),
-                confirmText: appI18n.t('common.actions.delete'),
-                success: appI18n.t(
+                confirmText: t('common.actions.delete'),
+                success: t(
                     'dialog.avatar.generated_toast.impostor_deleted'
                 ),
-                error: appI18n.t(
+                error: t(
                     'dialog.avatar.generated_toast.failed_to_delete_impostor'
                 ),
                 destructive: true
             },
             regenerate: {
-                title: appI18n.t(
+                title: t(
                     'dialog.avatar.generated_modal.regenerate_impostor_title'
                 ),
-                confirmText: appI18n.t(
+                confirmText: t(
                     'dialog.avatar.generated_modal.regenerate'
                 ),
-                success: appI18n.t(
+                success: t(
                     'dialog.avatar.generated_toast.impostor_queued_for_regeneration'
                 ),
-                error: appI18n.t(
+                error: t(
                     'dialog.avatar.generated_toast.failed_to_regenerate_impostor'
                 ),
                 destructive: true
@@ -571,7 +571,7 @@ export function createAvatarDialogActions({
             title: label.title,
             description: avatar.name || avatar.id,
             confirmText: label.confirmText,
-            cancelText: appI18n.t('common.actions.cancel'),
+            cancelText: t('common.actions.cancel'),
             destructive: Boolean(label.destructive)
         });
         if (!result.ok) {
@@ -609,7 +609,7 @@ export function createAvatarDialogActions({
             }
             toast.success(
                 refreshFailed
-                    ? appI18n.t('dialog.avatar.generated_toast.value_avatar_state_refresh_failed', { value: label.success })
+                    ? t('dialog.avatar.generated_toast.value_avatar_state_refresh_failed', { value: label.success })
                     : label.success
             );
         } catch (error) {
@@ -633,15 +633,15 @@ export function createAvatarDialogActions({
         setActionStatus('avatar-block');
         const result = await confirm({
             title: enabled
-                ? appI18n.t('dialog.avatar.generated_modal.block_avatar_title')
-                : appI18n.t(
+                ? t('dialog.avatar.generated_modal.block_avatar_title')
+                : t(
                       'dialog.avatar.generated_modal.unblock_avatar_title'
                   ),
             description: avatar.name || avatar.id,
             confirmText: enabled
-                ? appI18n.t('dialog.avatar.generated_modal.block')
-                : appI18n.t('dialog.avatar.generated_modal.unblock'),
-            cancelText: appI18n.t('common.actions.cancel'),
+                ? t('dialog.avatar.generated_modal.block')
+                : t('dialog.avatar.generated_modal.unblock'),
+            cancelText: t('common.actions.cancel'),
             destructive: enabled
         });
 
@@ -667,12 +667,12 @@ export function createAvatarDialogActions({
             }
             moderationRevisionRef.current += 1;
             setAvatarBlocked(enabled);
-            toast.success(enabled ? appI18n.t('dialog.avatar.generated_toast.avatar_blocked') : appI18n.t('dialog.avatar.generated_toast.avatar_unblocked'));
+            toast.success(enabled ? t('dialog.avatar.generated_toast.avatar_blocked') : t('dialog.avatar.generated_toast.avatar_unblocked'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_update_avatar_moderation')
+                    : t('dialog.avatar.generated_toast.failed_to_update_avatar_moderation')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -701,10 +701,10 @@ export function createAvatarDialogActions({
                     ? { ...currentAvatar, $memo: nextMemo }
                     : currentAvatar
             );
-            toast.success(nextMemo ? appI18n.t('dialog.avatar.generated_toast.memo_saved') : appI18n.t('dialog.avatar.generated_toast.memo_cleared'));
+            toast.success(nextMemo ? t('dialog.avatar.generated_toast.memo_saved') : t('dialog.avatar.generated_toast.memo_cleared'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('dialog.avatar.generated_toast.failed_to_save_memo')
+                error instanceof Error ? error.message : t('dialog.avatar.generated_toast.failed_to_save_memo')
             );
         }
     }
@@ -720,7 +720,7 @@ export function createAvatarDialogActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_open_avatar_cache_folder')
+                    : t('dialog.avatar.generated_toast.failed_to_open_avatar_cache_folder')
             );
         }
     }
@@ -737,7 +737,7 @@ export function createAvatarDialogActions({
             String(configResponse?.json?.sdkUnityVersion || '')
         );
         if (!args) {
-            toast.error(appI18n.t('dialog.avatar.generated.avatar_cache_location_unavailable'));
+            toast.error(t('dialog.avatar.generated.avatar_cache_location_unavailable'));
             return;
         }
         actionStatusRef.current = 'cache';
@@ -754,12 +754,12 @@ export function createAvatarDialogActions({
             setAvatar((current) =>
                 current ? { ...current, $isCached: cache.inCache } : current
             );
-            toast.success(appI18n.t('dialog.avatar.generated.avatar_cache_deleted'));
+            toast.success(t('dialog.avatar.generated.avatar_cache_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_delete_avatar_cache')
+                    : t('dialog.avatar.generated_toast.failed_to_delete_avatar_cache')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -786,8 +786,8 @@ export function createAvatarDialogActions({
         if (!validation.ok) {
             toast.error(
                 validation.reason === 'too_large'
-                    ? appI18n.t('dialog.avatar.generated_toast.selected_file_is_too_large')
-                    : appI18n.t('dialog.avatar.generated_toast.selected_file_is_not_an_image')
+                    ? t('dialog.avatar.generated_toast.selected_file_is_too_large')
+                    : t('dialog.avatar.generated_toast.selected_file_is_not_an_image')
             );
             return;
         }
@@ -817,13 +817,13 @@ export function createAvatarDialogActions({
                         .map(avatarGalleryImageUrl)
                         .filter(Boolean)
                 }));
-                toast.success(appI18n.t('dialog.avatar.generated.avatar_gallery_image_uploaded'));
+                toast.success(t('dialog.avatar.generated.avatar_gallery_image_uploaded'));
             }
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar.generated_toast.failed_to_upload_avatar_gallery_image')
+                    : t('dialog.avatar.generated_toast.failed_to_upload_avatar_gallery_image')
             );
         } finally {
             if (actionStatusRef.current === 'gallery-upload') {
@@ -835,12 +835,12 @@ export function createAvatarDialogActions({
 
     async function editMemo() {
         const result = await prompt({
-            title: appI18n.t('dialog.avatar.generated_modal.edit_local_memo'),
+            title: t('dialog.avatar.generated_modal.edit_local_memo'),
             description: avatar.name || avatar.id,
             inputValue: memo,
             multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
 
         if (!result.ok) {

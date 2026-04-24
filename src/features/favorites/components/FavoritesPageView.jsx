@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 
-import { appI18n } from '@/services/i18nService.js';
+import { useTranslation } from 'react-i18next';
 
 import { FavoritesPageLayout } from './FavoritesPageLayout.jsx';
 
@@ -12,7 +12,7 @@ function useStableEvent(handler) {
 }
 
 function getFavoriteSearchResultsSubtitle(count) {
-    return appI18n.t(
+    return t(
         count === 1
             ? 'view.favorites.generated_dynamic.search_results_singular'
             : 'view.favorites.generated_dynamic.search_results_plural',
@@ -98,6 +98,8 @@ export function FavoritesPageView({
     onHandleAvatarHistoryClear,
     onSplitterResize
 }) {
+    const { t } = useTranslation();
+
     const editModeDisabled =
         isSearchActive ||
         !selectedGroup ||
@@ -109,7 +111,7 @@ export function FavoritesPageView({
         ? pageConfig.searchPlaceholder
         : selectedGroup
           ? selectedGroup.label
-          : appI18n.t('view.favorites.generated.no_group_selected');
+          : t('view.favorites.generated.no_group_selected');
     const subtitle = isSearchActive
         ? getFavoriteSearchResultsSubtitle(contentItems.length)
         : selectedGroup

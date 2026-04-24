@@ -8,14 +8,13 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import dayjs from '@/lib/dayjs.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { backend } from '@/platform/index.js';
 import { toolsRepository } from '@/repositories/index.js';
 import { openGroupDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -42,7 +41,7 @@ async function getCalendarIcs(event) {
             .trimStart();
         if (!normalizedContent.startsWith('BEGIN:VCALENDAR')) {
             toast.error(
-                appI18n.t('dialog.tools.generated.failed_to_download_ics_file_invalid_icalendar_content')
+                t('dialog.tools.generated.failed_to_download_ics_file_invalid_icalendar_content')
             );
             return '';
         }
@@ -51,7 +50,7 @@ async function getCalendarIcs(event) {
         toast.error(
             userFacingErrorMessage(
                 error,
-                appI18n.t('host.tools_dialogs.generated_toast.failed_to_download_ics_file')
+                t('host.tools_dialogs.generated_toast.failed_to_download_ics_file')
             )
         );
         return '';
@@ -78,7 +77,7 @@ async function downloadEventIcs(event) {
         toast.error(
             userFacingErrorMessage(
                 error,
-                appI18n.t('host.tools_dialogs.generated_toast.failed_to_save_ics_file')
+                t('host.tools_dialogs.generated_toast.failed_to_save_ics_file')
             )
         );
     }
@@ -99,7 +98,7 @@ async function copyEventLink(event, t) {
         toast.error(
             userFacingErrorMessage(
                 error,
-                appI18n.t('host.tools_dialogs.generated_toast.failed_to_copy_event_link')
+                t('host.tools_dialogs.generated_toast.failed_to_copy_event_link')
             )
         );
     }
@@ -139,7 +138,7 @@ export function GroupEventCard({
     isFollowing,
     onToggleFollow
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const groupId = getEventGroupId(event);
     const [popoverOpen, setPopoverOpen] = useState(false);

@@ -1,5 +1,4 @@
 import { userImage } from '@/lib/entityMedia.js';
-import { appI18n } from '@/services/i18nService.js';
 import { resolveFriendPresenceLocation } from '@/shared/utils/location.js';
 
 import {
@@ -38,22 +37,28 @@ function buildLocalFavoriteGroups(names, source) {
     }));
 }
 
-function defaultFavoriteEntityTitle(kind) {
-    return kind === 'world'
-        ? appI18n.t('view.favorites.generated.world_fallback')
-        : appI18n.t('view.favorites.generated.avatar_fallback');
+function resolveTranslator(t) {
+    return typeof t === 'function' ? t : (key) => key;
 }
 
-function defaultFavoriteDetailSubtitle(kind, isUnavailable) {
+function defaultFavoriteEntityTitle(kind, t) {
+    const translate = resolveTranslator(t);
+    return kind === 'world'
+        ? translate('view.favorites.generated.world_fallback')
+        : translate('view.favorites.generated.avatar_fallback');
+}
+
+function defaultFavoriteDetailSubtitle(kind, isUnavailable, t) {
+    const translate = resolveTranslator(t);
     if (kind === 'world') {
         return isUnavailable
-            ? appI18n.t('view.favorites.generated.world_details_unavailable')
-            : appI18n.t('view.favorites.generated.loading_world_details');
+            ? translate('view.favorites.generated.world_details_unavailable')
+            : translate('view.favorites.generated.loading_world_details');
     }
 
     return isUnavailable
-        ? appI18n.t('view.favorites.generated.avatar_details_unavailable')
-        : appI18n.t('view.favorites.generated.loading_avatar_details');
+        ? translate('view.favorites.generated.avatar_details_unavailable')
+        : translate('view.favorites.generated.loading_avatar_details');
 }
 
 function resolveFavoriteSubtitle(friend, location) {
@@ -73,8 +78,10 @@ function buildFriendFavoriteItem({
     friendId,
     friend,
     index,
-    favoritesSortIndex
+    favoritesSortIndex,
+    t
 }) {
+    const translate = resolveTranslator(t);
     const normalizedId = normalizeEntityId(friendId);
     const status = friend?.stateBucket || friend?.state || 'offline';
     const location = resolveFavoritePresenceLocation(friend);
@@ -89,7 +96,7 @@ function buildFriendFavoriteItem({
         title:
             friend?.displayName ||
             friend?.username ||
-            appI18n.t('view.favorites.generated.user_fallback'),
+            translate('view.favorites.generated.user_fallback'),
         titleColor: friend?.$userColour || '',
         subtitle: resolveFavoriteSubtitle(friend, location),
         detailText: '',
@@ -110,29 +117,30 @@ export function resolveFavoritePresenceLocation(profile) {
     return resolveFriendPresenceLocation(profile);
 }
 
-export function getFavoritesPageConfig(kind) {
+export function getFavoritesPageConfig(kind, t) {
+    const translate = resolveTranslator(t);
     const remoteSectionTitle =
         kind === 'avatar'
-            ? appI18n.t('view.favorite.avatars.vrchat_favorites')
+            ? translate('view.favorite.avatars.vrchat_favorites')
             : kind === 'world'
-              ? appI18n.t('view.favorite.worlds.vrchat_favorites')
-              : appI18n.t('dialog.favorite.vrchat_favorites');
+              ? translate('view.favorite.worlds.vrchat_favorites')
+              : translate('dialog.favorite.vrchat_favorites');
     const localSectionTitle =
         kind === 'avatar'
-            ? appI18n.t('view.favorite.avatars.local_favorites')
+            ? translate('view.favorite.avatars.local_favorites')
             : kind === 'world'
-              ? appI18n.t('view.favorite.worlds.local_favorites')
-              : appI18n.t('dialog.favorite.local_favorites');
+              ? translate('view.favorite.worlds.local_favorites')
+              : translate('dialog.favorite.local_favorites');
 
     return {
         remoteSectionTitle,
         localSectionTitle,
         searchPlaceholder:
             kind === 'avatar'
-                ? appI18n.t('view.favorite.avatars.search')
+                ? translate('view.favorite.avatars.search')
                 : kind === 'world'
-                  ? appI18n.t('view.favorite.worlds.search')
-                  : appI18n.t('common.actions.search')
+                  ? translate('view.favorite.worlds.search')
+                  : translate('common.actions.search')
     };
 }
 
@@ -177,16 +185,21 @@ export function buildFavoriteLocalGroups({
     return buildLocalFavoriteGroups(names, source);
 }
 
-export function buildFavoriteAvatarHistoryGroups({ kind, avatarHistoryLength }) {
+export function buildFavoriteAvatarHistoryGroups({
+    kind,
+    avatarHistoryLength,
+    t
+}) {
     if (kind !== 'avatar') {
         return [];
     }
+    const translate = resolveTranslator(t);
 
     return [
         {
             source: 'history',
             key: 'local-history',
-            label: appI18n.t('view.favorite.avatars.local_history'),
+            label: translate('view.favorite.avatars.local_history'),
             count: avatarHistoryLength,
             capacity: 100,
             visibility: ''
@@ -208,8 +221,10 @@ export function buildFavoriteRemoteItemsByGroup({
     remoteFavoritesById,
     remoteEntityDetailsData,
     remoteEntityDetailsStatus,
-    remoteGroupLabelByKey
+    remoteGroupLabelByKey,
+    t
 }) {
+    const translate = resolveTranslator(t);
     const itemsByGroup = Object.create(null);
     for (const group of remoteGroups) {
         itemsByGroup[group.key] = [];
@@ -227,7 +242,8 @@ export function buildFavoriteRemoteItemsByGroup({
                     friendId,
                     friend: friendsById[normalizeEntityId(friendId)],
                     index,
-                    favoritesSortIndex
+                    favoritesSortIndex,
+                    t: translate
                 })
             );
             itemsByGroup[group.key] = sortItems(items, sortValue);
@@ -261,9 +277,9 @@ export function buildFavoriteRemoteItemsByGroup({
                     ? playerCount
                         ? `${detail.authorName} (${playerCount})`
                         : detail.authorName
-                    : defaultFavoriteDetailSubtitle(kind, isUnavailable)
+                    : defaultFavoriteDetailSubtitle(kind, isUnavailable, translate)
                 : detail?.authorName ||
-                  defaultFavoriteDetailSubtitle(kind, isUnavailable);
+                  defaultFavoriteDetailSubtitle(kind, isUnavailable, translate);
 
         itemsByGroup[groupKey].push({
             key: `remote:${groupKey}:${favoriteId}`,
@@ -272,9 +288,9 @@ export function buildFavoriteRemoteItemsByGroup({
             groupKey,
             groupLabel:
                 remoteGroupLabelByKey[groupKey] ||
-                appI18n.t('view.favorites.generated.favorites_fallback'),
+                translate('view.favorites.generated.favorites_fallback'),
             id: favoriteId,
-            title: detail?.name || defaultFavoriteEntityTitle(kind),
+            title: detail?.name || defaultFavoriteEntityTitle(kind, translate),
             subtitle,
             description: detail?.description || '',
             seedData: detail || null,
@@ -309,8 +325,10 @@ export function buildFavoriteLocalItemsByGroup({
     localAvatarDetailsById,
     localWorldDetailsById,
     friendsById,
-    sortValue
+    sortValue,
+    t
 }) {
+    const translate = resolveTranslator(t);
     const itemsByGroup = Object.create(null);
 
     if (kind === 'friend') {
@@ -326,7 +344,8 @@ export function buildFavoriteLocalItemsByGroup({
                     groupLabel: group.label,
                     friendId,
                     friend: friendsById[normalizeEntityId(friendId)],
-                    index
+                    index,
+                    t: translate
                 })
             );
             itemsByGroup[group.key] = sortItems(items, sortValue);
@@ -357,7 +376,7 @@ export function buildFavoriteLocalItemsByGroup({
                 groupKey: group.key,
                 groupLabel: group.label,
                 id: normalizedId,
-                title: detail.name || defaultFavoriteEntityTitle(kind),
+                title: detail.name || defaultFavoriteEntityTitle(kind, translate),
                 subtitle: detail.authorName || '',
                 description: detail.description || '',
                 seedData: detail || null,
@@ -377,12 +396,13 @@ export function buildFavoriteLocalItemsByGroup({
     return itemsByGroup;
 }
 
-export function buildFavoriteAvatarHistoryItems({ kind, avatarHistory }) {
+export function buildFavoriteAvatarHistoryItems({ kind, avatarHistory, t }) {
     if (kind !== 'avatar') {
         return [];
     }
 
-    const groupLabel = appI18n.t('view.favorite.avatars.local_history');
+    const translate = resolveTranslator(t);
+    const groupLabel = translate('view.favorite.avatars.local_history');
 
     return avatarHistory.map((detail, index) => {
         const normalizedId = normalizeEntityId(detail?.id);
@@ -395,7 +415,7 @@ export function buildFavoriteAvatarHistoryItems({ kind, avatarHistory }) {
             id: normalizedId,
             title:
                 detail?.name ||
-                appI18n.t('view.favorites.generated.avatar_fallback'),
+                translate('view.favorites.generated.avatar_fallback'),
             subtitle: detail?.authorName || '',
             description: detail?.description || '',
             seedData: detail || null,

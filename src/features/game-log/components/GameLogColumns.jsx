@@ -9,7 +9,6 @@ import {
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { openWorldDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Button } from '@/ui/shadcn/button';
 import { Badge } from '@/ui/shadcn/badge';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -334,8 +333,8 @@ export function buildGameLogColumns({
                                 size="icon"
                                 aria-label={
                                     shiftHeld
-                                        ? `${appI18n.t('view.game_log.generated_modal.delete_game_log_row')} (${appI18n.t('dialog.groups.generated.hold_shift')})`
-                                        : appI18n.t(
+                                        ? `${t('view.game_log.generated_modal.delete_game_log_row')} (${t('dialog.groups.generated.hold_shift')})`
+                                        : t(
                                               'view.game_log.generated_modal.delete_game_log_row'
                                           )
                                 }

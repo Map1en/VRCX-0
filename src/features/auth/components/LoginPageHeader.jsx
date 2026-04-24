@@ -1,6 +1,6 @@
 import { NetworkIcon } from 'lucide-react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { getLanguageName, languageCodes } from '@/localization/index.js';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -18,7 +18,7 @@ export function LoginPageHeader({
     onLanguageChange,
     onOpenProxyDialog
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     return (
         <div className="flex flex-wrap items-center justify-between gap-3">

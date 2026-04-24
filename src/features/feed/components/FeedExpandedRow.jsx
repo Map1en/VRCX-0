@@ -1,7 +1,7 @@
 import { ArrowDownIcon, ArrowRightIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { timeToText } from '@/lib/dateTime.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
@@ -18,6 +18,8 @@ function FeedExpandedRow({
     onNewInstance,
     onPreviewImage
 }) {
+    const { t } = useTranslation();
+
     if (row?.type === 'GPS') {
         return (
             <div className="pl-5 text-sm">
@@ -178,7 +180,7 @@ function FeedExpandedRow({
                                 >
                                     <img
                                         src={previousImage}
-                                        alt={appI18n.t('view.feed.generated.previous_avatar')}
+                                        alt={t('view.feed.generated.previous_avatar')}
                                         className="h-30 w-40 rounded object-cover"
                                         loading="lazy"
                                     />

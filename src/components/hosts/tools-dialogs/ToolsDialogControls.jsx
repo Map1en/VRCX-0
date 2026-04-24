@@ -1,4 +1,4 @@
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Field,
@@ -106,7 +106,7 @@ export function StatusEditor({
     onDescEnabledChange,
     onDescChange
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const descEnabledId = `${id}-description-enabled`;
 
     return (

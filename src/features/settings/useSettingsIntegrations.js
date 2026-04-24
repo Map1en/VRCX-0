@@ -6,7 +6,6 @@ import {
     configRepository,
     webRepository
 } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     setDiscordBoolPreference,
     setTranslationApiConfigPreference,
@@ -225,7 +224,7 @@ export function useSettingsIntegrations({ commit, t }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_save_translation_settings')
+                    : t('view.settings.generated_toast.failed_to_save_translation_settings')
             );
         } finally {
             setIntegrationStatus((current) => ({
@@ -281,7 +280,7 @@ export function useSettingsIntegrations({ commit, t }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_fetch_translation_models')
+                    : t('view.settings.generated_toast.failed_to_fetch_translation_models')
             );
         } finally {
             setIntegrationStatus((current) => ({ ...current, models: 'idle' }));

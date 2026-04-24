@@ -2,16 +2,19 @@ import { Trash2Icon, XIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 
+import { useTranslation } from 'react-i18next';
 import { DashboardPanelPreview } from "@/components/dashboard/DashboardPanelPreview.jsx";
 import {
     createDashboardPanelValue,
     DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS,
+    getDashboardInstanceWidgetColumnLabel,
     getDashboardPanelDefinition,
+    getDashboardPanelDescription,
+    getDashboardPanelLabel,
     resolveDashboardPanelKey
 } from "@/components/dashboard/dashboardRegistry.js";
 import { cn } from "@/lib/utils.js";
 import { FEED_FILTER_TYPES, GAME_LOG_FILTER_TYPES } from "@/repositories/index.js";
-import { appI18n } from "@/services/i18nService.js";
 import { Button } from "@/ui/shadcn/button";
 import {
     Dialog,
@@ -47,6 +50,8 @@ import {
 } from "../dashboardConfig.js";
 
 export function DashboardFilterConfig({ title, filterTypes, config, onConfigChange }) {
+    const { t } = useTranslation();
+
     const filters = getDashboardFilterList(config);
 
     return (
@@ -61,7 +66,7 @@ export function DashboardFilterConfig({ title, filterTypes, config, onConfigChan
                     variant={filters.length === 0 ? 'default' : 'outline'}
                     onClick={() => onConfigChange({ ...config, filters: [] })}
                 >
-                    {appI18n.t('view.dashboard.generated.all')}
+                    {t('view.dashboard.generated.all')}
                 </Button>
                 {filterTypes.map((filterType) => (
                     <Button
@@ -113,12 +118,14 @@ export function DashboardSwitchConfig({
 }
 
 export function DashboardInstanceColumnConfig({ config, onConfigChange }) {
+    const { t } = useTranslation();
+
     const activeColumns = getKnownDashboardInstanceWidgetColumns(config);
 
     return (
         <div className="flex flex-col gap-2">
             <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                {appI18n.t('view.dashboard.generated.visible_columns')}
+                {t('view.dashboard.generated.visible_columns')}
             </div>
             <div className="flex flex-wrap gap-2">
                 {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column) => (
@@ -141,7 +148,7 @@ export function DashboardInstanceColumnConfig({ config, onConfigChange }) {
                             )
                         }
                     >
-                        {column.label}
+                        {getDashboardInstanceWidgetColumnLabel(column, t)}
                     </Button>
                 ))}
             </div>
@@ -150,18 +157,20 @@ export function DashboardInstanceColumnConfig({ config, onConfigChange }) {
 }
 
 export function DashboardWidgetConfigEditor({ panelKey, config, onConfigChange }) {
+    const { t } = useTranslation();
+
     if (panelKey === 'widget:feed') {
         return (
             <div className="flex flex-col gap-3">
                 <DashboardFilterConfig
-                    title={appI18n.t('view.dashboard.generated.feed_filters')}
+                    title={t('view.dashboard.generated.feed_filters')}
                     filterTypes={FEED_FILTER_TYPES}
                     config={config}
                     onConfigChange={onConfigChange}
                 />
                 <DashboardSwitchConfig
-                    label={appI18n.t('view.dashboard.generated.show_type_column')}
-                    description={appI18n.t('view.dashboard.generated.matches_the_stored_feed_widget_config')}
+                    label={t('view.dashboard.generated.show_type_column')}
+                    description={t('view.dashboard.generated.matches_the_stored_feed_widget_config')}
                     checked={Boolean(config.showType)}
                     onCheckedChange={(checked) =>
                         onConfigChange({
@@ -178,14 +187,14 @@ export function DashboardWidgetConfigEditor({ panelKey, config, onConfigChange }
         return (
             <div className="flex flex-col gap-3">
                 <DashboardFilterConfig
-                    title={appI18n.t('view.dashboard.generated.game_log_filters')}
+                    title={t('view.dashboard.generated.game_log_filters')}
                     filterTypes={GAME_LOG_FILTER_TYPES}
                     config={config}
                     onConfigChange={onConfigChange}
                 />
                 <DashboardSwitchConfig
-                    label={appI18n.t('view.dashboard.generated.show_detail')}
-                    description={appI18n.t('view.dashboard.generated.expands_the_compact_game_log_description')}
+                    label={t('view.dashboard.generated.show_detail')}
+                    description={t('view.dashboard.generated.expands_the_compact_game_log_description')}
                     checked={Boolean(config.showDetail)}
                     onCheckedChange={(checked) =>
                         onConfigChange({
@@ -216,16 +225,18 @@ export function DashboardPanelSelectorDialog({
     onOpenChange,
     onSelect
 }) {
+    const { t } = useTranslation();
+
     const options = useMemo(
-        () => createDashboardPanelSelectOptions(currentPanelKey),
-        [currentPanelKey]
+        () => createDashboardPanelSelectOptions(currentPanelKey, t),
+        [currentPanelKey, t]
     );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[80vh] overflow-hidden sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{appI18n.t('view.dashboard.generated.select_panel')}</DialogTitle>
+                    <DialogTitle>{t('view.dashboard.generated.select_panel')}</DialogTitle>
                 </DialogHeader>
                 <div className="min-h-0 overflow-y-auto">
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -235,13 +246,19 @@ export function DashboardPanelSelectorDialog({
                             className="text-muted-foreground h-auto justify-start border-dashed p-3 text-left font-normal whitespace-normal"
                             onClick={() => onSelect('__none__')}
                         >
-                            {appI18n.t('view.dashboard.generated.not_configured')}
+                            {t('view.dashboard.generated.not_configured')}
                         </Button>
                         {options.map((option) => {
                             const definition = getDashboardPanelDefinition(
                                 option.value
                             );
                             const selected = option.value === currentPanelKey;
+                            const label = definition
+                                ? getDashboardPanelLabel(definition, t)
+                                : option.label;
+                            const description = definition
+                                ? getDashboardPanelDescription(definition, t)
+                                : option.value;
                             return (
                                 <Button
                                     key={option.value}
@@ -251,11 +268,10 @@ export function DashboardPanelSelectorDialog({
                                     onClick={() => onSelect(option.value)}
                                 >
                                     <div className="truncate text-sm font-medium">
-                                        {definition?.label || option.label}
+                                        {label}
                                     </div>
                                     <div className="text-muted-foreground line-clamp-2 text-xs">
-                                        {definition?.description ||
-                                            option.value}
+                                        {description}
                                     </div>
                                 </Button>
                             );
@@ -273,6 +289,8 @@ export function DashboardEditorPanel({
     onRemove,
     showRemove = true
 }) {
+    const { t } = useTranslation();
+
     const [selectorOpen, setSelectorOpen] = useState(false);
     const panelKey = resolveDashboardPanelKey(panel) ?? '__none__';
     const panelDefinition = getDashboardPanelDefinition(panelKey);
@@ -304,7 +322,11 @@ export function DashboardEditorPanel({
                 {panelKey !== '__none__' ? (
                     <div className="flex w-full flex-col gap-3">
                         <div className="text-muted-foreground flex items-center justify-center gap-2 text-base">
-                            <span>{panelDefinition?.label || panelKey}</span>
+                            <span>
+                                {panelDefinition
+                                    ? getDashboardPanelLabel(panelDefinition, t)
+                                    : panelKey}
+                            </span>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -326,14 +348,14 @@ export function DashboardEditorPanel({
                 ) : (
                     <>
                         <span className="text-muted-foreground text-base">
-                            {appI18n.t('view.dashboard.generated.panel_not_selected')}
+                            {t('view.dashboard.generated.panel_not_selected')}
                         </span>
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => setSelectorOpen(true)}
                         >
-                            {appI18n.t('common.actions.select')}
+                            {t('common.actions.select')}
                         </Button>
                     </>
                 )}
@@ -346,7 +368,7 @@ export function DashboardEditorPanel({
                     className="absolute bottom-2 left-1/2 -translate-x-1/2"
                     onClick={() => setSelectorOpen(true)}
                 >
-                    {appI18n.t('common.actions.select')}
+                    {t('common.actions.select')}
                 </Button>
             ) : null}
             <DashboardPanelSelectorDialog
@@ -370,6 +392,8 @@ export function DashboardEditorRow({
     onRowRemove,
     onDirectionChange
 }) {
+    const { t } = useTranslation();
+
     const direction = row?.direction === 'vertical' ? 'vertical' : 'horizontal';
     const panels = Array.isArray(row?.panels) ? row.panels : [];
     const panelEditClass =
@@ -383,7 +407,7 @@ export function DashboardEditorRow({
         <div className="relative flex h-full min-h-[180px] flex-col gap-2 rounded-md border border-dashed p-2">
             <div className="flex items-center justify-between gap-2">
                 <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    {appI18n.t('view.dashboard.generated.row')} {rowIndex + 1}
+                    {t('view.dashboard.generated.row')} {rowIndex + 1}
                 </div>
                 <div className="flex items-center gap-2">
                     {panels.length === 2 ? (
@@ -397,10 +421,10 @@ export function DashboardEditorRow({
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectItem value="horizontal">
-                                        {appI18n.t('view.dashboard.generated.horizontal')}
+                                        {t('view.dashboard.generated.horizontal')}
                                     </SelectItem>
                                     <SelectItem value="vertical">
-                                        {appI18n.t('view.dashboard.generated.vertical')}
+                                        {t('view.dashboard.generated.vertical')}
                                     </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
@@ -506,4 +530,3 @@ export function DashboardReadRow({ row, dashboardId, onPanelChange }) {
         </div>
     );
 }
-

@@ -1,7 +1,10 @@
 import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { useShellStore } from '@/state/shellStore.js';
+import {
+    DEFAULT_TIME_UNIT_LABELS,
+    useShellStore
+} from '@/state/shellStore.js';
 
 import { bootstrapActivityCache } from './activityCacheService.js';
 import { bindBackendEvents } from './backendEventService.js';
@@ -13,6 +16,7 @@ import {
     startRealtimeTransport,
     stopRealtimeTransport
 } from './realtimeTransportService.js';
+import { getTimeUnitLabels, setI18nLanguage } from './i18nService.js';
 import { initializeReactRuntime } from './startupService.js';
 import { applyThemeMode } from './themeService.js';
 import { startRuntimeUpdateLoop } from './updateLoopService.js';
@@ -175,6 +179,35 @@ export function startThemeModeSync() {
         unsubscribeThemeMode();
         mediaQuery.removeEventListener('change', handleChange);
     };
+}
+
+export function startI18nLanguageSync() {
+    const syncLanguage = (locale) => {
+        const nextLocale = locale || 'en';
+        if (typeof document !== 'undefined') {
+            document.documentElement.setAttribute('lang', nextLocale);
+        }
+        useShellStore
+            .getState()
+            .setTimeUnitLabels(
+                getTimeUnitLabels(nextLocale, DEFAULT_TIME_UNIT_LABELS)
+            );
+        setI18nLanguage(nextLocale).catch((error) => {
+            pushRuntimeNotification({
+                level: 'warning',
+                title: 'Language sync failed',
+                error
+            });
+        });
+    };
+
+    syncLanguage(useShellStore.getState().locale);
+
+    return useShellStore.subscribe((state, previousState) => {
+        if (state.locale !== previousState.locale) {
+            syncLanguage(state.locale);
+        }
+    });
 }
 
 export function startAuthenticatedRuntimeServices() {

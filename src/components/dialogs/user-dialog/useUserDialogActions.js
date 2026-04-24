@@ -1,5 +1,6 @@
 import { useLayoutEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { backend } from '@/platform/index.js';
 import {
@@ -11,7 +12,6 @@ import {
 } from '@/repositories/index.js';
 import { openGroupDialog } from '@/services/dialogService.js';
 import friendRelationshipService from '@/services/friendRelationshipService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { recordRecentAction } from '@/services/recentActionService.js';
 import { parseLocation } from '@/shared/utils/location.js';
 
@@ -44,6 +44,8 @@ export function useUserDialogActions({
     setModerationState,
     userSessionRepository
 }) {
+    const { t } = useTranslation();
+
     const [inviteMessageRequest, setInviteMessageRequest] = useState(null);
 
     useLayoutEffect(() => {
@@ -127,10 +129,10 @@ export function useUserDialogActions({
         actionStatusRef.current = 'unfriend';
         setActionStatus('unfriend');
         const result = await confirm({
-            title: appI18n.t('dialog.user.generated_modal.unfriend_user'),
+            title: t('dialog.user.generated_modal.unfriend_user'),
             description: friend?.displayName || rosterUserId,
-            confirmText: appI18n.t('dialog.user.generated_modal.unfriend'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('dialog.user.generated_modal.unfriend'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
 
@@ -149,7 +151,7 @@ export function useUserDialogActions({
             });
             if (deleteResult.stale) {
                 toast.info(
-                    appI18n.t('dialog.user.generated.unfriend_request_sent_but_the_active_session_changed_before_')
+                    t('dialog.user.generated.unfriend_request_sent_but_the_active_session_changed_before_')
                 );
             } else {
                 setBaseProfile((currentProfile) =>
@@ -162,14 +164,14 @@ export function useUserDialogActions({
                         : currentProfile
                 );
                 toast.success(
-                    appI18n.t('dialog.user.generated_dynamic.unfriended_value', { value: friend?.displayName || rosterUserId })
+                    t('dialog.user.generated_dynamic.unfriended_value', { value: friend?.displayName || rosterUserId })
                 );
             }
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_unfriend_user')
+                    : t('dialog.user.generated_toast.failed_to_unfriend_user')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -217,7 +219,7 @@ export function useUserDialogActions({
         actionStatusRef.current = `friend-request:${action}`;
         setActionStatus(actionStatusRef.current);
         const result = await confirm({
-            title: appI18n.t('dialog.user.generated_dynamic.value', { value: label }),
+            title: t('dialog.user.generated_dynamic.value', { value: label }),
             description: profile?.displayName || rosterUserId,
             confirmText:
                 action === 'accept'
@@ -227,7 +229,7 @@ export function useUserDialogActions({
                       : action === 'cancel'
                         ? 'Cancel Request'
                         : 'Send Request',
-            cancelText: appI18n.t('common.actions.cancel'),
+            cancelText: t('common.actions.cancel'),
             destructive: action === 'decline' || action === 'cancel'
         });
 
@@ -256,7 +258,7 @@ export function useUserDialogActions({
                     ) {
                         return;
                     }
-                    toast.info(appI18n.t('dialog.user.generated.friend_request_is_no_longer_active'));
+                    toast.info(t('dialog.user.generated.friend_request_is_no_longer_active'));
                     return;
                 }
                 const response =
@@ -313,8 +315,8 @@ export function useUserDialogActions({
                 }
                 toast.success(
                     isNowFriend
-                        ? appI18n.t('dialog.user.generated_toast.friend_request_accepted')
-                        : appI18n.t('dialog.user.generated_toast.friend_request_sent')
+                        ? t('dialog.user.generated_toast.friend_request_accepted')
+                        : t('dialog.user.generated_toast.friend_request_sent')
                 );
             } else {
                 incomingNotification =
@@ -333,7 +335,7 @@ export function useUserDialogActions({
                     ) {
                         return;
                     }
-                    toast.info(appI18n.t('dialog.user.generated.friend_request_is_no_longer_active'));
+                    toast.info(t('dialog.user.generated.friend_request_is_no_longer_active'));
                     return;
                 }
                 if (incomingNotification) {
@@ -365,8 +367,8 @@ export function useUserDialogActions({
                 }
                 toast.success(
                     action === 'decline'
-                        ? appI18n.t('dialog.user.generated_toast.friend_request_declined')
-                        : appI18n.t('dialog.user.generated_toast.friend_request_cancelled')
+                        ? t('dialog.user.generated_toast.friend_request_declined')
+                        : t('dialog.user.generated_toast.friend_request_cancelled')
                 );
             }
         } catch (error) {
@@ -390,11 +392,11 @@ export function useUserDialogActions({
                 ) {
                     return;
                 }
-                toast.info(appI18n.t('dialog.user.generated.friend_request_is_no_longer_active'));
+                toast.info(t('dialog.user.generated.friend_request_is_no_longer_active'));
                 return;
             }
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('dialog.user.generated_toast.value_failed', { value: label })
+                error instanceof Error ? error.message : t('dialog.user.generated_toast.value_failed', { value: label })
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -425,10 +427,10 @@ export function useUserDialogActions({
         actionStatusRef.current = `${type}:${enabled ? 'enable' : 'disable'}`;
         setActionStatus(actionStatusRef.current);
         const result = await confirm({
-            title: appI18n.t('dialog.user.generated_dynamic.value_user', { value: label }),
+            title: t('dialog.user.generated_dynamic.value_user', { value: label }),
             description: profile?.displayName || rosterUserId,
             confirmText: label,
-            cancelText: appI18n.t('common.actions.cancel'),
+            cancelText: t('common.actions.cancel'),
             destructive: enabled
         });
 
@@ -472,12 +474,12 @@ export function useUserDialogActions({
                 block: Boolean(savedState.block),
                 mute: Boolean(savedState.mute)
             });
-            toast.success(appI18n.t('dialog.user.generated_dynamic.value_request_sent', { value: label }));
+            toast.success(t('dialog.user.generated_dynamic.value_request_sent', { value: label }));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_value_user', { value: label.toLowerCase() })
+                    : t('dialog.user.generated_toast.failed_to_value_user', { value: label.toLowerCase() })
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -507,10 +509,10 @@ export function useUserDialogActions({
         actionStatusRef.current = `${type}:${enabled ? 'enable' : 'disable'}`;
         setActionStatus(actionStatusRef.current);
         const result = await confirm({
-            title: appI18n.t('dialog.user.generated_dynamic.value', { value: label }),
+            title: t('dialog.user.generated_dynamic.value', { value: label }),
             description: profile?.displayName || rosterUserId,
             confirmText: label,
-            cancelText: appI18n.t('common.actions.cancel'),
+            cancelText: t('common.actions.cancel'),
             destructive: enabled
         });
 
@@ -538,12 +540,12 @@ export function useUserDialogActions({
                 ...current,
                 [type]: enabled
             }));
-            toast.success(appI18n.t('dialog.user.generated_dynamic.value_request_sent', { value: label }));
+            toast.success(t('dialog.user.generated_dynamic.value_request_sent', { value: label }));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_value', { value: label.toLowerCase() })
+                    : t('dialog.user.generated_toast.failed_to_value', { value: label.toLowerCase() })
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -594,12 +596,12 @@ export function useUserDialogActions({
                 hideAvatar: nextType === 4,
                 showAvatar: nextType === 5
             });
-            toast.success(appI18n.t('dialog.user.generated_dynamic.value_updated', { value: label }));
+            toast.success(t('dialog.user.generated_dynamic.value_updated', { value: label }));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_update_avatar_moderation')
+                    : t('dialog.user.generated_toast.failed_to_update_avatar_moderation')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -618,10 +620,10 @@ export function useUserDialogActions({
         }
 
         const result = await confirm({
-            title: appI18n.t('dialog.user.generated_modal.report_hacking'),
+            title: t('dialog.user.generated_modal.report_hacking'),
             description: profile?.displayName || rosterUserId,
-            confirmText: appI18n.t('dialog.user.generated_modal.report'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('dialog.user.generated_modal.report'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -640,12 +642,12 @@ export function useUserDialogActions({
                 },
                 { endpoint: currentEndpoint }
             );
-            toast.success(appI18n.t('dialog.user.generated.report_sent'));
+            toast.success(t('dialog.user.generated.report_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_report_user')
+                    : t('dialog.user.generated_toast.failed_to_report_user')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -672,26 +674,26 @@ export function useUserDialogActions({
 
         if (requireCurrentUser && !normalizedCurrentUserId) {
             toast.error(
-                appI18n.t('dialog.user.generated.cannot_load_message_templates_no_current_user_session_is_ava')
+                t('dialog.user.generated.cannot_load_message_templates_no_current_user_session_is_ava')
             );
             return null;
         }
 
         if (!currentInviteLocation) {
             toast.error(
-                appI18n.t('dialog.user.generated.cannot_invite_no_current_vrchat_location_is_available')
+                t('dialog.user.generated.cannot_invite_no_current_vrchat_location_is_available')
             );
             return null;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error(appI18n.t('dialog.user.generated.cannot_invite_from_the_current_instance_type'));
+            toast.error(t('dialog.user.generated.cannot_invite_from_the_current_instance_type'));
             return null;
         }
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                appI18n.t('dialog.user.generated.cannot_invite_current_location_is_not_a_concrete_instance')
+                t('dialog.user.generated.cannot_invite_current_location_is_not_a_concrete_instance')
             );
             return null;
         }
@@ -719,7 +721,7 @@ export function useUserDialogActions({
 
         if (requireCurrentUser && !normalizedCurrentUserId) {
             toast.error(
-                appI18n.t('dialog.user.generated.cannot_load_message_templates_no_current_user_session_is_ava')
+                t('dialog.user.generated.cannot_load_message_templates_no_current_user_session_is_ava')
             );
             return null;
         }
@@ -776,14 +778,14 @@ export function useUserDialogActions({
                 messageSlot !== null ? 'Invite Message' : 'Invite'
             );
             toast.success(
-                messageSlot !== null ? appI18n.t('dialog.user.generated_toast.invite_message_sent') : appI18n.t('dialog.user.generated_toast.invite_sent')
+                messageSlot !== null ? t('dialog.user.generated_toast.invite_message_sent') : t('dialog.user.generated_toast.invite_sent')
             );
             return true;
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_send_invite')
+                    : t('dialog.user.generated_toast.failed_to_send_invite')
             );
             return false;
         } finally {
@@ -811,10 +813,10 @@ export function useUserDialogActions({
         }
 
         const result = await confirm({
-            title: appI18n.t('dialog.user.generated_modal.send_invite'),
+            title: t('dialog.user.generated_modal.send_invite'),
             description: profile?.displayName || context.rosterUserId,
-            confirmText: appI18n.t('dialog.user.generated_modal.invite'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('dialog.user.generated_modal.invite'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -857,15 +859,15 @@ export function useUserDialogActions({
             );
             toast.success(
                 requestSlot !== null
-                    ? appI18n.t('dialog.user.generated_toast.invite_request_message_sent')
-                    : appI18n.t('dialog.user.generated_toast.invite_request_sent')
+                    ? t('dialog.user.generated_toast.invite_request_message_sent')
+                    : t('dialog.user.generated_toast.invite_request_sent')
             );
             return true;
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_request_invite')
+                    : t('dialog.user.generated_toast.failed_to_request_invite')
             );
             return false;
         } finally {
@@ -895,10 +897,10 @@ export function useUserDialogActions({
         }
 
         const result = await confirm({
-            title: appI18n.t('dialog.user.generated_modal.request_invite'),
+            title: t('dialog.user.generated_modal.request_invite'),
             description: profile?.displayName || context.rosterUserId,
-            confirmText: appI18n.t('dialog.user.generated_modal.request_invite_2'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('dialog.user.generated_modal.request_invite_2'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -910,7 +912,7 @@ export function useUserDialogActions({
     async function selectInviteMessage({ row }) {
         const slot = inviteMessageSlot(row);
         if (!Number.isFinite(slot)) {
-            toast.error(appI18n.t('dialog.user.generated.invite_message_slot_must_be_a_number'));
+            toast.error(t('dialog.user.generated.invite_message_slot_must_be_a_number'));
             return false;
         }
 
@@ -947,12 +949,12 @@ export function useUserDialogActions({
         setActionStatus('boop');
         try {
             const result = await prompt({
-                title: appI18n.t('dialog.user.generated_modal.send_boop'),
+                title: t('dialog.user.generated_modal.send_boop'),
                 description:
-                    appI18n.t('dialog.user.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
+                    t('dialog.user.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
                 inputValue: '',
-                confirmText: appI18n.t('dialog.user.generated_modal.send'),
-                cancelText: appI18n.t('common.actions.cancel')
+                confirmText: t('dialog.user.generated_modal.send'),
+                cancelText: t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -964,10 +966,10 @@ export function useUserDialogActions({
                 emojiId: result.value,
                 endpoint: currentEndpoint
             });
-            toast.success(appI18n.t('dialog.user.generated.boop_sent'));
+            toast.success(t('dialog.user.generated.boop_sent'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('dialog.user.generated_toast.failed_to_send_boop')
+                error instanceof Error ? error.message : t('dialog.user.generated_toast.failed_to_send_boop')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -986,18 +988,18 @@ export function useUserDialogActions({
         }
 
         const result = await prompt({
-            title: appI18n.t('dialog.user.generated_modal.group_moderation'),
-            description: appI18n.t('dialog.user.generated_dynamic.enter_a_group_id_to_open_moderation_for_value', { value: profile?.displayName || rosterUserId }),
+            title: t('dialog.user.generated_modal.group_moderation'),
+            description: t('dialog.user.generated_dynamic.enter_a_group_id_to_open_moderation_for_value', { value: profile?.displayName || rosterUserId }),
             inputValue: '',
-            confirmText: appI18n.t('common.actions.open'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.open'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
         }
         const groupId = normalizeUserId(result.value);
         if (!groupId) {
-            toast.error(appI18n.t('dialog.user.generated.group_id_is_required'));
+            toast.error(t('dialog.user.generated.group_id_is_required'));
             return;
         }
         openGroupDialog({ groupId });

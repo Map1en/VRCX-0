@@ -1,12 +1,12 @@
 import { CheckIcon, UserIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import {
     EmptyState as AppEmptyState,
     LoadingState as AppLoadingState
 } from '@/components/layout/PageScaffold.jsx';
 import { userImage } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 
 export function UserPickerRow({
@@ -15,6 +15,8 @@ export function UserPickerRow({
     multiple = false,
     showSelection = true
 }) {
+    const { t } = useTranslation();
+
     const imageUrl = option?.user ? userImage(option.user, true, '64') : '';
 
     return (
@@ -38,7 +40,7 @@ export function UserPickerRow({
                 {Number.isFinite(option?.degree) ? (
                     <span className="text-muted-foreground block truncate text-xs">
                         {option.degree}{' '}
-                        {appI18n.t('view.charts.generated.connections')}
+                        {t('view.charts.generated.connections')}
                     </span>
                 ) : null}
             </span>
@@ -64,10 +66,12 @@ export function UserPickerRow({
 }
 
 export function GraphLoadingState() {
+    const { t } = useTranslation();
+
     return (
         <AppLoadingState
             className="min-h-80"
-            label={appI18n.t('view.charts.generated.loading_mutual_graph_snapshot')}
+            label={t('view.charts.generated.loading_mutual_graph_snapshot')}
         />
     );
 }

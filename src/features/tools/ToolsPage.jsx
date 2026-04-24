@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import {
     loadNavMenuModel,
     NAV_LAYOUT_UPDATED_EVENT,
@@ -30,7 +30,6 @@ import {
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { Button } from '@/ui/shadcn/button';
-import { appI18n } from '@/services/i18nService.js';
 
 const collapsibleCategories = toolCategories.map((category) => category.key);
 const configKey = 'VRCX_toolsCategoryCollapsed';
@@ -164,7 +163,7 @@ function removeToolNavItem(layout, navKey) {
 
 export function ToolsPage() {
     const navigate = useNavigate();
-    const { t, i18n } = useI18n();
+    const { t, i18n } = useTranslation();
     const dashboards = useDashboardStore((state) => state.dashboards);
     const ensureDashboardsLoaded = useDashboardStore(
         (state) => state.ensureLoaded
@@ -309,7 +308,7 @@ export function ToolsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.tools.generated_toast.failed_to_pin_tool_to_navigation')
+                    : t('view.tools.generated_toast.failed_to_pin_tool_to_navigation')
             );
         }
     }
@@ -336,7 +335,7 @@ export function ToolsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.tools.generated_toast.failed_to_unpin_tool_from_navigation')
+                    : t('view.tools.generated_toast.failed_to_unpin_tool_from_navigation')
             );
         }
     }

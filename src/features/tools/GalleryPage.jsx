@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { mediaRepository, vrchatAuthRepository } from '@/repositories/index.js';
 import userProfileRepository from '@/repositories/userProfileRepository.js';
@@ -15,7 +15,6 @@ import {
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-import { appI18n } from '@/services/i18nService.js';
 import { GalleryDialogs } from './components/GalleryDialogs.jsx';
 import { GalleryHeader } from './components/GalleryHeader.jsx';
 import { GalleryTabsSection } from './components/GalleryTabsSection.jsx';
@@ -120,7 +119,7 @@ function validateImageFile(file, t) {
 
 export function GalleryPage() {
     const navigate = useNavigate();
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const uploadInputRef = useRef(null);
     const uploadTargetRef = useRef('gallery');
     const uploadAuthTargetRef = useRef(null);
@@ -261,7 +260,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.tools.generated_toast.failed_to_load_value', { value: tab })
+                        : t('view.tools.generated_toast.failed_to_load_value', { value: tab })
                 );
             }
         } finally {
@@ -295,7 +294,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.tools.generated_toast.failed_to_load_prints')
+                        : t('view.tools.generated_toast.failed_to_load_prints')
                 );
             }
         } finally {
@@ -329,7 +328,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.tools.generated_toast.failed_to_load_inventory')
+                        : t('view.tools.generated_toast.failed_to_load_inventory')
                 );
             }
         } finally {
@@ -544,10 +543,10 @@ export function GalleryPage() {
 
         const authTarget = getAuthTarget();
         const result = await confirm({
-            title: appI18n.t('view.tools.generated_modal.delete_value_item', { value: tab }),
+            title: t('view.tools.generated_modal.delete_value_item', { value: tab }),
             description: normalizedFileId,
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -578,7 +577,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.tools.generated_toast.failed_to_delete_media_item')
+                        : t('view.tools.generated_toast.failed_to_delete_media_item')
                 );
             }
         } finally {
@@ -599,10 +598,10 @@ export function GalleryPage() {
 
         const authTarget = getAuthTarget();
         const result = await confirm({
-            title: appI18n.t('view.tools.generated_modal.delete_print'),
+            title: t('view.tools.generated_modal.delete_print'),
             description: normalizedPrintId,
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -631,7 +630,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.tools.generated_toast.failed_to_delete_print')
+                        : t('view.tools.generated_toast.failed_to_delete_print')
                 );
             }
         } finally {
@@ -700,7 +699,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.tools.generated_toast.failed_to_update_profile_media')
+                        : t('view.tools.generated_toast.failed_to_update_profile_media')
                 );
             }
         } finally {
@@ -746,7 +745,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.tools.generated_toast.failed_to_consume_inventory_bundle')
+                        : t('view.tools.generated_toast.failed_to_consume_inventory_bundle')
                 );
             }
         } finally {
@@ -785,7 +784,7 @@ export function GalleryPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.tools.generated_toast.failed_to_redeem_reward')
+                        : t('view.tools.generated_toast.failed_to_redeem_reward')
                 );
             }
         } finally {

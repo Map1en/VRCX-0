@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/layout/PageScaffold.jsx';
 import { openUserDialog } from '@/services/dialogService.js';
 import { Button } from '@/ui/shadcn/button';
@@ -61,7 +61,7 @@ function friendLogTypeLabel(type, t) {
 }
 
 export function FriendLogTypeFilterDropdown({ value, onChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const valueSet = useMemo(() => new Set(value), [value]);
     const label = value.length
         ? value

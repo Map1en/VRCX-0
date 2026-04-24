@@ -2,12 +2,11 @@ import { Trash2Icon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { userImage } from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { toolsRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { Alert, AlertAction, AlertDescription } from '@/ui/shadcn/alert';
@@ -39,7 +38,7 @@ import {
 } from './toolsDialogUtils.js';
 
 export function NoteExportDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const orderedFriendIds = useFriendRosterStore(
         (state) => state.orderedFriendIds
@@ -86,7 +85,7 @@ export function NoteExportDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    appI18n.t('host.tools_dialogs.generated_toast.failed_to_load_memo_export_rows')
+                    t('host.tools_dialogs.generated_toast.failed_to_load_memo_export_rows')
                 )
             );
         } finally {

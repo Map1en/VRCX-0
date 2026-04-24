@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
@@ -288,7 +288,7 @@ function FeedEntryContent({ row, friend, t }) {
 }
 
 export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.backendEvents.addGameLogEvent.count

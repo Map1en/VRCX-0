@@ -18,8 +18,8 @@ import {
     XIcon
 } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
@@ -32,6 +32,8 @@ import {
 import { GroupTitleLanguages } from './GroupDialogViewParts.jsx';
 
 export function GroupDialogHeaderSection({ state, handlers }) {
+    const { t } = useTranslation();
+
     const {
         actionStatus,
         canInviteToGroup,
@@ -101,13 +103,13 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                 type="button"
                                 variant="ghost"
                                 className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-xs font-normal"
-                                title={appI18n.t(
+                                title={t(
                                     'dialog.group.generated.open_group_owner_profile'
                                 )}
                                 onClick={onOpenOwner}
                             >
                                 <UserIcon data-icon="inline-start" />
-                                {appI18n.t('dialog.group.generated.owner')}{' '}
+                                {t('dialog.group.generated.owner')}{' '}
                                 {ownerLinkLabel}
                             </Button>
                         ) : null}
@@ -138,18 +140,18 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                     {group.isVerified ? (
                         <Badge>
                             <BadgeCheckIcon data-icon="inline-start" />
-                            {appI18n.t('dialog.group.tags.verified')}
+                            {t('dialog.group.tags.verified')}
                         </Badge>
                     ) : null}
                     <Badge variant="outline">
                         <UsersIcon data-icon="inline-start" />
-                        {group.memberCount} {appI18n.t('dialog.group.generated.members')}
+                        {group.memberCount} {t('dialog.group.generated.members')}
                     </Badge>
                     {group.onlineMemberCount > 0 ? (
                         <Badge variant="outline">
                             <UsersIcon data-icon="inline-start" />
                             {group.onlineMemberCount}{' '}
-                            {appI18n.t('dashboard.widget.feed_online')}
+                            {t('dashboard.widget.feed_online')}
                         </Badge>
                     ) : null}
                 </>
@@ -186,7 +188,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                             disabled={actionStatus === 'refresh'}
                             onSelect={onRefresh}
                         >
-                            {appI18n.t('common.actions.refresh')}
+                            {t('common.actions.refresh')}
                         </EntityActionItem>
                         {groupUrl ? (
                             <>
@@ -194,19 +196,19 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                     icon={Share2Icon}
                                     onSelect={() => void onCopyGroupUrl()}
                                 >
-                                    {appI18n.t('dialog.group.generated.share_copy_url')}
+                                    {t('dialog.group.generated.share_copy_url')}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={ExternalLinkIcon}
                                     onSelect={onOpenGroupPage}
                                 >
-                                    {appI18n.t('dialog.group.generated.open_group_page')}
+                                    {t('dialog.group.generated.open_group_page')}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={CopyIcon}
                                     onSelect={() => void onCopyGroupId()}
                                 >
-                                    {appI18n.t('dialog.group.generated.copy_group_id')}
+                                    {t('dialog.group.generated.copy_group_id')}
                                 </EntityActionItem>
                             </>
                         ) : null}
@@ -248,7 +250,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                             void onInviteUserToGroup()
                                         }
                                     >
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.group.generated.invite_to_group'
                                         )}
                                     </EntityActionItem>
@@ -261,7 +263,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                         }
                                         onSelect={() => void onCreateGroupPost()}
                                     >
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.group.generated.create_post'
                                         )}
                                     </EntityActionItem>
@@ -271,7 +273,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                         icon={SettingsIcon}
                                         onSelect={onOpenModeration}
                                     >
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.group.generated.moderation_tools'
                                         )}
                                     </EntityActionItem>
@@ -291,7 +293,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                             {memberVisibility === 'visible'
                                                 ? 'Selected: '
                                                 : ''}
-                                            {appI18n.t(
+                                            {t(
                                                 'dialog.group.actions.visibility_everyone'
                                             )}
                                         </EntityActionItem>
@@ -307,7 +309,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                             {memberVisibility === 'friends'
                                                 ? 'Selected: '
                                                 : ''}
-                                            {appI18n.t(
+                                            {t(
                                                 'dialog.group.actions.visibility_friends'
                                             )}
                                         </EntityActionItem>
@@ -323,7 +325,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                             {memberVisibility === 'hidden'
                                                 ? 'Selected: '
                                                 : ''}
-                                            {appI18n.t(
+                                            {t(
                                                 'dialog.group.actions.visibility_hidden'
                                             )}
                                         </EntityActionItem>
@@ -336,7 +338,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                     disabled={actionStatus === 'leave'}
                                     onSelect={onLeave}
                                 >
-                                    {appI18n.t('dialog.group.generated.leave_group')}
+                                    {t('dialog.group.generated.leave_group')}
                                 </EntityActionItem>
                             </>
                         ) : (

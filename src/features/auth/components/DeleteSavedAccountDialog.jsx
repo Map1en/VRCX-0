@@ -1,4 +1,4 @@
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -18,7 +18,7 @@ export function DeleteSavedAccountDialog({
     onOpenChange,
     onConfirm
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const deleteTargetName = deleteTarget?.user
         ? getUserDisplayName(deleteTarget.user)
         : '';

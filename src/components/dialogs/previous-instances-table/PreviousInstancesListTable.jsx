@@ -1,5 +1,6 @@
 import { ArrowDownIcon, ArrowUpIcon, Trash2Icon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar.jsx';
 import { Location } from '@/components/Location.jsx';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
@@ -13,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+
 import {
     Table,
     TableBody,
@@ -21,7 +23,6 @@ import {
     TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
-
 import {
     rowDuration,
     rowLocation,
@@ -33,7 +34,6 @@ import {
     InstanceOwnerCell,
     formatDate
 } from './PreviousInstancesViewParts.jsx';
-import { appI18n } from '@/services/i18nService.js';
 
 function renderLocationCell(row, { variant, currentUserId }) {
     const location = rowLocation(row);
@@ -96,6 +96,8 @@ export function PreviousInstancesListTable({
     onOpenDetails,
     onDeleteRow
 }) {
+    const { t } = useTranslation();
+
     return (
         <div
             className={['flex min-h-0 flex-col gap-3', className]
@@ -108,7 +110,7 @@ export function PreviousInstancesListTable({
                         <h3 className="text-base font-semibold">{title}</h3>
                         <p className="text-muted-foreground text-sm">
                             {filteredRows.length}/{rows.length}{' '}
-                            {appI18n.t(
+                            {t(
                                 'dialog.previous_instances.generated.recorded_instance_visits'
                             )}
                         </p>
@@ -119,14 +121,14 @@ export function PreviousInstancesListTable({
                 <Input
                     value={search}
                     onChange={(event) => onSearchChange(event.target.value)}
-                    placeholder={appI18n.t(
+                    placeholder={t(
                         'dialog.previous_instances.search_placeholder'
                     )}
                     className="max-w-sm"
                 />
                 <div className="flex items-center gap-2">
                     <span className="text-muted-foreground text-sm">
-                        {appI18n.t('dialog.previous_instances.generated.rows')}
+                        {t('dialog.previous_instances.generated.rows')}
                     </span>
                     <Select
                         value={String(pageSize)}
@@ -165,7 +167,7 @@ export function PreviousInstancesListTable({
                                         className="h-auto px-1"
                                         onClick={onSortDescChange}
                                     >
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.previous_instances.generated.created'
                                         )}
                                         {sortDesc ? (
@@ -176,27 +178,27 @@ export function PreviousInstancesListTable({
                                     </Button>
                                 </TableHead>
                                 <TableHead>
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.previous_instances.generated.location'
                                     )}
                                 </TableHead>
                                 <TableHead className="w-48">
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.previous_instances.generated.world_group'
                                     )}
                                 </TableHead>
                                 <TableHead className="w-44">
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.previous_instances.generated.creator'
                                     )}
                                 </TableHead>
                                 <TableHead className="w-24">
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.previous_instances.generated.duration'
                                     )}
                                 </TableHead>
                                 <TableHead className="w-80 text-right">
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.previous_instances.generated.actions'
                                     )}
                                 </TableHead>
@@ -223,7 +225,7 @@ export function PreviousInstancesListTable({
                                                 onClick={() => onOpenDetails(row)}
                                             >
                                                 <span className="sr-only">
-                                                    {appI18n.t(
+                                                    {t(
                                                         'dialog.previous_instances.generated.open_instance_details'
                                                     )}
                                                 </span>
@@ -274,7 +276,7 @@ export function PreviousInstancesListTable({
                                                         onOpenLocation(row)
                                                     }
                                                 >
-                                                    {appI18n.t(
+                                                    {t(
                                                         'common.actions.open'
                                                     )}
                                                 </Button>
@@ -286,7 +288,7 @@ export function PreviousInstancesListTable({
                                                         onOpenDetails(row)
                                                     }
                                                 >
-                                                    {appI18n.t(
+                                                    {t(
                                                         'dialog.previous_instances.generated.details'
                                                     )}
                                                 </Button>
@@ -300,7 +302,7 @@ export function PreviousInstancesListTable({
                                                     }
                                                 >
                                                     <Trash2Icon data-icon="inline-start" />
-                                                    {appI18n.t(
+                                                    {t(
                                                         'common.actions.delete'
                                                     )}
                                                 </Button>
@@ -314,12 +316,12 @@ export function PreviousInstancesListTable({
                 </div>
             ) : (
                 <DialogEmptyState
-                    title={appI18n.t(
+                    title={t(
                         'dialog.previous_instances.generated.no_instance_records'
                     )}
                     description={
                         search.trim()
-                            ? appI18n.t('common.search_no_results')
+                            ? t('common.search_no_results')
                             : undefined
                     }
                     className="min-h-40 flex-none"
@@ -327,7 +329,7 @@ export function PreviousInstancesListTable({
             )}
             <div className="flex items-center justify-between">
                 <div className="text-muted-foreground text-sm">
-                    {appI18n.t('dialog.previous_instances.generated.page')}{' '}
+                    {t('dialog.previous_instances.generated.page')}{' '}
                     {currentPageIndex + 1} / {totalPages}
                 </div>
                 <div className="flex gap-2">
@@ -338,7 +340,7 @@ export function PreviousInstancesListTable({
                         disabled={currentPageIndex <= 0}
                         onClick={onPreviousPage}
                     >
-                        {appI18n.t('table.pagination.previous')}
+                        {t('table.pagination.previous')}
                     </Button>
                     <Button
                         type="button"
@@ -347,7 +349,7 @@ export function PreviousInstancesListTable({
                         disabled={currentPageIndex >= totalPages - 1}
                         onClick={onNextPage}
                     >
-                        {appI18n.t('table.pagination.next')}
+                        {t('table.pagination.next')}
                     </Button>
                     {onClose ? (
                         <Button
@@ -356,7 +358,7 @@ export function PreviousInstancesListTable({
                             size="sm"
                             onClick={onClose}
                         >
-                            {appI18n.t('common.actions.close')}
+                            {t('common.actions.close')}
                         </Button>
                     ) : null}
                 </div>

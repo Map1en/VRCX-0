@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { gameLogRepository } from '@/repositories/index.js';
 import { openWorldDialog } from '@/services/dialogService.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -22,7 +23,6 @@ import {
     PreviousInstanceDetailsPanel
 } from './previous-instances-table/PreviousInstancesViewParts.jsx';
 import { PreviousInstancesListTable } from './previous-instances-table/PreviousInstancesListTable.jsx';
-import { appI18n } from '@/services/i18nService.js';
 function PreviousInstancesPanel({
     title = 'Instance History',
     instances = [],
@@ -35,6 +35,8 @@ function PreviousInstancesPanel({
     showHeader = true,
     className = ''
 }) {
+    const { t } = useTranslation();
+
     const confirm = useModalStore((state) => state.confirm);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -79,11 +81,11 @@ function PreviousInstancesPanel({
             return;
         }
         const result = await confirm({
-            title: appI18n.t('dialog.previous_instances_table.generated_modal.delete_instance_record'),
+            title: t('dialog.previous_instances_table.generated_modal.delete_instance_record'),
             description: location,
             destructive: true,
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -93,7 +95,7 @@ function PreviousInstancesPanel({
             if (variant === 'user') {
                 if (!Array.isArray(row.events) || row.events.length === 0) {
                     toast.error(
-                        appI18n.t('dialog.previous_instances.generated.this_user_instance_row_cannot_be_deleted_without_event_ids')
+                        t('dialog.previous_instances.generated.this_user_instance_row_cannot_be_deleted_without_event_ids')
                     );
                     return;
                 }
@@ -113,12 +115,12 @@ function PreviousInstancesPanel({
                 return nextRows;
             });
             setDetailRow((current) => (current === row ? null : current));
-            toast.success(appI18n.t('dialog.previous_instances.generated.instance_record_deleted'));
+            toast.success(t('dialog.previous_instances.generated.instance_record_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.previous_instances_table.generated_toast.failed_to_delete_instance_record')
+                    : t('dialog.previous_instances_table.generated_toast.failed_to_delete_instance_record')
             );
         }
     }

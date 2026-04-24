@@ -10,9 +10,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
 import { groupProfileRepository } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -35,12 +35,12 @@ import { openRow, rowImage } from './userDialogEntityListUtils.js';
 
 function visibilityLabel(visibility) {
     if (visibility === 'friends') {
-        return appI18n.t('dialog.user.generated.visibility_friends');
+        return t('dialog.user.generated.visibility_friends');
     }
     if (visibility === 'hidden') {
-        return appI18n.t('dialog.user.generated.visibility_hidden');
+        return t('dialog.user.generated.visibility_hidden');
     }
-    return appI18n.t('dialog.user.generated.visibility_everyone');
+    return t('dialog.user.generated.visibility_everyone');
 }
 
 export function UserGroupCard({
@@ -55,6 +55,8 @@ export function UserGroupCard({
     onMove,
     onSelectionChange
 }) {
+    const { t } = useTranslation();
+
     const groupId = groupIdForRow(group);
     const [profile, setProfile] = useState(null);
 
@@ -117,8 +119,8 @@ export function UserGroupCard({
                     disabled={busy}
                     aria-label={
                         label
-                            ? `${appI18n.t('common.actions.select')} ${label}`
-                            : appI18n.t('common.actions.select')
+                            ? `${t('common.actions.select')} ${label}`
+                            : t('common.actions.select')
                     }
                     className="shrink-0"
                     onCheckedChange={(checked) =>
@@ -151,7 +153,7 @@ export function UserGroupCard({
                         {group?.isRepresenting || group?.is_representing ? (
                             <TagIcon
                                 className="mr-1.5 shrink-0"
-                                aria-label={appI18n.t(
+                                aria-label={t(
                                     'dialog.group.info.representing'
                                 )}
                             />
@@ -175,10 +177,10 @@ export function UserGroupCard({
                             variant="ghost"
                             className="ml-1 shrink-0"
                             disabled={busy}
-                            title={appI18n.t(
+                            title={t(
                                 'dialog.user.generated.manage_group_membership'
                             )}
-                            aria-label={appI18n.t(
+                            aria-label={t(
                                 'dialog.user.generated.manage_group_membership'
                             )}
                         >
@@ -193,7 +195,7 @@ export function UserGroupCard({
                                         onSelect={() => void onMove(group, 'top')}
                                     >
                                         <DownloadIcon className="rotate-180" />
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.user.generated.move_top'
                                         )}
                                     </DropdownMenuItem>
@@ -201,7 +203,7 @@ export function UserGroupCard({
                                         onSelect={() => void onMove(group, 'up')}
                                     >
                                         <ArrowUpIcon />
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.user.generated.move_up'
                                         )}
                                     </DropdownMenuItem>
@@ -211,7 +213,7 @@ export function UserGroupCard({
                                         }
                                     >
                                         <ArrowDownIcon />
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.user.generated.move_down'
                                         )}
                                     </DropdownMenuItem>
@@ -221,7 +223,7 @@ export function UserGroupCard({
                                         }
                                     >
                                         <DownloadIcon />
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.user.generated.move_bottom'
                                         )}
                                     </DropdownMenuItem>
@@ -237,17 +239,17 @@ export function UserGroupCard({
                                 }
                             >
                                 <DropdownMenuRadioItem value="visible">
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.user.generated.visibility_everyone'
                                     )}
                                 </DropdownMenuRadioItem>
                                 <DropdownMenuRadioItem value="friends">
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.user.generated.visibility_friends'
                                     )}
                                 </DropdownMenuRadioItem>
                                 <DropdownMenuRadioItem value="hidden">
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.user.generated.visibility_hidden'
                                     )}
                                 </DropdownMenuRadioItem>
@@ -257,7 +259,7 @@ export function UserGroupCard({
                                 onSelect={() => onLeave?.(group)}
                             >
                                 <LogOutIcon />
-                                {appI18n.t('dialog.user.generated.leave_group')}
+                                {t('dialog.user.generated.leave_group')}
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                     </DropdownMenuContent>

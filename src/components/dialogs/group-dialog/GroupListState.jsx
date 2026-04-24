@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import {
     Empty,
@@ -7,7 +8,6 @@ import {
 } from '@/ui/shadcn/empty';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { cn } from '@/lib/utils.js';
-import { appI18n } from '@/services/i18nService.js';
 
 export function GroupListState({
     title = 'No rows',
@@ -16,6 +16,8 @@ export function GroupListState({
     error = '',
     className = ''
 }) {
+    const { t } = useTranslation();
+
     if (loading) {
         return (
             <div
@@ -25,7 +27,7 @@ export function GroupListState({
                 )}
             >
                 <Spinner className="size-4" />
-                <span>{appI18n.t('dialog.group.generated.loading')}</span>
+                <span>{t('dialog.group.generated.loading')}</span>
             </div>
         );
     }

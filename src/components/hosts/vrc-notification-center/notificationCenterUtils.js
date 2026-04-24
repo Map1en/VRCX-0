@@ -10,7 +10,6 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { getNotificationTs } from '@/shared/utils/notificationCategory.js';
 
@@ -190,7 +189,7 @@ export function openNotificationLink(link) {
     return true;
 }
 
-export function openSender(notification) {
+export function openSender(notification, t) {
     const userId = String(notification?.senderUserId || '').trim();
     if (
         userId.startsWith('grp_') ||
@@ -216,7 +215,7 @@ export function openSender(notification) {
     }
     if (!openNotificationLink(notification?.link)) {
         toast.info(
-            appI18n.t(
+            t(
                 'view.notification.generated.this_notification_does_not_expose_a_navigable_sender'
             )
         );

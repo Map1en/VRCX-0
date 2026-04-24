@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
 import { copyTextToClipboard, userImage } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
@@ -30,7 +31,6 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { appI18n } from '@/services/i18nService.js';
 
 function getInitials(value) {
     const source = String(value || '').trim();
@@ -283,6 +283,8 @@ export function FriendLocationCard({
     worldActionLabel = 'World',
     groupActionLabel = 'Group'
 }) {
+    const { t } = useTranslation();
+
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
@@ -324,7 +326,7 @@ export function FriendLocationCard({
             return;
         }
         await copyTextToClipboard(text);
-        toast.success(appI18n.t('component.friend_location_card.generated_dynamic.value_copied', { value: label }));
+        toast.success(t('component.friend_location_card.generated_dynamic.value_copied', { value: label }));
     }
 
     return (
@@ -435,7 +437,7 @@ export function FriendLocationCard({
                         onSelect={onOpenUser}
                     >
                         <UserIcon />
-                        {appI18n.t('common.generated.generated.user')}
+                        {t('common.generated.generated.user')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canOpenWorld}
@@ -459,14 +461,14 @@ export function FriendLocationCard({
                         onSelect={() => void onLaunchLocation?.()}
                     >
                         <ExternalLinkIcon />
-                        {appI18n.t('common.generated.generated.launch_in_vrchat')}
+                        {t('common.generated.generated.launch_in_vrchat')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
                         onSelect={() => void onSelfInviteLocation?.()}
                     >
                         <ExternalLinkIcon />
-                        {appI18n.t('common.generated.generated.self_invite')}
+                        {t('common.generated.generated.self_invite')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -475,19 +477,19 @@ export function FriendLocationCard({
                         disabled={!canSendInvite}
                         onSelect={() => void onSendInvite?.()}
                     >
-                        {appI18n.t('common.generated.generated.send_invite')}
+                        {t('common.generated.generated.send_invite')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canRequestInvite}
                         onSelect={() => void onRequestInvite?.()}
                     >
-                        {appI18n.t('common.generated.generated.request_invite')}
+                        {t('common.generated.generated.request_invite')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canBoop}
                         onSelect={() => void onSendBoop?.()}
                     >
-                        {appI18n.t('common.generated.generated.send_boop')}
+                        {t('common.generated.generated.send_boop')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -498,7 +500,7 @@ export function FriendLocationCard({
                             void copyCardText(friend?.id, 'User ID')
                         }
                     >
-                        {appI18n.t('common.generated.generated.copy_user_id')}
+                        {t('common.generated.generated.copy_user_id')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!rawLocation}
@@ -506,7 +508,7 @@ export function FriendLocationCard({
                             void copyCardText(rawLocation, 'Location')
                         }
                     >
-                        {appI18n.t('common.generated.generated.copy_location')}
+                        {t('common.generated.generated.copy_location')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
             </ContextMenuContent>

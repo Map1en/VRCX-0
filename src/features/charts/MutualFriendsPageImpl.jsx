@@ -8,7 +8,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
 import {
     configRepository,
@@ -61,7 +61,6 @@ import {
     readExcludedMutualFriendIds,
     writeExcludedMutualFriendIds
 } from './mutual-friends/mutualFriendsSettings.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     GraphEmptyState,
     GraphLoadingState,
@@ -76,7 +75,7 @@ const {
 } = MUTUAL_GRAPH_LAYOUT_LIMITS;
 
 export function MutualFriendsPage() {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const orderedFriendIds = useFriendRosterStore(
@@ -577,7 +576,7 @@ export function MutualFriendsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.charts.generated_toast.failed_to_fetch_mutual_friends_graph')
+                    : t('view.charts.generated_toast.failed_to_fetch_mutual_friends_graph')
             );
         } finally {
             fetchCancelRef.current = false;
@@ -663,11 +662,11 @@ export function MutualFriendsPage() {
         const isFriend = Boolean(friendsById[selectedNode.id]);
         if (!isFriend) {
             const result = await confirm({
-                title: appI18n.t('view.charts.generated_modal.refresh_non_friend_mutuals'),
+                title: t('view.charts.generated_modal.refresh_non_friend_mutuals'),
                 description:
-                    appI18n.t('view.charts.generated_modal.this_node_is_not_currently_in_the_friend_roster_'),
-                confirmText: appI18n.t('common.actions.refresh'),
-                cancelText: appI18n.t('common.actions.cancel')
+                    t('view.charts.generated_modal.this_node_is_not_currently_in_the_friend_roster_'),
+                confirmText: t('common.actions.refresh'),
+                cancelText: t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -696,7 +695,7 @@ export function MutualFriendsPage() {
                 `Refreshed mutuals for ${selectedNode.label}.`,
                 ownerUserId
             );
-            toast.success(appI18n.t('view.charts.generated_dynamic.refreshed_mutuals_for_value', { value: selectedNode.label }));
+            toast.success(t('view.charts.generated_dynamic.refreshed_mutuals_for_value', { value: selectedNode.label }));
         } catch (error) {
             if (error?.status === 403 || error?.status === 404) {
                 if (currentUserIdRef.current !== ownerUserId) {
@@ -714,7 +713,7 @@ export function MutualFriendsPage() {
                     ownerUserId
                 );
                 toast.warning(
-                    appI18n.t('view.charts.generated_dynamic.value_has_opted_out_of_shared_connections', { value: selectedNode.label })
+                    t('view.charts.generated_dynamic.value_has_opted_out_of_shared_connections', { value: selectedNode.label })
                 );
                 return;
             }
@@ -722,7 +721,7 @@ export function MutualFriendsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.charts.generated_toast.failed_to_refresh_selected_mutuals')
+                    : t('view.charts.generated_toast.failed_to_refresh_selected_mutuals')
             );
         } finally {
             setNodeRefreshId('');

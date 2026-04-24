@@ -19,7 +19,7 @@ import {
 } from './dialogService.js';
 import { bootstrapFavorites } from './favoriteBootstrapService.js';
 import { openFavoriteImportDialog } from './favoriteImportService.js';
-import { appI18n } from '@/services/i18nService.js';
+import i18n from '@/services/i18nService.js';
 
 let ipcTimeoutId = null;
 
@@ -198,10 +198,10 @@ async function handleLaunchCommand(input) {
             );
             if (shouldConfirm) {
                 const result = await useModalStore.getState().confirm({
-                    title: appI18n.t('common.actions.confirm'),
-                    description: appI18n.t('service.ipc_event_service.generated_modal.select_avatar_value', { value: avatarId }),
-                    confirmText: appI18n.t('common.actions.select'),
-                    cancelText: appI18n.t('common.actions.cancel')
+                    title: i18n.t('common.actions.confirm'),
+                    description: i18n.t('service.ipc_event_service.generated_modal.select_avatar_value', { value: avatarId }),
+                    confirmText: i18n.t('common.actions.select'),
+                    cancelText: i18n.t('common.actions.cancel')
                 });
                 if (!result.ok) {
                     break;

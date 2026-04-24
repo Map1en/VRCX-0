@@ -2,6 +2,7 @@ import { HeartIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import {
     localFavoritesRepository,
     vrchatFavoriteRepository
@@ -21,7 +22,6 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { appI18n } from '@/services/i18nService.js';
 
 function normalizeEntityId(value) {
     return typeof value === 'string'
@@ -104,6 +104,8 @@ export function FavoriteActionMenu({
     entity = null,
     label = 'Favorite'
 }) {
+    const { t } = useTranslation();
+
     const normalizedEntityId = normalizeEntityId(entityId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -162,12 +164,12 @@ export function FavoriteActionMenu({
             if (response.json && typeof response.json === 'object') {
                 addRemoteFavorite(response.json);
             }
-            toast.success(appI18n.t('view.favorite.generated.favorite_added'));
+            toast.success(t('view.favorite.generated.favorite_added'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.favorite_action_menu.generated_toast.failed_to_add_favorite')
+                    : t('component.favorite_action_menu.generated_toast.failed_to_add_favorite')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -183,11 +185,11 @@ export function FavoriteActionMenu({
         actionStatusRef.current = 'favorite';
         setActionStatus('favorite');
         const result = await confirm({
-            title: appI18n.t('component.favorite_action_menu.generated_modal.remove_vrchat_favorite'),
-            description: appI18n.t('component.favorite_action_menu.generated_dynamic.remove_value_from_vrchat_favorites', { value: normalizedEntityId }),
+            title: t('component.favorite_action_menu.generated_modal.remove_vrchat_favorite'),
+            description: t('component.favorite_action_menu.generated_dynamic.remove_value_from_vrchat_favorites', { value: normalizedEntityId }),
             destructive: true,
-            confirmText: appI18n.t('common.actions.remove'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.remove'),
+            cancelText: t('common.actions.cancel')
         });
 
         if (!result.ok) {
@@ -202,12 +204,12 @@ export function FavoriteActionMenu({
                 objectId: normalizedEntityId
             });
             removeRemoteFavorite(normalizedEntityId);
-            toast.success(appI18n.t('view.favorite.generated.favorite_removed'));
+            toast.success(t('view.favorite.generated.favorite_removed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.favorite_action_menu.generated_toast.failed_to_remove_favorite')
+                    : t('component.favorite_action_menu.generated_toast.failed_to_remove_favorite')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -234,12 +236,12 @@ export function FavoriteActionMenu({
                 groupName,
                 entity
             });
-            toast.success(appI18n.t('view.favorite.generated.local_favorite_added'));
+            toast.success(t('view.favorite.generated.local_favorite_added'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.favorite_action_menu.generated_toast.failed_to_add_local_favorite')
+                    : t('component.favorite_action_menu.generated_toast.failed_to_add_local_favorite')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -265,12 +267,12 @@ export function FavoriteActionMenu({
                 entityId: normalizedEntityId,
                 groupName
             });
-            toast.success(appI18n.t('view.favorite.generated.local_favorite_removed'));
+            toast.success(t('view.favorite.generated.local_favorite_removed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.favorite_action_menu.generated_toast.failed_to_remove_local_favorite')
+                    : t('component.favorite_action_menu.generated_toast.failed_to_remove_local_favorite')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -303,7 +305,7 @@ export function FavoriteActionMenu({
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuLabel>{appI18n.t('view.favorite.generated.vrchat_favorites')}</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('view.favorite.generated.vrchat_favorites')}</DropdownMenuLabel>
                 {remoteFavorite ? (
                     <>
                         <DropdownMenuGroup>
@@ -322,7 +324,7 @@ export function FavoriteActionMenu({
                                     void deleteFavorite();
                                 }}
                             >
-                                {appI18n.t('view.favorite.generated.remove_favorite')}
+                                {t('view.favorite.generated.remove_favorite')}
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                     </>
@@ -351,7 +353,7 @@ export function FavoriteActionMenu({
                 ) : (
                     <DropdownMenuGroup>
                         <DropdownMenuItem disabled>
-                            {appI18n.t('view.favorite.generated.no_favorite_groups_loaded')}
+                            {t('view.favorite.generated.no_favorite_groups_loaded')}
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                 )}
@@ -399,7 +401,7 @@ export function FavoriteActionMenu({
                 ) : (
                     <DropdownMenuGroup>
                         <DropdownMenuItem disabled>
-                            {appI18n.t('view.favorite.generated.no_local_favorite_groups_loaded')}
+                            {t('view.favorite.generated.no_local_favorite_groups_loaded')}
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                 )}

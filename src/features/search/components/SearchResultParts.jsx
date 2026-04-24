@@ -1,5 +1,6 @@
 import { GlobeIcon, UserIcon, UsersIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
 import {
     convertFileUrlToImageUrl,
@@ -13,24 +14,27 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Button } from '@/ui/shadcn/button';
 
 import { languageFlagLabel, resolveUserLanguages } from '../searchDisplay.js';
 
 export function SearchEmptyState() {
+    const { t } = useTranslation();
+
     return (
         <EmptyState
-            title={appI18n.t('common.no_data')}
+            title={t('common.no_data')}
             className="min-h-56"
         />
     );
 }
 
 export function SearchLoadingState() {
+    const { t } = useTranslation();
+
     return (
         <LoadingState
-            label={appI18n.t('common.loading')}
+            label={t('common.loading')}
             className="min-h-56"
         />
     );

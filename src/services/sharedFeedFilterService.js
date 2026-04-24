@@ -4,7 +4,7 @@ import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
-import { appI18n } from '@/services/i18nService.js';
+import i18n from '@/services/i18nService.js';
 
 const FEED_FILTER_KEY_BY_TYPE = Object.freeze({
     Avatar: 'AvatarChange'
@@ -168,7 +168,7 @@ export async function pushSharedFeedNotification(entry) {
         '';
     useNotificationStore.getState().pushNotification({
         level: 'info',
-        title: appI18n.t('service.shared_feed_filter_service.generated_dynamic.feed_value', { value: type }),
+        title: i18n.t('service.shared_feed_filter_service.generated_dynamic.feed_value', { value: type }),
         message: [displayName, detail].filter(Boolean).join(' - ')
     });
 }

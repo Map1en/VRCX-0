@@ -1,7 +1,7 @@
 import { AlertTriangleIcon, LockIcon, UnlockIcon } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge.jsx';
 import {
     normalizeString,
@@ -140,7 +140,7 @@ export function LocationWorld({
     instanceClickAction = 'launch',
     className = ''
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);
     const locObj = useMemo(
         () => normalizeLocationObject(locationObject),

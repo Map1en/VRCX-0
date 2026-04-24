@@ -8,6 +8,7 @@ import {
     XIcon
 } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -33,9 +34,8 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 import { Slider } from '@/ui/shadcn/slider';
-import { Spinner } from '@/ui/shadcn/spinner';
 
-import { appI18n } from '@/services/i18nService.js';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 const CARD_SCALE_SLIDER = { min: 0.6, max: 1, step: 0.01 };
 const CARD_SPACING_SLIDER = { min: 0.5, max: 1.5, step: 0.05 };
@@ -57,6 +57,8 @@ function FavoritesToolbar({
     onImport,
     onExport
 }) {
+    const { t } = useTranslation();
+
     const cardScalePercent = Math.round(cardScale * 100);
     const cardSpacingPercent = Math.round(cardSpacing * 100);
 
@@ -66,22 +68,21 @@ function FavoritesToolbar({
                 <SelectTrigger size="sm" className="min-w-48">
                     <span className="flex items-center gap-2">
                         <ArrowUpDownIcon className="size-4" />
-                        <SelectValue placeholder={appI18n.t('view.favorite.generated.sort_favorites')} />
+                        <SelectValue placeholder={t('view.favorite.generated.sort_favorites')} />
                     </span>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectGroup>
-                        <SelectItem value="name">{appI18n.t('view.search.avatar.sort_name')}</SelectItem>
-                        <SelectItem value="date">{appI18n.t('view.favorite.generated.sort_by_date')}</SelectItem>
+                        <SelectItem value="name">{t('view.search.avatar.sort_name')}</SelectItem>
+                        <SelectItem value="date">{t('view.favorite.generated.sort_by_date')}</SelectItem>
                         {kind === 'world' ? (
                             <SelectItem value="players">
-                                {appI18n.t('view.favorite.generated.sort_by_players')}
+                                {t('view.favorite.generated.sort_by_players')}
                             </SelectItem>
                         ) : null}
                     </SelectGroup>
                 </SelectContent>
             </Select>
-
             <div className="flex min-w-72 flex-1 items-center gap-2">
                 <InputGroup className="flex-1">
                     <InputGroupAddon>
@@ -102,7 +103,7 @@ function FavoritesToolbar({
                                 }
                                 onClick={() => onSearchModeChange('name')}
                             >
-                                {appI18n.t('view.favorite.generated.name')}
+                                {t('view.favorite.generated.name')}
                             </InputGroupButton>
                             <InputGroupButton
                                 type="button"
@@ -111,7 +112,7 @@ function FavoritesToolbar({
                                 }
                                 onClick={() => onSearchModeChange('tag')}
                             >
-                                {appI18n.t('view.favorite.worlds.search_mode_tag')}
+                                {t('view.favorite.worlds.search_mode_tag')}
                             </InputGroupButton>
                         </InputGroupAddon>
                     ) : searchQuery ? (
@@ -163,7 +164,7 @@ function FavoritesToolbar({
                         >
                             <Field>
                                 <div className="flex items-center justify-between text-sm font-semibold">
-                                    <FieldLabel>{appI18n.t('view.friends_locations.scale')}</FieldLabel>
+                                    <FieldLabel>{t('view.friends_locations.scale')}</FieldLabel>
                                     <span className="text-muted-foreground text-xs">
                                         {cardScalePercent}%
                                     </span>
@@ -180,7 +181,7 @@ function FavoritesToolbar({
                             </Field>
                             <Field>
                                 <div className="flex items-center justify-between text-sm font-semibold">
-                                    <FieldLabel>{appI18n.t('view.friends_locations.spacing')}</FieldLabel>
+                                    <FieldLabel>{t('view.friends_locations.spacing')}</FieldLabel>
                                     <span className="text-muted-foreground text-xs">
                                         {cardSpacingPercent}%
                                     </span>
@@ -200,11 +201,11 @@ function FavoritesToolbar({
                         <DropdownMenuGroup>
                             <DropdownMenuItem onSelect={onImport}>
                                 <UploadIcon data-icon="inline-start" />
-                                {appI18n.t('view.favorite.import')}
+                                {t('view.favorite.import')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={onExport}>
                                 <DownloadIcon data-icon="inline-start" />
-                                {appI18n.t('view.favorite.generated.export')}
+                                {t('view.favorite.generated.export')}
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                     </DropdownMenuContent>

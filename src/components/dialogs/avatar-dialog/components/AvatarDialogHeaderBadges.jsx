@@ -6,7 +6,7 @@ import {
     UserIcon
 } from 'lucide-react';
 
-import { appI18n } from '@/services/i18nService.js';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
@@ -36,30 +36,32 @@ export function AvatarDialogHeaderBadges({
     imposterVersion,
     onOpenCache
 }) {
+    const { t } = useTranslation();
+
     return (
         <>
             <Badge
                 variant={avatar.releaseStatus === 'public' ? 'default' : 'outline'}
             >
                 {avatar.releaseStatus === 'public'
-                    ? appI18n.t('dialog.avatar.tags.public')
-                    : appI18n.t('dialog.avatar.tags.private')}
+                    ? t('dialog.avatar.tags.public')
+                    : t('dialog.avatar.tags.private')}
             </Badge>
             {isCurrentAvatar ? (
                 <Badge variant="secondary">
                     <UserIcon data-icon="inline-start" />
-                    {appI18n.t('common.current_session')}
+                    {t('common.current_session')}
                 </Badge>
             ) : null}
             {avatarBlocked ? (
                 <Badge variant="destructive">
-                    {appI18n.t('dialog.avatar.generated.blocked')}
+                    {t('dialog.avatar.generated.blocked')}
                 </Badge>
             ) : null}
             {isFavorite ? (
                 <Badge>
                     <HeartIcon data-icon="inline-start" className="fill-current" />
-                    {appI18n.t('dialog.avatar.generated.favorite')}
+                    {t('dialog.avatar.generated.favorite')}
                 </Badge>
             ) : null}
             {avatar.$isCached ? (
@@ -71,19 +73,19 @@ export function AvatarDialogHeaderBadges({
                     onClick={onOpenCache}
                 >
                     {avatar.$cacheSize
-                        ? `${avatar.$cacheSize} ${appI18n.t('dialog.avatar.tags.cache')}`
-                        : appI18n.t('dialog.avatar.tags.cache')}
+                        ? `${avatar.$cacheSize} ${t('dialog.avatar.tags.cache')}`
+                        : t('dialog.avatar.tags.cache')}
                 </Button>
             ) : null}
             {hasImposter ? (
                 <Badge variant="outline">
-                    {appI18n.t('dialog.avatar.tags.impostor')}
+                    {t('dialog.avatar.tags.impostor')}
                     {imposterVersion ? ` v${imposterVersion}` : ''}
                 </Badge>
             ) : null}
             {avatar.styles?.primary || avatar.styles?.secondary ? (
                 <Badge variant="outline">
-                    {appI18n.t('view.favorite.avatars.styles')} {avatar.styles?.primary || ''}
+                    {t('view.favorite.avatars.styles')} {avatar.styles?.primary || ''}
                     {avatar.styles?.secondary
                         ? ` / ${avatar.styles.secondary}`
                         : ''}
@@ -91,12 +93,12 @@ export function AvatarDialogHeaderBadges({
             ) : null}
             {avatar.unityPackageUrl || avatar.unityPackage?.url ? (
                 <Badge variant="outline">
-                    {appI18n.t('dialog.avatar.generated.future_proofing')}
+                    {t('dialog.avatar.generated.future_proofing')}
                 </Badge>
             ) : null}
             {avatar.tags?.some((tag) => /quest/i.test(tag)) ? (
                 <Badge variant="outline">
-                    {appI18n.t('dialog.avatar.tags.fallback')}
+                    {t('dialog.avatar.tags.fallback')}
                 </Badge>
             ) : null}
             {platformInfo?.pc?.platform ? (
@@ -109,7 +111,7 @@ export function AvatarDialogHeaderBadges({
             ) : null}
             {platformInfo?.android?.platform ? (
                 <PlatformBadge
-                    label={appI18n.t('dialog.avatar.generated.android')}
+                    label={t('dialog.avatar.generated.android')}
                     rating={platformInfo.android.performanceRating}
                     fileSize={fileAnalysis.android?._fileSize}
                     icon={SmartphoneIcon}

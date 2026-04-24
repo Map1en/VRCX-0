@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -20,7 +19,7 @@ import { Input } from '@/ui/shadcn/input';
 import { Textarea } from '@/ui/shadcn/textarea';
 
 export function LaunchOptionsDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const [launchArguments, setLaunchArguments] = useState('');
     const [vrcLaunchPathOverride, setVrcLaunchPathOverride] = useState('');
     const [loading, setLoading] = useState(false);
@@ -57,7 +56,7 @@ export function LaunchOptionsDialog({ open, onOpenChange }) {
                 toast.error(
                     userFacingErrorMessage(
                         error,
-                        appI18n.t('host.system_dialogs.generated_toast.failed_to_load_launch_options')
+                        t('host.system_dialogs.generated_toast.failed_to_load_launch_options')
                     )
                 );
             })
@@ -104,7 +103,7 @@ export function LaunchOptionsDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    appI18n.t('host.system_dialogs.generated_toast.failed_to_save_launch_options')
+                    t('host.system_dialogs.generated_toast.failed_to_save_launch_options')
                 )
             );
         } finally {

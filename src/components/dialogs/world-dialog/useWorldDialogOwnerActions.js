@@ -1,8 +1,8 @@
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { worldProfileRepository } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 
 export function useWorldDialogOwnerActions({
     actionStatusRef,
@@ -19,6 +19,8 @@ export function useWorldDialogOwnerActions({
     setWorld,
     world
 }) {
+    const { t } = useTranslation();
+
     async function saveWorldPatch(patch, { successMessage, errorMessage }) {
         if (!canManageWorld || actionStatusRef.current !== 'idle') {
             return false;
@@ -65,11 +67,11 @@ export function useWorldDialogOwnerActions({
 
     async function renameWorld() {
         const result = await prompt({
-            title: appI18n.t('dialog.world.generated_modal.rename_world'),
+            title: t('dialog.world.generated_modal.rename_world'),
             description: world.name || world.id,
             inputValue: world.name || '',
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (result.ok) {
             await saveWorldPatch(
@@ -84,12 +86,12 @@ export function useWorldDialogOwnerActions({
 
     async function changeWorldDescription() {
         const result = await prompt({
-            title: appI18n.t('dialog.world.generated_modal.change_world_description'),
+            title: t('dialog.world.generated_modal.change_world_description'),
             description: world.name || world.id,
             inputValue: world.description || '',
             multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (result.ok) {
             await saveWorldPatch(
@@ -104,18 +106,18 @@ export function useWorldDialogOwnerActions({
 
     async function changeWorldCapacity(field, label) {
         const result = await prompt({
-            title: appI18n.t('dialog.world.generated_dynamic.change_value', { value: label }),
+            title: t('dialog.world.generated_dynamic.change_value', { value: label }),
             description: world.name || world.id,
             inputValue: String(world[field] || ''),
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
         }
         const value = Number.parseInt(result.value, 10);
         if (!Number.isFinite(value) || value < 1) {
-            toast.error(appI18n.t('dialog.world.generated_dynamic.value_must_be_a_positive_number', { value: label }));
+            toast.error(t('dialog.world.generated_dynamic.value_must_be_a_positive_number', { value: label }));
             return;
         }
         await saveWorldPatch(
@@ -129,11 +131,11 @@ export function useWorldDialogOwnerActions({
 
     async function changeWorldYouTubePreview() {
         const result = await prompt({
-            title: appI18n.t('dialog.world.generated_modal.change_youtube_preview'),
+            title: t('dialog.world.generated_modal.change_youtube_preview'),
             description: world.name || world.id,
             inputValue: world.previewYoutubeId || '',
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -153,7 +155,7 @@ export function useWorldDialogOwnerActions({
                     processedValue = pathId;
                 }
             } catch {
-                toast.error(appI18n.t('dialog.world.generated.youtube_preview_must_be_a_video_id_or_valid_url'));
+                toast.error(t('dialog.world.generated.youtube_preview_must_be_a_video_id_or_valid_url'));
                 return;
             }
         }
@@ -210,7 +212,7 @@ export function useWorldDialogOwnerActions({
             title: nextPublished ? 'Publish world?' : 'Unpublish world?',
             description: world.name || world.id,
             confirmText: nextPublished ? 'Publish' : 'Unpublish',
-            cancelText: appI18n.t('common.actions.cancel'),
+            cancelText: t('common.actions.cancel'),
             destructive: !nextPublished
         });
         if (!result.ok) {
@@ -244,7 +246,7 @@ export function useWorldDialogOwnerActions({
                     : currentWorld
             );
             toast.success(
-                nextPublished ? appI18n.t('dialog.world.generated_toast.world_published') : appI18n.t('dialog.world.generated_toast.world_unpublished')
+                nextPublished ? t('dialog.world.generated_toast.world_published') : t('dialog.world.generated_toast.world_unpublished')
             );
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
@@ -253,7 +255,7 @@ export function useWorldDialogOwnerActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_update_world_publication')
+                    : t('dialog.world.generated_toast.failed_to_update_world_publication')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -267,10 +269,10 @@ export function useWorldDialogOwnerActions({
         }
 
         const result = await confirm({
-            title: appI18n.t('dialog.world.generated_modal.delete_persistent_data'),
+            title: t('dialog.world.generated_modal.delete_persistent_data'),
             description: world.name || world.id,
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -296,7 +298,7 @@ export function useWorldDialogOwnerActions({
                     : currentWorld
             );
             setHasPersistData(false);
-            toast.success(appI18n.t('dialog.world.generated.world_persistent_data_deleted'));
+            toast.success(t('dialog.world.generated.world_persistent_data_deleted'));
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
@@ -304,7 +306,7 @@ export function useWorldDialogOwnerActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_delete_world_persistent_data')
+                    : t('dialog.world.generated_toast.failed_to_delete_world_persistent_data')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -318,10 +320,10 @@ export function useWorldDialogOwnerActions({
         }
 
         const result = await confirm({
-            title: appI18n.t('dialog.world.generated_modal.delete_world'),
+            title: t('dialog.world.generated_modal.delete_world'),
             description: world.name || world.id,
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -335,13 +337,13 @@ export function useWorldDialogOwnerActions({
                 worldId: world.id,
                 endpoint: currentEndpoint
             });
-            toast.success(appI18n.t('dialog.world.generated.world_deleted'));
+            toast.success(t('dialog.world.generated.world_deleted'));
             closeDialog();
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_delete_world')
+                    : t('dialog.world.generated_toast.failed_to_delete_world')
             );
         } finally {
             actionStatusRef.current = 'idle';

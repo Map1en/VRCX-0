@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
@@ -11,7 +12,6 @@ import {
     vrchatAuthRepository
 } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
@@ -66,6 +66,8 @@ export function GroupDialogTabbedView({
     onVisibility,
     onBlock
 }) {
+    const { t } = useTranslation();
+
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
@@ -100,12 +102,12 @@ export function GroupDialogTabbedView({
         gallerySignature
     });
     const tabs = [
-        { value: 'info', label: appI18n.t('dialog.group.moderation_tabs.info') },
-        { value: 'instance-history', label: appI18n.t('dialog.group.moderation_tabs.instance_history') },
-        { value: 'posts', label: appI18n.t('dialog.group.moderation_tabs.posts') },
-        { value: 'members', label: appI18n.t('dialog.group.moderation_tabs.members') },
-        { value: 'photos', label: appI18n.t('dialog.group.moderation_tabs.photos') },
-        { value: 'json', label: appI18n.t('dialog.group.moderation_tabs.json') }
+        { value: 'info', label: t('dialog.group.moderation_tabs.info') },
+        { value: 'instance-history', label: t('dialog.group.moderation_tabs.instance_history') },
+        { value: 'posts', label: t('dialog.group.moderation_tabs.posts') },
+        { value: 'members', label: t('dialog.group.moderation_tabs.members') },
+        { value: 'photos', label: t('dialog.group.moderation_tabs.photos') },
+        { value: 'json', label: t('dialog.group.moderation_tabs.json') }
     ];
     const posts =
         remoteStatus.posts === 'ready'
@@ -418,7 +420,7 @@ export function GroupDialogTabbedView({
 
     async function copyGroupText(text, label) {
         await copyTextToClipboard(text);
-        toast.success(appI18n.t('dialog.group.generated_dynamic.value_copied', { value: label }));
+        toast.success(t('dialog.group.generated_dynamic.value_copied', { value: label }));
     }
 
     function openGroupOwner() {
@@ -457,7 +459,7 @@ export function GroupDialogTabbedView({
         const title = String(form.title || '').trim();
         const text = String(form.text || '').trim();
         if (!title || !text) {
-            toast.warning(appI18n.t('dialog.group.generated.title_and_text_are_required'));
+            toast.warning(t('dialog.group.generated.title_and_text_are_required'));
             return;
         }
 
@@ -502,14 +504,14 @@ export function GroupDialogTabbedView({
             setPostEditor(null);
             toast.success(
                 form.mode === 'edit'
-                    ? appI18n.t('dialog.group.generated_toast.group_post_updated')
-                    : appI18n.t('dialog.group.generated_toast.group_post_created')
+                    ? t('dialog.group.generated_toast.group_post_updated')
+                    : t('dialog.group.generated_toast.group_post_created')
             );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.group.generated_toast.failed_to_save_group_post')
+                    : t('dialog.group.generated_toast.failed_to_save_group_post')
             );
         } finally {
             setPostEditorSubmitting(false);
@@ -518,11 +520,11 @@ export function GroupDialogTabbedView({
 
     async function inviteUserToGroup() {
         const result = await prompt({
-            title: appI18n.t('dialog.group.generated_modal.invite_to_group'),
-            description: appI18n.t('dialog.group.generated_modal.enter_the_vrchat_user_id_to_invite'),
+            title: t('dialog.group.generated_modal.invite_to_group'),
+            description: t('dialog.group.generated_modal.enter_the_vrchat_user_id_to_invite'),
             inputValue: '',
-            confirmText: appI18n.t('dialog.group.generated_modal.invite'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('dialog.group.generated_modal.invite'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -533,12 +535,12 @@ export function GroupDialogTabbedView({
                 userId: result.value,
                 endpoint: currentEndpoint
             });
-            toast.success(appI18n.t('dialog.group.generated.group_invite_sent'));
+            toast.success(t('dialog.group.generated.group_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.group.generated_toast.failed_to_send_group_invite')
+                    : t('dialog.group.generated_toast.failed_to_send_group_invite')
             );
         }
     }
@@ -558,10 +560,10 @@ export function GroupDialogTabbedView({
 
     async function deleteGroupPost(post) {
         const result = await confirm({
-            title: appI18n.t('dialog.group.generated_modal.delete_group_post'),
+            title: t('dialog.group.generated_modal.delete_group_post'),
             description: post?.title || group.name || 'Group',
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -577,12 +579,12 @@ export function GroupDialogTabbedView({
                 ...current,
                 posts: current.posts.filter((row) => row.id !== post.id)
             }));
-            toast.success(appI18n.t('dialog.group.generated.group_post_deleted'));
+            toast.success(t('dialog.group.generated.group_post_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.group.generated_toast.failed_to_delete_group_post')
+                    : t('dialog.group.generated_toast.failed_to_delete_group_post')
             );
         }
     }

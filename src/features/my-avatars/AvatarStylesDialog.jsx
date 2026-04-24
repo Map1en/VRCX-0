@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { myAvatarRepository } from '@/repositories/index.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Button } from '@/ui/shadcn/button';
@@ -28,7 +29,6 @@ import {
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Textarea } from '@/ui/shadcn/textarea';
-import { appI18n } from '@/services/i18nService.js';
 
 const CLEAR_STYLE_VALUE = '__clear__';
 
@@ -112,6 +112,8 @@ export function AvatarStylesDialog({
     onOpenChange,
     onSaved
 }) {
+    const { t } = useTranslation();
+
     const avatarId = normalizeStyleName(avatar?.id);
     const initialPrimaryStyle = normalizeStyleName(avatar?.styles?.primary);
     const initialSecondaryStyle = normalizeStyleName(avatar?.styles?.secondary);
@@ -168,7 +170,7 @@ export function AvatarStylesDialog({
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.my_avatars.generated_toast.failed_to_load_avatar_styles')
+                        : t('view.my_avatars.generated_toast.failed_to_load_avatar_styles')
                 );
             });
 
@@ -243,7 +245,7 @@ export function AvatarStylesDialog({
                 styleIdByName
             );
             if (!hasPrimaryStyleParam || !hasSecondaryStyleParam) {
-                toast.error(appI18n.t('view.my_avatars.generated.selected_avatar_style_is_not_available'));
+                toast.error(t('view.my_avatars.generated.selected_avatar_style_is_not_available'));
                 return;
             }
 
@@ -256,13 +258,13 @@ export function AvatarStylesDialog({
                 return;
             }
             onSaved?.(savedAvatar);
-            toast.success(appI18n.t('view.my_avatars.generated.avatar_styles_updated'));
+            toast.success(t('view.my_avatars.generated.avatar_styles_updated'));
             onOpenChange(false);
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.my_avatars.generated_toast.failed_to_update_avatar_styles')
+                    : t('view.my_avatars.generated_toast.failed_to_update_avatar_styles')
             );
         } finally {
             setSaving(false);
@@ -273,14 +275,14 @@ export function AvatarStylesDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{appI18n.t('dialog.set_avatar_styles.header')}</DialogTitle>
+                    <DialogTitle>{t('dialog.set_avatar_styles.header')}</DialogTitle>
                     <DialogDescription>
                         {avatar?.name || avatarId || 'Avatar'}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <Field>
-                        <FieldLabel>{appI18n.t('view.my_avatars.generated.primary_style')}</FieldLabel>
+                        <FieldLabel>{t('view.my_avatars.generated.primary_style')}</FieldLabel>
                         <Select
                             value={primaryStyle || CLEAR_STYLE_VALUE}
                             onValueChange={(value) =>
@@ -290,12 +292,12 @@ export function AvatarStylesDialog({
                             }
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder={appI18n.t('view.my_avatars.generated.select_style')} />
+                                <SelectValue placeholder={t('view.my_avatars.generated.select_style')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectItem value={CLEAR_STYLE_VALUE}>
-                                        {appI18n.t('view.my_avatars.generated.none')}
+                                        {t('view.my_avatars.generated.none')}
                                     </SelectItem>
                                     {styleNames.map((styleName) => (
                                         <SelectItem
@@ -310,7 +312,7 @@ export function AvatarStylesDialog({
                         </Select>
                     </Field>
                     <Field>
-                        <FieldLabel>{appI18n.t('view.my_avatars.generated.secondary_style')}</FieldLabel>
+                        <FieldLabel>{t('view.my_avatars.generated.secondary_style')}</FieldLabel>
                         <Select
                             value={secondaryStyle || CLEAR_STYLE_VALUE}
                             onValueChange={(value) =>
@@ -320,12 +322,12 @@ export function AvatarStylesDialog({
                             }
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder={appI18n.t('view.my_avatars.generated.select_style')} />
+                                <SelectValue placeholder={t('view.my_avatars.generated.select_style')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectItem value={CLEAR_STYLE_VALUE}>
-                                        {appI18n.t('view.my_avatars.generated.none')}
+                                        {t('view.my_avatars.generated.none')}
                                     </SelectItem>
                                     {styleNames.map((styleName) => (
                                         <SelectItem
@@ -341,7 +343,7 @@ export function AvatarStylesDialog({
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="avatar-styles-author-tags">
-                            {appI18n.t('view.my_avatars.generated.author_tags')}
+                            {t('view.my_avatars.generated.author_tags')}
                         </FieldLabel>
                         <Textarea
                             id="avatar-styles-author-tags"
@@ -355,7 +357,7 @@ export function AvatarStylesDialog({
                     </Field>
                     {loadStatus === 'error' ? (
                         <FieldDescription>
-                            {appI18n.t('view.my_avatars.generated.style_list_could_not_be_loaded_unknown_style_selections_will')}
+                            {t('view.my_avatars.generated.style_list_could_not_be_loaded_unknown_style_selections_will')}
                         </FieldDescription>
                     ) : null}
                 </FieldGroup>
@@ -365,7 +367,7 @@ export function AvatarStylesDialog({
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                     >
-                        {appI18n.t('common.actions.cancel')}
+                        {t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -375,7 +377,7 @@ export function AvatarStylesDialog({
                         {saving || loadStatus === 'running' ? (
                             <Spinner data-icon="inline-start" />
                         ) : null}
-                        {appI18n.t('common.actions.save')}
+                        {t('common.actions.save')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

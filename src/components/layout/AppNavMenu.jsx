@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { logoutFromReactShell } from '@/services/authExecutionService.js';
 import {
     setSidebarCollapsedPreference,
@@ -41,7 +41,6 @@ import {
     routePathByName,
     saveNavMenuModel
 } from './navMenuModel.js';
-import { appI18n } from '@/services/i18nService.js';
 
 function resolveActiveIndex(menuItems, pathname) {
     for (const item of menuItems) {
@@ -64,7 +63,7 @@ function resolveActiveIndex(menuItems, pathname) {
 export function AppNavMenu({ isCollapsed }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const sidebarOpen = useShellStore((state) => state.sidebarOpen);
     const themeMode = useShellStore((state) => state.themeMode);
     const tableDensity = useShellStore((state) => state.tableDensity);
@@ -199,7 +198,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_create_dashboard')
+                    : t('component.app_nav_menu.generated_toast.failed_to_create_dashboard')
             );
         } finally {
             setIsCreatingDashboard(false);
@@ -219,7 +218,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_mark_notifications_as_seen')
+                    : t('component.app_nav_menu.generated_toast.failed_to_mark_notifications_as_seen')
             );
         }
     }
@@ -283,7 +282,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_delete_dashboard')
+                    : t('component.app_nav_menu.generated_toast.failed_to_delete_dashboard')
             );
         }
     }
@@ -313,7 +312,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_save_custom_navigation')
+                    : t('component.app_nav_menu.generated_toast.failed_to_save_custom_navigation')
             );
         }
     }
@@ -332,7 +331,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_save_dashboard_navigation')
+                    : t('component.app_nav_menu.generated_toast.failed_to_save_dashboard_navigation')
             );
         }
     }
@@ -352,7 +351,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_unpin_tool_from_navigation')
+                    : t('component.app_nav_menu.generated_toast.failed_to_unpin_tool_from_navigation')
             );
         }
     }
@@ -369,7 +368,7 @@ export function AppNavMenu({ isCollapsed }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.app_nav_menu.generated_toast.failed_to_sign_out_of_vrcx_0')
+                    : t('component.app_nav_menu.generated_toast.failed_to_sign_out_of_vrcx_0')
             );
         }
     }

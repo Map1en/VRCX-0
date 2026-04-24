@@ -1,8 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import {
     confirmLegacyDatabaseMigration,
     skipLegacyDatabaseMigration
 } from '@/services/databaseUpgradeService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -30,6 +30,8 @@ function getDatabaseUpgradeTitle(phase) {
 }
 
 export function DatabaseUpgradeDialog({ open }) {
+    const { t } = useTranslation();
+
     const databaseUpgrade = useRuntimeStore((state) => state.databaseUpgrade);
     const setDatabaseUpgradeState = useRuntimeStore(
         (state) => state.setDatabaseUpgradeState
@@ -70,7 +72,7 @@ export function DatabaseUpgradeDialog({ open }) {
                                     void skipLegacyDatabaseMigration();
                                 }}
                             >
-                                {appI18n.t(
+                                {t(
                                     'message.database.migration_skip'
                                 )}
                             </Button>
@@ -80,7 +82,7 @@ export function DatabaseUpgradeDialog({ open }) {
                                     void confirmLegacyDatabaseMigration();
                                 }}
                             >
-                                {appI18n.t(
+                                {t(
                                     'dialog.system.generated.migrate_and_restart'
                                 )}
                             </Button>
@@ -94,7 +96,7 @@ export function DatabaseUpgradeDialog({ open }) {
                                 setDatabaseUpgradeState({ open: false })
                             }
                         >
-                            {appI18n.t('common.actions.close')}
+                            {t('common.actions.close')}
                         </Button>
                     )}
                 </DialogFooter>

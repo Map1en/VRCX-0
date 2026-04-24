@@ -6,7 +6,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
 import configRepository from '@/repositories/configRepository.js';
 import worldProfileRepository from '@/repositories/worldProfileRepository.js';
@@ -65,7 +65,8 @@ function getDisplayDayLabels(dayLabels, weekStartsOn) {
 }
 
 export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
-    const { locale, t } = useI18n();
+    const { t } = useTranslation();
+    const locale = useShellStore((state) => state.locale);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot

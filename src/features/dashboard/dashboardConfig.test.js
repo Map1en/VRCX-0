@@ -15,6 +15,18 @@ import {
     isDashboardFilterActive
 } from './dashboardConfig.js';
 
+const dashboardT = (key, params = {}) => {
+    const messages = {
+        'dashboard.registry.feed': 'Feed',
+        'dashboard.registry.feed_widget': 'Feed Widget',
+        'view.dashboard.generated_dynamic.existing_value': `Existing · ${params.value}`,
+        'view.dashboard.generated_dynamic.page_value': `Page · ${params.value}`,
+        'view.dashboard.generated_dynamic.widget_value': `Widget · ${params.value}`
+    };
+
+    return messages[key] ?? key;
+};
+
 describe('dashboardConfig', () => {
     it('keeps saved dashboard rows editable without mutating the stored dashboard', () => {
         const rows = [
@@ -49,7 +61,10 @@ describe('dashboardConfig', () => {
     });
 
     it('lets users pick widgets, pages, and existing unknown panels', () => {
-        const options = createDashboardPanelSelectOptions('legacy-panel');
+        const options = createDashboardPanelSelectOptions(
+            'legacy-panel',
+            dashboardT
+        );
 
         expect(options[0]).toEqual({
             value: 'legacy-panel',
@@ -62,7 +77,7 @@ describe('dashboardConfig', () => {
             true
         );
         expect(
-            createDashboardPanelSelectOptions('__none__').some(
+            createDashboardPanelSelectOptions('__none__', dashboardT).some(
                 (option) => option.value === '__none__'
             )
         ).toBe(false);

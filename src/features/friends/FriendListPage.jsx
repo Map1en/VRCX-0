@@ -7,7 +7,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { PageScaffold } from '@/components/layout/PageScaffold.jsx';
 import {
     configRepository,
@@ -45,14 +45,13 @@ import {
     sanitizeFriendListSorting as sanitizeSorting,
     writePersistedFriendListState as writePersistedState
 } from './friendListState.js';
-import { appI18n } from '@/services/i18nService.js';
 import { buildFriendListColumns } from './components/FriendListColumns.jsx';
 import { FriendListToolbar } from './components/FriendListToolbar.jsx';
 import { FriendListTable } from './components/FriendListTable.jsx';
 import { FriendListUserLoadDialog } from './components/FriendListUserLoadDialog.jsx';
 
 export function FriendListPage({ embedded = false } = {}) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -548,7 +547,7 @@ export function FriendListPage({ embedded = false } = {}) {
                     return next;
                 });
                 toast.success(
-                    appI18n.t('view.friends.generated_dynamic.unfriended_value', { value: friend.displayName || normalizedUserId })
+                    t('view.friends.generated_dynamic.unfriended_value', { value: friend.displayName || normalizedUserId })
                 );
             }
             return {
@@ -559,7 +558,7 @@ export function FriendListPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.friends.generated_toast.failed_to_unfriend_value', { value: friend.displayName || normalizedUserId })
+                    : t('view.friends.generated_toast.failed_to_unfriend_value', { value: friend.displayName || normalizedUserId })
             );
             return { stale: false, deleted: false };
         } finally {
@@ -574,10 +573,10 @@ export function FriendListPage({ embedded = false } = {}) {
         }
 
         const result = await confirm({
-            title: appI18n.t('view.friends.generated_modal.unfriend_user'),
+            title: t('view.friends.generated_modal.unfriend_user'),
             description: friend?.displayName || normalizedUserId,
-            confirmText: appI18n.t('view.friends.generated_modal.unfriend'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('view.friends.generated_modal.unfriend'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -596,13 +595,13 @@ export function FriendListPage({ embedded = false } = {}) {
         }
 
         const result = await confirm({
-            title: appI18n.t('view.friends.generated_dynamic.unfriend_value_friends', { value: selectedRows.length }),
+            title: t('view.friends.generated_dynamic.unfriend_value_friends', { value: selectedRows.length }),
             description: selectedRows
                 .map((friend) => friend.displayName || friend.id)
                 .slice(0, 30)
                 .join('\n'),
-            confirmText: appI18n.t('view.friends.generated_modal.unfriend'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('view.friends.generated_modal.unfriend'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -623,7 +622,7 @@ export function FriendListPage({ embedded = false } = {}) {
                 }
             }
             if (deletedCount > 0) {
-                toast.success(appI18n.t('view.friends.generated_dynamic.unfriended_value_friends', { value: deletedCount }));
+                toast.success(t('view.friends.generated_dynamic.unfriended_value_friends', { value: deletedCount }));
             }
         } finally {
             setIsBulkDeleting(false);
@@ -692,7 +691,7 @@ export function FriendListPage({ embedded = false } = {}) {
                 toast.warning(t('view.friend_list.generated.friend_detail_loading_cancelled'));
                 return;
             }
-            toast.success(appI18n.t('view.friends.generated_dynamic.loaded_value_friend_profiles', { value: loadedCount }));
+            toast.success(t('view.friends.generated_dynamic.loaded_value_friend_profiles', { value: loadedCount }));
         } finally {
             setIsLoadingUserDetails(false);
             if (!cancelUserLoadRef.current) {

@@ -1,11 +1,12 @@
 import { ArrowRightIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { useTranslation } from 'react-i18next';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
-import { Button } from '@/ui/shadcn/button';
 
+import { Button } from '@/ui/shadcn/button';
 import { DashboardEmbeddedPagePanel } from './DashboardEmbeddedPagePanel.jsx';
 import { canEmbedDashboardPagePanel } from './dashboardPagePanelRegistry.jsx';
 import {
@@ -16,7 +17,6 @@ import {
 import { DashboardFeedWidget } from './widgets/DashboardFeedWidget.jsx';
 import { DashboardGameLogWidget } from './widgets/DashboardGameLogWidget.jsx';
 import { DashboardInstanceWidget } from './widgets/DashboardInstanceWidget.jsx';
-import { appI18n } from '@/services/i18nService.js';
 
 function PreviewMetric({ label, value }) {
     return (
@@ -54,6 +54,8 @@ function DashboardWidgetPreview({ definition, config, configUpdater }) {
 }
 
 function DashboardPagePreview({ definition }) {
+    const { t } = useTranslation();
+
     const navigate = useNavigate();
     const friendCount = useFriendRosterStore(
         (state) => state.orderedFriendIds.length
@@ -73,19 +75,19 @@ function DashboardPagePreview({ definition }) {
     );
 
     let metrics = [
-        <PreviewMetric key="status" label={appI18n.t('view.dashboard.generated.status')} value="Route available" />
+        <PreviewMetric key="status" label={t('view.dashboard.generated.status')} value="Route available" />
     ];
 
     if (definition.key === 'friend-list') {
         metrics = [
-            <PreviewMetric key="friends" label={appI18n.t('view.dashboard.generated.friends')} value={friendCount} />,
-            <PreviewMetric key="online" label={appI18n.t('view.dashboard.generated.online')} value={onlineCount} />
+            <PreviewMetric key="friends" label={t('view.dashboard.generated.friends')} value={friendCount} />,
+            <PreviewMetric key="online" label={t('view.dashboard.generated.online')} value={onlineCount} />
         ];
     } else if (definition.key === 'favorite-friends') {
         metrics = [
             <PreviewMetric
                 key="favorites"
-                label={appI18n.t('view.dashboard.generated.favorites')}
+                label={t('view.dashboard.generated.favorites')}
                 value={favoriteFriendCount}
             />
         ];
@@ -93,7 +95,7 @@ function DashboardPagePreview({ definition }) {
         metrics = [
             <PreviewMetric
                 key="favorites"
-                label={appI18n.t('view.dashboard.generated.favorites')}
+                label={t('view.dashboard.generated.favorites')}
                 value={favoriteWorldCount}
             />
         ];
@@ -101,7 +103,7 @@ function DashboardPagePreview({ definition }) {
         metrics = [
             <PreviewMetric
                 key="favorites"
-                label={appI18n.t('view.dashboard.generated.favorites')}
+                label={t('view.dashboard.generated.favorites')}
                 value={favoriteAvatarCount}
             />
         ];
@@ -109,7 +111,7 @@ function DashboardPagePreview({ definition }) {
         metrics = [
             <PreviewMetric
                 key="notifications"
-                label={appI18n.t('view.dashboard.generated.notifications')}
+                label={t('view.dashboard.generated.notifications')}
                 value={notificationCount}
             />
         ];
@@ -126,7 +128,7 @@ function DashboardPagePreview({ definition }) {
                     size="sm"
                     onClick={() => navigate(definition.path)}
                 >
-                    {appI18n.t('common.actions.open')}
+                    {t('common.actions.open')}
                     <ArrowRightIcon data-icon="inline-end" />
                 </Button>
             </div>
@@ -135,6 +137,8 @@ function DashboardPagePreview({ definition }) {
 }
 
 export function DashboardPanelPreview({ panel, onPanelChange }) {
+    const { t } = useTranslation();
+
     const panelKey = resolveDashboardPanelKey(panel);
     const panelConfig = resolveDashboardPanelConfig(panel);
     const definition = getDashboardPanelDefinition(panelKey);
@@ -144,7 +148,7 @@ export function DashboardPanelPreview({ panel, onPanelChange }) {
     if (!panelKey) {
         return (
             <div className="bg-card text-muted-foreground relative flex h-full min-h-[180px] items-center justify-center overflow-hidden rounded-md border border-dashed text-sm">
-                <div className="py-10 text-center">{appI18n.t('view.dashboard.generated.panel_not_configured')}</div>
+                <div className="py-10 text-center">{t('view.dashboard.generated.panel_not_configured')}</div>
             </div>
         );
     }
@@ -152,7 +156,7 @@ export function DashboardPanelPreview({ panel, onPanelChange }) {
     if (!definition) {
         return (
             <div className="bg-card text-muted-foreground relative flex h-full min-h-[180px] items-center justify-center overflow-hidden rounded-md border border-dashed text-sm">
-                {appI18n.t('view.dashboard.generated.unsupported_panel')} {panelKey}
+                {t('view.dashboard.generated.unsupported_panel')} {panelKey}
             </div>
         );
     }

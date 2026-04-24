@@ -1,13 +1,13 @@
 import * as echarts from 'echarts';
 import { useCallback, useEffect, useRef } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import {
     EmptyState as AppEmptyState,
     LoadingState as AppLoadingState
 } from '@/components/layout/PageScaffold.jsx';
 import { Location } from '@/components/Location.jsx';
 import { openUserDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 
 import {
@@ -16,10 +16,12 @@ import {
 } from '../instance-activity/instanceActivityChart.js';
 
 export function ChartLoadingState() {
+    const { t } = useTranslation();
+
     return (
         <AppLoadingState
             className="min-h-80"
-            label={appI18n.t('view.charts.generated.loading_instance_activity')}
+            label={t('view.charts.generated.loading_instance_activity')}
         />
     );
 }
@@ -43,6 +45,8 @@ export function InstanceActivityDetailChart({
     worldDetailsById,
     onOpenPreviousInstanceInfo
 }) {
+    const { t } = useTranslation();
+
     const chartElementRef = useRef(null);
     const chartInstanceRef = useRef(null);
     const resizeObserverRef = useRef(null);
@@ -186,8 +190,8 @@ export function InstanceActivityDetailChart({
                 <div ref={setDetailChartElementRef} className="w-full" />
             ) : (
                 <ChartEmptyState
-                    title={appI18n.t('view.charts.generated.no_detail_rows')}
-                    description={appI18n.t('view.charts.generated.no_matching_player_activity_rows_were_found_for_this_instanc')}
+                    title={t('view.charts.generated.no_detail_rows')}
+                    description={t('view.charts.generated.no_matching_player_activity_rows_were_found_for_this_instanc')}
                 />
             )}
         </div>

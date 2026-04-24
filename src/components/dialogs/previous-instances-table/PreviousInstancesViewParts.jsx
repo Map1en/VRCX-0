@@ -1,6 +1,7 @@
 import { ArrowLeftIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { timeToText } from '@/lib/dateTime.js';
 import {
     gameLogRepository,
@@ -30,8 +31,8 @@ import {
     TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import {
     INFO_CHART_BAR_WIDTH,
     buildInfoChartOption,
@@ -46,7 +47,6 @@ import {
     rowLocation,
     rowOwnerUserId
 } from './previousInstancesRows.js';
-import { appI18n } from '@/services/i18nService.js';
 
 export function formatDate(value) {
     if (!value) {
@@ -167,6 +167,8 @@ export function InstanceOwnerCell({ userId, location = '', endpoint = '' }) {
 }
 
 function PreviousInstanceInfoChart({ rows }) {
+    const { t } = useTranslation();
+
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const favoriteFriendIds = useFavoriteStore(
@@ -319,10 +321,10 @@ function PreviousInstanceInfoChart({ rows }) {
     if (!chartRows.length) {
         return (
             <DialogEmptyState
-                title={appI18n.t(
+                title={t(
                     'dialog.previous_instances.generated.no_player_detail_rows'
                 )}
-                description={appI18n.t(
+                description={t(
                     'dialog.previous_instances.generated.there_are_no_timeline_rows_for_this_instance'
                 )}
             />
@@ -340,6 +342,8 @@ export function PreviousInstanceDetailsPanel({
     showTitle = true,
     className = ''
 }) {
+    const { t } = useTranslation();
+
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
@@ -418,10 +422,10 @@ export function PreviousInstanceDetailsPanel({
     if (!row) {
         return (
             <DialogEmptyState
-                title={appI18n.t(
+                title={t(
                     'dialog.previous_instances.generated.no_instance_selected'
                 )}
-                description={appI18n.t(
+                description={t(
                     'dialog.previous_instances.generated.select_an_instance_row_to_view_its_details'
                 )}
                 className={className}
@@ -440,7 +444,7 @@ export function PreviousInstanceDetailsPanel({
                     {showTitle ? (
                         <div className="min-w-0">
                             <h3 className="text-base font-semibold">
-                                {appI18n.t('dialog.previous_instances.info')}
+                                {t('dialog.previous_instances.info')}
                             </h3>
                             <p className="text-muted-foreground truncate text-sm">
                                 {rowLocation(row) || 'Instance details'}
@@ -455,7 +459,7 @@ export function PreviousInstanceDetailsPanel({
                             onClick={onBack}
                         >
                             <ArrowLeftIcon data-icon="inline-start" />
-                            {appI18n.t(
+                            {t(
                                 'dialog.previous_instances.generated.back'
                             )}
                         </Button>
@@ -465,7 +469,7 @@ export function PreviousInstanceDetailsPanel({
             <div className="grid gap-2 text-sm sm:grid-cols-2">
                 <div>
                     <span className="text-muted-foreground">
-                        {appI18n.t(
+                        {t(
                             'dialog.previous_instances.generated.created'
                         )}
                     </span>
@@ -473,7 +477,7 @@ export function PreviousInstanceDetailsPanel({
                 </div>
                 <div>
                     <span className="text-muted-foreground">
-                        {appI18n.t(
+                        {t(
                             'dialog.previous_instances.generated.duration'
                         )}
                     </span>
@@ -481,19 +485,19 @@ export function PreviousInstanceDetailsPanel({
                 </div>
                 <div>
                     <span className="text-muted-foreground">
-                        {appI18n.t('dialog.previous_instances.generated.world')}
+                        {t('dialog.previous_instances.generated.world')}
                     </span>
                     <div>{row?.worldName || '-'}</div>
                 </div>
                 <div>
                     <span className="text-muted-foreground">
-                        {appI18n.t('dialog.previous_instances.generated.group')}
+                        {t('dialog.previous_instances.generated.group')}
                     </span>
                     <div>{row?.groupName || '-'}</div>
                 </div>
                 <div>
                     <span className="text-muted-foreground">
-                        {appI18n.t(
+                        {t(
                             'dialog.previous_instances.generated.creator'
                         )}
                     </span>
@@ -514,24 +518,24 @@ export function PreviousInstanceDetailsPanel({
                 <div className="flex items-center justify-between gap-3">
                     <TabsList variant="line">
                         <TabsTrigger value="players">
-                            {appI18n.t(
+                            {t(
                                 'dialog.previous_instances.generated.players'
                             )}
                         </TabsTrigger>
                         <TabsTrigger value="timeline">
-                            {appI18n.t('dialog.previous_instances.chart_view')}
+                            {t('dialog.previous_instances.chart_view')}
                         </TabsTrigger>
                     </TabsList>
                     <span className="text-muted-foreground text-xs">
                         {infoData.players.length}{' '}
-                        {appI18n.t('dashboard.widget.instance_players')}
+                        {t('dashboard.widget.instance_players')}
                     </span>
                 </div>
                 {infoData.status === 'running' ? (
                     <div className="text-muted-foreground flex items-center gap-2 rounded-md border border-dashed p-4 text-sm">
                         <Spinner className="size-4" />
                         <span>
-                            {appI18n.t(
+                            {t(
                                 'dialog.previous_instances.generated.loading_instance_details'
                             )}
                         </span>
@@ -548,27 +552,27 @@ export function PreviousInstanceDetailsPanel({
                                     <TableHeader className="bg-background sticky top-0">
                                         <TableRow>
                                             <TableHead>
-                                                {appI18n.t(
+                                                {t(
                                                     'dialog.previous_instances.generated.name'
                                                 )}
                                             </TableHead>
                                             <TableHead>
-                                                {appI18n.t(
+                                                {t(
                                                     'dialog.previous_instances.generated.user_id'
                                                 )}
                                             </TableHead>
                                             <TableHead className="w-24">
-                                                {appI18n.t(
+                                                {t(
                                                     'dialog.world.info.visits'
                                                 )}
                                             </TableHead>
                                             <TableHead className="w-28">
-                                                {appI18n.t(
+                                                {t(
                                                     'table.previous_instances.time'
                                                 )}
                                             </TableHead>
                                             <TableHead className="w-44">
-                                                {appI18n.t(
+                                                {t(
                                                     'dialog.previous_instances.generated.first_seen'
                                                 )}
                                             </TableHead>
@@ -622,7 +626,7 @@ export function PreviousInstanceDetailsPanel({
                                                     colSpan={5}
                                                     className="py-6 text-center"
                                                 >
-                                                    {appI18n.t(
+                                                    {t(
                                                         'dialog.previous_instances.generated.no_player_detail_rows_for_this_instance'
                                                     )}
                                                 </TableCell>
@@ -644,7 +648,7 @@ export function PreviousInstanceDetailsPanel({
             {detailsViewMode === 'players' && infoData.details.length ? (
                 <details className="rounded-md border p-3">
                     <summary className="cursor-pointer text-sm font-medium">
-                        {appI18n.t(
+                        {t(
                             'dialog.previous_instances.generated.leave_details'
                         )}{' '}
                         ({infoData.details.length})
@@ -654,17 +658,17 @@ export function PreviousInstanceDetailsPanel({
                             <TableHeader className="bg-background sticky top-0">
                                 <TableRow>
                                     <TableHead className="h-8 px-2 py-1 text-xs">
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.previous_instances.generated.left_at'
                                         )}
                                     </TableHead>
                                     <TableHead className="h-8 px-2 py-1 text-xs">
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.previous_instances.generated.name'
                                         )}
                                     </TableHead>
                                     <TableHead className="h-8 px-2 py-1 text-xs">
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.previous_instances.generated.duration'
                                         )}
                                     </TableHead>

@@ -2,7 +2,7 @@ import { BellIcon, RefreshCcwIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog.jsx';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
@@ -25,8 +25,6 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
-import { appI18n } from '@/services/i18nService.js';
-
 import { NotificationList } from './vrc-notification-center/NotificationList.jsx';
 import {
     buildCachedInstanceMap,
@@ -36,7 +34,7 @@ import {
 } from './vrc-notification-center/notificationCenterUtils.js';
 
 export function VrcNotificationCenterHost() {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const modalStore = useModalStore();
     const runtimeAuth = useRuntimeStore((state) => state.auth);
     const gameState = useRuntimeStore((state) => state.gameState);
@@ -107,7 +105,7 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t(
+                    : t(
                           'host.vrc_notification_center.generated_toast.failed_to_mark_notifications_as_seen'
                       )
             );
@@ -144,10 +142,10 @@ export function VrcNotificationCenterHost() {
     async function acceptFriendRequest(notification) {
         try {
             const result = await modalStore.confirm({
-                title: appI18n.t(
+                title: t(
                     'host.vrc_notification_center.generated_modal.accept_friend_request'
                 ),
-                description: appI18n.t(
+                description: t(
                     'host.vrc_notification_center.generated_dynamic.accept_the_friend_request_from_value',
                     { value: notification.senderUsername || 'this user' }
                 )
@@ -171,7 +169,7 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t(
+                    : t(
                           'host.vrc_notification_center.generated_toast.failed_to_accept_friend_request'
                       )
             );
@@ -181,14 +179,14 @@ export function VrcNotificationCenterHost() {
     async function hideNotification(notification) {
         try {
             const result = await modalStore.confirm({
-                title: appI18n.t(
+                title: t(
                     'host.vrc_notification_center.generated_modal.decline_notification'
                 ),
-                description: appI18n.t(
+                description: t(
                     'host.vrc_notification_center.generated_dynamic.decline_the_value_notification',
                     { value: notification.type || 'notification' }
                 ),
-                confirmText: appI18n.t(
+                confirmText: t(
                     'host.vrc_notification_center.generated_modal.decline'
                 ),
                 destructive: true
@@ -211,7 +209,7 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t(
+                    : t(
                           'host.vrc_notification_center.generated_toast.failed_to_decline_notification'
                       )
             );
@@ -246,10 +244,10 @@ export function VrcNotificationCenterHost() {
                 return;
             }
             const result = await modalStore.confirm({
-                title: appI18n.t(
+                title: t(
                     'host.vrc_notification_center.generated_modal.send_invite'
                 ),
-                description: appI18n.t(
+                description: t(
                     'host.vrc_notification_center.generated_dynamic.send_an_invite_to_value',
                     { value: notification.senderUsername || 'this user' }
                 )
@@ -287,7 +285,7 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t(
+                    : t(
                           'host.vrc_notification_center.generated_toast.failed_to_send_invite'
                       )
             );
@@ -376,7 +374,7 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t(
+                    : t(
                           'host.vrc_notification_center.generated_toast.failed_to_send_notification_response'
                       )
             );
@@ -386,14 +384,14 @@ export function VrcNotificationCenterHost() {
     async function deleteNotification(notification) {
         try {
             const result = await modalStore.confirm({
-                title: appI18n.t(
+                title: t(
                     'host.vrc_notification_center.generated_modal.delete_notification_log_entry'
                 ),
-                description: appI18n.t(
+                description: t(
                     'host.vrc_notification_center.generated_modal.delete_the_local_value_log_entry',
                     { value: notification.type || 'notification' }
                 ),
-                confirmText: appI18n.t('common.actions.delete'),
+                confirmText: t('common.actions.delete'),
                 destructive: true
             });
             if (!result.ok) {
@@ -412,7 +410,7 @@ export function VrcNotificationCenterHost() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t(
+                    : t(
                           'host.vrc_notification_center.generated_toast.failed_to_delete_notification'
                       )
             );
@@ -453,7 +451,7 @@ export function VrcNotificationCenterHost() {
                                                 toast.error(
                                                     userFacingErrorMessage(
                                                         error,
-                                                        appI18n.t(
+                                                        t(
                                                             'host.vrc_notification_center.generated_toast.failed_to_refresh_notifications'
                                                         )
                                                     )

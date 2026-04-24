@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import {
     notificationRepository,
     vrchatSearchRepository
@@ -31,7 +31,6 @@ import {
     resolveWorldDialogTarget,
     uniqueFriendsById
 } from './friendsLocationsRows.js';
-import { appI18n } from '@/services/i18nService.js';
 import { FriendsLocationsToolbar } from './components/FriendsLocationsToolbar.jsx';
 import { FriendsLocationsVirtualList } from './components/FriendsLocationsVirtualList.jsx';
 import {
@@ -44,7 +43,7 @@ import {
 import { useFriendsLocationsPreferences } from './useFriendsLocationsPreferences.js';
 
 export function FriendsLocationsPage({ embedded = false } = {}) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -781,7 +780,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.friends.generated_toast.failed_to_launch_instance')
+                    : t('view.friends.generated_toast.failed_to_launch_instance')
             );
         }
     }
@@ -807,7 +806,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.friends.generated_toast.failed_to_send_self_invite')
+                    : t('view.friends.generated_toast.failed_to_send_self_invite')
             );
         }
     }
@@ -837,10 +836,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         }
 
         const result = await confirm({
-            title: appI18n.t('view.friends.generated_modal.send_invite'),
+            title: t('view.friends.generated_modal.send_invite'),
             description: friend?.displayName || friend?.username || 'this user',
-            confirmText: appI18n.t('view.friends.generated_modal.invite'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('view.friends.generated_modal.invite'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -869,7 +868,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.friends.generated_toast.failed_to_send_invite')
+                    : t('view.friends.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -881,10 +880,10 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         }
 
         const result = await confirm({
-            title: appI18n.t('view.friends.generated_modal.request_invite'),
+            title: t('view.friends.generated_modal.request_invite'),
             description: friend?.displayName || friend?.username || 'this user',
-            confirmText: appI18n.t('view.friends.generated_modal.request_invite_2'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('view.friends.generated_modal.request_invite_2'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -903,7 +902,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.friends.generated_toast.failed_to_request_invite')
+                    : t('view.friends.generated_toast.failed_to_request_invite')
             );
         }
     }
@@ -916,12 +915,12 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
 
         try {
             const result = await prompt({
-                title: appI18n.t('view.friends.generated_modal.send_boop'),
+                title: t('view.friends.generated_modal.send_boop'),
                 description:
-                    appI18n.t('view.friends.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
+                    t('view.friends.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
                 inputValue: '',
-                confirmText: appI18n.t('view.friends.generated_modal.send'),
-                cancelText: appI18n.t('common.actions.cancel')
+                confirmText: t('view.friends.generated_modal.send'),
+                cancelText: t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -934,7 +933,7 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             toast.success(t('view.friend_list.generated.boop_sent'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('view.friends.generated_toast.failed_to_send_boop')
+                error instanceof Error ? error.message : t('view.friends.generated_toast.failed_to_send_boop')
             );
         }
     }

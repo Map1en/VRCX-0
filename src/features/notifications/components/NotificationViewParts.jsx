@@ -21,12 +21,12 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
 import {
     mediaRepository,
     NOTIFICATION_TYPES
 } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -152,8 +152,10 @@ export function NotificationTypeFilterDropdown({
     onChange,
     getTypeLabel = (type) => type
 }) {
+    const { t } = useTranslation();
+
     const activeTypes = Array.isArray(value) ? value : [];
-    const filterLabel = appI18n.t('view.notification.filter_placeholder');
+    const filterLabel = t('view.notification.filter_placeholder');
     const label = activeTypes.length
         ? `${filterLabel} (${activeTypes.length})`
         : filterLabel;
@@ -209,6 +211,8 @@ export function BoopReplyDialog({
     onOpenChange,
     onSend
 }) {
+    const { t } = useTranslation();
+
     const navigate = useNavigate();
     const open = Boolean(request);
     const notification = request || null;
@@ -309,14 +313,14 @@ export function BoopReplyDialog({
             <DialogContent className="flex max-h-[90vh] max-w-[min(92vw,46rem)] flex-col">
                 <DialogHeader>
                     <DialogTitle>
-                        {appI18n.t('view.notification.generated.send_boop')}
+                        {t('view.notification.generated.send_boop')}
                     </DialogTitle>
                     <DialogDescription>{displayName}</DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-3">
                     {!emojiId ? (
                         <div className="text-muted-foreground rounded-md border p-3 text-sm">
-                            {appI18n.t('view.notification.generated.no_custom_emoji_selected_the_default_boop_will_be_sent')}
+                            {t('view.notification.generated.no_custom_emoji_selected_the_default_boop_will_be_sent')}
                         </div>
                     ) : null}
                     {isLocalUserVrcPlusSupporter ? (
@@ -324,7 +328,7 @@ export function BoopReplyDialog({
                             <div className="flex flex-wrap items-center gap-2">
                                 <Input
                                     value={emojiSearch}
-                                    placeholder={appI18n.t('view.notification.generated.search_emoji')}
+                                    placeholder={t('view.notification.generated.search_emoji')}
                                     disabled={sending}
                                     className="h-9 min-w-48 flex-1"
                                     onChange={(event) =>
@@ -338,14 +342,14 @@ export function BoopReplyDialog({
                                     disabled={sending || !emojiId}
                                     onClick={() => setEmojiId('')}
                                 >
-                                    {appI18n.t('view.notification.generated.clear_selection')}
+                                    {t('view.notification.generated.clear_selection')}
                                 </Button>
                             </div>
                             <div className="max-h-[48vh] min-h-0 overflow-y-auto rounded-md border p-2">
                                 {loading ? (
                                     <div className="text-muted-foreground flex h-28 items-center justify-center gap-2 text-sm">
                                         <Spinner className="size-4" />
-                                        {appI18n.t('view.notification.generated.loading_emojis')}
+                                        {t('view.notification.generated.loading_emojis')}
                                     </div>
                                 ) : filteredEmojiRows.length ? (
                                     <div className="grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-2">
@@ -413,7 +417,7 @@ export function BoopReplyDialog({
                             navigate('/tools/gallery');
                         }}
                     >
-                        {appI18n.t('view.notification.generated.emoji_manager')}
+                        {t('view.notification.generated.emoji_manager')}
                     </Button>
                     <Button
                         type="button"
@@ -422,7 +426,7 @@ export function BoopReplyDialog({
                         onClick={() => void loadEmojiRows()}
                     >
                         <RefreshCcwIcon data-icon="inline-start" />
-                        {appI18n.t('common.actions.refresh')}
+                        {t('common.actions.refresh')}
                     </Button>
                     <Button
                         type="button"
@@ -430,7 +434,7 @@ export function BoopReplyDialog({
                         disabled={sending}
                         onClick={() => onOpenChange(false)}
                     >
-                        {appI18n.t('common.actions.cancel')}
+                        {t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -442,7 +446,7 @@ export function BoopReplyDialog({
                         ) : (
                             <SendIcon data-icon="inline-start" />
                         )}
-                        {appI18n.t('view.notification.generated.send')}
+                        {t('view.notification.generated.send')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -6,9 +6,8 @@ import {
 
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
-import { TabsContent } from '@/ui/shadcn/tabs';
 
-import { appI18n } from '@/services/i18nService.js';
+import { TabsContent } from '@/ui/shadcn/tabs';
 import { GalleryEmojiUploadSettings } from './GalleryEmojiUploadSettings.jsx';
 import { GalleryFileCard } from './GalleryFileCard.jsx';
 import { EmptyState, LoadingState } from './GalleryViewParts.jsx';
@@ -154,11 +153,11 @@ export function GalleryFileTab({
                         </div>
                     ) : (
                         <EmptyState
-                            title={appI18n.t(
+                            title={t(
                                 'view.tools.generated_dynamic.no_value_loaded',
                                 { value: tab }
                             )}
-                            description={appI18n.t(
+                            description={t(
                                 'view.tools.generated_dynamic.refresh_this_tab_to_load_value_files',
                                 { value: definition.tag }
                             )}

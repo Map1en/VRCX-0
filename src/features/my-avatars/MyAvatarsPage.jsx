@@ -7,7 +7,7 @@ import {
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { LoadingState } from '@/components/layout/PageScaffold.jsx';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
@@ -49,7 +49,6 @@ import {
     sanitizeMyAvatarsSorting,
     writePersistedMyAvatarsState
 } from './myAvatarsState.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     MyAvatarsEmptyState,
     openAvatarDetails
@@ -70,7 +69,7 @@ function isRuntimeAuthTarget(authTarget) {
 }
 
 export function MyAvatarsPage({ embedded = false } = {}) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -168,7 +167,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 )
             );
             setManageTagsAvatar(null);
-            setDetail(appI18n.t('view.my_avatars.generated_dynamic.updated_local_tags_for_value', { value: avatar?.name || avatarId }));
+            setDetail(t('view.my_avatars.generated_dynamic.updated_local_tags_for_value', { value: avatar?.name || avatarId }));
         } catch (error) {
             setDetail(
                 error instanceof Error
@@ -249,11 +248,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
 
     async function renameAvatar(avatar) {
         const result = await prompt({
-            title: appI18n.t('view.my_avatars.generated_modal.rename_avatar'),
+            title: t('view.my_avatars.generated_modal.rename_avatar'),
             description: avatar?.name || avatar?.id || '',
             inputValue: avatar?.name || '',
-            confirmText: appI18n.t('view.my_avatars.generated_modal.rename'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('view.my_avatars.generated_modal.rename'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -273,11 +272,11 @@ export function MyAvatarsPage({ embedded = false } = {}) {
 
     async function changeAvatarDescription(avatar) {
         const result = await prompt({
-            title: appI18n.t('view.my_avatars.generated_modal.change_avatar_description'),
+            title: t('view.my_avatars.generated_modal.change_avatar_description'),
             description: avatar?.name || avatar?.id || '',
             inputValue: avatar?.description || '',
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -307,10 +306,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         );
         if (shouldConfirm) {
             const result = await confirm({
-                title: appI18n.t('common.actions.confirm'),
-                description: appI18n.t('view.my_avatars.generated_modal.select_avatar_value', { value: avatar?.name || avatarId }),
-                confirmText: appI18n.t('common.actions.select'),
-                cancelText: appI18n.t('common.actions.cancel')
+                title: t('common.actions.confirm'),
+                description: t('view.my_avatars.generated_modal.select_avatar_value', { value: avatar?.name || avatarId }),
+                confirmText: t('common.actions.select'),
+                cancelText: t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -334,7 +333,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
             }
-            setDetail(appI18n.t('view.my_avatars.generated_dynamic.selected_avatar_value', { value: avatar?.name || avatarId }));
+            setDetail(t('view.my_avatars.generated_dynamic.selected_avatar_value', { value: avatar?.name || avatarId }));
             toast.success(t('view.my_avatars.generated.avatar_selected'));
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
@@ -365,7 +364,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
                 nextReleaseStatus === 'public'
                     ? t('view.my_avatars.generated.make_public')
                     : t('view.my_avatars.generated.make_private'),
-            cancelText: appI18n.t('common.actions.cancel')
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -398,10 +397,10 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         }
 
         const result = await confirm({
-            title: appI18n.t('view.my_avatars.generated_modal.create_impostor'),
+            title: t('view.my_avatars.generated_modal.create_impostor'),
             description: avatar?.name || avatarId,
-            confirmText: appI18n.t('view.my_avatars.generated_modal.create'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('view.my_avatars.generated_modal.create'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -571,7 +570,7 @@ export function MyAvatarsPage({ embedded = false } = {}) {
             }
 
             applyAvatarUpdate(result.avatar);
-            setDetail(appI18n.t('view.my_avatars.generated_dynamic.avatar_image_updated_for_value', { value: avatar?.name || avatarId }));
+            setDetail(t('view.my_avatars.generated_dynamic.avatar_image_updated_for_value', { value: avatar?.name || avatarId }));
             toast.success(t('view.my_avatars.generated.avatar_image_updated'));
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {

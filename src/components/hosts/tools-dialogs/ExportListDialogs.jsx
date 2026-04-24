@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { myAvatarRepository } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import {
     Dialog,
@@ -24,7 +23,7 @@ import {
 } from './toolsDialogUtils.js';
 
 export function ExportDiscordNamesDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const orderedFriendIds = useFriendRosterStore(
         (state) => state.orderedFriendIds
@@ -69,7 +68,7 @@ export function ExportDiscordNamesDialog({ open, onOpenChange }) {
 }
 
 export function ExportFriendsListDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const orderedFriendIds = useFriendRosterStore(
         (state) => state.orderedFriendIds
@@ -107,7 +106,7 @@ export function ExportFriendsListDialog({ open, onOpenChange }) {
                 toast.error(
                     userFacingErrorMessage(
                         error,
-                        appI18n.t('host.tools_dialogs.generated_toast.failed_to_export_friends_list')
+                        t('host.tools_dialogs.generated_toast.failed_to_export_friends_list')
                     )
                 )
             );
@@ -149,7 +148,7 @@ export function ExportFriendsListDialog({ open, onOpenChange }) {
 }
 
 export function ExportAvatarsListDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const [content, setContent] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -177,7 +176,7 @@ export function ExportAvatarsListDialog({ open, onOpenChange }) {
                 toast.error(
                     userFacingErrorMessage(
                         error,
-                        appI18n.t('host.tools_dialogs.generated_toast.failed_to_export_avatar_list')
+                        t('host.tools_dialogs.generated_toast.failed_to_export_avatar_list')
                     )
                 )
             )

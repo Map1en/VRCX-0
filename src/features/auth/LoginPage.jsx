@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { executeReactAutoLogin } from '@/services/authAutoLoginService.js';
@@ -29,7 +29,6 @@ import {
     getLoginUserDisplayName as getUserDisplayName
 } from './loginDisplay.js';
 import { getSnapshotLoginParams } from './loginSession.js';
-import { appI18n } from '@/services/i18nService.js';
 import { DeleteSavedAccountDialog } from './components/DeleteSavedAccountDialog.jsx';
 import { LoginAutoLoginAlert } from './components/LoginAutoLoginAlert.jsx';
 import { LoginFormCard } from './components/LoginFormCard.jsx';
@@ -40,7 +39,7 @@ import { SavedAccountsCard } from './components/SavedAccountsCard.jsx';
 
 export function LoginPage() {
     const navigate = useNavigate();
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const locale = useShellStore((state) => state.locale);
     const proxyServer = usePreferencesStore((state) => state.proxyServer);
     const preferencesHydrated = usePreferencesStore(
@@ -184,7 +183,7 @@ export function LoginPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.auth.generated_toast.failed_to_load_saved_auth_snapshot')
+                        : t('view.auth.generated_toast.failed_to_load_saved_auth_snapshot')
                 );
             })
             .finally(() => {
@@ -368,7 +367,7 @@ export function LoginPage() {
                 toast.error(
                     getErrorMessage(
                         error,
-                        appI18n.t('view.auth.generated_toast.automatic_login_failed_unexpectedly')
+                        t('view.auth.generated_toast.automatic_login_failed_unexpectedly')
                     )
                 );
             });
@@ -402,7 +401,7 @@ export function LoginPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.auth.generated_toast.failed_to_change_language')
+                    : t('view.auth.generated_toast.failed_to_change_language')
             );
         }
     }
@@ -415,7 +414,7 @@ export function LoginPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.auth.generated_toast.failed_to_load_proxy_settings')
+                        : t('view.auth.generated_toast.failed_to_load_proxy_settings')
                 );
             }
         }
@@ -439,7 +438,7 @@ export function LoginPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.auth.generated_toast.failed_to_save_proxy_settings')
+                    : t('view.auth.generated_toast.failed_to_save_proxy_settings')
             );
         } finally {
             setIsSavingProxySettings(false);
@@ -473,7 +472,7 @@ export function LoginPage() {
                 websocket: previousValue ? current.websocket : ''
             }));
             toast.error(
-                getErrorMessage(error, appI18n.t('view.auth.generated_toast.failed_to_update_endpoint_preference'))
+                getErrorMessage(error, t('view.auth.generated_toast.failed_to_update_endpoint_preference'))
             );
         } finally {
             setIsUpdatingEndpointSetting(false);
@@ -496,7 +495,7 @@ export function LoginPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.auth.generated_toast.failed_to_remove_saved_account')
+                    : t('view.auth.generated_toast.failed_to_remove_saved_account')
             );
         } finally {
             setIsDeleting(false);
@@ -552,7 +551,7 @@ export function LoginPage() {
             if (error?.authSnapshot) {
                 applySnapshot(error.authSnapshot);
             }
-            toast.error(getErrorMessage(error, appI18n.t('view.auth.generated_toast.failed_to_authenticate')));
+            toast.error(getErrorMessage(error, t('view.auth.generated_toast.failed_to_authenticate')));
         } finally {
             setIsSubmitting(false);
         }
@@ -577,14 +576,14 @@ export function LoginPage() {
             const nextSnapshot = await executeSavedCredentialLogin(entry);
             applySnapshot(nextSnapshot);
             toast.success(
-                appI18n.t('view.auth.generated_dynamic.authenticated_and_prepared_the_session_for_value', { value: getUserDisplayName(entry.user) })
+                t('view.auth.generated_dynamic.authenticated_and_prepared_the_session_for_value', { value: getUserDisplayName(entry.user) })
             );
         } catch (error) {
             if (error?.authSnapshot) {
                 applySnapshot(error.authSnapshot);
             }
             toast.error(
-                getErrorMessage(error, appI18n.t('view.auth.generated_toast.failed_to_restore_the_saved_account'))
+                getErrorMessage(error, t('view.auth.generated_toast.failed_to_restore_the_saved_account'))
             );
         } finally {
             setActiveSavedUserId('');

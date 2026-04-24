@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold.jsx';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import { getPlatformInfo } from '@/lib/avatarPlatform.js';
@@ -16,8 +17,8 @@ import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Input } from '@/ui/shadcn/input';
-import { Spinner } from '@/ui/shadcn/spinner';
 
+import { Spinner } from '@/ui/shadcn/spinner';
 import {
     avatarGalleryImageUrl,
     defaultAvatarSideData
@@ -29,7 +30,6 @@ import {
     AvatarContentTagsDialog,
     AvatarStylesDialog
 } from './AvatarOwnerEditDialogs.jsx';
-import { appI18n } from '@/services/i18nService.js';
 
 function normalizeEntityId(value) {
     return typeof value === 'string'
@@ -49,6 +49,8 @@ function AvatarDialogEmptyState({ title, description, loading = false }) {
 }
 
 export function AvatarDialogContent({ avatarId, seedData = null }) {
+    const { t } = useTranslation();
+
     const normalizedAvatarId = normalizeEntityId(avatarId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -349,8 +351,8 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         return (
             <AvatarDialogEmptyState
                 loading
-                title={appI18n.t('dialog.avatar.generated.loading_avatar_profile')}
-                description={appI18n.t('dialog.avatar.generated.fetching_the_current_vrchat_avatar_snapshot_for_this_dialog')}
+                title={t('dialog.avatar.generated.loading_avatar_profile')}
+                description={t('dialog.avatar.generated.fetching_the_current_vrchat_avatar_snapshot_for_this_dialog')}
             />
         );
     }
@@ -358,10 +360,10 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
     if (!avatar) {
         return (
             <AvatarDialogEmptyState
-                title={appI18n.t('dialog.avatar.generated.avatar_profile_unavailable')}
+                title={t('dialog.avatar.generated.avatar_profile_unavailable')}
                 description={
                     detail ||
-                    appI18n.t(
+                    t(
                         'dialog.avatar.generated.avatar_snapshot_unavailable_description'
                     )
                 }
@@ -470,7 +472,8 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         setDetail,
         setImageCropRequest,
         setMemo,
-        setOwnerEditor
+        setOwnerEditor,
+        t
     });
 
     return (
@@ -560,7 +563,7 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
                 open={Boolean(imageCropRequest)}
                 file={imageCropRequest?.file || null}
                 aspectRatio={4 / 3}
-                title={appI18n.t('dialog.avatar.generated.change_avatar_image')}
+                title={t('dialog.avatar.generated.change_avatar_image')}
                 onOpenChange={(open) => {
                     if (!open) {
                         setImageCropRequest(null);

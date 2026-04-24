@@ -2,6 +2,7 @@ import { CopyIcon, InfoIcon, MoreHorizontalIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { InstanceInviteDialog } from '@/components/dialogs/InstanceInviteDialog.jsx';
 import { copyTextToClipboard } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
@@ -35,7 +36,6 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Field, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
-import { appI18n } from '@/services/i18nService.js';
 
 const emptyDetails = {
     tag: '',
@@ -157,6 +157,8 @@ function LaunchField({ label, value, notice = '', onCopy }) {
 }
 
 export function LaunchDialogHost() {
+    const { t } = useTranslation();
+
     const launchDialog = useLaunchStore((state) => state.launchDialog);
     const setLaunchDialogOpen = useLaunchStore(
         (state) => state.setLaunchDialogOpen
@@ -241,7 +243,7 @@ export function LaunchDialogHost() {
                     toast.error(
                         error instanceof Error
                             ? error.message
-                            : appI18n.t('host.launch_dialog.generated_toast.failed_to_resolve_launch_details')
+                            : t('host.launch_dialog.generated_toast.failed_to_resolve_launch_details')
                     );
                 }
             })
@@ -267,7 +269,7 @@ export function LaunchDialogHost() {
             return;
         }
         await copyTextToClipboard(value);
-        toast.success(appI18n.t('host.launch_dialog.generated_dynamic.value_copied', { value: label }));
+        toast.success(t('host.launch_dialog.generated_dynamic.value_copied', { value: label }));
     }
 
     async function runAction(key, action) {
@@ -282,7 +284,7 @@ export function LaunchDialogHost() {
             }
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('host.launch_dialog.generated_toast.launch_action_failed')
+                error instanceof Error ? error.message : t('host.launch_dialog.generated_toast.launch_action_failed')
             );
         } finally {
             setBusy('');
@@ -292,11 +294,11 @@ export function LaunchDialogHost() {
     async function launchWithMode(nextDesktopMode) {
         if (isGameRunning) {
             const result = await confirm({
-                title: appI18n.t('host.launch_dialog.generated_modal.launch_vrchat'),
+                title: t('host.launch_dialog.generated_modal.launch_vrchat'),
                 description:
-                    appI18n.t('host.launch_dialog.generated_modal.vrchat_is_already_running_continue_launching_thi'),
-                confirmText: appI18n.t('host.launch_dialog.generated_modal.launch'),
-                cancelText: appI18n.t('common.actions.cancel')
+                    t('host.launch_dialog.generated_modal.vrchat_is_already_running_continue_launching_thi'),
+                confirmText: t('host.launch_dialog.generated_modal.launch'),
+                cancelText: t('common.actions.cancel')
             });
             if (!result.ok) {
                 return false;
@@ -349,9 +351,9 @@ export function LaunchDialogHost() {
             >
                 <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
-                        <DialogTitle>{appI18n.t('dialog.launch.generated.launch')}</DialogTitle>
+                        <DialogTitle>{t('dialog.launch.generated.launch')}</DialogTitle>
                         <DialogDescription>
-                            {appI18n.t('dialog.launch.generated.open_copy_invite_or_self_invite_to_this_vrchat_instance')}
+                            {t('dialog.launch.generated.open_copy_invite_or_self_invite_to_this_vrchat_instance')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -370,7 +372,7 @@ export function LaunchDialogHost() {
                         />
                         {details.shortUrl ? (
                             <LaunchField
-                                label={appI18n.t('dialog.launch.short_url')}
+                                label={t('dialog.launch.short_url')}
                                 value={details.shortUrl}
                                 notice="Only available when VRChat returned a short name for this instance."
                                 onCopy={() =>
@@ -382,7 +384,7 @@ export function LaunchDialogHost() {
                             />
                         ) : null}
                         <LaunchField
-                            label={appI18n.t('dialog.launch.generated.location')}
+                            label={t('dialog.launch.generated.location')}
                             value={details.location}
                             onCopy={() =>
                                 void copyField(details.location, 'Location')
@@ -400,7 +402,7 @@ export function LaunchDialogHost() {
                                 }
                                 onClick={() => setInviteOpen(true)}
                             >
-                                {appI18n.t('dialog.launch.generated.invite')}
+                                {t('dialog.launch.generated.invite')}
                             </Button>
                             {canOpenInstanceInGame ? (
                                 <Button
@@ -419,7 +421,7 @@ export function LaunchDialogHost() {
                                         )
                                     }
                                 >
-                                    {appI18n.t('dialog.launch.generated.open_in_game')}
+                                    {t('dialog.launch.generated.open_in_game')}
                                 </Button>
                             ) : null}
                             <Button
@@ -438,7 +440,7 @@ export function LaunchDialogHost() {
                                     )
                                 }
                             >
-                                {appI18n.t('dialog.launch.generated.self_invite')}
+                                {t('dialog.launch.generated.self_invite')}
                             </Button>
                         </div>
                         <div className="flex">
@@ -487,7 +489,7 @@ export function LaunchDialogHost() {
                                                 )
                                             }
                                         >
-                                            {appI18n.t('dialog.launch.generated.launch')}
+                                            {t('dialog.launch.generated.launch')}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                             onSelect={() =>
@@ -497,7 +499,7 @@ export function LaunchDialogHost() {
                                                 )
                                             }
                                         >
-                                            {appI18n.t('dialog.launch.generated.start_as_desktop')}
+                                            {t('dialog.launch.generated.start_as_desktop')}
                                         </DropdownMenuItem>
                                     </DropdownMenuGroup>
                                 </DropdownMenuContent>

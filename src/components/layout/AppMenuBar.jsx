@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { OpenSourceNoticeDialog } from '@/features/settings/components/OpenSourceNoticeDialog.jsx';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { backend } from '@/platform/index.js';
@@ -69,7 +69,7 @@ export function AppMenuBar({
     onOpenNotificationCenter,
     onToggleRightSidebar
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [aboutOpen, setAboutOpen] = useState(false);
     const [openSourceNoticeOpen, setOpenSourceNoticeOpen] = useState(false);

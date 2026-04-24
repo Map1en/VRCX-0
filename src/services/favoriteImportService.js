@@ -12,7 +12,7 @@ import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 import { bootstrapFavorites } from './favoriteBootstrapService.js';
-import { appI18n } from '@/services/i18nService.js';
+import i18n from '@/services/i18nService.js';
 
 const TYPE_CONFIG = {
     avatar: {
@@ -363,8 +363,8 @@ export async function importFavoriteImportRows() {
     ) {
         useNotificationStore.getState().pushNotification({
             level: 'success',
-            title: appI18n.t('service.favorite_import_service.generated_dynamic.value_import_complete', { value: TYPE_CONFIG[type].label }),
-            message: appI18n.t('service.favorite_import_service.generated_dynamic.value_item_s_imported', { value: imported })
+            title: i18n.t('service.favorite_import_service.generated_dynamic.value_import_complete', { value: TYPE_CONFIG[type].label }),
+            message: i18n.t('service.favorite_import_service.generated_dynamic.value_item_s_imported', { value: imported })
         });
     }
 }

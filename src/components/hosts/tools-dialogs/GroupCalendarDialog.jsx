@@ -2,7 +2,7 @@ import { ChevronDownIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import dayjs from '@/lib/dayjs.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
@@ -11,7 +11,6 @@ import {
     groupProfileRepository,
     toolsRepository
 } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import { replaceBioSymbols } from '@/shared/utils/base/string.js';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -37,7 +36,7 @@ import {
 } from './toolsDialogUtils.js';
 
 export function GroupCalendarDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const [selectedDate, setSelectedDate] = useState(() =>
         selectedDateKey(new Date())
     );
@@ -189,7 +188,7 @@ export function GroupCalendarDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    appI18n.t('host.tools_dialogs.generated_toast.failed_to_load_group_events')
+                    t('host.tools_dialogs.generated_toast.failed_to_load_group_events')
                 )
             );
         } finally {
@@ -243,7 +242,7 @@ export function GroupCalendarDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    appI18n.t('host.tools_dialogs.generated_toast.failed_to_update_group_event_follow_state')
+                    t('host.tools_dialogs.generated_toast.failed_to_update_group_event_follow_state')
                 )
             );
         }

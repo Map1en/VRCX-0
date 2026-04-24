@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import {
     LoadingState,
     PageBody,
@@ -32,7 +32,6 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { appI18n } from '@/services/i18nService.js';
 import { ModerationPageTable } from './components/ModerationPageTable.jsx';
 import { ModerationPageToolbar } from './components/ModerationPageToolbar.jsx';
 import {
@@ -275,7 +274,7 @@ function isSameModerationRow(left, right) {
 }
 
 export function ModerationPage({ embedded = false } = {}) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -580,11 +579,11 @@ export function ModerationPage({ embedded = false } = {}) {
         const result = skipConfirm
             ? { ok: true }
             : await confirm({
-                  title: appI18n.t('common.actions.confirm'),
+                  title: t('common.actions.confirm'),
                   description: `Continue? Moderation ${row.type || ''}`.trim(),
                   destructive: true,
-                  confirmText: appI18n.t('common.actions.delete'),
-                  cancelText: appI18n.t('common.actions.cancel')
+                  confirmText: t('common.actions.delete'),
+                  cancelText: t('common.actions.cancel')
               });
 
         if (
@@ -617,7 +616,7 @@ export function ModerationPage({ embedded = false } = {}) {
                 rows: nextRows
             });
             setDetail(
-                appI18n.t('view.moderation.generated_dynamic.deleted_value_for_value', { value: row.type || 'moderation', value2: row.targetDisplayName || row.targetUserId })
+                t('view.moderation.generated_dynamic.deleted_value_for_value', { value: row.type || 'moderation', value2: row.targetDisplayName || row.targetUserId })
             );
         } catch (error) {
             setDetail(

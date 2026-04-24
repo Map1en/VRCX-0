@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import {
     Empty,
@@ -5,9 +6,8 @@ import {
     EmptyHeader,
     EmptyTitle
 } from '@/ui/shadcn/empty';
-import { Spinner } from '@/ui/shadcn/spinner';
 
-import { appI18n } from '@/services/i18nService.js';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 export function EntityListEmptyTitle(kind) {
     if (kind === 'user') {
@@ -26,11 +26,13 @@ export function EntityListEmptyTitle(kind) {
 }
 
 export function EntityListState({ kind, loading = false, error = '' }) {
+    const { t } = useTranslation();
+
     if (loading) {
         return (
             <div className="text-muted-foreground flex min-h-32 items-center justify-center gap-2 text-sm">
                 <Spinner className="size-4" />
-                <span>{appI18n.t('dialog.user.generated.loading')}</span>
+                <span>{t('dialog.user.generated.loading')}</span>
             </div>
         );
     }
@@ -48,7 +50,7 @@ export function EntityListState({ kind, loading = false, error = '' }) {
             <EmptyHeader>
                 <EmptyTitle>{EntityListEmptyTitle(kind)}</EmptyTitle>
                 <EmptyDescription>
-                    {appI18n.t('common.no_matching_entries')}
+                    {t('common.no_matching_entries')}
                 </EmptyDescription>
             </EmptyHeader>
         </Empty>

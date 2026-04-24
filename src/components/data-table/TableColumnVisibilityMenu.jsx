@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Fragment } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -18,6 +19,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -28,7 +30,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-
 import {
     getColumnOrder,
     getColumnOrderLocked,
@@ -38,7 +39,6 @@ import {
     resolveColumnLabel,
     setColumnOrderLocked
 } from './tableColumnLayout.js';
-import { appI18n } from '@/services/i18nService.js';
 
 function moveColumn(table, columnId, delta, order = getColumnOrder(table)) {
     const currentIndex = order.indexOf(columnId);
@@ -63,6 +63,8 @@ export function TableColumnVisibilityMenu({
     label = 'Columns',
     onResetLayout
 }) {
+    const { t } = useTranslation();
+
     const allLeafColumns = table.getAllLeafColumns();
     const columns = getToggleableColumns(allLeafColumns);
 
@@ -89,7 +91,7 @@ export function TableColumnVisibilityMenu({
                 align="end"
                 className="max-h-96 w-72 overflow-y-auto"
             >
-                <DropdownMenuLabel>{appI18n.t('table.generated.table_layout')}</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('table.generated.table_layout')}</DropdownMenuLabel>
                 <DropdownMenuGroup>
                     <DropdownMenuItem
                         onSelect={(event) => {
@@ -98,7 +100,7 @@ export function TableColumnVisibilityMenu({
                         }}
                     >
                         <RotateCcwIcon data-icon="inline-start" />
-                        {appI18n.t('table.generated.reset_columns')}
+                        {t('table.generated.reset_columns')}
                     </DropdownMenuItem>
                     {showColumnOrderLock ? (
                         <DropdownMenuItem
@@ -156,7 +158,7 @@ export function TableColumnVisibilityMenu({
                                     }}
                                 >
                                     <ArrowUpIcon data-icon="inline-start" />
-                                    {appI18n.t('table.generated.move_up')}
+                                    {t('table.generated.move_up')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     inset
@@ -172,7 +174,7 @@ export function TableColumnVisibilityMenu({
                                     }}
                                 >
                                     <ArrowDownIcon data-icon="inline-start" />
-                                    {appI18n.t('table.generated.move_down')}
+                                    {t('table.generated.move_down')}
                                 </DropdownMenuItem>
                             </Fragment>
                         );
@@ -189,6 +191,8 @@ export function TableColumnHeaderContextMenu({
     children,
     className = 'w-56'
 }) {
+    const { t } = useTranslation();
+
     const allLeafColumns = table?.getAllLeafColumns?.() ?? [];
     const columns = getToggleableColumns(allLeafColumns);
     const columnOrderLocked = getColumnOrderLocked(table);
@@ -255,7 +259,7 @@ export function TableColumnHeaderContextMenu({
                                     resetTableLayout(table, onResetLayout)
                                 }
                             >
-                                {appI18n.t('table.generated.reset_columns')}
+                                {t('table.generated.reset_columns')}
                             </ContextMenuItem>
                         ) : null}
                     </ContextMenuGroup>

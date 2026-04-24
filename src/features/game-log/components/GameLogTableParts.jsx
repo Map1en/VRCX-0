@@ -20,7 +20,7 @@ import {
 } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/layout/PageScaffold.jsx';
 import { Location } from '@/components/Location.jsx';
 import { formatDateFilter } from '@/lib/dateTime.js';
@@ -63,7 +63,6 @@ import {
     resolveGameLogSessionDuration as resolveSessionDuration,
     resolveGameLogWorldTarget as resolveWorldTarget
 } from '../gameLogRows.js';
-import { appI18n } from '@/services/i18nService.js';
 
 const SESSION_FILTER_TYPES = ['OnPlayerJoined', 'OnPlayerLeft', 'VideoPlay'];
 function normalizeId(value) {
@@ -116,7 +115,7 @@ async function openGameLogUser(row) {
         }
 
         if (displayName.startsWith('ID:')) {
-            toast.info(appI18n.t('view.game_log.generated_dynamic.no_user_id_was_found_for_value', { value: displayName }));
+            toast.info(t('view.game_log.generated_dynamic.no_user_id_was_found_for_value', { value: displayName }));
             return;
         }
 
@@ -142,12 +141,12 @@ async function openGameLogUser(row) {
             });
             return;
         }
-        toast.info(appI18n.t('view.game_log.generated_dynamic.no_user_id_was_found_for_value', { value: displayName }));
+        toast.info(t('view.game_log.generated_dynamic.no_user_id_was_found_for_value', { value: displayName }));
     } catch (error) {
         toast.error(
             error instanceof Error
                 ? error.message
-                : appI18n.t('view.game_log.generated_toast.failed_to_look_up_value', { value: displayName })
+                : t('view.game_log.generated_toast.failed_to_look_up_value', { value: displayName })
         );
     }
 }
@@ -236,7 +235,7 @@ function GameLogLocationDetail({
 }
 
 function TypeFilterDropdown({ types, selectedTypes, onSelectedTypesChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     return (
         <DropdownMenu>
@@ -297,7 +296,7 @@ function TypeFilterToggleGroup({
     onSelectedTypesChange,
     className = 'flex min-w-0 flex-wrap items-center gap-1'
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     function toggleType(type) {
         const nextTypes = selectedTypes.includes(type)
@@ -366,7 +365,7 @@ function renderSessionMember(member) {
 }
 
 function SessionEventRow({ event }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const isJoin =
         event.type === 'OnPlayerJoined' || event.type === 'JoinGroup';
     const isLeave = event.type === 'OnPlayerLeft' || event.type === 'LeftGroup';
@@ -570,7 +569,7 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
     collapsed = false,
     onCollapsedChange
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const worldTarget = resolveWorldTarget(session);
     const joinedCount = countSessionEvent(session.events, 'OnPlayerJoined');
     const leftCount = countSessionEvent(session.events, 'OnPlayerLeft');
@@ -753,7 +752,7 @@ function GameLogSessionsView({
     autoFillKey = '',
     onLoadMore
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const scrollRef = useRef(null);
     const sentinelRef = useRef(null);
     const [autoFillAttempts, setAutoFillAttempts] = useState(0);

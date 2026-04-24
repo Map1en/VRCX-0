@@ -3,9 +3,9 @@ import {
     DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS,
     DASHBOARD_SELECTABLE_PAGE_DEFINITIONS,
     DASHBOARD_WIDGET_DEFINITIONS,
-    getDashboardPanelDefinition
+    getDashboardPanelDefinition,
+    getDashboardPanelLabel
 } from '@/components/dashboard/dashboardRegistry.js';
-import { appI18n } from '@/services/i18nService.js';
 
 const DASHBOARD_INSTANCE_WIDGET_COLUMN_KEYS = new Set(
     DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column) => column.key)
@@ -35,15 +35,15 @@ export function getDashboardRowKey(row) {
     return `legacy-${hash.toString(36)}`;
 }
 
-export function createDashboardPanelSelectOptions(currentPanelKey) {
+export function createDashboardPanelSelectOptions(currentPanelKey, t) {
     const options = [
         ...DASHBOARD_WIDGET_DEFINITIONS.map((definition) => ({
             value: definition.key,
-            label: appI18n.t('view.dashboard.generated_dynamic.widget_value', { value: definition.label })
+            label: t('view.dashboard.generated_dynamic.widget_value', { value: getDashboardPanelLabel(definition, t) })
         })),
         ...DASHBOARD_SELECTABLE_PAGE_DEFINITIONS.map((definition) => ({
             value: definition.key,
-            label: appI18n.t('view.dashboard.generated_dynamic.page_value', { value: definition.label })
+            label: t('view.dashboard.generated_dynamic.page_value', { value: getDashboardPanelLabel(definition, t) })
         }))
     ];
 
@@ -54,7 +54,7 @@ export function createDashboardPanelSelectOptions(currentPanelKey) {
     ) {
         options.unshift({
             value: currentPanelKey,
-            label: appI18n.t('view.dashboard.generated_dynamic.existing_value', { value: getDashboardPanelDefinition(currentPanelKey)?.label || currentPanelKey })
+            label: t('view.dashboard.generated_dynamic.existing_value', { value: getDashboardPanelLabel(getDashboardPanelDefinition(currentPanelKey), t) || currentPanelKey })
         });
     }
 

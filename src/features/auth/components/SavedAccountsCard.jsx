@@ -1,6 +1,6 @@
 import { Trash2Icon } from 'lucide-react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { userImage } from '@/lib/entityMedia.js';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
@@ -24,7 +24,7 @@ export function SavedAccountsCard({
     onDeleteStart,
     onCancelAutoLogin
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     if (!visible) {
         return null;

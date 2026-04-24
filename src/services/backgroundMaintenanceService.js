@@ -31,7 +31,7 @@ import {
     bootstrapFriendRoster,
     syncFriendRosterStateFromCurrentUserSnapshot
 } from './friendBootstrapService.js';
-import { appI18n } from '@/services/i18nService.js';
+import i18n from '@/services/i18nService.js';
 
 const timers = {
     currentUserRefresh: 300,
@@ -596,7 +596,7 @@ async function updateAutoStateChange() {
     });
     useNotificationStore.getState().pushNotification({
         level: 'info',
-        title: appI18n.t(
+        title: i18n.t(
             'service.background_maintenance.generated.status_automatically_changed'
         ),
         message: nextStatus
@@ -735,11 +735,11 @@ async function checkAutoBackupRestoreVrcRegistry() {
     }
 
     await useModalStore.getState().alert({
-        title: appI18n.t(
+        title: i18n.t(
             'service.background_maintenance.generated.vrchat_registry_backup'
         ),
         description:
-            appI18n.t(
+            i18n.t(
                 'service.background_maintenance.generated.registry_backup_restore_description'
             )
     });
@@ -768,10 +768,10 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
         if (available) {
             useNotificationStore.getState().pushNotification({
                 level: 'info',
-                title: appI18n.t(
+                title: i18n.t(
                     'service.background_maintenance.generated.vrcx_update_available'
                 ),
-                message: appI18n.t(
+                message: i18n.t(
                     'service.background_maintenance.generated.update_ready_to_install'
                 )
             });
@@ -803,16 +803,16 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                     );
                     useNotificationStore.getState().pushNotification({
                         level: 'info',
-                        title: appI18n.t(
+                        title: i18n.t(
                             'service.background_maintenance.generated.vrcx_update_available'
                         ),
-                        message: appI18n.t('service.background_maintenance_service.generated_dynamic.version_value_is_available_on_the_value_branch', { value: displayVersion, value2: branch })
+                        message: i18n.t('service.background_maintenance_service.generated_dynamic.version_value_is_available_on_the_value_branch', { value: displayVersion, value2: branch })
                     });
 
                     if (autoUpdateMode === 'Auto Download') {
                         useRuntimeStore.getState().setUpdateLoopState({
                             lastUpdaterCheckAt: new Date().toISOString(),
-                            lastUpdaterCheckDetail: appI18n.t(
+                            lastUpdaterCheckDetail: i18n.t(
                                 'service.background_maintenance.generated.downloading_version',
                                 { version: displayVersion }
                             )
@@ -822,7 +822,7 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                                 useRuntimeStore.getState().setUpdateLoopState({
                                     lastUpdaterCheckAt:
                                         new Date().toISOString(),
-                                    lastUpdaterCheckDetail: appI18n.t(
+                                    lastUpdaterCheckDetail: i18n.t(
                                         'service.background_maintenance.generated.downloading_version_progress',
                                         {
                                             version: displayVersion,
@@ -834,10 +834,10 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
                         });
                         useNotificationStore.getState().pushNotification({
                             level: 'info',
-                            title: appI18n.t(
+                            title: i18n.t(
                                 'service.background_maintenance.generated.vrcx_update_downloaded'
                             ),
-                            message: appI18n.t('service.background_maintenance_service.generated_dynamic.version_value_is_ready_to_install', { value: displayVersion })
+                            message: i18n.t('service.background_maintenance_service.generated_dynamic.version_value_is_ready_to_install', { value: displayVersion })
                         });
                         useRuntimeStore
                             .getState()

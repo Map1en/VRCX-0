@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { timeToText } from '@/lib/dateTime.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -34,7 +34,8 @@ import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
 
 import {
     DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS,
-    DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS
+    DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS,
+    getDashboardInstanceWidgetColumnLabel
 } from '../dashboardRegistry.js';
 import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
 import { DashboardWidgetHeader } from './DashboardWidgetHeader.jsx';
@@ -175,7 +176,7 @@ function getNextColumnConfig(config, activeColumns, columnKey) {
 }
 
 export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentUserLocation = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot?.location || ''
@@ -368,7 +369,7 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
                                     )
                                 }
                             >
-                                {column.label}
+                                {getDashboardInstanceWidgetColumnLabel(column, t)}
                             </DropdownMenuCheckboxItem>
                         )
                     )}

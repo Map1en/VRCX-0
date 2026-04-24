@@ -2,13 +2,13 @@ import { ImageIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
     openExternalLink
 } from '@/lib/entityMedia.js';
 import { openUserDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils.js';
 import { useModalStore } from '@/state/modalStore.js';
 
@@ -73,13 +73,15 @@ export function AvatarDialogTabbedView({
     onRegenerateImposter,
     onDelete
 }) {
+    const { t } = useTranslation();
+
     const [activeTab, setActiveTab] = useState(() => lastAvatarDialogTab);
     const [galleryIndex, setGalleryIndex] = useState(0);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
-    const avatarFallbackLabel = appI18n.t('view.favorite.generated.avatar_fallback');
+    const avatarFallbackLabel = t('view.favorite.generated.avatar_fallback');
     const tabs = [
-        { value: 'info', label: appI18n.t('dialog.avatar.info.header') },
-        { value: 'json', label: appI18n.t('dialog.avatar.json.header') }
+        { value: 'info', label: t('dialog.avatar.info.header') },
+        { value: 'json', label: t('dialog.avatar.json.header') }
     ];
 
     function changeTab(tab) {
@@ -121,7 +123,7 @@ export function AvatarDialogTabbedView({
     async function copyAvatarText(text, label) {
         await copyTextToClipboard(text);
         toast.success(
-            appI18n.t('dialog.avatar.generated_dynamic.value_copied', {
+            t('dialog.avatar.generated_dynamic.value_copied', {
                 value: label
             })
         );
@@ -177,7 +179,7 @@ export function AvatarDialogTabbedView({
                         ? () =>
                               void copyAvatarText(
                                   avatar.name,
-                                  appI18n.t('dialog.avatar.info.name')
+                                  t('dialog.avatar.info.name')
                               )
                         : undefined
                 }

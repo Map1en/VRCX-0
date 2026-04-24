@@ -1,14 +1,14 @@
 import { useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { backend } from '@/platform/index.js';
 import { directAccessParse } from '@/services/directAccessService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
 export function useDirectAccessAction() {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const prompt = useModalStore((state) => state.prompt);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint

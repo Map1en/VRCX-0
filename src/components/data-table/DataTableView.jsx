@@ -19,6 +19,7 @@ import {
 } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -35,6 +36,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+
 import {
     Table,
     TableBody,
@@ -42,7 +44,6 @@ import {
     TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
-
 import { ResizableTableHead } from './ResizableTableParts.jsx';
 import {
     getColumnOrder,
@@ -50,7 +51,6 @@ import {
     getReorderableColumnIds
 } from './tableColumnLayout.js';
 import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu.jsx';
-import { appI18n } from '@/services/i18nService.js';
 
 function moveColumnByDrag(table, activeId, overId) {
     if (!activeId || !overId || activeId === overId) {
@@ -206,6 +206,8 @@ export function DataTablePagination({
     nextLabel = 'Next',
     className = ''
 }) {
+    const { t } = useTranslation();
+
     const resolvedPageIndex = Number.isFinite(pageIndex)
         ? pageIndex
         : (table?.getState?.().pagination?.pageIndex ?? 0);
@@ -270,7 +272,7 @@ export function DataTablePagination({
                     </PaginationItem>
                     <PaginationItem>
                         <Badge variant="outline">
-                            {appI18n.t('table.generated.page')} {resolvedPageIndex + 1} / {resolvedPageCount}
+                            {t('table.generated.page')} {resolvedPageIndex + 1} / {resolvedPageCount}
                         </Badge>
                     </PaginationItem>
                     <PaginationItem>

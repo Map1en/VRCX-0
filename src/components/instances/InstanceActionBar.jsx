@@ -9,6 +9,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { cn } from '@/lib/utils.js';
 import { instanceRepository } from '@/repositories/index.js';
@@ -21,7 +22,6 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
-import { appI18n } from '@/services/i18nService.js';
 
 function normalizeString(value) {
     return typeof value === 'string'
@@ -160,6 +160,8 @@ function InstanceInfoTooltip({
     onClose,
     children
 }) {
+    const { t } = useTranslation();
+
     const disabledContent = disabledContentSettings(instance);
     return (
         <Tooltip>
@@ -168,7 +170,7 @@ function InstanceInfoTooltip({
                 <div className="flex flex-col gap-1.5">
                     {instance?.closedAt ? (
                         <div>
-                            {appI18n.t('dialog.instance.generated.closed_at')}{' '}
+                            {t('dialog.instance.generated.closed_at')}{' '}
                             {formatDateFilter(instance.closedAt, 'long')}
                         </div>
                     ) : null}
@@ -187,29 +189,29 @@ function InstanceInfoTooltip({
                                 onClose?.();
                             }}
                         >
-                            {appI18n.t('dialog.instance.generated.close_instance')}
+                            {t('dialog.instance.generated.close_instance')}
                         </Button>
                     ) : null}
                     <div>
                         <span className="text-platform-pc">PC: </span>
                         {platformCount(instance, 'standalonewindows')}
                         <span className="text-platform-quest ml-2">
-                            {appI18n.t('dialog.instance.generated.android')}{' '}
+                            {t('dialog.instance.generated.android')}{' '}
                         </span>
                         {platformCount(instance, 'android')}
                     </div>
                     <div>
-                        {appI18n.t('dialog.instance.generated.ios')}{' '}
+                        {t('dialog.instance.generated.ios')}{' '}
                         {platformCount(instance, 'ios')}
                     </div>
                     {instance?.gameServerVersion ? (
-                        <div>{appI18n.t('dialog.instance.generated.game_version')} {instance.gameServerVersion}</div>
+                        <div>{t('dialog.instance.generated.game_version')} {instance.gameServerVersion}</div>
                     ) : null}
                     {instance?.queueEnabled ? (
-                        <div>{appI18n.t('dialog.instance.generated.instance_queuing_enabled')}</div>
+                        <div>{t('dialog.instance.generated.instance_queuing_enabled')}</div>
                     ) : null}
                     {disabledContent ? (
-                        <div>{appI18n.t('dialog.instance.generated.disabled_content')} {disabledContent}</div>
+                        <div>{t('dialog.instance.generated.disabled_content')} {disabledContent}</div>
                     ) : null}
                 </div>
             </TooltipContent>
@@ -239,6 +241,8 @@ export function InstanceActionBar({
     onRefresh,
     onHistory
 }) {
+    const { t } = useTranslation();
+
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const confirm = useModalStore((state) => state.confirm);
@@ -333,12 +337,12 @@ export function InstanceActionBar({
                 shortName || parsedInviteLocation.shortName,
                 endpoint
             );
-            toast.success(appI18n.t('dialog.instance.generated.self_invite_sent'));
+            toast.success(t('dialog.instance.generated.self_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.instance_action_bar.generated_toast.failed_to_send_self_invite')
+                    : t('component.instance_action_bar.generated_toast.failed_to_send_self_invite')
             );
         } finally {
             setBusy('');
@@ -376,12 +380,12 @@ export function InstanceActionBar({
                 }
                 setInstanceInfo(response.json);
             }
-            toast.success(appI18n.t('dialog.instance.generated.instance_refreshed'));
+            toast.success(t('dialog.instance.generated.instance_refreshed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.instance_action_bar.generated_toast.failed_to_refresh_instance')
+                    : t('component.instance_action_bar.generated_toast.failed_to_refresh_instance')
             );
         } finally {
             setBusy('');
@@ -395,10 +399,10 @@ export function InstanceActionBar({
         const requestLocation = resolvedInstanceLocation;
         const requestEndpoint = endpoint;
         const result = await confirm({
-            title: appI18n.t('component.instance_action_bar.generated_modal.close_instance'),
+            title: t('component.instance_action_bar.generated_modal.close_instance'),
             description: requestLocation,
-            confirmText: appI18n.t('common.actions.close'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('common.actions.close'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -421,12 +425,12 @@ export function InstanceActionBar({
             if (response.json) {
                 setInstanceInfo(response.json);
             }
-            toast.success(appI18n.t('dialog.instance.generated.instance_closed'));
+            toast.success(t('dialog.instance.generated.instance_closed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.instance_action_bar.generated_toast.failed_to_close_instance')
+                    : t('component.instance_action_bar.generated_toast.failed_to_close_instance')
             );
         } finally {
             setBusy('');
@@ -450,7 +454,7 @@ export function InstanceActionBar({
         >
             {showLaunch && isRealLaunchLocation ? (
                 <ActionButton
-                    label={appI18n.t('dialog.instance.generated.launch_instance')}
+                    label={t('dialog.instance.generated.launch_instance')}
                     icon={LogInIcon}
                     loading={busy === 'launch'}
                     disabled={Boolean(busy)}
@@ -459,7 +463,7 @@ export function InstanceActionBar({
             ) : null}
             {showInvite && isRealInviteLocation ? (
                 <ActionButton
-                    label={appI18n.t('dialog.instance.generated.self_invite')}
+                    label={t('dialog.instance.generated.self_invite')}
                     icon={MailIcon}
                     loading={busy === 'invite'}
                     disabled={Boolean(busy)}
@@ -511,9 +515,9 @@ export function InstanceActionBar({
                                 <XCircleIcon className="size-3.5" />
                             )
                         ) : null}
-                        {queueSize ? <span>{appI18n.t('dialog.new_instance.queueEnabled')} {queueSize}</span> : null}
+                        {queueSize ? <span>{t('dialog.new_instance.queueEnabled')} {queueSize}</span> : null}
                         {hasAgeGate ? (
-                            <Badge variant="destructive">{appI18n.t('dialog.new_instance.ageGate')}</Badge>
+                            <Badge variant="destructive">{t('dialog.new_instance.ageGate')}</Badge>
                         ) : null}
                     </div>
                 </InstanceInfoTooltip>

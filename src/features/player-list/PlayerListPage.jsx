@@ -6,7 +6,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { LoadingState, PageScaffold } from '@/components/layout/PageScaffold.jsx';
 import { userImage } from '@/lib/entityMedia.js';
@@ -48,7 +48,6 @@ import {
     sanitizePlayerListSorting,
     writePersistedPlayerListState
 } from './playerListState.js';
-import { appI18n } from '@/services/i18nService.js';
 import { buildPlayerListColumns } from './components/PlayerListColumns.jsx';
 import {
     CurrentWorldHeader,
@@ -58,7 +57,7 @@ import {
 } from './components/PlayerListViewParts.jsx';
 
 export function PlayerListPage({ embedded = false } = {}) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentUserEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -671,7 +670,7 @@ export function PlayerListPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.player_list.generated_toast.failed_to_look_up_this_player')
+                    : t('view.player_list.generated_toast.failed_to_look_up_this_player')
             );
         }
     }

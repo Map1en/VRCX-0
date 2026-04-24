@@ -2,11 +2,11 @@ import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon, CopyIcon, ExternalLinkIcon
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { copyTextToClipboard } from '@/lib/entityMedia.js';
 import { userProfileRepository } from '@/repositories/index.js';
 import { openGroupDialog, openUserDialog, openWorldDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { parseLocation, resolveFriendPresenceLocation } from '@/shared/utils/location.js';
 import { Button } from '@/ui/shadcn/button';
 import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from '@/ui/shadcn/context-menu';
@@ -39,7 +39,7 @@ async function copyFeedText(text, label = 'Value') {
         return;
     }
     await copyTextToClipboard(value);
-    toast.success(appI18n.t('view.feed.generated_dynamic.value_copied', { value: label }));
+    toast.success(t('view.feed.generated_dynamic.value_copied', { value: label }));
 }
 
 function SortButton({ column, label }) {
@@ -77,6 +77,8 @@ function FeedUserLink({
     canUseFriendInstance,
     actions
 }) {
+    const { t } = useTranslation();
+
     const userId = resolveFeedUserId(row);
     const displayName = resolveFeedUserDisplayName(
         row,
@@ -180,7 +182,7 @@ function FeedUserLink({
                         }
                     >
                         <UserIcon />
-                        {appI18n.t('view.feed.generated.open_user')}
+                        {t('view.feed.generated.open_user')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!worldTarget}
@@ -192,7 +194,7 @@ function FeedUserLink({
                         }
                     >
                         <GlobeIcon />
-                        {appI18n.t('view.feed.generated.open_current_location')}
+                        {t('view.feed.generated.open_current_location')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!groupTarget}
@@ -204,7 +206,7 @@ function FeedUserLink({
                         }
                     >
                         <UsersIcon />
-                        {appI18n.t('view.feed.generated.open_group')}
+                        {t('view.feed.generated.open_group')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -214,7 +216,7 @@ function FeedUserLink({
                         onSelect={() => void actions?.launchLocation(location)}
                     >
                         <ExternalLinkIcon />
-                        {appI18n.t('view.feed.generated.launch_in_vrchat')}
+                        {t('view.feed.generated.launch_in_vrchat')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
@@ -223,7 +225,7 @@ function FeedUserLink({
                         }
                     >
                         <ExternalLinkIcon />
-                        {appI18n.t('view.feed.generated.self_invite')}
+                        {t('view.feed.generated.self_invite')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -233,7 +235,7 @@ function FeedUserLink({
                         onSelect={() => void actions?.sendInvite(friend || row)}
                     >
                         <ExternalLinkIcon />
-                        {appI18n.t('view.feed.generated.send_invite')}
+                        {t('view.feed.generated.send_invite')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={isCurrentUser || !canRequestInvite}
@@ -242,14 +244,14 @@ function FeedUserLink({
                         }
                     >
                         <ExternalLinkIcon />
-                        {appI18n.t('view.feed.generated.request_invite')}
+                        {t('view.feed.generated.request_invite')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={isCurrentUser || !canBoop}
                         onSelect={() => void actions?.sendBoop(friend || row)}
                     >
                         <ExternalLinkIcon />
-                        {appI18n.t('view.feed.generated.send_boop')}
+                        {t('view.feed.generated.send_boop')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
@@ -259,7 +261,7 @@ function FeedUserLink({
                         onSelect={() => void copyFeedText(userId, 'User ID')}
                     >
                         <CopyIcon />
-                        {appI18n.t('view.feed.generated.copy_user_id')}
+                        {t('view.feed.generated.copy_user_id')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!displayName}
@@ -268,7 +270,7 @@ function FeedUserLink({
                         }
                     >
                         <CopyIcon />
-                        {appI18n.t('view.feed.generated.copy_display_name')}
+                        {t('view.feed.generated.copy_display_name')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
             </ContextMenuContent>

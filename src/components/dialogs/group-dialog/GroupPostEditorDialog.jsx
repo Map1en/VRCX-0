@@ -1,9 +1,9 @@
 import { ImageIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
 import { mediaRepository } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -41,6 +41,8 @@ export function GroupPostEditorDialog({
     submitting = false,
     onSubmit
 }) {
+    const { t } = useTranslation();
+
     const [galleryRows, setGalleryRows] = useState([]);
     const [galleryStatus, setGalleryStatus] = useState('idle');
     const [galleryError, setGalleryError] = useState('');
@@ -130,7 +132,7 @@ export function GroupPostEditorDialog({
                 <FieldGroup className="gap-4">
                     <Field>
                         <FieldLabel htmlFor="group-post-title">
-                            {appI18n.t('dialog.group_post_edit.title')}
+                            {t('dialog.group_post_edit.title')}
                         </FieldLabel>
                         <Input
                             id="group-post-title"
@@ -143,7 +145,7 @@ export function GroupPostEditorDialog({
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="group-post-text">
-                            {appI18n.t('dialog.group.generated.message')}
+                            {t('dialog.group.generated.message')}
                         </FieldLabel>
                         <Textarea
                             id="group-post-text"
@@ -172,7 +174,7 @@ export function GroupPostEditorDialog({
                                 }
                             />
                             <FieldLabel htmlFor="group-post-send-notification">
-                                {appI18n.t(
+                                {t(
                                     'dialog.group.generated.send_notification'
                                 )}
                             </FieldLabel>
@@ -180,7 +182,7 @@ export function GroupPostEditorDialog({
                     ) : null}
                     <Field>
                         <FieldLabel>
-                            {appI18n.t('dialog.group.generated.post_visibility')}
+                            {t('dialog.group.generated.post_visibility')}
                         </FieldLabel>
                         <ToggleGroup
                             type="single"
@@ -209,7 +211,7 @@ export function GroupPostEditorDialog({
                     {form.visibility === 'group' ? (
                         <Field>
                             <FieldLabel>
-                                {appI18n.t('dialog.group.generated.roles')}
+                                {t('dialog.group.generated.roles')}
                             </FieldLabel>
                             {roles.length ? (
                                 <FieldGroup
@@ -250,7 +252,7 @@ export function GroupPostEditorDialog({
                                 </FieldGroup>
                             ) : (
                                 <GroupListState
-                                    title={appI18n.t(
+                                    title={t(
                                         'dialog.group.generated.no_roles'
                                     )}
                                     description=""
@@ -261,7 +263,7 @@ export function GroupPostEditorDialog({
                     ) : null}
                     <Field>
                         <FieldLabel htmlFor="group-post-image-id">
-                            {appI18n.t('dialog.group.generated.image')}
+                            {t('dialog.group.generated.image')}
                         </FieldLabel>
                         <InputGroup>
                             <InputGroupInput
@@ -271,7 +273,7 @@ export function GroupPostEditorDialog({
                                     updateForm({ imageId: event.target.value })
                                 }
                                 disabled={submitting}
-                                placeholder={appI18n.t(
+                                placeholder={t(
                                     'dialog.group.generated.gallery_image_id'
                                 )}
                             />
@@ -281,7 +283,7 @@ export function GroupPostEditorDialog({
                                     disabled={submitting || !form.imageId}
                                     onClick={() => updateForm({ imageId: '' })}
                                 >
-                                    {appI18n.t('common.actions.clear')}
+                                    {t('common.actions.clear')}
                                 </InputGroupButton>
                                 <InputGroupButton
                                     type="button"
@@ -291,7 +293,7 @@ export function GroupPostEditorDialog({
                                     }
                                     onClick={() => void loadGalleryRows()}
                                 >
-                                    {appI18n.t('common.actions.refresh')}
+                                    {t('common.actions.refresh')}
                                 </InputGroupButton>
                             </InputGroupAddon>
                         </InputGroup>
@@ -336,10 +338,10 @@ export function GroupPostEditorDialog({
                             </div>
                         ) : (
                             <GroupListState
-                                title={appI18n.t(
+                                title={t(
                                     'dialog.group.generated.no_gallery_images'
                                 )}
-                                description={appI18n.t(
+                                description={t(
                                     'dialog.group.generated.refresh_to_load_gallery_images'
                                 )}
                                 loading={galleryStatus === 'running'}
@@ -356,7 +358,7 @@ export function GroupPostEditorDialog({
                         disabled={submitting}
                         onClick={() => onOpenChange?.(false)}
                     >
-                        {appI18n.t('common.actions.cancel')}
+                        {t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"

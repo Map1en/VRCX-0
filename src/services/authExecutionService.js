@@ -22,7 +22,7 @@ import {
     refreshSavedAuthSnapshot
 } from './authSnapshotService.js';
 import { clearEntityQueryCache } from './entityQueryCacheService.js';
-import { translateCurrentLocale } from './i18nService.js';
+import i18n from './i18nService.js';
 import { stopRealtimeTransport } from './realtimeTransportService.js';
 import { bootstrapAuthenticatedSession } from './sessionBootstrapService.js';
 
@@ -153,10 +153,10 @@ async function getLocalizedAuthPrompt(mode) {
         case 'emailOtp': {
             const [title, description, confirmText, cancelText] =
                 await Promise.all([
-                    translateCurrentLocale('prompt.email_otp.header'),
-                    translateCurrentLocale('prompt.email_otp.description'),
-                    translateCurrentLocale('prompt.email_otp.verify'),
-                    translateCurrentLocale('prompt.email_otp.resend')
+                    i18n.t('prompt.email_otp.header'),
+                    i18n.t('prompt.email_otp.description'),
+                    i18n.t('prompt.email_otp.verify'),
+                    i18n.t('prompt.email_otp.resend')
                 ]);
 
             return {
@@ -170,10 +170,10 @@ async function getLocalizedAuthPrompt(mode) {
         case 'otp': {
             const [title, description, confirmText, cancelText] =
                 await Promise.all([
-                    translateCurrentLocale('prompt.otp.header'),
-                    translateCurrentLocale('prompt.otp.description'),
-                    translateCurrentLocale('prompt.otp.verify'),
-                    translateCurrentLocale('prompt.otp.use_totp')
+                    i18n.t('prompt.otp.header'),
+                    i18n.t('prompt.otp.description'),
+                    i18n.t('prompt.otp.verify'),
+                    i18n.t('prompt.otp.use_totp')
                 ]);
 
             return {
@@ -187,10 +187,10 @@ async function getLocalizedAuthPrompt(mode) {
         default: {
             const [title, description, confirmText, cancelText] =
                 await Promise.all([
-                    translateCurrentLocale('prompt.totp.header'),
-                    translateCurrentLocale('prompt.totp.description'),
-                    translateCurrentLocale('prompt.totp.verify'),
-                    translateCurrentLocale('prompt.totp.use_otp')
+                    i18n.t('prompt.totp.header'),
+                    i18n.t('prompt.totp.description'),
+                    i18n.t('prompt.totp.verify'),
+                    i18n.t('prompt.totp.use_otp')
                 ]);
 
             return {
@@ -212,11 +212,11 @@ async function promptForTwoFactorCode(mode) {
 async function getTwoFactorInputErrorMessage(mode) {
     switch (mode) {
         case 'emailOtp':
-            return translateCurrentLocale('prompt.email_otp.input_error');
+            return i18n.t('prompt.email_otp.input_error');
         case 'otp':
-            return translateCurrentLocale('prompt.otp.input_error');
+            return i18n.t('prompt.otp.input_error');
         default:
-            return translateCurrentLocale('prompt.totp.input_error');
+            return i18n.t('prompt.totp.input_error');
     }
 }
 
@@ -350,10 +350,10 @@ async function restoreAuthSnapshotOnFailure(error) {
 
 export async function logoutFromReactShell() {
     const [title, description, confirmText, cancelText] = await Promise.all([
-        translateCurrentLocale('common.actions.confirm'),
-        translateCurrentLocale('confirm.logout'),
-        translateCurrentLocale('dialog.alertdialog.confirm'),
-        translateCurrentLocale('dialog.alertdialog.cancel')
+        i18n.t('common.actions.confirm'),
+        i18n.t('confirm.logout'),
+        i18n.t('dialog.alertdialog.confirm'),
+        i18n.t('dialog.alertdialog.cancel')
     ]);
     const result = await useModalStore.getState().confirm({
         title,
@@ -417,7 +417,7 @@ export async function logoutFromReactShell() {
 
     if (currentUserDisplayName) {
         toast.success(
-            await translateCurrentLocale('message.auth.logout_greeting', {
+            await i18n.t('message.auth.logout_greeting', {
                 name: currentUserDisplayName
             })
         );

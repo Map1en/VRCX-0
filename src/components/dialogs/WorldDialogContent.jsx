@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold.jsx';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog.jsx';
 import {
@@ -38,8 +39,8 @@ import { useLaunchStore } from '@/state/launchStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Input } from '@/ui/shadcn/input';
-import { Spinner } from '@/ui/shadcn/spinner';
 
+import { Spinner } from '@/ui/shadcn/spinner';
 import { InstanceInviteDialog } from './InstanceInviteDialog.jsx';
 import { resolveCreatedInstanceDetails } from './world-dialog/worldInstanceResolver.js';
 import {
@@ -54,7 +55,6 @@ import {
     WorldAllowedDomainsDialog,
     WorldTagsDialog
 } from './WorldOwnerEditDialogs.jsx';
-import { appI18n } from '@/services/i18nService.js';
 
 function WorldDialogEmptyState({ title, description, loading = false }) {
     return (
@@ -80,6 +80,8 @@ export function WorldDialogContent({
     initialAction = '',
     initialActionNonce = 0
 }) {
+    const { t } = useTranslation();
+
     const normalizedWorldId = normalizeEntityId(worldId);
     const profileWorldId = normalizedWorldId.split(':')[0] || normalizedWorldId;
     const currentEndpoint = useRuntimeStore(
@@ -396,8 +398,8 @@ export function WorldDialogContent({
         return (
             <WorldDialogEmptyState
                 loading
-                title={appI18n.t('dialog.world.generated.loading_world_profile')}
-                description={appI18n.t('dialog.world.generated.fetching_the_current_vrchat_world_snapshot_for_this_dialog')}
+                title={t('dialog.world.generated.loading_world_profile')}
+                description={t('dialog.world.generated.fetching_the_current_vrchat_world_snapshot_for_this_dialog')}
             />
         );
     }
@@ -405,7 +407,7 @@ export function WorldDialogContent({
     if (!world) {
         return (
             <WorldDialogEmptyState
-                title={appI18n.t('dialog.world.generated.world_profile_unavailable')}
+                title={t('dialog.world.generated.world_profile_unavailable')}
                 description={
                     detail ||
                     'VRCX-0 could not resolve a world snapshot for this dialog.'
@@ -463,7 +465,7 @@ export function WorldDialogContent({
                 return;
             }
             setWorld(nextWorld);
-            toast.success(appI18n.t('dialog.world.generated.world_refreshed'));
+            toast.success(t('dialog.world.generated.world_refreshed'));
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
@@ -471,7 +473,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_refresh_world')
+                    : t('dialog.world.generated_toast.failed_to_refresh_world')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -493,15 +495,15 @@ export function WorldDialogContent({
                 currentEndpoint
             );
             if (opened) {
-                toast.success(appI18n.t('dialog.world.generated.vrchat_launch_request_sent'));
+                toast.success(t('dialog.world.generated.vrchat_launch_request_sent'));
                 return;
             }
-            toast.error(appI18n.t('dialog.world.generated.unable_to_open_this_instance_in_vrchat'));
+            toast.error(t('dialog.world.generated.unable_to_open_this_instance_in_vrchat'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_launch_vrchat_instance')
+                    : t('dialog.world.generated_toast.failed_to_launch_vrchat_instance')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -523,7 +525,7 @@ export function WorldDialogContent({
                 ? 'Reset your VRChat home location.'
                 : `Set ${world.name || world.id} as your VRChat home world?`,
             confirmText: isHomeWorld ? 'Reset Home' : 'Make Home',
-            cancelText: appI18n.t('common.actions.cancel')
+            cancelText: t('common.actions.cancel')
         });
 
         if (!result.ok) {
@@ -551,13 +553,13 @@ export function WorldDialogContent({
                 });
             }
             toast.success(
-                isHomeWorld ? appI18n.t('dialog.world.generated_toast.home_world_reset') : appI18n.t('dialog.world.generated_toast.home_world_updated')
+                isHomeWorld ? t('dialog.world.generated_toast.home_world_reset') : t('dialog.world.generated_toast.home_world_updated')
             );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_update_home_world')
+                    : t('dialog.world.generated_toast.failed_to_update_home_world')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -578,10 +580,10 @@ export function WorldDialogContent({
             }
             const nextMemo = nextEntry.memo || '';
             setMemo(nextMemo);
-            toast.success(nextMemo ? appI18n.t('dialog.world.generated_toast.memo_saved') : appI18n.t('dialog.world.generated_toast.memo_cleared'));
+            toast.success(nextMemo ? t('dialog.world.generated_toast.memo_saved') : t('dialog.world.generated_toast.memo_cleared'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('dialog.world.generated_toast.failed_to_save_memo')
+                error instanceof Error ? error.message : t('dialog.world.generated_toast.failed_to_save_memo')
             );
         }
     }
@@ -597,7 +599,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_open_world_cache_folder')
+                    : t('dialog.world.generated_toast.failed_to_open_world_cache_folder')
             );
         }
     }
@@ -623,7 +625,7 @@ export function WorldDialogContent({
                 String(configResponse?.json?.sdkUnityVersion || '')
             );
             if (!args) {
-                toast.error(appI18n.t('dialog.world.generated.world_cache_location_unavailable'));
+                toast.error(t('dialog.world.generated.world_cache_location_unavailable'));
                 return;
             }
             await backend.assetBundle.DeleteCache(
@@ -637,7 +639,7 @@ export function WorldDialogContent({
                 return;
             }
             setWorldSideData((current) => ({ ...current, cache }));
-            toast.success(appI18n.t('dialog.world.generated.world_cache_deleted'));
+            toast.success(t('dialog.world.generated.world_cache_deleted'));
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
@@ -645,7 +647,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_delete_world_cache')
+                    : t('dialog.world.generated_toast.failed_to_delete_world_cache')
             );
         } finally {
             if (actionStatusRef.current === 'cache') {
@@ -657,12 +659,12 @@ export function WorldDialogContent({
 
     async function editMemo() {
         const result = await prompt({
-            title: appI18n.t('dialog.world.generated_modal.edit_local_memo'),
+            title: t('dialog.world.generated_modal.edit_local_memo'),
             description: world.name || world.id,
             inputValue: memo,
             multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
 
         if (!result.ok) {
@@ -727,7 +729,7 @@ export function WorldDialogContent({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_load_new_instance_settings')
+                    : t('dialog.world.generated_toast.failed_to_load_new_instance_settings')
             );
         }
     }
@@ -744,7 +746,7 @@ export function WorldDialogContent({
         const targetWorldId = world.id;
         const targetEndpoint = currentEndpoint;
         if (form.accessType === 'group' && !normalizeEntityId(form.groupId)) {
-            toast.error(appI18n.t('dialog.world.generated.group_id_is_required_for_group_instances'));
+            toast.error(t('dialog.world.generated.group_id_is_required_for_group_instances'));
             return;
         }
 
@@ -806,7 +808,7 @@ export function WorldDialogContent({
                 }
             );
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
-                toast.success(appI18n.t('dialog.world.generated.instance_created'));
+                toast.success(t('dialog.world.generated.instance_created'));
                 return;
             }
             setNewInstanceRequest((current) => ({
@@ -820,7 +822,7 @@ export function WorldDialogContent({
                 const parsedLocation = parseLocation(location);
                 if (!parsedLocation.worldId || !parsedLocation.instanceId) {
                     toast.error(
-                        appI18n.t('dialog.world.generated.instance_created_but_the_new_instance_location_is_not_invite')
+                        t('dialog.world.generated.instance_created_but_the_new_instance_location_is_not_invite')
                     );
                 } else {
                     try {
@@ -831,23 +833,23 @@ export function WorldDialogContent({
                                 '',
                             currentEndpoint
                         );
-                        toast.success(appI18n.t('dialog.world.generated.instance_created_and_self_invite_sent'));
+                        toast.success(t('dialog.world.generated.instance_created_and_self_invite_sent'));
                     } catch (error) {
                         toast.error(
                             error instanceof Error
-                                ? appI18n.t('dialog.world.generated_toast.instance_created_but_self_invite_failed_value', { value: error.message })
-                                : appI18n.t('dialog.world.generated_toast.instance_created_but_self_invite_failed')
+                                ? t('dialog.world.generated_toast.instance_created_but_self_invite_failed_value', { value: error.message })
+                                : t('dialog.world.generated_toast.instance_created_but_self_invite_failed')
                         );
                     }
                 }
             } else {
-                toast.success(appI18n.t('dialog.world.generated.instance_created'));
+                toast.success(t('dialog.world.generated.instance_created'));
             }
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_create_instance')
+                    : t('dialog.world.generated_toast.failed_to_create_instance')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -860,14 +862,14 @@ export function WorldDialogContent({
             return;
         }
         await copyTextToClipboard(created.url);
-        toast.success(appI18n.t('dialog.world.generated.instance_url_copied'));
+        toast.success(t('dialog.world.generated.instance_url_copied'));
     }
 
     async function selfInviteCreatedInstance(created) {
         const parsedLocation = parseLocation(created?.location || '');
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                appI18n.t('dialog.world.generated.cannot_self_invite_location_is_not_a_concrete_instance')
+                t('dialog.world.generated.cannot_self_invite_location_is_not_a_concrete_instance')
             );
             return;
         }
@@ -879,12 +881,12 @@ export function WorldDialogContent({
                 created.shortName || created.secureOrShortName || '',
                 currentEndpoint
             );
-            toast.success(appI18n.t('dialog.world.generated.self_invite_sent'));
+            toast.success(t('dialog.world.generated.self_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_send_self_invite')
+                    : t('dialog.world.generated_toast.failed_to_send_self_invite')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -925,7 +927,7 @@ export function WorldDialogContent({
         const parsedLocation = parseLocation(created.location);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                appI18n.t('dialog.world.generated.cannot_open_in_vrchat_location_is_not_a_concrete_instance')
+                t('dialog.world.generated.cannot_open_in_vrchat_location_is_not_a_concrete_instance')
             );
             return;
         }
@@ -944,17 +946,17 @@ export function WorldDialogContent({
                     currentEndpoint
                 );
                 toast.warning(
-                    appI18n.t('dialog.world.generated.failed_open_instance_in_vrchat_falling_back_to_self_invite')
+                    t('dialog.world.generated.failed_open_instance_in_vrchat_falling_back_to_self_invite')
                 );
-                toast.success(appI18n.t('dialog.world.generated.self_invite_sent'));
+                toast.success(t('dialog.world.generated.self_invite_sent'));
                 return;
             }
-            toast.success(appI18n.t('dialog.world.generated.vrchat_launch_request_sent'));
+            toast.success(t('dialog.world.generated.vrchat_launch_request_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.world.generated_toast.failed_to_open_instance_in_vrchat')
+                    : t('dialog.world.generated_toast.failed_to_open_instance_in_vrchat')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -1034,9 +1036,9 @@ export function WorldDialogContent({
             }
             setWorld(worldProfileRepository.normalize(result.world));
             setDetail(
-                appI18n.t('dialog.world.generated_dynamic.world_image_updated_for_value', { value: selectedWorld.name || selectedWorldId })
+                t('dialog.world.generated_dynamic.world_image_updated_for_value', { value: selectedWorld.name || selectedWorldId })
             );
-            toast.success(appI18n.t('dialog.world.generated.world_image_updated'));
+            toast.success(t('dialog.world.generated.world_image_updated'));
         } catch (error) {
             const message =
                 error instanceof Error
@@ -1144,7 +1146,7 @@ export function WorldDialogContent({
                 open={Boolean(imageCropRequest)}
                 file={imageCropRequest?.file || null}
                 aspectRatio={4 / 3}
-                title={appI18n.t('dialog.world.generated.change_world_image')}
+                title={t('dialog.world.generated.change_world_image')}
                 onOpenChange={(open) => {
                     if (!open) {
                         setImageCropRequest(null);

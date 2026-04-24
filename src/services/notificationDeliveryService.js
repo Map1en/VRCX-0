@@ -1,7 +1,7 @@
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import { backend } from '@/platform/index.js';
 import { configRepository, memoRepository } from '@/repositories/index.js';
-import { translateCurrentLocale } from '@/services/i18nService.js';
+import i18n from '@/services/i18nService.js';
 import { extractFileId, extractFileVersion } from '@/shared/utils/fileUtils.js';
 import { displayLocation } from '@/shared/utils/locationParser.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -213,7 +213,7 @@ function getDetailMessage(notification) {
 }
 
 async function translated(key, params, fallback) {
-    const value = await translateCurrentLocale(key, params);
+    const value = await i18n.t(key, params);
     return value && value !== key ? value : fallback;
 }
 

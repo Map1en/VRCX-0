@@ -1,5 +1,6 @@
 import { BellIcon, XIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { useNotificationStore } from '@/state/notificationStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -11,9 +12,10 @@ import {
     SheetHeader,
     SheetTitle
 } from '@/ui/shadcn/sheet';
-import { appI18n } from '@/services/i18nService.js';
 
 export function NotificationHost() {
+    const { t } = useTranslation();
+
     const items = useNotificationStore((state) => state.items);
     const isPanelOpen = useNotificationStore((state) => state.isPanelOpen);
     const setPanelOpen = useNotificationStore((state) => state.setPanelOpen);
@@ -30,24 +32,24 @@ export function NotificationHost() {
                     <div className="flex items-center justify-between gap-3">
                         <SheetTitle className="flex items-center gap-2">
                             <BellIcon className="size-4" />
-                            {appI18n.t('dialog.tools.generated.notifications')}
+                            {t('dialog.tools.generated.notifications')}
                         </SheetTitle>
                         <Badge
                             variant={unreadCount > 0 ? 'default' : 'outline'}
                         >
-                            {unreadCount} {appI18n.t('dialog.tools.generated.unread')}
+                            {unreadCount} {t('dialog.tools.generated.unread')}
                         </Badge>
                     </div>
                     <SheetDescription>
-                        {appI18n.t('dialog.tools.generated.backend_events_and_system_messages_land_here')}
+                        {t('dialog.tools.generated.backend_events_and_system_messages_land_here')}
                     </SheetDescription>
                 </SheetHeader>
                 <div className="mt-6 flex items-center justify-between gap-3">
                     <div className="text-muted-foreground text-xs">
-                        {appI18n.t('dialog.tools.generated.notifications_are_surfaced_from_the_top_level_status_bar')}
+                        {t('dialog.tools.generated.notifications_are_surfaced_from_the_top_level_status_bar')}
                     </div>
                     <Button size="sm" variant="outline" onClick={markAllRead}>
-                        {appI18n.t('dialog.tools.generated.mark_all_read')}
+                        {t('dialog.tools.generated.mark_all_read')}
                     </Button>
                 </div>
                 <Separator className="my-4" />
@@ -83,7 +85,7 @@ export function NotificationHost() {
                         ))
                     ) : (
                         <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
-                            {appI18n.t('dialog.tools.generated.no_notifications_yet')}
+                            {t('dialog.tools.generated.no_notifications_yet')}
                         </div>
                     )}
                 </div>

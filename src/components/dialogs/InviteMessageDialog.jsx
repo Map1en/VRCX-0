@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -8,7 +9,6 @@ import {
     DialogTitle
 } from '@/ui/shadcn/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
-import { appI18n } from '@/services/i18nService.js';
 
 import {
     INVITE_MESSAGE_TYPES,
@@ -95,6 +95,8 @@ function InviteMessageTemplatesDialog({
     currentUserId,
     endpoint
 }) {
+    const { t } = useTranslation();
+
     const [activeType, setActiveType] = useState('message');
 
     useEffect(() => {
@@ -112,12 +114,12 @@ function InviteMessageTemplatesDialog({
             <DialogContent className="flex max-h-[90vh] max-w-[min(92vw,64rem)] flex-col">
                 <DialogHeader>
                     <DialogTitle>
-                        {appI18n.t(
+                        {t(
                             'dialog.invite_message.generated.message_templates'
                         )}
                     </DialogTitle>
                     <DialogDescription>
-                        {appI18n.t(
+                        {t(
                             'dialog.invite_message.generated.edit_reusable_invite_and_request_message_templates'
                         )}
                     </DialogDescription>

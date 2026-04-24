@@ -1,6 +1,7 @@
 import { PlusIcon, SaveIcon, XIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { TAG_COLORS, getTagColor } from '@/shared/constants/tags.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -14,7 +15,6 @@ import {
 } from '@/ui/shadcn/dialog';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
-import { appI18n } from '@/services/i18nService.js';
 
 function normalizeTagName(value) {
     return typeof value === 'string'
@@ -65,6 +65,8 @@ export function ManageAvatarTagsDialog({
     onOpenChange,
     onSave
 }) {
+    const { t } = useTranslation();
+
     const avatarId = normalizeTagName(avatar?.id);
     const avatarName = avatar?.name || avatarId || 'Avatar';
     const [tagEntries, setTagEntries] = useState([]);
@@ -119,7 +121,7 @@ export function ManageAvatarTagsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>{appI18n.t('view.my_avatars.generated.manage_avatar_tags')}</DialogTitle>
+                    <DialogTitle>{t('view.my_avatars.generated.manage_avatar_tags')}</DialogTitle>
                     <DialogDescription>{avatarName}</DialogDescription>
                 </DialogHeader>
 
@@ -127,7 +129,7 @@ export function ManageAvatarTagsDialog({
                     <FieldGroup>
                         <Field>
                             <FieldLabel htmlFor="avatar-tag-name">
-                                {appI18n.t('view.my_avatars.generated.add_local_tag')}
+                                {t('view.my_avatars.generated.add_local_tag')}
                             </FieldLabel>
                             <div className="flex gap-2">
                                 <Input
@@ -142,7 +144,7 @@ export function ManageAvatarTagsDialog({
                                             addTag();
                                         }
                                     }}
-                                    placeholder={appI18n.t('view.my_avatars.generated.tag_name')}
+                                    placeholder={t('view.my_avatars.generated.tag_name')}
                                     disabled={saving}
                                 />
                                 <Button
@@ -152,7 +154,7 @@ export function ManageAvatarTagsDialog({
                                     disabled={saving}
                                 >
                                     <PlusIcon data-icon="inline-start" />
-                                    {appI18n.t('view.my_avatars.generated.add')}
+                                    {t('view.my_avatars.generated.add')}
                                 </Button>
                             </div>
                         </Field>
@@ -189,7 +191,7 @@ export function ManageAvatarTagsDialog({
                                                 disabled={saving}
                                             >
                                                 <XIcon data-icon="inline-start" />
-                                                {appI18n.t('common.actions.remove')}
+                                                {t('common.actions.remove')}
                                             </Button>
                                         </div>
                                         <div className="mt-3 flex flex-wrap gap-2">
@@ -244,7 +246,7 @@ export function ManageAvatarTagsDialog({
                             })
                         ) : (
                             <div className="bg-muted/20 text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
-                                {appI18n.t('view.my_avatars.generated.this_avatar_has_no_local_tags_yet')}
+                                {t('view.my_avatars.generated.this_avatar_has_no_local_tags_yet')}
                             </div>
                         )}
                     </div>
@@ -257,7 +259,7 @@ export function ManageAvatarTagsDialog({
                         disabled={saving}
                         onClick={() => onOpenChange(false)}
                     >
-                        {appI18n.t('common.actions.cancel')}
+                        {t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -265,7 +267,7 @@ export function ManageAvatarTagsDialog({
                         onClick={() => onSave({ avatarId, tags: tagEntries })}
                     >
                         <SaveIcon data-icon="inline-start" />
-                        {appI18n.t('common.actions.save')}
+                        {t('common.actions.save')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

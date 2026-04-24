@@ -1,11 +1,7 @@
 import { createInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import {
-    getAllLocalizedStrings,
-    getLocalizedStrings
-} from '@/localization/index.js';
-import { useShellStore } from '@/state/shellStore.js';
+import { getAllLocalizedStrings } from '@/localization/index.js';
 
 const allLocalizedStrings = getAllLocalizedStrings();
 const i18nResources = Object.fromEntries(
@@ -14,8 +10,9 @@ const i18nResources = Object.fromEntries(
         { translation: messages || {} }
     ])
 );
-export const appI18n = createInstance();
-const appI18nReady = appI18n.use(initReactI18next).init({
+
+export const i18n = createInstance();
+const i18nReady = i18n.use(initReactI18next).init({
     lng: 'en',
     fallbackLng: 'en',
     ns: ['translation'],
@@ -32,22 +29,33 @@ const appI18nReady = appI18n.use(initReactI18next).init({
     returnNull: false
 });
 
+export default i18n;
+
 function resolveMessage(messages, key) {
     return key.split('.').reduce((current, part) => current?.[part], messages);
 }
 
-async function loadMessages(locale) {
-    const normalizedLocale =
-        typeof locale === 'string' && locale.trim() ? locale.trim() : 'en';
-    return allLocalizedStrings[normalizedLocale] ?? getLocalizedStrings(normalizedLocale);
+function normalizeLocale(locale) {
+    return typeof locale === 'string' && locale.trim() ? locale.trim() : 'en';
 }
 
-export function buildTimeUnitLabels(messages, fallbackMessages, defaultLabels) {
+export async function setI18nLanguage(locale) {
+    const normalizedLocale = normalizeLocale(locale);
+    await i18nReady;
+    await i18n.changeLanguage(normalizedLocale);
+    return normalizedLocale;
+}
+
+export function getTimeUnitLabels(locale, defaultLabels) {
+    const normalizedLocale =
+        allLocalizedStrings[normalizeLocale(locale)] ? normalizeLocale(locale) : 'en';
+    const localizedMessages = allLocalizedStrings[normalizedLocale] ?? {};
+    const fallbackMessages = allLocalizedStrings.en ?? {};
     const labels = {};
 
     for (const unit of Object.keys(defaultLabels)) {
         const key = `common.time_units.${unit}`;
-        const localized = resolveMessage(messages, key);
+        const localized = resolveMessage(localizedMessages, key);
         const fallback = resolveMessage(fallbackMessages, key);
         labels[unit] =
             typeof localized === 'string'
@@ -60,72 +68,14 @@ export function buildTimeUnitLabels(messages, fallbackMessages, defaultLabels) {
     return labels;
 }
 
-export async function ensureI18nLocale(locale) {
-    const normalizedLocale =
-        typeof locale === 'string' && locale.trim() ? locale.trim() : 'en';
-    const [fallbackMessages, localizedMessages] = await Promise.all([
-        loadMessages('en'),
-        normalizedLocale === 'en'
-            ? Promise.resolve(null)
-            : loadMessages(normalizedLocale)
-    ]);
-
-    await appI18nReady;
-    if (!appI18n.hasResourceBundle('en', 'translation')) {
-        appI18n.addResourceBundle(
-            'en',
-            'translation',
-            fallbackMessages ?? {},
-            true,
-            true
-        );
-    }
-    if (
-        normalizedLocale !== 'en' &&
-        !appI18n.hasResourceBundle(normalizedLocale, 'translation')
-    ) {
-        appI18n.addResourceBundle(
-            normalizedLocale,
-            'translation',
-            localizedMessages ?? {},
-            true,
-            true
-        );
-    }
-
-    return {
-        locale: normalizedLocale,
-        fallbackMessages: fallbackMessages ?? {},
-        localizedMessages:
-            normalizedLocale === 'en'
-                ? (fallbackMessages ?? {})
-                : (localizedMessages ?? {})
-    };
-}
-
-export async function changeI18nLocale(locale) {
-    const result = await ensureI18nLocale(locale);
-    await appI18n.changeLanguage(result.locale);
-    return result;
-}
-
 export async function translateForLocale(locale, key, params = {}) {
-    const normalizedLocale =
-        typeof locale === 'string' && locale.trim() ? locale.trim() : 'en';
-    await ensureI18nLocale(normalizedLocale);
-    const translated = appI18n.getFixedT(normalizedLocale)(key, params);
+    const normalizedLocale = normalizeLocale(locale);
+    await i18nReady;
+    const translated = i18n.getFixedT(normalizedLocale)(key, params);
 
     if (translated !== key) {
         return translated;
     }
 
     return key;
-}
-
-export async function translateCurrentLocale(key, params = {}) {
-    return translateForLocale(
-        useShellStore.getState().locale || 'en',
-        key,
-        params
-    );
 }

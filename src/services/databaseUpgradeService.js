@@ -7,7 +7,7 @@ import sqliteRepository from '@/repositories/sqliteRepository.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { appI18n } from '@/services/i18nService.js';
+import i18n from '@/services/i18nService.js';
 
 const DATABASE_VERSION = 16;
 
@@ -22,9 +22,9 @@ function errorMessage(error) {
 function failedUpgradeDescription(failedUpgrade) {
     const workDbPath =
         failedUpgrade?.workDbPath ||
-        appI18n.t('service.database_upgrade_service.generated.unknown_path');
+        i18n.t('service.database_upgrade_service.generated.unknown_path');
     if (failedUpgrade?.reason) {
-        return appI18n.t(
+        return i18n.t(
             'service.database_upgrade_service.generated.failed_upgrade_description_with_reason',
             {
                 path: workDbPath,
@@ -32,7 +32,7 @@ function failedUpgradeDescription(failedUpgrade) {
             }
         );
     }
-    return appI18n.t(
+    return i18n.t(
         'service.database_upgrade_service.generated.failed_upgrade_description',
         { path: workDbPath }
     );
@@ -49,7 +49,7 @@ async function blockOnFailedUpgrade(failedUpgrade) {
     });
 
     await useModalStore.getState().alert({
-        title: appI18n.t(
+        title: i18n.t(
             'service.database_upgrade_service.generated.database_upgrade_failed'
         ),
         description: failedUpgradeDescription(failedUpgrade),
@@ -83,7 +83,7 @@ async function runFullDatabaseUpgrade() {
             phase: 'completed',
             fromVersion: currentVersion,
             toVersion: DATABASE_VERSION,
-            detail: appI18n.t(
+            detail: i18n.t(
                 'service.database_upgrade_service.generated.database_schema_is_current'
             ),
             legacyMigrationAvailable: false
@@ -97,7 +97,7 @@ async function runFullDatabaseUpgrade() {
         phase: 'running',
         fromVersion: currentVersion,
         toVersion: DATABASE_VERSION,
-        detail: appI18n.t('service.database_upgrade_service.generated_dynamic.updating_database_from_value_to_value', { value: currentVersion, value2: DATABASE_VERSION }),
+        detail: i18n.t('service.database_upgrade_service.generated_dynamic.updating_database_from_value_to_value', { value: currentVersion, value2: DATABASE_VERSION }),
         legacyMigrationAvailable: false
     });
 
@@ -129,7 +129,7 @@ async function runFullDatabaseUpgrade() {
             phase: 'completed',
             fromVersion: currentVersion,
             toVersion: DATABASE_VERSION,
-            detail: appI18n.t(
+            detail: i18n.t(
                 'service.database_upgrade_service.generated.database_update_complete'
             )
         });
@@ -151,11 +151,11 @@ async function runFullDatabaseUpgrade() {
             }
         }
 
-        let description = appI18n.t(
+        let description = i18n.t(
             'service.database_upgrade_service.generated.apply_upgrade_failed'
         );
         if (upgradeCommitted) {
-            description = appI18n.t(
+            description = i18n.t(
                 'service.database_upgrade_service.generated.refresh_config_failed_after_upgrade'
             );
         } else if (failedUpgrade) {
@@ -167,7 +167,7 @@ async function runFullDatabaseUpgrade() {
             detail: description
         });
         await useModalStore.getState().alert({
-            title: appI18n.t(
+            title: i18n.t(
                 'service.database_upgrade_service.generated.database_upgrade_failed'
             ),
             description,

@@ -16,12 +16,12 @@ import {
     UserIcon
 } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/layout/PageScaffold.jsx';
 import { getAvailablePlatforms } from '@/lib/avatarPlatform.js';
 import { cn } from '@/lib/utils.js';
 import { configRepository } from '@/repositories/index.js';
 import { openAvatarDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { getTagColor } from '@/shared/constants/tags.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -134,6 +134,8 @@ export function AvatarActionMenuItems({
     Separator,
     onAction
 }) {
+    const { t } = useTranslation();
+
     const releaseAction =
         avatar?.releaseStatus === 'public' ? 'makePrivate' : 'makePublic';
 
@@ -146,14 +148,14 @@ export function AvatarActionMenuItems({
             <Group>
                 <Item onSelect={() => handleAction('details')}>
                     <EyeIcon />
-                    {appI18n.t('view.my_avatars.generated.view_details')}
+                    {t('view.my_avatars.generated.view_details')}
                 </Item>
                 <Item
                     disabled={disabled || isActive}
                     onSelect={() => handleAction('wear')}
                 >
                     <CheckIcon />
-                    {appI18n.t('view.my_avatars.generated.select_avatar')}
+                    {t('view.my_avatars.generated.select_avatar')}
                 </Item>
             </Group>
             <Separator />
@@ -163,7 +165,7 @@ export function AvatarActionMenuItems({
                     onSelect={() => handleAction('manageTags')}
                 >
                     <TagIcon />
-                    {appI18n.t('view.my_avatars.generated.manage_tags')}
+                    {t('view.my_avatars.generated.manage_tags')}
                 </Item>
             </Group>
             <Separator />
@@ -174,50 +176,50 @@ export function AvatarActionMenuItems({
                 >
                     <UserIcon />
                     {avatar?.releaseStatus === 'public'
-                        ? appI18n.t('view.my_avatars.generated.make_private')
-                        : appI18n.t('view.my_avatars.generated.make_public')}
+                        ? t('view.my_avatars.generated.make_private')
+                        : t('view.my_avatars.generated.make_public')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('rename')}
                 >
                     <PencilIcon />
-                    {appI18n.t('view.my_avatars.generated.rename')}
+                    {t('view.my_avatars.generated.rename')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('changeDescription')}
                 >
                     <PencilIcon />
-                    {appI18n.t('view.my_avatars.generated.change_description')}
+                    {t('view.my_avatars.generated.change_description')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('changeTags')}
                 >
                     <PencilIcon />
-                    {appI18n.t('view.my_avatars.generated.change_content_tags')}
+                    {t('view.my_avatars.generated.change_content_tags')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('changeStyles')}
                 >
                     <PencilIcon />
-                    {appI18n.t('view.my_avatars.generated.change_styles_author_tags')}
+                    {t('view.my_avatars.generated.change_styles_author_tags')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('changeImage')}
                 >
                     <ImageIcon />
-                    {appI18n.t('view.my_avatars.generated.change_image')}
+                    {t('view.my_avatars.generated.change_image')}
                 </Item>
                 <Item
                     disabled={disabled}
                     onSelect={() => handleAction('createImpostor')}
                 >
                     <RefreshCwIcon />
-                    {appI18n.t('view.my_avatars.generated.create_impostor')}
+                    {t('view.my_avatars.generated.create_impostor')}
                 </Item>
             </Group>
         </>
@@ -230,6 +232,8 @@ export function AvatarActionsDropdown({
     isUpdating,
     onAction
 }) {
+    const { t } = useTranslation();
+
     const disabled = resolveMyAvatarActionDisabled(avatar, isUpdating);
 
     return (
@@ -239,7 +243,7 @@ export function AvatarActionsDropdown({
                     type="button"
                     variant="ghost"
                     size="icon-xs"
-                    aria-label={appI18n.t(
+                    aria-label={t(
                         'view.my_avatars.generated.open_avatar_actions'
                     )}
                     disabled={isUpdating}
@@ -278,12 +282,14 @@ export function MyAvatarFilterPopover({
     onTagFiltersChange,
     onClearFilters
 }) {
+    const { t } = useTranslation();
+
     return (
         <Popover>
             <PopoverTrigger asChild>
                 <Button type="button" variant="outline" size="sm">
                     <ListFilterIcon data-icon="inline-start" />
-                    {appI18n.t('view.my_avatars.generated.filter')}
+                    {t('view.my_avatars.generated.filter')}
                     {activeFilterCount ? (
                         <Badge variant="secondary">{activeFilterCount}</Badge>
                     ) : null}
@@ -293,7 +299,7 @@ export function MyAvatarFilterPopover({
                 <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1.5">
                         <div className="text-muted-foreground text-xs font-medium">
-                            {appI18n.t('view.my_avatars.generated.visibility')}
+                            {t('view.my_avatars.generated.visibility')}
                         </div>
                         <div className="flex flex-wrap gap-1">
                             {MY_AVATARS_RELEASE_STATUS_OPTIONS.map((option) => (
@@ -311,17 +317,17 @@ export function MyAvatarFilterPopover({
                                     }
                                 >
                                     {option === 'all'
-                                        ? appI18n.t('search.avatar.all')
+                                        ? t('search.avatar.all')
                                         : option === 'public'
-                                          ? appI18n.t('search.avatar.public')
-                                          : appI18n.t('search.avatar.private')}
+                                          ? t('search.avatar.public')
+                                          : t('search.avatar.private')}
                                 </Button>
                             ))}
                         </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
                         <div className="text-muted-foreground text-xs font-medium">
-                            {appI18n.t('view.my_avatars.generated.platform')}
+                            {t('view.my_avatars.generated.platform')}
                         </div>
                         <div className="flex flex-wrap gap-1">
                             {MY_AVATARS_PLATFORM_OPTIONS.map((option) => (
@@ -337,7 +343,7 @@ export function MyAvatarFilterPopover({
                                     onClick={() => onPlatformChange(option)}
                                 >
                                     {option === 'all'
-                                        ? appI18n.t('search.avatar.all')
+                                        ? t('search.avatar.all')
                                         : option === 'pc'
                                           ? 'PC'
                                           : option === 'android'
@@ -350,7 +356,7 @@ export function MyAvatarFilterPopover({
                     {allTags.length ? (
                         <div className="flex flex-col gap-1.5">
                             <div className="text-muted-foreground text-xs font-medium">
-                                {appI18n.t('dialog.avatar.info.tags')}
+                                {t('dialog.avatar.info.tags')}
                             </div>
                             <div className="flex max-h-40 flex-wrap gap-1 overflow-y-auto">
                                 {allTags.map((tag) => {
@@ -399,7 +405,7 @@ export function MyAvatarFilterPopover({
                             size="sm"
                             onClick={onClearFilters}
                         >
-                            {appI18n.t('view.my_avatars.generated.clear_filters')}
+                            {t('view.my_avatars.generated.clear_filters')}
                         </Button>
                     ) : null}
                 </div>
@@ -414,6 +420,8 @@ export function GridSettingsMenu({
     onCardScaleChange,
     onCardSpacingChange
 }) {
+    const { t } = useTranslation();
+
     const cardScalePercent = Math.round(cardScale * 100);
     const cardSpacingPercent = Math.round(cardSpacing * 100);
 
@@ -452,7 +460,7 @@ export function GridSettingsMenu({
                     type="button"
                     size="icon-sm"
                     variant="ghost"
-                    aria-label={appI18n.t(
+                    aria-label={t(
                         'view.my_avatars.generated.grid_settings'
                     )}
                 >
@@ -464,7 +472,7 @@ export function GridSettingsMenu({
                     <Field>
                         <div className="flex items-center justify-between text-sm font-medium">
                             <FieldLabel>
-                                {appI18n.t('view.friends_locations.scale')}
+                                {t('view.friends_locations.scale')}
                             </FieldLabel>
                             <span className="text-xs">{cardScalePercent}%</span>
                         </div>
@@ -473,7 +481,7 @@ export function GridSettingsMenu({
                             min={0.4}
                             max={1.4}
                             step={0.05}
-                            aria-label={appI18n.t(
+                            aria-label={t(
                                 'view.my_avatars.generated.avatar_card_scale'
                             )}
                             onValueChange={(value) => updateCardScale(value[0])}
@@ -483,7 +491,7 @@ export function GridSettingsMenu({
                     <Field>
                         <div className="flex items-center justify-between text-sm font-medium">
                             <FieldLabel>
-                                {appI18n.t('view.friends_locations.spacing')}
+                                {t('view.friends_locations.spacing')}
                             </FieldLabel>
                             <span className="text-xs">
                                 {cardSpacingPercent}%
@@ -494,7 +502,7 @@ export function GridSettingsMenu({
                             min={0.6}
                             max={2}
                             step={0.05}
-                            aria-label={appI18n.t(
+                            aria-label={t(
                                 'view.my_avatars.generated.avatar_card_spacing'
                             )}
                             onValueChange={(value) =>
@@ -518,6 +526,8 @@ export function MyAvatarGridCard({
     isUpdating,
     onAction
 }) {
+    const { t } = useTranslation();
+
     const isActive = avatar?.id === currentAvatarId;
     const platforms = getAvailablePlatforms(avatar?.unityPackages);
     const disabled = resolveMyAvatarActionDisabled(avatar, isUpdating);
@@ -582,7 +592,7 @@ export function MyAvatarGridCard({
                             }}
                         >
                             {avatar?.name ||
-                                appI18n.t(
+                                t(
                                     'view.my_avatars.generated.untitled_avatar'
                                 )}
                         </span>

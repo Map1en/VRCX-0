@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import {
     avatarProfileRepository,
     avatarLocalRepository,
@@ -24,8 +25,8 @@ import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
 
+import { useRuntimeStore } from '@/state/runtimeStore.js';
 import {
     favoriteGroupType,
     normalizeFavoriteEntityId as normalizeEntityId,
@@ -36,12 +37,13 @@ import {
     clearFavoriteRemoteDetailsCache,
     useFavoriteRemoteDetails
 } from './useFavoriteRemoteDetails.js';
-import { appI18n } from '@/services/i18nService.js';
 import { FavoritesPageView } from './components/FavoritesPageView.jsx';
 import { useFavoritesLayoutPreferences } from './useFavoritesLayoutPreferences.js';
 import { useFavoritesViewData } from './useFavoritesViewData.js';
 
 function FavoritesPage({ kind, embedded = false }) {
+    const { t } = useTranslation();
+
     const favoriteLoadStatus = useFavoriteStore((state) => state.loadStatus);
     const favoriteDetail = useFavoriteStore((state) => state.detail);
     const favoritesSortOrder = useFavoriteStore(
@@ -290,12 +292,12 @@ function FavoritesPage({ kind, embedded = false }) {
                 );
                 setAvatarHistory(Array.isArray(rows) ? rows : []);
             }
-            toast.success(appI18n.t('view.favorite.generated.favorites_refreshed'));
+            toast.success(t('view.favorite.generated.favorites_refreshed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_refresh_favorites')
+                    : t('view.favorites.generated_toast.failed_to_refresh_favorites')
             );
         } finally {
             setRefreshing(false);
@@ -311,7 +313,7 @@ function FavoritesPage({ kind, embedded = false }) {
                     toast.error(
                         error instanceof Error
                             ? error.message
-                            : appI18n.t('view.favorites.generated_toast.failed_to_save_favorite_sort_preference')
+                            : t('view.favorites.generated_toast.failed_to_save_favorite_sort_preference')
                     );
                 }
             );
@@ -331,23 +333,23 @@ function FavoritesPage({ kind, embedded = false }) {
             removingFavoriteKeyRef.current = item.key;
             setRemovingFavoriteKey(item.key);
             const result = await confirm({
-                title: appI18n.t('view.favorites.generated_modal.remove_local_favorite'),
-                description: appI18n.t(
+                title: t('view.favorites.generated_modal.remove_local_favorite'),
+                description: t(
                     'view.favorites.generated_dynamic.remove_value_from_value',
                     {
                         value:
                             item.title ||
-                            appI18n.t('view.favorites.generated.favorite_fallback'),
+                            t('view.favorites.generated.favorite_fallback'),
                         value2:
                             item.groupLabel ||
-                            appI18n.t(
+                            t(
                                 'view.favorites.generated.favorites_fallback'
                             )
                     }
                 ),
                 destructive: true,
-                confirmText: appI18n.t('common.actions.remove'),
-                cancelText: appI18n.t('common.actions.cancel')
+                confirmText: t('common.actions.remove'),
+                cancelText: t('common.actions.cancel')
             });
 
             if (!result.ok) {
@@ -369,7 +371,7 @@ function FavoritesPage({ kind, embedded = false }) {
                 groupName: item.groupKey
             });
             if (!silent) {
-                toast.success(appI18n.t('view.favorite.generated.local_favorite_removed'));
+                toast.success(t('view.favorite.generated.local_favorite_removed'));
             }
             return true;
         } catch (error) {
@@ -379,7 +381,7 @@ function FavoritesPage({ kind, embedded = false }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_remove_local_favorite')
+                    : t('view.favorites.generated_toast.failed_to_remove_local_favorite')
             );
             return false;
         } finally {
@@ -408,23 +410,23 @@ function FavoritesPage({ kind, embedded = false }) {
             removingFavoriteKeyRef.current = item.key;
             setRemovingFavoriteKey(item.key);
             const result = await confirm({
-                title: appI18n.t('view.favorites.generated_modal.remove_vrchat_favorite'),
-                description: appI18n.t(
+                title: t('view.favorites.generated_modal.remove_vrchat_favorite'),
+                description: t(
                     'view.favorites.generated_dynamic.remove_value_from_value',
                     {
                         value:
                             item.title ||
-                            appI18n.t('view.favorites.generated.favorite_fallback'),
+                            t('view.favorites.generated.favorite_fallback'),
                         value2:
                             item.groupLabel ||
-                            appI18n.t(
+                            t(
                                 'view.favorites.generated.favorites_fallback'
                             )
                     }
                 ),
                 destructive: true,
-                confirmText: appI18n.t('common.actions.remove'),
-                cancelText: appI18n.t('common.actions.cancel')
+                confirmText: t('common.actions.remove'),
+                cancelText: t('common.actions.cancel')
             });
 
             if (!result.ok) {
@@ -441,7 +443,7 @@ function FavoritesPage({ kind, embedded = false }) {
             });
             removeRemoteFavorite(item.id);
             if (!silent) {
-                toast.success(appI18n.t('view.favorite.generated.vrchat_favorite_removed'));
+                toast.success(t('view.favorite.generated.vrchat_favorite_removed'));
             }
             return true;
         } catch (error) {
@@ -451,7 +453,7 @@ function FavoritesPage({ kind, embedded = false }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_remove_vrchat_favorite')
+                    : t('view.favorites.generated_toast.failed_to_remove_vrchat_favorite')
             );
             return false;
         } finally {
@@ -561,7 +563,7 @@ function FavoritesPage({ kind, embedded = false }) {
 
     async function exportCurrentFavorites() {
         if (!allItems.length) {
-            toast.error(appI18n.t('view.favorite.generated.no_favorites_available_to_export'));
+            toast.error(t('view.favorite.generated.no_favorites_available_to_export'));
             return;
         }
 
@@ -570,13 +572,13 @@ function FavoritesPage({ kind, embedded = false }) {
 
     async function handleRemoteGroupRename(group) {
         const result = await prompt({
-            title: appI18n.t('view.favorites.generated_modal.change_favorite_group_name'),
-            description: appI18n.t('view.favorites.generated_modal.enter_the_new_display_name'),
+            title: t('view.favorites.generated_modal.change_favorite_group_name'),
+            description: t('view.favorites.generated_modal.enter_the_new_display_name'),
             inputValue: group.label || group.name,
             pattern: /\S+/,
-            confirmText: appI18n.t('view.favorites.generated_modal.change'),
-            cancelText: appI18n.t('common.actions.cancel'),
-            errorMessage: appI18n.t(
+            confirmText: t('view.favorites.generated_modal.change'),
+            cancelText: t('common.actions.cancel'),
+            errorMessage: t(
                 'view.favorites.generated_modal.group_name_required'
             )
         });
@@ -597,12 +599,12 @@ function FavoritesPage({ kind, embedded = false }) {
                 displayName: nextName
             });
             await refreshFavorites();
-            toast.success(appI18n.t('view.favorite.generated.favorite_group_renamed'));
+            toast.success(t('view.favorite.generated.favorite_group_renamed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_rename_favorite_group')
+                    : t('view.favorites.generated_toast.failed_to_rename_favorite_group')
             );
         }
     }
@@ -621,23 +623,23 @@ function FavoritesPage({ kind, embedded = false }) {
                 visibility
             });
             await refreshFavorites();
-            toast.success(appI18n.t('view.favorite.generated.group_visibility_changed'));
+            toast.success(t('view.favorite.generated.group_visibility_changed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_change_group_visibility')
+                    : t('view.favorites.generated_toast.failed_to_change_group_visibility')
             );
         }
     }
 
     async function handleRemoteGroupClear(group) {
         const result = await confirm({
-            title: appI18n.t('view.favorites.generated_modal.clear_favorite_group'),
-            description: appI18n.t('view.favorites.generated_modal.remove_all_favorites_from_this_group'),
+            title: t('view.favorites.generated_modal.clear_favorite_group'),
+            description: t('view.favorites.generated_modal.remove_all_favorites_from_this_group'),
             destructive: true,
-            confirmText: appI18n.t('common.actions.clear'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.clear'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -651,25 +653,25 @@ function FavoritesPage({ kind, embedded = false }) {
                 group: group.name
             });
             await refreshFavorites();
-            toast.success(appI18n.t('view.favorite.generated.favorite_group_cleared'));
+            toast.success(t('view.favorite.generated.favorite_group_cleared'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_clear_favorite_group')
+                    : t('view.favorites.generated_toast.failed_to_clear_favorite_group')
             );
         }
     }
 
     async function handleLocalGroupRename(group) {
         const result = await prompt({
-            title: appI18n.t('view.favorites.generated_modal.rename_local_favorite_group'),
-            description: appI18n.t('view.favorites.generated_modal.enter_the_new_local_group_name'),
+            title: t('view.favorites.generated_modal.rename_local_favorite_group'),
+            description: t('view.favorites.generated_modal.enter_the_new_local_group_name'),
             inputValue: group.label,
             pattern: /\S+/,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel'),
-            errorMessage: appI18n.t(
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel'),
+            errorMessage: t(
                 'view.favorites.generated_modal.group_name_required'
             )
         });
@@ -681,7 +683,7 @@ function FavoritesPage({ kind, embedded = false }) {
             return;
         }
         if (localGroups.some((localGroup) => localGroup.key === nextName)) {
-            toast.error(appI18n.t('view.favorites.generated_dynamic.local_group_value_already_exists', { value: nextName }));
+            toast.error(t('view.favorites.generated_dynamic.local_group_value_already_exists', { value: nextName }));
             return;
         }
 
@@ -699,23 +701,23 @@ function FavoritesPage({ kind, embedded = false }) {
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey(nextName);
             }
-            toast.success(appI18n.t('view.favorite.generated.local_favorite_group_renamed'));
+            toast.success(t('view.favorite.generated.local_favorite_group_renamed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_rename_local_favorite_group')
+                    : t('view.favorites.generated_toast.failed_to_rename_local_favorite_group')
             );
         }
     }
 
     async function handleLocalGroupDelete(group) {
         const result = await confirm({
-            title: appI18n.t('view.favorites.generated_modal.delete_local_favorite_group'),
-            description: appI18n.t('view.favorites.generated_modal.delete_value', { value: group.label }),
+            title: t('view.favorites.generated_modal.delete_local_favorite_group'),
+            description: t('view.favorites.generated_modal.delete_value', { value: group.label }),
             destructive: true,
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -730,12 +732,12 @@ function FavoritesPage({ kind, embedded = false }) {
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey('');
             }
-            toast.success(appI18n.t('view.favorite.generated.local_favorite_group_deleted'));
+            toast.success(t('view.favorite.generated.local_favorite_group_deleted'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_delete_local_favorite_group')
+                    : t('view.favorites.generated_toast.failed_to_delete_local_favorite_group')
             );
         }
     }
@@ -756,7 +758,7 @@ function FavoritesPage({ kind, embedded = false }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_refresh_avatar_history')
+                    : t('view.favorites.generated_toast.failed_to_refresh_avatar_history')
             );
         } finally {
             setAvatarHistoryLoading(false);
@@ -765,12 +767,12 @@ function FavoritesPage({ kind, embedded = false }) {
 
     async function handleAvatarHistoryClear() {
         const result = await confirm({
-            title: appI18n.t('view.favorites.generated_modal.clear_avatar_history'),
+            title: t('view.favorites.generated_modal.clear_avatar_history'),
             description:
-                appI18n.t('view.favorites.generated_modal.clear_local_avatar_history_and_cached_avatar_met'),
+                t('view.favorites.generated_modal.clear_local_avatar_history_and_cached_avatar_met'),
             destructive: true,
-            confirmText: appI18n.t('common.actions.clear'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.clear'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -782,12 +784,12 @@ function FavoritesPage({ kind, embedded = false }) {
             if (selectedSource === 'history') {
                 setSelectedGroupKey('');
             }
-            toast.success(appI18n.t('view.favorite.generated.avatar_history_cleared'));
+            toast.success(t('view.favorite.generated.avatar_history_cleared'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_clear_avatar_history')
+                    : t('view.favorites.generated_toast.failed_to_clear_avatar_history')
             );
         }
     }
@@ -823,15 +825,15 @@ function FavoritesPage({ kind, embedded = false }) {
                 currentEndpoint
             );
             if (opened) {
-                toast.success(appI18n.t('view.favorite.generated.vrchat_launch_request_sent'));
+                toast.success(t('view.favorite.generated.vrchat_launch_request_sent'));
                 return;
             }
-            toast.error(appI18n.t('view.favorite.generated.unable_to_open_this_instance_in_vrchat'));
+            toast.error(t('view.favorite.generated.unable_to_open_this_instance_in_vrchat'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_launch_instance')
+                    : t('view.favorites.generated_toast.failed_to_launch_instance')
             );
         }
     }
@@ -854,7 +856,7 @@ function FavoritesPage({ kind, embedded = false }) {
                 friends: friendsMap
             })
         ) {
-            toast.error(appI18n.t('view.favorite.generated.cannot_self_invite_to_this_instance'));
+            toast.error(t('view.favorite.generated.cannot_self_invite_to_this_instance'));
             return;
         }
 
@@ -864,12 +866,12 @@ function FavoritesPage({ kind, embedded = false }) {
                 parsedLocation.shortName || '',
                 currentEndpoint
             );
-            toast.success(appI18n.t('view.favorite.generated.self_invite_sent'));
+            toast.success(t('view.favorite.generated.self_invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_send_self_invite')
+                    : t('view.favorites.generated_toast.failed_to_send_self_invite')
             );
         }
     }
@@ -882,30 +884,30 @@ function FavoritesPage({ kind, embedded = false }) {
         }
         if (!currentInviteLocation) {
             toast.error(
-                appI18n.t('view.favorite.generated.cannot_invite_no_current_vrchat_location_is_available')
+                t('view.favorite.generated.cannot_invite_no_current_vrchat_location_is_available')
             );
             return;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error(appI18n.t('view.favorite.generated.cannot_invite_from_the_current_instance_type'));
+            toast.error(t('view.favorite.generated.cannot_invite_from_the_current_instance_type'));
             return;
         }
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
-                appI18n.t('view.favorite.generated.cannot_invite_current_location_is_not_a_concrete_instance')
+                t('view.favorite.generated.cannot_invite_current_location_is_not_a_concrete_instance')
             );
             return;
         }
 
         const result = await confirm({
-            title: appI18n.t('view.favorites.generated_modal.send_invite'),
+            title: t('view.favorites.generated_modal.send_invite'),
             description:
                 friend?.displayName ||
-                appI18n.t('view.favorites.generated.this_user'),
-            confirmText: appI18n.t('view.favorites.generated_modal.invite'),
-            cancelText: appI18n.t('common.actions.cancel')
+                t('view.favorites.generated.this_user'),
+            confirmText: t('view.favorites.generated_modal.invite'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -929,12 +931,12 @@ function FavoritesPage({ kind, embedded = false }) {
                     rsvp: true
                 }
             });
-            toast.success(appI18n.t('view.favorite.generated.invite_sent'));
+            toast.success(t('view.favorite.generated.invite_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_send_invite')
+                    : t('view.favorites.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -947,12 +949,12 @@ function FavoritesPage({ kind, embedded = false }) {
         }
 
         const result = await confirm({
-            title: appI18n.t('view.favorites.generated_modal.request_invite'),
+            title: t('view.favorites.generated_modal.request_invite'),
             description:
                 friend?.displayName ||
-                appI18n.t('view.favorites.generated.this_user'),
-            confirmText: appI18n.t('view.favorites.generated_modal.request_invite_2'),
-            cancelText: appI18n.t('common.actions.cancel')
+                t('view.favorites.generated.this_user'),
+            confirmText: t('view.favorites.generated_modal.request_invite_2'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -966,12 +968,12 @@ function FavoritesPage({ kind, embedded = false }) {
                     platform: 'standalonewindows'
                 }
             });
-            toast.success(appI18n.t('view.favorite.generated.invite_request_sent'));
+            toast.success(t('view.favorite.generated.invite_request_sent'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_request_invite')
+                    : t('view.favorites.generated_toast.failed_to_request_invite')
             );
         }
     }
@@ -985,12 +987,12 @@ function FavoritesPage({ kind, embedded = false }) {
 
         try {
             const result = await prompt({
-                title: appI18n.t('view.favorites.generated_modal.send_boop'),
+                title: t('view.favorites.generated_modal.send_boop'),
                 description:
-                    appI18n.t('view.favorites.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
+                    t('view.favorites.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
                 inputValue: '',
-                confirmText: appI18n.t('view.favorites.generated_modal.send'),
-                cancelText: appI18n.t('common.actions.cancel')
+                confirmText: t('view.favorites.generated_modal.send'),
+                cancelText: t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -1000,10 +1002,10 @@ function FavoritesPage({ kind, embedded = false }) {
                 emojiId: result.value,
                 endpoint: currentEndpoint
             });
-            toast.success(appI18n.t('view.favorite.generated.boop_sent'));
+            toast.success(t('view.favorite.generated.boop_sent'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('view.favorites.generated_toast.failed_to_send_boop')
+                error instanceof Error ? error.message : t('view.favorites.generated_toast.failed_to_send_boop')
             );
         }
     }
@@ -1031,12 +1033,12 @@ function FavoritesPage({ kind, embedded = false }) {
         );
         if (shouldConfirm) {
             const result = await confirm({
-                title: appI18n.t('view.favorites.generated_modal.select_avatar'),
+                title: t('view.favorites.generated_modal.select_avatar'),
                 description:
                     item.title ||
-                    appI18n.t('view.favorites.generated.avatar_fallback'),
-                confirmText: appI18n.t('common.actions.select'),
-                cancelText: appI18n.t('common.actions.cancel')
+                    t('view.favorites.generated.avatar_fallback'),
+                confirmText: t('common.actions.select'),
+                cancelText: t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -1048,12 +1050,12 @@ function FavoritesPage({ kind, embedded = false }) {
                 avatarId: item.id,
                 endpoint: currentEndpoint
             });
-            toast.success(appI18n.t('view.favorite.generated.avatar_selected'));
+            toast.success(t('view.favorite.generated.avatar_selected'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_select_avatar')
+                    : t('view.favorites.generated_toast.failed_to_select_avatar')
             );
         }
     }
@@ -1070,7 +1072,7 @@ function FavoritesPage({ kind, embedded = false }) {
             return;
         }
         if (localGroups.some((group) => group.key === nextName)) {
-            toast.error(appI18n.t('view.favorites.generated_dynamic.local_group_value_already_exists', { value: nextName }));
+            toast.error(t('view.favorites.generated_dynamic.local_group_value_already_exists', { value: nextName }));
             return;
         }
         try {
@@ -1087,7 +1089,7 @@ function FavoritesPage({ kind, embedded = false }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_create_local_favorite_group')
+                    : t('view.favorites.generated_toast.failed_to_create_local_favorite_group')
             );
         }
     }
@@ -1109,12 +1111,12 @@ function FavoritesPage({ kind, embedded = false }) {
             await navigator.clipboard.writeText(
                 selectedContentItems.map((item) => `${item.id}\n`).join('')
             );
-            toast.success(appI18n.t('view.favorite.generated.copied_selected_favorite_ids'));
+            toast.success(t('view.favorite.generated.copied_selected_favorite_ids'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_copy_selected_favorites')
+                    : t('view.favorites.generated_toast.failed_to_copy_selected_favorites')
             );
         }
     }
@@ -1125,11 +1127,11 @@ function FavoritesPage({ kind, embedded = false }) {
         }
 
         const result = await confirm({
-            title: appI18n.t('view.favorites.generated_modal.delete_value_favorites', { value: selectedContentItems.length }),
-            description: appI18n.t('view.favorites.generated_modal.this_action_cannot_be_undone'),
+            title: t('view.favorites.generated_modal.delete_value_favorites', { value: selectedContentItems.length }),
+            description: t('view.favorites.generated_modal.this_action_cannot_be_undone'),
             destructive: true,
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -1165,10 +1167,10 @@ function FavoritesPage({ kind, embedded = false }) {
         }
         if (failedCount === 0) {
             setEditMode(false);
-            toast.success(appI18n.t('view.favorite.generated.selected_favorites_removed'));
+            toast.success(t('view.favorite.generated.selected_favorites_removed'));
             return;
         }
-        toast.error(appI18n.t('view.favorites.generated_dynamic.removed_value_value_failed', { value: removedCount, value2: failedCount }));
+        toast.error(t('view.favorites.generated_dynamic.removed_value_value_failed', { value: removedCount, value2: failedCount }));
     }
 
     return (

@@ -2,6 +2,7 @@ import { PlusIcon, UserIcon, UsersIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
 import { userImage } from '@/lib/entityMedia.js';
 import {
@@ -41,7 +42,6 @@ import {
 import { Field, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { appI18n } from '@/services/i18nService.js';
 
 function normalizeId(value) {
     return typeof value === 'string'
@@ -80,6 +80,8 @@ export function InstanceInviteDialog({
     endpoint = '',
     onOpenChange
 }) {
+    const { t } = useTranslation();
+
     const currentUser = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
@@ -265,19 +267,19 @@ export function InstanceInviteDialog({
             .map(normalizeId)
             .filter(Boolean);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error(appI18n.t('dialog.invite.generated.cannot_invite_location_is_not_a_concrete_instance'));
+            toast.error(t('dialog.invite.generated.cannot_invite_location_is_not_a_concrete_instance'));
             return;
         }
         if (!normalizedUserIds.length) {
-            toast.error(appI18n.t('dialog.invite.generated.select_at_least_one_user_to_invite'));
+            toast.error(t('dialog.invite.generated.select_at_least_one_user_to_invite'));
             return;
         }
 
         const result = await confirm({
-            title: appI18n.t('dialog.instance_invite.generated_modal.send_invite'),
-            description: appI18n.t('dialog.instance_invite.generated_dynamic.send_invites_to_value_user_value', { value: normalizedUserIds.length, value2: normalizedUserIds.length === 1 ? '' : 's' }),
-            confirmText: appI18n.t('dialog.instance_invite.generated_modal.invite'),
-            cancelText: appI18n.t('common.actions.cancel')
+            title: t('dialog.instance_invite.generated_modal.send_invite'),
+            description: t('dialog.instance_invite.generated_dynamic.send_invites_to_value_user_value', { value: normalizedUserIds.length, value2: normalizedUserIds.length === 1 ? '' : 's' }),
+            confirmText: t('dialog.instance_invite.generated_modal.invite'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -324,8 +326,8 @@ export function InstanceInviteDialog({
             if (successCount) {
                 toast.success(
                     successCount === 1
-                        ? appI18n.t('dialog.instance_invite.generated_toast.invite_sent')
-                        : appI18n.t('dialog.instance_invite.generated_toast.sent_value_invites', { value: successCount })
+                        ? t('dialog.instance_invite.generated_toast.invite_sent')
+                        : t('dialog.instance_invite.generated_toast.sent_value_invites', { value: successCount })
                 );
             }
             if (failures.length) {
@@ -335,7 +337,7 @@ export function InstanceInviteDialog({
                 toast.error(
                     failures.length === 1
                         ? failures[0]
-                        : appI18n.t('dialog.instance_invite.generated_toast.failed_to_send_value_invites', { value: failures.length })
+                        : t('dialog.instance_invite.generated_toast.failed_to_send_value_invites', { value: failures.length })
                 );
             } else {
                 onOpenChange?.(false);
@@ -344,7 +346,7 @@ export function InstanceInviteDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.instance_invite.generated_toast.failed_to_send_invite')
+                    : t('dialog.instance_invite.generated_toast.failed_to_send_invite')
             );
         } finally {
             setSending(false);
@@ -355,9 +357,9 @@ export function InstanceInviteDialog({
         <Dialog open={Boolean(open)} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{appI18n.t('dialog.invite.generated.invite')}</DialogTitle>
+                    <DialogTitle>{t('dialog.invite.generated.invite')}</DialogTitle>
                     <DialogDescription>
-                        {appI18n.t('dialog.invite.generated.choose_online_friends_to_invite_to_this_instance')}
+                        {t('dialog.invite.generated.choose_online_friends_to_invite_to_this_instance')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-4 overflow-hidden">
@@ -378,7 +380,7 @@ export function InstanceInviteDialog({
                             onClick={() => addUserIds([currentUserId])}
                         >
                             <UserIcon data-icon="inline-start" />
-                            {appI18n.t('dialog.invite.add_self')}
+                            {t('dialog.invite.add_self')}
                         </Button>
                         <Button
                             type="button"
@@ -392,7 +394,7 @@ export function InstanceInviteDialog({
                             }
                         >
                             <UsersIcon data-icon="inline-start" />
-                            {appI18n.t('dialog.invite.add_friends_in_instance')}
+                            {t('dialog.invite.add_friends_in_instance')}
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -407,7 +409,7 @@ export function InstanceInviteDialog({
                                     }
                                 >
                                     <PlusIcon data-icon="inline-start" />
-                                    {appI18n.t('dialog.invite.add_favorite_friends')}
+                                    {t('dialog.invite.add_favorite_friends')}
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-56">
@@ -445,7 +447,7 @@ export function InstanceInviteDialog({
                     <Input
                         value={search}
                         disabled={sending}
-                        placeholder={appI18n.t('dialog.invite.generated.search_online_friends')}
+                        placeholder={t('dialog.invite.generated.search_online_friends')}
                         onChange={(event) => setSearch(event.target.value)}
                     />
                     <div className="max-h-72 overflow-auto rounded-md border">
@@ -505,9 +507,9 @@ export function InstanceInviteDialog({
                         ) : (
                             <Empty className="min-h-32 border-0">
                                 <EmptyHeader>
-                                    <EmptyTitle>{appI18n.t('dialog.invite.generated.no_online_friends')}</EmptyTitle>
+                                    <EmptyTitle>{t('dialog.invite.generated.no_online_friends')}</EmptyTitle>
                                     <EmptyDescription>
-                                        {appI18n.t('dialog.invite.generated.no_selectable_online_friends_match_the_current_search')}
+                                        {t('dialog.invite.generated.no_selectable_online_friends_match_the_current_search')}
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
@@ -521,7 +523,7 @@ export function InstanceInviteDialog({
                         disabled={sending}
                         onClick={() => onOpenChange?.(false)}
                     >
-                        {appI18n.t('common.actions.cancel')}
+                        {t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -529,7 +531,7 @@ export function InstanceInviteDialog({
                         onClick={() => void sendInvites()}
                     >
                         {sending ? <Spinner data-icon="inline-start" /> : null}
-                        {appI18n.t('dialog.invite.generated.invite')}
+                        {t('dialog.invite.generated.invite')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

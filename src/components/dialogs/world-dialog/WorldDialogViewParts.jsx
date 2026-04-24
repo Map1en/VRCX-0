@@ -1,5 +1,6 @@
 import { MonitorIcon, SmartphoneIcon, UserIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { timeToText } from '@/lib/dateTime.js';
 import { userImage } from '@/lib/entityMedia.js';
 import { userStatusDotClassName } from '@/lib/userStatus.js';
@@ -17,9 +18,8 @@ import {
     EmptyHeader,
     EmptyTitle
 } from '@/ui/shadcn/empty';
-import { Spinner } from '@/ui/shadcn/spinner';
 
-import { appI18n } from '@/services/i18nService.js';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 export function PlatformBadge({ name, fileSize = '' }) {
     const normalized = String(name || '').toLowerCase();
@@ -41,12 +41,14 @@ export function PlatformBadge({ name, fileSize = '' }) {
 }
 
 export function WorldInstancesEmptyState() {
+    const { t } = useTranslation();
+
     return (
         <Empty className="min-h-32 border">
             <EmptyHeader>
-                <EmptyTitle>{appI18n.t('dialog.world.generated.no_active_instances')}</EmptyTitle>
+                <EmptyTitle>{t('dialog.world.generated.no_active_instances')}</EmptyTitle>
                 <EmptyDescription>
-                    {appI18n.t('dialog.world.generated.no_public_or_group_instances_are_currently_listed')}
+                    {t('dialog.world.generated.no_public_or_group_instances_are_currently_listed')}
                 </EmptyDescription>
             </EmptyHeader>
         </Empty>

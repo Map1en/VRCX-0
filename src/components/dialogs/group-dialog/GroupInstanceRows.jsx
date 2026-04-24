@@ -1,11 +1,11 @@
 import { PlayIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { userImage } from '@/lib/entityMedia.js';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { Button } from '@/ui/shadcn/button';
 
@@ -86,6 +86,8 @@ function getInstanceUsers(instance) {
 }
 
 export function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
+    const { t } = useTranslation();
+
     if (!instances.length) {
         return null;
     }
@@ -102,7 +104,7 @@ export function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
             );
             if (opened) {
                 toast.success(
-                    appI18n.t('dialog.group.generated.vrchat_launch_request_sent')
+                    t('dialog.group.generated.vrchat_launch_request_sent')
                 );
                 return;
             }
@@ -113,7 +115,7 @@ export function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t(
+                    : t(
                           'dialog.group.generated_toast.failed_to_launch_instance'
                       )
             );
@@ -121,7 +123,7 @@ export function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
     }
 
     return (
-        <EntityInfoBlock label={appI18n.t('dialog.group.generated.instances')} full>
+        <EntityInfoBlock label={t('dialog.group.generated.instances')} full>
             <div className="mt-1 flex flex-col gap-2">
                 {instances.map((instance, index) => {
                     const location = getInstanceLocation(instance);

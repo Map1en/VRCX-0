@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -19,15 +20,14 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import { Textarea } from '@/ui/shadcn/textarea';
 
+import { Textarea } from '@/ui/shadcn/textarea';
 import {
     buildFavoriteExportCsv,
     FAVORITES_EXPORT_ALL_VALUE as EXPORT_ALL_VALUE,
     FAVORITES_EXPORT_NONE_VALUE as EXPORT_NONE_VALUE,
     getFavoriteExportFieldOptions
 } from '../favoritesExport.js';
-import { appI18n } from '@/services/i18nService.js';
 
 function FavoriteExportDialog({
     open,
@@ -38,6 +38,8 @@ function FavoriteExportDialog({
     remoteItemsByGroup,
     localItemsByGroup
 }) {
+    const { t } = useTranslation();
+
     const fieldOptions = getFavoriteExportFieldOptions(kind);
     const [selectedFields, setSelectedFields] = useState(() =>
         fieldOptions.map((option) => option.value)
@@ -81,12 +83,12 @@ function FavoriteExportDialog({
     async function copyExportContent() {
         try {
             await navigator.clipboard.writeText(content);
-            toast.success(appI18n.t('view.favorite.generated.copied_favorite_export_data'));
+            toast.success(t('view.favorite.generated.copied_favorite_export_data'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.favorites.generated_toast.failed_to_copy_favorite_export_data')
+                    : t('view.favorites.generated_toast.failed_to_copy_favorite_export_data')
             );
         }
     }
@@ -95,9 +97,9 @@ function FavoriteExportDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>{appI18n.t('view.favorite.generated.export_favorite')} {kind}{appI18n.t('common.time_units.s')}</DialogTitle>
+                    <DialogTitle>{t('view.favorite.generated.export_favorite')} {kind}{t('common.time_units.s')}</DialogTitle>
                     <DialogDescription>
-                        {appI18n.t('view.favorite.generated.review_the_csv_content_before_copying_it_to_the_clipboard')}
+                        {t('view.favorite.generated.review_the_csv_content_before_copying_it_to_the_clipboard')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup
@@ -131,12 +133,12 @@ function FavoriteExportDialog({
                         onValueChange={setRemoteGroupKey}
                     >
                         <SelectTrigger size="sm" className="min-w-52">
-                            <SelectValue placeholder={appI18n.t('view.favorite.generated.vrchat_group')} />
+                            <SelectValue placeholder={t('view.favorite.generated.vrchat_group')} />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
                                 <SelectItem value={EXPORT_ALL_VALUE}>
-                                    {appI18n.t('view.favorite.generated.all_vrchat_favorites')}
+                                    {t('view.favorite.generated.all_vrchat_favorites')}
                                 </SelectItem>
                                 {remoteGroups.map((group) => (
                                     <SelectItem
@@ -158,12 +160,12 @@ function FavoriteExportDialog({
                         onValueChange={setLocalGroupKey}
                     >
                         <SelectTrigger size="sm" className="min-w-52">
-                            <SelectValue placeholder={appI18n.t('view.favorite.generated.local_group')} />
+                            <SelectValue placeholder={t('view.favorite.generated.local_group')} />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
                                 <SelectItem value={EXPORT_NONE_VALUE}>
-                                    {appI18n.t('view.favorite.generated.no_local_group')}
+                                    {t('view.favorite.generated.no_local_group')}
                                 </SelectItem>
                                 {localGroups.map((group) => (
                                     <SelectItem
@@ -177,7 +179,7 @@ function FavoriteExportDialog({
                         </SelectContent>
                     </Select>
                     <span className="text-muted-foreground text-sm">
-                        {items.length} {appI18n.t('view.favorite.generated.item_s')}
+                        {items.length} {t('view.favorite.generated.item_s')}
                     </span>
                 </div>
                 <Textarea
@@ -193,14 +195,14 @@ function FavoriteExportDialog({
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                     >
-                        {appI18n.t('common.actions.close')}
+                        {t('common.actions.close')}
                     </Button>
                     <Button
                         type="button"
                         disabled={!items.length || !selectedFields.length}
                         onClick={() => void copyExportContent()}
                     >
-                        {appI18n.t('common.actions.copy')}
+                        {t('common.actions.copy')}
                     </Button>
                 </div>
             </DialogContent>

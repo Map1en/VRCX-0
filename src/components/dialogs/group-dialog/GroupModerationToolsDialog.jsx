@@ -2,10 +2,10 @@ import { DownloadIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { groupProfileRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -43,22 +43,22 @@ import {
 const moderationTabs = [
     {
         value: 'members',
-        label: appI18n.t('dialog.group.moderation_tabs.members')
+        label: t('dialog.group.moderation_tabs.members')
     },
-    { value: 'bans', label: appI18n.t('dialog.group.moderation_tabs.bans') },
+    { value: 'bans', label: t('dialog.group.moderation_tabs.bans') },
     {
         value: 'invites',
-        label: appI18n.t('dialog.group.moderation_tabs.invites')
+        label: t('dialog.group.moderation_tabs.invites')
     },
     {
         value: 'requests',
-        label: appI18n.t('dialog.group.moderation_tabs.join_requests')
+        label: t('dialog.group.moderation_tabs.join_requests')
     },
     {
         value: 'blocked',
-        label: appI18n.t('dialog.group.moderation_tabs.blocked_requests')
+        label: t('dialog.group.moderation_tabs.blocked_requests')
     },
-    { value: 'logs', label: appI18n.t('dialog.group.moderation_tabs.logs') }
+    { value: 'logs', label: t('dialog.group.moderation_tabs.logs') }
 ];
 
 function moderationRowUserId(row) {
@@ -156,6 +156,8 @@ export function GroupModerationToolsDialog({
     group,
     endpoint
 }) {
+    const { t } = useTranslation();
+
     const confirm = useModalStore((state) => state.confirm);
     const [activeTab, setActiveTab] = useState('members');
     const [rowsByTab, setRowsByTab] = useState({});
@@ -286,12 +288,12 @@ export function GroupModerationToolsDialog({
             return [
                 {
                     key: 'kick',
-                    label: appI18n.t('dialog.group.moderation_tabs.kick'),
+                    label: t('dialog.group.moderation_tabs.kick'),
                     destructive: true
                 },
                 {
                     key: 'ban',
-                    label: appI18n.t('dialog.group.moderation_tabs.ban'),
+                    label: t('dialog.group.moderation_tabs.ban'),
                     destructive: true
                 }
             ];
@@ -300,7 +302,7 @@ export function GroupModerationToolsDialog({
             return [
                 {
                     key: 'unban',
-                    label: appI18n.t('dialog.group.moderation_tabs.unban')
+                    label: t('dialog.group.moderation_tabs.unban')
                 }
             ];
         }
@@ -308,7 +310,7 @@ export function GroupModerationToolsDialog({
             return [
                 {
                     key: 'delete-invite',
-                    label: appI18n.t('dialog.group.moderation_tabs.delete'),
+                    label: t('dialog.group.moderation_tabs.delete'),
                     destructive: true
                 }
             ];
@@ -317,16 +319,16 @@ export function GroupModerationToolsDialog({
             return [
                 {
                     key: 'accept-request',
-                    label: appI18n.t('dialog.group.moderation_tabs.accept')
+                    label: t('dialog.group.moderation_tabs.accept')
                 },
                 {
                     key: 'reject-request',
-                    label: appI18n.t('dialog.group.moderation_tabs.reject'),
+                    label: t('dialog.group.moderation_tabs.reject'),
                     destructive: true
                 },
                 {
                     key: 'block-request',
-                    label: appI18n.t('dialog.group.moderation_tabs.block'),
+                    label: t('dialog.group.moderation_tabs.block'),
                     destructive: true
                 }
             ];
@@ -335,7 +337,7 @@ export function GroupModerationToolsDialog({
             return [
                 {
                     key: 'delete-blocked',
-                    label: appI18n.t('dialog.group.moderation_tabs.delete'),
+                    label: t('dialog.group.moderation_tabs.delete'),
                     destructive: true
                 }
             ];
@@ -350,12 +352,12 @@ export function GroupModerationToolsDialog({
         }
         const label = moderationRowLabel(row);
         const result = await confirm({
-            title: appI18n.t('dialog.group.generated_dynamic.value_group_user', {
+            title: t('dialog.group.generated_dynamic.value_group_user', {
                 value: action.label
             }),
             description: label,
             confirmText: action.label,
-            cancelText: appI18n.t('common.actions.cancel'),
+            cancelText: t('common.actions.cancel'),
             destructive: Boolean(action.destructive)
         });
         if (!result.ok) {
@@ -430,7 +432,7 @@ export function GroupModerationToolsDialog({
             }));
             setErrorsByTab((current) => ({ ...current, [activeTab]: '' }));
             toast.success(
-                appI18n.t('dialog.group.generated_dynamic.value_completed', {
+                t('dialog.group.generated_dynamic.value_completed', {
                     value: action.label
                 })
             );
@@ -438,7 +440,7 @@ export function GroupModerationToolsDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.group.generated_toast.value_failed', {
+                    : t('dialog.group.generated_toast.value_failed', {
                           value: action.label
                       })
             );
@@ -452,7 +454,7 @@ export function GroupModerationToolsDialog({
             <DialogContent className="max-w-[min(92vw,64rem)]">
                 <DialogHeader>
                     <DialogTitle>
-                        {appI18n.t('dialog.group.generated.moderation_tools')}
+                        {t('dialog.group.generated.moderation_tools')}
                     </DialogTitle>
                     <DialogDescription>
                         {group.name || 'Group'}
@@ -495,7 +497,7 @@ export function GroupModerationToolsDialog({
                                         }
                                     >
                                         <RefreshCwIcon data-icon="inline-start" />
-                                        {appI18n.t('common.actions.refresh')}
+                                        {t('common.actions.refresh')}
                                     </Button>
                                     <Button
                                         type="button"
@@ -523,7 +525,7 @@ export function GroupModerationToolsDialog({
                                             setSearch(event.target.value);
                                             setPageIndex(0);
                                         }}
-                                        placeholder={appI18n.t(
+                                        placeholder={t(
                                             'dialog.group.generated_dynamic.search_value',
                                             { value: tab.label.toLowerCase() }
                                         )}
@@ -563,7 +565,7 @@ export function GroupModerationToolsDialog({
                             </div>
                             {loading ? (
                                 <GroupListState
-                                    title={appI18n.t(
+                                    title={t(
                                         'dialog.group.generated_dynamic.no_value',
                                         { value: tab.label.toLowerCase() }
                                     )}
@@ -572,7 +574,7 @@ export function GroupModerationToolsDialog({
                             ) : null}
                             {error ? (
                                 <GroupListState
-                                    title={appI18n.t(
+                                    title={t(
                                         'dialog.group.generated_dynamic.no_value',
                                         { value: tab.label.toLowerCase() }
                                     )}
@@ -585,27 +587,27 @@ export function GroupModerationToolsDialog({
                                         <TableHeader className="bg-background sticky top-0">
                                             <TableRow>
                                                 <TableHead className="w-56">
-                                                    {appI18n.t(
+                                                    {t(
                                                         'dialog.group.generated.user'
                                                     )}
                                                 </TableHead>
                                                 <TableHead>
-                                                    {appI18n.t(
+                                                    {t(
                                                         'dialog.group.generated.roles_description'
                                                     )}
                                                 </TableHead>
                                                 <TableHead className="w-44">
-                                                    {appI18n.t(
+                                                    {t(
                                                         'dialog.group.generated.status'
                                                     )}
                                                 </TableHead>
                                                 <TableHead className="w-44">
-                                                    {appI18n.t(
+                                                    {t(
                                                         'dialog.group.generated.date'
                                                     )}
                                                 </TableHead>
                                                 <TableHead className="w-48 text-right">
-                                                    {appI18n.t(
+                                                    {t(
                                                         'dialog.group.generated.actions'
                                                     )}
                                                 </TableHead>
@@ -745,7 +747,7 @@ export function GroupModerationToolsDialog({
                                                         colSpan={5}
                                                         className="text-muted-foreground py-8 text-center text-sm"
                                                     >
-                                                        {appI18n.t(
+                                                        {t(
                                                             'dialog.group.generated.no_rows'
                                                         )}
                                                     </TableCell>
@@ -758,7 +760,7 @@ export function GroupModerationToolsDialog({
                             {!loading && !error ? (
                                 <div className="mt-3 flex items-center justify-between">
                                     <span className="text-muted-foreground text-sm">
-                                        {appI18n.t(
+                                        {t(
                                             'dialog.group.generated.page'
                                         )}{' '}
                                         {currentPageIndex + 1} / {totalPages}
@@ -775,7 +777,7 @@ export function GroupModerationToolsDialog({
                                                 )
                                             }
                                         >
-                                            {appI18n.t(
+                                            {t(
                                                 'table.pagination.previous'
                                             )}
                                         </Button>
@@ -796,7 +798,7 @@ export function GroupModerationToolsDialog({
                                                 )
                                             }
                                         >
-                                            {appI18n.t('table.pagination.next')}
+                                            {t('table.pagination.next')}
                                         </Button>
                                     </div>
                                 </div>

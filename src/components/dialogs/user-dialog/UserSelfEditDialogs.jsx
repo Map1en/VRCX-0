@@ -5,6 +5,7 @@ import {
     XIcon
 } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -33,9 +34,8 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
-import { appI18n } from '@/services/i18nService.js';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 import {
     languageOptionLabel,
@@ -57,28 +57,30 @@ export function UserSocialStatusDialog({
     onCancel,
     onSave
 }) {
+    const { t } = useTranslation();
+
     const busy = actionStatus !== 'idle';
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>{appI18n.t('dialog.user.generated.edit_social_status')}</DialogTitle>
+                    <DialogTitle>{t('dialog.user.generated.edit_social_status')}</DialogTitle>
                     <DialogDescription>
-                        {appI18n.t('dialog.user.generated.update_your_social_status_and_status_description')}
+                        {t('dialog.user.generated.update_your_social_status_and_status_description')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <Field>
                         <FieldLabel htmlFor="user-social-status-description">
-                            {appI18n.t('dialog.user.generated.status_description')}
+                            {t('dialog.user.generated.status_description')}
                         </FieldLabel>
                         <div className="flex items-center gap-2">
                             <Input
                                 id="user-social-status-description"
                                 value={draft.statusDescription}
                                 maxLength={32}
-                                placeholder={appI18n.t('dialog.user.generated.status_description')}
+                                placeholder={t('dialog.user.generated.status_description')}
                                 disabled={busy}
                                 onChange={(event) => {
                                     setDraft((current) => ({
@@ -148,7 +150,7 @@ export function UserSocialStatusDialog({
                                             )
                                         ) : (
                                             <DropdownMenuItem disabled>
-                                                {appI18n.t('dialog.user.generated.no_status_history')}
+                                                {t('dialog.user.generated.no_status_history')}
                                             </DropdownMenuItem>
                                         )}
                                     </DropdownMenuGroup>
@@ -160,7 +162,7 @@ export function UserSocialStatusDialog({
                         </div>
                     </Field>
                     <Field>
-                        <FieldLabel>{appI18n.t('dialog.user.generated.social_status')}</FieldLabel>
+                        <FieldLabel>{t('dialog.user.generated.social_status')}</FieldLabel>
                         <ToggleGroup
                             type="single"
                             variant="outline"
@@ -211,7 +213,7 @@ export function UserSocialStatusDialog({
                     </Field>
                     {statusPresets.length ? (
                         <Field>
-                            <FieldLabel>{appI18n.t('dialog.social_status.presets')}</FieldLabel>
+                            <FieldLabel>{t('dialog.social_status.presets')}</FieldLabel>
                             <div className="flex flex-wrap gap-2">
                                 {statusPresets.map((preset, index) => {
                                     const presetStatus =
@@ -287,7 +289,7 @@ export function UserSocialStatusDialog({
                         onClick={onSavePreset}
                     >
                         <BookmarkIcon data-icon="inline-start" />
-                        {appI18n.t('dialog.user.generated.save_preset')}
+                        {t('dialog.user.generated.save_preset')}
                     </Button>
                     <Button
                         type="button"
@@ -295,10 +297,10 @@ export function UserSocialStatusDialog({
                         disabled={busy}
                         onClick={onCancel}
                     >
-                        {appI18n.t('common.actions.cancel')}
+                        {t('common.actions.cancel')}
                     </Button>
                     <Button type="button" disabled={busy} onClick={onSave}>
-                        {appI18n.t('dialog.user.generated.update')}
+                        {t('dialog.user.generated.update')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -318,15 +320,17 @@ export function UserLanguageDialog({
     onAddLanguage,
     onRemoveLanguage
 }) {
+    const { t } = useTranslation();
+
     const busy = actionStatus !== 'idle';
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{appI18n.t('dialog.user.generated.edit_language')}</DialogTitle>
+                    <DialogTitle>{t('dialog.user.generated.edit_language')}</DialogTitle>
                     <DialogDescription>
-                        {appI18n.t('dialog.user.generated.add_or_remove_the_languages_shown_on_your_profile')}
+                        {t('dialog.user.generated.add_or_remove_the_languages_shown_on_your_profile')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-4">
@@ -356,7 +360,7 @@ export function UserLanguageDialog({
                             ))
                         ) : (
                             <div className="text-muted-foreground text-sm">
-                                {appI18n.t('dialog.user.generated.no_languages_selected')}
+                                {t('dialog.user.generated.no_languages_selected')}
                             </div>
                         )}
                     </div>
@@ -400,7 +404,7 @@ export function UserLanguageDialog({
                     </Select>
                     {languageOptionsStatus === 'error' ? (
                         <div className="text-muted-foreground text-xs">
-                            {appI18n.t('dialog.user.generated.vrchat_language_list_unavailable_using_local_language_codes')}
+                            {t('dialog.user.generated.vrchat_language_list_unavailable_using_local_language_codes')}
                         </div>
                     ) : null}
                 </div>

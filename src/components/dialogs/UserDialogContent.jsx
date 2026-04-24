@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { backend } from '@/platform/index.js';
 import {
@@ -27,8 +28,8 @@ import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
-import { useRuntimeStore } from '@/state/runtimeStore.js';
 
+import { useRuntimeStore } from '@/state/runtimeStore.js';
 import {
     isSameLocationTag,
     resolveFriendRequestState,
@@ -55,9 +56,10 @@ import {
 import { useUserDialogSelfActions } from './user-dialog/useUserDialogSelfActions.js';
 import { useUserDialogActions } from './user-dialog/useUserDialogActions.js';
 import { UserDialogTabbedView } from './UserDialogTabbedView.jsx';
-import { appI18n } from '@/services/i18nService.js';
 
 export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
+    const { t } = useTranslation();
+
     const normalizedUserId = normalizeUserId(userId);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentUserSnapshot = useRuntimeStore(
@@ -775,12 +777,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         let nextNote = targetProfile.note || '';
         if (!editingCurrentUser) {
             const noteResult = await prompt({
-                title: appI18n.t('dialog.user.generated_modal.edit_vrchat_note'),
+                title: t('dialog.user.generated_modal.edit_vrchat_note'),
                 description: targetProfile.displayName || targetProfile.id,
                 inputValue: nextNote,
                 multiline: true,
-                confirmText: appI18n.t('dialog.user.generated_modal.next'),
-                cancelText: appI18n.t('common.actions.cancel')
+                confirmText: t('dialog.user.generated_modal.next'),
+                cancelText: t('common.actions.cancel')
             });
             if (!noteResult.ok) {
                 return;
@@ -789,12 +791,12 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         }
 
         const result = await prompt({
-            title: appI18n.t('dialog.user.generated_modal.edit_local_memo'),
+            title: t('dialog.user.generated_modal.edit_local_memo'),
             description: targetProfile.displayName || targetProfile.id,
             inputValue: memo,
             multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
 
         if (!result.ok) {
@@ -851,10 +853,10 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
                         friendsById[rosterUserId]?.state
                 });
             }
-            toast.success(nextMemo ? appI18n.t('dialog.user.generated_toast.memo_saved') : appI18n.t('dialog.user.generated_toast.memo_cleared'));
+            toast.success(nextMemo ? t('dialog.user.generated_toast.memo_saved') : t('dialog.user.generated_toast.memo_cleared'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('dialog.user.generated_toast.failed_to_save_memo')
+                error instanceof Error ? error.message : t('dialog.user.generated_toast.failed_to_save_memo')
             );
         }
     }
@@ -869,8 +871,8 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         return (
             <UserDialogEmptyState
                 loading
-                title={appI18n.t('dialog.user.generated.loading_user_profile')}
-                description={appI18n.t('dialog.user.generated.fetching_the_current_vrchat_user_snapshot_for_this_dialog')}
+                title={t('dialog.user.generated.loading_user_profile')}
+                description={t('dialog.user.generated.fetching_the_current_vrchat_user_snapshot_for_this_dialog')}
             />
         );
     }
@@ -878,7 +880,7 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
     if (!profile) {
         return (
             <UserDialogEmptyState
-                title={appI18n.t('dialog.user.generated.user_profile_unavailable')}
+                title={t('dialog.user.generated.user_profile_unavailable')}
                 description={
                     detail ||
                     'VRCX-0 could not resolve a user snapshot for this dialog.'

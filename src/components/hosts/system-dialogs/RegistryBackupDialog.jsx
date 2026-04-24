@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { configRepository } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     backupVrcRegistry,
     deleteVrcRegistryBackup,
@@ -44,7 +43,7 @@ function formatBackupLabel(backup) {
 }
 
 export function RegistryBackupDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
     const refreshRequestRef = useRef(0);
@@ -183,7 +182,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
 
         setLoading(true);
         setDetail(
-            appI18n.t('host.system_dialogs.generated_dynamic.restoring_value', {
+            t('host.system_dialogs.generated_dynamic.restoring_value', {
                 value: selectedBackup.name
             })
         );
@@ -209,7 +208,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
 
         setLoading(true);
         setDetail(
-            appI18n.t('host.system_dialogs.generated_dynamic.deleting_value', {
+            t('host.system_dialogs.generated_dynamic.deleting_value', {
                 value: selectedBackup.name
             })
         );
@@ -239,7 +238,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
 
         setLoading(true);
         setDetail(
-            appI18n.t('host.system_dialogs.generated_dynamic.saving_value', {
+            t('host.system_dialogs.generated_dynamic.saving_value', {
                 value: selectedBackup.name
             })
         );
@@ -288,14 +287,14 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
 
     async function handleDeleteRegistryFolder() {
         const result = await confirm({
-            title: appI18n.t(
+            title: t(
                 'host.system_dialogs.generated_modal.delete_vrchat_registry'
             ),
-            description: appI18n.t(
+            description: t(
                 'host.system_dialogs.generated_modal.delete_the_vrchat_registry_folder_this_matches_t'
             ),
-            confirmText: appI18n.t('common.actions.delete'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -324,12 +323,12 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>
-                        {appI18n.t(
+                        {t(
                             'dialog.system.generated.vrchat_registry_backup'
                         )}
                     </DialogTitle>
                     <DialogDescription>
-                        {appI18n.t(
+                        {t(
                             'dialog.system.generated.create_restore_or_remove_saved_vrchat_registry_backups'
                         )}
                     </DialogDescription>
@@ -339,7 +338,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
                         <Field orientation="horizontal" data-disabled={loading}>
                             <FieldContent>
                                 <FieldLabel htmlFor="registry-auto-backup">
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.system.generated.auto_backup'
                                     )}
                                 </FieldLabel>
@@ -356,7 +355,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
                         <Field orientation="horizontal" data-disabled={loading}>
                             <FieldContent>
                                 <FieldLabel htmlFor="registry-ask-restore">
-                                    {appI18n.t(
+                                    {t(
                                         'dialog.system.generated.ask_to_restore'
                                     )}
                                 </FieldLabel>
@@ -401,11 +400,11 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
                     {selectedBackup ? (
                         <div className="bg-muted/30 rounded-md border p-3 text-sm">
                             <div>
-                                {appI18n.t('dialog.system.generated.name')}{' '}
+                                {t('dialog.system.generated.name')}{' '}
                                 {selectedBackup.name}
                             </div>
                             <div>
-                                {appI18n.t('dialog.system.generated.date')}{' '}
+                                {t('dialog.system.generated.date')}{' '}
                                 {selectedBackup.date || 'Unknown'}
                             </div>
                         </div>
@@ -426,7 +425,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading}
                         onClick={() => void refreshBackups()}
                     >
-                        {appI18n.t('common.actions.refresh')}
+                        {t('common.actions.refresh')}
                     </Button>
                     <Button
                         type="button"
@@ -434,7 +433,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading}
                         onClick={() => void handleCreateBackup()}
                     >
-                        {appI18n.t('dialog.system.generated.create_backup')}
+                        {t('dialog.system.generated.create_backup')}
                     </Button>
                     <Button
                         type="button"
@@ -442,7 +441,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading || !selectedBackup}
                         onClick={() => void handleDeleteBackup()}
                     >
-                        {appI18n.t('common.actions.delete')}
+                        {t('common.actions.delete')}
                     </Button>
                     <Button
                         type="button"
@@ -450,7 +449,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading || !selectedBackup}
                         onClick={() => void handleSaveBackupToFile()}
                     >
-                        {appI18n.t('dialog.system.generated.save_to_file')}
+                        {t('dialog.system.generated.save_to_file')}
                     </Button>
                     <Button
                         type="button"
@@ -458,7 +457,7 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading}
                         onClick={() => void handleRestoreFromFile()}
                     >
-                        {appI18n.t('dialog.system.generated.restore_from_file')}
+                        {t('dialog.system.generated.restore_from_file')}
                     </Button>
                     <Button
                         type="button"
@@ -466,14 +465,14 @@ export function RegistryBackupDialog({ open, onOpenChange }) {
                         disabled={loading}
                         onClick={() => void handleDeleteRegistryFolder()}
                     >
-                        {appI18n.t('common.actions.reset')}
+                        {t('common.actions.reset')}
                     </Button>
                     <Button
                         type="button"
                         disabled={loading || !selectedBackup}
                         onClick={() => void handleRestoreBackup()}
                     >
-                        {appI18n.t('dialog.registry_backup.restore')}
+                        {t('dialog.registry_backup.restore')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

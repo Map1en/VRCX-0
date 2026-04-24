@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { AvatarProviderSettingsDialog } from '@/components/search/AvatarProviderSettingsDialog.jsx';
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import {
@@ -22,7 +22,6 @@ import {
     SEARCH_PAGE_SIZE as PAGE_SIZE
 } from './searchRequests.js';
 import { dedupeById, emptyArray } from './searchResults.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     SearchAvatarTabPanel,
     SearchGroupTabPanel,
@@ -32,7 +31,7 @@ import {
 import { SearchPageToolbar } from './components/SearchPageToolbar.jsx';
 
 export function SearchPage() {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const searchSequenceRef = useRef({
         user: 0,
         world: 0,
@@ -97,7 +96,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.search.generated_toast.failed_to_load_world_categories')
+                        : t('view.search.generated_toast.failed_to_load_world_categories')
                 );
             });
 
@@ -140,7 +139,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.search.generated_toast.failed_to_load_avatar_providers')
+                        : t('view.search.generated_toast.failed_to_load_avatar_providers')
                 );
             });
 
@@ -215,7 +214,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.search.generated_toast.failed_to_search_users')
+                        : t('view.search.generated_toast.failed_to_search_users')
                 );
             }
         } finally {
@@ -249,7 +248,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.search.generated_toast.failed_to_search_worlds')
+                        : t('view.search.generated_toast.failed_to_search_worlds')
                 );
             }
         } finally {
@@ -278,7 +277,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.search.generated_toast.failed_to_search_groups')
+                        : t('view.search.generated_toast.failed_to_search_groups')
                 );
             }
         } finally {
@@ -310,7 +309,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.search.generated_toast.failed_to_search_avatars')
+                        : t('view.search.generated_toast.failed_to_search_avatars')
                 );
             }
         } finally {
@@ -395,7 +394,7 @@ export function SearchPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.search.generated_toast.failed_to_save_avatar_provider')
+                        : t('view.search.generated_toast.failed_to_save_avatar_provider')
                 );
             });
     }

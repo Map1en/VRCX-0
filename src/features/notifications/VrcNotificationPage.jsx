@@ -7,7 +7,7 @@ import {
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog.jsx';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
@@ -48,7 +48,6 @@ import {
     sanitizeNotificationSorting as sanitizeSorting,
     writePersistedNotificationTableState as writePersistedState
 } from './notificationTableState.js';
-import { appI18n } from '@/services/i18nService.js';
 import { buildNotificationColumns } from './components/NotificationPageColumns.jsx';
 import { NotificationPageTable } from './components/NotificationPageTable.jsx';
 import { NotificationPageToolbar } from './components/NotificationPageToolbar.jsx';
@@ -57,7 +56,7 @@ import {
 } from './components/NotificationViewParts.jsx';
 
 export function VrcNotificationPage({ embedded = false } = {}) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const runtimeAuth = useRuntimeStore((state) => state.auth);
     const gameState = useRuntimeStore((state) => state.gameState);
     const modalStore = useModalStore();
@@ -282,7 +281,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.notifications.generated_toast.failed_to_load_notifications')
+                    : t('view.notifications.generated_toast.failed_to_load_notifications')
             );
         });
 
@@ -417,7 +416,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.notifications.generated_toast.failed_to_mark_notification_as_seen')
+                    : t('view.notifications.generated_toast.failed_to_mark_notification_as_seen')
             );
         }
     }
@@ -429,9 +428,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         try {
             if (!skipConfirm) {
                 const result = await modalStore.confirm({
-                    title: appI18n.t('view.notifications.generated_modal.delete_notification_log_entry'),
-                    description: appI18n.t('view.notifications.generated_modal.delete_the_local_value_log_entry', { value: notification.type || 'notification' }),
-                    confirmText: appI18n.t('common.actions.delete'),
+                    title: t('view.notifications.generated_modal.delete_notification_log_entry'),
+                    description: t('view.notifications.generated_modal.delete_the_local_value_log_entry', { value: notification.type || 'notification' }),
+                    confirmText: t('common.actions.delete'),
                     destructive: true
                 });
                 if (!result.ok) {
@@ -449,7 +448,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.notifications.generated_toast.failed_to_delete_notification')
+                    : t('view.notifications.generated_toast.failed_to_delete_notification')
             );
         }
     }
@@ -465,8 +464,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
     async function acceptFriendRequest(notification) {
         try {
             const result = await modalStore.confirm({
-                title: appI18n.t('view.notifications.generated_modal.accept_friend_request'),
-                description: appI18n.t('view.notifications.generated_dynamic.accept_the_friend_request_from_value', { value: notification.senderUsername || 'this user' })
+                title: t('view.notifications.generated_modal.accept_friend_request'),
+                description: t('view.notifications.generated_dynamic.accept_the_friend_request_from_value', { value: notification.senderUsername || 'this user' })
             });
             if (!result.ok) {
                 return;
@@ -485,7 +484,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.notifications.generated_toast.failed_to_accept_friend_request')
+                    : t('view.notifications.generated_toast.failed_to_accept_friend_request')
             );
         }
     }
@@ -497,9 +496,9 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         try {
             if (!skipConfirm) {
                 const result = await modalStore.confirm({
-                    title: appI18n.t('view.notifications.generated_modal.decline_notification'),
-                    description: appI18n.t('view.notifications.generated_dynamic.decline_the_value_notification', { value: notification.type || 'notification' }),
-                    confirmText: appI18n.t('view.notifications.generated_modal.decline'),
+                    title: t('view.notifications.generated_modal.decline_notification'),
+                    description: t('view.notifications.generated_dynamic.decline_the_value_notification', { value: notification.type || 'notification' }),
+                    confirmText: t('view.notifications.generated_modal.decline'),
                     destructive: true
                 });
                 if (!result.ok) {
@@ -519,7 +518,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.notifications.generated_toast.failed_to_decline_notification')
+                    : t('view.notifications.generated_toast.failed_to_decline_notification')
             );
         }
     }
@@ -544,8 +543,8 @@ export function VrcNotificationPage({ embedded = false } = {}) {
                 return;
             }
             const result = await modalStore.confirm({
-                title: appI18n.t('view.notifications.generated_modal.send_invite'),
-                description: appI18n.t('view.notifications.generated_dynamic.send_an_invite_to_value', { value: notification.senderUsername || 'this user' })
+                title: t('view.notifications.generated_modal.send_invite'),
+                description: t('view.notifications.generated_dynamic.send_an_invite_to_value', { value: notification.senderUsername || 'this user' })
             });
             if (!result.ok) {
                 return;
@@ -580,7 +579,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.notifications.generated_toast.failed_to_send_invite')
+                    : t('view.notifications.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -640,7 +639,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
         });
         await expireNotificationLocally(notification);
         toast.success(
-            imageData ? appI18n.t('view.notifications.generated_toast.invite_response_photo_sent') : appI18n.t('view.notifications.generated_toast.invite_response_sent')
+            imageData ? t('view.notifications.generated_toast.invite_response_photo_sent') : t('view.notifications.generated_toast.invite_response_sent')
         );
     }
 
@@ -738,7 +737,7 @@ export function VrcNotificationPage({ embedded = false } = {}) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.notifications.generated_toast.failed_to_send_notification_response')
+                    : t('view.notifications.generated_toast.failed_to_send_notification_response')
             );
         }
     }

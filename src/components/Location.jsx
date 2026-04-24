@@ -11,7 +11,7 @@ import {
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge.jsx';
 import {
@@ -44,7 +44,6 @@ import {
 } from '@/ui/shadcn/context-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
-import { appI18n } from '@/services/i18nService.js';
 
 function locationTarget(location, traveling) {
     const normalizedLocation = normalizeLocationValue(location);
@@ -90,7 +89,7 @@ export function Location({
     showGroupLink = true,
     className = ''
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);
     const preferencesHydrated = usePreferencesStore(
         (state) => state.preferencesHydrated
@@ -275,7 +274,7 @@ export function Location({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.location.generated_toast.failed_to_send_self_invite')
+                    : t('component.location.generated_toast.failed_to_send_self_invite')
             );
         }
     }
@@ -365,7 +364,7 @@ export function Location({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.location.generated_toast.failed_to_load_instance_history')
+                    : t('component.location.generated_toast.failed_to_load_instance_history')
             );
         } finally {
             setPreviousInstancesLoading(false);

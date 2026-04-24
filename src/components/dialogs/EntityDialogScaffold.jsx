@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
@@ -19,7 +20,6 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
-import { appI18n } from '@/services/i18nService.js';
 
 function EntityDialogScaffold({ className, children }) {
     return (
@@ -322,6 +322,8 @@ function EntityActionSeparator() {
 }
 
 function EntityRawJson({ value, valueFactory }) {
+    const { t } = useTranslation();
+
     const [snapshot, setSnapshot] = useState(() =>
         typeof valueFactory === 'function' ? valueFactory() : value
     );
@@ -359,7 +361,7 @@ function EntityRawJson({ value, valueFactory }) {
                     ) : (
                         <RefreshCwIcon data-icon="inline-start" />
                     )}
-                    {appI18n.t('common.actions.refresh')}
+                    {t('common.actions.refresh')}
                 </Button>
             </div>
             <pre className="bg-muted/20 max-h-[55vh] overflow-auto rounded-md border p-3 text-xs">

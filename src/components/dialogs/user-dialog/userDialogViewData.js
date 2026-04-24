@@ -18,28 +18,30 @@ import {
     normalizeLanguageOptionsFromConfig,
     normalizeProfileLanguageRows
 } from './userProfileFields.js';
-import { appI18n } from '@/services/i18nService.js';
 
 export function buildUserDialogTabs({
     isCurrentUser,
-    currentUserHasSharedConnectionsOptOut
+    currentUserHasSharedConnectionsOptOut,
+    t
 }) {
+    const translate = typeof t === 'function' ? t : (key) => key;
+
     return [
-        { value: 'info', label: appI18n.t('dialog.user.tabs.info') },
-        { value: 'instance-history', label: appI18n.t('dialog.user.tabs.instance_history') },
+        { value: 'info', label: translate('dialog.user.tabs.info') },
+        { value: 'instance-history', label: translate('dialog.user.tabs.instance_history') },
         ...(!isCurrentUser && !currentUserHasSharedConnectionsOptOut
-            ? [{ value: 'mutual', label: appI18n.t('dialog.user.tabs.mutual') }]
+            ? [{ value: 'mutual', label: translate('dialog.user.tabs.mutual') }]
             : []),
-        { value: 'groups', label: appI18n.t('dialog.user.tabs.groups') },
-        { value: 'worlds', label: appI18n.t('dialog.user.tabs.worlds') },
+        { value: 'groups', label: translate('dialog.user.tabs.groups') },
+        { value: 'worlds', label: translate('dialog.user.tabs.worlds') },
         ...(!isCurrentUser
             ? [
-                  { value: 'favorite-worlds', label: appI18n.t('dialog.user.tabs.favorite_worlds') },
-                  { value: 'avatars', label: appI18n.t('dialog.user.tabs.avatars') }
+                  { value: 'favorite-worlds', label: translate('dialog.user.tabs.favorite_worlds') },
+                  { value: 'avatars', label: translate('dialog.user.tabs.avatars') }
               ]
             : []),
-        { value: 'activity', label: appI18n.t('dialog.user.tabs.activity') },
-        { value: 'json', label: appI18n.t('dialog.user.tabs.json') }
+        { value: 'activity', label: translate('dialog.user.tabs.activity') },
+        { value: 'json', label: translate('dialog.user.tabs.json') }
     ];
 }
 
@@ -56,7 +58,8 @@ export function buildUserDialogListViewData({
     selectedGroupIds,
     effectiveAvatarReleaseStatus,
     avatarSort,
-    currentUserHasSharedConnectionsOptOut
+    currentUserHasSharedConnectionsOptOut,
+    t
 }) {
     const profileGroups = normalizeUserGroupMembershipRows(
         remoteStatus.groups === 'ready'
@@ -122,7 +125,8 @@ export function buildUserDialogListViewData({
     );
     const tabs = buildUserDialogTabs({
         isCurrentUser,
-        currentUserHasSharedConnectionsOptOut
+        currentUserHasSharedConnectionsOptOut,
+        t
     });
     const groupSearchActive = normalizedText(search.groups).length > 0;
 

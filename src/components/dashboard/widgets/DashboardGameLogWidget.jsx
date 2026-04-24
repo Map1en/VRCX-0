@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -207,7 +207,7 @@ function GameLogEntryContent({ row, showDetail }) {
 }
 
 export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.backendEvents.addGameLogEvent.count

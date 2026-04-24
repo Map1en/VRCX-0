@@ -1,4 +1,4 @@
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -13,7 +13,7 @@ export function LoginAutoLoginAlert({
     onCancel,
     onRetry
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     if (!visible) {
         return null;

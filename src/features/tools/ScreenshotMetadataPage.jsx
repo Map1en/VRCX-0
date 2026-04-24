@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { convertFileSrc } from '@/platform/tauri/index.js';
 import { mediaRepository } from '@/repositories/index.js';
 import { withUploadTimeout } from '@/shared/utils/imageUpload.js';
@@ -18,7 +18,6 @@ import {
     sortScreenshotRowsByNewest,
     sortScreenshotSearchRows
 } from './screenshotMetadataValues.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     ScreenshotMetadataDetailsCard,
     ScreenshotMetadataHeader,
@@ -38,7 +37,7 @@ function openSearchResult(
 
 export function ScreenshotMetadataPage() {
     const navigate = useNavigate();
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const currentEndpoint = useRuntimeStore(
@@ -254,7 +253,7 @@ export function ScreenshotMetadataPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.tools.generated_toast.failed_to_open_screenshot_picker')
+                    : t('view.tools.generated_toast.failed_to_open_screenshot_picker')
             );
         }
     }
@@ -273,7 +272,7 @@ export function ScreenshotMetadataPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.tools.generated_toast.failed_to_open_folder')
+                    : t('view.tools.generated_toast.failed_to_open_folder')
             );
         }
     }
@@ -288,7 +287,7 @@ export function ScreenshotMetadataPage() {
             toast.success(t('message.image.copied_to_clipboard'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('view.tools.generated_toast.failed_to_copy_image')
+                error instanceof Error ? error.message : t('view.tools.generated_toast.failed_to_copy_image')
             );
         }
     }
@@ -303,7 +302,7 @@ export function ScreenshotMetadataPage() {
             title: t('dialog.screenshot_metadata.delete_metadata'),
             description: metadata?.fileName || filePath,
             confirmText: t('dialog.screenshot_metadata.delete_metadata'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {

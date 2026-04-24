@@ -88,7 +88,7 @@ function NotificationRow({
                 className="size-9 shrink-0 p-0"
                 aria-label={senderName}
                 title={senderName}
-                onClick={() => openSender(notification)}
+                onClick={() => openSender(notification, t)}
             >
                 <NotificationAvatar notification={notification} />
             </Button>
@@ -98,7 +98,7 @@ function NotificationRow({
                         type="button"
                         variant="ghost"
                         className="h-auto min-w-0 flex-1 justify-start p-0 text-left text-sm font-medium"
-                        onClick={() => openSender(notification)}
+                        onClick={() => openSender(notification, t)}
                     >
                         <span className="truncate">
                             {senderName}

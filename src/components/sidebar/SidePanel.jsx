@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
 import { configRepository } from '@/repositories/index.js';
 import { refreshCurrentUserFriendsAndFavorites } from '@/services/backgroundMaintenanceService.js';
@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { FriendsSidebar } from './FriendsSidebar.jsx';
 import { GroupsSidebar } from './GroupsSidebar.jsx';
-import { appI18n } from '@/services/i18nService.js';
 import { SidePanelFavoriteGroupOrderDialog } from './side-panel/SidePanelFavoriteGroupOrderDialog.jsx';
 import { SidePanelSettingsPopover } from './side-panel/SidePanelSettingsPopover.jsx';
 
@@ -72,7 +71,7 @@ export const SidePanel = forwardRef(function SidePanel(
     { className = '', style = undefined },
     ref
 ) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const onlineIds = useFriendRosterStore((state) => state.onlineIds);
     const favoriteLoadStatus = useFavoriteStore((state) => state.loadStatus);
@@ -166,11 +165,11 @@ export const SidePanel = forwardRef(function SidePanel(
         () => [
             {
                 value: 'friends',
-                label: appI18n.t('component.side_panel.generated_dynamic.value_value_value', { value: t('side_panel.friends'), value2: onlineIds.length, value3: totalFriendCount })
+                label: t('component.side_panel.generated_dynamic.value_value_value', { value: t('side_panel.friends'), value2: onlineIds.length, value3: totalFriendCount })
             },
             {
                 value: 'groups',
-                label: appI18n.t('component.side_panel.generated_dynamic.value_value', { value: t('side_panel.groups'), value2: groupInstances.length })
+                label: t('component.side_panel.generated_dynamic.value_value', { value: t('side_panel.groups'), value2: groupInstances.length })
             }
         ],
         [groupInstances.length, onlineIds.length, t, totalFriendCount]
@@ -324,7 +323,7 @@ export const SidePanel = forwardRef(function SidePanel(
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.side_panel.generated_toast.failed_to_refresh_friends')
+                    : t('component.side_panel.generated_toast.failed_to_refresh_friends')
             );
         } finally {
             setIsRefreshing(false);

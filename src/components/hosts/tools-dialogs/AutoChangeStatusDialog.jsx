@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { configRepository } from '@/repositories/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { Button } from '@/ui/shadcn/button';
@@ -36,7 +35,7 @@ import {
 } from './toolsDialogUtils.js';
 
 export function AutoChangeStatusDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const favoriteFriendGroups = useFavoriteStore(
         (state) => state.favoriteFriendGroups
     );
@@ -140,7 +139,7 @@ export function AutoChangeStatusDialog({ open, onOpenChange }) {
                 toast.error(
                     userFacingErrorMessage(
                         error,
-                        appI18n.t(
+                        t(
                             'host.tools_dialogs.generated_toast.failed_to_load_tool_settings'
                         )
                     )
@@ -174,7 +173,7 @@ export function AutoChangeStatusDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    appI18n.t(
+                    t(
                         'host.tools_dialogs.generated_toast.failed_to_save_tool_settings'
                     )
                 )

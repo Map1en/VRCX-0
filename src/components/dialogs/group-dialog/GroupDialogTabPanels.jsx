@@ -1,8 +1,8 @@
 import { DownloadIcon, ExternalLinkIcon, EyeIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
@@ -34,6 +34,8 @@ import {
 } from './groupDialogUtils.js';
 
 function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
+    const { t } = useTranslation();
+
     const announcement = group.announcement;
     const roleNames = announcementRoleNames(announcement, group);
 
@@ -42,7 +44,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
     }
 
     return (
-        <EntityInfoBlock label={appI18n.t('dialog.group.info.announcement')} full>
+        <EntityInfoBlock label={t('dialog.group.info.announcement')} full>
             <span className="block truncate text-sm">
                 {announcement.title || 'Announcement'}
             </span>
@@ -97,7 +99,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                                 )
                             }
                         >
-                            <span>{appI18n.t('dialog.group.generated.author')}</span>
+                            <span>{t('dialog.group.generated.author')}</span>
                             <span className="text-foreground font-medium">
                                 {announcementUserLabel(announcement, 'author') ||
                                     announcementUserId(announcement, 'author')}
@@ -105,7 +107,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                         </Button>
                     ) : (
                         <span className="inline-flex items-center gap-1">
-                            <span>{appI18n.t('dialog.group.generated.author')}</span>
+                            <span>{t('dialog.group.generated.author')}</span>
                             <span className="text-foreground font-medium">
                                 {announcementUserLabel(announcement, 'author')}
                             </span>
@@ -129,7 +131,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                                 )
                             }
                         >
-                            <span>{appI18n.t('dialog.group.posts.edited_by')}</span>
+                            <span>{t('dialog.group.posts.edited_by')}</span>
                             <span className="text-foreground font-medium">
                                 {announcementUserLabel(announcement, 'editor') ||
                                     announcementUserId(announcement, 'editor')}
@@ -137,7 +139,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                         </Button>
                     ) : (
                         <span className="inline-flex items-center gap-1">
-                            <span>{appI18n.t('dialog.group.posts.edited_by')}</span>
+                            <span>{t('dialog.group.posts.edited_by')}</span>
                             <span className="text-foreground font-medium">
                                 {announcementUserLabel(announcement, 'editor')}
                             </span>
@@ -146,7 +148,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                 ) : null}
                 {announcement.createdAt ? (
                     <span className="inline-flex items-center gap-1">
-                        <span>{appI18n.t('dialog.group.generated.created')}</span>
+                        <span>{t('dialog.group.generated.created')}</span>
                         <span className="text-foreground font-medium">
                             {announcementTimestamp(announcement.createdAt)}
                         </span>
@@ -154,7 +156,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                 ) : null}
                 {announcement.updatedAt ? (
                     <span className="inline-flex items-center gap-1">
-                        <span>{appI18n.t('dialog.group.generated.updated')}</span>
+                        <span>{t('dialog.group.generated.updated')}</span>
                         <span className="text-foreground font-medium">
                             {announcementTimestamp(announcement.updatedAt)}
                         </span>
@@ -166,6 +168,8 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
 }
 
 export function GroupDialogTabPanels({ state, handlers }) {
+    const { t } = useTranslation();
+
     const {
         activeInstances,
         activeTab,
@@ -247,7 +251,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                     />
                     {group.rules ? (
                         <EntityInfoBlock
-                            label={appI18n.t('dialog.group.info.rules')}
+                            label={t('dialog.group.info.rules')}
                             full
                         >
                             <pre className="text-muted-foreground font-sans text-xs whitespace-pre-wrap">
@@ -256,11 +260,11 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         </EntityInfoBlock>
                     ) : null}
                     <EntityInfoBlock
-                        label={appI18n.t('dialog.group.generated.members_2')}
+                        label={t('dialog.group.generated.members_2')}
                         value={`${group.memberCount || 0} (${group.onlineMemberCount || 0})`}
                     />
                     <EntityInfoBlock
-                        label={appI18n.t('dialog.group.generated.created_at')}
+                        label={t('dialog.group.generated.created_at')}
                         value={
                             group.createdAt || group.created_at
                                 ? formatDateFilter(
@@ -271,7 +275,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         }
                     />
                     <EntityInfoBlock
-                        label={appI18n.t('dialog.group.generated.last_visited')}
+                        label={t('dialog.group.generated.last_visited')}
                         value={
                             previousInstances[0]?.created_at ||
                             previousInstances[0]?.createdAt
@@ -289,24 +293,24 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         }
                     />
                     <EntityInfoBlock
-                        label={appI18n.t('dialog.group.generated.join_state')}
+                        label={t('dialog.group.generated.join_state')}
                         value={joinState || '—'}
                     />
                     <EntityInfoBlock
-                        label={appI18n.t('dialog.group.generated.membership')}
+                        label={t('dialog.group.generated.membership')}
                         value={memberStatus || group.membershipStatus || '—'}
                     />
                     <EntityInfoBlock
-                        label={appI18n.t('dialog.group.generated.languages')}
+                        label={t('dialog.group.generated.languages')}
                         value={languages.join(', ') || '—'}
                     />
                     <EntityInfoBlock
-                        label={appI18n.t('dialog.group.generated.privacy')}
+                        label={t('dialog.group.generated.privacy')}
                         value={group.privacy || '—'}
                     />
                     {links.length ? (
                         <EntityInfoBlock
-                            label={appI18n.t('dialog.group.info.links')}
+                            label={t('dialog.group.info.links')}
                             full
                         >
                             <div className="flex flex-wrap gap-1.5">
@@ -336,20 +340,20 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         onClick={groupUrl ? handlers.onCopyGroupUrl : undefined}
                     />
                     <EntityInfoBlock
-                        label={appI18n.t('dialog.group.info.id')}
+                        label={t('dialog.group.info.id')}
                         value={group.id}
                         mono
                         wide
                     />
                     <EntityInfoBlock
-                        label={appI18n.t('dialog.group.generated.owner_2')}
+                        label={t('dialog.group.generated.owner_2')}
                         value={ownerLabel || '—'}
                         wide
                         onClick={group.ownerId ? onOpenOwner : undefined}
                     />
                     {tags.length ? (
                         <EntityInfoBlock
-                            label={appI18n.t('dialog.avatar.info.tags')}
+                            label={t('dialog.avatar.info.tags')}
                             full
                         >
                             <div className="flex flex-wrap gap-1.5">
@@ -363,7 +367,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                     ) : null}
                     {roles.length ? (
                         <EntityInfoBlock
-                            label={appI18n.t('dialog.group.generated.roles')}
+                            label={t('dialog.group.generated.roles')}
                             full
                         >
                             <div className="flex flex-wrap gap-1.5">
@@ -385,7 +389,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                 className="flex min-h-0 flex-col"
             >
                 <PreviousInstancesPanel
-                    title={appI18n.t('dialog.previous_instances.header')}
+                    title={t('dialog.previous_instances.header')}
                     instances={previousInstances}
                     variant="group"
                     targetRef={group}
@@ -397,14 +401,14 @@ export function GroupDialogTabPanels({ state, handlers }) {
                 <div className="flex items-center gap-2">
                     <div className="text-muted-foreground text-sm">
                         {filteredPosts.length}/{posts.length}{' '}
-                        {appI18n.t('dialog.group.generated.posts')}
+                        {t('dialog.group.generated.posts')}
                     </div>
                     <Input
                         value={search.posts}
                         onChange={(event) =>
                             onSearchPostsChange(event.target.value)
                         }
-                        placeholder={appI18n.t('dialog.group.generated.search_posts')}
+                        placeholder={t('dialog.group.generated.search_posts')}
                         className="ml-auto h-8 max-w-64"
                     />
                 </div>
@@ -427,7 +431,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                 <div className="flex flex-wrap items-center gap-2">
                     <div className="text-muted-foreground text-sm">
                         {memberRows.length}/{group.memberCount || members.length}{' '}
-                        {appI18n.t('dialog.group.generated.members')}
+                        {t('dialog.group.generated.members')}
                     </div>
                     <Button
                         type="button"
@@ -436,7 +440,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         disabled={remoteStatus.members === 'running'}
                         onClick={onRefreshMembers}
                     >
-                        {appI18n.t('common.actions.refresh')}
+                        {t('common.actions.refresh')}
                     </Button>
                     <Button
                         type="button"
@@ -445,7 +449,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         disabled={remoteStatus.members === 'running'}
                         onClick={onLoadAllMembers}
                     >
-                        {appI18n.t('dialog.group.generated.load_all')}
+                        {t('dialog.group.generated.load_all')}
                     </Button>
                     <Button
                         type="button"
@@ -464,22 +468,22 @@ export function GroupDialogTabPanels({ state, handlers }) {
                     >
                         <SelectTrigger size="sm" className="w-44">
                             <SelectValue
-                                placeholder={appI18n.t('side_panel.settings.sort')}
+                                placeholder={t('side_panel.settings.sort')}
                             />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
                                 <SelectItem value="joinedAt:desc">
-                                    {appI18n.t('dialog.group.generated.joined_newest')}
+                                    {t('dialog.group.generated.joined_newest')}
                                 </SelectItem>
                                 <SelectItem value="joinedAt:asc">
-                                    {appI18n.t('dialog.group.generated.joined_oldest')}
+                                    {t('dialog.group.generated.joined_oldest')}
                                 </SelectItem>
                                 <SelectItem value="user.displayName:asc">
-                                    {appI18n.t('dialog.group.generated.name_a_z')}
+                                    {t('dialog.group.generated.name_a_z')}
                                 </SelectItem>
                                 <SelectItem value="user.displayName:desc">
-                                    {appI18n.t('dialog.group.generated.name_z_a')}
+                                    {t('dialog.group.generated.name_z_a')}
                                 </SelectItem>
                             </SelectGroup>
                         </SelectContent>
@@ -491,13 +495,13 @@ export function GroupDialogTabPanels({ state, handlers }) {
                     >
                         <SelectTrigger size="sm" className="w-48">
                             <SelectValue
-                                placeholder={appI18n.t('dialog.group.generated.role')}
+                                placeholder={t('dialog.group.generated.role')}
                             />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
                                 <SelectItem value="all">
-                                    {appI18n.t('dialog.group.generated.all_roles')}
+                                    {t('dialog.group.generated.all_roles')}
                                 </SelectItem>
                                 {roles.map((role) => (
                                     <SelectItem
@@ -515,7 +519,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         onChange={(event) =>
                             onSearchMembersChange(event.target.value)
                         }
-                        placeholder={appI18n.t(
+                        placeholder={t(
                             'dialog.group.generated.search_members'
                         )}
                         className="ml-auto h-8 max-w-64"

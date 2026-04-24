@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { memo } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
 import { cn } from '@/lib/utils.js';
 import {
@@ -30,10 +31,9 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-import { Spinner } from '@/ui/shadcn/spinner';
 
+import { Spinner } from '@/ui/shadcn/spinner';
 import { normalizeFavoriteEntityId as normalizeEntityId } from '../favoritesItems.js';
-import { appI18n } from '@/services/i18nService.js';
 
 function resolvePresenceLocation(profile) {
     return resolveFriendPresenceLocation(profile);
@@ -63,6 +63,8 @@ const FavoriteCard = memo(function FavoriteCard({
     onWorldSelfInvite,
     onAvatarSelect
 }) {
+    const { t } = useTranslation();
+
     const Icon =
         item.kind === 'friend'
             ? UserIcon
@@ -268,7 +270,7 @@ const FavoriteCard = memo(function FavoriteCard({
                     <DropdownMenuContent align="end">
                         <DropdownMenuGroup>
                             <DropdownMenuItem onSelect={() => openHandler?.()}>
-                                {appI18n.t('view.favorite.generated.view_details')}
+                                {t('view.favorite.generated.view_details')}
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         {item.kind === 'friend' ? (
@@ -284,7 +286,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                             onFriendRequestInvite?.(item)
                                         }
                                     >
-                                        {appI18n.t('view.favorite.generated.request_invite')}
+                                        {t('view.favorite.generated.request_invite')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         disabled={
@@ -294,7 +296,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                         }
                                         onSelect={() => onFriendInvite?.(item)}
                                     >
-                                        {appI18n.t('view.favorite.generated.send_invite')}
+                                        {t('view.favorite.generated.send_invite')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         disabled={
@@ -304,7 +306,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                         }
                                         onSelect={() => onFriendBoop?.(item)}
                                     >
-                                        {appI18n.t('view.favorite.generated.send_boop')}
+                                        {t('view.favorite.generated.send_boop')}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
@@ -316,7 +318,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                         }
                                         onSelect={() => onFriendLaunch?.(item)}
                                     >
-                                        {appI18n.t('view.favorite.generated.launch_in_vrchat')}
+                                        {t('view.favorite.generated.launch_in_vrchat')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         disabled={
@@ -327,7 +329,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                             onFriendSelfInvite?.(item)
                                         }
                                     >
-                                        {appI18n.t('view.favorite.generated.self_invite')}
+                                        {t('view.favorite.generated.self_invite')}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                             </>
@@ -338,13 +340,13 @@ const FavoriteCard = memo(function FavoriteCard({
                                     disabled={!onWorldNewInstance}
                                     onSelect={() => onWorldNewInstance?.(item)}
                                 >
-                                    {appI18n.t('view.favorite.generated.new_instance')}
+                                    {t('view.favorite.generated.new_instance')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     disabled={!onWorldSelfInvite}
                                     onSelect={() => onWorldSelfInvite?.(item)}
                                 >
-                                    {appI18n.t('view.favorite.generated.new_instance_and_self_invite')}
+                                    {t('view.favorite.generated.new_instance_and_self_invite')}
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                         ) : null}
@@ -354,7 +356,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                     disabled={!canSelectAvatar}
                                     onSelect={() => onAvatarSelect?.(item)}
                                 >
-                                    {appI18n.t('view.favorite.generated.select_avatar')}
+                                    {t('view.favorite.generated.select_avatar')}
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                         ) : null}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
 import {
@@ -15,7 +15,6 @@ import {
     ContextMenu,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { appI18n } from '@/services/i18nService.js';
 import { StatusBarContextMenuContent } from './status-bar/StatusBarContextMenuContent.jsx';
 import { StatusBarFooter } from './status-bar/StatusBarFooter.jsx';
 
@@ -139,7 +138,7 @@ function formatStatusDate(value) {
 }
 
 export function AppStatusBar() {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const transportMessageCountRef = useRef(0);
     const messageHistoryRef = useRef(new Array(60).fill(0));
     const [nowMs, setNowMs] = useState(Date.now());
@@ -298,7 +297,7 @@ export function AppStatusBar() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('component.app_status_bar.generated_toast.failed_to_save_status_bar_visibility')
+                        : t('component.app_status_bar.generated_toast.failed_to_save_status_bar_visibility')
                 );
             });
     }
@@ -326,7 +325,7 @@ export function AppStatusBar() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('component.app_status_bar.generated_toast.failed_to_save_clock_count')
+                        : t('component.app_status_bar.generated_toast.failed_to_save_clock_count')
                 );
             });
     }
@@ -353,7 +352,7 @@ export function AppStatusBar() {
                     toast.error(
                         error instanceof Error
                             ? error.message
-                            : appI18n.t('component.app_status_bar.generated_toast.failed_to_save_status_bar_clocks')
+                            : t('component.app_status_bar.generated_toast.failed_to_save_status_bar_clocks')
                     );
                 });
             return nextClocks;
@@ -368,7 +367,7 @@ export function AppStatusBar() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.app_status_bar.generated_toast.failed_to_open_vrchat_status')
+                    : t('component.app_status_bar.generated_toast.failed_to_open_vrchat_status')
             );
         }
     }
@@ -379,12 +378,12 @@ export function AppStatusBar() {
         }
         const currentProxyServer = usePreferencesStore.getState().proxyServer;
         const result = await prompt({
-            title: appI18n.t('component.app_status_bar.generated_modal.proxy_settings'),
+            title: t('component.app_status_bar.generated_modal.proxy_settings'),
             description:
-                appI18n.t('component.app_status_bar.generated_modal.set_the_proxy_server_used_by_vrcx_0_restart_is_r'),
+                t('component.app_status_bar.generated_modal.set_the_proxy_server_used_by_vrcx_0_restart_is_r'),
             inputValue: currentProxyServer,
-            confirmText: appI18n.t('component.app_status_bar.generated_modal.restart'),
-            cancelText: appI18n.t('common.actions.close')
+            confirmText: t('component.app_status_bar.generated_modal.restart'),
+            cancelText: t('common.actions.close')
         });
         if (!result.ok) {
             return;
@@ -408,7 +407,7 @@ export function AppStatusBar() {
                                     toast.error(
                                         error instanceof Error
                                             ? error.message
-                                            : appI18n.t(
+                                            : t(
                                                   'component.app_status_bar.generated_toast.failed_to_open_media_link'
                                               )
                                     );
@@ -420,7 +419,7 @@ export function AppStatusBar() {
                                 toast.error(
                                     error instanceof Error
                                         ? error.message
-                                        : appI18n.t(
+                                        : t(
                                               'component.app_status_bar.generated_toast.failed_to_update_proxy_settings'
                                           )
                                 );

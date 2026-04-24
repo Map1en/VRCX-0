@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import {
     LoadingState,
     PageBody,
@@ -30,7 +30,6 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { appI18n } from '@/services/i18nService.js';
 import { FriendLogPageTable } from './components/FriendLogPageTable.jsx';
 import { FriendLogPageToolbar } from './components/FriendLogPageToolbar.jsx';
 import {
@@ -251,7 +250,7 @@ function matchesSearch(row, searchQuery) {
 }
 
 export function FriendLogPage({ embedded = false } = {}) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const confirm = useModalStore((state) => state.confirm);
 
@@ -548,10 +547,10 @@ export function FriendLogPage({ embedded = false } = {}) {
         const result = skipConfirm
             ? { ok: true }
             : await confirm({
-                  title: appI18n.t('common.actions.confirm'),
+                  title: t('common.actions.confirm'),
                   description: t('confirm.delete_log'),
-                  confirmText: appI18n.t('common.actions.delete'),
-                  cancelText: appI18n.t('common.actions.cancel'),
+                  confirmText: t('common.actions.delete'),
+                  cancelText: t('common.actions.cancel'),
                   destructive: true
               });
 

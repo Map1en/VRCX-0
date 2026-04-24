@@ -1,4 +1,4 @@
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -18,7 +18,7 @@ export function LoginFormCard({
     onOpenRegister,
     onOpenForgotPassword
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     return (
         <Card className="flex flex-1 flex-col">

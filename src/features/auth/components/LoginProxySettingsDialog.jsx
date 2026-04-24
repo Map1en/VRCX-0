@@ -4,7 +4,7 @@ import {
     DEFAULT_ENDPOINT_DOMAIN,
     DEFAULT_WEBSOCKET_DOMAIN
 } from '@/repositories/vrchatAuthRepository.js';
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -28,7 +28,7 @@ export function LoginProxySettingsDialog({
     onCustomEndpointToggle,
     onCancelAutoLogin
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const { open, setOpen, proxyInput, setProxyInput } = state;
     const { isSavingProxySettings, isUpdatingEndpointSetting, isAuthBusy } = flags;
 

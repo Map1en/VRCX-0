@@ -1,14 +1,14 @@
 import { HistoryIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/ui/shadcn/badge';
 import { DropdownMenuCheckboxItem } from '@/ui/shadcn/dropdown-menu';
+
 import {
     HoverCard,
     HoverCardContent,
     HoverCardTrigger
 } from '@/ui/shadcn/hover-card';
-
-import { appI18n } from '@/services/i18nService.js';
 import { languageOptionLabel } from '../userProfileFields.js';
 import { formatStatsDate } from '../userDialogRows.js';
 
@@ -40,6 +40,8 @@ export function UserTitleLanguages({ languages }) {
 }
 
 export function PreviousDisplayNamesBadge({ names }) {
+    const { t } = useTranslation();
+
     if (!names.length) {
         return null;
     }
@@ -72,7 +74,7 @@ export function PreviousDisplayNamesBadge({ names }) {
                 <div className="flex flex-col">
                     <div className="border-border flex items-center justify-between gap-3 border-b px-3 py-2">
                         <div className="text-sm font-medium">
-                            {appI18n.t('dialog.user.generated.previous_display_names')}
+                            {t('dialog.user.generated.previous_display_names')}
                         </div>
                         <Badge variant="secondary">{names.length}</Badge>
                     </div>

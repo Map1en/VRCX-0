@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { QuickSearchDialog } from '@/components/sidebar/QuickSearchDialog.jsx';
 import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/index.js';
@@ -35,7 +35,6 @@ import {
 import { AppMenuBar } from './AppMenuBar.jsx';
 import { shouldShowSidePanel } from './sidePanelRoutes.js';
 import { useDirectAccessAction } from './useDirectAccessAction.js';
-import { appI18n } from '@/services/i18nService.js';
 
 const TITLE_BAR_INTERACTIVE_SELECTOR = [
     'button',
@@ -76,7 +75,7 @@ function TitleBarShortcutKey({ children }) {
 }
 
 export function AppTitleBar() {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const location = useLocation();
     const [isMaximized, setIsMaximized] = useState(false);
     const [quickSearchOpen, setQuickSearchOpen] = useState(false);
@@ -273,7 +272,7 @@ export function AppTitleBar() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.app_title_bar.generated_toast.failed_to_mark_notifications_as_seen')
+                    : t('component.app_title_bar.generated_toast.failed_to_mark_notifications_as_seen')
             );
         }
     }
@@ -357,7 +356,7 @@ export function AppTitleBar() {
                             </Button>
                         ) : null}
                         <TitleBarButton
-                            label={appI18n.t('component.app_title_bar.generated_dynamic.value_ctrl_k', { value: t('side_panel.search_placeholder') })}
+                            label={t('component.app_title_bar.generated_dynamic.value_ctrl_k', { value: t('side_panel.search_placeholder') })}
                             className="w-auto gap-1.5 px-2"
                             onClick={() => setQuickSearchOpen(true)}
                         >
@@ -366,7 +365,7 @@ export function AppTitleBar() {
                             <TitleBarShortcutKey>K</TitleBarShortcutKey>
                         </TitleBarButton>
                         <TitleBarButton
-                            label={appI18n.t('component.app_title_bar.generated_dynamic.value_ctrl_d', { value: t('prompt.direct_access_omni.header') })}
+                            label={t('component.app_title_bar.generated_dynamic.value_ctrl_d', { value: t('prompt.direct_access_omni.header') })}
                             className="w-auto gap-1.5 px-2"
                             onClick={() => void openDirectAccessFromClipboard()}
                         >

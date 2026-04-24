@@ -1,11 +1,11 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
+
 import {
     ResizableHandle,
     ResizablePanel,
     ResizablePanelGroup
 } from '@/ui/shadcn/resizable';
-
-import { appI18n } from '@/services/i18nService.js';
 import { FavoriteCard } from './FavoriteCard.jsx';
 import { FavoriteExportDialog } from './FavoriteExportDialog.jsx';
 import { FavoritesContentHeader } from './FavoritesContentHeader.jsx';
@@ -14,6 +14,8 @@ import { FavoritesEmptyState, FavoritesLoadingState } from './FavoritesStatePart
 import { FavoritesToolbar } from './FavoritesToolbar.jsx';
 
 function FavoritesGroupRailPanel({ kind, groupRail }) {
+    const { t } = useTranslation();
+
     const selectedSource = groupRail.hasSearchInput ? '' : groupRail.selectedSource;
     const selectedGroupKey = groupRail.hasSearchInput
         ? ''
@@ -58,7 +60,7 @@ function FavoritesGroupRailPanel({ kind, groupRail }) {
             />
             {kind === 'avatar' ? (
                 <GroupRailSection
-                    title={appI18n.t('view.favorite.avatars.local_history')}
+                    title={t('view.favorite.avatars.local_history')}
                     groups={groupRail.avatarHistoryGroups}
                     selectedSource={selectedSource}
                     selectedGroupKey={selectedGroupKey}
@@ -78,6 +80,8 @@ function FavoritesGroupRailPanel({ kind, groupRail }) {
 }
 
 function FavoritesContentPanel({ kind, content }) {
+    const { t } = useTranslation();
+
     const remoteDetails = content.remoteEntityDetails || {};
     const remoteDetailsData = remoteDetails.data || {};
     const isRemoteDetailsLoading =
@@ -106,10 +110,10 @@ function FavoritesContentPanel({ kind, content }) {
             <div className="min-h-0 min-w-0 flex-1 overflow-auto pr-2">
                 {content.favoriteLoadStatus === 'running' &&
                 !content.items.length ? (
-                    <FavoritesLoadingState title={appI18n.t('view.favorite.generated.loading_favorites_baseline')} />
+                    <FavoritesLoadingState title={t('view.favorite.generated.loading_favorites_baseline')} />
                 ) : content.favoriteLoadStatus === 'error' ? (
                     <FavoritesEmptyState
-                        title={appI18n.t('view.favorite.generated.favorites_failed_to_load')}
+                        title={t('view.favorite.generated.favorites_failed_to_load')}
                         description={
                             content.favoriteDetail ||
                             'The favorites baseline did not finish loading.'

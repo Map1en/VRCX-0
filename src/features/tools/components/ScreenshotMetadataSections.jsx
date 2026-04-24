@@ -11,7 +11,7 @@ import {
     UsersIcon
 } from 'lucide-react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
 import { openUserDialog } from '@/services/dialogService.js';
 import { Badge } from '@/ui/shadcn/badge';
@@ -99,7 +99,7 @@ export function ScreenshotMetadataToolbar({
     onUpload,
     onDelete
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     return (
         <div className="my-2 flex flex-col gap-3 xl:flex-row xl:items-center">
@@ -217,7 +217,7 @@ export function ScreenshotMetadataResultsTable({
     onToggleSearchSort,
     onOpenResult
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     return (
         <div className="min-h-0 flex-1 overflow-auto">
@@ -344,7 +344,7 @@ export function ScreenshotMetadataPreviewCard({
     onDragOver,
     onDrop
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     return (
         <Card className="flex min-h-0 flex-col">
@@ -424,7 +424,7 @@ export function ScreenshotMetadataDetailsCard({
     currentEndpoint,
     onBackToResults
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
 
     return (
         <Card className="flex min-h-0 flex-col">

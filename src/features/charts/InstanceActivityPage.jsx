@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { appI18n } from '@/services/i18nService.js';
 
 const InstanceActivityPageImpl = lazy(() =>
     import('./InstanceActivityPageImpl.jsx').then((module) => ({
@@ -10,10 +10,12 @@ const InstanceActivityPageImpl = lazy(() =>
 );
 
 function ChartPageFallback() {
+    const { t } = useTranslation();
+
     return (
         <div className="text-muted-foreground flex h-full min-h-0 items-center justify-center gap-2 text-sm">
             <Spinner className="size-4" />
-            <span>{appI18n.t('view.charts.generated.loading_chart')}</span>
+            <span>{t('view.charts.generated.loading_chart')}</span>
         </div>
     );
 }

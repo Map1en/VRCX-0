@@ -17,7 +17,7 @@ import { normalizeLocationValue } from '@/shared/utils/location.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
-import { translateCurrentLocale } from './i18nService.js';
+import i18n from './i18nService.js';
 
 const DEFAULT_APP_ID = '883308884863901717';
 const i18nKeys = [
@@ -148,7 +148,7 @@ function compactObject(value) {
 
 async function createTranslator() {
     const pairs = await Promise.all(
-        i18nKeys.map(async (key) => [key, await translateCurrentLocale(key)])
+        i18nKeys.map(async (key) => [key, await i18n.t(key)])
     );
     const labels = Object.fromEntries(pairs);
     return (key) => labels[key] ?? key;

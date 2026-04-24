@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { backend } from '@/platform/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     VRChatCameraResolutions,
     VRChatScreenshotResolutions
@@ -99,7 +98,7 @@ function ResolutionSelect({ label, value, rows, onValueChange }) {
 }
 
 export function VRChatConfigDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const loadRequestRef = useRef(0);
     const [config, setConfig] = useState({
@@ -174,7 +173,7 @@ export function VRChatConfigDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    appI18n.t('host.system_dialogs.generated_toast.failed_to_load_vrchat_configuration')
+                    t('host.system_dialogs.generated_toast.failed_to_load_vrchat_configuration')
                 )
             );
         } finally {
@@ -199,7 +198,7 @@ export function VRChatConfigDialog({ open, onOpenChange }) {
                 toast.error(
                     userFacingErrorMessage(
                         error,
-                        appI18n.t('host.system_dialogs.generated_toast.failed_to_select_folder')
+                        t('host.system_dialogs.generated_toast.failed_to_select_folder')
                     )
                 );
                 return '';
@@ -215,7 +214,7 @@ export function VRChatConfigDialog({ open, onOpenChange }) {
             const removed = await backend.assetBundle.SweepCache();
             toast.success(
                 Array.isArray(removed)
-                    ? appI18n.t(
+                    ? t(
                           'host.system_dialogs.generated_toast.removed_value_cache_entries',
                           { value: removed.length }
                       )
@@ -226,7 +225,7 @@ export function VRChatConfigDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    appI18n.t('host.system_dialogs.generated_toast.failed_to_sweep_asset_cache')
+                    t('host.system_dialogs.generated_toast.failed_to_sweep_asset_cache')
                 )
             );
         } finally {
@@ -254,7 +253,7 @@ export function VRChatConfigDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    appI18n.t('host.system_dialogs.generated_toast.failed_to_delete_asset_cache')
+                    t('host.system_dialogs.generated_toast.failed_to_delete_asset_cache')
                 )
             );
         } finally {
@@ -277,7 +276,7 @@ export function VRChatConfigDialog({ open, onOpenChange }) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    appI18n.t('host.system_dialogs.generated_toast.failed_to_save_vrchat_configuration')
+                    t('host.system_dialogs.generated_toast.failed_to_save_vrchat_configuration')
                 )
             );
         } finally {

@@ -16,7 +16,7 @@ import {
     executeSavedCredentialLogin
 } from './authExecutionService.js';
 import { applySavedAuthSnapshot } from './authSnapshotService.js';
-import { translateCurrentLocale } from './i18nService.js';
+import i18n from './i18nService.js';
 
 function createAutoLoginAbortError() {
     const error = new Error('Automatic login was cancelled.');
@@ -87,7 +87,7 @@ async function applyAutoLoginDelay(seconds, { signal, onCountdown } = {}) {
 
     try {
         for (let remaining = seconds; remaining > 0; remaining -= 1) {
-            const message = await translateCurrentLocale(
+            const message = await i18n.t(
                 'message.auto_login_delay_countdown',
                 {
                     seconds: remaining
@@ -178,7 +178,7 @@ export async function executeReactAutoLogin(
                     endpoint: restoreEndpoint
                 });
                 toast.success(
-                    await translateCurrentLocale(
+                    await i18n.t(
                         'message.auth.auto_login_success'
                     )
                 );
@@ -221,7 +221,7 @@ export async function executeReactAutoLogin(
             );
             await flashWindowSafely();
             toast.error(
-                await translateCurrentLocale('message.auth.auto_login_failed')
+                await i18n.t('message.auth.auto_login_failed')
             );
             return {
                 status: 'throttled',
@@ -238,7 +238,7 @@ export async function executeReactAutoLogin(
         const nextSnapshot = await executeSavedCredentialLogin(savedCredential);
 
         toast.success(
-            await translateCurrentLocale('message.auth.auto_login_success')
+            await i18n.t('message.auth.auto_login_success')
         );
         return {
             status: 'success',
@@ -267,11 +267,11 @@ export async function executeReactAutoLogin(
             error instanceof Error ? error.message : String(error)
         );
         toast.error(
-            await translateCurrentLocale('message.auth.auto_login_failed')
+            await i18n.t('message.auth.auto_login_failed')
         );
 
         if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-            toast.error(await translateCurrentLocale('message.auth.offline'));
+            toast.error(await i18n.t('message.auth.offline'));
         }
 
         return {

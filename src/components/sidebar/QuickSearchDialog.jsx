@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { convertFileUrlToImageUrl, userImage } from '@/lib/entityMedia.js';
 import {
     groupProfileRepository,
@@ -312,7 +312,7 @@ function ResultGroup({ title, items, onSelect }) {
 }
 
 export function QuickSearchDialog({ open, onOpenChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const remoteFavoritesByObjectId = useFavoriteStore(
         (state) => state.remoteFavoritesByObjectId

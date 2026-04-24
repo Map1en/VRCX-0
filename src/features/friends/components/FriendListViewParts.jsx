@@ -5,7 +5,7 @@ import {
     ChevronDownIcon
 } from 'lucide-react';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/layout/PageScaffold.jsx';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -51,7 +51,7 @@ export function FriendListEmptyState({ title, description }) {
 }
 
 export function FriendListSearchFilterDropdown({ value, onChange }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const activeFilters = value instanceof Set ? value : new Set();
     const label = activeFilters.size
         ? `${activeFilters.size}/${SEARCH_FILTERS.length}`

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { PageHeader, PageTitle } from '@/components/layout/PageScaffold.jsx';
 import {
     clearFavoriteRemoteDetailsCache,
@@ -111,7 +111,6 @@ import {
     parseIntegerInput,
     TABLE_PAGE_SIZE_DEFAULTS
 } from './settingsValues.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     avatarAutoCleanupOptions,
     desktopToastOptions,
@@ -125,7 +124,7 @@ import { useAvatarProviderConfig } from './useAvatarProviderConfig.js';
 import { useSettingsIntegrations } from './useSettingsIntegrations.js';
 
 export function SettingsPage() {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const locale = useShellStore((state) => state.locale);
     const zoomLevel = useShellStore((state) => state.zoomLevel);
     const sidebarOpen = useShellStore((state) => state.sidebarOpen);
@@ -323,7 +322,7 @@ export function SettingsPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.settings.generated_toast.failed_to_load_settings')
+                        : t('view.settings.generated_toast.failed_to_load_settings')
                 );
             })
             .finally(() => {
@@ -482,7 +481,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_save_setting')
+                    : t('view.settings.generated_toast.failed_to_save_setting')
             );
             return false;
         }
@@ -655,7 +654,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_save_trust_color')
+                    : t('view.settings.generated_toast.failed_to_save_trust_color')
             );
             await restorePersistedTrustColors();
         }
@@ -670,7 +669,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_save_trust_color')
+                    : t('view.settings.generated_toast.failed_to_save_trust_color')
             );
         }
     }
@@ -699,7 +698,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_refresh_sqlite_table_sizes')
+                    : t('view.settings.generated_toast.failed_to_refresh_sqlite_table_sizes')
             );
         }
     }
@@ -718,7 +717,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_refresh_config_json')
+                    : t('view.settings.generated_toast.failed_to_refresh_config_json')
             );
         }
     }
@@ -733,7 +732,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_refresh_online_user_count')
+                    : t('view.settings.generated_toast.failed_to_refresh_online_user_count')
             );
         }
     }
@@ -757,7 +756,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_load_proxy_settings')
+                    : t('view.settings.generated_toast.failed_to_load_proxy_settings')
             );
             return;
         }
@@ -770,7 +769,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_save_proxy_settings')
+                    : t('view.settings.generated_toast.failed_to_save_proxy_settings')
             );
         }
     }
@@ -960,7 +959,7 @@ export function SettingsPage() {
             favoriteDetailsPending: 0
         }));
         toast.success(
-            appI18n.t('view.settings.generated_dynamic.cleared_value_query_cache_entries_value_avatar_n', { value: queryCacheCount, value2: avatarNameCacheCount, value3: favoriteStats.detailCacheCount })
+            t('view.settings.generated_dynamic.cleared_value_query_cache_entries_value_avatar_n', { value: queryCacheCount, value2: avatarNameCacheCount, value3: favoriteStats.detailCacheCount })
         );
     }
 
@@ -1110,11 +1109,11 @@ export function SettingsPage() {
 
     async function promptCropExistingPrints() {
         const result = await confirm({
-            title: appI18n.t('view.settings.generated_modal.crop_existing_prints'),
+            title: t('view.settings.generated_modal.crop_existing_prints'),
             description:
-                appI18n.t('view.settings.generated_modal.crop_already_saved_instance_prints_in_the_config'),
-            confirmText: appI18n.t('view.settings.generated_modal.crop_prints'),
-            cancelText: appI18n.t('view.settings.generated_modal.skip')
+                t('view.settings.generated_modal.crop_already_saved_instance_prints_in_the_config'),
+            confirmText: t('view.settings.generated_modal.crop_prints'),
+            cancelText: t('view.settings.generated_modal.skip')
         });
         if (!result.ok) {
             return;
@@ -1147,7 +1146,7 @@ export function SettingsPage() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.settings.generated_toast.failed_to_crop_existing_prints')
+                        : t('view.settings.generated_toast.failed_to_crop_existing_prints')
                 );
             });
         }
@@ -1180,7 +1179,7 @@ export function SettingsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('view.settings.generated_toast.failed_to_save_feed_filters')
+                    : t('view.settings.generated_toast.failed_to_save_feed_filters')
             );
         });
     }
@@ -1808,7 +1807,7 @@ export function SettingsPage() {
                     sqliteTableSizeRows={sqliteTableSizeRows}
                     onlineVisitCount={onlineVisitCount}
                     configTreeData={configTreeData}
-                    gameLogDisabledLabel={appI18n.t(
+                    gameLogDisabledLabel={t(
                         'view.settings.generated_dynamic.value_value',
                         {
                             value: t(

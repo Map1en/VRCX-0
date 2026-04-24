@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { memo } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -21,9 +22,8 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
-import { Spinner } from '@/ui/shadcn/spinner';
 
-import { appI18n } from '@/services/i18nService.js';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'];
 function GroupMenu({
@@ -35,6 +35,8 @@ function GroupMenu({
     onLocalDelete,
     onHistoryClear
 }) {
+    const { t } = useTranslation();
+
     if (group.source === 'history') {
         return (
             <DropdownMenu>
@@ -60,7 +62,7 @@ function GroupMenu({
                             variant="destructive"
                             onSelect={() => onHistoryClear(group)}
                         >
-                            {appI18n.t('common.actions.clear')}
+                            {t('common.actions.clear')}
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                 </DropdownMenuContent>
@@ -92,12 +94,12 @@ function GroupMenu({
                         <DropdownMenuItem
                             onSelect={() => onRemoteRename(group)}
                         >
-                            {appI18n.t('view.favorite.generated.rename')}
+                            {t('view.favorite.generated.rename')}
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSub>
                         <DropdownMenuSubTrigger>
-                            {appI18n.t('view.favorite.generated.visibility')}
+                            {t('view.favorite.generated.visibility')}
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent className="w-40">
                             <DropdownMenuGroup>
@@ -126,7 +128,7 @@ function GroupMenu({
                             variant="destructive"
                             onSelect={() => onRemoteClear(group)}
                         >
-                            {appI18n.t('common.actions.clear')}
+                            {t('common.actions.clear')}
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                 </DropdownMenuContent>
@@ -151,13 +153,13 @@ function GroupMenu({
             <DropdownMenuContent side="right" align="start" className="w-48">
                 <DropdownMenuGroup>
                     <DropdownMenuItem onSelect={() => onLocalRename(group)}>
-                        {appI18n.t('view.favorite.generated.rename')}
+                        {t('view.favorite.generated.rename')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         variant="destructive"
                         onSelect={() => onLocalDelete(group)}
                     >
-                        {appI18n.t('common.actions.delete')}
+                        {t('common.actions.delete')}
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -187,6 +189,8 @@ const GroupRailSection = memo(function GroupRailSection({
     onLocalDelete,
     onHistoryClear
 }) {
+    const { t } = useTranslation();
+
     return (
         <div className="flex flex-col gap-2">
             <div className="mb-[9px] flex items-center justify-between text-sm font-semibold">
@@ -218,7 +222,7 @@ const GroupRailSection = memo(function GroupRailSection({
                         >
                             <div className="min-w-0">
                                 <div className="truncate font-semibold">
-                                    {appI18n.t('view.favorite.generated.group')} {index + 1}
+                                    {t('view.favorite.generated.group')} {index + 1}
                                 </div>
                                 <div className="bg-muted mt-1 h-3 w-14 rounded" />
                             </div>
@@ -280,7 +284,7 @@ const GroupRailSection = memo(function GroupRailSection({
                     })
                 ) : (
                     <div className="text-muted-foreground py-3 text-center text-xs">
-                        {appI18n.t('common.no_data')}
+                        {t('common.no_data')}
                     </div>
                 )}
                 {showNewGroup && !creating ? (
@@ -292,7 +296,7 @@ const GroupRailSection = memo(function GroupRailSection({
                         onClick={onStartCreate}
                     >
                         <PlusIcon data-icon="inline-start" />
-                        <span>{appI18n.t('view.favorite.generated.new_group')}</span>
+                        <span>{t('view.favorite.generated.new_group')}</span>
                     </Button>
                 ) : null}
                 {showNewGroup && creating ? (
@@ -301,7 +305,7 @@ const GroupRailSection = memo(function GroupRailSection({
                         autoFocus
                         className="h-8 text-sm"
                         disabled={loading}
-                        placeholder={appI18n.t('view.favorite.generated.new_group')}
+                        placeholder={t('view.favorite.generated.new_group')}
                         onChange={(event) =>
                             onNewGroupNameChange(event.target.value)
                         }

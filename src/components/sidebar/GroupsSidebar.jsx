@@ -2,7 +2,7 @@ import { ChevronDownIcon, UsersIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location.jsx';
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
@@ -23,7 +23,6 @@ import {
     ContextMenuItem,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { appI18n } from '@/services/i18nService.js';
 
 const GROUP_HEADER_ROW_SIZE = 38;
 const GROUP_INSTANCE_ROW_SIZE = 49;
@@ -153,7 +152,7 @@ function groupInstances(instances, groupOrder = []) {
 }
 
 function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const groupId = normalizeGroupId(instance);
     const name = resolveGroupName(instance, groupId);
     const iconUrl = convertFileUrlToImageUrl(
@@ -202,7 +201,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.groups_sidebar.generated_toast.failed_to_launch_instance')
+                    : t('component.groups_sidebar.generated_toast.failed_to_launch_instance')
             );
         }
     }
@@ -222,7 +221,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.groups_sidebar.generated_toast.failed_to_send_self_invite')
+                    : t('component.groups_sidebar.generated_toast.failed_to_send_self_invite')
             );
         }
     }

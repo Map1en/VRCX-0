@@ -1,15 +1,17 @@
 import { Suspense } from 'react';
 
-import { Spinner } from '@/ui/shadcn/spinner';
+import { useTranslation } from 'react-i18next';
 
+import { Spinner } from '@/ui/shadcn/spinner';
 import { getDashboardPagePanelComponent } from './dashboardPagePanelRegistry.jsx';
-import { appI18n } from '@/services/i18nService.js';
 
 function EmbeddedPageFallback() {
+    const { t } = useTranslation();
+
     return (
         <div className="text-muted-foreground flex min-h-[220px] flex-1 items-center justify-center gap-2 text-sm">
             <Spinner />
-            {appI18n.t('view.dashboard.generated.loading_dashboard_panel')}
+            {t('view.dashboard.generated.loading_dashboard_panel')}
         </div>
     );
 }

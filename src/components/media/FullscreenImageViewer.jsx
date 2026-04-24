@@ -11,7 +11,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { mediaRepository } from '@/repositories/index.js';
 import { extractFileId } from '@/shared/utils/fileUtils.js';
 import { Button } from '@/ui/shadcn/button';
@@ -386,7 +386,7 @@ export function FullscreenImageViewer({
     sourcePath,
     onClose
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const [imageLoading, setImageLoading] = useState(false);
     const [imageLoadError, setImageLoadError] = useState(false);
     const [copying, setCopying] = useState(false);

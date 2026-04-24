@@ -2,7 +2,7 @@ import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { avatarSearchProviderRepository } from '@/repositories/index.js';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -19,7 +19,6 @@ import {
     InputGroupButton,
     InputGroupInput
 } from '@/ui/shadcn/input-group';
-import { appI18n } from '@/services/i18nService.js';
 
 function providerListKey(providerList) {
     return JSON.stringify(
@@ -35,7 +34,7 @@ export function AvatarProviderSettingsDialog({
     providerList = [],
     onConfigSaved
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const [draftProviderList, setDraftProviderList] = useState(providerList);
     const [isSaving, setIsSaving] = useState(false);
     const lastSavedProviderListKeyRef = useRef(providerListKey(providerList));
@@ -74,7 +73,7 @@ export function AvatarProviderSettingsDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.avatar_provider_settings.generated_toast.failed_to_save_avatar_providers')
+                    : t('component.avatar_provider_settings.generated_toast.failed_to_save_avatar_providers')
             );
         } finally {
             if (inFlightProviderListKeyRef.current === nextProviderListKey) {

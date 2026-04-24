@@ -5,7 +5,7 @@ import {
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
@@ -84,7 +84,6 @@ import {
 } from './user-dialog/components/UserDialogHeaderBadges.jsx';
 import { UserDialogHeaderActions } from './user-dialog/components/UserDialogHeaderActions.jsx';
 import { UserDialogInfoTab } from './user-dialog/components/UserDialogInfoTab.jsx';
-import { appI18n } from '@/services/i18nService.js';
 
 const userDialogTabServiceRepositories = Object.freeze({
     avatarProfileRepository,
@@ -180,7 +179,7 @@ export function UserDialogTabbedView({
     onToggleBadgeVisibility,
     onToggleBadgeShowcased
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
@@ -259,7 +258,8 @@ export function UserDialogTabbedView({
                 selectedGroupIds,
                 effectiveAvatarReleaseStatus,
                 avatarSort,
-                currentUserHasSharedConnectionsOptOut
+                currentUserHasSharedConnectionsOptOut,
+                t
             }),
         [
             avatarSort,
@@ -274,7 +274,8 @@ export function UserDialogTabbedView({
             remoteData,
             remoteStatus,
             search,
-            selectedGroupIds
+            selectedGroupIds,
+            t
         ]
     );
     const isRecentDialogAction = (actionType) =>
@@ -616,7 +617,7 @@ export function UserDialogTabbedView({
 
     async function copyUserText(text, label) {
         await copyTextToClipboard(text);
-        toast.success(appI18n.t('dialog.user.generated_dynamic.value_copied', { value: label }));
+        toast.success(t('dialog.user.generated_dynamic.value_copied', { value: label }));
     }
 
     async function openDiscordProfile(discordId) {
@@ -626,7 +627,7 @@ export function UserDialogTabbedView({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_open_discord_profile')
+                    : t('dialog.user.generated_toast.failed_to_open_discord_profile')
             );
         }
     }
@@ -662,7 +663,7 @@ export function UserDialogTabbedView({
             });
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('dialog.user.generated_toast.translation_failed')
+                error instanceof Error ? error.message : t('dialog.user.generated_toast.translation_failed')
             );
         } finally {
             setBioTranslationLoading(false);
@@ -690,7 +691,7 @@ export function UserDialogTabbedView({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_load_avatar_author')
+                    : t('dialog.user.generated_toast.failed_to_load_avatar_author')
             );
         }
     }
@@ -700,11 +701,11 @@ export function UserDialogTabbedView({
             return;
         }
         const result = await prompt({
-            title: appI18n.t('dialog.user.generated_modal.invite_to_group'),
-            description: appI18n.t('dialog.user.generated_modal.enter_the_vrchat_group_id_to_invite_this_user_to'),
+            title: t('dialog.user.generated_modal.invite_to_group'),
+            description: t('dialog.user.generated_modal.enter_the_vrchat_group_id_to_invite_this_user_to'),
             inputValue: '',
-            confirmText: appI18n.t('dialog.user.generated_modal.invite'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('dialog.user.generated_modal.invite'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -720,7 +721,7 @@ export function UserDialogTabbedView({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_send_group_invite')
+                    : t('dialog.user.generated_toast.failed_to_send_group_invite')
             );
         }
     }
@@ -750,7 +751,7 @@ export function UserDialogTabbedView({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_update_group_visibility')
+                    : t('dialog.user.generated_toast.failed_to_update_group_visibility')
             );
         } finally {
             setGroupActionId('');
@@ -763,10 +764,10 @@ export function UserDialogTabbedView({
             return;
         }
         const result = await confirm({
-            title: appI18n.t('dialog.user.generated_modal.leave_group'),
-            description: appI18n.t('dialog.user.generated_dynamic.leave_value', { value: summarizeEntityRow(group, groupId) }),
-            confirmText: appI18n.t('dialog.user.generated_modal.leave'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            title: t('dialog.user.generated_modal.leave_group'),
+            description: t('dialog.user.generated_dynamic.leave_value', { value: summarizeEntityRow(group, groupId) }),
+            confirmText: t('dialog.user.generated_modal.leave'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -785,7 +786,7 @@ export function UserDialogTabbedView({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_leave_group')
+                    : t('dialog.user.generated_toast.failed_to_leave_group')
             );
         } finally {
             setGroupActionId('');
@@ -836,7 +837,7 @@ export function UserDialogTabbedView({
                 profile.username || profile.displayName || profile.id
             ).replace(/[^a-z0-9_-]+/gi, '_') || 'user';
         downloadJsonFile(`vrcx-${filenameUser}-groups.json`, groups);
-        toast.success(appI18n.t('dialog.user.generated_dynamic.exported_value_groups', { value: groups.length }));
+        toast.success(t('dialog.user.generated_dynamic.exported_value_groups', { value: groups.length }));
     }
 
     async function changeSelectedGroupsVisibility(visibility) {
@@ -859,9 +860,9 @@ export function UserDialogTabbedView({
                 (result) => result.status === 'rejected'
             ).length;
             if (failed) {
-                toast.error(appI18n.t('dialog.user.generated_dynamic.failed_to_update_value_groups', { value: failed }));
+                toast.error(t('dialog.user.generated_dynamic.failed_to_update_value_groups', { value: failed }));
             } else {
-                toast.success(appI18n.t('dialog.user.generated_dynamic.updated_value_groups', { value: selectedUserGroups.length }));
+                toast.success(t('dialog.user.generated_dynamic.updated_value_groups', { value: selectedUserGroups.length }));
             }
             await refreshGroupsAfterMembershipChange();
         } finally {
@@ -874,10 +875,10 @@ export function UserDialogTabbedView({
             return;
         }
         const result = await confirm({
-            title: appI18n.t('dialog.user.generated_modal.leave_selected_groups'),
-            description: appI18n.t('dialog.user.generated_dynamic.leave_value_selected_groups', { value: selectedUserGroups.length }),
-            confirmText: appI18n.t('dialog.user.generated_modal.leave'),
-            cancelText: appI18n.t('common.actions.cancel'),
+            title: t('dialog.user.generated_modal.leave_selected_groups'),
+            description: t('dialog.user.generated_dynamic.leave_value_selected_groups', { value: selectedUserGroups.length }),
+            confirmText: t('dialog.user.generated_modal.leave'),
+            cancelText: t('common.actions.cancel'),
             destructive: true
         });
         if (!result.ok) {
@@ -897,9 +898,9 @@ export function UserDialogTabbedView({
                 (entry) => entry.status === 'rejected'
             ).length;
             if (failed) {
-                toast.error(appI18n.t('dialog.user.generated_dynamic.failed_to_leave_value_groups', { value: failed }));
+                toast.error(t('dialog.user.generated_dynamic.failed_to_leave_value_groups', { value: failed }));
             } else {
-                toast.success(appI18n.t('dialog.user.generated_dynamic.left_value_groups', { value: selectedUserGroups.length }));
+                toast.success(t('dialog.user.generated_dynamic.left_value_groups', { value: selectedUserGroups.length }));
                 clearSelectedGroups();
             }
             await refreshGroupsAfterMembershipChange();
@@ -973,7 +974,7 @@ export function UserDialogTabbedView({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.user.generated_toast.failed_to_update_group_order')
+                    : t('dialog.user.generated_toast.failed_to_update_group_order')
             );
         } finally {
             setGroupActionId('');

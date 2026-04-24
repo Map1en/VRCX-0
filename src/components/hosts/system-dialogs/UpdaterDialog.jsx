@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { backend } from '@/platform/index.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     defaultBranchForVersion,
     downloadUpdateAndWait,
@@ -31,6 +31,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 export function UpdaterDialog({ open, onOpenChange }) {
+    const { t } = useTranslation();
+
     const cancelTokenRef = useRef(null);
     const [branch, setBranch] = useState(() =>
         defaultBranchForVersion(VERSION || '')
@@ -117,7 +119,7 @@ export function UpdaterDialog({ open, onOpenChange }) {
         setDownloading(true);
         setProgress(0);
         setDetail(
-            appI18n.t('host.system_dialogs.generated_dynamic.downloading_value', {
+            t('host.system_dialogs.generated_dynamic.downloading_value', {
                 value: selectedRelease.displayName
             })
         );
@@ -128,7 +130,7 @@ export function UpdaterDialog({ open, onOpenChange }) {
             });
             setPendingInstall(true);
             setDetail(
-                appI18n.t(
+                t(
                     'host.system_dialogs.generated_dynamic.value_is_ready_to_install',
                     { value: selectedRelease.displayName }
                 )
@@ -164,10 +166,10 @@ export function UpdaterDialog({ open, onOpenChange }) {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>
-                        {appI18n.t('dialog.system.generated.vrcx_0_update')}
+                        {t('dialog.system.generated.vrcx_0_update')}
                     </DialogTitle>
                     <DialogDescription>
-                        {appI18n.t('dialog.system.generated.current_version')}{' '}
+                        {t('dialog.system.generated.current_version')}{' '}
                         {formatReleaseDisplayVersion(VERSION || '') || '-'}.
                     </DialogDescription>
                 </DialogHeader>
@@ -180,12 +182,12 @@ export function UpdaterDialog({ open, onOpenChange }) {
                     >
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="Stable">
-                                {appI18n.t(
+                                {t(
                                     'dialog.vrcx_updater.branch_stable'
                                 )}
                             </TabsTrigger>
                             <TabsTrigger value="Beta">
-                                {appI18n.t('dialog.system.generated.beta')}
+                                {t('dialog.system.generated.beta')}
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
@@ -233,7 +235,7 @@ export function UpdaterDialog({ open, onOpenChange }) {
                     ) : null}
                     {pendingInstall ? (
                         <div className="bg-muted/30 rounded-md border p-3 text-sm">
-                            {appI18n.t(
+                            {t(
                                 'dialog.system.generated.an_update_is_downloaded_and_ready_to_install'
                             )}
                         </div>
@@ -254,7 +256,7 @@ export function UpdaterDialog({ open, onOpenChange }) {
                             variant="outline"
                             onClick={() => void handleCancel()}
                         >
-                            {appI18n.t('common.actions.cancel')}
+                            {t('common.actions.cancel')}
                         </Button>
                     ) : null}
                     <Button
@@ -262,14 +264,14 @@ export function UpdaterDialog({ open, onOpenChange }) {
                         disabled={!selectedRelease || loading || downloading}
                         onClick={() => void handleDownload()}
                     >
-                        {appI18n.t('dialog.vrcx_updater.download')}
+                        {t('dialog.vrcx_updater.download')}
                     </Button>
                     <Button
                         type="button"
                         disabled={downloading || !pendingInstall}
                         onClick={handleInstall}
                     >
-                        {appI18n.t(
+                        {t(
                             'dialog.system.generated.install_and_restart'
                         )}
                     </Button>

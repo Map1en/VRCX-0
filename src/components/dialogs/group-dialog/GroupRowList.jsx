@@ -8,9 +8,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { openUserDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { Button } from '@/ui/shadcn/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
@@ -31,6 +31,8 @@ function PostList({
     onEditPost,
     onDeletePost
 }) {
+    const { t } = useTranslation();
+
     const rolesById = getGroupRoleNameMap(group);
     return (
         <div className="flex flex-wrap items-start">
@@ -99,7 +101,7 @@ function PostList({
                                     type="button"
                                     size="icon-sm"
                                     variant="ghost"
-                                    aria-label={appI18n.t(
+                                    aria-label={t(
                                         'common.actions.edit'
                                     )}
                                     onClick={() => onEditPost?.(post)}
@@ -111,7 +113,7 @@ function PostList({
                                     size="icon-sm"
                                     variant="ghost"
                                     className="text-destructive"
-                                    aria-label={appI18n.t(
+                                    aria-label={t(
                                         'common.actions.delete'
                                     )}
                                     onClick={() => onDeletePost?.(post)}
@@ -128,6 +130,8 @@ function PostList({
 }
 
 function PhotoGalleryRows({ rows, loading, error, onPreviewImage }) {
+    const { t } = useTranslation();
+
     const groups = new Map();
     for (const row of rows) {
         const galleryId = row?.$galleryId || 'gallery';
@@ -159,7 +163,7 @@ function PhotoGalleryRows({ rows, loading, error, onPreviewImage }) {
     if (loading) {
         return (
             <GroupListState
-                title={appI18n.t('dialog.group.generated.no_photos')}
+                title={t('dialog.group.generated.no_photos')}
                 loading
             />
         );
@@ -167,15 +171,13 @@ function PhotoGalleryRows({ rows, loading, error, onPreviewImage }) {
     if (error) {
         return (
             <GroupListState
-                title={appI18n.t('dialog.group.generated.no_photos')}
+                title={t('dialog.group.generated.no_photos')}
                 error={error}
             />
         );
     }
     if (!galleryEntries.length) {
-        return (
-            <GroupListState title={appI18n.t('dialog.group.generated.no_photos')} />
-        );
+        return (<GroupListState title={t('dialog.group.generated.no_photos')} />);
     }
 
     return (

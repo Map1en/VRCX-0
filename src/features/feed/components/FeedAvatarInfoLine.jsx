@@ -2,12 +2,11 @@ import { LockIcon } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository.js';
 import { avatarSearchProviderRepository, localFavoritesRepository } from '@/repositories/index.js';
 import { openAvatarDialog, openUserDialog } from '@/services/dialogService.js';
-import { appI18n } from '@/services/i18nService.js';
 import { extractFileId } from '@/shared/utils/fileUtils.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
@@ -152,7 +151,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
     ownerId,
     userId
 }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
@@ -301,7 +300,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : appI18n.t('view.feed.generated_toast.failed_to_resolve_avatar_author')
+                        : t('view.feed.generated_toast.failed_to_resolve_avatar_author')
                 );
                 return;
             }

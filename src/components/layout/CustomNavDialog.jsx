@@ -32,7 +32,6 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { appI18n } from '@/services/i18nService.js';
 import {
     buildHiddenPlacementMap,
     buildVisibleNodes,
@@ -447,7 +446,7 @@ export function CustomNavDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.custom_nav.generated_toast.failed_to_create_dashboard')
+                    : t('component.custom_nav.generated_toast.failed_to_create_dashboard')
             );
         }
     }
@@ -485,7 +484,7 @@ export function CustomNavDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.custom_nav.generated_toast.failed_to_update_dashboard')
+                    : t('component.custom_nav.generated_toast.failed_to_update_dashboard')
             );
         }
     }
@@ -512,7 +511,7 @@ export function CustomNavDialog({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.custom_nav.generated_toast.failed_to_delete_dashboard')
+                    : t('component.custom_nav.generated_toast.failed_to_delete_dashboard')
             );
         }
     }

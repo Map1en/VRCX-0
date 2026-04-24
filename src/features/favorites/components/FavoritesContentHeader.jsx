@@ -1,9 +1,9 @@
 import { CopyIcon, Trash2Icon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
-import { Switch } from '@/ui/shadcn/switch';
 
-import { appI18n } from '@/services/i18nService.js';
+import { Switch } from '@/ui/shadcn/switch';
 
 function FavoritesContentHeader({
     title,
@@ -20,6 +20,8 @@ function FavoritesContentHeader({
     onCopySelection,
     onBulkRemove
 }) {
+    const { t } = useTranslation();
+
     return (
         <>
             <div className="mb-3 flex min-w-0 items-center justify-between gap-3">
@@ -32,7 +34,7 @@ function FavoritesContentHeader({
                     ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-2 text-sm">
-                    <span>{appI18n.t('view.favorite.generated.edit_mode')}</span>
+                    <span>{t('view.favorite.generated.edit_mode')}</span>
                     <Switch
                         checked={editMode}
                         disabled={editModeDisabled}
@@ -58,7 +60,7 @@ function FavoritesContentHeader({
                             disabled={!hasSelection}
                             onClick={onClearSelection}
                         >
-                            {appI18n.t('common.actions.clear')}
+                            {t('common.actions.clear')}
                         </Button>
                         {showCopyButton ? (
                             <Button
@@ -69,7 +71,7 @@ function FavoritesContentHeader({
                                 onClick={onCopySelection}
                             >
                                 <CopyIcon data-icon="inline-start" />
-                                {appI18n.t('common.actions.copy')}
+                                {t('common.actions.copy')}
                             </Button>
                         ) : null}
                         <Button
@@ -80,7 +82,7 @@ function FavoritesContentHeader({
                             onClick={onBulkRemove}
                         >
                             <Trash2Icon data-icon="inline-start" />
-                            {appI18n.t('view.favorite.bulk_unfavorite')}
+                            {t('view.favorite.bulk_unfavorite')}
                         </Button>
                     </div>
                 ) : null}

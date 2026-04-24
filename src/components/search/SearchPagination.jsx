@@ -1,12 +1,12 @@
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
 import {
     Pagination,
     PaginationContent,
     PaginationItem
 } from '@/ui/shadcn/pagination';
-import { appI18n } from '@/services/i18nService.js';
 
 export function SearchPagination({
     show = false,
@@ -15,6 +15,8 @@ export function SearchPagination({
     onPrev,
     onNext
 }) {
+    const { t } = useTranslation();
+
     if (!show) {
         return null;
     }
@@ -32,7 +34,7 @@ export function SearchPagination({
                         onClick={onPrev}
                     >
                         <ArrowLeftIcon data-icon="inline-start" />
-                        {appI18n.t('table.pagination.previous')}
+                        {t('table.pagination.previous')}
                     </Button>
                 </PaginationItem>
                 <PaginationItem>
@@ -44,7 +46,7 @@ export function SearchPagination({
                         disabled={nextDisabled}
                         onClick={onNext}
                     >
-                        {appI18n.t('table.pagination.next')}
+                        {t('table.pagination.next')}
                         <ArrowRightIcon data-icon="inline-end" />
                     </Button>
                 </PaginationItem>

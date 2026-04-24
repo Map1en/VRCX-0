@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
     normalizeFavoriteSearchValue as normalizeSearchValue
@@ -43,6 +44,8 @@ export function useFavoritesViewData({
     selectedSource,
     sortValue
 }) {
+    const { t } = useTranslation();
+
     const favoritesSortIndex = useMemo(() => {
         const index = Object.create(null);
         favoritesSortOrder.forEach((favoriteId, position) => {
@@ -51,7 +54,7 @@ export function useFavoritesViewData({
         return index;
     }, [favoritesSortOrder]);
 
-    const pageConfig = useMemo(() => getFavoritesPageConfig(kind), [kind]);
+    const pageConfig = useMemo(() => getFavoritesPageConfig(kind, t), [kind, t]);
 
     const remoteGroups = useMemo(() => {
         return buildFavoriteRemoteGroups({
@@ -85,9 +88,10 @@ export function useFavoritesViewData({
     const avatarHistoryGroups = useMemo(() => {
         return buildFavoriteAvatarHistoryGroups({
             kind,
-            avatarHistoryLength: avatarHistory.length
+            avatarHistoryLength: avatarHistory.length,
+            t
         });
-    }, [avatarHistory.length, kind]);
+    }, [avatarHistory.length, kind, t]);
 
     const remoteGroupLabelByKey = useMemo(
         () => buildFavoriteGroupLabelByKey(remoteGroups),
@@ -105,7 +109,8 @@ export function useFavoritesViewData({
             remoteFavoritesById,
             remoteEntityDetailsData: remoteEntityDetails.data,
             remoteEntityDetailsStatus: remoteEntityDetails.status,
-            remoteGroupLabelByKey
+            remoteGroupLabelByKey,
+            t
         });
     }, [
         favoritesSortIndex,
@@ -117,7 +122,8 @@ export function useFavoritesViewData({
         remoteFavoritesById,
         remoteGroupLabelByKey,
         remoteGroups,
-        sortValue
+        sortValue,
+        t
     ]);
 
     const localItemsByGroup = useMemo(() => {
@@ -130,7 +136,8 @@ export function useFavoritesViewData({
             localAvatarDetailsById,
             localWorldDetailsById,
             friendsById,
-            sortValue
+            sortValue,
+            t
         });
     }, [
         friendsById,
@@ -141,12 +148,13 @@ export function useFavoritesViewData({
         localGroups,
         localWorldDetailsById,
         localWorldFavorites,
-        sortValue
+        sortValue,
+        t
     ]);
 
     const avatarHistoryItems = useMemo(() => {
-        return buildFavoriteAvatarHistoryItems({ kind, avatarHistory });
-    }, [avatarHistory, kind]);
+        return buildFavoriteAvatarHistoryItems({ kind, avatarHistory, t });
+    }, [avatarHistory, kind, t]);
 
     const allItems = useMemo(
         () => [

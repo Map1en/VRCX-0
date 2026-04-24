@@ -2,6 +2,7 @@ import { UserIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { cn } from '@/lib/utils.js';
 import { avatarProfileRepository } from '@/repositories/index.js';
@@ -32,7 +33,6 @@ import {
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Textarea } from '@/ui/shadcn/textarea';
-import { appI18n } from '@/services/i18nService.js';
 
 const contentTagOptions = [
     { value: 'content_horror', label: 'Horror' },
@@ -160,6 +160,8 @@ export function AvatarContentTagsDialog({
     onOpenChange,
     onSavedCurrentAvatar
 }) {
+    const { t } = useTranslation();
+
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [ownAvatars, setOwnAvatars] = useState([]);
@@ -205,7 +207,7 @@ export function AvatarContentTagsDialog({
                     toast.error(
                         error instanceof Error
                             ? error.message
-                            : appI18n.t('dialog.avatar_owner_edit_dialogs.generated_toast.failed_to_load_own_avatars')
+                            : t('dialog.avatar_owner_edit_dialogs.generated_toast.failed_to_load_own_avatars')
                     );
                 }
             })
@@ -290,7 +292,7 @@ export function AvatarContentTagsDialog({
                     );
                 }
             }
-            toast.success(appI18n.t('dialog.avatar.generated.avatar_content_tags_updated'));
+            toast.success(t('dialog.avatar.generated.avatar_content_tags_updated'));
             onOpenChange(false);
         } catch (error) {
             const rollbackFailures = [];
@@ -328,11 +330,11 @@ export function AvatarContentTagsDialog({
                     : 'Failed to update avatar content tags.';
             if (savedAvatarIds.length && rollbackFailures.length) {
                 toast.error(
-                    appI18n.t('dialog.avatar_owner_edit_dialogs.generated_dynamic.value_rolled_back_value_avatar_s_but_value_rollb', { value: baseMessage, value2: savedAvatarIds.length - rollbackFailures.length, value3: rollbackFailures.length })
+                    t('dialog.avatar_owner_edit_dialogs.generated_dynamic.value_rolled_back_value_avatar_s_but_value_rollb', { value: baseMessage, value2: savedAvatarIds.length - rollbackFailures.length, value3: rollbackFailures.length })
                 );
             } else if (savedAvatarIds.length) {
                 toast.error(
-                    appI18n.t('dialog.avatar_owner_edit_dialogs.generated_dynamic.value_rolled_back_value_avatar_s', { value: baseMessage, value2: savedAvatarIds.length })
+                    t('dialog.avatar_owner_edit_dialogs.generated_dynamic.value_rolled_back_value_avatar_s', { value: baseMessage, value2: savedAvatarIds.length })
                 );
             } else {
                 toast.error(baseMessage);
@@ -346,15 +348,15 @@ export function AvatarContentTagsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-[min(92vw,49rem)]">
                 <DialogHeader>
-                    <DialogTitle>{appI18n.t('dialog.avatar.actions.change_content_tags')}</DialogTitle>
+                    <DialogTitle>{t('dialog.avatar.actions.change_content_tags')}</DialogTitle>
                     <DialogDescription>
-                        {appI18n.t('dialog.avatar.generated.apply_content_tags_to_this_avatar_or_selected_owned_avatars')}
+                        {t('dialog.avatar.generated.apply_content_tags_to_this_avatar_or_selected_owned_avatars')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <FieldSet>
                         <FieldLegend variant="label">
-                            {appI18n.t('dialog.avatar.generated.built_in_content_tags')}
+                            {t('dialog.avatar.generated.built_in_content_tags')}
                         </FieldLegend>
                         <FieldGroup
                             data-slot="checkbox-group"
@@ -388,7 +390,7 @@ export function AvatarContentTagsDialog({
                             htmlFor="avatar-content-tags-csv"
                             className="sr-only"
                         >
-                            {appI18n.t('dialog.avatar.generated.raw_content_tags')}
+                            {t('dialog.avatar.generated.raw_content_tags')}
                         </FieldLabel>
                         <Textarea
                             id="avatar-content-tags-csv"
@@ -437,7 +439,7 @@ export function AvatarContentTagsDialog({
                         disabled={saving}
                         onClick={() => onOpenChange(false)}
                     >
-                        {appI18n.t('common.actions.cancel')}
+                        {t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -446,7 +448,7 @@ export function AvatarContentTagsDialog({
                         }
                         onClick={() => void save()}
                     >
-                        {appI18n.t('common.actions.save')}
+                        {t('common.actions.save')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -461,6 +463,8 @@ export function AvatarStylesDialog({
     onOpenChange,
     onSavedCurrentAvatar
 }) {
+    const { t } = useTranslation();
+
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [styles, setStyles] = useState([]);
@@ -507,7 +511,7 @@ export function AvatarStylesDialog({
                     toast.error(
                         error instanceof Error
                             ? error.message
-                            : appI18n.t('dialog.avatar_owner_edit_dialogs.generated_toast.failed_to_load_avatar_styles')
+                            : t('dialog.avatar_owner_edit_dialogs.generated_toast.failed_to_load_avatar_styles')
                     );
                 }
             })
@@ -562,13 +566,13 @@ export function AvatarStylesDialog({
                           tags: [...remainingTags, ...nextAuthorTags]
                       }
             );
-            toast.success(appI18n.t('dialog.avatar.generated.avatar_styles_and_author_tags_updated'));
+            toast.success(t('dialog.avatar.generated.avatar_styles_and_author_tags_updated'));
             onOpenChange(false);
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('dialog.avatar_owner_edit_dialogs.generated_toast.failed_to_update_avatar_styles_and_author_tags')
+                    : t('dialog.avatar_owner_edit_dialogs.generated_toast.failed_to_update_avatar_styles_and_author_tags')
             );
         } finally {
             setSaving(false);
@@ -579,14 +583,14 @@ export function AvatarStylesDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-[min(92vw,25rem)]">
                 <DialogHeader>
-                    <DialogTitle>{appI18n.t('dialog.avatar.actions.change_styles_author_tags')}</DialogTitle>
+                    <DialogTitle>{t('dialog.avatar.actions.change_styles_author_tags')}</DialogTitle>
                     <DialogDescription>
-                        {appI18n.t('dialog.avatar.generated.set_avatar_style_metadata_and_author_tags')}
+                        {t('dialog.avatar.generated.set_avatar_style_metadata_and_author_tags')}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <Field>
-                        <FieldLabel>{appI18n.t('dialog.set_avatar_styles.primary_style')}</FieldLabel>
+                        <FieldLabel>{t('dialog.set_avatar_styles.primary_style')}</FieldLabel>
                         <Select
                             value={primaryStyle || noneValue}
                             disabled={loading}
@@ -597,12 +601,12 @@ export function AvatarStylesDialog({
                             }
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder={appI18n.t('dialog.avatar.generated.select_style')} />
+                                <SelectValue placeholder={t('dialog.avatar.generated.select_style')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectItem value={noneValue}>
-                                        {appI18n.t('dialog.avatar.generated.none')}
+                                        {t('dialog.avatar.generated.none')}
                                     </SelectItem>
                                     {styles.map((style) => (
                                         <SelectItem
@@ -617,7 +621,7 @@ export function AvatarStylesDialog({
                         </Select>
                     </Field>
                     <Field>
-                        <FieldLabel>{appI18n.t('dialog.set_avatar_styles.secondary_style')}</FieldLabel>
+                        <FieldLabel>{t('dialog.set_avatar_styles.secondary_style')}</FieldLabel>
                         <Select
                             value={secondaryStyle || noneValue}
                             disabled={loading}
@@ -628,12 +632,12 @@ export function AvatarStylesDialog({
                             }
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder={appI18n.t('dialog.avatar.generated.select_style')} />
+                                <SelectValue placeholder={t('dialog.avatar.generated.select_style')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectItem value={noneValue}>
-                                        {appI18n.t('dialog.avatar.generated.none')}
+                                        {t('dialog.avatar.generated.none')}
                                     </SelectItem>
                                     {styles.map((style) => (
                                         <SelectItem
@@ -649,7 +653,7 @@ export function AvatarStylesDialog({
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="avatar-owner-author-tags">
-                            {appI18n.t('dialog.world.info.author_tags')}
+                            {t('dialog.world.info.author_tags')}
                         </FieldLabel>
                         <Textarea
                             id="avatar-owner-author-tags"
@@ -669,14 +673,14 @@ export function AvatarStylesDialog({
                         disabled={saving}
                         onClick={() => onOpenChange(false)}
                     >
-                        {appI18n.t('common.actions.cancel')}
+                        {t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
                         disabled={saving || loading}
                         onClick={() => void save()}
                     >
-                        {appI18n.t('common.actions.save')}
+                        {t('common.actions.save')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

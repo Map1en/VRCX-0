@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useI18n } from '@/app/hooks/use-i18n.js';
+import { useTranslation } from 'react-i18next';
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata.js';
 import { useVirtualSidebarRows } from '@/components/sidebar/virtualSidebarRows.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -30,7 +30,6 @@ import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
-import { appI18n } from '@/services/i18nService.js';
 import {
     buildFavoriteIdSet,
     buildSameInstanceGroups,
@@ -65,7 +64,7 @@ const defaultGroupState = {
     sameInstance: true
 };
 export function FriendsSidebar({ prefs }) {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const themeMode = useShellStore((state) => state.themeMode);
     const timeUnitLabels = useShellStore((state) => state.timeUnitLabels);
     const currentUser = useRuntimeStore(
@@ -538,7 +537,7 @@ export function FriendsSidebar({ prefs }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.friends_sidebar.generated_toast.failed_to_launch_instance')
+                    : t('component.friends_sidebar.generated_toast.failed_to_launch_instance')
             );
         }
     }
@@ -563,7 +562,7 @@ export function FriendsSidebar({ prefs }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.friends_sidebar.generated_toast.failed_to_send_self_invite')
+                    : t('component.friends_sidebar.generated_toast.failed_to_send_self_invite')
             );
         }
     }
@@ -591,10 +590,10 @@ export function FriendsSidebar({ prefs }) {
             return;
         }
         const result = await confirm({
-            title: appI18n.t('component.friends_sidebar.generated_modal.send_invite'),
+            title: t('component.friends_sidebar.generated_modal.send_invite'),
             description: friend.displayName || friendId,
-            confirmText: appI18n.t('component.friends_sidebar.generated_modal.invite'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('component.friends_sidebar.generated_modal.invite'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -623,7 +622,7 @@ export function FriendsSidebar({ prefs }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.friends_sidebar.generated_toast.failed_to_send_invite')
+                    : t('component.friends_sidebar.generated_toast.failed_to_send_invite')
             );
         }
     }
@@ -634,10 +633,10 @@ export function FriendsSidebar({ prefs }) {
             return;
         }
         const result = await confirm({
-            title: appI18n.t('component.friends_sidebar.generated_modal.request_invite'),
+            title: t('component.friends_sidebar.generated_modal.request_invite'),
             description: friend.displayName || friendId,
-            confirmText: appI18n.t('component.friends_sidebar.generated_modal.request_invite_2'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('component.friends_sidebar.generated_modal.request_invite_2'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
@@ -656,7 +655,7 @@ export function FriendsSidebar({ prefs }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : appI18n.t('component.friends_sidebar.generated_toast.failed_to_request_invite')
+                    : t('component.friends_sidebar.generated_toast.failed_to_request_invite')
             );
         }
     }
@@ -668,12 +667,12 @@ export function FriendsSidebar({ prefs }) {
         }
         try {
             const result = await prompt({
-                title: appI18n.t('component.friends_sidebar.generated_modal.send_boop'),
+                title: t('component.friends_sidebar.generated_modal.send_boop'),
                 description:
-                    appI18n.t('component.friends_sidebar.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
+                    t('component.friends_sidebar.generated_modal.optional_emoji_id_leave_blank_to_send_the_defaul'),
                 inputValue: '',
-                confirmText: appI18n.t('component.friends_sidebar.generated_modal.send'),
-                cancelText: appI18n.t('common.actions.cancel')
+                confirmText: t('component.friends_sidebar.generated_modal.send'),
+                cancelText: t('common.actions.cancel')
             });
             if (!result.ok) {
                 return;
@@ -686,7 +685,7 @@ export function FriendsSidebar({ prefs }) {
             toast.success(t('side_panel.generated.boop_sent'));
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : appI18n.t('component.friends_sidebar.generated_toast.failed_to_send_boop')
+                error instanceof Error ? error.message : t('component.friends_sidebar.generated_toast.failed_to_send_boop')
             );
         }
     }
@@ -749,11 +748,11 @@ export function FriendsSidebar({ prefs }) {
 
     async function editCurrentUserStatusDescription() {
         const result = await prompt({
-            title: appI18n.t('component.friends_sidebar.generated_modal.edit_status_description'),
+            title: t('component.friends_sidebar.generated_modal.edit_status_description'),
             inputValue: currentUser?.statusDescription || '',
             multiline: true,
-            confirmText: appI18n.t('common.actions.save'),
-            cancelText: appI18n.t('common.actions.cancel')
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
             return;
