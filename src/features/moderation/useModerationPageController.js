@@ -302,6 +302,17 @@ export function useModerationPageController({ embedded = false } = {}) {
             DEFAULT_PAGE_SIZES[1]
         )
     }));
+    const filteredRows = useMemo(() => {
+        const activeTypeSet = selectedTypes.length
+            ? new Set(selectedTypes)
+            : null;
+        return rows.filter((row) => {
+            if (activeTypeSet && !activeTypeSet.has(row?.type)) {
+                return false;
+            }
+            return matchesSearch(row, searchQuery);
+        });
+    }, [rows, searchQuery, selectedTypes]);
     useModerationPageEffects({
         DEFAULT_PAGE_SIZES,
         TYPE_FILTERS_CONFIG_KEY,
@@ -345,17 +356,6 @@ export function useModerationPageController({ embedded = false } = {}) {
         vrchatModerationRepository,
         writePersistedState
     });
-    const filteredRows = useMemo(() => {
-        const activeTypeSet = selectedTypes.length
-            ? new Set(selectedTypes)
-            : null;
-        return rows.filter((row) => {
-            if (activeTypeSet && !activeTypeSet.has(row?.type)) {
-                return false;
-            }
-            return matchesSearch(row, searchQuery);
-        });
-    }, [rows, searchQuery, selectedTypes]);
     const { handleDeleteModeration, openModerationUser } =
         useModerationPageActions({
             confirm,

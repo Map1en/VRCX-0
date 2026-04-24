@@ -34,7 +34,7 @@ import { groupDisplayName } from '../userDialogRows.js';
 import { rowImage } from './userDialogEntityImages.js';
 import { openRow } from './userDialogEntityNavigation.js';
 
-function visibilityLabel(visibility) {
+function visibilityLabel(visibility, t) {
     if (visibility === 'friends') {
         return t('dialog.user.generated.visibility_friends');
     }
@@ -160,7 +160,7 @@ export function UserGroupCard({
                         {visibility !== 'visible' ? (
                             <EyeIcon
                                 className="mr-1.5 shrink-0"
-                                aria-label={visibilityLabel(visibility)}
+                                aria-label={visibilityLabel(visibility, t)}
                             />
                         ) : null}
                         <span className="truncate">({memberCount})</span>

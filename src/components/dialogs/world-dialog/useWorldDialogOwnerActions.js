@@ -20,9 +20,10 @@ export function useWorldDialogOwnerActions({
     world
 }) {
     const { t } = useTranslation();
+    const worldNameOrId = world?.name || world?.id || '';
 
     async function saveWorldPatch(patch, { successMessage, errorMessage }) {
-        if (!canManageWorld || actionStatusRef.current !== 'idle') {
+        if (!world?.id || !canManageWorld || actionStatusRef.current !== 'idle') {
             return false;
         }
 
@@ -68,8 +69,8 @@ export function useWorldDialogOwnerActions({
     async function renameWorld() {
         const result = await prompt({
             title: t('dialog.world.generated_modal.rename_world'),
-            description: world.name || world.id,
-            inputValue: world.name || '',
+            description: worldNameOrId,
+            inputValue: world?.name || '',
             confirmText: t('common.actions.save'),
             cancelText: t('common.actions.cancel')
         });
@@ -87,8 +88,8 @@ export function useWorldDialogOwnerActions({
     async function changeWorldDescription() {
         const result = await prompt({
             title: t('dialog.world.generated_modal.change_world_description'),
-            description: world.name || world.id,
-            inputValue: world.description || '',
+            description: worldNameOrId,
+            inputValue: world?.description || '',
             multiline: true,
             confirmText: t('common.actions.save'),
             cancelText: t('common.actions.cancel')
@@ -107,8 +108,8 @@ export function useWorldDialogOwnerActions({
     async function changeWorldCapacity(field, label) {
         const result = await prompt({
             title: t('dialog.world.generated_dynamic.change_value', { value: label }),
-            description: world.name || world.id,
-            inputValue: String(world[field] || ''),
+            description: worldNameOrId,
+            inputValue: String(world?.[field] || ''),
             confirmText: t('common.actions.save'),
             cancelText: t('common.actions.cancel')
         });
@@ -132,8 +133,8 @@ export function useWorldDialogOwnerActions({
     async function changeWorldYouTubePreview() {
         const result = await prompt({
             title: t('dialog.world.generated_modal.change_youtube_preview'),
-            description: world.name || world.id,
-            inputValue: world.previewYoutubeId || '',
+            description: worldNameOrId,
+            inputValue: world?.previewYoutubeId || '',
             confirmText: t('common.actions.save'),
             cancelText: t('common.actions.cancel')
         });
@@ -204,13 +205,13 @@ export function useWorldDialogOwnerActions({
     }
 
     async function updateWorldPublication(nextPublished) {
-        if (!canManageWorld || actionStatusRef.current !== 'idle') {
+        if (!world?.id || !canManageWorld || actionStatusRef.current !== 'idle') {
             return;
         }
 
         const result = await confirm({
             title: nextPublished ? 'Publish world?' : 'Unpublish world?',
-            description: world.name || world.id,
+            description: worldNameOrId,
             confirmText: nextPublished ? 'Publish' : 'Unpublish',
             cancelText: t('common.actions.cancel'),
             destructive: !nextPublished
@@ -264,13 +265,13 @@ export function useWorldDialogOwnerActions({
     }
 
     async function deleteWorldPersistentData() {
-        if (!currentUserId || !world.id || actionStatusRef.current !== 'idle') {
+        if (!currentUserId || !world?.id || actionStatusRef.current !== 'idle') {
             return;
         }
 
         const result = await confirm({
             title: t('dialog.world.generated_modal.delete_persistent_data'),
-            description: world.name || world.id,
+            description: worldNameOrId,
             confirmText: t('common.actions.delete'),
             cancelText: t('common.actions.cancel'),
             destructive: true
@@ -315,13 +316,13 @@ export function useWorldDialogOwnerActions({
     }
 
     async function deleteWorld() {
-        if (!canManageWorld || actionStatusRef.current !== 'idle') {
+        if (!world?.id || !canManageWorld || actionStatusRef.current !== 'idle') {
             return;
         }
 
         const result = await confirm({
             title: t('dialog.world.generated_modal.delete_world'),
-            description: world.name || world.id,
+            description: worldNameOrId,
             confirmText: t('common.actions.delete'),
             cancelText: t('common.actions.cancel'),
             destructive: true

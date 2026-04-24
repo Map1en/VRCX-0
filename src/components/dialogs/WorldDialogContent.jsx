@@ -394,6 +394,40 @@ export function WorldDialogContent({
         }
     }, [initialAction, initialActionNonce, profileWorldId, world?.id]);
 
+    const isInstanceLocation = normalizedWorldId.includes(':');
+    const worldDialogShortName = isInstanceLocation
+        ? parseLocation(normalizedWorldId).shortName
+        : '';
+    const isHomeWorld =
+        normalizeEntityId(currentHomeLocation) === normalizeEntityId(world?.id);
+    const canUpdateHome = Boolean(currentUserId && world?.id);
+    const canManageWorld =
+        normalizeEntityId(world?.authorId) === normalizeEntityId(currentUserId);
+
+    function isCurrentWorldTarget(targetWorldId, targetEndpoint) {
+        return (
+            activeWorldTargetRef.current.worldId ===
+                normalizeEntityId(targetWorldId) &&
+            activeWorldTargetRef.current.endpoint === targetEndpoint
+        );
+    }
+
+    const ownerActions = useWorldDialogOwnerActions({
+        actionStatusRef,
+        canManageWorld,
+        closeDialog,
+        confirm,
+        currentEndpoint,
+        currentUserId,
+        isCurrentWorldTarget,
+        prompt,
+        setActionStatus,
+        setHasPersistData,
+        setOwnerEditor,
+        setWorld,
+        world
+    });
+
     if (loadStatus === 'running' && !world) {
         return (
             <WorldDialogEmptyState
@@ -420,15 +454,6 @@ export function WorldDialogContent({
         world.imageUrl || world.thumbnailImageUrl,
         512
     );
-    const isInstanceLocation = normalizedWorldId.includes(':');
-    const worldDialogShortName = isInstanceLocation
-        ? parseLocation(normalizedWorldId).shortName
-        : '';
-    const isHomeWorld =
-        normalizeEntityId(currentHomeLocation) === normalizeEntityId(world.id);
-    const canUpdateHome = Boolean(currentUserId && world.id);
-    const canManageWorld =
-        normalizeEntityId(world.authorId) === normalizeEntityId(currentUserId);
     const worldForView = {
         ...world,
         $isCached: worldSideData.cache.inCache,
@@ -437,14 +462,6 @@ export function WorldDialogContent({
         $cachePath: worldSideData.cache.cachePath,
         fileAnalysis: worldSideData.fileAnalysis
     };
-
-    function isCurrentWorldTarget(targetWorldId, targetEndpoint) {
-        return (
-            activeWorldTargetRef.current.worldId ===
-                normalizeEntityId(targetWorldId) &&
-            activeWorldTargetRef.current.endpoint === targetEndpoint
-        );
-    }
 
     async function refreshWorldProfile() {
         if (actionStatusRef.current !== 'idle') {
@@ -673,22 +690,6 @@ export function WorldDialogContent({
 
         await saveMemo(result.value);
     }
-
-    const ownerActions = useWorldDialogOwnerActions({
-        actionStatusRef,
-        canManageWorld,
-        closeDialog,
-        confirm,
-        currentEndpoint,
-        currentUserId,
-        isCurrentWorldTarget,
-        prompt,
-        setActionStatus,
-        setHasPersistData,
-        setOwnerEditor,
-        setWorld,
-        world
-    });
 
     async function loadNewInstanceDefaults() {
         const [
