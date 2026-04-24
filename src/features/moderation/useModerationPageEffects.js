@@ -10,6 +10,7 @@ export function useModerationPageEffects({
     currentEndpoint,
     currentUserId,
     filteredRows,
+    getTablePageSizePreference,
     getTablePageSizesPreference,
     hasWrittenPageSizeRef,
     hasWrittenSortingRef,
@@ -45,7 +46,7 @@ export function useModerationPageEffects({
         let active = true;
         Promise.all([
             getTablePageSizesPreference(DEFAULT_PAGE_SIZES),
-            configRepository.getInt('tablePageSize', DEFAULT_PAGE_SIZES[1]),
+            getTablePageSizePreference(20),
             configRepository.getString(TYPE_FILTERS_CONFIG_KEY, '[]')
         ])
             .then(([nextPageSizes, nextPageSize, nextTypeFilters]) => {
@@ -72,14 +73,7 @@ export function useModerationPageEffects({
                           resolvedConfiguredPageSize
                       )
                     : resolvedConfiguredPageSize;
-                setPageSizes((current) =>
-                    sanitizePageSizes([
-                        ...current,
-                        ...resolvedPageSizes,
-                        resolvedConfiguredPageSize,
-                        resolvedActivePageSize
-                    ])
-                );
+                setPageSizes(resolvedPageSizes);
                 setPagination((current) => ({
                     ...current,
                     pageSize: resolvedActivePageSize
@@ -100,11 +94,18 @@ export function useModerationPageEffects({
         }
         const resolvedPageSizes = sanitizePageSizes(tablePageSizesPreference);
         setPageSizes(resolvedPageSizes);
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0,
-            pageSize: resolvePageSize(current.pageSize, resolvedPageSizes)
-        }));
+        setPagination((current) => {
+            const pageSize = resolvePageSize(
+                current.pageSize,
+                resolvedPageSizes
+            );
+            return pageSize === current.pageSize
+                ? current
+                : {
+                      ...current,
+                      pageSize
+                  };
+        });
     }, [preferencesHydrated, tablePageSizesPreference]);
     useEffect(() => {
         if (!hydratedTypeFiltersRef.current) {

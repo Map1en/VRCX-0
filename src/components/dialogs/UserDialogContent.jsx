@@ -218,6 +218,8 @@ export function UserDialogContent({ userId, seedData = null, openNonce = 0 }) {
         currentGameDestination,
         currentGameLocation,
         currentSnapshotLocation,
+        currentUserSnapshot,
+        isTargetCurrentUser,
         normalizedUserId,
         openNonce,
         profile,

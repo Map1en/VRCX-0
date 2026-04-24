@@ -15,7 +15,7 @@ export function VrcNotificationPageView({
     detail,
     rows,
     pagination,
-    DEFAULT_PAGE_SIZES,
+    pageSizes,
     setPagination,
     resolvePageSize,
     InviteMessageDialog,
@@ -58,11 +58,15 @@ export function VrcNotificationPageView({
                     loadStatus={loadStatus}
                     rowsCount={rows.length}
                     pagination={pagination}
-                    pageSizes={DEFAULT_PAGE_SIZES}
+                    pageSizes={pageSizes}
                     onPageSizeChange={(value) =>
                         setPagination({
                             pageIndex: 0,
-                            pageSize: resolvePageSize(value)
+                            pageSize: resolvePageSize(
+                                value,
+                                pageSizes,
+                                pagination.pageSize
+                            )
                         })
                     }
                     t={t}

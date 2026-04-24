@@ -1,4 +1,4 @@
-export const FEED_TABLE_DEFAULT_PAGE_SIZES = [10, 25, 50];
+export const FEED_TABLE_DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 export const FEED_TABLE_DEFAULT_SORTING = [];
 export const FEED_TABLE_COLUMN_IDS = [
     'created_at',
@@ -77,7 +77,9 @@ export function sanitizeFeedPageSizes(value) {
 
     const sizes = value
         .map((entry) => Number.parseInt(entry, 10))
-        .filter((entry) => Number.isFinite(entry) && entry > 0);
+        .filter(
+            (entry) => Number.isFinite(entry) && entry > 0 && entry <= 1000
+        );
     return sizes.length
         ? [...new Set(sizes)].sort((left, right) => left - right)
         : FEED_TABLE_DEFAULT_PAGE_SIZES;
@@ -128,12 +130,26 @@ export function resolveFeedPageSize(
     pageSizes = FEED_TABLE_DEFAULT_PAGE_SIZES,
     fallback = pageSizes[1] ?? FEED_TABLE_DEFAULT_PAGE_SIZES[1]
 ) {
+    const allowed = Array.isArray(pageSizes)
+        ? pageSizes.filter((size) => Number.isFinite(size) && size > 0)
+        : FEED_TABLE_DEFAULT_PAGE_SIZES;
+    const fallbackPageSize = allowed.length
+        ? allowed[0]
+        : FEED_TABLE_DEFAULT_PAGE_SIZES[0];
+    const nearestPageSize = (value) =>
+        allowed.length
+            ? allowed.reduce((previous, size) =>
+                  Math.abs(size - value) < Math.abs(previous - value)
+                      ? size
+                      : previous
+              )
+            : fallbackPageSize;
     const parsed = Number.parseInt(candidate, 10);
-    if (Number.isFinite(parsed) && parsed > 0 && pageSizes.includes(parsed)) {
-        return parsed;
+    if (Number.isFinite(parsed) && parsed > 0) {
+        return allowed.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
 
-    return pageSizes.includes(fallback)
+    return allowed.includes(fallback)
         ? fallback
-        : (pageSizes[0] ?? FEED_TABLE_DEFAULT_PAGE_SIZES[0]);
+        : nearestPageSize(Number(fallback) || fallbackPageSize);
 }

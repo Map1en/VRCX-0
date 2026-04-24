@@ -337,7 +337,8 @@ async function getGroupProfile({
     groupId,
     endpoint = '',
     includeRoles = true,
-    force = false
+    force = false,
+    dialog = false
 }) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
@@ -348,7 +349,9 @@ async function getGroupProfile({
 
     const json = await fetchCachedData({
         queryKey: queryKeys.group(normalizedGroupId, includeRoles, endpoint),
-        policy: entityQueryPolicies.group,
+        policy: dialog
+            ? entityQueryPolicies.groupDialog
+            : entityQueryPolicies.group,
         force,
         queryFn: async () => {
             const response = await executeGet(

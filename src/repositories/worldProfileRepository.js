@@ -337,7 +337,13 @@ async function executeDelete(path, params = {}, { endpoint = '' } = {}) {
     };
 }
 
-async function getWorldProfile({ worldId, endpoint = '', force = false }) {
+async function getWorldProfile({
+    worldId,
+    endpoint = '',
+    force = false,
+    dialog = false,
+    location = false
+}) {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
         throw new Error(
@@ -347,7 +353,11 @@ async function getWorldProfile({ worldId, endpoint = '', force = false }) {
 
     const json = await fetchCachedData({
         queryKey: queryKeys.world(normalizedWorldId, endpoint),
-        policy: entityQueryPolicies.world,
+        policy: location
+            ? entityQueryPolicies.worldLocation
+            : dialog
+              ? entityQueryPolicies.worldDialog
+              : entityQueryPolicies.world,
         force,
         queryFn: () =>
             fetchWorldProfile({ worldId: normalizedWorldId, endpoint })

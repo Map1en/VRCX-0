@@ -34,6 +34,7 @@ import { withUploadTimeout } from '@/shared/utils/imageUpload.js';
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useModalStore } from '@/state/modalStore.js';
+import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
 
@@ -56,6 +57,7 @@ import {
     sanitizeNotificationColumnSizing as sanitizeColumnSizing,
     sanitizeNotificationColumnVisibility as sanitizeColumnVisibility,
     sanitizeNotificationFilters,
+    sanitizeNotificationPageSizes as sanitizePageSizes,
     sanitizeNotificationSorting as sanitizeSorting,
     writePersistedNotificationTableState as writePersistedState
 } from './notificationTableState.js';
@@ -89,6 +91,15 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
     );
     const confirm = useModalStore((state) => state.confirm);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
+    const preferencesHydrated = usePreferencesStore(
+        (state) => state.preferencesHydrated
+    );
+    const tablePageSizePreference = usePreferencesStore(
+        (state) => state.tablePageSize
+    );
+    const tablePageSizesPreference = usePreferencesStore(
+        (state) => state.tablePageSizes
+    );
     const notificationRows = useVrcNotificationStore((state) => state.rows);
     const notificationLoadStatus = useVrcNotificationStore(
         (state) => state.loadStatus
@@ -146,6 +157,13 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
         [t]
     );
     const [persistedState] = useState(() => readPersistedState());
+    const persistedPageSize = Number.parseInt(persistedState.pageSize, 10);
+    const hasPersistedPageSize =
+        Number.isFinite(persistedPageSize) && persistedPageSize > 0;
+    const hasStoredPageSizeRef = useRef(hasPersistedPageSize);
+    const storedPageSizeRef = useRef(
+        hasPersistedPageSize ? persistedPageSize : null
+    );
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenColumnVisibilityRef = useRef(false);
@@ -156,6 +174,7 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
     const [activeTypes, setActiveTypes] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [preferencesReady, setPreferencesReady] = useState(false);
+    const [pageSizes, setPageSizes] = useState(DEFAULT_PAGE_SIZES);
     const [sorting, setSorting] = useState(() =>
         sanitizeSorting(persistedState.sorting)
     );
@@ -173,7 +192,7 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
     );
     const [pagination, setPagination] = useState({
         pageIndex: 0,
-        pageSize: resolvePageSize(persistedState.pageSize)
+        pageSize: resolvePageSize(persistedPageSize)
     });
     const [reloadToken, setReloadToken] = useState(0);
     const [inviteResponseRequest, setInviteResponseRequest] = useState(null);
@@ -252,6 +271,8 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
             hasWrittenPageSizeRef.current = true;
             return;
         }
+        hasStoredPageSizeRef.current = true;
+        storedPageSizeRef.current = pagination.pageSize;
         writePersistedState({
             pageSize: pagination.pageSize
         });
@@ -276,6 +297,40 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
             columnOrderLocked
         });
     }, [columnOrder, columnOrderLocked, columnSizing]);
+    useEffect(() => {
+        if (!preferencesHydrated) {
+            return;
+        }
+        const resolvedPageSizes = sanitizePageSizes(tablePageSizesPreference);
+        const configuredPageSize = resolvePageSize(
+            tablePageSizePreference,
+            resolvedPageSizes
+        );
+        setPageSizes(resolvedPageSizes);
+        setPagination((current) => {
+            const storedPageSize = Number.isFinite(storedPageSizeRef.current)
+                ? storedPageSizeRef.current
+                : current.pageSize;
+            const activePageSize = hasStoredPageSizeRef.current
+                ? resolvePageSize(
+                      storedPageSize,
+                      resolvedPageSizes,
+                      configuredPageSize
+                  )
+                : configuredPageSize;
+            storedPageSizeRef.current = activePageSize;
+            return activePageSize === current.pageSize
+                ? current
+                : {
+                      ...current,
+                      pageSize: activePageSize
+                  };
+        });
+    }, [
+        preferencesHydrated,
+        tablePageSizePreference,
+        tablePageSizesPreference
+    ]);
     useEffect(() => {
         let active = true;
         if (!preferencesReady) {
@@ -464,7 +519,7 @@ export function useVrcNotificationPageController({ embedded = false } = {}) {
         detail,
         rows,
         pagination,
-        DEFAULT_PAGE_SIZES,
+        pageSizes,
         setPagination,
         resolvePageSize,
         InviteMessageDialog,

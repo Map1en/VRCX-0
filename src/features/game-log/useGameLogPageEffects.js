@@ -16,6 +16,7 @@ export function useGameLogPageEffects({
     favoritesOnly,
     gameLogDisabled,
     gameLogRepository,
+    getTablePageSizePreference,
     getTablePageSizesPreference,
     hasWrittenPageSizeRef,
     hasWrittenSortingRef,
@@ -99,10 +100,7 @@ export function useGameLogPageEffects({
         let active = true;
         Promise.all([
             getTablePageSizesPreference(GAME_LOG_DEFAULT_PAGE_SIZES),
-            configRepository.getInt(
-                'tablePageSize',
-                GAME_LOG_DEFAULT_PAGE_SIZES[1]
-            ),
+            getTablePageSizePreference(20),
             configRepository.getString('gameLogTableFilters', '[]'),
             configRepository.getBool('VRCX_gameLogTableVIPFilter', false),
             configRepository.getString('gameLogSessionsFilters', '[]'),
@@ -147,14 +145,7 @@ export function useGameLogPageEffects({
                               resolvedConfiguredPageSize
                           )
                         : resolvedConfiguredPageSize;
-                    setPageSizes((current) =>
-                        sanitizeGameLogPageSizes([
-                            ...current,
-                            ...resolvedPageSizes,
-                            resolvedConfiguredPageSize,
-                            resolvedActivePageSize
-                        ])
-                    );
+                    setPageSizes(resolvedPageSizes);
                     setPagination((current) => ({
                         ...current,
                         pageSize: resolvedActivePageSize
@@ -218,14 +209,18 @@ export function useGameLogPageEffects({
             tablePageSizesPreference
         );
         setPageSizes(resolvedPageSizes);
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0,
-            pageSize: resolveGameLogPageSize(
+        setPagination((current) => {
+            const pageSize = resolveGameLogPageSize(
                 current.pageSize,
                 resolvedPageSizes
-            )
-        }));
+            );
+            return pageSize === current.pageSize
+                ? current
+                : {
+                      ...current,
+                      pageSize
+                  };
+        });
         setSessionLimit((current) =>
             resolveGameLogPageSize(current, resolvedPageSizes)
         );

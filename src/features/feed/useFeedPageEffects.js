@@ -21,8 +21,12 @@ export function useFeedPageEffects({
     friendLogRepository,
     friendRosterLastLoadedAt,
     gameLogRepository,
+    getTablePageSizePreference,
     getTablePageSizesPreference,
+    hasWrittenColumnVisibilityRef,
     hasWrittenPageSizeRef,
+    hasWrittenSortingRef,
+    hasWrittenTableLayoutRef,
     isFavoritesLoaded,
     lastLiveFeedSequenceRef,
     maxFeedRows,
@@ -171,7 +175,7 @@ export function useFeedPageEffects({
             configRepository.getString('feedTableFilters', '[]'),
             configRepository.getBool('VRCX_feedTableVIPFilter', false),
             getTablePageSizesPreference(DEFAULT_PAGE_SIZES),
-            configRepository.getInt('tablePageSize', DEFAULT_PAGE_SIZES[1])
+            getTablePageSizePreference(20)
         ])
             .then(([savedFilters, savedVip, savedPageSizes, savedPageSize]) => {
                 if (!active) {
@@ -223,11 +227,15 @@ export function useFeedPageEffects({
         }
         const nextPageSizes = sanitizePageSizes(tablePageSizesPreference);
         setPageSizes(nextPageSizes);
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0,
-            pageSize: resolvePageSize(current.pageSize, nextPageSizes)
-        }));
+        setPagination((current) => {
+            const pageSize = resolvePageSize(current.pageSize, nextPageSizes);
+            return pageSize === current.pageSize
+                ? current
+                : {
+                      ...current,
+                      pageSize
+                  };
+        });
     }, [preferencesHydrated, tablePageSizesPreference]);
     useEffect(() => {
         if (!preferencesReady) {
@@ -245,6 +253,10 @@ export function useFeedPageEffects({
         void configRepository.setBool('VRCX_feedTableVIPFilter', favoritesOnly);
     }, [favoritesOnly, preferencesReady]);
     useEffect(() => {
+        if (!hasWrittenSortingRef.current) {
+            hasWrittenSortingRef.current = true;
+            return;
+        }
         writePersistedState({
             sorting: sanitizeSorting(sorting)
         });
@@ -259,11 +271,19 @@ export function useFeedPageEffects({
         });
     }, [pagination.pageSize]);
     useEffect(() => {
+        if (!hasWrittenColumnVisibilityRef.current) {
+            hasWrittenColumnVisibilityRef.current = true;
+            return;
+        }
         writePersistedState({
             columnVisibility: sanitizeColumnVisibility(columnVisibility)
         });
     }, [columnVisibility]);
     useEffect(() => {
+        if (!hasWrittenTableLayoutRef.current) {
+            hasWrittenTableLayoutRef.current = true;
+            return;
+        }
         writePersistedState({
             columnOrder: sanitizeColumnOrder(columnOrder),
             columnSizing: sanitizeColumnSizing(columnSizing),

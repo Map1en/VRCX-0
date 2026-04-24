@@ -128,8 +128,8 @@ describe('myAvatarsState', () => {
         );
 
         expect(resolveMyAvatarsPageSize('50', [10, 25, 50], 25)).toBe(50);
-        expect(resolveMyAvatarsPageSize('999', [10, 25, 50], 25)).toBe(25);
-        expect(resolveMyAvatarsPageSize('999', [10, 50], 25)).toBe(10);
+        expect(resolveMyAvatarsPageSize('999', [10, 25, 50], 25)).toBe(50);
+        expect(resolveMyAvatarsPageSize('999', [10, 50], 25)).toBe(50);
         expect(resolveMyAvatarsPageSize('bad', [], 25)).toBe(10);
 
         expect(sanitizeMyAvatarsCardScale('0.2')).toBe(0.4);

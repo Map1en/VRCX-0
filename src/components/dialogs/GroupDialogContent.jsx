@@ -108,7 +108,8 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         groupProfileRepository
             .getGroupProfile({
                 groupId: normalizedGroupId,
-                endpoint: currentEndpoint
+                endpoint: currentEndpoint,
+                dialog: true
             })
             .then((nextGroup) => {
                 if (!active) {

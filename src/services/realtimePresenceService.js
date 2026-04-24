@@ -1,10 +1,19 @@
 import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
-import { configRepository, feedRepository } from '@/repositories/index.js';
+import {
+    configRepository,
+    feedRepository,
+    gameLogRepository
+} from '@/repositories/index.js';
+import { buildCurrentUserGameStatePresencePatch } from '@/shared/utils/currentUserPresence.js';
+import { createLocationEntry } from '@/shared/utils/gameLog.js';
+import { isRealInstance } from '@/shared/utils/instance.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFeedLiveStore } from '@/state/feedLiveStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
+import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useShellStore } from '@/state/shellStore.js';
+import { useVrcNotificationStore } from '@/state/vrcNotificationStore.js';
 
 import { pushSharedFeedNotification } from './sharedFeedFilterService.js';
 import { handleRealtimeNotificationEvent } from './vrcNotificationRuntimeService.js';
@@ -721,7 +730,185 @@ function notifyFriendLogMenu() {
     useShellStore.getState().notifyMenu('friend-log');
 }
 
-export function handleRealtimePresenceEvent(message) {
+function parseStringArray(value) {
+    if (Array.isArray(value)) {
+        return value.filter((entry) => typeof entry === 'string');
+    }
+    if (typeof value !== 'string') {
+        return [];
+    }
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed)
+            ? parsed.filter((entry) => typeof entry === 'string')
+            : [];
+    } catch {
+        return [];
+    }
+}
+
+async function shouldNotifyInstanceClosed() {
+    try {
+        const filters = parseStringArray(
+            await configRepository.getString(
+                'VRCX_notificationTableFilters',
+                '[]'
+            )
+        );
+        return !filters.length || filters.includes('instance.closed');
+    } catch {
+        return true;
+    }
+}
+
+async function isGameLogDisabled() {
+    const preferencesState = usePreferencesStore.getState();
+    if (preferencesState.preferencesHydrated) {
+        return Boolean(preferencesState.gameLogDisabled);
+    }
+    try {
+        return Boolean(await configRepository.getBool('gameLogDisabled', false));
+    } catch {
+        return false;
+    }
+}
+
+function patchCurrentUserSnapshotFromGameState(runtimeStore) {
+    const currentSnapshot = getCurrentUserSnapshot(runtimeStore);
+    if (!currentSnapshot) {
+        return false;
+    }
+    const presencePatch = buildCurrentUserGameStatePresencePatch(
+        runtimeStore.gameState,
+        currentSnapshot
+    );
+    if (!presencePatch) {
+        return false;
+    }
+    const startedAt = Date.parse(
+        runtimeStore.gameState.currentLocationStartedAt || ''
+    );
+    const locationTime = Number.isFinite(startedAt) ? startedAt : Date.now();
+    setCurrentUserSnapshot(runtimeStore, {
+        ...currentSnapshot,
+        ...presencePatch,
+        ...(runtimeStore.gameState.currentLocation === 'traveling'
+            ? { $travelingToTime: locationTime }
+            : { $location_at: locationTime })
+    });
+    return true;
+}
+
+async function updateRealtimeLocationFallback(location) {
+    const normalizedLocation = firstString(location);
+    const runtimeStore = useRuntimeStore.getState();
+    if (!normalizedLocation || runtimeStore.gameState.isGameRunning) {
+        return;
+    }
+
+    if (!isRealInstance(normalizedLocation)) {
+        runtimeStore.setGameState({
+            currentLocation: '',
+            currentWorldId: '',
+            currentWorldName: '',
+            currentDestination: '',
+            currentLocationStartedAt: null,
+            currentLocationPlayerIds: []
+        });
+        return;
+    }
+
+    const createdAt = new Date().toISOString();
+    const parsed = parseLocation(normalizedLocation);
+    const worldName = parsed.worldId
+        ? await gameLogRepository.getWorldNameByWorldId(parsed.worldId)
+        : '';
+    runtimeStore.setGameState({
+        currentLocation: normalizedLocation,
+        currentWorldId: parsed.worldId || '',
+        currentWorldName: worldName || '',
+        currentDestination: '',
+        currentLocationStartedAt: createdAt,
+        currentLocationPlayerIds: [],
+        lastGameLogAt: createdAt,
+        lastGameLogType: 'location'
+    });
+
+    const latestLocations = await gameLogRepository.lookupGameLogDatabase(
+        ['Location'],
+        [],
+        1
+    );
+    const latestLocation =
+        Array.isArray(latestLocations) && latestLocations.length
+            ? firstString(latestLocations[0]?.location)
+            : '';
+    if (latestLocation === normalizedLocation) {
+        return;
+    }
+
+    await gameLogRepository.addGamelogLocationToDatabase(
+        createLocationEntry(
+            createdAt,
+            normalizedLocation,
+            parsed.worldId || '',
+            worldName || ''
+        )
+    );
+}
+
+async function applyCurrentUserLocationEvent(content) {
+    const runtimeStore = useRuntimeStore.getState();
+    patchCurrentUserSnapshot(
+        buildLocationPatch(
+            content.location,
+            content.travelingToLocation,
+            content.worldId,
+            runtimeStore.auth.currentUserSnapshot
+        )
+    );
+
+    if (
+        runtimeStore.gameState.isGameRunning &&
+        !(await isGameLogDisabled()) &&
+        firstString(runtimeStore.gameState.currentLocation)
+    ) {
+        patchCurrentUserSnapshotFromGameState(useRuntimeStore.getState());
+        return true;
+    }
+
+    await updateRealtimeLocationFallback(content.location);
+    return true;
+}
+
+async function handleInstanceClosedEvent(content) {
+    const location = firstString(content.instanceLocation, content.location);
+    const createdAt = new Date().toISOString();
+    const notification = {
+        id: `instance.closed:${location || 'unknown'}:${createdAt}`,
+        type: 'instance.closed',
+        location,
+        message: 'Instance Closed',
+        createdAt,
+        created_at: createdAt
+    };
+    useVrcNotificationStore.getState().upsertNotification(notification);
+    if (await shouldNotifyInstanceClosed()) {
+        useShellStore.getState().notifyMenu('notification');
+    }
+    useFeedLiveStore
+        .getState()
+        .pushEntry(notification, { ownerUserId: currentSessionUserId() });
+    void pushSharedFeedNotification(notification).catch((error) => {
+        console.warn(
+            'Failed to publish instance-closed shared feed notification:',
+            error
+        );
+    });
+    return true;
+}
+
+export async function handleRealtimePresenceEvent(message) {
     const type = typeof message?.type === 'string' ? message.type : '';
     const content =
         message?.content && typeof message.content === 'object'
@@ -970,15 +1157,10 @@ export function handleRealtimePresenceEvent(message) {
             if (!currentUserId || !userId || currentUserId !== userId) {
                 return false;
             }
-            patchCurrentUserSnapshot(
-                buildLocationPatch(
-                    content.location,
-                    content.travelingToLocation,
-                    content.worldId,
-                    useRuntimeStore.getState().auth.currentUserSnapshot
-                )
-            );
-            return true;
+            return applyCurrentUserLocationEvent(content);
+        }
+        case 'instance-closed': {
+            return handleInstanceClosedEvent(content);
         }
         default:
             return false;

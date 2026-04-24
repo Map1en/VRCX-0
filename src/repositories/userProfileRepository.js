@@ -54,7 +54,12 @@ function normalize(user) {
     return normalizeUserProfile(user);
 }
 
-async function getUserProfile({ userId, endpoint = '', force = false }) {
+async function getUserProfile({
+    userId,
+    endpoint = '',
+    force = false,
+    dialog = false
+}) {
     const normalizedUserId =
         typeof userId === 'string'
             ? userId.trim()
@@ -67,7 +72,9 @@ async function getUserProfile({ userId, endpoint = '', force = false }) {
 
     const json = await fetchCachedData({
         queryKey: queryKeys.user(normalizedUserId, endpoint),
-        policy: entityQueryPolicies.user,
+        policy: dialog
+            ? entityQueryPolicies.userDialog
+            : entityQueryPolicies.user,
         force,
         queryFn: async () => {
             const response = await vrchatFriendRepository.getUser({
@@ -78,6 +85,33 @@ async function getUserProfile({ userId, endpoint = '', force = false }) {
         }
     });
     return normalize(json);
+}
+
+async function getMutualCounts({ userId, endpoint = '' }) {
+    const normalizedUserId =
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
+    if (!normalizedUserId) {
+        throw new Error(
+            'UserProfileRepository.getMutualCounts requires a user id.'
+        );
+    }
+
+    return fetchCachedData({
+        queryKey: queryKeys.mutualCounts(normalizedUserId, endpoint),
+        policy: entityQueryPolicies.mutualCounts,
+        queryFn: async () => {
+            const response = await vrchatFriendRepository.executeGet(
+                `users/${encodeURIComponent(normalizedUserId)}/mutuals`,
+                {},
+                { endpoint }
+            );
+            return response.json && typeof response.json === 'object'
+                ? response.json
+                : {};
+        }
+    });
 }
 
 async function getUserGroups({ userId, endpoint = '' }) {
@@ -287,6 +321,7 @@ const userProfileRepository = Object.freeze({
     getUserProfile,
     getUserGroups,
     getRepresentedGroup,
+    getMutualCounts,
     getMutualFriends,
     getAllMutualFriends,
     updateCurrentUser,
@@ -300,6 +335,7 @@ export {
     getUserProfile,
     getUserGroups,
     getRepresentedGroup,
+    getMutualCounts,
     getMutualFriends,
     getAllMutualFriends,
     updateCurrentUser,

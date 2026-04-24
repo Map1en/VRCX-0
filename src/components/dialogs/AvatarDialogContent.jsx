@@ -267,7 +267,8 @@ export function AvatarDialogContent({ avatarId, seedData = null }) {
         avatarProfileRepository
             .getAvatarProfile({
                 avatarId: normalizedAvatarId,
-                endpoint: currentEndpoint
+                endpoint: currentEndpoint,
+                dialog: true
             })
             .then((nextAvatar) => {
                 if (!active) {

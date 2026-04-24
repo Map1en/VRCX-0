@@ -387,6 +387,7 @@ async function getAvatarProfile({
     avatarId,
     endpoint = '',
     force = false,
+    dialog = false,
     allowLocalFallback = true,
     currentUserId = ''
 }) {
@@ -406,7 +407,9 @@ async function getAvatarProfile({
         const [json, localSnapshot] = await Promise.all([
             fetchCachedData({
                 queryKey: queryKeys.avatar(normalizedAvatarId, endpoint),
-                policy: entityQueryPolicies.avatar,
+                policy: dialog
+                    ? entityQueryPolicies.avatarDialog
+                    : entityQueryPolicies.avatar,
                 force,
                 queryFn: async () => {
                     const response = await executeGet(

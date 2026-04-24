@@ -1,4 +1,11 @@
-export const NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES = [10, 25, 50, 100];
+export const NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES = [
+    10,
+    15,
+    20,
+    25,
+    50,
+    100
+];
 export const NOTIFICATION_TABLE_DEFAULT_SORTING = [
     { id: 'created_at', desc: true }
 ];
@@ -105,6 +112,27 @@ export function sanitizeNotificationFilters(value, allowedTypes) {
     return value.filter((type) => allowedTypeSet.has(type));
 }
 
+export function sanitizeNotificationPageSizes(value) {
+    if (!Array.isArray(value)) {
+        return NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES;
+    }
+
+    const normalized = Array.from(
+        new Set(
+            value
+                .map((entry) => Number.parseInt(entry, 10))
+                .filter(
+                    (entry) =>
+                        Number.isFinite(entry) && entry > 0 && entry <= 1000
+                )
+        )
+    ).sort((left, right) => left - right);
+
+    return normalized.length
+        ? normalized
+        : NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES;
+}
+
 export function sanitizeNotificationColumnVisibility(value) {
     const visibility = {};
     if (!value || typeof value !== 'object') {
@@ -162,10 +190,30 @@ export function sanitizeNotificationColumnSizing(value) {
     return sizing;
 }
 
-export function resolveNotificationPageSize(candidate) {
+export function resolveNotificationPageSize(
+    candidate,
+    allowed = NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES,
+    fallback = 20
+) {
+    const pageSizes = Array.isArray(allowed)
+        ? allowed.filter((size) => Number.isFinite(size) && size > 0)
+        : NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES;
+    const fallbackPageSize = pageSizes.length
+        ? pageSizes[0]
+        : NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES[0];
+    const nearestPageSize = (value) =>
+        pageSizes.length
+            ? pageSizes.reduce((previous, size) =>
+                  Math.abs(size - value) < Math.abs(previous - value)
+                      ? size
+                      : previous
+              )
+            : fallbackPageSize;
     const parsed = Number.parseInt(candidate, 10);
-    return Number.isFinite(parsed) &&
-        NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES.includes(parsed)
-        ? parsed
-        : NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES[1];
+    if (Number.isFinite(parsed) && parsed > 0) {
+        return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
+    }
+    return pageSizes.includes(fallback)
+        ? fallback
+        : nearestPageSize(Number(fallback) || fallbackPageSize);
 }

@@ -22,7 +22,10 @@ import {
 import { openWorldDialog } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
-import { getTablePageSizesPreference } from '@/services/preferencesService.js';
+import {
+    getTablePageSizePreference,
+    getTablePageSizesPreference
+} from '@/services/preferencesService.js';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/location.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
@@ -119,12 +122,12 @@ export function useFeedPageController({ embedded = false } = {}) {
     );
     const [persistedState] = useState(() => readPersistedState());
     const persistedPageSize = Number.parseInt(persistedState.pageSize, 10);
-    const initialPageSizes = useMemo(
-        () => sanitizePageSizes([...DEFAULT_PAGE_SIZES, persistedPageSize]),
-        [persistedPageSize]
-    );
+    const initialPageSizes = DEFAULT_PAGE_SIZES;
     const requestIdRef = useRef(0);
+    const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
+    const hasWrittenColumnVisibilityRef = useRef(false);
+    const hasWrittenTableLayoutRef = useRef(false);
     const lastLiveFeedSequenceRef = useRef(0);
     const [searchDraft, setSearchDraft] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -164,7 +167,7 @@ export function useFeedPageController({ embedded = false } = {}) {
     );
     const [pagination, setPagination] = useState({
         pageIndex: 0,
-        pageSize: resolvePageSize(persistedState.pageSize, initialPageSizes)
+        pageSize: resolvePageSize(persistedPageSize, initialPageSizes)
     });
     const deferredSearchQuery = useDeferredValue(searchQuery);
     const favoriteIdSet = useMemo(
@@ -287,8 +290,12 @@ export function useFeedPageController({ embedded = false } = {}) {
         friendLogRepository,
         friendRosterLastLoadedAt,
         gameLogRepository,
+        getTablePageSizePreference,
         getTablePageSizesPreference,
+        hasWrittenColumnVisibilityRef,
         hasWrittenPageSizeRef,
+        hasWrittenSortingRef,
+        hasWrittenTableLayoutRef,
         isFavoritesLoaded,
         lastLiveFeedSequenceRef,
         maxFeedRows,

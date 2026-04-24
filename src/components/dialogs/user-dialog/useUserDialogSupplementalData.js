@@ -13,12 +13,26 @@ import {
     readCachedUserStats
 } from './userDialogCache.js';
 
+function normalizeMutualFriendCount(value) {
+    const source = value && typeof value === 'object' ? value : {};
+    return (
+        Number(
+            source.friends ??
+                source.friendCount ??
+                source.mutualFriendCount ??
+                source.mutualFriends
+        ) || 0
+    );
+}
+
 export function useUserDialogSupplementalData({
     activeUserTargetRef,
     currentEndpoint,
     currentGameDestination,
     currentGameLocation,
     currentSnapshotLocation,
+    currentUserSnapshot,
+    isTargetCurrentUser,
     normalizedUserId,
     openNonce,
     profile,
@@ -178,8 +192,14 @@ export function useUserDialogSupplementalData({
                     joinCount: Number(stats?.joinCount) || 0,
                     previousDisplayNames
                 };
-                cacheUserStats(targetKey, nextStats);
-                setUserStats(nextStats);
+                setUserStats((current) => {
+                    const mergedStats = {
+                        ...current,
+                        ...nextStats
+                    };
+                    cacheUserStats(targetKey, mergedStats);
+                    return mergedStats;
+                });
             })
             .catch(() => {
                 // Keep the last visible stats while a refresh fails.
@@ -198,6 +218,54 @@ export function useUserDialogSupplementalData({
         profile?.travelingToLocation,
         profile?.username,
         openNonce,
+        reloadToken,
+        targetKey
+    ]);
+
+    useEffect(() => {
+        let active = true;
+
+        if (
+            !profile?.id ||
+            isTargetCurrentUser ||
+            currentUserSnapshot?.hasSharedConnectionsOptOut
+        ) {
+            return () => {
+                active = false;
+            };
+        }
+
+        userProfileRepository
+            .getMutualCounts({
+                userId: profile.id,
+                endpoint: currentEndpoint
+            })
+            .then((counts) => {
+                if (!active) {
+                    return;
+                }
+                const mutualFriendCount = normalizeMutualFriendCount(counts);
+                setUserStats((current) => {
+                    const nextStats = {
+                        ...current,
+                        mutualFriendCount
+                    };
+                    cacheUserStats(targetKey, nextStats);
+                    return nextStats;
+                });
+            })
+            .catch(() => {
+                // Keep cached stats while mutual count refresh fails.
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [
+        currentEndpoint,
+        currentUserSnapshot?.hasSharedConnectionsOptOut,
+        isTargetCurrentUser,
+        profile?.id,
         reloadToken,
         targetKey
     ]);

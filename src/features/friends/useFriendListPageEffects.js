@@ -9,11 +9,11 @@ export function useFriendListPageEffects({
     columnOrderLocked,
     columnSizing,
     columnVisibility,
-    configRepository,
     currentUserId,
     favoritesOnly,
     filteredRows,
     gameLogRepository,
+    getTablePageSizePreference,
     getTablePageSizesPreference,
     hasWrittenPageSizeRef,
     hasWrittenSortingRef,
@@ -49,7 +49,7 @@ export function useFriendListPageEffects({
         let active = true;
         Promise.all([
             getTablePageSizesPreference(DEFAULT_PAGE_SIZES),
-            configRepository.getInt('tablePageSize', DEFAULT_PAGE_SIZES[1])
+            getTablePageSizePreference(20)
         ])
             .then(([nextPageSizes, nextPageSize]) => {
                 if (!active) {
@@ -75,14 +75,7 @@ export function useFriendListPageEffects({
                           resolvedConfiguredPageSize
                       )
                     : resolvedConfiguredPageSize;
-                setPageSizes((current) =>
-                    sanitizePageSizes([
-                        ...current,
-                        ...resolvedPageSizes,
-                        resolvedConfiguredPageSize,
-                        resolvedActivePageSize
-                    ])
-                );
+                setPageSizes(resolvedPageSizes);
                 setPagination((current) => ({
                     ...current,
                     pageSize: resolvedActivePageSize
@@ -99,11 +92,18 @@ export function useFriendListPageEffects({
         }
         const resolvedPageSizes = sanitizePageSizes(tablePageSizesPreference);
         setPageSizes(resolvedPageSizes);
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0,
-            pageSize: resolvePageSize(current.pageSize, resolvedPageSizes)
-        }));
+        setPagination((current) => {
+            const pageSize = resolvePageSize(
+                current.pageSize,
+                resolvedPageSizes
+            );
+            return pageSize === current.pageSize
+                ? current
+                : {
+                      ...current,
+                      pageSize
+                  };
+        });
     }, [preferencesHydrated, tablePageSizesPreference]);
     useEffect(() => {
         if (!hasWrittenSortingRef.current) {

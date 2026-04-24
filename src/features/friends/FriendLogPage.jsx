@@ -18,7 +18,10 @@ import {
     configRepository,
     friendLogHistoryRepository
 } from '@/repositories/index.js';
-import { getTablePageSizesPreference } from '@/services/preferencesService.js';
+import {
+    getTablePageSizePreference,
+    getTablePageSizesPreference
+} from '@/services/preferencesService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -110,7 +113,7 @@ export function FriendLogPage({ embedded = false } = {}) {
 
         Promise.all([
             getTablePageSizesPreference(DEFAULT_PAGE_SIZES),
-            configRepository.getInt('tablePageSize', DEFAULT_PAGE_SIZES[1]),
+            getTablePageSizePreference(20),
             configRepository.getString('friendLogTableFilters', '[]')
         ])
             .then(([nextPageSizes, nextPageSize, nextTypeFilters]) => {
@@ -139,14 +142,7 @@ export function FriendLogPage({ embedded = false } = {}) {
                       )
                     : resolvedConfiguredPageSize;
 
-                setPageSizes((current) =>
-                    sanitizePageSizes([
-                        ...current,
-                        ...resolvedPageSizes,
-                        resolvedConfiguredPageSize,
-                        resolvedActivePageSize
-                    ])
-                );
+                setPageSizes(resolvedPageSizes);
 
                 setPagination((current) => ({
                     ...current,
@@ -171,11 +167,18 @@ export function FriendLogPage({ embedded = false } = {}) {
         }
         const resolvedPageSizes = sanitizePageSizes(tablePageSizesPreference);
         setPageSizes(resolvedPageSizes);
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0,
-            pageSize: resolvePageSize(current.pageSize, resolvedPageSizes)
-        }));
+        setPagination((current) => {
+            const pageSize = resolvePageSize(
+                current.pageSize,
+                resolvedPageSizes
+            );
+            return pageSize === current.pageSize
+                ? current
+                : {
+                      ...current,
+                      pageSize
+                  };
+        });
     }, [preferencesHydrated, tablePageSizesPreference]);
 
     useEffect(() => {

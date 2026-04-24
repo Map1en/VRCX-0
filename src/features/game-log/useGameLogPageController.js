@@ -35,7 +35,10 @@ import {
     GAME_LOG_FILTER_TYPES,
     gameLogRepository
 } from '@/repositories/index.js';
-import { getTablePageSizesPreference } from '@/services/preferencesService.js';
+import {
+    getTablePageSizePreference,
+    getTablePageSizesPreference
+} from '@/services/preferencesService.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -329,6 +332,7 @@ export function useGameLogPageController({ embedded = false } = {}) {
         favoritesOnly,
         gameLogDisabled,
         gameLogRepository,
+        getTablePageSizePreference,
         getTablePageSizesPreference,
         hasWrittenPageSizeRef,
         hasWrittenSortingRef,

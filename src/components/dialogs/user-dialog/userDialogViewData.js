@@ -231,7 +231,8 @@ export function buildUserDialogProfileSummary({
     );
     const mutualFriendCount =
         Number(
-            profile.mutualFriendCount ??
+            userStats.mutualFriendCount ??
+                profile.mutualFriendCount ??
                 profile.$mutualFriendCount ??
                 mutualFriends.length ??
                 0

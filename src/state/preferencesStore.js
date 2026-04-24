@@ -16,7 +16,15 @@ import {
 
 import { normalizeNavWidth, normalizeTableDensity } from './shellStore.js';
 
-const DEFAULT_TABLE_PAGE_SIZES = Object.freeze([10, 15, 20, 25, 50, 100]);
+export const DEFAULT_TABLE_PAGE_SIZE = 20;
+export const DEFAULT_TABLE_PAGE_SIZES = Object.freeze([
+    10,
+    15,
+    20,
+    25,
+    50,
+    100
+]);
 const DEFAULT_TRANSLATION_ENDPOINT =
     'https://api.openai.com/v1/chat/completions';
 const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
@@ -57,6 +65,17 @@ export function normalizeTablePageSizes(value) {
         (left, right) => left - right
     );
     return normalized.length ? normalized : [...DEFAULT_TABLE_PAGE_SIZES];
+}
+
+export function normalizeTablePageSize(
+    value,
+    fallback = DEFAULT_TABLE_PAGE_SIZE
+) {
+    return normalizeBoundedInt(value, {
+        min: 1,
+        max: 1000,
+        fallback
+    });
 }
 
 export function normalizeTableLimits(value = {}) {
@@ -158,6 +177,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     navPanelWidth: 240,
     navIsCollapsed: false,
     proxyServer: '',
+    tablePageSize: DEFAULT_TABLE_PAGE_SIZE,
     tablePageSizes: DEFAULT_TABLE_PAGE_SIZES,
     tableLimits: {
         maxTableSize: DEFAULT_MAX_TABLE_SIZE,
@@ -277,6 +297,7 @@ export function normalizePreferenceSnapshot(snapshot = {}) {
         navPanelWidth: normalizeNavWidth(next.navPanelWidth),
         navIsCollapsed: normalizeBool(next.navIsCollapsed),
         proxyServer: String(next.proxyServer || ''),
+        tablePageSize: normalizeTablePageSize(next.tablePageSize),
         tablePageSizes: normalizeTablePageSizes(next.tablePageSizes),
         tableLimits: normalizeTableLimits(next.tableLimits),
         localFavoriteFriendsGroups: Array.isArray(

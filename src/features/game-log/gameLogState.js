@@ -1,4 +1,4 @@
-export const GAME_LOG_DEFAULT_PAGE_SIZES = [10, 25, 50];
+export const GAME_LOG_DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 export const GAME_LOG_DEFAULT_SORTING = [{ id: 'created_at', desc: true }];
 export const GAME_LOG_COLUMN_IDS = [
     'spacer',
@@ -79,7 +79,10 @@ export function sanitizeGameLogPageSizes(value) {
         new Set(
             value
                 .map((entry) => Number.parseInt(entry, 10))
-                .filter((entry) => Number.isFinite(entry) && entry > 0)
+                .filter(
+                    (entry) =>
+                        Number.isFinite(entry) && entry > 0 && entry <= 1000
+                )
         )
     ).sort((left, right) => left - right);
 
@@ -139,22 +142,28 @@ export function resolveGameLogPageSize(
     allowed,
     fallback = GAME_LOG_DEFAULT_PAGE_SIZES[1]
 ) {
+    const pageSizes = Array.isArray(allowed)
+        ? allowed.filter((size) => Number.isFinite(size) && size > 0)
+        : GAME_LOG_DEFAULT_PAGE_SIZES;
+    const fallbackPageSize = pageSizes.length
+        ? pageSizes[0]
+        : GAME_LOG_DEFAULT_PAGE_SIZES[0];
+    const nearestPageSize = (value) =>
+        pageSizes.length
+            ? pageSizes.reduce((previous, size) =>
+                  Math.abs(size - value) < Math.abs(previous - value)
+                      ? size
+                      : previous
+              )
+            : fallbackPageSize;
     const parsed = Number.parseInt(candidate, 10);
     if (Number.isFinite(parsed) && parsed > 0) {
-        if (allowed.includes(parsed)) {
-            return parsed;
-        }
-
-        if (allowed.includes(fallback)) {
-            return fallback;
-        }
-
-        return allowed[0] ?? GAME_LOG_DEFAULT_PAGE_SIZES[0];
+        return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
 
-    if (allowed.includes(fallback)) {
+    if (pageSizes.includes(fallback)) {
         return fallback;
     }
 
-    return allowed[0] ?? GAME_LOG_DEFAULT_PAGE_SIZES[0];
+    return nearestPageSize(Number(fallback) || fallbackPageSize);
 }

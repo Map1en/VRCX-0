@@ -236,7 +236,7 @@ export function WorldDialogContent({
             .getWorldProfile({
                 worldId: profileWorldId,
                 endpoint: currentEndpoint,
-                force: true
+                dialog: true
             })
             .then((nextWorld) => {
                 if (!active) {
@@ -1180,4 +1180,3 @@ export function WorldDialogContent({
         </>
     );
 }
-

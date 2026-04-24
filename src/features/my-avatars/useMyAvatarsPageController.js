@@ -17,7 +17,10 @@ import {
     mediaRepository,
     myAvatarRepository
 } from '@/repositories/index.js';
-import { getTablePageSizesPreference } from '@/services/preferencesService.js';
+import {
+    getTablePageSizePreference,
+    getTablePageSizesPreference
+} from '@/services/preferencesService.js';
 import {
     IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
@@ -179,10 +182,7 @@ export function useMyAvatarsPageController({ embedded = false } = {}) {
         let active = true;
         Promise.all([
             getTablePageSizesPreference(MY_AVATARS_DEFAULT_PAGE_SIZES),
-            configRepository.getInt(
-                'tablePageSize',
-                MY_AVATARS_DEFAULT_PAGE_SIZES[1]
-            ),
+            getTablePageSizePreference(20),
             configRepository.getString('MyAvatarsViewMode', 'grid'),
             configRepository.getString(
                 'VRCX_MyAvatarsCardScale',
@@ -225,14 +225,7 @@ export function useMyAvatarsPageController({ embedded = false } = {}) {
                               resolvedConfiguredPageSize
                           )
                         : resolvedConfiguredPageSize;
-                    setPageSizes((current) =>
-                        sanitizeMyAvatarsPageSizes([
-                            ...current,
-                            ...resolvedPageSizes,
-                            resolvedConfiguredPageSize,
-                            resolvedActivePageSize
-                        ])
-                    );
+                    setPageSizes(resolvedPageSizes);
                     setPagination((current) => ({
                         ...current,
                         pageSize: resolvedActivePageSize
@@ -261,14 +254,18 @@ export function useMyAvatarsPageController({ embedded = false } = {}) {
             tablePageSizesPreference
         );
         setPageSizes(resolvedPageSizes);
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0,
-            pageSize: resolveMyAvatarsPageSize(
+        setPagination((current) => {
+            const pageSize = resolveMyAvatarsPageSize(
                 current.pageSize,
                 resolvedPageSizes
-            )
-        }));
+            );
+            return pageSize === current.pageSize
+                ? current
+                : {
+                      ...current,
+                      pageSize
+                  };
+        });
     }, [preferencesHydrated, tablePageSizesPreference]);
     useEffect(() => {
         if (!hasWrittenSortingRef.current) {

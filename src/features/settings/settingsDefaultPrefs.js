@@ -71,6 +71,7 @@ export function createDefaultSettingsPrefs() {
         isCloseToTray: false,
         navIsCollapsed: false,
         proxyServer: '',
+        tablePageSize: 20,
         tablePageSizes: [...TABLE_PAGE_SIZE_DEFAULTS],
         tableLimits: {
             maxTableSize: DEFAULT_MAX_TABLE_SIZE,

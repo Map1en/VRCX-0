@@ -19,7 +19,10 @@ import {
     vrchatModerationRepository
 } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
-import { getTablePageSizesPreference } from '@/services/preferencesService.js';
+import {
+    getTablePageSizePreference,
+    getTablePageSizesPreference
+} from '@/services/preferencesService.js';
 import { moderationTypes } from '@/shared/constants';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
@@ -31,7 +34,7 @@ import { ModerationPageToolbar } from './components/ModerationPageToolbar.jsx';
 import { ModerationEmptyState } from './components/ModerationViewParts.jsx';
 import { useModerationPageActions } from './useModerationPageActions.js';
 import { useModerationPageEffects } from './useModerationPageEffects.js';
-const DEFAULT_PAGE_SIZES = [10, 25, 50];
+const DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 const DEFAULT_SORTING = [
     {
         id: 'created',
@@ -126,7 +129,10 @@ function sanitizePageSizes(value) {
         new Set(
             value
                 .map((entry) => Number.parseInt(entry, 10))
-                .filter((entry) => Number.isFinite(entry) && entry > 0)
+                .filter(
+                    (entry) =>
+                        Number.isFinite(entry) && entry > 0 && entry <= 1000
+                )
         )
     ).sort((left, right) => left - right);
     return normalized.length ? normalized : DEFAULT_PAGE_SIZES;
@@ -169,20 +175,28 @@ function sanitizeColumnSizing(value) {
     return sizing;
 }
 function resolvePageSize(candidate, allowed, fallback = DEFAULT_PAGE_SIZES[1]) {
+    const pageSizes = Array.isArray(allowed)
+        ? allowed.filter((size) => Number.isFinite(size) && size > 0)
+        : DEFAULT_PAGE_SIZES;
+    const fallbackPageSize = pageSizes.length
+        ? pageSizes[0]
+        : DEFAULT_PAGE_SIZES[0];
+    const nearestPageSize = (value) =>
+        pageSizes.length
+            ? pageSizes.reduce((previous, size) =>
+                  Math.abs(size - value) < Math.abs(previous - value)
+                      ? size
+                      : previous
+              )
+            : fallbackPageSize;
     const parsed = Number.parseInt(candidate, 10);
     if (Number.isFinite(parsed) && parsed > 0) {
-        if (allowed.includes(parsed)) {
-            return parsed;
-        }
-        if (allowed.includes(fallback)) {
-            return fallback;
-        }
-        return allowed[0] ?? DEFAULT_PAGE_SIZES[0];
+        return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
-    if (allowed.includes(fallback)) {
+    if (pageSizes.includes(fallback)) {
         return fallback;
     }
-    return allowed[0] ?? DEFAULT_PAGE_SIZES[0];
+    return nearestPageSize(Number(fallback) || fallbackPageSize);
 }
 function normalizeSelectedTypes(value) {
     if (!Array.isArray(value)) {
@@ -299,6 +313,7 @@ export function useModerationPageController({ embedded = false } = {}) {
         currentEndpoint,
         currentUserId,
         filteredRows,
+        getTablePageSizePreference,
         getTablePageSizesPreference,
         hasWrittenPageSizeRef,
         hasWrittenSortingRef,

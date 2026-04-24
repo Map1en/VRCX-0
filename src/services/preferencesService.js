@@ -16,6 +16,7 @@ import {
     parseSharedFeedFilters,
     normalizeSharedFeedFilters,
     normalizeTableLimits,
+    normalizeTablePageSize,
     normalizeTablePageSizes,
     usePreferencesStore
 } from '@/state/preferencesStore.js';
@@ -103,6 +104,19 @@ function normalizeStringList(value) {
     return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
+function resolveTablePageSize(candidate, pageSizes) {
+    const allowed = normalizeTablePageSizes(pageSizes);
+    const fallbackPageSize = allowed[0] ?? DEFAULT_PREFERENCES.tablePageSize;
+    const nearestPageSize = (value) =>
+        allowed.reduce((previous, size) =>
+            Math.abs(size - value) < Math.abs(previous - value)
+                ? size
+                : previous
+        );
+    const parsed = normalizeTablePageSize(candidate, fallbackPageSize);
+    return allowed.includes(parsed) ? parsed : nearestPageSize(parsed);
+}
+
 export async function loadPreferenceSnapshot() {
     const [
         navIsCollapsed,
@@ -162,6 +176,7 @@ export async function loadPreferenceSnapshot() {
         trustColor,
         currentCulture,
         proxyServer,
+        tablePageSize,
         tablePageSizes,
         maxTableSize,
         searchLimit,
@@ -243,6 +258,10 @@ export async function loadPreferenceSnapshot() {
         configRepository.getObject('VRCX_trustColor', null),
         backend.app.CurrentCulture().catch(() => navigator.language || 'en-gb'),
         storageRepository.getString('VRCX_ProxyServer', ''),
+        configRepository.getInt(
+            'VRCX_tablePageSize',
+            DEFAULT_PREFERENCES.tablePageSize
+        ),
         configRepository.getArray(
             'VRCX_tablePageSizes',
             DEFAULT_PREFERENCES.tablePageSizes
@@ -388,6 +407,7 @@ export async function loadPreferenceSnapshot() {
         navPanelWidth: normalizeNavWidth(navPanelWidth),
         navIsCollapsed: Boolean(navIsCollapsed),
         proxyServer: proxyServer || '',
+        tablePageSize: normalizeTablePageSize(tablePageSize),
         tablePageSizes: normalizeTablePageSizes(tablePageSizes),
         tableLimits: normalizeTableLimits({ maxTableSize, searchLimit }),
         localFavoriteFriendsGroups: normalizeStringList(
@@ -747,10 +767,51 @@ export async function setProxyServerPreference(value, { restart = true } = {}) {
 
 export async function setTablePageSizesPreference(value) {
     const tablePageSizes = normalizeTablePageSizes(value);
-    await configRepository.setArray('VRCX_tablePageSizes', tablePageSizes);
-    patchPreferences({ tablePageSizes });
+    const currentTablePageSize = normalizeTablePageSize(
+        usePreferencesStore.getState().preferencesHydrated
+            ? usePreferencesStore.getState().tablePageSize
+            : await configRepository.getInt(
+                  'VRCX_tablePageSize',
+                  DEFAULT_PREFERENCES.tablePageSize
+              )
+    );
+    const nextTablePageSize = resolveTablePageSize(
+        currentTablePageSize,
+        tablePageSizes
+    );
+    await Promise.all([
+        configRepository.setArray('VRCX_tablePageSizes', tablePageSizes),
+        nextTablePageSize === currentTablePageSize
+            ? Promise.resolve()
+            : configRepository.setInt('VRCX_tablePageSize', nextTablePageSize)
+    ]);
+    patchPreferences({
+        tablePageSize: nextTablePageSize,
+        tablePageSizes
+    });
     publishPreferenceChanged('VRCX_tablePageSizes', tablePageSizes);
+    if (nextTablePageSize !== currentTablePageSize) {
+        publishPreferenceChanged('VRCX_tablePageSize', nextTablePageSize);
+    }
     return tablePageSizes;
+}
+
+export async function setTablePageSizePreference(value) {
+    const tablePageSize = normalizeTablePageSize(value);
+    await configRepository.setInt('VRCX_tablePageSize', tablePageSize);
+    patchPreferences({ tablePageSize });
+    publishPreferenceChanged('VRCX_tablePageSize', tablePageSize);
+    return tablePageSize;
+}
+
+export async function getTablePageSizePreference(
+    fallback = DEFAULT_PREFERENCES.tablePageSize
+) {
+    const preferenceState = usePreferencesStore.getState();
+    if (preferenceState.preferencesHydrated) {
+        return preferenceState.tablePageSize;
+    }
+    return configRepository.getInt('VRCX_tablePageSize', fallback);
 }
 
 export async function getTablePageSizesPreference(

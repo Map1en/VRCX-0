@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 
 import { PageScaffold } from '@/components/layout/PageScaffold.jsx';
 import {
-    configRepository,
     gameLogRepository,
     memoRepository,
     mutualGraphRepository,
@@ -18,7 +17,10 @@ import {
 } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import friendRelationshipService from '@/services/friendRelationshipService.js';
-import { getTablePageSizesPreference } from '@/services/preferencesService.js';
+import {
+    getTablePageSizePreference,
+    getTablePageSizesPreference
+} from '@/services/preferencesService.js';
 import { executeWithBackoff } from '@/shared/utils/retry.js';
 import { createRateLimiter } from '@/shared/utils/throttle.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
@@ -154,12 +156,12 @@ export function useFriendListPageController({ embedded = false } = {}) {
         columnOrderLocked,
         columnSizing,
         columnVisibility,
-        configRepository,
         currentUserId,
         favoritesOnly,
         filteredRows,
         gameLogRepository,
         getTablePageSizesPreference,
+        getTablePageSizePreference,
         hasWrittenPageSizeRef,
         hasWrittenSortingRef,
         hasWrittenTableStateRef,

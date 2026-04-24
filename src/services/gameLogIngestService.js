@@ -12,6 +12,7 @@ import {
     getPrintFileName,
     getPrintLocalDate
 } from '@/shared/utils/gallery.js';
+import { buildCurrentUserGameStatePresencePatch } from '@/shared/utils/currentUserPresence.js';
 import {
     createJoinLeaveEntry,
     createLocationEntry,
@@ -908,8 +909,6 @@ function updateCurrentLocation({ location, worldName = '', createdAt = '' }) {
     ingestState.lastResourceUrl = '';
 
     const runtimeStore = useRuntimeStore.getState();
-    const currentSnapshot = runtimeStore.auth.currentUserSnapshot;
-
     runtimeStore.setGameState({
         currentLocation: location,
         currentWorldId: parsed.worldId || '',
@@ -921,15 +920,49 @@ function updateCurrentLocation({ location, worldName = '', createdAt = '' }) {
         lastGameLogType: 'location'
     });
 
-    if (currentSnapshot && typeof currentSnapshot === 'object') {
-        runtimeStore.setAuthBootstrap({
-            currentUserSnapshot: {
-                ...currentSnapshot,
-                location,
-                worldId: parsed.worldId || currentSnapshot.worldId || ''
-            }
-        });
+    patchCurrentUserLocationFromGameState(runtimeStore, {
+        currentLocation: location,
+        currentWorldId: parsed.worldId || '',
+        currentWorldName: worldName,
+        currentDestination: '',
+        currentLocationStartedAt: ingestState.currentLocationStartedAt,
+        currentLocationPlayerIds: []
+    });
+}
+
+function patchCurrentUserLocationFromGameState(runtimeStore, gameStatePatch) {
+    const currentSnapshot = runtimeStore.auth.currentUserSnapshot;
+    if (!currentSnapshot || typeof currentSnapshot !== 'object') {
+        return;
     }
+
+    const presencePatch = buildCurrentUserGameStatePresencePatch(
+        {
+            ...runtimeStore.gameState,
+            ...gameStatePatch,
+            isGameRunning: true
+        },
+        currentSnapshot
+    );
+    if (!presencePatch) {
+        return;
+    }
+
+    const startedAt = Date.parse(gameStatePatch.currentLocationStartedAt || '');
+    const locationTime = Number.isFinite(startedAt) ? startedAt : Date.now();
+    const timedPresencePatch = {
+        ...presencePatch,
+        ...(gameStatePatch.currentLocation === 'traveling'
+            ? { $travelingToTime: locationTime }
+            : { $location_at: locationTime })
+    };
+
+    runtimeStore.setAuthBootstrap({
+        currentUserSnapshot: {
+            ...currentSnapshot,
+            ...timedPresencePatch
+        }
+    });
 }
 
 async function persistGameLog(gameLog, options = {}) {
@@ -945,12 +978,33 @@ async function persistGameLog(gameLog, options = {}) {
     });
 
     switch (gameLog.type) {
-        case 'location-destination':
+        case 'location-destination': {
+            const destination = normalizeString(gameLog.location);
+            if (!runtimeStore.gameState.isGameRunning || !destination) {
+                break;
+            }
+            const changedAt = gameLog.dt || new Date().toISOString();
+            await finalizeCurrentGameLogSession(changedAt);
             runtimeStore.setGameState({
-                currentDestination: normalizeString(gameLog.location),
+                currentLocation: 'traveling',
+                currentWorldId: '',
+                currentWorldName: '',
+                currentDestination: destination,
+                currentLocationStartedAt: changedAt,
+                currentLocationPlayerIds: [],
+                lastGameLogAt: changedAt,
                 lastGameLogType: gameLog.type
             });
+            patchCurrentUserLocationFromGameState(runtimeStore, {
+                currentLocation: 'traveling',
+                currentWorldId: '',
+                currentWorldName: '',
+                currentDestination: destination,
+                currentLocationStartedAt: changedAt,
+                currentLocationPlayerIds: []
+            });
             break;
+        }
         case 'location': {
             const normalizedLocation = normalizeString(gameLog.location);
             const worldName = normalizeString(gameLog.worldName);

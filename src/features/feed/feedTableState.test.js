@@ -123,6 +123,6 @@ describe('feed table state helpers', () => {
             detail: 320
         });
         expect(resolveFeedPageSize(50, [10, 25, 50], 25)).toBe(50);
-        expect(resolveFeedPageSize(100, [10, 25, 50], 25)).toBe(25);
+        expect(resolveFeedPageSize(100, [10, 25, 50], 25)).toBe(50);
     });
 });

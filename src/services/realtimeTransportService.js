@@ -202,13 +202,6 @@ function attachSocketHandlers(
             return;
         }
 
-        if (typeof data === 'string') {
-            if (lastSocketMessage === data) {
-                return;
-            }
-            lastSocketMessage = data;
-        }
-
         const parsedMessage = parseTransportMessage(data);
         useRuntimeStore
             .getState()
@@ -216,6 +209,13 @@ function attachSocketHandlers(
                 parsedMessage.messageType,
                 getByteLength(data)
             );
+
+        if (typeof data === 'string') {
+            if (lastSocketMessage === data) {
+                return;
+            }
+            lastSocketMessage = data;
+        }
 
         if (parsedMessage.json) {
             Promise.resolve(

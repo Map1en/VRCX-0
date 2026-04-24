@@ -123,7 +123,8 @@ export function useUserDialogProfileResource({
             .getUserProfile({
                 userId: normalizedUserId,
                 endpoint: currentEndpoint,
-                force: reloadToken > 0
+                force: reloadToken > 0,
+                dialog: true
             })
             .then((nextProfile) => {
                 if (!active) {

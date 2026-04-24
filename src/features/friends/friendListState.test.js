@@ -114,7 +114,7 @@ describe('friendListState', () => {
             10, 25, 50
         ]);
         expect(resolveFriendListPageSize('50', [10, 25, 50], 25)).toBe(50);
-        expect(resolveFriendListPageSize('999', [10, 25, 50], 25)).toBe(25);
+        expect(resolveFriendListPageSize('999', [10, 25, 50], 25)).toBe(50);
         expect(resolveFriendListPageSize('bad', [], 25)).toBe(10);
     });
 

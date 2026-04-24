@@ -114,7 +114,7 @@ describe('gameLogState', () => {
             10, 25, 50
         ]);
         expect(resolveGameLogPageSize('50', [10, 25, 50], 25)).toBe(50);
-        expect(resolveGameLogPageSize('999', [10, 25, 50], 25)).toBe(25);
+        expect(resolveGameLogPageSize('999', [10, 25, 50], 25)).toBe(50);
         expect(resolveGameLogPageSize('bad', [], 25)).toBe(10);
     });
 

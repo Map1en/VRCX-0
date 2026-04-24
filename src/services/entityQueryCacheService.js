@@ -12,6 +12,12 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
+    userDialog: Object.freeze({
+        staleTime: 60 * SECOND,
+        gcTime: 90 * SECOND,
+        retry: 1,
+        refetchOnWindowFocus: false
+    }),
     instance: Object.freeze({
         staleTime: 20 * SECOND,
         gcTime: 90 * SECOND,
@@ -24,8 +30,26 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
+    avatarDialog: Object.freeze({
+        staleTime: 120 * SECOND,
+        gcTime: 300 * SECOND,
+        retry: 1,
+        refetchOnWindowFocus: false
+    }),
     world: Object.freeze({
         staleTime: 60 * SECOND,
+        gcTime: 300 * SECOND,
+        retry: 1,
+        refetchOnWindowFocus: false
+    }),
+    worldDialog: Object.freeze({
+        staleTime: 120 * SECOND,
+        gcTime: 300 * SECOND,
+        retry: 1,
+        refetchOnWindowFocus: false
+    }),
+    worldLocation: Object.freeze({
+        staleTime: 120 * SECOND,
         gcTime: 300 * SECOND,
         retry: 1,
         refetchOnWindowFocus: false
@@ -38,6 +62,12 @@ export const entityQueryPolicies = Object.freeze({
     }),
     group: Object.freeze({
         staleTime: 5 * MINUTE,
+        gcTime: 30 * MINUTE,
+        retry: 1,
+        refetchOnWindowFocus: false
+    }),
+    groupDialog: Object.freeze({
+        staleTime: 120 * SECOND,
         gcTime: 30 * MINUTE,
         retry: 1,
         refetchOnWindowFocus: false
@@ -102,6 +132,12 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
+    mutualCounts: Object.freeze({
+        staleTime: 15 * MINUTE,
+        gcTime: 60 * MINUTE,
+        retry: 1,
+        refetchOnWindowFocus: false
+    }),
     worldPersistData: Object.freeze({
         staleTime: 30 * MINUTE,
         gcTime: 120 * MINUTE,
@@ -131,6 +167,8 @@ function stableParams(params = {}) {
 
 export const queryKeys = Object.freeze({
     user: (userId, endpoint = '') => withEndpoint(['user', userId], endpoint),
+    mutualCounts: (userId, endpoint = '') =>
+        withEndpoint(['user', userId, 'mutualCounts'], endpoint),
     userGroups: (userId, endpoint = '') =>
         withEndpoint(['user', userId, 'groups'], endpoint),
     instance: (worldId, instanceId, endpoint = '') =>

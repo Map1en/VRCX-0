@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-    NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES,
     NOTIFICATION_TABLE_DEFAULT_SORTING,
     normalizeNotificationColumnId,
     readPersistedNotificationTableState,
@@ -149,8 +148,6 @@ describe('notification table state helpers', () => {
             message: 240
         });
         expect(resolveNotificationPageSize(50)).toBe(50);
-        expect(resolveNotificationPageSize('bad')).toBe(
-            NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES[1]
-        );
+        expect(resolveNotificationPageSize('bad')).toBe(20);
     });
 });
