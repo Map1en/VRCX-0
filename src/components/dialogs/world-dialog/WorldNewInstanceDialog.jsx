@@ -114,7 +114,7 @@ export function WorldNewInstanceDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[min(92vw,34rem)]">
+            <DialogContent className="sm:max-w-[min(92vw,32rem)]">
                 <DialogHeader>
                     <DialogTitle>
                         {request?.selfInvite
