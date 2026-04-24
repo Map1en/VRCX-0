@@ -3,7 +3,7 @@ import {
     fetchCachedData,
     queryKeys,
     setCachedQueryData
-} from '@/services/entityQueryCacheService.js';
+} from '@/lib/entityQueryCache.js';
 import {
     computeTrustLevel,
     computeUserPlatform,

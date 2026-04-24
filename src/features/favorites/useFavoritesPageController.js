@@ -31,10 +31,7 @@ import {
     resolveCurrentInviteLocation
 } from './favoritesItems.js';
 import { resolveFavoritePresenceLocation } from './favoritesPageData.js';
-import {
-    clearFavoriteRemoteDetailsCache,
-    useFavoriteRemoteDetails
-} from './useFavoriteRemoteDetails.js';
+import { useFavoriteRemoteDetails } from './useFavoriteRemoteDetails.js';
 import { useFavoritesLayoutPreferences } from './useFavoritesLayoutPreferences.js';
 import { useFavoritesPageActions } from './useFavoritesPageActions.js';
 import { useFavoritesViewData } from './useFavoritesViewData.js';
@@ -306,7 +303,6 @@ export function useFavoritesPageController({ kind, embedded = false }) {
         bootstrapFavorites,
         canInviteFromCurrentLocation,
         checkCanInviteSelf,
-        clearFavoriteRemoteDetailsCache,
         configRepository,
         confirm,
         contentItems,

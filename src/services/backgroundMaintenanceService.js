@@ -1,4 +1,3 @@
-import { clearFavoriteRemoteDetailsCache } from '@/features/favorites/useFavoriteRemoteDetails.js';
 import { backend } from '@/platform/index.js';
 import {
     configRepository,
@@ -17,6 +16,8 @@ import {
     hasUpdateForBranch,
     sanitizeBranch
 } from '@/services/updateService.js';
+import { clearFavoriteRemoteDetailsCache } from '@/services/favoriteRemoteDetailsCacheService.js';
+import i18n from '@/services/i18nService.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
@@ -31,7 +32,6 @@ import {
     bootstrapFriendRoster,
     syncFriendRosterStateFromCurrentUserSnapshot
 } from './friendBootstrapService.js';
-import i18n from '@/services/i18nService.js';
 
 const timers = {
     currentUserRefresh: 300,

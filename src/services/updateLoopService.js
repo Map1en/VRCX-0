@@ -5,6 +5,7 @@ import {
     runBackgroundMaintenanceTick
 } from './backgroundMaintenanceService.js';
 import { syncGameLogTail } from './gameLogIngestService.js';
+import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 
 let updateLoopTimer = null;
 let stopped = true;
@@ -34,6 +35,7 @@ async function tickRuntimeLoop() {
                 'Game log tail sync and background maintenance are active.'
             );
     } catch (error) {
+        await showSQLiteErrorDialog(error);
         useRuntimeStore
             .getState()
             .setStartupTask(

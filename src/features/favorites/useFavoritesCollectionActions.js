@@ -1,8 +1,9 @@
+import { clearFavoriteRemoteDetailsCache } from '@/services/favoriteRemoteDetailsCacheService.js';
+
 export function useFavoritesCollectionActions({
     allItems,
     avatarLocalRepository,
     bootstrapFavorites,
-    clearFavoriteRemoteDetailsCache,
     confirm,
     currentEndpoint,
     currentUserId,

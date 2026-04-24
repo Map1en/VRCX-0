@@ -6,6 +6,7 @@ import { useSessionStore } from '@/state/sessionStore.js';
 import { ingestBackendGameLogEvent } from './gameLogIngestService.js';
 import { handleGameRunningUpdate } from './gameStateService.js';
 import { handleIpcEvent } from './ipcEventService.js';
+import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 import { handleBrowserFocus } from './vrcStatusService.js';
 
 function handleBackendEvent(name, payload) {
@@ -14,7 +15,8 @@ function handleBackendEvent(name, payload) {
     runtimeStore.recordBackendEvent(name, payload);
 
     if (name === 'addGameLogEvent') {
-        ingestBackendGameLogEvent(payload).catch((error) => {
+        ingestBackendGameLogEvent(payload).catch(async (error) => {
+            await showSQLiteErrorDialog(error);
             useNotificationStore.getState().pushNotification({
                 level: 'warning',
                 title: 'Game log ingest failed',

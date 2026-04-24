@@ -1,70 +1,89 @@
-import { useModalStore } from '@/state/modalStore.js';
-
 import { normalizePlatformError } from '../platform/tauri/errors.js';
 import { backend } from '../platform/tauri/index.js';
-import i18n from '@/services/i18nService.js';
+import { notifySQLiteError } from '../shared/sqliteErrorEvents.js';
 
-function showSQLiteErrorModal(error) {
-    const message =
-        typeof error?.message === 'string'
-            ? error.message
-            : String(error ?? '');
-    if (!message) {
-        return;
+const SQLITE_ERROR_PATTERNS = [
+    {
+        category: 'malformed',
+        code: 'SQLITE_CORRUPT',
+        matches: ['database disk image is malformed']
+    },
+    {
+        category: 'disk_full',
+        code: 'SQLITE_FULL',
+        matches: ['database or disk is full']
+    },
+    {
+        category: 'locked',
+        code: 'SQLITE_BUSY',
+        matches: [
+            'database is locked',
+            'attempt to write a readonly database'
+        ]
+    },
+    {
+        category: 'io_error',
+        code: 'SQLITE_IOERR',
+        matches: ['disk I/O error']
     }
+];
 
-    const modalStore = useModalStore.getState();
-    if (message.includes('database disk image is malformed')) {
-        void modalStore.confirm({
-            description:
-                i18n.t('repository.sqlite_repository.generated_modal.please_repair_or_delete_your_database_file_by_fo'),
-            title: i18n.t('repository.sqlite_repository.generated_modal.your_database_is_corrupted')
-        });
-        return;
+function getErrorMessage(error) {
+    if (error instanceof Error) {
+        return error.message || String(error);
     }
-    if (message.includes('database or disk is full')) {
-        void modalStore.alert({
-            description: i18n.t(
-                'repository.sqlite_repository.generated_modal.disk_full_description'
-            ),
-            title: i18n.t(
-                'repository.sqlite_repository.generated_modal.disk_full_title'
-            )
-        });
-        return;
+    if (typeof error === 'string') {
+        return error;
     }
-    if (
-        message.includes('database is locked') ||
-        message.includes('attempt to write a readonly database')
-    ) {
-        void modalStore.alert({
-            description: i18n.t(
-                'repository.sqlite_repository.generated_modal.database_locked_description'
-            ),
-            title: i18n.t(
-                'repository.sqlite_repository.generated_modal.database_locked_title'
-            )
-        });
-        return;
+    if (error === undefined || error === null) {
+        return '';
     }
-    if (message.includes('disk I/O error')) {
-        void modalStore.alert({
-            description: i18n.t(
-                'repository.sqlite_repository.generated_modal.disk_io_error_description'
-            ),
-            title: i18n.t(
-                'repository.sqlite_repository.generated_modal.disk_io_error_title'
-            )
-        });
+    try {
+        return JSON.stringify(error);
+    } catch {
+        return String(error);
     }
+}
+
+function classifySQLiteError(message) {
+    const normalizedMessage = String(message || '').toLowerCase();
+    const match = SQLITE_ERROR_PATTERNS.find((entry) =>
+        entry.matches.some((pattern) =>
+            normalizedMessage.includes(pattern.toLowerCase())
+        )
+    );
+    if (!match) {
+        return {
+            category: 'unknown',
+            code: 'SQLITE_ERROR'
+        };
+    }
+    return {
+        category: match.category,
+        code: match.code
+    };
+}
+
+function normalizeSQLiteError(error, fallbackMessage) {
+    const originalMessage = getErrorMessage(error);
+    const normalizedError = normalizePlatformError(error, fallbackMessage);
+    const { category, code } = classifySQLiteError(originalMessage);
+    normalizedError.sqliteCategory = category;
+    normalizedError.sqliteCode = code;
+    normalizedError.originalMessage = originalMessage;
+    return normalizedError;
 }
 
 async function query(sql, args = null) {
     try {
         return await backend.sqlite.execute(sql, args);
     } catch (error) {
-        showSQLiteErrorModal(error);
-        throw normalizePlatformError(error, 'SQLite query failed');
+        const normalizedError = normalizeSQLiteError(
+            error,
+            'SQLite query failed'
+        );
+        notifySQLiteError(normalizedError);
+        throw normalizedError;
     }
 }
 
@@ -90,8 +109,12 @@ async function executeNonQuery(sql, args = null) {
     try {
         return await backend.sqlite.executeNonQuery(sql, args);
     } catch (error) {
-        showSQLiteErrorModal(error);
-        throw normalizePlatformError(error, 'SQLite non-query failed');
+        const normalizedError = normalizeSQLiteError(
+            error,
+            'SQLite non-query failed'
+        );
+        notifySQLiteError(normalizedError);
+        throw normalizedError;
     }
 }
 

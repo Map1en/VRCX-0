@@ -3,47 +3,11 @@ import {
     fetchCachedData,
     invalidateEntityQueries,
     queryKeys
-} from '@/services/entityQueryCacheService.js';
-import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
+} from '@/lib/entityQueryCache.js';
 
-import { safeJsonParse } from './baseRepository.js';
-import webRepository from './webRepository.js';
+import { executeVrchatRequest } from './vrchatRequest.js';
 
 const PAGE_SIZE = 100;
-
-function buildUrl(path, params = {}, endpoint = '') {
-    const url = new URL(path, getVrchatEndpointBase(endpoint));
-    if (params && typeof params === 'object') {
-        for (const [key, value] of Object.entries(params)) {
-            if (value === null || value === undefined) {
-                continue;
-            }
-            url.searchParams.set(key, String(value));
-        }
-    }
-    return url.toString();
-}
-
-function parseJsonResponse(data) {
-    if (data === null || data === undefined || data === '') {
-        return data ?? null;
-    }
-    if (typeof data !== 'string') {
-        return data;
-    }
-    return safeJsonParse(data, data);
-}
-
-function unwrapErrorMessage(json, status, fallback) {
-    if (typeof json === 'string' && json.trim()) {
-        return json.replace(/^"+|"+$/g, '');
-    }
-    const message = json?.error?.message ?? json?.message;
-    if (typeof message === 'string' && message.trim()) {
-        return message.replace(/^"+|"+$/g, '');
-    }
-    return `${fallback} (${status})`;
-}
 
 async function processAllPages(fetchPage, { pageSize = PAGE_SIZE } = {}) {
     const results = [];
@@ -72,45 +36,14 @@ async function execute(
     path,
     { endpoint = '', method = 'GET', params = null } = {}
 ) {
-    const requestOptions = {
-        url: buildUrl(path, method === 'GET' ? params : {}, endpoint),
-        method
-    };
-
-    if (method !== 'GET') {
-        requestOptions.headers = {
-            'Content-Type': 'application/json;charset=utf-8'
-        };
-        requestOptions.body = JSON.stringify(params ?? {});
-    }
-
-    const response = await webRepository.execute(requestOptions);
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw new Error(
-            unwrapErrorMessage(
-                json,
-                response.status,
-                'VRChat tool request failed'
-            )
-        );
-    }
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw new Error(
-            unwrapErrorMessage(
-                json,
-                response.status,
-                'VRChat tool request failed'
-            )
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
+    return executeVrchatRequest(path, {
+        endpoint,
+        method,
+        params,
+        body: params,
+        fallbackMessage: 'VRChat tool request failed',
+        decorateError: false
+    });
 }
 
 async function getGroupCalendars(

@@ -21,7 +21,7 @@ import {
     applySavedAuthSnapshot,
     refreshSavedAuthSnapshot
 } from './authSnapshotService.js';
-import { clearEntityQueryCache } from './entityQueryCacheService.js';
+import { clearEntityQueryCache } from '@/lib/entityQueryCache.js';
 import i18n from './i18nService.js';
 import { stopRealtimeTransport } from './realtimeTransportService.js';
 import { bootstrapAuthenticatedSession } from './sessionBootstrapService.js';

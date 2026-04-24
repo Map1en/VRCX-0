@@ -4,84 +4,16 @@ import {
     invalidateEntityQueries,
     queryKeys,
     setCachedQueryData
-} from '@/services/entityQueryCacheService.js';
+} from '@/lib/entityQueryCache.js';
 import { storeAvatarImage } from '@/shared/utils/avatar.js';
 import { extractFileId } from '@/shared/utils/fileUtils.js';
-import {
-    getVrchatEndpointBase,
-    normalizeVrchatEndpointDomain
-} from '@/shared/vrchatEndpoint.js';
+import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 
-import { safeJsonParse } from './baseRepository.js';
 import avatarLocalRepository from './avatarLocalRepository.js';
 import memoRepository from './memoRepository.js';
-import webRepository from './webRepository.js';
+import { executeVrchatRequest } from './vrchatRequest.js';
 
 const cachedAvatarNames = new Map();
-
-function appendParams(url, params) {
-    if (!params || typeof params !== 'object') {
-        return url;
-    }
-
-    for (const [key, value] of Object.entries(params)) {
-        if (value === null || value === undefined) {
-            continue;
-        }
-
-        if (Array.isArray(value)) {
-            for (const item of value) {
-                if (item === null || item === undefined) {
-                    continue;
-                }
-                url.searchParams.append(key, String(item));
-            }
-            continue;
-        }
-
-        url.searchParams.set(key, String(value));
-    }
-
-    return url;
-}
-
-function buildUrl(path, params = {}, endpoint = '') {
-    const url = new URL(path, getVrchatEndpointBase(endpoint));
-    return appendParams(url, params).toString();
-}
-
-function parseJsonResponse(data) {
-    if (data === null || data === undefined || data === '') {
-        return data ?? null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
-    }
-
-    return safeJsonParse(data, data);
-}
-
-function unwrapErrorMessage(json, status) {
-    if (typeof json === 'string' && json.trim()) {
-        return json.replace(/^"+|"+$/g, '');
-    }
-
-    const message = json?.error?.message ?? json?.message;
-    if (typeof message === 'string' && message.trim()) {
-        return message.replace(/^"+|"+$/g, '');
-    }
-
-    return `VRChat avatar request failed (${status})`;
-}
-
-function createAvatarRequestError(message, status, path, payload = null) {
-    const error = new Error(message);
-    error.status = status;
-    error.endpoint = path;
-    error.payload = payload;
-    return error;
-}
 
 function normalizeEntityId(value) {
     return typeof value === 'string'
@@ -204,148 +136,42 @@ function getAvatarNameCacheSize() {
 }
 
 async function executeGet(path, params = {}, { endpoint = '' } = {}) {
-    const response = await webRepository.execute({
-        url: buildUrl(path, params, endpoint),
-        method: 'GET'
+    return executeVrchatRequest(path, {
+        endpoint,
+        method: 'GET',
+        params,
+        fallbackMessage: 'VRChat avatar request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createAvatarRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createAvatarRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function executePut(path, params = {}, { endpoint = '' } = {}) {
-    const requestOptions = {
-        url: buildUrl(path, {}, endpoint),
-        method: 'PUT'
-    };
-
-    if (params !== null) {
-        requestOptions.headers = {
-            'Content-Type': 'application/json;charset=utf-8'
-        };
-        requestOptions.body = JSON.stringify(
-            params && typeof params === 'object' ? params : {}
-        );
-    }
-
-    const response = await webRepository.execute(requestOptions);
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createAvatarRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createAvatarRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
+    return executeVrchatRequest(path, {
+        endpoint,
+        method: 'PUT',
+        body: params,
+        jsonBody: params !== null,
+        fallbackMessage: 'VRChat avatar request failed'
+    });
 }
 
 async function executePost(path, params = {}, { endpoint = '' } = {}) {
-    const requestOptions = {
-        url: buildUrl(path, {}, endpoint),
+    return executeVrchatRequest(path, {
+        endpoint,
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(params && typeof params === 'object' ? params : {})
-    };
-
-    const response = await webRepository.execute(requestOptions);
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createAvatarRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createAvatarRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
+        body: params,
+        fallbackMessage: 'VRChat avatar request failed'
+    });
 }
 
 async function executeDelete(path, params = {}, { endpoint = '' } = {}) {
-    const response = await webRepository.execute({
-        url: buildUrl(path, params, endpoint),
-        method: 'DELETE'
+    return executeVrchatRequest(path, {
+        endpoint,
+        method: 'DELETE',
+        params,
+        queryParams: params,
+        jsonBody: false,
+        fallbackMessage: 'VRChat avatar request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createAvatarRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createAvatarRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function getLocalSnapshot(avatarId, currentUserId = '') {

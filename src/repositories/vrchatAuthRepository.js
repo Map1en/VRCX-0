@@ -1,98 +1,23 @@
-import {
-    DEFAULT_VRCHAT_API_ENDPOINT,
-    getVrchatEndpointBase,
-    normalizeVrchatEndpoint
-} from '@/shared/vrchatEndpoint.js';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint.js';
 
-import { safeJsonParse } from './baseRepository.js';
-import webRepository from './webRepository.js';
+import { executeVrchatRequest } from './vrchatRequest.js';
 
 export const DEFAULT_ENDPOINT_DOMAIN = DEFAULT_VRCHAT_API_ENDPOINT;
 export const DEFAULT_WEBSOCKET_DOMAIN = 'wss://pipeline.vrchat.cloud';
-
-function buildUrl(path, endpointDomain) {
-    return new URL(path, getVrchatEndpointBase(endpointDomain)).toString();
-}
-
-function parseJsonResponse(data) {
-    if (data === null || data === undefined || data === '') {
-        return data ?? null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
-    }
-
-    return safeJsonParse(data, data);
-}
-
-function unwrapErrorMessage(json, status) {
-    if (typeof json === 'string' && json.trim()) {
-        return json.replace(/^"+|"+$/g, '');
-    }
-
-    const message = json?.error?.message ?? json?.message;
-    if (typeof message === 'string' && message.trim()) {
-        return message.replace(/^"+|"+$/g, '');
-    }
-
-    return `VRChat request failed (${status})`;
-}
-
-function createAuthError(message, status, endpoint, payload = null) {
-    const error = new Error(message);
-    error.status = status;
-    error.endpoint = endpoint;
-    error.payload = payload;
-    return error;
-}
 
 async function execute(
     path,
     { endpoint = '', method = 'GET', headers = {}, params = null } = {}
 ) {
-    const endpointDomain = normalizeVrchatEndpoint(endpoint);
-    const requestOptions = {
-        url: buildUrl(path, endpointDomain),
+    return executeVrchatRequest(path, {
+        endpoint,
         method,
-        headers
-    };
-
-    if (method !== 'GET') {
-        requestOptions.headers = {
-            'Content-Type': 'application/json;charset=utf-8',
-            ...headers
-        };
-        requestOptions.body = JSON.stringify(params ?? {});
-    }
-
-    const response = await webRepository.execute(requestOptions);
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createAuthError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createAuthError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        endpointDomain,
-        raw: response.raw
-    };
+        headers,
+        body: params,
+        normalizeEndpoint: true,
+        fallbackMessage: 'VRChat request failed',
+        returnEndpointDomain: true
+    });
 }
 
 async function executeGet(path, options = {}) {

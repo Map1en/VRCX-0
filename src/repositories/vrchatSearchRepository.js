@@ -1,7 +1,4 @@
-import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
-
-import { safeJsonParse } from './baseRepository.js';
-import webRepository from './webRepository.js';
+import { executeVrchatRequest } from './vrchatRequest.js';
 
 function normalizeParams(params = {}) {
     if (!params || typeof params !== 'object') {
@@ -10,93 +7,18 @@ function normalizeParams(params = {}) {
     return { ...params };
 }
 
-function appendParams(url, params) {
-    if (!params || typeof params !== 'object') {
-        return url;
-    }
-
-    for (const [key, value] of Object.entries(params)) {
-        if (value === null || value === undefined) {
-            continue;
-        }
-
-        if (Array.isArray(value)) {
-            for (const item of value) {
-                if (item === null || item === undefined) {
-                    continue;
-                }
-                url.searchParams.append(key, String(item));
-            }
-            continue;
-        }
-
-        if (value instanceof Date) {
-            url.searchParams.set(key, value.toISOString());
-            continue;
-        }
-
-        if (typeof value === 'object') {
-            url.searchParams.set(key, String(value));
-            continue;
-        }
-
-        url.searchParams.set(key, String(value));
-    }
-
-    return url;
-}
-
-function buildUrl(path, params, endpoint = '') {
-    const url = new URL(
-        path,
-        getVrchatEndpointBase(endpoint, { allowDebugEndpoint: true })
-    );
-    return appendParams(url, params);
-}
-
-function parseJsonResponse(data) {
-    if (data === null || data === undefined || data === '') {
-        return data ?? null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
-    }
-
-    return safeJsonParse(data, data);
-}
-
-function unwrapErrorMessage(json, status) {
-    const message = json?.error?.message ?? json?.message;
-    if (typeof message === 'string' && message.trim()) {
-        return message.replace(/^"+|"+$/g, '');
-    }
-    return `VRChat request failed (${status})`;
-}
-
 async function executeGet(path, params = {}, extra = {}, options = {}) {
     const normalizedParams = normalizeParams(params);
-    const response = await webRepository.execute({
-        url: buildUrl(path, normalizedParams, options.endpoint).toString(),
-        method: 'GET'
-    });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw new Error(unwrapErrorMessage(json, response.status));
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw new Error(unwrapErrorMessage(json, response.status));
-    }
-
-    return {
-        json,
+    return executeVrchatRequest(path, {
+        endpoint: options.endpoint,
+        method: 'GET',
         params: normalizedParams,
-        ...extra,
-        status: response.status,
-        raw: response.raw
-    };
+        allowDebugEndpoint: true,
+        fallbackMessage: 'VRChat request failed',
+        decorateError: false,
+        includeParams: true,
+        extra
+    });
 }
 
 async function getConfig(params = {}) {

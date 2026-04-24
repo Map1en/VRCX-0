@@ -1,48 +1,8 @@
-import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
-
-import { safeJsonParse } from './baseRepository.js';
 import sqliteRepository from './sqliteRepository.js';
 import userSessionRepository, {
     normalizeUserTablePrefix
 } from './userSessionRepository.js';
-import webRepository from './webRepository.js';
-
-function buildUrl(path, endpointDomain) {
-    return new URL(path, getVrchatEndpointBase(endpointDomain)).toString();
-}
-
-function parseJsonResponse(data) {
-    if (data === null || data === undefined || data === '') {
-        return data ?? null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
-    }
-
-    return safeJsonParse(data, data);
-}
-
-function unwrapErrorMessage(json, status) {
-    if (typeof json === 'string' && json.trim()) {
-        return json.replace(/^"+|"+$/g, '');
-    }
-
-    const message = json?.error?.message ?? json?.message;
-    if (typeof message === 'string' && message.trim()) {
-        return message.replace(/^"+|"+$/g, '');
-    }
-
-    return `VRChat moderation request failed (${status})`;
-}
-
-function createModerationError(message, status, endpoint, payload = null) {
-    const error = new Error(message);
-    error.status = status;
-    error.endpoint = endpoint;
-    error.payload = payload;
-    return error;
-}
+import { executeVrchatRequest } from './vrchatRequest.js';
 
 function normalizePlayerModerationRow(row) {
     if (!row || typeof row !== 'object') {
@@ -92,111 +52,29 @@ function normalizeUserId(value) {
 }
 
 async function executeGet(path, { endpoint = '' } = {}) {
-    const response = await webRepository.execute({
-        url: buildUrl(path, endpoint),
-        method: 'GET'
+    return executeVrchatRequest(path, {
+        endpoint,
+        method: 'GET',
+        fallbackMessage: 'VRChat moderation request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createModerationError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createModerationError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function executePut(path, payload = {}, { endpoint = '' } = {}) {
-    const response = await webRepository.execute({
-        url: buildUrl(path, endpoint),
+    return executeVrchatRequest(path, {
+        endpoint,
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(
-            payload && typeof payload === 'object' ? payload : {}
-        )
+        body: payload,
+        fallbackMessage: 'VRChat moderation request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createModerationError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createModerationError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function executePost(path, payload = {}, { endpoint = '' } = {}) {
-    const response = await webRepository.execute({
-        url: buildUrl(path, endpoint),
+    return executeVrchatRequest(path, {
+        endpoint,
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(
-            payload && typeof payload === 'object' ? payload : {}
-        )
+        body: payload,
+        fallbackMessage: 'VRChat moderation request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createModerationError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createModerationError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function getPlayerModerations({ endpoint = '' } = {}) {

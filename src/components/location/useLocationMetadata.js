@@ -9,7 +9,7 @@ import {
 import {
     entityQueryPolicies,
     queryKeys
-} from '@/services/entityQueryCacheService.js';
+} from '@/lib/entityQueryCache.js';
 import { parseLocation, resolveRegion } from '@/shared/utils/location.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 

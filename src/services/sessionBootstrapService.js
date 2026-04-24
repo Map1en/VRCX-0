@@ -7,6 +7,7 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 
 import { syncStartupServicesTask } from './startupServicesStatus.js';
+import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 
 function getCurrentUserDisplayName(user) {
     return user?.displayName || user?.username || user?.id || '';
@@ -133,6 +134,7 @@ export async function bootstrapAuthenticatedSession(user) {
             'error',
             normalizeBootstrapError(error).message
         );
+        await showSQLiteErrorDialog(error);
         throw normalizeBootstrapError(error);
     }
 }

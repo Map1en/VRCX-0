@@ -4,10 +4,6 @@ import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 
 import { PageHeader, PageTitle } from '@/components/layout/PageScaffold.jsx';
-import {
-    clearFavoriteRemoteDetailsCache,
-    getFavoriteRemoteDetailsCacheStats
-} from '@/features/favorites/useFavoriteRemoteDetails.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { backend } from '@/platform/index.js';
 import {
@@ -23,7 +19,7 @@ import {
     clearEntityQueryCache,
     getEntityQueryCacheSize,
     getEntityQueryCacheStats
-} from '@/services/entityQueryCacheService.js';
+} from '@/lib/entityQueryCache.js';
 import {
     loadPreferenceSnapshot,
     setAccessibleStatusIndicatorsPreference,
@@ -344,7 +340,6 @@ export function useSettingsPageController() {
         avatarProfileRepository,
         backend,
         clearEntityQueryCache,
-        clearFavoriteRemoteDetailsCache,
         commit,
         configRepository,
         confirm,
@@ -355,7 +350,6 @@ export function useSettingsPageController() {
         gameState,
         getEntityQueryCacheSize,
         getEntityQueryCacheStats,
-        getFavoriteRemoteDetailsCacheStats,
         isValidFontFamilyList,
         loadTrustColorPreference,
         localFavoriteFriendsGroups,

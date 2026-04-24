@@ -5,7 +5,7 @@ import {
     getEntityQueryCacheStats,
     queryKeys,
     setCachedQueryData
-} from './entityQueryCacheService.js';
+} from '@/lib/entityQueryCache.js';
 
 describe('entityQueryCacheService', () => {
     afterEach(async () => {

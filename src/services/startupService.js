@@ -9,6 +9,7 @@ import { runStartupMaintenance } from './backgroundMaintenanceService.js';
 import { initializeDatabaseUpgradeFlow } from './databaseUpgradeService.js';
 import { checkVRChatDebugLogging } from './gameStateService.js';
 import { loadPreferenceSnapshot } from './preferencesService.js';
+import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 import {
     APP_CJK_FONT_PACK_DEFAULT_KEY,
     APP_FONT_DEFAULT_KEY,
@@ -109,6 +110,7 @@ export async function initializeReactRuntime() {
             'error',
             error instanceof Error ? error.message : String(error)
         );
+        await showSQLiteErrorDialog(error);
         console.error('Failed to initialize application runtime:', error);
         throw error;
     }

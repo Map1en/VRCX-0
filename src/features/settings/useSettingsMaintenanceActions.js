@@ -1,9 +1,13 @@
+import {
+    clearFavoriteRemoteDetailsCache,
+    getFavoriteRemoteDetailsCacheStats
+} from '@/services/favoriteRemoteDetailsCacheService.js';
+
 export function useSettingsMaintenanceActions({
     auth,
     avatarProfileRepository,
     backend,
     clearEntityQueryCache,
-    clearFavoriteRemoteDetailsCache,
     commit,
     configRepository,
     confirm,
@@ -13,7 +17,6 @@ export function useSettingsMaintenanceActions({
     gameState,
     getEntityQueryCacheSize,
     getEntityQueryCacheStats,
-    getFavoriteRemoteDetailsCacheStats,
     mediaRepository,
     normalizeSharedFeedFilters,
     prefs,

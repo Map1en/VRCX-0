@@ -1,11 +1,16 @@
-import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
-
 import { safeJsonParse } from './baseRepository.js';
 import configRepository from './configRepository.js';
 import sqliteRepository from './sqliteRepository.js';
 import userSessionRepository, {
     normalizeUserTablePrefix
 } from './userSessionRepository.js';
+import {
+    buildUrl,
+    createRequestError,
+    executeVrchatRequest,
+    parseJsonResponse,
+    unwrapErrorMessage
+} from './vrchatRequest.js';
 import webRepository from './webRepository.js';
 
 export const NOTIFICATION_TYPES = Object.freeze([
@@ -36,61 +41,6 @@ function normalizeUserId(value) {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
-}
-
-function appendParams(url, params) {
-    if (!params || typeof params !== 'object') {
-        return url;
-    }
-
-    for (const [key, value] of Object.entries(params)) {
-        if (value === null || value === undefined) {
-            continue;
-        }
-        url.searchParams.set(key, String(value));
-    }
-
-    return url;
-}
-
-function buildUrl(path, params = {}, endpoint = '') {
-    return appendParams(
-        new URL(path, getVrchatEndpointBase(endpoint)),
-        params
-    ).toString();
-}
-
-function parseJsonResponse(data) {
-    if (data === null || data === undefined || data === '') {
-        return data ?? null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
-    }
-
-    return safeJsonParse(data, data);
-}
-
-function unwrapErrorMessage(json, status) {
-    if (typeof json === 'string' && json.trim()) {
-        return json.replace(/^"+|"+$/g, '');
-    }
-
-    const message = json?.error?.message ?? json?.message;
-    if (typeof message === 'string' && message.trim()) {
-        return message.replace(/^"+|"+$/g, '');
-    }
-
-    return `VRChat notification request failed (${status})`;
-}
-
-function createNotificationError(message, status, path, payload = null) {
-    const error = new Error(message);
-    error.status = status;
-    error.endpoint = path;
-    error.payload = payload;
-    return error;
 }
 
 function readColumn(row, index, key) {
@@ -219,44 +169,14 @@ async function executeApi(
     path,
     { endpoint = '', method = 'GET', params = null } = {}
 ) {
-    const requestOptions = {
-        url: buildUrl(path, method === 'GET' ? params : {}, endpoint),
-        method
-    };
-
-    if (method !== 'GET' && params !== null) {
-        requestOptions.headers = {
-            'Content-Type': 'application/json;charset=utf-8'
-        };
-        requestOptions.body = JSON.stringify(params ?? {});
-    }
-
-    const response = await webRepository.execute(requestOptions);
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createNotificationError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createNotificationError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
+    return executeVrchatRequest(path, {
+        endpoint,
+        method,
+        params,
+        body: params,
+        jsonBody: params !== null,
+        fallbackMessage: 'VRChat notification request failed'
+    });
 }
 
 async function queryNotifications({ userId, search = '', filters = [] } = {}) {
@@ -718,8 +638,10 @@ async function sendInviteResponsePhoto({
     const json = parseJsonResponse(response.data);
 
     if (response.status >= 400) {
-        throw createNotificationError(
-            unwrapErrorMessage(json, response.status),
+        throw createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat notification request failed'
+            }),
             response.status,
             path,
             json
@@ -727,8 +649,10 @@ async function sendInviteResponsePhoto({
     }
 
     if (json && typeof json === 'object' && 'error' in json) {
-        throw createNotificationError(
-            unwrapErrorMessage(json, response.status),
+        throw createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat notification request failed'
+            }),
             response.status,
             path,
             json

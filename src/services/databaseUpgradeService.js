@@ -9,6 +9,8 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 import i18n from '@/services/i18nService.js';
 
+import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
+
 const DATABASE_VERSION = 16;
 
 function setUpgradeState(patch) {
@@ -70,40 +72,43 @@ async function writeUpgradeDatabaseVersion() {
 }
 
 async function runFullDatabaseUpgrade() {
-    const failedUpgrade = await backend.sqlite.GetFailedUpgrade();
-    if (failedUpgrade) {
-        return blockOnFailedUpgrade(failedUpgrade);
-    }
-
-    const currentVersion = await configRepository.getInt('databaseVersion', 0);
-
-    if (currentVersion >= DATABASE_VERSION) {
-        setUpgradeState({
-            open: false,
-            phase: 'completed',
-            fromVersion: currentVersion,
-            toVersion: DATABASE_VERSION,
-            detail: i18n.t(
-                'service.database_upgrade_service.generated.database_schema_is_current'
-            ),
-            legacyMigrationAvailable: false
-        });
-        useSessionStore.getState().setSessionState({ databaseReady: true });
-        return true;
-    }
-
-    setUpgradeState({
-        open: currentVersion > 0,
-        phase: 'running',
-        fromVersion: currentVersion,
-        toVersion: DATABASE_VERSION,
-        detail: i18n.t('service.database_upgrade_service.generated_dynamic.updating_database_from_value_to_value', { value: currentVersion, value2: DATABASE_VERSION }),
-        legacyMigrationAvailable: false
-    });
-
     let upgradeStarted = false;
     let upgradeCommitted = false;
     try {
+        const failedUpgrade = await backend.sqlite.GetFailedUpgrade();
+        if (failedUpgrade) {
+            return blockOnFailedUpgrade(failedUpgrade);
+        }
+
+        const currentVersion = await configRepository.getInt(
+            'databaseVersion',
+            0
+        );
+
+        if (currentVersion >= DATABASE_VERSION) {
+            setUpgradeState({
+                open: false,
+                phase: 'completed',
+                fromVersion: currentVersion,
+                toVersion: DATABASE_VERSION,
+                detail: i18n.t(
+                    'service.database_upgrade_service.generated.database_schema_is_current'
+                ),
+                legacyMigrationAvailable: false
+            });
+            useSessionStore.getState().setSessionState({ databaseReady: true });
+            return true;
+        }
+
+        setUpgradeState({
+            open: currentVersion > 0,
+            phase: 'running',
+            fromVersion: currentVersion,
+            toVersion: DATABASE_VERSION,
+            detail: i18n.t('service.database_upgrade_service.generated_dynamic.updating_database_from_value_to_value', { value: currentVersion, value2: DATABASE_VERSION }),
+            legacyMigrationAvailable: false
+        });
+
         await backend.sqlite.BeginUpgrade(currentVersion, DATABASE_VERSION);
         upgradeStarted = true;
 
@@ -150,6 +155,7 @@ async function runFullDatabaseUpgrade() {
                 );
             }
         }
+        await showSQLiteErrorDialog(error);
 
         let description = i18n.t(
             'service.database_upgrade_service.generated.apply_upgrade_failed'

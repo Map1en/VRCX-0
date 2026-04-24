@@ -7,6 +7,7 @@ import { useSessionStore } from '@/state/sessionStore.js';
 
 import { refreshCurrentUserFriendsAndFavorites } from './backgroundMaintenanceService.js';
 import { handleRealtimePresenceEvent } from './realtimePresenceService.js';
+import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
 let activeSocket = null;
@@ -220,7 +221,8 @@ function attachSocketHandlers(
         if (parsedMessage.json) {
             Promise.resolve(
                 handleRealtimePresenceEvent(parsedMessage.json)
-            ).catch((error) => {
+            ).catch(async (error) => {
+                await showSQLiteErrorDialog(error);
                 useNotificationStore.getState().pushNotification({
                     level: 'warning',
                     title: 'Realtime event failed',

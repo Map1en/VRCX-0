@@ -1,74 +1,7 @@
-import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
-
-import { safeJsonParse } from './baseRepository.js';
-import webRepository from './webRepository.js';
+import { executeVrchatRequest } from './vrchatRequest.js';
 
 const PAGE_SIZE = 50;
 const MAX_OFFSET = 7500;
-
-function appendParams(url, params) {
-    if (!params || typeof params !== 'object') {
-        return url;
-    }
-
-    for (const [key, value] of Object.entries(params)) {
-        if (value === null || value === undefined) {
-            continue;
-        }
-
-        if (Array.isArray(value)) {
-            for (const item of value) {
-                if (item === null || item === undefined) {
-                    continue;
-                }
-                url.searchParams.append(key, String(item));
-            }
-            continue;
-        }
-
-        url.searchParams.set(key, String(value));
-    }
-
-    return url;
-}
-
-function buildUrl(path, params = {}, endpoint = '') {
-    const url = new URL(path, getVrchatEndpointBase(endpoint));
-    return appendParams(url, params).toString();
-}
-
-function parseJsonResponse(data) {
-    if (data === null || data === undefined || data === '') {
-        return data ?? null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
-    }
-
-    return safeJsonParse(data, data);
-}
-
-function unwrapErrorMessage(json, status) {
-    if (typeof json === 'string' && json.trim()) {
-        return json.replace(/^"+|"+$/g, '');
-    }
-
-    const message = json?.error?.message ?? json?.message;
-    if (typeof message === 'string' && message.trim()) {
-        return message.replace(/^"+|"+$/g, '');
-    }
-
-    return `VRChat friend request failed (${status})`;
-}
-
-function createFriendRequestError(message, status, path, payload = null) {
-    const error = new Error(message);
-    error.status = status;
-    error.endpoint = path;
-    error.payload = payload;
-    return error;
-}
 
 function isValidFriendUser(user) {
     return Boolean(
@@ -83,46 +16,14 @@ async function execute(
     path,
     { endpoint = '', method = 'GET', params = null } = {}
 ) {
-    const requestOptions = {
-        url: buildUrl(path, method === 'GET' ? params : {}, endpoint),
-        method
-    };
-
-    if (method !== 'GET' && params !== null) {
-        requestOptions.headers = {
-            'Content-Type': 'application/json;charset=utf-8'
-        };
-        requestOptions.body = JSON.stringify(params ?? {});
-    }
-
-    const response = await webRepository.execute({
-        ...requestOptions
+    return executeVrchatRequest(path, {
+        endpoint,
+        method,
+        params,
+        body: params,
+        jsonBody: method !== 'GET' && params !== null,
+        fallbackMessage: 'VRChat friend request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createFriendRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createFriendRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function executeGet(path, params = {}, { endpoint = '' } = {}) {

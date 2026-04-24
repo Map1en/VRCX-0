@@ -2,77 +2,11 @@ import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
-} from '@/services/entityQueryCacheService.js';
+} from '@/lib/entityQueryCache.js';
 import { replaceBioSymbols } from '@/shared/utils/base/string.js';
 import { createDefaultGroupRef } from '@/shared/utils/groupTransforms.js';
-import { getVrchatEndpointBase } from '@/shared/vrchatEndpoint.js';
 
-import { safeJsonParse } from './baseRepository.js';
-import webRepository from './webRepository.js';
-
-function appendParams(url, params) {
-    if (!params || typeof params !== 'object') {
-        return url;
-    }
-
-    for (const [key, value] of Object.entries(params)) {
-        if (value === null || value === undefined) {
-            continue;
-        }
-
-        if (Array.isArray(value)) {
-            for (const item of value) {
-                if (item === null || item === undefined) {
-                    continue;
-                }
-                url.searchParams.append(key, String(item));
-            }
-            continue;
-        }
-
-        url.searchParams.set(key, String(value));
-    }
-
-    return url;
-}
-
-function buildUrl(path, params = {}, endpoint = '') {
-    const url = new URL(path, getVrchatEndpointBase(endpoint));
-    return appendParams(url, params).toString();
-}
-
-function parseJsonResponse(data) {
-    if (data === null || data === undefined || data === '') {
-        return data ?? null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
-    }
-
-    return safeJsonParse(data, data);
-}
-
-function unwrapErrorMessage(json, status) {
-    if (typeof json === 'string' && json.trim()) {
-        return json.replace(/^"+|"+$/g, '');
-    }
-
-    const message = json?.error?.message ?? json?.message;
-    if (typeof message === 'string' && message.trim()) {
-        return message.replace(/^"+|"+$/g, '');
-    }
-
-    return `VRChat group request failed (${status})`;
-}
-
-function createGroupRequestError(message, status, path, payload = null) {
-    const error = new Error(message);
-    error.status = status;
-    error.endpoint = path;
-    error.payload = payload;
-    return error;
-}
+import { executeVrchatRequest } from './vrchatRequest.js';
 
 function normalizeEntityId(value) {
     return typeof value === 'string'
@@ -198,139 +132,41 @@ function normalize(group) {
 }
 
 async function executeGet(path, params = {}, { endpoint = '' } = {}) {
-    const response = await webRepository.execute({
-        url: buildUrl(path, params, endpoint),
-        method: 'GET'
+    return executeVrchatRequest(path, {
+        endpoint,
+        method: 'GET',
+        params,
+        fallbackMessage: 'VRChat group request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createGroupRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createGroupRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function executePost(path, params = {}, { endpoint = '' } = {}) {
-    const response = await webRepository.execute({
-        url: buildUrl(path, {}, endpoint),
+    return executeVrchatRequest(path, {
+        endpoint,
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(params && typeof params === 'object' ? params : {})
+        body: params,
+        fallbackMessage: 'VRChat group request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createGroupRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createGroupRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function executePut(path, params = {}, { endpoint = '' } = {}) {
-    const response = await webRepository.execute({
-        url: buildUrl(path, {}, endpoint),
+    return executeVrchatRequest(path, {
+        endpoint,
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(params && typeof params === 'object' ? params : {})
+        body: params,
+        fallbackMessage: 'VRChat group request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createGroupRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createGroupRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function executeDelete(path, params = {}, { endpoint = '' } = {}) {
-    const response = await webRepository.execute({
-        url: buildUrl(path, params, endpoint),
-        method: 'DELETE'
+    return executeVrchatRequest(path, {
+        endpoint,
+        method: 'DELETE',
+        params,
+        queryParams: params,
+        jsonBody: false,
+        fallbackMessage: 'VRChat group request failed'
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createGroupRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createGroupRequestError(
-            unwrapErrorMessage(json, response.status),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
 }
 
 async function getGroupProfile({

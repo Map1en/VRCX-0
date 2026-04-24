@@ -1,4 +1,4 @@
-import { ConfigKeys } from '@/services/configKeys.js';
+import { ConfigKeys } from '@/repositories/configKeys.js';
 
 import {
     asString,
@@ -158,11 +158,12 @@ class ConfigRepository {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
         const stringValue = String(value);
-        this.#cache.set(dbKey, stringValue);
-        return sqliteRepository.executeNonQuery(
+        const result = await sqliteRepository.executeNonQuery(
             'INSERT OR REPLACE INTO configs (key, value) VALUES (@key, @value)',
             { '@key': dbKey, '@value': stringValue }
         );
+        this.#cache.set(dbKey, stringValue);
+        return result;
     }
 
     async set(key, value) {
@@ -213,13 +214,14 @@ class ConfigRepository {
     async remove(key) {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
-        this.#cache.delete(dbKey);
-        return sqliteRepository.executeNonQuery(
+        const result = await sqliteRepository.executeNonQuery(
             'DELETE FROM configs WHERE key = @key',
             {
                 '@key': dbKey
             }
         );
+        this.#cache.delete(dbKey);
+        return result;
     }
 
     async has(key) {

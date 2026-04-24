@@ -1,29 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { vrchatFavoriteRepository } from '@/repositories/index.js';
+import {
+    deleteFavoriteRemoteDetailsPromise,
+    getFavoriteRemoteDetailsCache,
+    getFavoriteRemoteDetailsCacheGeneration,
+    getFavoriteRemoteDetailsPromise,
+    setFavoriteRemoteDetailsCache,
+    setFavoriteRemoteDetailsPromise
+} from '@/services/favoriteRemoteDetailsCacheService.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-
-const detailCache = new Map();
-const detailPromises = new Map();
-let detailCacheGeneration = 0;
-
-export function clearFavoriteRemoteDetailsCache() {
-    const result = {
-        detailCacheCount: detailCache.size,
-        detailPromiseCount: detailPromises.size
-    };
-    detailCacheGeneration += 1;
-    detailCache.clear();
-    detailPromises.clear();
-    return result;
-}
-
-export function getFavoriteRemoteDetailsCacheStats() {
-    return {
-        detailCacheCount: detailCache.size,
-        detailPromiseCount: detailPromises.size
-    };
-}
 
 function normalizeValues(values) {
     return Array.from(
@@ -104,11 +90,11 @@ export function useFavoriteRemoteDetails({
     const tagsKey = normalizedTags.join('|');
     const cacheKey = buildCacheKey(type, endpoint, idsKey, tagsKey);
     const [state, setState] = useState(
-        () => detailCache.get(cacheKey) ?? buildInitialState()
+        () => getFavoriteRemoteDetailsCache(cacheKey) ?? buildInitialState()
     );
 
     useEffect(() => {
-        const cachedState = detailCache.get(cacheKey);
+        const cachedState = getFavoriteRemoteDetailsCache(cacheKey);
         if (cachedState) {
             setState(cachedState);
             return;
@@ -134,14 +120,14 @@ export function useFavoriteRemoteDetails({
             return;
         }
 
-        const cachedState = detailCache.get(cacheKey);
+        const cachedState = getFavoriteRemoteDetailsCache(cacheKey);
         if (cachedState) {
             setState(cachedState);
             return;
         }
 
         let active = true;
-        const effectGeneration = detailCacheGeneration;
+        const effectGeneration = getFavoriteRemoteDetailsCacheGeneration();
         setState(
             buildInitialState(
                 'running',
@@ -151,12 +137,15 @@ export function useFavoriteRemoteDetails({
             )
         );
 
-        let promise = detailPromises.get(cacheKey);
+        let promise = getFavoriteRemoteDetailsPromise(cacheKey);
         if (!promise) {
-            const promiseGeneration = detailCacheGeneration;
+            const promiseGeneration = getFavoriteRemoteDetailsCacheGeneration();
             promise = loadRemoteDetails(type, endpoint, normalizedTags)
                 .then((data) => {
-                    if (promiseGeneration !== detailCacheGeneration) {
+                    if (
+                        promiseGeneration !==
+                        getFavoriteRemoteDetailsCacheGeneration()
+                    ) {
                         return null;
                     }
                     const filtered = {};
@@ -175,15 +164,18 @@ export function useFavoriteRemoteDetails({
                         data: filtered,
                         lastLoadedAt: new Date().toISOString()
                     };
-                    detailCache.set(cacheKey, nextState);
+                    setFavoriteRemoteDetailsCache(cacheKey, nextState);
                     return nextState;
                 })
                 .finally(() => {
-                    if (promiseGeneration === detailCacheGeneration) {
-                        detailPromises.delete(cacheKey);
+                    if (
+                        promiseGeneration ===
+                        getFavoriteRemoteDetailsCacheGeneration()
+                    ) {
+                        deleteFavoriteRemoteDetailsPromise(cacheKey);
                     }
                 });
-            detailPromises.set(cacheKey, promise);
+            setFavoriteRemoteDetailsPromise(cacheKey, promise);
         }
 
         promise
@@ -193,7 +185,11 @@ export function useFavoriteRemoteDetails({
                 }
             })
             .catch((error) => {
-                if (!active || effectGeneration !== detailCacheGeneration) {
+                if (
+                    !active ||
+                    effectGeneration !==
+                        getFavoriteRemoteDetailsCacheGeneration()
+                ) {
                     return;
                 }
 

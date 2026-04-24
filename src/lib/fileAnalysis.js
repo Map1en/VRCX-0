@@ -3,7 +3,7 @@ import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
-} from '@/services/entityQueryCacheService.js';
+} from '@/lib/entityQueryCache.js';
 import { compareUnityVersion } from '@/shared/utils/avatar.js';
 import { extractFileId, extractFileVersion } from '@/shared/utils/fileUtils.js';
 
