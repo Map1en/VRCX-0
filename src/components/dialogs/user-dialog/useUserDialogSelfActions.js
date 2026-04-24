@@ -255,8 +255,10 @@ export function useUserDialogSelfActions({
                 ).slice(0, 32)
             },
             {
-                successMessage: 'Status updated.',
-                errorMessage: 'Failed to update social status.'
+                successMessage: t('dialog.user.generated.status_updated'),
+                errorMessage: t(
+                    'dialog.user.generated_toast.failed_to_update_social_status'
+                )
             }
         );
         if (saved) {
@@ -345,8 +347,10 @@ export function useUserDialogSelfActions({
             await saveCurrentUserPatch(
                 { bio: result.value },
                 {
-                    successMessage: 'Bio updated.',
-                    errorMessage: 'Failed to update bio.'
+                    successMessage: t('dialog.user.generated.bio_updated'),
+                    errorMessage: t(
+                        'dialog.user.generated_toast.failed_to_update_bio'
+                    )
                 }
             );
         }
@@ -379,8 +383,10 @@ export function useUserDialogSelfActions({
                         .slice(0, 3)
                 },
                 {
-                    successMessage: 'Bio links updated.',
-                    errorMessage: 'Failed to update bio links.'
+                    successMessage: t('dialog.user.generated.bio_links_updated'),
+                    errorMessage: t(
+                        'dialog.user.generated_toast.failed_to_update_bio_links'
+                    )
                 }
             );
         }
@@ -403,8 +409,10 @@ export function useUserDialogSelfActions({
             await saveCurrentUserPatch(
                 { pronouns: result.value },
                 {
-                    successMessage: 'Pronouns updated.',
-                    errorMessage: 'Failed to update pronouns.'
+                    successMessage: t('dialog.user.generated.pronouns_updated'),
+                    errorMessage: t(
+                        'dialog.user.generated_toast.failed_to_update_pronouns'
+                    )
                 }
             );
         }
@@ -414,8 +422,12 @@ export function useUserDialogSelfActions({
         await saveCurrentUserPatch(
             { allowAvatarCopying: !profile?.allowAvatarCopying },
             {
-                successMessage: 'Avatar cloning setting updated.',
-                errorMessage: 'Failed to update avatar cloning setting.'
+                successMessage: t(
+                    'dialog.user.generated.avatar_cloning_setting_updated'
+                ),
+                errorMessage: t(
+                    'dialog.user.generated_toast.failed_to_update_avatar_cloning_setting'
+                )
             }
         );
     }
@@ -424,8 +436,10 @@ export function useUserDialogSelfActions({
         await saveCurrentUserPatch(
             { isBoopingEnabled: profile?.isBoopingEnabled === false },
             {
-                successMessage: 'Booping setting updated.',
-                errorMessage: 'Failed to update booping setting.'
+                successMessage: t('dialog.user.generated.booping_setting_updated'),
+                errorMessage: t(
+                    'dialog.user.generated_toast.failed_to_update_booping_setting'
+                )
             }
         );
     }
@@ -436,8 +450,12 @@ export function useUserDialogSelfActions({
                 hasSharedConnectionsOptOut: !profile?.hasSharedConnectionsOptOut
             },
             {
-                successMessage: 'Shared connections setting updated.',
-                errorMessage: 'Failed to update shared connections setting.'
+                successMessage: t(
+                    'dialog.user.generated.shared_connections_setting_updated'
+                ),
+                errorMessage: t(
+                    'dialog.user.generated_toast.failed_to_update_shared_connections_setting'
+                )
             }
         );
     }
@@ -446,8 +464,12 @@ export function useUserDialogSelfActions({
         await saveCurrentUserPatch(
             { hasDiscordFriendsOptOut: !profile?.hasDiscordFriendsOptOut },
             {
-                successMessage: 'Discord connections setting updated.',
-                errorMessage: 'Failed to update Discord connections setting.'
+                successMessage: t(
+                    'dialog.user.generated.discord_connections_setting_updated'
+                ),
+                errorMessage: t(
+                    'dialog.user.generated_toast.failed_to_update_discord_connections_setting'
+                )
             }
         );
     }

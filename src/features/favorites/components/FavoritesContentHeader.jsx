@@ -51,7 +51,9 @@ function FavoritesContentHeader({
                             variant="outline"
                             onClick={onToggleSelectAll}
                         >
-                            {isAllSelected ? 'Deselect All' : 'Select All'}
+                            {isAllSelected
+                                ? t('view.favorite.deselect_all')
+                                : t('view.favorite.select_all')}
                         </Button>
                         <Button
                             type="button"

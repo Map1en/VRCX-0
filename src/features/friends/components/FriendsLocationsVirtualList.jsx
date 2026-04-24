@@ -59,7 +59,10 @@ export function FriendsLocationsVirtualList({ controller }) {
                         'view.friend_list.generated.friend_locations_failed_to_load'
                     )}
                     description={
-                        rosterDetail || 'The roster bootstrap did not complete.'
+                        rosterDetail ||
+                        t(
+                            'view.friend_list.generated.roster_bootstrap_did_not_complete'
+                        )
                     }
                 />
             ) : hasVisibleSections ? (
@@ -140,8 +143,12 @@ export function FriendsLocationsVirtualList({ controller }) {
                     )}
                     description={
                         activeSegment === 'favorite' && !isFavoritesLoaded
-                            ? 'Favorites are still hydrating.'
-                            : 'Try a different segment or broaden the search query.'
+                            ? t(
+                                  'view.friend_list.generated.favorites_are_still_hydrating'
+                              )
+                            : t(
+                                  'view.friend_list.generated.try_a_different_segment_or_broaden_the_search_query'
+                              )
                     }
                 />
             )}

@@ -286,8 +286,12 @@ export function useFriendsSidebarActions({
         await saveCurrentUserPatch(
             { status },
             {
-                successMessage: 'Social status updated.',
-                errorMessage: 'Failed to update social status.'
+                successMessage: t(
+                    'component.friends_sidebar.generated.social_status_updated'
+                ),
+                errorMessage: t(
+                    'component.friends_sidebar.generated_toast.failed_to_update_social_status'
+                )
             }
         );
     }
@@ -296,8 +300,12 @@ export function useFriendsSidebarActions({
         await saveCurrentUserPatch(
             { statusDescription },
             {
-                successMessage: 'Status description updated.',
-                errorMessage: 'Failed to update status description.'
+                successMessage: t(
+                    'component.friends_sidebar.generated.status_description_updated'
+                ),
+                errorMessage: t(
+                    'component.friends_sidebar.generated_toast.failed_to_update_status_description'
+                )
             }
         );
     }
@@ -327,8 +335,10 @@ export function useFriendsSidebarActions({
             patch.statusDescription = preset.statusDescription || '';
         }
         await saveCurrentUserPatch(patch, {
-            successMessage: 'Status updated.',
-            errorMessage: 'Failed to update status.'
+            successMessage: t('component.friends_sidebar.generated.status_updated'),
+            errorMessage: t(
+                'component.friends_sidebar.generated_toast.failed_to_update_status'
+            )
         });
     }
 

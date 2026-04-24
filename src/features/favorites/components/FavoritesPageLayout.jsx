@@ -116,28 +116,28 @@ function FavoritesContentPanel({ kind, content }) {
                         title={t('view.favorite.generated.favorites_failed_to_load')}
                         description={
                             content.favoriteDetail ||
-                            'The favorites baseline did not finish loading.'
+                            t('view.favorite.generated.the_favorites_baseline_did_not_finish_loading')
                         }
                     />
                 ) : isRemoteDetailsLoading ? (
                     <FavoritesLoadingState
                         title={
                             kind === 'avatar'
-                                ? 'Loading remote avatar details.'
-                                : 'Loading remote world details.'
+                                ? t('view.favorite.generated.loading_remote_avatar_details')
+                                : t('view.favorite.generated.loading_remote_world_details')
                         }
                     />
                 ) : !content.items.length ? (
                     <FavoritesEmptyState
                         title={
                             content.isSearchActive
-                                ? 'No matches found'
-                                : 'No data'
+                                ? t('common.no_matching_records')
+                                : t('common.no_data')
                         }
                         description={
                             content.isSearchActive
-                                ? 'Try a different search term.'
-                                : 'The selected group currently has no items.'
+                                ? t('view.favorite.generated.try_a_different_search_term')
+                                : t('view.favorite.generated.the_selected_group_currently_has_no_items')
                         }
                     />
                 ) : (

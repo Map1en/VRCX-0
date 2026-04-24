@@ -222,7 +222,7 @@ export function WorldDialogContent({
         if (!normalizedWorldId) {
             setWorld(null);
             setLoadStatus('error');
-            setDetail('No world id was provided for this dialog.');
+            setDetail(t('dialog.world.generated.no_world_id_was_provided_for_this_dialog'));
             return () => {
                 active = false;
             };
@@ -257,7 +257,7 @@ export function WorldDialogContent({
                     setDetail(
                         error instanceof Error
                             ? error.message
-                            : 'Failed to refresh the remote world snapshot.'
+                            : t('dialog.world.generated.failed_to_refresh_the_remote_world_snapshot')
                     );
                     return;
                 }
@@ -267,7 +267,7 @@ export function WorldDialogContent({
                 setDetail(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to load the world profile.'
+                        : t('dialog.world.generated.failed_to_load_the_world_profile')
                 );
             });
 
@@ -444,7 +444,7 @@ export function WorldDialogContent({
                 title={t('dialog.world.generated.world_profile_unavailable')}
                 description={
                     detail ||
-                    'VRCX-0 could not resolve a world snapshot for this dialog.'
+                    t('dialog.world.generated.world_snapshot_unavailable_description')
                 }
             />
         );
@@ -537,11 +537,15 @@ export function WorldDialogContent({
         setActionStatus('home');
         const nextHomeLocation = isHomeWorld ? '' : world.id;
         const result = await confirm({
-            title: isHomeWorld ? 'Reset home world?' : 'Make home world?',
+            title: isHomeWorld
+                ? t('dialog.world.generated_modal.reset_home_world')
+                : t('dialog.world.generated_modal.make_home_world'),
             description: isHomeWorld
-                ? 'Reset your VRChat home location.'
-                : `Set ${world.name || world.id} as your VRChat home world?`,
-            confirmText: isHomeWorld ? 'Reset Home' : 'Make Home',
+                ? t('dialog.world.generated.reset_your_vrchat_home_location')
+                : t('dialog.world.generated_dynamic.set_value_as_your_vrchat_home_world', { value: world.name || world.id }),
+            confirmText: isHomeWorld
+                ? t('dialog.world.actions.reset_home')
+                : t('dialog.world.actions.make_home'),
             cancelText: t('common.actions.cancel')
         });
 
@@ -796,7 +800,9 @@ export function WorldDialogContent({
             const location = resolveInstanceLocation(world.id, response.json);
             if (!location) {
                 throw new Error(
-                    'The instance was created but VRChat did not return a launch location.'
+                    t(
+                        'dialog.world.generated.the_instance_was_created_but_vrchat_did_not_return_a_launch_location'
+                    )
                 );
             }
             const created = await resolveCreatedInstanceDetails(
@@ -983,8 +989,8 @@ export function WorldDialogContent({
         if (!validation.ok) {
             const message =
                 validation.reason === 'too_large'
-                    ? 'Selected image is too large.'
-                    : 'Selected file is not an image.';
+                    ? t('dialog.world.generated.selected_image_is_too_large')
+                    : t('dialog.world.generated.selected_file_is_not_an_image');
             setDetail(message);
             toast.error(message);
             return;
@@ -1044,7 +1050,7 @@ export function WorldDialogContent({
             const message =
                 error instanceof Error
                     ? error.message
-                    : 'Failed to upload world image.';
+                    : t('dialog.world.generated_toast.failed_to_upload_world_image');
             setDetail(message);
             toast.error(message);
         } finally {
@@ -1079,12 +1085,15 @@ export function WorldDialogContent({
                 onRename={() => void ownerActions.renameWorld()}
                 onChangeDescription={() => void ownerActions.changeWorldDescription()}
                 onChangeCapacity={() =>
-                    void ownerActions.changeWorldCapacity('capacity', 'Capacity')
+                    void ownerActions.changeWorldCapacity(
+                        'capacity',
+                        t('dialog.world.generated.capacity')
+                    )
                 }
                 onChangeRecommendedCapacity={() =>
                     void ownerActions.changeWorldCapacity(
                         'recommendedCapacity',
-                        'Recommended Capacity'
+                        t('dialog.world.generated.recommended_capacity')
                     )
                 }
                 onChangePreview={() => void ownerActions.changeWorldYouTubePreview()}

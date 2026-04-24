@@ -78,8 +78,10 @@ export function useWorldDialogOwnerActions({
             await saveWorldPatch(
                 { name: result.value },
                 {
-                    successMessage: 'World renamed.',
-                    errorMessage: 'Failed to rename world.'
+                    successMessage: t('dialog.world.generated.world_renamed'),
+                    errorMessage: t(
+                        'dialog.world.generated_toast.failed_to_rename_world'
+                    )
                 }
             );
         }
@@ -98,8 +100,12 @@ export function useWorldDialogOwnerActions({
             await saveWorldPatch(
                 { description: result.value },
                 {
-                    successMessage: 'World description updated.',
-                    errorMessage: 'Failed to update world description.'
+                    successMessage: t(
+                        'dialog.world.generated.world_description_updated'
+                    ),
+                    errorMessage: t(
+                        'dialog.world.generated_toast.failed_to_update_world_description'
+                    )
                 }
             );
         }
@@ -124,8 +130,15 @@ export function useWorldDialogOwnerActions({
         await saveWorldPatch(
             { [field]: value },
             {
-                successMessage: `${label} updated.`,
-                errorMessage: `Failed to update ${label}.`
+                successMessage: t('dialog.world.generated_dynamic.value_updated', {
+                    value: label
+                }),
+                errorMessage: t(
+                    'dialog.world.generated_dynamic.failed_to_update_value',
+                    {
+                        value: label
+                    }
+                )
             }
         );
     }
@@ -164,8 +177,12 @@ export function useWorldDialogOwnerActions({
         await saveWorldPatch(
             { previewYoutubeId: processedValue },
             {
-                successMessage: 'YouTube preview updated.',
-                errorMessage: 'Failed to update YouTube preview.'
+                successMessage: t(
+                    'dialog.world.generated.youtube_preview_updated'
+                ),
+                errorMessage: t(
+                    'dialog.world.generated_toast.failed_to_update_youtube_preview'
+                )
             }
         );
     }
@@ -178,8 +195,10 @@ export function useWorldDialogOwnerActions({
         const saved = await saveWorldPatch(
             { tags },
             {
-                successMessage: 'World tags updated.',
-                errorMessage: 'Failed to update world tags.'
+                successMessage: t('dialog.world.generated.world_tags_updated'),
+                errorMessage: t(
+                    'dialog.world.generated_toast.failed_to_update_world_tags'
+                )
             }
         );
         if (saved) {
@@ -195,8 +214,12 @@ export function useWorldDialogOwnerActions({
         const saved = await saveWorldPatch(
             { urlList },
             {
-                successMessage: 'Allowed domains updated.',
-                errorMessage: 'Failed to update allowed domains.'
+                successMessage: t(
+                    'dialog.world.generated.allowed_domains_updated'
+                ),
+                errorMessage: t(
+                    'dialog.world.generated_toast.failed_to_update_allowed_domains'
+                )
             }
         );
         if (saved) {
@@ -210,9 +233,13 @@ export function useWorldDialogOwnerActions({
         }
 
         const result = await confirm({
-            title: nextPublished ? 'Publish world?' : 'Unpublish world?',
+            title: nextPublished
+                ? t('dialog.world.generated_modal.publish_world')
+                : t('dialog.world.generated_modal.unpublish_world'),
             description: worldNameOrId,
-            confirmText: nextPublished ? 'Publish' : 'Unpublish',
+            confirmText: nextPublished
+                ? t('dialog.world.actions.publish')
+                : t('dialog.world.actions.unpublish'),
             cancelText: t('common.actions.cancel'),
             destructive: !nextPublished
         });

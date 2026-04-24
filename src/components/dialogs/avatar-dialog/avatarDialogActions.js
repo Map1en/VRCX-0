@@ -200,9 +200,13 @@ export function createAvatarDialogActions({
         actionStatusRef.current = 'release-status';
         setActionStatus('release-status');
         const result = await confirm({
-            title: isPublic ? 'Make avatar public?' : 'Make avatar private?',
+            title: isPublic
+                ? t('view.my_avatars.generated_modal.make_avatar_public')
+                : t('view.my_avatars.generated_modal.make_avatar_private'),
             description: avatar.name || avatar.id,
-            confirmText: isPublic ? 'Make Public' : 'Make Private',
+            confirmText: isPublic
+                ? t('dialog.avatar.actions.make_public')
+                : t('dialog.avatar.actions.make_private'),
             cancelText: t('common.actions.cancel'),
             destructive: !isPublic
         });

@@ -224,7 +224,7 @@ function useDashboardEditorController({ dashboard, updateDashboard, t }) {
         setIsSaving(true);
         try {
             await updateDashboard(dashboard.id, {
-                name: editName.trim() || dashboard.name || 'Dashboard',
+                name: editName.trim() || dashboard.name || t('dashboard.default_name'),
                 rows: editRows
             });
             setIsEditing(false);
@@ -388,7 +388,9 @@ export function DashboardPage() {
 
     const handleCreateDashboard = async () => {
         try {
-            const nextDashboard = await createDashboard('Dashboard');
+            const nextDashboard = await createDashboard(
+                t('dashboard.default_name')
+            );
             setEditingDashboardId(nextDashboard.id);
             navigate(`/dashboard/${nextDashboard.id}`);
         } catch (error) {
@@ -430,15 +432,15 @@ export function DashboardPage() {
                             </CardTitle>
                             <CardDescription>
                                 {dashboards.length
-                                    ? 'That dashboard no longer exists in the stored config.'
-                                    : 'No dashboard definitions are stored yet.'}
+                                    ? t('view.dashboard.generated.that_dashboard_no_longer_exists_in_the_stored_config')
+                                    : t('view.dashboard.generated.no_dashboard_definitions_are_stored_yet')}
                             </CardDescription>
                         </div>
                         {detail ? (
                             <div className="text-muted-foreground text-sm">
                                 {userFacingErrorMessage(
                                     detail,
-                                    'Failed to load dashboard configuration.'
+                                    t('view.dashboard.generated_toast.failed_to_load_dashboard_configuration')
                                 )}
                             </div>
                         ) : null}

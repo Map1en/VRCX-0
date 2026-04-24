@@ -75,7 +75,11 @@ function DashboardPagePreview({ definition }) {
     );
 
     let metrics = [
-        <PreviewMetric key="status" label={t('view.dashboard.generated.status')} value="Route available" />
+        <PreviewMetric
+            key="status"
+            label={t('view.dashboard.generated.status')}
+            value={t('view.dashboard.generated.route_available')}
+        />
     ];
 
     if (definition.key === 'friend-list') {

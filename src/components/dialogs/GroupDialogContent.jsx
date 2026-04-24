@@ -93,7 +93,9 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         if (!normalizedGroupId) {
             setGroup(null);
             setLoadStatus('error');
-            setDetail('No group id was provided for this dialog.');
+            setDetail(
+                t('dialog.group.generated.no_group_id_was_provided_for_this_dialog')
+            );
             return () => {
                 active = false;
             };
@@ -130,7 +132,9 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                     setDetail(
                         error instanceof Error
                             ? error.message
-                            : 'Failed to refresh the remote group snapshot.'
+                            : t(
+                                  'dialog.group.generated.failed_to_refresh_the_remote_group_snapshot'
+                              )
                     );
                     return;
                 }
@@ -140,14 +144,14 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 setDetail(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to load the group profile.'
+                        : t('dialog.group.generated.failed_to_load_the_group_profile')
                 );
             });
 
         return () => {
             active = false;
         };
-    }, [currentEndpoint, normalizedGroupId, seedData]);
+    }, [currentEndpoint, normalizedGroupId, seedData, t]);
 
     useEffect(() => {
         let active = true;
@@ -236,7 +240,9 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 title={t('dialog.group.generated.group_profile_unavailable')}
                 description={
                     detail ||
-                    'VRCX-0 could not resolve a group snapshot for this dialog.'
+                    t(
+                        'dialog.group.generated.group_snapshot_unavailable_description'
+                    )
                 }
             />
         );
@@ -492,9 +498,13 @@ export function GroupDialogContent({ groupId, seedData = null }) {
         }
 
         const result = await confirm({
-            title: enabled ? 'Block group?' : 'Unblock group?',
+            title: enabled
+                ? t('dialog.group.generated_modal.block_group')
+                : t('dialog.group.generated_modal.unblock_group'),
             description: group.name || group.id,
-            confirmText: enabled ? 'Block' : 'Unblock',
+            confirmText: enabled
+                ? t('dialog.group.actions.block')
+                : t('dialog.group.actions.unblock'),
             cancelText: t('common.actions.cancel'),
             destructive: enabled
         });
@@ -566,14 +576,14 @@ export function GroupDialogContent({ groupId, seedData = null }) {
                 void updateGroupMemberProps(
                     { isSubscribedToAnnouncements: enabled },
                     enabled
-                        ? 'Subscribed to announcements.'
-                        : 'Unsubscribed from announcements.'
+                        ? t('dialog.group.generated.subscribed_to_announcements')
+                        : t('dialog.group.members.unsubscribed_announcements')
                 )
             }
             onVisibility={(visibility) =>
                 void updateGroupMemberProps(
                     { visibility },
-                    'Group visibility updated.'
+                    t('dialog.group.generated.group_visibility_updated')
                 )
             }
             onBlock={(enabled) => void updateGroupBlock(enabled)}

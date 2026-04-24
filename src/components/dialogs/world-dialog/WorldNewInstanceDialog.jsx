@@ -27,19 +27,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { buildLegacyCreatedInstance } from './worldInstances.js';
 
 const accessTypeOptions = [
-    { value: 'public', label: 'Public' },
-    { value: 'friends+', label: 'Friends+' },
-    { value: 'friends', label: 'Friends' },
-    { value: 'invite+', label: 'Invite+' },
-    { value: 'invite', label: 'Invite' },
-    { value: 'group', label: 'Group' }
+    { value: 'public', labelKey: 'dialog.new_instance.access_type_public' },
+    { value: 'friends+', labelKey: 'dialog.new_instance.access_type_friend_plus' },
+    { value: 'friends', labelKey: 'dialog.new_instance.access_type_friend' },
+    { value: 'invite+', labelKey: 'dialog.new_instance.access_type_invite_plus' },
+    { value: 'invite', labelKey: 'dialog.new_instance.access_type_invite' },
+    { value: 'group', labelKey: 'dialog.new_instance.access_type_group' }
 ];
 
-const regionOptions = ['US West', 'US East', 'Europe', 'Japan'];
+const regionOptions = [
+    { value: 'US West', labelKey: 'dialog.new_instance.region_usw' },
+    { value: 'US East', labelKey: 'dialog.new_instance.region_use' },
+    { value: 'Europe', labelKey: 'dialog.new_instance.region_eu' },
+    { value: 'Japan', labelKey: 'dialog.new_instance.region_jp' }
+];
 const groupAccessTypeOptions = [
-    { value: 'public', label: 'Group Public' },
-    { value: 'plus', label: 'Group+' },
-    { value: 'members', label: 'Group Members' }
+    { value: 'public', labelKey: 'dialog.new_instance.group_access_type_public' },
+    { value: 'plus', labelKey: 'dialog.new_instance.group_access_type_plus' },
+    { value: 'members', labelKey: 'dialog.new_instance.group_access_type_members' }
 ];
 
 export function WorldNewInstanceDialog({
@@ -118,11 +123,11 @@ export function WorldNewInstanceDialog({
                 <DialogHeader>
                     <DialogTitle>
                         {request?.selfInvite
-                            ? 'New instance and self invite'
-                            : 'New instance'}
+                            ? t('dialog.world.actions.new_instance_and_self_invite')
+                            : t('dialog.new_instance.header')}
                     </DialogTitle>
                     <DialogDescription>
-                        {world?.name || world?.id || 'World'}
+                        {world?.name || world?.id || t('dialog.world.generated.world')}
                     </DialogDescription>
                 </DialogHeader>
                 <Tabs
@@ -154,7 +159,7 @@ export function WorldNewInstanceDialog({
                                                     key={option.value}
                                                     value={option.value}
                                                 >
-                                                    {option.label}
+                                                    {t(option.labelKey)}
                                                 </SelectItem>
                                             ))}
                                         </SelectGroup>
@@ -177,10 +182,10 @@ export function WorldNewInstanceDialog({
                                         <SelectGroup>
                                             {regionOptions.map((region) => (
                                                 <SelectItem
-                                                    key={region}
-                                                    value={region}
+                                                    key={region.value}
+                                                    value={region.value}
                                                 >
-                                                    {region}
+                                                    {t(region.labelKey)}
                                                 </SelectItem>
                                             ))}
                                         </SelectGroup>
@@ -230,7 +235,7 @@ export function WorldNewInstanceDialog({
                                                                     option.value
                                                                 }
                                                             >
-                                                                {option.label}
+                                                                {t(option.labelKey)}
                                                             </SelectItem>
                                                         )
                                                     )}
@@ -344,7 +349,7 @@ export function WorldNewInstanceDialog({
                                                     key={option.value}
                                                     value={option.value}
                                                 >
-                                                    {option.label}
+                                                    {t(option.labelKey)}
                                                 </SelectItem>
                                             ))}
                                         </SelectGroup>
@@ -366,10 +371,10 @@ export function WorldNewInstanceDialog({
                                         <SelectGroup>
                                             {regionOptions.map((region) => (
                                                 <SelectItem
-                                                    key={region}
-                                                    value={region}
+                                                    key={region.value}
+                                                    value={region.value}
                                                 >
-                                                    {region}
+                                                    {t(region.labelKey)}
                                                 </SelectItem>
                                             ))}
                                         </SelectGroup>
@@ -452,7 +457,7 @@ export function WorldNewInstanceDialog({
                                                                     option.value
                                                                 }
                                                             >
-                                                                {option.label}
+                                                                {t(option.labelKey)}
                                                             </SelectItem>
                                                         )
                                                     )}
@@ -515,7 +520,7 @@ export function WorldNewInstanceDialog({
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="world-created-url">
-                                URL
+                                {t('dialog.new_instance.url')}
                             </FieldLabel>
                             <Input
                                 id="world-created-url"
@@ -588,8 +593,8 @@ export function WorldNewInstanceDialog({
                             onClick={() => onSubmit(form)}
                         >
                             {request?.selfInvite
-                                ? 'Create and Invite'
-                                : 'Create'}
+                                ? t('dialog.new_instance.create_and_invite')
+                                : t('dialog.new_instance.create_instance')}
                         </Button>
                     </DialogFooter>
                 )}

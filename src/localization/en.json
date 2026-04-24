@@ -446,7 +446,11 @@
                 "boop_sent": "Boop sent",
                 "clear_search": "Clear search",
                 "loading_feed_rows": "Loading feed rows",
-                "rows": "rows"
+                "rows": "rows",
+                "favorites_are_still_hydrating": "Favorites are still hydrating",
+                "feed_query_failed": "Feed query failed",
+                "no_feed_rows_match_the_current_filters": "No feed rows match the current filters",
+                "favorites_only": "Favorites only"
             },
             "generated_dynamic": {
                 "value_copied": "{value} copied"
@@ -813,7 +817,12 @@
                 "copied_selected_favorite_ids": "Copied selected favorite ids",
                 "selected_favorites_removed": "Selected favorites removed",
                 "loading_favorites_baseline": "Loading favorites baseline",
-                "favorites_failed_to_load": "Favorites failed to load"
+                "favorites_failed_to_load": "Favorites failed to load",
+                "the_favorites_baseline_did_not_finish_loading": "The favorites baseline did not finish loading",
+                "loading_remote_avatar_details": "Loading remote avatar details",
+                "loading_remote_world_details": "Loading remote world details",
+                "try_a_different_search_term": "Try a different search term",
+                "the_selected_group_currently_has_no_items": "The selected group currently has no items"
             }
         },
         "friend_log": {
@@ -987,6 +996,8 @@
                 "friend": "friend",
                 "no_friends_match_the_current_filters": "No friends match the current filters",
                 "try_turning_off_favorites_only_or_broadening_the_search_query": "Try turning off favorites-only or broadening the search query",
+                "favorites_are_still_hydrating": "Favorites are still hydrating",
+                "try_a_different_segment_or_broaden_the_search_query": "Try a different segment or broaden the search query",
                 "the_current_search_filters_excluded_every_friend_in_the_roster": "The current search filters excluded every friend in the roster",
                 "loading_friend_details": "Loading friend details",
                 "cancelling": "Cancelling...",
@@ -1942,7 +1953,10 @@
                 "add_full_row": "Add full row",
                 "add_split_row": "Add split row",
                 "add_vertical_row": "Add vertical row",
-                "show_add_row_options": "Show add row options"
+                "show_add_row_options": "Show add row options",
+                "route_available": "Route available",
+                "that_dashboard_no_longer_exists_in_the_stored_config": "That dashboard no longer exists in the stored config",
+                "no_dashboard_definitions_are_stored_yet": "No dashboard definitions are stored yet"
             },
             "generated_dynamic": {
                 "widget_value": "Widget · {value}",
@@ -1953,7 +1967,8 @@
                 "failed_to_update_dashboard_panel": "Failed to update dashboard panel",
                 "failed_to_save_dashboard": "Failed to save dashboard",
                 "failed_to_delete_dashboard": "Failed to delete dashboard",
-                "failed_to_create_dashboard": "Failed to create dashboard"
+                "failed_to_create_dashboard": "Failed to create dashboard",
+                "failed_to_load_dashboard_configuration": "Failed to load dashboard configuration"
             },
             "generated_modal": {
                 "delete_dashboard": "Delete dashboard?",
@@ -2404,6 +2419,14 @@
                 "language_added": "Language added",
                 "language_removed": "Language removed",
                 "badge_updated": "Badge updated",
+                "status_updated": "Status updated",
+                "bio_updated": "Bio updated",
+                "bio_links_updated": "Bio links updated",
+                "pronouns_updated": "Pronouns updated",
+                "avatar_cloning_setting_updated": "Avatar cloning setting updated",
+                "booping_setting_updated": "Booping setting updated",
+                "shared_connections_setting_updated": "Shared connections setting updated",
+                "discord_connections_setting_updated": "Discord connections setting updated",
                 "unfriend_request_sent_but_the_active_session_changed_before_": "Unfriend request sent, but the active session changed before local state was updated",
                 "friend_request_is_no_longer_active": "Friend request is no longer active",
                 "report_sent": "Report sent",
@@ -2542,6 +2565,14 @@
                 "failed_to_remove_status_preset": "Failed to remove status preset",
                 "failed_to_add_language": "Failed to add language",
                 "failed_to_remove_language": "Failed to remove language",
+                "failed_to_update_social_status": "Failed to update social status",
+                "failed_to_update_bio": "Failed to update bio",
+                "failed_to_update_bio_links": "Failed to update bio links",
+                "failed_to_update_pronouns": "Failed to update pronouns",
+                "failed_to_update_avatar_cloning_setting": "Failed to update avatar cloning setting",
+                "failed_to_update_booping_setting": "Failed to update booping setting",
+                "failed_to_update_shared_connections_setting": "Failed to update shared connections setting",
+                "failed_to_update_discord_connections_setting": "Failed to update Discord connections setting",
                 "failed_to_update_badge": "Failed to update badge",
                 "failed_to_unfriend_user": "Failed to unfriend user",
                 "friend_request_accepted": "Friend request accepted",
@@ -2641,6 +2672,7 @@
                 "change_image": "Change Image",
                 "change_allowed_video_player_domains": "Change Allowed Video Player Domains",
                 "download_package": "Download Unity Package",
+                "publish": "Publish",
                 "publish_to_labs": "Publish To Labs. You can only publish once per week (7 days)",
                 "unpublish": "Unpublish",
                 "delete_persistent_data": "Delete Persistent Data",
@@ -2687,6 +2719,7 @@
             },
             "generated": {
                 "access": "Access",
+                "world": "World",
                 "role_ids": "Role IDs",
                 "queue_enabled": "Queue enabled",
                 "age_gate": "Age gate",
@@ -2703,6 +2736,7 @@
                 "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Fetching the current VRChat world snapshot for this dialog",
                 "world_profile_unavailable": "World profile unavailable",
                 "world_refreshed": "World refreshed",
+                "the_instance_was_created_but_vrchat_did_not_return_a_launch_location": "The instance was created but VRChat did not return a launch location",
                 "vrchat_launch_request_sent": "VRChat launch request sent",
                 "unable_to_open_this_instance_in_vrchat": "Unable to open this instance in VRChat",
                 "world_cache_location_unavailable": "World cache location unavailable",
@@ -2721,6 +2755,20 @@
                 "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Failed open instance in VRChat, falling back to self invite",
                 "world_image_updated": "World image updated",
                 "change_world_image": "Change world image",
+                "no_world_id_was_provided_for_this_dialog": "No world id was provided for this dialog",
+                "failed_to_refresh_the_remote_world_snapshot": "Failed to refresh the remote world snapshot",
+                "failed_to_load_the_world_profile": "Failed to load the world profile",
+                "world_snapshot_unavailable_description": "VRCX-0 could not resolve a world snapshot for this dialog",
+                "reset_your_vrchat_home_location": "Reset your VRChat home location",
+                "selected_image_is_too_large": "Selected image is too large",
+                "selected_file_is_not_an_image": "Selected file is not an image",
+                "capacity": "Capacity",
+                "recommended_capacity": "Recommended Capacity",
+                "world_renamed": "World renamed",
+                "world_description_updated": "World description updated",
+                "youtube_preview_updated": "YouTube preview updated",
+                "world_tags_updated": "World tags updated",
+                "allowed_domains_updated": "Allowed domains updated",
                 "no_active_instances": "No active instances",
                 "no_public_or_group_instances_are_currently_listed": "No public or group instances are currently listed",
                 "occupants": "Occupants",
@@ -2771,7 +2819,10 @@
                 "change_value": "Change {value}",
                 "value_must_be_a_positive_number": "{value} must be a positive number",
                 "world_image_updated_for_value": "World image updated for {value}",
-                "value_copied": "{value} copied"
+                "value_updated": "{value} updated",
+                "failed_to_update_value": "Failed to update {value}",
+                "value_copied": "{value} copied",
+                "set_value_as_your_vrchat_home_world": "Set {value} as your VRChat home world?"
             },
             "generated_toast": {
                 "failed_to_refresh_world": "Failed to refresh world",
@@ -2794,13 +2845,23 @@
                 "instance_created_but_self_invite_failed": "Instance created, but self invite failed",
                 "failed_to_create_instance": "Failed to create instance",
                 "failed_to_send_self_invite": "Failed to send self invite",
-                "failed_to_open_instance_in_vrchat": "Failed to open instance in VRChat"
+                "failed_to_open_instance_in_vrchat": "Failed to open instance in VRChat",
+                "failed_to_rename_world": "Failed to rename world",
+                "failed_to_update_world_description": "Failed to update world description",
+                "failed_to_update_youtube_preview": "Failed to update YouTube preview",
+                "failed_to_update_world_tags": "Failed to update world tags",
+                "failed_to_update_allowed_domains": "Failed to update allowed domains",
+                "failed_to_upload_world_image": "Failed to upload world image"
             },
             "generated_modal": {
                 "edit_local_memo": "Edit local memo",
                 "rename_world": "Rename world",
                 "change_world_description": "Change world description",
                 "change_youtube_preview": "Change YouTube preview",
+                "reset_home_world": "Reset home world?",
+                "make_home_world": "Make home world?",
+                "publish_world": "Publish world?",
+                "unpublish_world": "Unpublish world?",
                 "delete_persistent_data": "Delete persistent data?",
                 "delete_world": "Delete world?"
             }
@@ -3085,6 +3146,10 @@
                 "loading_group_profile": "Loading group profile",
                 "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Fetching the current VRChat group snapshot for this dialog",
                 "group_profile_unavailable": "Group profile unavailable",
+                "no_group_id_was_provided_for_this_dialog": "No group id was provided for this dialog",
+                "failed_to_refresh_the_remote_group_snapshot": "Failed to refresh the remote group snapshot",
+                "failed_to_load_the_group_profile": "Failed to load the group profile",
+                "group_snapshot_unavailable_description": "VRCX-0 could not resolve a group snapshot for this dialog",
                 "group_left": "Group left",
                 "group_join_request_cancelled": "Group join request cancelled",
                 "group_refreshed": "Group refreshed",
@@ -3115,6 +3180,8 @@
                 "refresh_to_load_gallery_images": "Refresh to load gallery images",
                 "title_and_text_are_required": "Title and text are required",
                 "group_invite_sent": "Group invite sent",
+                "subscribed_to_announcements": "Subscribed to announcements",
+                "group_visibility_updated": "Group visibility updated",
                 "group_post_deleted": "Group post deleted",
                 "open_group_owner_profile": "Open group owner profile",
                 "owner": "Owner:",
@@ -3186,7 +3253,9 @@
                 "invite_to_group": "Invite to group",
                 "enter_the_vrchat_user_id_to_invite": "Enter the VRChat user id to invite",
                 "invite": "Invite",
-                "delete_group_post": "Delete group post?"
+                "delete_group_post": "Delete group post?",
+                "block_group": "Block group?",
+                "unblock_group": "Unblock group?"
             },
             "moderation_tabs": {
                 "members": "Members",
@@ -3251,9 +3320,9 @@
             "access_type_invite_plus": "Invite+",
             "access_type_invite": "Invite",
             "group_access_type": "Group Access",
-            "group_access_type_members": "Members",
-            "group_access_type_plus": "Plus",
-            "group_access_type_public": "Public",
+                "group_access_type_members": "Group Members",
+                "group_access_type_plus": "Group+",
+                "group_access_type_public": "Group Public",
             "region": "Region",
             "region_usw": "US West",
             "region_use": "US East",
@@ -3281,6 +3350,7 @@
             "invite": "Invite",
             "launch": "Launch",
             "create_instance": "Create Instance",
+            "create_and_invite": "Create and Invite",
             "queueEnabled": "Queue",
             "ageGate": "Age Gate",
             "normal": "Normal",
@@ -4902,12 +4972,20 @@
             }
         },
         "friends_sidebar": {
+            "generated": {
+                "social_status_updated": "Social status updated",
+                "status_description_updated": "Status description updated",
+                "status_updated": "Status updated"
+            },
             "generated_toast": {
                 "failed_to_launch_instance": "Failed to launch instance",
                 "failed_to_send_self_invite": "Failed to send self invite",
                 "failed_to_send_invite": "Failed to send invite",
                 "failed_to_request_invite": "Failed to request invite",
-                "failed_to_send_boop": "Failed to send boop"
+                "failed_to_send_boop": "Failed to send boop",
+                "failed_to_update_social_status": "Failed to update social status",
+                "failed_to_update_status_description": "Failed to update status description",
+                "failed_to_update_status": "Failed to update status"
             },
             "generated_modal": {
                 "send_invite": "Send invite?",

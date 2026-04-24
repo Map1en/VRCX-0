@@ -91,11 +91,13 @@ export function FeedTableShell({
                                             {t('view.feed.generated.loading_feed_rows')}
                                         </span>
                                     ) : favoritesOnly && !isFavoritesLoaded ? (
-                                        'Favorites are still hydrating.'
+                                        t('view.feed.generated.favorites_are_still_hydrating')
                                     ) : loadStatus === 'error' ? (
-                                        'Feed query failed.'
+                                        t('view.feed.generated.feed_query_failed')
                                     ) : (
-                                        'No feed rows match the current filters.'
+                                        t(
+                                            'view.feed.generated.no_feed_rows_match_the_current_filters'
+                                        )
                                     )}
                                 </DataTableEmptyRow>
                             )}
@@ -107,7 +109,9 @@ export function FeedTableShell({
             <PageFooter>
                 <div className="text-muted-foreground text-sm">
                     {rows.length} {t('view.feed.generated.rows')}
-                    {favoritesOnly ? ' · Favorites only' : ''}
+                    {favoritesOnly
+                        ? ` · ${t('view.feed.generated.favorites_only')}`
+                        : ''}
                 </div>
                 <DataTablePagination
                     table={table}
