@@ -30,14 +30,16 @@ async function dispatchRealtimePresenceMessage(message, handlers) {
 
     const { type, content } = parts;
     if (notificationEventTypes.has(type)) {
+        if (typeof handlers.notification !== 'function') {
+            return false;
+        }
         return handlers.notification(type, content);
     }
 
-    const handler = handlers[type] ?? handlers.default;
-    if (typeof handler !== 'function') {
+    if (typeof handlers.default !== 'function') {
         return false;
     }
-    return handler(content, type);
+    return handlers.default(content, type);
 }
 
 export { dispatchRealtimePresenceMessage, getRealtimePresenceMessageParts };

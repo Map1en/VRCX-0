@@ -54,6 +54,23 @@ vi.mock('@/state/runtimeStore.js', () => ({
     useRuntimeStore: (selector) => selector(mocks.runtimeState)
 }));
 
+vi.mock('react-i18next', () => {
+    const translations = {
+        'dialog.instance.generated.android': 'Android:',
+        'dialog.instance.generated.ios': 'iOS:',
+        'dialog.instance.generated.launch_instance': 'Launch instance',
+        'dialog.instance.generated.self_invite': 'Self invite',
+        'dialog.new_instance.ageGate': 'Age Gate',
+        'dialog.new_instance.queueEnabled': 'Queue'
+    };
+
+    return {
+        useTranslation: () => ({
+            t: (key) => translations[key] || key
+        })
+    };
+});
+
 vi.mock('@/ui/shadcn/tooltip', async () => {
     const React = await import('react');
 
