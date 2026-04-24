@@ -1,6 +1,7 @@
 # VRCX-0
 
-> A personal fork of VRCX, rebuilt with a modern stack and a different direction.
+**The first commit of this repository corresponds to the upstream project snapshot at the time of forking and is licensed under the MIT License.
+Any modifications, additions, or new code introduced in later commits are licensed under the GNU General Public License v3.0 (GPLv3).**
 
 ---
 
@@ -8,7 +9,7 @@
 
 ### About
 
-**VRCX-0** is a personal fork of VRCX.
+**VRCX-0** is a fork of VRCX.
 
 I started contributing to VRCX in late 2024 and remained active until April 2026, working on a large portion of its development, including multiple frontend iterations.
 
@@ -119,7 +120,7 @@ If you're interested in the direction of VRCX-0:
 
 ### 项目说明
 
-**VRCX-0** 是 VRCX 的一个个人分支项目。
+**VRCX-0** 是 VRCX 的一个分支项目。
 
 我从 2024 年末开始参与 VRCX 的开发，并持续到 2026 年 4 月，期间参与并主导了大量功能开发和前端重构。
 
