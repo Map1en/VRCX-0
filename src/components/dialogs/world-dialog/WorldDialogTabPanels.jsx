@@ -48,16 +48,16 @@ export function WorldDialogTabPanels({ handlers, helpers, state, t }) {
         world,
         worldDialogShortName
     } = state;
-    const {
-        onChangeTab,
-        onOpenAuthor,
-        onPreviousInstancesChange,
-        onSaveMemo
-    } = handlers;
+    const { onChangeTab, onOpenAuthor, onPreviousInstancesChange, onSaveMemo } =
+        handlers;
     const { formatDate } = helpers;
 
     return (
-        <EntityDialogTabs value={activeTab} onValueChange={onChangeTab} tabs={tabs}>
+        <EntityDialogTabs
+            value={activeTab}
+            onValueChange={onChangeTab}
+            tabs={tabs}
+        >
             <EntityDialogTabContent
                 value="instances"
                 className="flex flex-col gap-4"
@@ -83,7 +83,10 @@ export function WorldDialogTabPanels({ handlers, helpers, state, t }) {
                 <div className="flex flex-col gap-2">
                     {displayInstanceRows.length ? (
                         displayInstanceRows.map((instance) => {
-                            const location = resolveLaunchLocation(world, instance);
+                            const location = resolveLaunchLocation(
+                                world,
+                                instance
+                            );
                             const shortName = instance.shortName || '';
                             const launchToken =
                                 instance.shortName || instance.secureName || '';
@@ -127,6 +130,7 @@ export function WorldDialogTabPanels({ handlers, helpers, state, t }) {
                                             }
                                             playerCount={playerCount}
                                             capacity={capacity}
+                                            showPlayerSummary={false}
                                             hint={
                                                 world.name ||
                                                 instance.worldName ||

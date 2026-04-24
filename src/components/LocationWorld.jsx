@@ -1,7 +1,7 @@
 import { AlertTriangleIcon, LockIcon, UnlockIcon } from 'lucide-react';
 import { useMemo } from 'react';
-
 import { useTranslation } from 'react-i18next';
+
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge.jsx';
 import {
     normalizeString,
@@ -125,6 +125,24 @@ function launchTagForLocationObject(locObj) {
     return worldId && instanceId ? `${worldId}:${instanceId}` : '';
 }
 
+function finiteNumber(value) {
+    if (value === null || typeof value === 'undefined' || value === '') {
+        return null;
+    }
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+}
+
+function firstFiniteNumber(...values) {
+    for (const value of values) {
+        const number = finiteNumber(value);
+        if (number !== null) {
+            return number;
+        }
+    }
+    return null;
+}
+
 export function LocationWorld({
     locationObject,
     currentUserId = '',
@@ -138,6 +156,7 @@ export function LocationWorld({
     hint = '',
     interactive = true,
     instanceClickAction = 'launch',
+    showPlayerSummary = true,
     className = ''
 }) {
     const { t } = useTranslation();
@@ -174,12 +193,24 @@ export function LocationWorld({
     );
     const ownerLabel =
         normalizeString(instanceOwnerName) || normalizeString(instanceOwner);
-    const resolvedPlayerCount = Number(playerCount);
-    const resolvedCapacity = Number(capacity);
+    const resolvedPlayerCount = firstFiniteNumber(
+        playerCount,
+        locObj.playerCount,
+        locObj.userCount,
+        locObj.occupants,
+        locObj.n_users,
+        Array.isArray(locObj.users) ? locObj.users.length : null
+    );
+    const resolvedCapacity = firstFiniteNumber(
+        capacity,
+        locObj.capacity,
+        locObj.world?.capacity,
+        locObj.ref?.capacity,
+        locObj.ref?.world?.capacity
+    );
     const hasPlayerCount =
-        Number.isFinite(resolvedPlayerCount) && resolvedPlayerCount >= 0;
-    const hasCapacity =
-        Number.isFinite(resolvedCapacity) && resolvedCapacity > 0;
+        resolvedPlayerCount !== null && resolvedPlayerCount >= 0;
+    const hasCapacity = resolvedCapacity !== null && resolvedCapacity > 0;
     const playerSummary =
         hasPlayerCount || hasCapacity
             ? `${hasPlayerCount ? resolvedPlayerCount : '—'}${hasCapacity ? `/${resolvedCapacity}` : ''}`
@@ -316,7 +347,7 @@ export function LocationWorld({
                     {t('dialog.world.instances.instance_creator')}: {ownerLabel}
                 </span>
             ) : null}
-            {playerSummary ? (
+            {showPlayerSummary && playerSummary ? (
                 <span className="text-muted-foreground ml-2 shrink-0 text-xs">
                     {playerSummary}
                 </span>
