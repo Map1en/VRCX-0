@@ -2,9 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/app/hooks/use-i18n.js';
-import { onPreferenceChanged } from '@/lib/preferenceEvents.js';
 import {
-    configRepository,
     notificationRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
@@ -15,7 +13,6 @@ import {
 } from '@/services/dialogService.js';
 import { tryOpenLaunchLocation } from '@/services/directAccessService.js';
 import { selfInviteToInstance } from '@/services/launchService.js';
-import { getFriendsSortFunction } from '@/shared/utils/friend.js';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/location.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
@@ -24,326 +21,28 @@ import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 
-import {
-    FRIENDS_LOCATIONS_SEGMENTS as SEGMENTS,
-    parseConfigArray
-} from './friendsLocationsConfig.js';
+import { FRIENDS_LOCATIONS_SEGMENTS as SEGMENTS } from './friendsLocationsConfig.js';
 import {
     buildFriendsLocationsFavoriteIdSet as buildFavoriteIdSet,
     buildSameInstanceGroups,
     matchesFriendLocationSearch as matchesSearch,
     normalizeFriendsLocationId as normalizeId,
     resolveFriendsLocationsCurrentInviteLocation as resolveCurrentInviteLocation,
-    resolveLocationSummary,
-    resolveLocationTarget,
     resolveWorldDialogTarget,
     uniqueFriendsById
 } from './friendsLocationsRows.js';
 import { appI18n } from '@/services/i18nService.js';
 import { FriendsLocationsToolbar } from './components/FriendsLocationsToolbar.jsx';
 import { FriendsLocationsVirtualList } from './components/FriendsLocationsVirtualList.jsx';
+import {
+    buildFavoriteGroupLabelsByFriendId,
+    buildFriendSections,
+    buildSameInstanceSections,
+    compareFavoriteGroups,
+    sortFriendsBySidebarPrefs
+} from './friendsLocationsSections.js';
+import { useFriendsLocationsPreferences } from './useFriendsLocationsPreferences.js';
 
-function formatOptionValue(value) {
-    return Number(value)
-        .toFixed(2)
-        .replace(/\.00$/, '')
-        .replace(/(\.\d)0$/, '$1');
-}
-
-function appendLabel(labelsByFriendId, friendId, label) {
-    const normalizedFriendId = normalizeId(friendId);
-    const normalizedLabel =
-        typeof label === 'string' ? label.trim() : String(label ?? '').trim();
-    if (!normalizedFriendId || !normalizedLabel) {
-        return;
-    }
-
-    const labels = labelsByFriendId.get(normalizedFriendId) ?? [];
-    if (!labels.includes(normalizedLabel)) {
-        labels.push(normalizedLabel);
-    }
-    labelsByFriendId.set(normalizedFriendId, labels);
-}
-
-function buildFavoriteGroupLabelsByFriendId({
-    favoriteFriendGroups,
-    groupedFavoriteFriendIdsByGroupKey,
-    localFriendFavorites
-}) {
-    const labelsByFriendId = new Map();
-
-    for (const group of favoriteFriendGroups ?? []) {
-        const groupKey = normalizeId(group?.key);
-        if (!groupKey) {
-            continue;
-        }
-
-        const label = group?.displayName || group?.name || groupKey;
-        for (const friendId of groupedFavoriteFriendIdsByGroupKey?.[groupKey] ??
-            []) {
-            appendLabel(labelsByFriendId, friendId, label);
-        }
-    }
-
-    for (const [groupName, friendIds] of Object.entries(
-        localFriendFavorites ?? {}
-    )) {
-        if (!Array.isArray(friendIds)) {
-            continue;
-        }
-
-        const label = `Local: ${groupName || 'Favorites'}`;
-        for (const friendId of friendIds) {
-            appendLabel(labelsByFriendId, friendId, label);
-        }
-    }
-
-    return labelsByFriendId;
-}
-
-function compareFavoriteGroups(left, right, order = []) {
-    const leftIndex = order.indexOf(left.key);
-    const rightIndex = order.indexOf(right.key);
-    if (leftIndex >= 0 && rightIndex >= 0) {
-        return leftIndex - rightIndex;
-    }
-    if (leftIndex >= 0) {
-        return -1;
-    }
-    if (rightIndex >= 0) {
-        return 1;
-    }
-    return String(left.label || left.key || '').localeCompare(
-        String(right.label || right.key || ''),
-        undefined,
-        { sensitivity: 'base' }
-    );
-}
-
-function readFriendRef(friend) {
-    return friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
-}
-
-function toLegacyFriendSortRow(friend) {
-    const ref = readFriendRef(friend);
-    return {
-        ...friend,
-        name:
-            friend?.name ||
-            friend?.displayName ||
-            friend?.username ||
-            friend?.id ||
-            '',
-        ref: ref && ref !== friend ? { ...friend, ...ref } : friend
-    };
-}
-
-function sortFriendsBySidebarPrefs(friends, sortMethods) {
-    const methods = (sortMethods ?? []).filter(Boolean);
-    if (!methods.length) {
-        return friends;
-    }
-
-    const sort = getFriendsSortFunction(methods);
-    return [...friends].sort((left, right) =>
-        sort(toLegacyFriendSortRow(left), toLegacyFriendSortRow(right))
-    );
-}
-
-function resolveFavoriteGroupLabels(
-    friend,
-    favoriteGroupLabelsByFriendId,
-    favoriteIds
-) {
-    const friendId = normalizeId(friend?.id);
-    if (!friendId) {
-        return [];
-    }
-
-    const labels = favoriteGroupLabelsByFriendId.get(friendId) ?? [];
-    if (labels.length > 0) {
-        return labels;
-    }
-
-    return favoriteIds.has(friendId) ? ['Favorites'] : [];
-}
-
-function resolveInstanceSectionDescriptor(friend) {
-    const target = resolveLocationTarget(friend);
-    const summary = resolveLocationSummary(friend);
-    const descriptor = {
-        key: 'instance:unknown',
-        title: '',
-        description: '',
-        worldId: '',
-        groupId: '',
-        rawLocation: ''
-    };
-
-    if (target.isOffline) {
-        return {
-            ...descriptor,
-            key: 'instance:offline',
-            title: 'Offline'
-        };
-    }
-
-    if (target.isPrivate) {
-        return {
-            ...descriptor,
-            key: `instance:private:${target.worldId || target.rawLocation || 'private'}`,
-            title: 'Private',
-            description: '',
-            worldId: target.worldId,
-            rawLocation: target.rawLocation
-        };
-    }
-
-    if (target.isTraveling) {
-        return {
-            ...descriptor,
-            key: `instance:traveling:${target.rawLocation || 'traveling'}`,
-            title: 'Traveling',
-            description: summary.meta || '',
-            worldId: target.worldId,
-            groupId: target.groupId,
-            rawLocation: target.rawLocation
-        };
-    }
-
-    if (target.worldId) {
-        return {
-            ...descriptor,
-            key: `instance:${target.rawLocation || target.worldId}`,
-            title: summary.label || target.worldId || 'World',
-            description: [summary.meta].filter(Boolean).join(' · '),
-            worldId: target.worldId,
-            groupId: target.groupId,
-            rawLocation: target.rawLocation
-        };
-    }
-
-    return {
-        ...descriptor,
-        key: `instance:${summary.label || target.rawLocation || 'unknown'}`,
-        title: summary.label || '',
-        description: summary.meta || '',
-        rawLocation: target.rawLocation
-    };
-}
-
-function buildSameInstanceSections({
-    sameInstanceGroups,
-    displayInstanceInfo = true
-}) {
-    return sameInstanceGroups
-        .map(({ location, friends }) => {
-            const descriptor = resolveInstanceSectionDescriptor({
-                ...friends[0],
-                location,
-                travelingToLocation: ''
-            });
-
-            return {
-                ...descriptor,
-                key: `instance:${location}`,
-                rawLocation: location,
-                displayInstanceInfo,
-                friends
-            };
-        })
-        .filter((section) => section.friends.length > 0);
-}
-
-function upsertSection(sectionMap, descriptor, friend) {
-    const existing = sectionMap.get(descriptor.key);
-    if (existing) {
-        existing.friends.push(friend);
-        return;
-    }
-
-    sectionMap.set(descriptor.key, {
-        ...descriptor,
-        friends: [friend]
-    });
-}
-
-function buildFriendSections({
-    friends,
-    groupingMode,
-    favoriteIds,
-    favoriteGroupLabelsByFriendId
-}) {
-    if (groupingMode === 'flat') {
-        return [
-            {
-                key: 'flat',
-                title: 'All matching friends',
-                description: '',
-                friends,
-                worldId: '',
-                groupId: ''
-            }
-        ];
-    }
-
-    const sectionsByKey = new Map();
-
-    for (const friend of friends) {
-        if (groupingMode === 'favoriteGroup') {
-            const labels = resolveFavoriteGroupLabels(
-                friend,
-                favoriteGroupLabelsByFriendId,
-                favoriteIds
-            );
-            const label =
-                labels.length > 0 ? labels.join(' / ') : 'No favorite group';
-            upsertSection(
-                sectionsByKey,
-                {
-                    key: `favorite:${label}`,
-                    title: label,
-                    description:
-                        labels.length > 0
-                            ? 'Favorite group segment'
-                            : 'Friend is not in a hydrated favorite group.',
-                    worldId: '',
-                    groupId: ''
-                },
-                friend
-            );
-            continue;
-        }
-
-        upsertSection(
-            sectionsByKey,
-            resolveInstanceSectionDescriptor(friend),
-            friend
-        );
-    }
-
-    return Array.from(sectionsByKey.values()).sort((left, right) => {
-        if (left.title === 'Offline' && right.title !== 'Offline') {
-            return 1;
-        }
-        if (right.title === 'Offline' && left.title !== 'Offline') {
-            return -1;
-        }
-        return left.title.localeCompare(right.title, undefined, {
-            sensitivity: 'base'
-        });
-    });
-}
-
-function parseScale(value, fallback) {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function clampScale(value, min, max, fallback) {
-    const parsed = parseScale(value, fallback);
-    return Math.min(max, Math.max(min, parsed));
-}
 export function FriendsLocationsPage({ embedded = false } = {}) {
     const { t } = useI18n();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -382,22 +81,19 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
     const prompt = useModalStore((state) => state.prompt);
     const [activeSegment, setActiveSegment] = useState('online');
     const [searchQuery, setSearchQuery] = useState('');
-    const [showSameInstance, setShowSameInstance] = useState(false);
-    const [cardScale, setCardScale] = useState(1);
-    const [spacingScale, setSpacingScale] = useState(1);
     const [collapsedFavoriteGroups, setCollapsedFavoriteGroups] = useState(
         () => new Set()
     );
-    const [sidebarFavoritePrefs, setSidebarFavoritePrefs] = useState({
-        isDivideByGroup: false,
-        selectedGroups: [],
-        groupOrder: []
-    });
-    const [sidebarSortMethods, setSidebarSortMethods] = useState([
-        'Sort by Status',
-        'Sort Alphabetically',
-        ''
-    ]);
+    const {
+        cardScale,
+        changeCardScalePreference,
+        changeShowSameInstance,
+        changeSpacingScalePreference,
+        showSameInstance,
+        sidebarFavoritePrefs,
+        sidebarSortMethods,
+        spacingScale
+    } = useFriendsLocationsPreferences();
     const deferredSearchQuery = useDeferredValue(searchQuery);
     const scrollRef = useRef(null);
     const [scrollMetrics, setScrollMetrics] = useState({
@@ -405,129 +101,6 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
         viewportHeight: 0,
         width: 0
     });
-
-    useEffect(() => {
-        let active = true;
-
-        Promise.all([
-            configRepository.getString('FriendLocationCardScale', '1'),
-            configRepository.getString('FriendLocationCardSpacing', '1'),
-            configRepository.getBool('FriendLocationShowSameInstance', false),
-            configRepository.getBool('isSidebarDivideByFriendGroup', false),
-            configRepository.getString('sidebarFavoriteGroups', '[]'),
-            configRepository.getString('sidebarFavoriteGroupOrder', '[]'),
-            configRepository.getString('sidebarSortMethod1', 'Sort by Status'),
-            configRepository.getString(
-                'sidebarSortMethod2',
-                'Sort Alphabetically'
-            ),
-            configRepository.getString('sidebarSortMethod3', '')
-        ])
-            .then(
-                ([
-                    nextScale,
-                    nextSpacing,
-                    nextShowSameInstance,
-                    nextDivideByGroup,
-                    nextSelectedGroups,
-                    nextGroupOrder,
-                    nextSortMethod1,
-                    nextSortMethod2,
-                    nextSortMethod3
-                ]) => {
-                    if (!active) {
-                        return;
-                    }
-
-                    setCardScale(clampScale(nextScale, 0.5, 1, 1));
-                    setSpacingScale(clampScale(nextSpacing, 0.25, 1, 1));
-                    setShowSameInstance(Boolean(nextShowSameInstance));
-                    setSidebarFavoritePrefs({
-                        isDivideByGroup: Boolean(nextDivideByGroup),
-                        selectedGroups: parseConfigArray(nextSelectedGroups),
-                        groupOrder: parseConfigArray(nextGroupOrder)
-                    });
-                    setSidebarSortMethods([
-                        nextSortMethod1 || '',
-                        nextSortMethod2 || '',
-                        nextSortMethod3 || ''
-                    ]);
-                }
-            )
-            .catch(() => {});
-
-        return () => {
-            active = false;
-        };
-    }, []);
-
-    useEffect(() => {
-        let active = true;
-        const unsubscribe = onPreferenceChanged(
-            [
-                'isSidebarDivideByFriendGroup',
-                'sidebarFavoriteGroups',
-                'sidebarFavoriteGroupOrder',
-                'sidebarSortMethod1',
-                'sidebarSortMethod2',
-                'sidebarSortMethod3'
-            ],
-            async () => {
-                try {
-                    const [
-                        nextDivideByGroup,
-                        nextSelectedGroups,
-                        nextGroupOrder,
-                        nextSortMethod1,
-                        nextSortMethod2,
-                        nextSortMethod3
-                    ] = await Promise.all([
-                        configRepository.getBool(
-                            'isSidebarDivideByFriendGroup',
-                            false
-                        ),
-                        configRepository.getString(
-                            'sidebarFavoriteGroups',
-                            '[]'
-                        ),
-                        configRepository.getString(
-                            'sidebarFavoriteGroupOrder',
-                            '[]'
-                        ),
-                        configRepository.getString(
-                            'sidebarSortMethod1',
-                            'Sort by Status'
-                        ),
-                        configRepository.getString(
-                            'sidebarSortMethod2',
-                            'Sort Alphabetically'
-                        ),
-                        configRepository.getString('sidebarSortMethod3', '')
-                    ]);
-                    if (active) {
-                        setSidebarFavoritePrefs({
-                            isDivideByGroup: Boolean(nextDivideByGroup),
-                            selectedGroups:
-                                parseConfigArray(nextSelectedGroups),
-                            groupOrder: parseConfigArray(nextGroupOrder)
-                        });
-                        setSidebarSortMethods([
-                            nextSortMethod1 || '',
-                            nextSortMethod2 || '',
-                            nextSortMethod3 || ''
-                        ]);
-                    }
-                } catch {
-                    // ignore preference refresh failures
-                }
-            }
-        );
-
-        return () => {
-            active = false;
-            unsubscribe();
-        };
-    }, []);
 
     function toggleFavoriteGroup(groupKey) {
         setCollapsedFavoriteGroups((current) => {
@@ -539,30 +112,6 @@ export function FriendsLocationsPage({ embedded = false } = {}) {
             }
             return next;
         });
-    }
-
-    function changeShowSameInstance(value) {
-        const nextValue = Boolean(value);
-        setShowSameInstance(nextValue);
-        void configRepository.setBool('FriendLocationShowSameInstance', nextValue);
-    }
-
-    function changeCardScalePreference(value) {
-        const nextValue = clampScale(value, 0.5, 1, 1);
-        setCardScale(nextValue);
-        void configRepository.setString(
-            'FriendLocationCardScale',
-            formatOptionValue(nextValue)
-        );
-    }
-
-    function changeSpacingScalePreference(value) {
-        const nextValue = clampScale(value, 0.25, 1, 1);
-        setSpacingScale(nextValue);
-        void configRepository.setString(
-            'FriendLocationCardSpacing',
-            formatOptionValue(nextValue)
-        );
     }
 
     useEffect(() => {

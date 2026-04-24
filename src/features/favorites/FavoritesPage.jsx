@@ -29,63 +29,17 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import {
     favoriteGroupType,
     normalizeFavoriteEntityId as normalizeEntityId,
-    normalizeFavoriteSearchValue as normalizeSearchValue,
     resolveCurrentInviteLocation
 } from './favoritesItems.js';
-import {
-    buildFavoriteAvatarHistoryGroups,
-    buildFavoriteAvatarHistoryItems,
-    buildFavoriteGroupLabelByKey,
-    buildFavoriteLocalGroups,
-    buildFavoriteLocalItemsByGroup,
-    buildFavoriteRemoteGroups,
-    buildFavoriteRemoteItemsByGroup,
-    getFavoritesPageConfig,
-    resolveFavoritePresenceLocation
-} from './favoritesPageData.js';
+import { resolveFavoritePresenceLocation } from './favoritesPageData.js';
 import {
     clearFavoriteRemoteDetailsCache,
     useFavoriteRemoteDetails
 } from './useFavoriteRemoteDetails.js';
 import { appI18n } from '@/services/i18nService.js';
 import { FavoritesPageView } from './components/FavoritesPageView.jsx';
-
-const EMPTY_ITEMS = Object.freeze([]);
-const SPLITTER_CONFIG_KEYS = {
-    friend: 'VRCX_FavoritesFriendSplitter',
-    world: 'VRCX_FavoritesWorldSplitter',
-    avatar: 'VRCX_FavoritesAvatarSplitter'
-};
-const SPLITTER_DEFAULT_SIZE_PX = 260;
-const SPLITTER_MIN_SIZE_PX = 0;
-const CARD_SCALE_CONFIG_KEYS = {
-    friend: 'VRCX_FavoritesFriendCardScale',
-    world: 'VRCX_FavoritesWorldCardScale',
-    avatar: 'VRCX_FavoritesAvatarCardScale'
-};
-const CARD_SPACING_CONFIG_KEYS = {
-    friend: 'VRCX_FavoritesFriendCardSpacing',
-    world: 'VRCX_FavoritesWorldCardSpacing',
-    avatar: 'VRCX_FavoritesAvatarCardSpacing'
-};
-const CARD_SCALE_SLIDER = { min: 0.6, max: 1, step: 0.01 };
-const CARD_SPACING_SLIDER = { min: 0.5, max: 1.5, step: 0.05 };
-
-function clampNumber(value, min, max, fallback) {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) {
-        return fallback;
-    }
-    return Math.min(max, Math.max(min, parsed));
-}
-
-function normalizeSplitterSizePx(value) {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) {
-        return SPLITTER_DEFAULT_SIZE_PX;
-    }
-    return Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed));
-}
+import { useFavoritesLayoutPreferences } from './useFavoritesLayoutPreferences.js';
+import { useFavoritesViewData } from './useFavoritesViewData.js';
 
 function FavoritesPage({ kind, embedded = false }) {
     const favoriteLoadStatus = useFavoriteStore((state) => state.loadStatus);
@@ -181,14 +135,17 @@ function FavoritesPage({ kind, embedded = false }) {
     const [newLocalGroupName, setNewLocalGroupName] = useState('');
     const [remoteDetailsRefreshToken, setRemoteDetailsRefreshToken] =
         useState(0);
-    const [splitterSizePx, setSplitterSizePx] = useState(
-        SPLITTER_DEFAULT_SIZE_PX
-    );
-    const [splitterLayoutVersion, setSplitterLayoutVersion] = useState(0);
-    const [cardScale, setCardScale] = useState(1);
-    const [cardSpacing, setCardSpacing] = useState(1);
     const removingFavoriteKeyRef = useRef('');
-    const pendingSplitterSizePxRef = useRef(null);
+    const {
+        cardScale,
+        cardSpacing,
+        handleCardScaleChange,
+        handleCardSpacingChange,
+        handleSplitterResize,
+        persistSplitterLayout,
+        splitterLayoutVersion,
+        splitterSizePx
+    } = useFavoritesLayoutPreferences(kind);
     const selectedKeysSet = useMemo(
         () => new Set(selectedKeys),
         [selectedKeys]
@@ -257,79 +214,6 @@ function FavoritesPage({ kind, embedded = false }) {
     useEffect(() => {
         setSortValue(sortFavorites ? 'date' : 'name');
     }, [sortFavorites]);
-
-    useEffect(() => {
-        let active = true;
-        const configKey = SPLITTER_CONFIG_KEYS[kind];
-        configRepository
-            .getString(configKey, '260')
-            .then((value) => {
-                if (!active) {
-                    return;
-                }
-                const parsed = Number(value);
-                if (!Number.isFinite(parsed) || parsed < 0) {
-                    setSplitterSizePx(SPLITTER_DEFAULT_SIZE_PX);
-                    setSplitterLayoutVersion((version) => version + 1);
-                    return;
-                }
-                setSplitterSizePx(normalizeSplitterSizePx(parsed));
-                setSplitterLayoutVersion((version) => version + 1);
-            })
-            .catch(() => {
-                if (active) {
-                    setSplitterSizePx(SPLITTER_DEFAULT_SIZE_PX);
-                    setSplitterLayoutVersion((version) => version + 1);
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [kind]);
-
-    useEffect(() => {
-        let active = true;
-        const scaleKey = CARD_SCALE_CONFIG_KEYS[kind];
-        const spacingKey = CARD_SPACING_CONFIG_KEYS[kind];
-
-        Promise.all([
-            configRepository.getString(scaleKey, '1'),
-            configRepository.getString(spacingKey, '1')
-        ])
-            .then(([nextScale, nextSpacing]) => {
-                if (!active) {
-                    return;
-                }
-                setCardScale(
-                    clampNumber(
-                        nextScale,
-                        CARD_SCALE_SLIDER.min,
-                        CARD_SCALE_SLIDER.max,
-                        1
-                    )
-                );
-                setCardSpacing(
-                    clampNumber(
-                        nextSpacing,
-                        CARD_SPACING_SLIDER.min,
-                        CARD_SPACING_SLIDER.max,
-                        1
-                    )
-                );
-            })
-            .catch(() => {
-                if (!active) {
-                    return;
-                }
-                setCardScale(1);
-                setCardSpacing(1);
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [kind]);
 
     useEffect(() => {
         setEditMode(false);
@@ -432,34 +316,6 @@ function FavoritesPage({ kind, embedded = false }) {
                 }
             );
         }
-    };
-
-    const handleCardScaleChange = (value) => {
-        const nextValue = clampNumber(
-            value,
-            CARD_SCALE_SLIDER.min,
-            CARD_SCALE_SLIDER.max,
-            1
-        );
-        setCardScale(nextValue);
-        void configRepository.setString(
-            CARD_SCALE_CONFIG_KEYS[kind],
-            String(nextValue)
-        );
-    };
-
-    const handleCardSpacingChange = (value) => {
-        const nextValue = clampNumber(
-            value,
-            CARD_SPACING_SLIDER.min,
-            CARD_SPACING_SLIDER.max,
-            1
-        );
-        setCardSpacing(nextValue);
-        void configRepository.setString(
-            CARD_SPACING_CONFIG_KEYS[kind],
-            String(nextValue)
-        );
     };
 
     const handleRemoveLocalFavorite = async (item, { silent = false } = {}) => {
@@ -608,164 +464,49 @@ function FavoritesPage({ kind, embedded = false }) {
         }
     };
 
-    const favoritesSortIndex = useMemo(() => {
-        const index = Object.create(null);
-        favoritesSortOrder.forEach((favoriteId, position) => {
-            index[favoriteId] = position;
-        });
-        return index;
-    }, [favoritesSortOrder]);
-
-    const pageConfig = useMemo(() => getFavoritesPageConfig(kind), [kind]);
-
-    const remoteGroups = useMemo(() => {
-        return buildFavoriteRemoteGroups({
-            kind,
-            favoriteFriendGroups,
-            favoriteAvatarGroups,
-            favoriteWorldGroups
-        });
-    }, [favoriteAvatarGroups, favoriteFriendGroups, favoriteWorldGroups, kind]);
-
-    const localGroups = useMemo(() => {
-        return buildFavoriteLocalGroups({
-            kind,
-            localFriendFavoriteGroups,
-            localAvatarFavoriteGroups,
-            localWorldFavoriteGroups,
-            localFriendFavorites,
-            localAvatarFavorites,
-            localWorldFavorites
-        });
-    }, [
+    const {
+        allItems,
+        avatarEditSelectionDisabled,
+        avatarHistoryGroups,
+        canCreateLocalGroup,
+        contentItems,
+        hasSearchInput,
+        isAllSelected,
+        isSearchActive,
+        localGroups,
+        localItemsByGroup,
+        pageConfig,
+        remoteGroups,
+        remoteItemsByGroup,
+        selectedContentItems,
+        selectedGroup
+    } = useFavoritesViewData({
+        avatarHistory,
+        currentUserSnapshot,
+        favoriteAvatarGroups,
+        favoriteFriendGroups,
+        favoriteWorldGroups,
+        favoritesSortOrder,
+        friendsById,
+        groupedFavoriteFriendIdsByGroupKey,
         kind,
+        localAvatarDetailsById,
         localAvatarFavoriteGroups,
         localAvatarFavorites,
         localFriendFavoriteGroups,
         localFriendFavorites,
-        localWorldFavoriteGroups,
-        localWorldFavorites
-    ]);
-
-    const avatarHistoryGroups = useMemo(() => {
-        return buildFavoriteAvatarHistoryGroups({
-            kind,
-            avatarHistoryLength: avatarHistory.length
-        });
-    }, [avatarHistory.length, kind]);
-
-    const remoteGroupLabelByKey = useMemo(
-        () => buildFavoriteGroupLabelByKey(remoteGroups),
-        [remoteGroups]
-    );
-
-    const remoteItemsByGroup = useMemo(() => {
-        return buildFavoriteRemoteItemsByGroup({
-            kind,
-            remoteGroups,
-            groupedFavoriteFriendIdsByGroupKey,
-            friendsById,
-            favoritesSortIndex,
-            sortValue,
-            remoteFavoritesById,
-            remoteEntityDetailsData: remoteEntityDetails.data,
-            remoteEntityDetailsStatus: remoteEntityDetails.status,
-            remoteGroupLabelByKey
-        });
-    }, [
-        favoritesSortIndex,
-        friendsById,
-        groupedFavoriteFriendIdsByGroupKey,
-        kind,
-        remoteEntityDetails.data,
-        remoteEntityDetails.status,
-        remoteFavoritesById,
-        remoteGroupLabelByKey,
-        remoteGroups,
-        sortValue
-    ]);
-
-    const localItemsByGroup = useMemo(() => {
-        return buildFavoriteLocalItemsByGroup({
-            kind,
-            localGroups,
-            localFriendFavorites,
-            localAvatarFavorites,
-            localWorldFavorites,
-            localAvatarDetailsById,
-            localWorldDetailsById,
-            friendsById,
-            sortValue
-        });
-    }, [
-        friendsById,
-        kind,
-        localAvatarDetailsById,
-        localAvatarFavorites,
-        localFriendFavorites,
-        localGroups,
         localWorldDetailsById,
+        localWorldFavoriteGroups,
         localWorldFavorites,
+        remoteEntityDetails,
+        remoteFavoritesById,
+        searchMode,
+        searchQuery,
+        selectedGroupKey,
+        selectedKeysSet,
+        selectedSource,
         sortValue
-    ]);
-
-    const avatarHistoryItems = useMemo(() => {
-        return buildFavoriteAvatarHistoryItems({ kind, avatarHistory });
-    }, [avatarHistory, kind]);
-
-    const allItems = useMemo(
-        () => [
-            ...Object.values(remoteItemsByGroup).flat(),
-            ...Object.values(localItemsByGroup).flat()
-        ],
-        [localItemsByGroup, remoteItemsByGroup]
-    );
-
-    const searchNeedle = normalizeSearchValue(searchQuery);
-    const isSearchActive = searchNeedle.length >= 3;
-    const hasSearchInput = searchNeedle.length > 0;
-    const filteredItems = useMemo(() => {
-        if (!isSearchActive) {
-            return [];
-        }
-
-        return allItems.filter((item) => {
-            if (kind === 'world' && searchMode === 'tag') {
-                const matchesTag =
-                    Array.isArray(item.tags) &&
-                    item.tags.some(
-                        (tag) =>
-                            typeof tag === 'string' &&
-                            tag.startsWith('author_tag_') &&
-                            tag
-                                .substring(11)
-                                .toLowerCase()
-                                .includes(searchNeedle)
-                    );
-                if (!matchesTag) {
-                    return false;
-                }
-            } else {
-                const matchesText = [
-                    item.title,
-                    item.subtitle,
-                    item.description,
-                    item.id,
-                    item.groupLabel,
-                    item.statusLabel
-                ]
-                    .filter(Boolean)
-                    .join(' ')
-                    .toLowerCase()
-                    .includes(searchNeedle);
-                if (!matchesText) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-    }, [allItems, isSearchActive, kind, searchMode, searchNeedle]);
+    });
 
     useEffect(() => {
         const hasSelection = (
@@ -801,60 +542,6 @@ function FavoritesPage({ kind, embedded = false }) {
         selectedGroupKey,
         selectedSource
     ]);
-
-    const selectedGroup = useMemo(
-        () =>
-            (selectedSource === 'remote'
-                ? remoteGroups
-                : selectedSource === 'history'
-                  ? avatarHistoryGroups
-                  : localGroups
-            ).find((group) => group.key === selectedGroupKey) || null,
-        [
-            avatarHistoryGroups,
-            localGroups,
-            remoteGroups,
-            selectedGroupKey,
-            selectedSource
-        ]
-    );
-    const selectedItems = useMemo(() => {
-        if (!selectedGroup) {
-            return EMPTY_ITEMS;
-        }
-        if (selectedSource === 'history') {
-            return avatarHistoryItems;
-        }
-        return (
-            (selectedSource === 'remote'
-                ? remoteItemsByGroup[selectedGroup.key]
-                : localItemsByGroup[selectedGroup.key]) || EMPTY_ITEMS
-        );
-    }, [
-        avatarHistoryItems,
-        localItemsByGroup,
-        remoteItemsByGroup,
-        selectedGroup,
-        selectedSource
-    ]);
-    const contentItems = useMemo(
-        () => (isSearchActive ? filteredItems : selectedItems),
-        [filteredItems, isSearchActive, selectedItems]
-    );
-    const isAllSelected =
-        contentItems.length > 0 &&
-        contentItems.every((item) => selectedKeysSet.has(item.key));
-    const avatarEditSelectionDisabled =
-        kind === 'avatar' && selectedSource !== 'remote';
-    const selectedContentItems = contentItems.filter((item) =>
-        selectedKeysSet.has(item.key)
-    );
-    const canCreateLocalGroup =
-        kind !== 'avatar' ||
-        Boolean(
-            currentUserSnapshot?.$isVRCPlus ||
-            currentUserSnapshot?.tags?.includes?.('system_supporter')
-        );
 
     useEffect(() => {
         if (isSearchActive && editMode) {
@@ -1482,31 +1169,6 @@ function FavoritesPage({ kind, embedded = false }) {
             return;
         }
         toast.error(appI18n.t('view.favorites.generated_dynamic.removed_value_value_failed', { value: removedCount, value2: failedCount }));
-    }
-
-    function persistSplitterSizePx(nextSizePx) {
-        const normalizedSizePx = normalizeSplitterSizePx(nextSizePx);
-        setSplitterSizePx(normalizedSizePx);
-        void configRepository.setString(
-            SPLITTER_CONFIG_KEYS[kind],
-            String(normalizedSizePx)
-        );
-    }
-
-    function handleSplitterResize(panelSize) {
-        const nextSizePx = Number(panelSize?.inPixels);
-        if (!Number.isFinite(nextSizePx) || nextSizePx < 0) {
-            return;
-        }
-        pendingSplitterSizePxRef.current = normalizeSplitterSizePx(nextSizePx);
-    }
-
-    function persistSplitterLayout() {
-        const pendingSizePx = pendingSplitterSizePxRef.current;
-        pendingSplitterSizePxRef.current = null;
-        if (Number.isFinite(pendingSizePx)) {
-            persistSplitterSizePx(pendingSizePx);
-        }
     }
 
     return (

@@ -34,11 +34,6 @@ import {
     filterMyAvatars
 } from './myAvatarsFilters.js';
 import {
-    buildMyAvatarsGridRows,
-    getMyAvatarsGridMetrics,
-    getVisibleMyAvatarsGridRows
-} from './myAvatarsGrid.js';
-import {
     MY_AVATARS_DEFAULT_CARD_SCALE,
     MY_AVATARS_DEFAULT_CARD_SPACING,
     MY_AVATARS_DEFAULT_PAGE_SIZES,
@@ -64,6 +59,7 @@ import { MyAvatarsToolbar } from './components/MyAvatarsToolbar.jsx';
 import { MyAvatarsTableView } from './components/MyAvatarsTableView.jsx';
 import { MyAvatarsGridView } from './components/MyAvatarsGridView.jsx';
 import { MyAvatarsDialogs } from './components/MyAvatarsDialogs.jsx';
+import { useMyAvatarsGridVirtualization } from './useMyAvatarsGridVirtualization.js';
 
 function isRuntimeAuthTarget(authTarget) {
     const runtimeAuth = useRuntimeStore.getState().auth;
@@ -97,7 +93,6 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     const imageUploadInputRef = useRef(null);
     const imageUploadAvatarRef = useRef(null);
     const imageUploadAuthTargetRef = useRef(null);
-    const gridScrollRef = useRef(null);
     const preferencesHydrated = usePreferencesStore(
         (state) => state.preferencesHydrated
     );
@@ -140,11 +135,6 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     const [columnOrderLocked, setColumnOrderLocked] = useState(
         () => persistedState.columnOrderLocked === true
     );
-    const [gridScrollMetrics, setGridScrollMetrics] = useState({
-        scrollTop: 0,
-        viewportHeight: 0,
-        width: 0
-    });
     const [pagination, setPagination] = useState(() => ({
         pageIndex: 0,
         pageSize: resolveMyAvatarsPageSize(
@@ -835,81 +825,6 @@ export function MyAvatarsPage({ embedded = false } = {}) {
     ]);
 
     useEffect(() => {
-        if (viewMode !== 'grid') {
-            return undefined;
-        }
-
-        function updateGridScrollMetrics() {
-            const node = gridScrollRef.current;
-            if (!node) {
-                return;
-            }
-
-            const nextMetrics = {
-                scrollTop: node.scrollTop,
-                viewportHeight: node.clientHeight,
-                width: node.clientWidth
-            };
-
-            setGridScrollMetrics((current) =>
-                current.scrollTop === nextMetrics.scrollTop &&
-                current.viewportHeight === nextMetrics.viewportHeight &&
-                current.width === nextMetrics.width
-                    ? current
-                    : nextMetrics
-            );
-        }
-
-        const node = gridScrollRef.current;
-        if (!node) {
-            return undefined;
-        }
-
-        updateGridScrollMetrics();
-        node.addEventListener('scroll', updateGridScrollMetrics, {
-            passive: true
-        });
-
-        const observer =
-            typeof ResizeObserver === 'function'
-                ? new ResizeObserver(updateGridScrollMetrics)
-                : null;
-        observer?.observe(node);
-        window.addEventListener('resize', updateGridScrollMetrics);
-
-        return () => {
-            node.removeEventListener('scroll', updateGridScrollMetrics);
-            observer?.disconnect();
-            window.removeEventListener('resize', updateGridScrollMetrics);
-        };
-    }, [filteredAvatars.length, viewMode]);
-
-    useEffect(() => {
-        if (viewMode !== 'grid') {
-            return;
-        }
-
-        const node = gridScrollRef.current;
-        if (node) {
-            node.scrollTop = 0;
-        }
-
-        setGridScrollMetrics((current) => ({
-            ...current,
-            scrollTop: 0
-        }));
-    }, [
-        cardScale,
-        cardSpacing,
-        deferredSearchQuery,
-        filteredAvatars.length,
-        platformFilter,
-        releaseStatusFilter,
-        tagFilters,
-        viewMode
-    ]);
-
-    useEffect(() => {
         const maxPageIndex = Math.max(
             0,
             Math.ceil(filteredAvatars.length / pagination.pageSize) - 1
@@ -968,35 +883,23 @@ export function MyAvatarsPage({ embedded = false } = {}) {
         }
     });
 
-    const { gridGap, gridMinWidth, gridColumnCount, gridRowHeight } =
-        getMyAvatarsGridMetrics({
-            cardScale,
-            cardSpacing,
-            width: gridScrollMetrics.width
-        });
-    const gridRows = useMemo(
-        () =>
-            buildMyAvatarsGridRows({
-                avatars: filteredAvatars,
-                gridColumnCount,
-                gridRowHeight
-            }),
-        [filteredAvatars, gridColumnCount, gridRowHeight]
-    );
-    const gridTotalHeight = gridRows.length * gridRowHeight;
-    const visibleGridRows = useMemo(
-        () =>
-            getVisibleMyAvatarsGridRows({
-                gridRows,
-                scrollTop: gridScrollMetrics.scrollTop,
-                viewportHeight: gridScrollMetrics.viewportHeight
-            }),
-        [
-            gridRows,
-            gridScrollMetrics.scrollTop,
-            gridScrollMetrics.viewportHeight
-        ]
-    );
+    const {
+        gridGap,
+        gridColumnCount,
+        gridMinWidth,
+        gridScrollRef,
+        gridTotalHeight,
+        visibleGridRows
+    } = useMyAvatarsGridVirtualization({
+        cardScale,
+        cardSpacing,
+        deferredSearchQuery,
+        filteredAvatars,
+        platformFilter,
+        releaseStatusFilter,
+        tagFilters,
+        viewMode
+    });
     const isLoading = loadStatus === 'running' && avatars.length === 0;
     const isError = loadStatus === 'error' && avatars.length === 0;
     const hasRows = filteredAvatars.length > 0;
