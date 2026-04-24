@@ -6,6 +6,8 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
 
+import { GalleryEmojiImage } from './GalleryEmojiImage.jsx';
+
 function getLatestFileUrl(file) {
     const versions = Array.isArray(file?.versions) ? file.versions : [];
     return versions.at(-1)?.file?.url ?? '';
@@ -46,7 +48,10 @@ export function GalleryFileCard({
 
     return (
         <Card
-            className={cn('overflow-hidden', isCurrent && 'ring-primary ring-2')}
+            className={cn(
+                'overflow-hidden',
+                isCurrent && 'ring-primary ring-2'
+            )}
         >
             {imageUrl ? (
                 <Button
@@ -55,14 +60,11 @@ export function GalleryFileCard({
                     className="h-auto w-full rounded-none p-0"
                     onClick={() => onPreview({ id: file.id, url: imageUrl })}
                 >
-                    <img
-                        src={imageUrl}
-                        alt={file.id}
-                        loading="lazy"
-                        className={cn(
-                            definition.aspectClass,
-                            'w-full object-cover'
-                        )}
+                    <GalleryEmojiImage
+                        file={tab === 'emojis' ? file : null}
+                        imageUrl={imageUrl}
+                        alt={file.displayName || file.name || file.id}
+                        className={cn(definition.aspectClass, 'w-full')}
                     />
                 </Button>
             ) : (
@@ -117,7 +119,9 @@ export function GalleryFileCard({
                         variant="outline"
                         size="sm"
                         disabled={!imageUrl}
-                        onClick={() => onPreview({ id: file.id, url: imageUrl })}
+                        onClick={() =>
+                            onPreview({ id: file.id, url: imageUrl })
+                        }
                     >
                         <EyeIcon data-icon="inline-start" />
                         {t('view.tools.generated.preview')}
@@ -131,7 +135,9 @@ export function GalleryFileCard({
                                 isMutating ||
                                 !currentUserId
                             }
-                            onClick={() => onSetProfileField(profileField, file.id)}
+                            onClick={() =>
+                                onSetProfileField(profileField, file.id)
+                            }
                         >
                             <CheckIcon data-icon="inline-start" />
                             {tab === 'icons' ? 'Icon' : 'Profile'}

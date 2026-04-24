@@ -55,34 +55,61 @@ function getEmojiFileName(emoji) {
 }
 
 /**
- * @param {string} url
- * @param {number} fps
  * @param {number} frameCount
- * @param {string} loopStyle
- * @param size
  */
-function generateEmojiStyle(url, fps, frameCount, loopStyle, size) {
+function getEmojiFrameLayout(frameCount) {
+    const numericFrameCount = Number(frameCount);
+    const normalizedFrameCount = Math.min(
+        64,
+        Math.max(
+            1,
+            Number.isFinite(numericFrameCount)
+                ? Math.trunc(numericFrameCount)
+                : 1
+        )
+    );
     let framesPerLine = 2;
-    if (frameCount > 4) framesPerLine = 4;
-    if (frameCount > 16) framesPerLine = 8;
-    const animationDurationMs = (1000 / fps) * frameCount;
+    if (normalizedFrameCount > 4) framesPerLine = 4;
+    if (normalizedFrameCount > 16) framesPerLine = 8;
     const frameSize = 1024 / framesPerLine;
-    const scale = 100 / (frameSize / size);
-    const animStyle = loopStyle === 'pingpong' ? 'alternate' : 'none';
-    const style = `
-            transform: scale(${scale / 100});
-            transform-origin: top left;
-            width: ${frameSize}px;
-            height: ${frameSize}px;
-            background: url('${url}') 0 0;
-            animation: ${animationDurationMs}ms steps(1) 0s infinite ${animStyle} running animated-emoji-${frameCount};
-        `;
-    return style;
+    return {
+        frameCount: normalizedFrameCount,
+        framesPerLine,
+        frameSize
+    };
+}
+
+/**
+ * @param {number} frameCount
+ */
+function getEmojiAnimationName(frameCount) {
+    return `animated-emoji-${getEmojiFrameLayout(frameCount).frameCount}`;
+}
+
+/**
+ * @param {number} frameCount
+ */
+function buildEmojiKeyframes(frameCount) {
+    const { frameCount: normalizedFrameCount, framesPerLine } =
+        getEmojiFrameLayout(frameCount);
+    const maxFrameIndex = framesPerLine - 1;
+    const rules = [];
+    for (let index = 0; index < normalizedFrameCount; index += 1) {
+        const percent = (index / normalizedFrameCount) * 100;
+        const column = index % framesPerLine;
+        const row = Math.floor(index / framesPerLine);
+        const x = maxFrameIndex > 0 ? (column / maxFrameIndex) * 100 : 0;
+        const y = maxFrameIndex > 0 ? (row / maxFrameIndex) * 100 : 0;
+        rules.push(`${percent}%{background-position:${x}% ${y}%;}`);
+    }
+    return rules.join('');
 }
 
 export {
     getPrintLocalDate,
     getPrintFileName,
     getEmojiFileName,
-    generateEmojiStyle
+    getEmojiFrameLayout,
+    getEmojiAnimationName,
+    buildEmojiKeyframes
 };
