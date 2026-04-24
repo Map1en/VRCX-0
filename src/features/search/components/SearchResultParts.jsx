@@ -1,6 +1,6 @@
 import { GlobeIcon, UserIcon, UsersIcon } from 'lucide-react';
-
 import { useTranslation } from 'react-i18next';
+
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold.jsx';
 import {
     convertFileUrlToImageUrl,
@@ -15,29 +15,20 @@ import {
     openWorldDialog
 } from '@/services/dialogService.js';
 import { Button } from '@/ui/shadcn/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { languageFlagLabel, resolveUserLanguages } from '../searchDisplay.js';
 
 export function SearchEmptyState() {
     const { t } = useTranslation();
 
-    return (
-        <EmptyState
-            title={t('common.no_data')}
-            className="min-h-56"
-        />
-    );
+    return <EmptyState title={t('common.no_data')} className="min-h-56" />;
 }
 
 export function SearchLoadingState() {
     const { t } = useTranslation();
 
-    return (
-        <LoadingState
-            label={t('common.loading')}
-            className="min-h-56"
-        />
-    );
+    return <LoadingState label={t('common.loading')} className="min-h-56" />;
 }
 
 export function AvatarCard({ avatar }) {
@@ -168,13 +159,16 @@ export function UserRow({ user, randomUserColours, isDarkMode }) {
                         {user.$trustLevel || ''}
                     </span>
                     {languages.map((entry) => (
-                        <span
-                            key={`${user.id}-${entry.key}-${entry.value}`}
-                            className="shrink-0 text-sm leading-none"
-                            title={entry.value || entry.key}
-                        >
-                            {languageFlagLabel(entry.key)}
-                        </span>
+                        <Tooltip key={`${user.id}-${entry.key}-${entry.value}`}>
+                            <TooltipTrigger asChild>
+                                <span className="shrink-0 text-sm leading-none">
+                                    {languageFlagLabel(entry.key)}
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {entry.value || entry.key}
+                            </TooltipContent>
+                        </Tooltip>
                     ))}
                 </div>
                 {user.bio ? (

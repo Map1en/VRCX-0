@@ -8,8 +8,8 @@ import {
     UserIcon
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-
 import { useTranslation } from 'react-i18next';
+
 import { LocationWorld } from '@/components/LocationWorld.jsx';
 import { timeToText } from '@/lib/dateTime.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -31,6 +31,7 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS,
@@ -175,7 +176,12 @@ function getNextColumnConfig(config, activeColumns, columnKey) {
     return { ...config, columns };
 }
 
-function DashboardInstanceSettingsMenu({ config, configUpdater, activeColumns, t }) {
+function DashboardInstanceSettingsMenu({
+    config,
+    configUpdater,
+    activeColumns,
+    t
+}) {
     if (!configUpdater) {
         return null;
     }
@@ -187,7 +193,7 @@ function DashboardInstanceSettingsMenu({ config, configUpdater, activeColumns, t
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={"Widget settings"}
+                    aria-label={'Widget settings'}
                 >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
@@ -332,10 +338,14 @@ function DashboardInstancePlayersTable({ activeColumns, rows }) {
                                         ) : null}
                                         {activeColumns.includes('status') ? (
                                             row.statusValue ? (
-                                                <span
-                                                    title={row.statusValue}
-                                                    className="bg-muted-foreground/70 inline-block size-2.5 rounded-full border"
-                                                />
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span className="bg-muted-foreground/70 inline-block size-2.5 rounded-full border" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {row.statusValue}
+                                                    </TooltipContent>
+                                                </Tooltip>
                                             ) : null
                                         ) : null}
                                     </div>
@@ -374,14 +384,19 @@ function DashboardInstancePlayersTable({ activeColumns, rows }) {
                                         {row.languageEntries
                                             .slice(0, 2)
                                             .map((entry) => (
-                                                <span
+                                                <Tooltip
                                                     key={`${row.id}:${entry.key}`}
-                                                    title={
-                                                        entry.value || entry.key
-                                                    }
                                                 >
-                                                    {entry.flag}
-                                                </span>
+                                                    <TooltipTrigger asChild>
+                                                        <span>
+                                                            {entry.flag}
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {entry.value ||
+                                                            entry.key}
+                                                    </TooltipContent>
+                                                </Tooltip>
                                             ))}
                                     </span>
                                 </TableCell>
@@ -571,7 +586,9 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
             <DashboardInstanceWidgetShell settingsMenu={settingsMenu} t={t}>
                 <DashboardWidgetEmptyState
                     title={t('view.dashboard.generated.instance_widget_idle')}
-                    description={t('view.dashboard.generated.start_vrchat_before_the_dashboard_can_rebuild_the_current_in')}
+                    description={t(
+                        'view.dashboard.generated.start_vrchat_before_the_dashboard_can_rebuild_the_current_in'
+                    )}
                 />
             </DashboardInstanceWidgetShell>
         );
@@ -607,7 +624,9 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }) {
             <DashboardInstanceWidgetShell settingsMenu={settingsMenu} t={t}>
                 <DashboardWidgetEmptyState
                     title={t('view.dashboard.generated.instance_widget_idle')}
-                    description={t('view.dashboard.generated.current_players_are_not_available_yet')}
+                    description={t(
+                        'view.dashboard.generated.current_players_are_not_available_yet'
+                    )}
                 />
             </DashboardInstanceWidgetShell>
         );

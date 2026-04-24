@@ -11,6 +11,7 @@ import { userProfileRepository } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 export function EmptyState({ title, description, loading = false }) {
     return (
@@ -80,20 +81,24 @@ export function MetadataAuthorLink({ author, endpoint }) {
     }
 
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-left"
-            title={userId}
-            onClick={() =>
-                openUserDialog({
-                    userId,
-                    title: displayName || userId
-                })
-            }
-        >
-            <CameraIcon data-icon="inline-start" />
-            <span className="truncate">{displayName || userId}</span>
-        </Button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-left"
+                    onClick={() =>
+                        openUserDialog({
+                            userId,
+                            title: displayName || userId
+                        })
+                    }
+                >
+                    <CameraIcon data-icon="inline-start" />
+                    <span className="truncate">{displayName || userId}</span>
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>{userId}</TooltipContent>
+        </Tooltip>
     );
 }

@@ -10,10 +10,10 @@ import {
     WrenchIcon
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import {
     loadNavMenuModel,
     NAV_LAYOUT_UPDATED_EVENT,
@@ -30,6 +30,7 @@ import {
 import { useDashboardStore } from '@/state/dashboardStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { Button } from '@/ui/shadcn/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 const collapsibleCategories = toolCategories.map((category) => category.key);
 const configKey = 'VRCX_toolsCategoryCollapsed';
@@ -90,26 +91,32 @@ function ToolItem({
                 </div>
             </Button>
             {navEligible ? (
-                <Button
-                    type="button"
-                    size="icon-xs"
-                    variant={isPinned ? 'secondary' : 'ghost'}
-                    className={cn(
-                        'absolute top-2 right-2 size-7',
-                        !isPinned && 'text-muted-foreground'
-                    )}
-                    title={isPinned ? unpinLabel : pinLabel}
-                    aria-label={isPinned ? unpinLabel : pinLabel}
-                    onClick={() => {
-                        if (isPinned) {
-                            onUnpin?.();
-                        } else {
-                            onPin?.();
-                        }
-                    }}
-                >
-                    <PinStateIcon data-icon="inline-start" />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            type="button"
+                            size="icon-xs"
+                            variant={isPinned ? 'secondary' : 'ghost'}
+                            className={cn(
+                                'absolute top-2 right-2 size-7',
+                                !isPinned && 'text-muted-foreground'
+                            )}
+                            aria-label={isPinned ? unpinLabel : pinLabel}
+                            onClick={() => {
+                                if (isPinned) {
+                                    onUnpin?.();
+                                } else {
+                                    onPin?.();
+                                }
+                            }}
+                        >
+                            <PinStateIcon data-icon="inline-start" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {isPinned ? unpinLabel : pinLabel}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
         </div>
     );
@@ -318,7 +325,9 @@ export function ToolsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.tools.generated_toast.failed_to_pin_tool_to_navigation')
+                    : t(
+                          'view.tools.generated_toast.failed_to_pin_tool_to_navigation'
+                      )
             );
         }
     }
@@ -345,7 +354,9 @@ export function ToolsPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.tools.generated_toast.failed_to_unpin_tool_from_navigation')
+                    : t(
+                          'view.tools.generated_toast.failed_to_unpin_tool_from_navigation'
+                      )
             );
         }
     }

@@ -22,6 +22,7 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     EntityDialogTabContent,
@@ -33,8 +34,8 @@ import {
     formatStatsDate,
     formatStatsDuration
 } from '../userDialogRows.js';
-import { useUserBioTranslation } from '../useUserBioTranslation.js';
 import { EntityList } from '../UserDialogViewParts.jsx';
+import { useUserBioTranslation } from '../useUserBioTranslation.js';
 
 function UserDialogPresenceSection({ presence, presenceActions, profile, t }) {
     const {
@@ -185,10 +186,7 @@ export function UserDialogInfoTab({
                         </pre>
                     </EntityInfoBlock>
                 ) : null}
-                <EntityInfoBlock
-                    label={t('dialog.user.info.avatar_info')}
-                    full
-                >
+                <EntityInfoBlock label={t('dialog.user.info.avatar_info')} full>
                     {currentAvatarTarget ? (
                         <Button
                             type="button"
@@ -282,63 +280,71 @@ export function UserDialogInfoTab({
                         </span>
                     )}
                 </EntityInfoBlock>
-                <EntityInfoBlock
-                    label={t('dialog.user.generated.bio')}
-                    full
-                >
+                <EntityInfoBlock label={t('dialog.user.generated.bio')} full>
                     <div className="flex items-start gap-2">
                         <pre className="text-muted-foreground max-h-52 min-w-0 flex-1 overflow-auto font-sans text-xs whitespace-pre-wrap">
                             {visibleBio}
                         </pre>
                         {profile.bio ? (
-                            <Button
-                                type="button"
-                                size="icon-xs"
-                                variant="ghost"
-                                className="shrink-0"
-                                disabled={bioTranslationLoading}
-                                title={
-                                    translatedBioActive
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        size="icon-xs"
+                                        variant="ghost"
+                                        className="shrink-0"
+                                        disabled={bioTranslationLoading}
+                                        aria-label={
+                                            translatedBioActive
+                                                ? 'Show original bio'
+                                                : 'Translate bio'
+                                        }
+                                        onClick={() =>
+                                            void toggleBioTranslation()
+                                        }
+                                    >
+                                        {bioTranslationLoading ? (
+                                            <Spinner data-icon="inline-start" />
+                                        ) : (
+                                            <LanguagesIcon data-icon="inline-start" />
+                                        )}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {translatedBioActive
                                         ? 'Show original bio'
-                                        : 'Translate bio'
-                                }
-                                aria-label={
-                                    translatedBioActive
-                                        ? 'Show original bio'
-                                        : 'Translate bio'
-                                }
-                                onClick={() => void toggleBioTranslation()}
-                            >
-                                {bioTranslationLoading ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : (
-                                    <LanguagesIcon data-icon="inline-start" />
-                                )}
-                            </Button>
+                                        : 'Translate bio'}
+                                </TooltipContent>
+                            </Tooltip>
                         ) : null}
                     </div>
                     {bioLinks.length ? (
                         <div className="mt-1.5 flex flex-wrap gap-1.5">
                             {bioLinks.map((link) => (
-                                <Button
-                                    key={link}
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    title={link}
-                                    aria-label={`Open ${link}`}
-                                    onClick={() => openExternalLink(link)}
-                                >
-                                    {getFaviconUrl(link) ? (
-                                        <img
-                                            src={getFaviconUrl(link)}
-                                            alt=""
-                                            className="size-4"
-                                        />
-                                    ) : (
-                                        <ExternalLinkIcon data-icon="inline-start" />
-                                    )}
-                                </Button>
+                                <Tooltip key={link}>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-xs"
+                                            aria-label={`Open ${link}`}
+                                            onClick={() =>
+                                                openExternalLink(link)
+                                            }
+                                        >
+                                            {getFaviconUrl(link) ? (
+                                                <img
+                                                    src={getFaviconUrl(link)}
+                                                    alt=""
+                                                    className="size-4"
+                                                />
+                                            ) : (
+                                                <ExternalLinkIcon data-icon="inline-start" />
+                                            )}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{link}</TooltipContent>
+                                </Tooltip>
                             ))}
                         </div>
                     ) : null}
@@ -419,23 +425,29 @@ export function UserDialogInfoTab({
                         {profile.id || '\u2014'}
                         {profile.id ? (
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        aria-label="Open user copy menu"
-                                        title={t(
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                aria-label="Open user copy menu"
+                                                className="ml-1"
+                                                size="icon-xs"
+                                                variant="ghost"
+                                                onClick={(event) =>
+                                                    event.stopPropagation()
+                                                }
+                                            >
+                                                <CopyIcon data-icon="inline-start" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        {t(
                                             'dialog.user.generated.copy_user_details'
                                         )}
-                                        className="ml-1"
-                                        size="icon-xs"
-                                        variant="ghost"
-                                        onClick={(event) =>
-                                            event.stopPropagation()
-                                        }
-                                    >
-                                        <CopyIcon data-icon="inline-start" />
-                                    </Button>
-                                </DropdownMenuTrigger>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <DropdownMenuContent align="start">
                                     <DropdownMenuGroup>
                                         <DropdownMenuItem

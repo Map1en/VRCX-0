@@ -9,6 +9,7 @@ import {
     InputGroupInput
 } from '@/ui/shadcn/input-group';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { FriendLogTypeFilterDropdown } from './FriendLogViewParts.jsx';
 
@@ -41,24 +42,34 @@ export function FriendLogPageToolbar({
                             onChange={(event) =>
                                 onSearchQueryChange(event.target.value)
                             }
-                            placeholder={t('view.friend_log.search_placeholder')}
+                            placeholder={t(
+                                'view.friend_log.search_placeholder'
+                            )}
                         />
                     </InputGroup>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        title={t('common.actions.refresh')}
-                        aria-label={t('common.actions.refresh')}
-                        disabled={!currentUserId || loadStatus === 'running'}
-                        onClick={onRefresh}
-                    >
-                        {loadStatus === 'running' ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCwIcon data-icon="inline-start" />
-                        )}
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label={t('common.actions.refresh')}
+                                disabled={
+                                    !currentUserId || loadStatus === 'running'
+                                }
+                                onClick={onRefresh}
+                            >
+                                {loadStatus === 'running' ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <RefreshCwIcon data-icon="inline-start" />
+                                )}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {t('common.actions.refresh')}
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
                 <TableColumnVisibilityMenu table={table} />
             </PageToolbarRow>

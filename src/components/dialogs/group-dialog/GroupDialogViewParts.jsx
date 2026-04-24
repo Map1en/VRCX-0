@@ -1,4 +1,5 @@
 import { Badge } from '@/ui/shadcn/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     languageOptionLabel,
@@ -23,14 +24,17 @@ export function GroupTitleLanguages({ languages }) {
                 ).trim();
                 const label = languageOptionLabel(language);
                 return (
-                    <Badge
-                        key={`${key}:${language?.value || ''}`}
-                        variant="outline"
-                        className="shrink-0 text-xs"
-                        title={label}
-                    >
-                        {label}
-                    </Badge>
+                    <Tooltip key={`${key}:${language?.value || ''}`}>
+                        <TooltipTrigger asChild>
+                            <Badge
+                                variant="outline"
+                                className="shrink-0 text-xs"
+                            >
+                                {label}
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>{label}</TooltipContent>
+                    </Tooltip>
                 );
             })}
         </span>

@@ -1,12 +1,8 @@
-import {
-    RefreshCwIcon,
-    SproutIcon,
-    TractorIcon
-} from 'lucide-react';
+import { RefreshCwIcon, SproutIcon, TractorIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
 import configRepository from '@/repositories/configRepository.js';
 import worldProfileRepository from '@/repositories/worldProfileRepository.js';
@@ -29,6 +25,8 @@ import {
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+
 import {
     ActivityEmptyState,
     getWorldThumbnailUrl,
@@ -105,9 +103,7 @@ function UserActivityOverlapSection({
                             className="scale-75"
                         />
                         <span className="text-muted-foreground text-sm whitespace-nowrap">
-                            {t(
-                                'dialog.user.activity.overlap.exclude_hours'
-                            )}
+                            {t('dialog.user.activity.overlap.exclude_hours')}
                         </span>
                         <Select
                             value={excludeStartHour}
@@ -134,9 +130,7 @@ function UserActivityOverlapSection({
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        <span className="text-muted-foreground text-xs">
-                            -
-                        </span>
+                        <span className="text-muted-foreground text-xs">-</span>
                         <Select
                             value={excludeEndHour}
                             onValueChange={(value) =>
@@ -193,9 +187,7 @@ function UserActivityOverlapSection({
                     {bestOverlapTime ? (
                         <div className="text-sm">
                             <span className="text-muted-foreground">
-                                {t(
-                                    'dialog.user.activity.overlap.peak_overlap'
-                                )}
+                                {t('dialog.user.activity.overlap.peak_overlap')}
                             </span>
                             <span className="ml-1 font-medium">
                                 {bestOverlapTime}
@@ -246,9 +238,7 @@ function UserActivityTopWorldsSection({
             <div className="mb-2 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">
-                        {t(
-                            'dialog.user.activity.most_visited_worlds.header'
-                        )}
+                        {t('dialog.user.activity.most_visited_worlds.header')}
                     </span>
                     {topWorldsLoadingVisible ? (
                         <Spinner className="size-3.5" />
@@ -316,9 +306,7 @@ function UserActivityTopWorldsSection({
                 <div className="text-muted-foreground flex items-center gap-2 py-2 text-sm">
                     <Spinner className="size-4" />
                     <span>
-                        {t(
-                            'dialog.user.activity.most_visited_worlds.loading'
-                        )}
+                        {t('dialog.user.activity.most_visited_worlds.loading')}
                     </span>
                 </div>
             ) : topWorlds.length === 0 && !loading && !topWorldsLoading ? (
@@ -326,7 +314,11 @@ function UserActivityTopWorldsSection({
                     {t('dialog.user.activity.no_data_in_period')}
                 </div>
             ) : (
-                <TopWorldRows worlds={topWorlds} sortBy={topWorldsSortBy} t={t} />
+                <TopWorldRows
+                    worlds={topWorlds}
+                    sortBy={topWorldsSortBy}
+                    t={t}
+                />
             )}
         </div>
     );
@@ -1001,22 +993,30 @@ export function UserActivityPanel({ profile, isCurrentUser, active = false }) {
         >
             <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-full"
-                        disabled={loading}
-                        aria-label={"Refresh activity data"}
-                        title={t('dialog.user.activity.refresh_hint')}
-                        onClick={() => void refreshData({ forceRefresh: true })}
-                    >
-                        {loading ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCwIcon data-icon="inline-start" />
-                        )}
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                className="rounded-full"
+                                disabled={loading}
+                                aria-label={'Refresh activity data'}
+                                onClick={() =>
+                                    void refreshData({ forceRefresh: true })
+                                }
+                            >
+                                {loading ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <RefreshCwIcon data-icon="inline-start" />
+                                )}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {t('dialog.user.activity.refresh_hint')}
+                        </TooltipContent>
+                    </Tooltip>
                     {filteredEventCount > 0 ? (
                         <span className="text-accent-foreground ml-1 text-sm">
                             {t('dialog.user.activity.total_events', {

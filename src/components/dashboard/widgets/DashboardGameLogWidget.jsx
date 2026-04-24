@@ -8,8 +8,8 @@ import {
     WaypointsIcon
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-
 import { useTranslation } from 'react-i18next';
+
 import { Location } from '@/components/Location.jsx';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -33,6 +33,7 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
 import { DashboardWidgetHeader } from './DashboardWidgetHeader.jsx';
@@ -71,7 +72,7 @@ function GameLogWidgetUserName({ row, className = '' }) {
             type="button"
             variant="ghost"
             className={cn(
-                'h-auto min-w-0 cursor-pointer justify-start p-0 text-left font-normal hover:text-primary',
+                'hover:text-primary h-auto min-w-0 cursor-pointer justify-start p-0 text-left font-normal',
                 className
             )}
             onClick={() => openGameLogWidgetUser(row)}
@@ -158,35 +159,41 @@ function GameLogEntryContent({ row, showDetail }) {
                 row?.videoId !== 'PopcornPalace'
             );
             return (
-                <div
-                    className="flex min-w-0 items-center"
-                    title={
-                        row?.videoId
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="flex min-w-0 items-center">
+                            <PlayIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
+                            {row?.videoId ? (
+                                <span className="text-muted-foreground mr-1 shrink-0">
+                                    {row.videoId}:
+                                </span>
+                            ) : null}
+                            {canOpenVideo ? (
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    className="text-muted-foreground h-auto min-w-0 justify-start p-0 text-left font-normal"
+                                    onClick={() =>
+                                        void openExternalLink(row.videoUrl)
+                                    }
+                                >
+                                    <span className="truncate">
+                                        {videoLabel}
+                                    </span>
+                                </Button>
+                            ) : (
+                                <span className="text-muted-foreground min-w-0 truncate">
+                                    {videoLabel}
+                                </span>
+                            )}
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {row?.videoId
                             ? `${row.videoId}: ${videoLabel}`
-                            : videoLabel
-                    }
-                >
-                    <PlayIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
-                    {row?.videoId ? (
-                        <span className="text-muted-foreground mr-1 shrink-0">
-                            {row.videoId}:
-                        </span>
-                    ) : null}
-                    {canOpenVideo ? (
-                        <Button
-                            type="button"
-                            variant="link"
-                            className="text-muted-foreground h-auto min-w-0 justify-start p-0 text-left font-normal"
-                            onClick={() => void openExternalLink(row.videoUrl)}
-                        >
-                            <span className="truncate">{videoLabel}</span>
-                        </Button>
-                    ) : (
-                        <span className="text-muted-foreground min-w-0 truncate">
-                            {videoLabel}
-                        </span>
-                    )}
-                </div>
+                            : videoLabel}
+                    </TooltipContent>
+                </Tooltip>
             );
         }
         default:
@@ -303,7 +310,7 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={"Widget settings"}
+                    aria-label={'Widget settings'}
                 >
                     <SettingsIcon data-icon="inline-start" />
                 </Button>
@@ -367,7 +374,9 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <DashboardWidgetEmptyState
                 title={t('view.dashboard.generated.game_log_unavailable')}
-                description={t('view.dashboard.generated.sign_in_before_the_dashboard_can_query_game_log_rows')}
+                description={t(
+                    'view.dashboard.generated.sign_in_before_the_dashboard_can_query_game_log_rows'
+                )}
             />
         );
     }
@@ -397,7 +406,9 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
         return renderShell(
             <DashboardWidgetEmptyState
                 title={t('view.dashboard.generated.no_game_log_rows')}
-                description={t('view.dashboard.generated.the_current_filter_set_did_not_return_any_recent_game_log_ac')}
+                description={t(
+                    'view.dashboard.generated.the_current_filter_set_did_not_return_any_recent_game_log_ac'
+                )}
             />
         );
     }
@@ -405,13 +416,18 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
     return renderShell(
         <>
             <div className="text-muted-foreground flex flex-wrap gap-2 px-3 pt-3 text-xs">
-                <span>{annotatedRows.length} {t('view.dashboard.generated.recent_rows')}</span>
+                <span>
+                    {annotatedRows.length}{' '}
+                    {t('view.dashboard.generated.recent_rows')}
+                </span>
                 <span>
                     {Array.isArray(config.filters) && config.filters.length
                         ? `${config.filters.length} type filters`
                         : 'All game-log types'}
                 </span>
-                {showDetail ? <span>{t('view.dashboard.generated.detail_expanded')}</span> : null}
+                {showDetail ? (
+                    <span>{t('view.dashboard.generated.detail_expanded')}</span>
+                ) : null}
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto">
@@ -422,14 +438,20 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                                 <TableRow
                                     key={`${row.type || 'gamelog'}-${row.created_at || index}-${index}`}
                                 >
-                                    <TableCell
-                                        className="text-muted-foreground w-24 align-top text-xs tabular-nums"
-                                        title={formatWidgetExactTime(
-                                            row.created_at
-                                        )}
-                                    >
-                                        {formatWidgetTime(row.created_at)}
-                                    </TableCell>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <TableCell className="text-muted-foreground w-24 align-top text-xs tabular-nums">
+                                                {formatWidgetTime(
+                                                    row.created_at
+                                                )}
+                                            </TableCell>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {formatWidgetExactTime(
+                                                row.created_at
+                                            )}
+                                        </TooltipContent>
+                                    </Tooltip>
                                     <TableCell className="w-24 align-top">
                                         <Badge
                                             variant="outline"
@@ -452,7 +474,9 @@ export function DashboardGameLogWidget({ config = {}, configUpdater = null }) {
                                                     className="shrink-0 gap-1 px-1.5"
                                                 >
                                                     <HeartIcon className="size-3 fill-current" />
-                                                    {t('view.dashboard.generated.favorite')}
+                                                    {t(
+                                                        'view.dashboard.generated.favorite'
+                                                    )}
                                                 </Badge>
                                             ) : null}
                                         </div>

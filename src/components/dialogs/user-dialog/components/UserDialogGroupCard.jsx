@@ -25,6 +25,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     groupIdForRow,
@@ -169,23 +170,27 @@ export function UserGroupCard({
             </Button>
             {editable ? (
                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            variant="ghost"
-                            className="ml-1 shrink-0"
-                            disabled={busy}
-                            title={t(
-                                'dialog.user.generated.manage_group_membership'
-                            )}
-                            aria-label={t(
-                                'dialog.user.generated.manage_group_membership'
-                            )}
-                        >
-                            <SettingsIcon data-icon="inline-start" />
-                        </Button>
-                    </DropdownMenuTrigger>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    className="ml-1 shrink-0"
+                                    disabled={busy}
+                                    aria-label={t(
+                                        'dialog.user.generated.manage_group_membership'
+                                    )}
+                                >
+                                    <SettingsIcon data-icon="inline-start" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {t('dialog.user.generated.manage_group_membership')}
+                        </TooltipContent>
+                    </Tooltip>
                     <DropdownMenuContent align="end">
                         {onMove ? (
                             <>

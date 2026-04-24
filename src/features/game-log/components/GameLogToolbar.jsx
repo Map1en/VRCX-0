@@ -21,6 +21,7 @@ import {
 } from '@/ui/shadcn/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS } from '../gameLogDateRange.js';
 import {
@@ -34,26 +35,34 @@ function GameLogViewModeToggle({ viewMode, onViewModeChange, t }) {
 
     return (
         <div className="flex shrink-0 rounded-md border p-0.5">
-            <Button
-                type="button"
-                size="icon"
-                variant={viewMode === 'sessions' ? 'default' : 'ghost'}
-                title={sessionsLabel}
-                aria-label={sessionsLabel}
-                onClick={() => onViewModeChange('sessions')}
-            >
-                <LogsIcon data-icon="inline-start" />
-            </Button>
-            <Button
-                type="button"
-                size="icon"
-                variant={viewMode === 'table' ? 'default' : 'ghost'}
-                title={tableLabel}
-                aria-label={tableLabel}
-                onClick={() => onViewModeChange('table')}
-            >
-                <Table2Icon data-icon="inline-start" />
-            </Button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        type="button"
+                        size="icon"
+                        variant={viewMode === 'sessions' ? 'default' : 'ghost'}
+                        aria-label={sessionsLabel}
+                        onClick={() => onViewModeChange('sessions')}
+                    >
+                        <LogsIcon data-icon="inline-start" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>{sessionsLabel}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        type="button"
+                        size="icon"
+                        variant={viewMode === 'table' ? 'default' : 'ghost'}
+                        aria-label={tableLabel}
+                        onClick={() => onViewModeChange('table')}
+                    >
+                        <Table2Icon data-icon="inline-start" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>{tableLabel}</TooltipContent>
+            </Tooltip>
         </div>
     );
 }
@@ -62,16 +71,20 @@ function GameLogFavoritesToggle({ favoritesOnly, onToggle, t }) {
     const label = t('view.game_log.generated.favorites_only');
 
     return (
-        <Button
-            type="button"
-            variant={favoritesOnly ? 'default' : 'outline'}
-            size="icon"
-            title={label}
-            aria-label={label}
-            onClick={onToggle}
-        >
-            <StarIcon data-icon="inline-start" />
-        </Button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant={favoritesOnly ? 'default' : 'outline'}
+                    size="icon"
+                    aria-label={label}
+                    onClick={onToggle}
+                >
+                    <StarIcon data-icon="inline-start" />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
     );
 }
 
@@ -93,30 +106,34 @@ function GameLogSessionDateFilter({
 
     return (
         <Popover open={open} onOpenChange={onOpenChange}>
-            <PopoverTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                        'h-8 shrink-0 gap-1.5',
-                        (sessionDateFrom || sessionDateTo) &&
-                            'bg-accent text-accent-foreground'
-                    )}
-                    title={label}
-                    aria-label={label}
-                >
-                    <CalendarRangeIcon data-icon="inline-start" />
-                    {sessionDateFrom || sessionDateTo ? (
-                        <Badge
-                            variant="secondary"
-                            className="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs"
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                                'h-8 shrink-0 gap-1.5',
+                                (sessionDateFrom || sessionDateTo) &&
+                                    'bg-accent text-accent-foreground'
+                            )}
+                            aria-label={label}
                         >
-                            1
-                        </Badge>
-                    ) : null}
-                </Button>
-            </PopoverTrigger>
+                            <CalendarRangeIcon data-icon="inline-start" />
+                            {sessionDateFrom || sessionDateTo ? (
+                                <Badge
+                                    variant="secondary"
+                                    className="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs"
+                                >
+                                    1
+                                </Badge>
+                            ) : null}
+                        </Button>
+                    </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent>{label}</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-auto" align="start">
                 <Calendar
                     mode="range"
@@ -157,13 +174,7 @@ function GameLogSessionDateFilter({
     );
 }
 
-function GameLogSearchInput({
-    value,
-    onChange,
-    onCommit,
-    onClear,
-    t
-}) {
+function GameLogSearchInput({ value, onChange, onCommit, onClear, t }) {
     return (
         <InputGroup className="ml-auto w-60 shrink-0">
             <InputGroupAddon>
@@ -207,21 +218,25 @@ function GameLogToolbarControls({
 }) {
     return (
         <div className="flex shrink-0 items-center gap-2">
-            <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                title={t('common.actions.refresh')}
-                aria-label={t('common.actions.refresh')}
-                disabled={!canRefresh || loadStatus === 'running'}
-                onClick={onRefresh}
-            >
-                {loadStatus === 'running' ? (
-                    <Spinner data-icon="inline-start" />
-                ) : (
-                    <RefreshCwIcon data-icon="inline-start" />
-                )}
-            </Button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label={t('common.actions.refresh')}
+                        disabled={!canRefresh || loadStatus === 'running'}
+                        onClick={onRefresh}
+                    >
+                        {loadStatus === 'running' ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <RefreshCwIcon data-icon="inline-start" />
+                        )}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t('common.actions.refresh')}</TooltipContent>
+            </Tooltip>
             {showColumnVisibilityMenu ? (
                 <TableColumnVisibilityMenu table={table} />
             ) : null}

@@ -1,8 +1,4 @@
-import {
-    ExternalLinkIcon,
-    IdCardIcon,
-    UserIcon
-} from 'lucide-react';
+import { ExternalLinkIcon, IdCardIcon, UserIcon } from 'lucide-react';
 
 import { timeToText } from '@/lib/dateTime.js';
 import { getNameColour, openExternalLink } from '@/lib/entityMedia.js';
@@ -85,74 +81,120 @@ function PlayerIconCell({ row, t }) {
     return (
         <div className="flex items-center justify-center gap-1">
             {row.original.isMaster ? (
-                <span title={t('view.player_list.generated.instance_master')}>
-                    {PLAYER_ICON_GLYPHS.master}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span>{PLAYER_ICON_GLYPHS.master}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.generated.instance_master')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
             {row.original.isModerator ? (
-                <span title={t('view.player_list.generated.moderator')}>
-                    {PLAYER_ICON_GLYPHS.moderator}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span>{PLAYER_ICON_GLYPHS.moderator}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.generated.moderator')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
             {row.original.isFavorite ? (
-                <span title={t('view.player_list.generated.favorite')}>
-                    {PLAYER_ICON_GLYPHS.favorite}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span>{PLAYER_ICON_GLYPHS.favorite}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.generated.favorite')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
             {!row.original.isFavorite && row.original.isFriend ? (
-                <span title={t('side_panel.notification_center.tab_friend')}>
-                    {PLAYER_ICON_GLYPHS.friend}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span>{PLAYER_ICON_GLYPHS.friend}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('side_panel.notification_center.tab_friend')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
             {row.original.isBlocked ? (
-                <span
-                    className="text-destructive"
-                    title={t('view.player_list.generated.blocked')}
-                >
-                    {PLAYER_ICON_GLYPHS.blocked}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="text-destructive">
+                            {PLAYER_ICON_GLYPHS.blocked}
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.generated.blocked')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
             {row.original.isMuted ? (
-                <span
-                    className="text-muted-foreground"
-                    title={t('view.player_list.generated.muted')}
-                >
-                    {PLAYER_ICON_GLYPHS.muted}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="text-muted-foreground">
+                            {PLAYER_ICON_GLYPHS.muted}
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.generated.muted')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
             {row.original.isAvatarInteractionDisabled ? (
-                <span
-                    className="text-muted-foreground"
-                    title={t(
-                        'view.player_list.generated.avatar_interaction_disabled'
-                    )}
-                >
-                    {PLAYER_ICON_GLYPHS.avatarInteractionDisabled}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="text-muted-foreground">
+                            {PLAYER_ICON_GLYPHS.avatarInteractionDisabled}
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t(
+                            'view.player_list.generated.avatar_interaction_disabled'
+                        )}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
             {row.original.isChatBoxMuted ? (
-                <span
-                    className="text-muted-foreground"
-                    title={t('view.player_list.generated.chatbox_muted')}
-                >
-                    {PLAYER_ICON_GLYPHS.chatboxMuted}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="text-muted-foreground">
+                            {PLAYER_ICON_GLYPHS.chatboxMuted}
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.generated.chatbox_muted')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
             {row.original.timeoutTime ? (
-                <span
-                    className="text-destructive"
-                    title={t('view.player_list.generated.timeout')}
-                >
-                    {PLAYER_ICON_GLYPHS.timeout}
-                    {row.original.timeoutTime}
-                    {t('common.time_units.s')}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="text-destructive">
+                            {PLAYER_ICON_GLYPHS.timeout}
+                            {row.original.timeoutTime}
+                            {t('common.time_units.s')}
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.generated.timeout')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
             {row.original.ageVerified ? (
-                <IdCardIcon
-                    className="x-tag-age-verification size-4"
-                    title={t('view.player_list.generated.age_verified')}
-                />
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span>
+                            <IdCardIcon className="x-tag-age-verification size-4" />
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.generated.age_verified')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
         </div>
     );
@@ -212,28 +254,31 @@ function BioLinksCell({ row }) {
                       const faviconUrl = getFaviconUrl(link);
 
                       return (
-                          <Button
-                              key={`${link}:${index}`}
-                              type="button"
-                              variant="ghost"
-                              size="icon-xs"
-                              aria-label={`Open Link: ${link}`}
-                              title={link}
-                              onClick={(event) => {
-                                  event.stopPropagation();
-                                  void openExternalLink(link);
-                              }}
-                          >
-                              {faviconUrl ? (
-                                  <img
-                                      src={faviconUrl}
-                                      alt=""
-                                      className="size-4"
-                                  />
-                              ) : (
-                                  <ExternalLinkIcon data-icon="inline-start" />
-                              )}
-                          </Button>
+                          <Tooltip key={`${link}:${index}`}>
+                              <TooltipTrigger asChild>
+                                  <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon-xs"
+                                      aria-label={`Open Link: ${link}`}
+                                      onClick={(event) => {
+                                          event.stopPropagation();
+                                          void openExternalLink(link);
+                                      }}
+                                  >
+                                      {faviconUrl ? (
+                                          <img
+                                              src={faviconUrl}
+                                              alt=""
+                                              className="size-4"
+                                          />
+                                      ) : (
+                                          <ExternalLinkIcon data-icon="inline-start" />
+                                      )}
+                                  </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{link}</TooltipContent>
+                          </Tooltip>
                       );
                   })
                 : null}
@@ -260,7 +305,10 @@ export function buildPlayerListColumns({ isDarkMode, randomUserColours, t }) {
             meta: { label: t('table.playerList.timer') },
             accessorFn: (row) => row.timerMs,
             header: ({ column }) => (
-                <SortButton column={column} label={t('table.playerList.timer')} />
+                <SortButton
+                    column={column}
+                    label={t('table.playerList.timer')}
+                />
             ),
             cell: ({ row }) => (
                 <span className="text-sm">
@@ -301,7 +349,10 @@ export function buildPlayerListColumns({ isDarkMode, randomUserColours, t }) {
             meta: { label: t('table.playerList.rank') },
             accessorFn: (row) => row.trustSortNum,
             header: ({ column }) => (
-                <SortButton column={column} label={t('table.playerList.rank')} />
+                <SortButton
+                    column={column}
+                    label={t('table.playerList.rank')}
+                />
             ),
             cell: ({ row }) => (
                 <span className={cn('text-sm', row.original.trustClass || '')}>
@@ -326,7 +377,10 @@ export function buildPlayerListColumns({ isDarkMode, randomUserColours, t }) {
             meta: { label: t('table.playerList.icon') },
             accessorFn: (row) => row.iconWeight,
             header: ({ column }) => (
-                <SortButton column={column} label={t('table.playerList.icon')} />
+                <SortButton
+                    column={column}
+                    label={t('table.playerList.icon')}
+                />
             ),
             cell: ({ row }) => <PlayerIconCell row={row} t={t} />
         },

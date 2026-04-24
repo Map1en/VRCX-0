@@ -1,15 +1,17 @@
 import { UsersIcon } from 'lucide-react';
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+
 import { EntityDialogHeader } from '../../EntityDialogScaffold.jsx';
+import {
+    PreviousDisplayNamesBadge,
+    UserTitleLanguages
+} from '../UserDialogViewParts.jsx';
 import { UserDialogHeaderActions } from './UserDialogHeaderActions.jsx';
 import {
     UserDialogHeaderBadges,
     UserDialogHeaderMediaBadges
 } from './UserDialogHeaderBadges.jsx';
-import {
-    PreviousDisplayNamesBadge,
-    UserTitleLanguages
-} from '../UserDialogViewParts.jsx';
 
 export function UserDialogHeaderSection({
     actionStatus,
@@ -92,10 +94,14 @@ export function UserDialogHeaderSection({
             }
             titlePrefix={
                 statusIndicatorClassName ? (
-                    <i
-                        className={statusIndicatorClassName}
-                        title={statusStateText || undefined}
-                    />
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <i className={statusIndicatorClassName} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {statusStateText || undefined}
+                        </TooltipContent>
+                    </Tooltip>
                 ) : null
             }
             title={profileTitle}
@@ -103,12 +109,16 @@ export function UserDialogHeaderSection({
             titleMeta={
                 <>
                     {pronounsText ? (
-                        <span
-                            className="text-muted-foreground shrink-0 font-mono text-xs font-normal"
-                            title={t('dialog.user.pronouns')}
-                        >
-                            {pronounsText}
-                        </span>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span className="text-muted-foreground shrink-0 font-mono text-xs font-normal">
+                                    {pronounsText}
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('dialog.user.pronouns')}
+                            </TooltipContent>
+                        </Tooltip>
                     ) : null}
                     <UserTitleLanguages languages={profileLanguages} />
                     <PreviousDisplayNamesBadge names={previousDisplayNames} />

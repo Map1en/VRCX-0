@@ -1,12 +1,16 @@
 import { StarIcon } from 'lucide-react';
 
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
-import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold.jsx';
+import {
+    PageToolbar,
+    PageToolbarRow
+} from '@/components/layout/PageScaffold.jsx';
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { FriendListSearchFilterDropdown } from './FriendListViewParts.jsx';
 
@@ -38,23 +42,31 @@ export function FriendListToolbar({
         <PageToolbar>
             <PageToolbarRow className="justify-between">
                 <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                        type="button"
-                        variant={favoritesOnly ? 'default' : 'outline'}
-                        size="icon"
-                        className="size-9"
-                        disabled={!isFavoritesLoaded}
-                        title={t('view.friend_list.favorites_only_tooltip')}
-                        aria-label={t(
-                            'view.friend_list.favorites_only_tooltip'
-                        )}
-                        onClick={onToggleFavoritesOnly}
-                    >
-                        <StarIcon
-                            data-icon="inline-start"
-                            className={cn(favoritesOnly ? 'fill-current' : '')}
-                        />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant={favoritesOnly ? 'default' : 'outline'}
+                                size="icon"
+                                className="size-9"
+                                disabled={!isFavoritesLoaded}
+                                aria-label={t(
+                                    'view.friend_list.favorites_only_tooltip'
+                                )}
+                                onClick={onToggleFavoritesOnly}
+                            >
+                                <StarIcon
+                                    data-icon="inline-start"
+                                    className={cn(
+                                        favoritesOnly ? 'fill-current' : ''
+                                    )}
+                                />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {t('view.friend_list.favorites_only_tooltip')}
+                        </TooltipContent>
+                    </Tooltip>
                     <FriendListSearchFilterDropdown
                         value={activeSearchFilterIds}
                         onChange={onSearchFilterChange}

@@ -4,6 +4,7 @@ import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVi
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { NotificationTypeFilterDropdown } from './NotificationViewParts.jsx';
 
@@ -34,22 +35,26 @@ export function NotificationPageToolbar({
                 placeholder={t('common.actions.search')}
                 className="h-9 min-w-36 flex-1 sm:max-w-52"
             />
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={refreshLabel}
-                title={refreshLabel}
-                className="rounded-full"
-                disabled={loadStatus === 'running'}
-                onClick={onRefresh}
-            >
-                {loadStatus === 'running' ? (
-                    <Spinner data-icon="inline-start" />
-                ) : (
-                    <RefreshCcwIcon data-icon="inline-start" />
-                )}
-            </Button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={refreshLabel}
+                        className="rounded-full"
+                        disabled={loadStatus === 'running'}
+                        onClick={onRefresh}
+                    >
+                        {loadStatus === 'running' ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <RefreshCcwIcon data-icon="inline-start" />
+                        )}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>{refreshLabel}</TooltipContent>
+            </Tooltip>
             <TableColumnVisibilityMenu table={table} />
             {activeTypes.length ? (
                 <Button

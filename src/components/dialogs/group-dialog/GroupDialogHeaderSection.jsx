@@ -17,11 +17,12 @@ import {
     UsersIcon,
     XIcon
 } from 'lucide-react';
-
 import { useTranslation } from 'react-i18next';
+
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     EntityActionDropdown,
@@ -84,7 +85,9 @@ export function GroupDialogHeaderSection({ state, handlers }) {
             imageUrl={iconUrl}
             imageAlt={group.name || 'Group'}
             imageClassName="size-32"
-            imagePlaceholder={<UsersIcon className="text-muted-foreground size-8" />}
+            imagePlaceholder={
+                <UsersIcon className="text-muted-foreground size-8" />
+            }
             onImageClick={iconUrl ? onPreviewIcon : null}
             title={groupTitle}
             onTitleClick={group.name ? onCopyGroupName : undefined}
@@ -99,19 +102,25 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                 group.ownerId || detail ? (
                     <div className="flex flex-col items-start gap-1">
                         {group.ownerId ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-xs font-normal"
-                                title={t(
-                                    'dialog.group.generated.open_group_owner_profile'
-                                )}
-                                onClick={onOpenOwner}
-                            >
-                                <UserIcon data-icon="inline-start" />
-                                {t('dialog.group.generated.owner')}{' '}
-                                {ownerLinkLabel}
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-xs font-normal"
+                                        onClick={onOpenOwner}
+                                    >
+                                        <UserIcon data-icon="inline-start" />
+                                        {t('dialog.group.generated.owner')}{' '}
+                                        {ownerLinkLabel}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {t(
+                                        'dialog.group.generated.open_group_owner_profile'
+                                    )}
+                                </TooltipContent>
+                            </Tooltip>
                         ) : null}
                         {detail ? (
                             <span>
@@ -145,7 +154,8 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                     ) : null}
                     <Badge variant="outline">
                         <UsersIcon data-icon="inline-start" />
-                        {group.memberCount} {t('dialog.group.generated.members')}
+                        {group.memberCount}{' '}
+                        {t('dialog.group.generated.members')}
                     </Badge>
                     {group.onlineMemberCount > 0 ? (
                         <Badge variant="outline">
@@ -202,7 +212,9 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                     icon={ExternalLinkIcon}
                                     onSelect={onOpenGroupPage}
                                 >
-                                    {t('dialog.group.generated.open_group_page')}
+                                    {t(
+                                        'dialog.group.generated.open_group_page'
+                                    )}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={CopyIcon}
@@ -261,7 +273,9 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                         disabled={
                                             remoteStatus.posts === 'running'
                                         }
-                                        onSelect={() => void onCreateGroupPost()}
+                                        onSelect={() =>
+                                            void onCreateGroupPost()
+                                        }
                                     >
                                         {t(
                                             'dialog.group.generated.create_post'
@@ -345,7 +359,9 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                             <>
                                 <EntityActionSeparator />
                                 <EntityActionItem
-                                    icon={isBlocked ? ShieldIcon : ShieldOffIcon}
+                                    icon={
+                                        isBlocked ? ShieldIcon : ShieldOffIcon
+                                    }
                                     destructive={isBlocked}
                                     disabled={actionStatus === 'block'}
                                     onSelect={onBlockToggle}

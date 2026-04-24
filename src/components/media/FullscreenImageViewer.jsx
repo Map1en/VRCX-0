@@ -17,15 +17,16 @@ import { Button } from '@/ui/shadcn/button';
 import { Dialog, DialogContent, DialogTitle } from '@/ui/shadcn/dialog';
 import { Separator } from '@/ui/shadcn/separator';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import {
-    deriveImageFileName,
-    toFullSizeImageUrl
-} from './fullscreenImageViewerUtils.js';
 import {
     fetchImageBlob,
     getDownloadImageBase64
 } from './fullscreenImageDownload.js';
+import {
+    deriveImageFileName,
+    toFullSizeImageUrl
+} from './fullscreenImageViewerUtils.js';
 import { useFullscreenImageTransform } from './useFullscreenImageTransform.js';
 
 export function FullscreenImageViewer({
@@ -200,104 +201,154 @@ export function FullscreenImageViewer({
                         className="bg-background/80 absolute top-3 right-3 left-3 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center justify-end gap-2 rounded-lg border px-2 py-1 shadow-sm backdrop-blur sm:left-auto sm:max-w-none"
                         onClick={(event) => event.stopPropagation()}
                     >
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            disabled={copying || (!url && !sourcePath)}
-                            aria-label={'Copy image'}
-                            title={t('message.image.copy')}
-                            onClick={() => void copyImage()}
-                        >
-                            {copying ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : (
-                                <CopyIcon data-icon="inline-start" />
-                            )}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            disabled={downloading || (!url && !sourcePath)}
-                            aria-label={'Download image'}
-                            title={t('message.image.download')}
-                            onClick={() => void downloadImage()}
-                        >
-                            {downloading ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : (
-                                <DownloadIcon data-icon="inline-start" />
-                            )}
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={copying || (!url && !sourcePath)}
+                                    aria-label={'Copy image'}
+                                    onClick={() => void copyImage()}
+                                >
+                                    {copying ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : (
+                                        <CopyIcon data-icon="inline-start" />
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('message.image.copy')}
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={
+                                        downloading || (!url && !sourcePath)
+                                    }
+                                    aria-label={'Download image'}
+                                    onClick={() => void downloadImage()}
+                                >
+                                    {downloading ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : (
+                                        <DownloadIcon data-icon="inline-start" />
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('message.image.download')}
+                            </TooltipContent>
+                        </Tooltip>
                         <Separator
                             orientation="vertical"
                             className="mx-1 h-5 data-vertical:self-center"
                         />
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={'Zoom out'}
-                            title={t('message.image.zoom_out')}
-                            onClick={zoomOut}
-                        >
-                            <ZoomOutIcon data-icon="inline-start" />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={'Zoom in'}
-                            title={t('message.image.zoom_in')}
-                            onClick={zoomIn}
-                        >
-                            <ZoomInIcon data-icon="inline-start" />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={'Rotate clockwise'}
-                            title={t('message.image.rotate_clockwise')}
-                            onClick={rotateClockwise}
-                        >
-                            <RotateCwIcon data-icon="inline-start" />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={'Rotate counterclockwise'}
-                            title={t('message.image.rotate_counterclockwise')}
-                            onClick={rotateCounterClockwise}
-                        >
-                            <RotateCcwIcon data-icon="inline-start" />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={'Reset'}
-                            title={t('message.image.reset')}
-                            onClick={resetTransform}
-                        >
-                            <RefreshCcwIcon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={'Zoom out'}
+                                    onClick={zoomOut}
+                                >
+                                    <ZoomOutIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('message.image.zoom_out')}
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={'Zoom in'}
+                                    onClick={zoomIn}
+                                >
+                                    <ZoomInIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('message.image.zoom_in')}
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={'Rotate clockwise'}
+                                    onClick={rotateClockwise}
+                                >
+                                    <RotateCwIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('message.image.rotate_clockwise')}
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={'Rotate counterclockwise'}
+                                    onClick={rotateCounterClockwise}
+                                >
+                                    <RotateCcwIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('message.image.rotate_counterclockwise')}
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={'Reset'}
+                                    onClick={resetTransform}
+                                >
+                                    <RefreshCcwIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('message.image.reset')}
+                            </TooltipContent>
+                        </Tooltip>
                         <Separator
                             orientation="vertical"
                             className="mx-1 h-5 data-vertical:self-center"
                         />
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={'Close'}
-                            title={t('message.image.close')}
-                            onClick={onClose}
-                        >
-                            <XIcon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={'Close'}
+                                    onClick={onClose}
+                                >
+                                    <XIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('message.image.close')}
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
 
                     {fullSizeUrl ? (

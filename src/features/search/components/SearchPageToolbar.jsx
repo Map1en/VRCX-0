@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 export function SearchPageToolbar({
     t,
@@ -59,20 +60,26 @@ export function SearchPageToolbar({
                         </Button>
                     ) : null}
                 </div>
-                <Button
-                    type="button"
-                    className="ml-2"
-                    size="icon"
-                    variant="ghost"
-                    title={t('view.search.clear_results_tooltip')}
-                    aria-label={'Clear Search Results'}
-                    onClick={onClearSearch}
-                >
-                    <Trash2Icon data-icon="inline-start" />
-                    <span className="sr-only">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            type="button"
+                            className="ml-2"
+                            size="icon"
+                            variant="ghost"
+                            aria-label={'Clear Search Results'}
+                            onClick={onClearSearch}
+                        >
+                            <Trash2Icon data-icon="inline-start" />
+                            <span className="sr-only">
+                                {t('view.search.clear_results_tooltip')}
+                            </span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
                         {t('view.search.clear_results_tooltip')}
-                    </span>
-                </Button>
+                    </TooltipContent>
+                </Tooltip>
             </div>
         </div>
     );

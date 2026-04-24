@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     canDeclineNotification,
@@ -80,17 +81,21 @@ function NotificationRow({
 
     return (
         <div className="bg-card text-card-foreground mb-1.5 flex gap-2 rounded-md border p-2">
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-9 shrink-0 p-0"
-                aria-label={senderName}
-                title={senderName}
-                onClick={() => openSender(notification, t)}
-            >
-                <NotificationAvatar notification={notification} />
-            </Button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 shrink-0 p-0"
+                        aria-label={senderName}
+                        onClick={() => openSender(notification, t)}
+                    >
+                        <NotificationAvatar notification={notification} />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>{senderName}</TooltipContent>
+            </Tooltip>
             <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 items-center gap-2">
                     <Button
@@ -99,9 +104,7 @@ function NotificationRow({
                         className="h-auto min-w-0 flex-1 justify-start p-0 text-left text-sm font-medium"
                         onClick={() => openSender(notification, t)}
                     >
-                        <span className="truncate">
-                            {senderName}
-                        </span>
+                        <span className="truncate">{senderName}</span>
                     </Button>
                     <Badge variant="secondary" className="shrink-0 text-xs">
                         {notification?.type || 'unknown'}
@@ -130,160 +133,229 @@ function NotificationRow({
                 <div className="flex items-center gap-1">
                     {remoteActionsVisible &&
                     notification.type === 'friendRequest' ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t('view.notification.actions.accept')}
-                            title={t('view.notification.actions.accept')}
-                            onClick={() =>
-                                void onAcceptFriendRequest(notification)
-                            }
-                        >
-                            <CheckIcon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        'view.notification.actions.accept'
+                                    )}
+                                    onClick={() =>
+                                        void onAcceptFriendRequest(notification)
+                                    }
+                                >
+                                    <CheckIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('view.notification.actions.accept')}
+                            </TooltipContent>
+                        </Tooltip>
                     ) : null}
                     {remoteActionsVisible &&
                     notification.type === 'requestInvite' &&
                     canInviteFromCurrentLocation ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t('view.notification.actions.invite')}
-                            title={t('view.notification.actions.invite')}
-                            onClick={() =>
-                                void onAcceptRequestInvite(notification)
-                            }
-                        >
-                            <SendIcon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        'view.notification.actions.invite'
+                                    )}
+                                    onClick={() =>
+                                        void onAcceptRequestInvite(notification)
+                                    }
+                                >
+                                    <SendIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('view.notification.actions.invite')}
+                            </TooltipContent>
+                        </Tooltip>
                     ) : null}
                     {remoteActionsVisible && notification.type === 'invite' ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t(
-                                'view.notification.actions.decline_with_message'
-                            )}
-                            title={t(
-                                'view.notification.actions.decline_with_message'
-                            )}
-                            onClick={() =>
-                                void onSendInviteResponseWithMessage(
-                                    notification,
-                                    'response'
-                                )
-                            }
-                        >
-                            <MessageCircleIcon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        'view.notification.actions.decline_with_message'
+                                    )}
+                                    onClick={() =>
+                                        void onSendInviteResponseWithMessage(
+                                            notification,
+                                            'response'
+                                        )
+                                    }
+                                >
+                                    <MessageCircleIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t(
+                                    'view.notification.actions.decline_with_message'
+                                )}
+                            </TooltipContent>
+                        </Tooltip>
                     ) : null}
                     {remoteActionsVisible &&
                     notification.type === 'requestInvite' ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t(
-                                'view.notification.actions.decline_with_message'
-                            )}
-                            title={t(
-                                'view.notification.actions.decline_with_message'
-                            )}
-                            onClick={() =>
-                                void onSendInviteResponseWithMessage(
-                                    notification,
-                                    'requestResponse'
-                                )
-                            }
-                        >
-                            <MessageCircleIcon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        'view.notification.actions.decline_with_message'
+                                    )}
+                                    onClick={() =>
+                                        void onSendInviteResponseWithMessage(
+                                            notification,
+                                            'requestResponse'
+                                        )
+                                    }
+                                >
+                                    <MessageCircleIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t(
+                                    'view.notification.actions.decline_with_message'
+                                )}
+                            </TooltipContent>
+                        </Tooltip>
                     ) : null}
                     {remoteActionsVisible
                         ? responses.map((response) => (
-                              <Button
+                              <Tooltip
                                   key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  aria-label={getResponseLabel(response)}
-                                  title={getResponseLabel(response)}
-                                  onClick={() =>
-                                      void onSendNotificationResponse(
-                                          notification,
-                                          response
-                                      )
-                                  }
                               >
-                                  {response?.type === 'link' ? (
-                                      <ExternalLinkIcon data-icon="inline-start" />
-                                  ) : (
-                                      <CheckIcon data-icon="inline-start" />
-                                  )}
-                              </Button>
+                                  <TooltipTrigger asChild>
+                                      <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon-xs"
+                                          aria-label={getResponseLabel(
+                                              response
+                                          )}
+                                          onClick={() =>
+                                              void onSendNotificationResponse(
+                                                  notification,
+                                                  response
+                                              )
+                                          }
+                                      >
+                                          {response?.type === 'link' ? (
+                                              <ExternalLinkIcon data-icon="inline-start" />
+                                          ) : (
+                                              <CheckIcon data-icon="inline-start" />
+                                          )}
+                                      </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                      {getResponseLabel(response)}
+                                  </TooltipContent>
+                              </Tooltip>
                           ))
                         : null}
                     {remoteActionsVisible &&
                     canDeclineNotification(notification) ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t('view.notification.actions.decline')}
-                            title={t('view.notification.actions.decline')}
-                            onClick={() => void onHideNotification(notification)}
-                        >
-                            <XIcon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        'view.notification.actions.decline'
+                                    )}
+                                    onClick={() =>
+                                        void onHideNotification(notification)
+                                    }
+                                >
+                                    <XIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('view.notification.actions.decline')}
+                            </TooltipContent>
+                        </Tooltip>
                     ) : null}
                     {hasLink ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t(
-                                'view.notification.generated.open_notification_link'
-                            )}
-                            title={t(
-                                'view.notification.generated.open_notification_link'
-                            )}
-                            onClick={() =>
-                                openNotificationLink(notification.link)
-                            }
-                        >
-                            <ExternalLinkIcon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        'view.notification.generated.open_notification_link'
+                                    )}
+                                    onClick={() =>
+                                        openNotificationLink(notification.link)
+                                    }
+                                >
+                                    <ExternalLinkIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t(
+                                    'view.notification.generated.open_notification_link'
+                                )}
+                            </TooltipContent>
+                        </Tooltip>
                     ) : null}
                     {isUnseen ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t('view.notification.generated.mark_seen')}
-                            title={t('view.notification.generated.mark_seen')}
-                            onClick={() => {
-                                void onMarkSeen(notification);
-                            }}
-                        >
-                            <CheckIcon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        'view.notification.generated.mark_seen'
+                                    )}
+                                    onClick={() => {
+                                        void onMarkSeen(notification);
+                                    }}
+                                >
+                                    <CheckIcon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('view.notification.generated.mark_seen')}
+                            </TooltipContent>
+                        </Tooltip>
                     ) : null}
                     {shouldShowDeleteLog(notification) ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t('view.notification.actions.delete_log')}
-                            title={t('view.notification.actions.delete_log')}
-                            onClick={() =>
-                                void onDeleteNotification(notification)
-                            }
-                        >
-                            <Trash2Icon data-icon="inline-start" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        'view.notification.actions.delete_log'
+                                    )}
+                                    onClick={() =>
+                                        void onDeleteNotification(notification)
+                                    }
+                                >
+                                    <Trash2Icon data-icon="inline-start" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('view.notification.actions.delete_log')}
+                            </TooltipContent>
+                        </Tooltip>
                     ) : null}
                 </div>
             </div>

@@ -20,6 +20,7 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     FeedEntryContent,
@@ -364,14 +365,16 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
                     <TableBody>
                         {annotatedRows.map((row) => (
                             <TableRow key={getFeedRowKey(row)}>
-                                <TableCell
-                                    className="text-muted-foreground w-24 align-top text-xs tabular-nums"
-                                    title={formatWidgetExactTime(
-                                        row.created_at
-                                    )}
-                                >
-                                    {formatWidgetTime(row.created_at)}
-                                </TableCell>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <TableCell className="text-muted-foreground w-24 align-top text-xs tabular-nums">
+                                            {formatWidgetTime(row.created_at)}
+                                        </TableCell>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        {formatWidgetExactTime(row.created_at)}
+                                    </TooltipContent>
+                                </Tooltip>
                                 {showType ? (
                                     <TableCell className="text-muted-foreground w-20 align-top text-xs">
                                         {row.type || ''}

@@ -1,7 +1,7 @@
 import { PlusIcon, SaveIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
 import { useTranslation } from 'react-i18next';
+
 import { TAG_COLORS, getTagColor } from '@/shared/constants/tags.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -15,6 +15,7 @@ import {
 } from '@/ui/shadcn/dialog';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 function normalizeTagName(value) {
     return typeof value === 'string'
@@ -118,7 +119,9 @@ export function ManageAvatarTagsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>{t('view.my_avatars.generated.manage_avatar_tags')}</DialogTitle>
+                    <DialogTitle>
+                        {t('view.my_avatars.generated.manage_avatar_tags')}
+                    </DialogTitle>
                     <DialogDescription>{avatarName}</DialogDescription>
                 </DialogHeader>
 
@@ -141,7 +144,9 @@ export function ManageAvatarTagsDialog({
                                             addTag();
                                         }
                                     }}
-                                    placeholder={t('view.my_avatars.generated.tag_name')}
+                                    placeholder={t(
+                                        'view.my_avatars.generated.tag_name'
+                                    )}
                                     disabled={saving}
                                 />
                                 <Button
@@ -202,39 +207,50 @@ export function ManageAvatarTagsDialog({
                                                             .name ===
                                                             color.name);
                                                 return (
-                                                    <Button
-                                                        key={color.name}
-                                                        type="button"
-                                                        size="icon-sm"
-                                                        variant="outline"
-                                                        className={
-                                                            selected
-                                                                ? 'ring-ring size-6 p-0 ring-2 ring-offset-2'
-                                                                : 'size-6 p-0'
-                                                        }
-                                                        style={{
-                                                            backgroundColor:
-                                                                color.bg.replace(
-                                                                    '/ 0.2)',
-                                                                    '/ 1)'
-                                                                )
-                                                        }}
-                                                        aria-label={color.label}
-                                                        aria-pressed={selected}
-                                                        title={color.label}
-                                                        disabled={saving}
-                                                        data-selected={
-                                                            selected
-                                                                ? 'true'
-                                                                : undefined
-                                                        }
-                                                        onClick={() =>
-                                                            setTagColor(
-                                                                entry.tag,
-                                                                color
-                                                            )
-                                                        }
-                                                    />
+                                                    <Tooltip key={color.name}>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                size="icon-sm"
+                                                                variant="outline"
+                                                                className={
+                                                                    selected
+                                                                        ? 'ring-ring size-6 p-0 ring-2 ring-offset-2'
+                                                                        : 'size-6 p-0'
+                                                                }
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        color.bg.replace(
+                                                                            '/ 0.2)',
+                                                                            '/ 1)'
+                                                                        )
+                                                                }}
+                                                                aria-label={
+                                                                    color.label
+                                                                }
+                                                                aria-pressed={
+                                                                    selected
+                                                                }
+                                                                disabled={
+                                                                    saving
+                                                                }
+                                                                data-selected={
+                                                                    selected
+                                                                        ? 'true'
+                                                                        : undefined
+                                                                }
+                                                                onClick={() =>
+                                                                    setTagColor(
+                                                                        entry.tag,
+                                                                        color
+                                                                    )
+                                                                }
+                                                            />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {color.label}
+                                                        </TooltipContent>
+                                                    </Tooltip>
                                                 );
                                             })}
                                         </div>
@@ -243,7 +259,9 @@ export function ManageAvatarTagsDialog({
                             })
                         ) : (
                             <div className="bg-muted/20 text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
-                                {t('view.my_avatars.generated.this_avatar_has_no_local_tags_yet')}
+                                {t(
+                                    'view.my_avatars.generated.this_avatar_has_no_local_tags_yet'
+                                )}
                             </div>
                         )}
                     </div>

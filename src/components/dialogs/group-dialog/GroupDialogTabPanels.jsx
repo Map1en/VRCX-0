@@ -1,6 +1,6 @@
 import { DownloadIcon, ExternalLinkIcon, EyeIcon } from 'lucide-react';
-
 import { useTranslation } from 'react-i18next';
+
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { Badge } from '@/ui/shadcn/badge';
@@ -14,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     EntityDialogTabContent,
@@ -23,8 +24,6 @@ import {
     EntityRawJson
 } from '../EntityDialogScaffold.jsx';
 import { PreviousInstancesPanel } from '../PreviousInstancesTableDialog.jsx';
-import { GroupInstanceRows } from './GroupInstanceRows.jsx';
-import { RowList } from './GroupRowList.jsx';
 import {
     announcementRoleNames,
     announcementTimestamp,
@@ -32,6 +31,8 @@ import {
     announcementUserLabel,
     firstArray
 } from './groupDialogUtils.js';
+import { GroupInstanceRows } from './GroupInstanceRows.jsx';
+import { RowList } from './GroupRowList.jsx';
 
 function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
     const { t } = useTranslation();
@@ -56,13 +57,19 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                     aria-label={`Preview ${announcement.title || 'announcement'} image`}
                     onClick={() =>
                         onPreviewImage(
-                            convertFileUrlToImageUrl(announcement.imageUrl, 1024),
+                            convertFileUrlToImageUrl(
+                                announcement.imageUrl,
+                                1024
+                            ),
                             announcement.title || 'Announcement'
                         )
                     }
                 >
                     <img
-                        src={convertFileUrlToImageUrl(announcement.imageUrl, 128)}
+                        src={convertFileUrlToImageUrl(
+                            announcement.imageUrl,
+                            128
+                        )}
                         alt=""
                         className="size-16 rounded-md object-cover"
                     />
@@ -73,14 +80,17 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
             </pre>
             <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                 {roleNames.length ? (
-                    <Badge
-                        variant="outline"
-                        className="max-w-full"
-                        title={roleNames.join(', ')}
-                    >
-                        <EyeIcon data-icon="inline-start" />
-                        <span className="truncate">{roleNames.join(', ')}</span>
-                    </Badge>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge variant="outline" className="max-w-full">
+                                <EyeIcon data-icon="inline-start" />
+                                <span className="truncate">
+                                    {roleNames.join(', ')}
+                                </span>
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>{roleNames.join(', ')}</TooltipContent>
+                    </Tooltip>
                 ) : null}
                 {announcementUserId(announcement, 'author') ||
                 announcementUserLabel(announcement, 'author') ? (
@@ -101,8 +111,10 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                         >
                             <span>{t('dialog.group.generated.author')}</span>
                             <span className="text-foreground font-medium">
-                                {announcementUserLabel(announcement, 'author') ||
-                                    announcementUserId(announcement, 'author')}
+                                {announcementUserLabel(
+                                    announcement,
+                                    'author'
+                                ) || announcementUserId(announcement, 'author')}
                             </span>
                         </Button>
                     ) : (
@@ -133,8 +145,10 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                         >
                             <span>{t('dialog.group.posts.edited_by')}</span>
                             <span className="text-foreground font-medium">
-                                {announcementUserLabel(announcement, 'editor') ||
-                                    announcementUserId(announcement, 'editor')}
+                                {announcementUserLabel(
+                                    announcement,
+                                    'editor'
+                                ) || announcementUserId(announcement, 'editor')}
                             </span>
                         </Button>
                     ) : (
@@ -221,7 +235,11 @@ export function GroupDialogTabPanels({ state, handlers }) {
     const roles = Array.isArray(group.roles) ? group.roles : [];
 
     return (
-        <EntityDialogTabs value={activeTab} onValueChange={onChangeTab} tabs={tabs}>
+        <EntityDialogTabs
+            value={activeTab}
+            onValueChange={onChangeTab}
+            tabs={tabs}
+        >
             <EntityDialogTabContent value="info">
                 {bannerUrl ? (
                     <Button
@@ -397,7 +415,10 @@ export function GroupDialogTabPanels({ state, handlers }) {
                     className="flex-1"
                 />
             </EntityDialogTabContent>
-            <EntityDialogTabContent value="posts" className="flex flex-col gap-2">
+            <EntityDialogTabContent
+                value="posts"
+                className="flex flex-col gap-2"
+            >
                 <div className="flex items-center gap-2">
                     <div className="text-muted-foreground text-sm">
                         {filteredPosts.length}/{posts.length}{' '}
@@ -430,7 +451,8 @@ export function GroupDialogTabPanels({ state, handlers }) {
             >
                 <div className="flex flex-wrap items-center gap-2">
                     <div className="text-muted-foreground text-sm">
-                        {memberRows.length}/{group.memberCount || members.length}{' '}
+                        {memberRows.length}/
+                        {group.memberCount || members.length}{' '}
                         {t('dialog.group.generated.members')}
                     </div>
                     <Button
@@ -519,9 +541,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         onChange={(event) =>
                             onSearchMembersChange(event.target.value)
                         }
-                        placeholder={t(
-                            'dialog.group.generated.search_members'
-                        )}
+                        placeholder={t('dialog.group.generated.search_members')}
                         className="ml-auto h-8 max-w-64"
                     />
                 </div>

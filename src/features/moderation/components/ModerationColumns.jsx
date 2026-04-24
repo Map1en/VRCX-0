@@ -4,6 +4,7 @@ import { formatDateFilter } from '@/lib/dateTime.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { SortButton } from './ModerationViewParts.jsx';
 
@@ -58,12 +59,16 @@ export function buildModerationColumns({
             cell: ({ row }) => {
                 const createdAt = row.original?.created || '';
                 return (
-                    <span
-                        className="text-sm"
-                        title={formatDateFilter(createdAt, 'long')}
-                    >
-                        {formatDateFilter(createdAt, 'short')}
-                    </span>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="text-sm">
+                                {formatDateFilter(createdAt, 'short')}
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {formatDateFilter(createdAt, 'long')}
+                        </TooltipContent>
+                    </Tooltip>
                 );
             }
         },

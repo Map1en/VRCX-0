@@ -1,13 +1,10 @@
-import {
-    LayoutGridIcon,
-    ListIcon,
-    RefreshCwIcon
-} from 'lucide-react';
+import { LayoutGridIcon, ListIcon, RefreshCwIcon } from 'lucide-react';
 
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     GridSettingsMenu,
@@ -41,26 +38,46 @@ export function MyAvatarsToolbar({
     return (
         <div className="flex flex-wrap items-center gap-2 px-0.5 pt-1.5">
             <div className="flex items-center gap-1">
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant={viewMode === 'grid' ? 'default' : 'outline'}
-                    aria-label={t('view.my_avatars.generated.show_avatar_grid')}
-                    title={t('view.my_avatars.generated.show_avatar_grid')}
-                    onClick={() => onViewModeChange('grid')}
-                >
-                    <LayoutGridIcon data-icon="inline-start" />
-                </Button>
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant={viewMode === 'table' ? 'default' : 'outline'}
-                    aria-label={t('view.my_avatars.generated.show_avatar_table')}
-                    title={t('view.my_avatars.generated.show_avatar_table')}
-                    onClick={() => onViewModeChange('table')}
-                >
-                    <ListIcon data-icon="inline-start" />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant={
+                                viewMode === 'grid' ? 'default' : 'outline'
+                            }
+                            aria-label={t(
+                                'view.my_avatars.generated.show_avatar_grid'
+                            )}
+                            onClick={() => onViewModeChange('grid')}
+                        >
+                            <LayoutGridIcon data-icon="inline-start" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.my_avatars.generated.show_avatar_grid')}
+                    </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant={
+                                viewMode === 'table' ? 'default' : 'outline'
+                            }
+                            aria-label={t(
+                                'view.my_avatars.generated.show_avatar_table'
+                            )}
+                            onClick={() => onViewModeChange('table')}
+                        >
+                            <ListIcon data-icon="inline-start" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.my_avatars.generated.show_avatar_table')}
+                    </TooltipContent>
+                </Tooltip>
             </div>
 
             <MyAvatarFilterPopover
@@ -100,23 +117,29 @@ export function MyAvatarsToolbar({
             {viewMode === 'table' ? (
                 <TableColumnVisibilityMenu table={table} />
             ) : null}
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={t(
-                    'view.my_avatars.generated.refresh_avatar_inventory'
-                )}
-                title={t('view.my_avatars.generated.refresh_avatar_inventory')}
-                disabled={!currentUserId || loadStatus === 'running'}
-                onClick={onRefresh}
-            >
-                {loadStatus === 'running' ? (
-                    <Spinner data-icon="inline-start" />
-                ) : (
-                    <RefreshCwIcon data-icon="inline-start" />
-                )}
-            </Button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={t(
+                            'view.my_avatars.generated.refresh_avatar_inventory'
+                        )}
+                        disabled={!currentUserId || loadStatus === 'running'}
+                        onClick={onRefresh}
+                    >
+                        {loadStatus === 'running' ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <RefreshCwIcon data-icon="inline-start" />
+                        )}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    {t('view.my_avatars.generated.refresh_avatar_inventory')}
+                </TooltipContent>
+            </Tooltip>
         </div>
     );
 }

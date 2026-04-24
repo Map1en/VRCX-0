@@ -27,6 +27,7 @@ import {
     TableRow
 } from '@/ui/shadcn/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { PreviousInstanceInfoChart } from './PreviousInstanceInfoChart.jsx';
 import {
@@ -113,24 +114,33 @@ export function InstanceOwnerCell({ userId, location = '', endpoint = '' }) {
     }
 
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            className="hover:text-primary h-auto max-w-full flex-col items-start justify-start gap-0 p-0 text-left text-xs"
-            title={[displayName || userId, userId, location]
-                .filter(Boolean)
-                .join('\n')}
-            onClick={() =>
-                openUserDialog({ userId, title: displayName || undefined })
-            }
-        >
-            <span className="truncate">{displayName || userId}</span>
-            {displayName && displayName !== userId ? (
-                <span className="text-muted-foreground max-w-full truncate text-xs">
-                    {userId}
-                </span>
-            ) : null}
-        </Button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    className="hover:text-primary h-auto max-w-full flex-col items-start justify-start gap-0 p-0 text-left text-xs"
+                    onClick={() =>
+                        openUserDialog({
+                            userId,
+                            title: displayName || undefined
+                        })
+                    }
+                >
+                    <span className="truncate">{displayName || userId}</span>
+                    {displayName && displayName !== userId ? (
+                        <span className="text-muted-foreground max-w-full truncate text-xs">
+                            {userId}
+                        </span>
+                    ) : null}
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+                {[displayName || userId, userId, location]
+                    .filter(Boolean)
+                    .join('\n')}
+            </TooltipContent>
+        </Tooltip>
     );
 }
 

@@ -1,11 +1,6 @@
-import {
-    BookmarkIcon,
-    CheckIcon,
-    HistoryIcon,
-    XIcon
-} from 'lucide-react';
-
+import { BookmarkIcon, CheckIcon, HistoryIcon, XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
 import { userStatusIndicatorClassName } from '@/lib/userStatus.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -34,8 +29,8 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     languageOptionLabel,
@@ -65,9 +60,13 @@ export function UserSocialStatusDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>{t('dialog.user.generated.edit_social_status')}</DialogTitle>
+                    <DialogTitle>
+                        {t('dialog.user.generated.edit_social_status')}
+                    </DialogTitle>
                     <DialogDescription>
-                        {t('dialog.user.generated.update_your_social_status_and_status_description')}
+                        {t(
+                            'dialog.user.generated.update_your_social_status_and_status_description'
+                        )}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
@@ -80,7 +79,9 @@ export function UserSocialStatusDialog({
                                 id="user-social-status-description"
                                 value={draft.statusDescription}
                                 maxLength={32}
-                                placeholder={t('dialog.user.generated.status_description')}
+                                placeholder={t(
+                                    'dialog.user.generated.status_description'
+                                )}
                                 disabled={busy}
                                 onChange={(event) => {
                                     setDraft((current) => ({
@@ -150,7 +151,9 @@ export function UserSocialStatusDialog({
                                             )
                                         ) : (
                                             <DropdownMenuItem disabled>
-                                                {t('dialog.user.generated.no_status_history')}
+                                                {t(
+                                                    'dialog.user.generated.no_status_history'
+                                                )}
                                             </DropdownMenuItem>
                                         )}
                                     </DropdownMenuGroup>
@@ -162,7 +165,9 @@ export function UserSocialStatusDialog({
                         </div>
                     </Field>
                     <Field>
-                        <FieldLabel>{t('dialog.user.generated.social_status')}</FieldLabel>
+                        <FieldLabel>
+                            {t('dialog.user.generated.social_status')}
+                        </FieldLabel>
                         <ToggleGroup
                             type="single"
                             variant="outline"
@@ -213,7 +218,9 @@ export function UserSocialStatusDialog({
                     </Field>
                     {statusPresets.length ? (
                         <Field>
-                            <FieldLabel>{t('dialog.social_status.presets')}</FieldLabel>
+                            <FieldLabel>
+                                {t('dialog.social_status.presets')}
+                            </FieldLabel>
                             <div className="flex flex-wrap gap-2">
                                 {statusPresets.map((preset, index) => {
                                     const presetStatus =
@@ -328,39 +335,54 @@ export function UserLanguageDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{t('dialog.user.generated.edit_language')}</DialogTitle>
+                    <DialogTitle>
+                        {t('dialog.user.generated.edit_language')}
+                    </DialogTitle>
                     <DialogDescription>
-                        {t('dialog.user.generated.add_or_remove_the_languages_shown_on_your_profile')}
+                        {t(
+                            'dialog.user.generated.add_or_remove_the_languages_shown_on_your_profile'
+                        )}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-4">
                     <div className="flex min-h-8 flex-wrap gap-2">
                         {currentLanguageRows.length ? (
                             currentLanguageRows.map((language) => (
-                                <Badge
-                                    key={language.key}
-                                    variant="outline"
-                                    className="gap-1.5 pr-1"
-                                    title={languageOptionLabel(language)}
-                                >
-                                    <span>{languageOptionLabel(language)}</span>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-xs"
-                                        disabled={busy}
-                                        aria-label={`Remove ${languageOptionLabel(language)}`}
-                                        onClick={() =>
-                                            onRemoveLanguage(language.key)
-                                        }
-                                    >
-                                        <XIcon data-icon="inline-start" />
-                                    </Button>
-                                </Badge>
+                                <Tooltip key={language.key}>
+                                    <TooltipTrigger asChild>
+                                        <Badge
+                                            variant="outline"
+                                            className="gap-1.5 pr-1"
+                                        >
+                                            <span>
+                                                {languageOptionLabel(language)}
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                disabled={busy}
+                                                aria-label={`Remove ${languageOptionLabel(language)}`}
+                                                onClick={() =>
+                                                    onRemoveLanguage(
+                                                        language.key
+                                                    )
+                                                }
+                                            >
+                                                <XIcon data-icon="inline-start" />
+                                            </Button>
+                                        </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        {languageOptionLabel(language)}
+                                    </TooltipContent>
+                                </Tooltip>
                             ))
                         ) : (
                             <div className="text-muted-foreground text-sm">
-                                {t('dialog.user.generated.no_languages_selected')}
+                                {t(
+                                    'dialog.user.generated.no_languages_selected'
+                                )}
                             </div>
                         )}
                     </div>
@@ -404,7 +426,9 @@ export function UserLanguageDialog({
                     </Select>
                     {languageOptionsStatus === 'error' ? (
                         <div className="text-muted-foreground text-xs">
-                            {t('dialog.user.generated.vrchat_language_list_unavailable_using_local_language_codes')}
+                            {t(
+                                'dialog.user.generated.vrchat_language_list_unavailable_using_local_language_codes'
+                            )}
                         </div>
                     ) : null}
                 </div>

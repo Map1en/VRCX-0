@@ -10,10 +10,10 @@ import {
     XIcon
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { QuickSearchDialog } from '@/components/sidebar/QuickSearchDialog.jsx';
 import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/index.js';
@@ -31,6 +31,7 @@ import {
     ContextMenuItem,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { AppMenuBar } from './AppMenuBar.jsx';
 import { shouldShowSidePanel } from './sidePanelRoutes.js';
@@ -51,18 +52,25 @@ const UPDATE_EXE_CHECK_RETRY_MS = 5 * 60 * 1000;
 
 function TitleBarButton({ label, className, children, onClick, ...props }) {
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={label}
-            title={label}
-            className={cn('h-full w-9 rounded-none border-0', className)}
-            onClick={onClick}
-            {...props}
-        >
-            {children}
-        </Button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={label}
+                    className={cn(
+                        'h-full w-9 rounded-none border-0',
+                        className
+                    )}
+                    onClick={onClick}
+                    {...props}
+                >
+                    {children}
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
     );
 }
 
@@ -272,7 +280,9 @@ export function AppTitleBar() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('component.app_title_bar.generated_toast.failed_to_mark_notifications_as_seen')
+                    : t(
+                          'component.app_title_bar.generated_toast.failed_to_mark_notifications_as_seen'
+                      )
             );
         }
     }
@@ -310,7 +320,9 @@ export function AppTitleBar() {
                     onDoubleClick={handleTitleBarDoubleClick}
                 >
                     <span className="text-foreground shrink-0 text-xs font-semibold">
-                        {t('view.settings.advanced.advanced.vrcx_settings.header')}
+                        {t(
+                            'view.settings.advanced.advanced.vrcx_settings.header'
+                        )}
                     </span>
                     {titleBarActionsVisible ? (
                         <div
@@ -343,20 +355,32 @@ export function AppTitleBar() {
                 {titleBarActionsVisible ? (
                     <div className="flex h-full shrink-0 items-center">
                         {hasPendingUpdate ? (
-                            <Button
-                                type="button"
-                                size="sm"
-                                title={t('nav_menu.update')}
-                                className="mx-1 h-6 gap-1.5 rounded-sm px-2 text-xs"
-                                onClick={() =>
-                                    setSystemHostOpen('updaterOpen', true)
-                                }
-                            >
-                                {t('nav_menu.update')}
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="mx-1 h-6 gap-1.5 rounded-sm px-2 text-xs"
+                                        onClick={() =>
+                                            setSystemHostOpen(
+                                                'updaterOpen',
+                                                true
+                                            )
+                                        }
+                                    >
+                                        {t('nav_menu.update')}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {t('nav_menu.update')}
+                                </TooltipContent>
+                            </Tooltip>
                         ) : null}
                         <TitleBarButton
-                            label={t('component.app_title_bar.generated_dynamic.value_ctrl_k', { value: t('side_panel.search_placeholder') })}
+                            label={t(
+                                'component.app_title_bar.generated_dynamic.value_ctrl_k',
+                                { value: t('side_panel.search_placeholder') }
+                            )}
                             className="w-auto gap-1.5 px-2"
                             onClick={() => setQuickSearchOpen(true)}
                         >
@@ -365,7 +389,10 @@ export function AppTitleBar() {
                             <TitleBarShortcutKey>K</TitleBarShortcutKey>
                         </TitleBarButton>
                         <TitleBarButton
-                            label={t('component.app_title_bar.generated_dynamic.value_ctrl_d', { value: t('prompt.direct_access_omni.header') })}
+                            label={t(
+                                'component.app_title_bar.generated_dynamic.value_ctrl_d',
+                                { value: t('prompt.direct_access_omni.header') }
+                            )}
                             className="w-auto gap-1.5 px-2"
                             onClick={() => void openDirectAccessFromClipboard()}
                         >

@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 export function FriendsLocationsToolbar({ controller }) {
     const { t } = useTranslation();
@@ -64,17 +65,21 @@ export function FriendsLocationsToolbar({ controller }) {
             </div>
 
             <Popover>
-                <PopoverTrigger asChild>
-                    <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={t('common.settings')}
-                        title={t('common.settings')}
-                    >
-                        <Settings2Icon data-icon="inline-start" />
-                    </Button>
-                </PopoverTrigger>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <PopoverTrigger asChild>
+                            <Button
+                                type="button"
+                                size="icon-sm"
+                                variant="ghost"
+                                aria-label={t('common.settings')}
+                            >
+                                <Settings2Icon data-icon="inline-start" />
+                            </Button>
+                        </PopoverTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('common.settings')}</TooltipContent>
+                </Tooltip>
                 <PopoverContent className="w-72" align="end">
                     <FieldGroup>
                         <Field orientation="horizontal">

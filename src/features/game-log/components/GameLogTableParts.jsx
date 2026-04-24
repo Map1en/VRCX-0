@@ -18,6 +18,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { getGameLogLocationTarget } from '../gameLogRows.js';
 import { GameLogSessionsView } from './GameLogSessionsView.jsx';
@@ -65,44 +66,56 @@ function GameLogLocationDetail({
 
     if (!targetLocation) {
         return (
-            <div
-                className="flex min-w-0 items-center gap-1.5 text-sm"
-                title={[detailValue.primary, detailValue.secondary]
-                    .filter(Boolean)
-                    .join(' · ')}
-            >
-                <span className="min-w-0 truncate">{detailValue.primary}</span>
-                {detailValue.secondary ? (
-                    <span className="text-muted-foreground min-w-0 truncate text-xs">
-                        {detailValue.secondary}
-                    </span>
-                ) : null}
-            </div>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <div className="flex min-w-0 items-center gap-1.5 text-sm">
+                        <span className="min-w-0 truncate">
+                            {detailValue.primary}
+                        </span>
+                        {detailValue.secondary ? (
+                            <span className="text-muted-foreground min-w-0 truncate text-xs">
+                                {detailValue.secondary}
+                            </span>
+                        ) : null}
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                    {[detailValue.primary, detailValue.secondary]
+                        .filter(Boolean)
+                        .join(' · ')}
+                </TooltipContent>
+            </Tooltip>
         );
     }
 
     return (
-        <div
-            className="flex min-w-0 items-center gap-1.5 text-sm"
-            title={[detailValue.primary, detailValue.secondary]
-                .filter(Boolean)
-                .join(' · ')}
-        >
-            <Location
-                location={targetLocation}
-                hint={row?.worldName || detailValue.primary}
-                grouphint={row?.groupName || ''}
-                enableContextMenu
-                showLaunchActions
-                onShowPreviousInstances={() => void onPreviousInstances?.(row)}
-                className="text-sm"
-            />
-            {detailValue.secondary ? (
-                <span className="text-muted-foreground min-w-0 truncate text-xs">
-                    {detailValue.secondary}
-                </span>
-            ) : null}
-        </div>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <div className="flex min-w-0 items-center gap-1.5 text-sm">
+                    <Location
+                        location={targetLocation}
+                        hint={row?.worldName || detailValue.primary}
+                        grouphint={row?.groupName || ''}
+                        enableContextMenu
+                        showLaunchActions
+                        onShowPreviousInstances={() =>
+                            void onPreviousInstances?.(row)
+                        }
+                        className="text-sm"
+                    />
+                    {detailValue.secondary ? (
+                        <span className="text-muted-foreground min-w-0 truncate text-xs">
+                            {detailValue.secondary}
+                        </span>
+                    ) : null}
+                </div>
+            </TooltipTrigger>
+            <TooltipContent>
+                {[detailValue.primary, detailValue.secondary]
+                    .filter(Boolean)
+                    .join(' · ')}
+            </TooltipContent>
+        </Tooltip>
     );
 }
 

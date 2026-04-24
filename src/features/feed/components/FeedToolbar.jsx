@@ -15,6 +15,7 @@ import {
     InputGroupInput
 } from '@/ui/shadcn/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 function FeedDateFilterControl({
     activeFilterCount,
@@ -31,26 +32,30 @@ function FeedDateFilterControl({
 }) {
     return (
         <Popover open={dateFilterOpen} onOpenChange={onDateFilterOpenChange}>
-            <PopoverTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    className="relative"
-                    title={t('view.feed.filter')}
-                    aria-label="Filter"
-                >
-                    <CalendarIcon data-icon="icon" />
-                    {activeFilterCount ? (
-                        <Badge
-                            variant="secondary"
-                            className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[0.65rem] leading-none"
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            className="relative"
+                            aria-label="Filter"
                         >
-                            {activeFilterCount}
-                        </Badge>
-                    ) : null}
-                </Button>
-            </PopoverTrigger>
+                            <CalendarIcon data-icon="icon" />
+                            {activeFilterCount ? (
+                                <Badge
+                                    variant="secondary"
+                                    className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[0.65rem] leading-none"
+                                >
+                                    {activeFilterCount}
+                                </Badge>
+                            ) : null}
+                        </Button>
+                    </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent>{t('view.feed.filter')}</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-auto" align="end">
                 <Calendar
                     mode="range"
@@ -202,16 +207,22 @@ export function FeedToolbar({
                         t={t}
                         todayDate={todayDate}
                     />
-                    <Button
-                        type="button"
-                        variant={favoritesOnly ? 'default' : 'outline'}
-                        size="icon-sm"
-                        title={t('view.feed.favorites_only_tooltip')}
-                        aria-label="Filter favorites only"
-                        onClick={onToggleFavoritesOnly}
-                    >
-                        <StarIcon data-icon="icon" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant={favoritesOnly ? 'default' : 'outline'}
+                                size="icon-sm"
+                                aria-label="Filter favorites only"
+                                onClick={onToggleFavoritesOnly}
+                            >
+                                <StarIcon data-icon="icon" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {t('view.feed.favorites_only_tooltip')}
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 <FeedFilterButtons

@@ -9,9 +9,10 @@ import {
 import { formatDateFilter } from '@/lib/dateTime.js';
 import { openExternalLink } from '@/lib/entityMedia.js';
 import { openWorldDialog } from '@/services/dialogService.js';
-import { Button } from '@/ui/shadcn/button';
 import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     canDeleteGameLogRow,
@@ -77,12 +78,16 @@ export function buildGameLogColumns({
             cell: ({ row }) => {
                 const createdAt = row.original?.created_at || '';
                 return (
-                    <span
-                        className="text-sm"
-                        title={formatDateFilter(createdAt, 'long')}
-                    >
-                        {formatDateFilter(createdAt, 'short')}
-                    </span>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="text-sm">
+                                {formatDateFilter(createdAt, 'short')}
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {formatDateFilter(createdAt, 'long')}
+                        </TooltipContent>
+                    </Tooltip>
                 );
             }
         },
@@ -124,10 +129,7 @@ export function buildGameLogColumns({
                 }
 
                 return (
-                    <Badge
-                        variant="outline"
-                        className="text-muted-foreground"
-                    >
+                    <Badge variant="outline" className="text-muted-foreground">
                         {typeLabel}
                     </Badge>
                 );
@@ -145,7 +147,9 @@ export function buildGameLogColumns({
                     rowA.original?.displayName || rowA.original?.userId || ''
                 ).localeCompare(
                     String(
-                        rowB.original?.displayName || rowB.original?.userId || ''
+                        rowB.original?.displayName ||
+                            rowB.original?.userId ||
+                            ''
                     ),
                     undefined,
                     { sensitivity: 'base' }
@@ -154,7 +158,7 @@ export function buildGameLogColumns({
                 const displayName = row.original?.displayName || '';
                 const canOpenUser = Boolean(
                     displayName &&
-                        (row.original?.userId || row.original?.displayName)
+                    (row.original?.userId || row.original?.displayName)
                 );
 
                 return (
@@ -227,82 +231,88 @@ export function buildGameLogColumns({
                     return <EmptyTableValue />;
                 }
                 return (
-                    <div
-                        className="flex min-w-0 items-center gap-1.5 text-sm"
-                        title={[detailValue.primary, detailValue.secondary]
-                            .filter(Boolean)
-                            .join(' \u00b7 ')}
-                    >
-                        {canOpenWorld ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="hover:text-primary h-auto min-w-0 p-0 text-left text-sm"
-                                onClick={() =>
-                                    openWorldDialog({
-                                        worldId: worldTarget,
-                                        title:
-                                            row.original?.worldName ||
-                                            detailValue.primary ||
-                                            worldTarget
-                                    })
-                                }
-                            >
-                                <span className="truncate">
-                                    {detailValue.primary}
-                                </span>
-                            </Button>
-                        ) : (
-                            <span className="min-w-0 truncate">
-                                {detailValue.primary}
-                            </span>
-                        )}
-                        {detailValue.secondary ? (
-                            <span className="text-muted-foreground min-w-0 truncate text-xs">
-                                {detailValue.secondary}
-                            </span>
-                        ) : null}
-                        {externalTarget || copyTarget ? (
-                            <div className="ml-auto flex shrink-0 items-center gap-1">
-                                {externalTarget ? (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="flex min-w-0 items-center gap-1.5 text-sm">
+                                {canOpenWorld ? (
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        size="icon"
-                                        aria-label={t(
-                                            'view.game_log.generated.open_link'
-                                        )}
-                                        className="size-6 p-0"
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            void openExternalLink(
-                                                externalTarget
-                                            );
-                                        }}
+                                        className="hover:text-primary h-auto min-w-0 p-0 text-left text-sm"
+                                        onClick={() =>
+                                            openWorldDialog({
+                                                worldId: worldTarget,
+                                                title:
+                                                    row.original?.worldName ||
+                                                    detailValue.primary ||
+                                                    worldTarget
+                                            })
+                                        }
                                     >
-                                        <ExternalLinkIcon data-icon="inline-start" />
+                                        <span className="truncate">
+                                            {detailValue.primary}
+                                        </span>
                                     </Button>
+                                ) : (
+                                    <span className="min-w-0 truncate">
+                                        {detailValue.primary}
+                                    </span>
+                                )}
+                                {detailValue.secondary ? (
+                                    <span className="text-muted-foreground min-w-0 truncate text-xs">
+                                        {detailValue.secondary}
+                                    </span>
                                 ) : null}
-                                {copyTarget ? (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        aria-label={t(
-                                            'view.game_log.generated.copy_detail'
-                                        )}
-                                        className="size-6 p-0"
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            void onCopyDetail(row.original);
-                                        }}
-                                    >
-                                        <CopyIcon data-icon="inline-start" />
-                                    </Button>
+                                {externalTarget || copyTarget ? (
+                                    <div className="ml-auto flex shrink-0 items-center gap-1">
+                                        {externalTarget ? (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                aria-label={t(
+                                                    'view.game_log.generated.open_link'
+                                                )}
+                                                className="size-6 p-0"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    void openExternalLink(
+                                                        externalTarget
+                                                    );
+                                                }}
+                                            >
+                                                <ExternalLinkIcon data-icon="inline-start" />
+                                            </Button>
+                                        ) : null}
+                                        {copyTarget ? (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                aria-label={t(
+                                                    'view.game_log.generated.copy_detail'
+                                                )}
+                                                className="size-6 p-0"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    void onCopyDetail(
+                                                        row.original
+                                                    );
+                                                }}
+                                            >
+                                                <CopyIcon data-icon="inline-start" />
+                                            </Button>
+                                        ) : null}
+                                    </div>
                                 ) : null}
                             </div>
-                        ) : null}
-                    </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {[detailValue.primary, detailValue.secondary]
+                                .filter(Boolean)
+                                .join(' \u00b7 ')}
+                        </TooltipContent>
+                    </Tooltip>
                 );
             }
         },
@@ -367,7 +377,9 @@ export function buildGameLogColumns({
                                     'view.game_log.generated.show_instance_history'
                                 )}
                                 className="text-muted-foreground hover:text-foreground size-6 p-0"
-                                disabled={loadingPreviousInstancesKey === rowKey}
+                                disabled={
+                                    loadingPreviousInstancesKey === rowKey
+                                }
                                 onClick={() =>
                                     void onOpenPreviousInstances(row.original)
                                 }

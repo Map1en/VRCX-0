@@ -1,8 +1,4 @@
-import {
-    EyeOffIcon,
-    UserIcon,
-    UserMinusIcon
-} from 'lucide-react';
+import { EyeOffIcon, UserIcon, UserMinusIcon } from 'lucide-react';
 
 import { formatDateFilter, timeToText } from '@/lib/dateTime.js';
 import {
@@ -84,8 +80,10 @@ export function buildFriendListColumns({
             size: 100,
             meta: { label: t('table.friendList.no') },
             accessorFn: (row) =>
-                Number.parseInt(row?.$friendNumber ?? row?.friendNumber ?? 0, 10) ||
-                0,
+                Number.parseInt(
+                    row?.$friendNumber ?? row?.friendNumber ?? 0,
+                    10
+                ) || 0,
             header: ({ column }) => (
                 <SortButton
                     column={column}
@@ -171,7 +169,8 @@ export function buildFriendListColumns({
             id: 'rank',
             size: 140,
             meta: { label: t('table.friendList.rank') },
-            accessorFn: (row) => Number.parseInt(row?.$trustSortNum ?? 0, 10) || 0,
+            accessorFn: (row) =>
+                Number.parseInt(row?.$trustSortNum ?? 0, 10) || 0,
             header: ({ column }) => (
                 <SortButton
                     column={column}
@@ -179,7 +178,9 @@ export function buildFriendListColumns({
                 />
             ),
             cell: ({ row }) => (
-                <span className={cn('text-sm', row.original?.$trustClass || '')}>
+                <span
+                    className={cn('text-sm', row.original?.$trustClass || '')}
+                >
                     {row.original?.$trustLevel || ''}
                 </span>
             )
@@ -222,7 +223,9 @@ export function buildFriendListColumns({
             id: 'language',
             accessorFn: (row) =>
                 Array.isArray(row?.$languages)
-                    ? row.$languages.map((entry) => entry?.value || '').join('\u0000')
+                    ? row.$languages
+                          .map((entry) => entry?.value || '')
+                          .join('\u0000')
                     : '',
             size: 160,
             meta: { label: t('table.friendList.language') },
@@ -245,7 +248,6 @@ export function buildFriendListColumns({
                                     <TooltipTrigger asChild>
                                         <span
                                             className="mr-1 inline-flex min-w-5 items-center justify-center text-sm leading-none"
-                                            title={tooltipLabel}
                                             aria-label={tooltipLabel}
                                         >
                                             {languageFlagLabel(entry?.key)}
@@ -282,25 +284,28 @@ export function buildFriendListColumns({
                 return links.length ? (
                     <div className="flex items-center gap-1">
                         {links.map((link) => (
-                            <Button
-                                key={link}
-                                type="button"
-                                title={link}
-                                variant="outline"
-                                size="icon-sm"
-                                className="size-7"
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    void openExternalLink(link);
-                                }}
-                            >
-                                <img
-                                    src={getFaviconUrl(link)}
-                                    alt=""
-                                    className="size-4"
-                                    loading="lazy"
-                                />
-                            </Button>
+                            <Tooltip key={link}>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon-sm"
+                                        className="size-7"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            void openExternalLink(link);
+                                        }}
+                                    >
+                                        <img
+                                            src={getFaviconUrl(link)}
+                                            alt=""
+                                            className="size-4"
+                                            loading="lazy"
+                                        />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>{link}</TooltipContent>
+                            </Tooltip>
                         ))}
                     </div>
                 ) : null;
@@ -362,7 +367,8 @@ export function buildFriendListColumns({
         },
         {
             id: 'mutualFriends',
-            accessorFn: (row) => Number.parseInt(row?.$mutualCount ?? 0, 10) || 0,
+            accessorFn: (row) =>
+                Number.parseInt(row?.$mutualCount ?? 0, 10) || 0,
             size: 140,
             meta: { label: t('table.friendList.mutualFriends') },
             header: ({ column }) => (
@@ -406,7 +412,10 @@ export function buildFriendListColumns({
                 />
             ),
             cell: ({ row }) => {
-                const text = formatDateFilter(row.original?.last_activity, 'long');
+                const text = formatDateFilter(
+                    row.original?.last_activity,
+                    'long'
+                );
                 return <span>{text === '-' ? '' : text}</span>;
             }
         },

@@ -6,11 +6,11 @@ import {
     XIcon
 } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDefaultLayout } from 'react-resizable-panels';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import { generateDashboardRowId } from '@/repositories/dashboardRepository.js';
 import { useDashboardStore } from '@/state/dashboardStore.js';
@@ -24,20 +24,18 @@ import {
     CardTitle
 } from '@/ui/shadcn/card';
 import { Input } from '@/ui/shadcn/input';
-
 import {
     ResizableHandle,
     ResizablePanel,
     ResizablePanelGroup
 } from '@/ui/shadcn/resizable';
-import {
-    cloneDashboardRows,
-    getDashboardRowKey
-} from './dashboardConfig.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+
 import {
     DashboardEditorRow,
     DashboardReadRow
 } from './components/DashboardViewParts.jsx';
+import { cloneDashboardRows, getDashboardRowKey } from './dashboardConfig.js';
 
 function DashboardAddRowControl({ onAddRow }) {
     const { t } = useTranslation();
@@ -54,7 +52,7 @@ function DashboardAddRowControl({ onAddRow }) {
                 type="button"
                 variant="ghost"
                 className="border-muted-foreground/20 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 mt-auto flex min-h-[80px] flex-1 items-center justify-center rounded-md border-2 border-dashed transition-colors"
-                aria-label={"Show add row options"}
+                aria-label={'Show add row options'}
                 onClick={() => setShowOptions(true)}
             >
                 <PlusIcon data-icon="icon" className="opacity-50" />
@@ -68,52 +66,70 @@ function DashboardAddRowControl({ onAddRow }) {
                 <span className="text-muted-foreground text-xs">
                     {t('view.dashboard.generated.add_row')}
                 </span>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-10 w-16 border-2 border-dashed"
-                    title={t('dashboard.actions.add_full_row')}
-                    aria-label={"Add full row"}
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        addRow(1);
-                    }}
-                >
-                    <div className="bg-muted-foreground/20 h-6 w-12 rounded" />
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-10 w-16 gap-1 border-2 border-dashed"
-                    title={t('dashboard.actions.add_split_row')}
-                    aria-label={"Add split row"}
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        addRow(2);
-                    }}
-                >
-                    <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
-                    <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-10 w-16 gap-1 border-2 border-dashed"
-                    title={t('dashboard.actions.add_vertical_row')}
-                    aria-label={"Add vertical row"}
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        addRow(2, 'vertical');
-                    }}
-                >
-                    <div className="flex flex-col gap-0.5">
-                        <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
-                        <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
-                    </div>
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-16 border-2 border-dashed"
+                            aria-label={'Add full row'}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                addRow(1);
+                            }}
+                        >
+                            <div className="bg-muted-foreground/20 h-6 w-12 rounded" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('dashboard.actions.add_full_row')}
+                    </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-16 gap-1 border-2 border-dashed"
+                            aria-label={'Add split row'}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                addRow(2);
+                            }}
+                        >
+                            <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
+                            <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('dashboard.actions.add_split_row')}
+                    </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-16 gap-1 border-2 border-dashed"
+                            aria-label={'Add vertical row'}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                addRow(2, 'vertical');
+                            }}
+                        >
+                            <div className="flex flex-col gap-0.5">
+                                <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
+                                <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
+                            </div>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('dashboard.actions.add_vertical_row')}
+                    </TooltipContent>
+                </Tooltip>
             </div>
         </div>
     );
@@ -224,7 +240,10 @@ function useDashboardEditorController({ dashboard, updateDashboard, t }) {
         setIsSaving(true);
         try {
             await updateDashboard(dashboard.id, {
-                name: editName.trim() || dashboard.name || t('dashboard.default_name'),
+                name:
+                    editName.trim() ||
+                    dashboard.name ||
+                    t('dashboard.default_name'),
                 rows: editRows
             });
             setIsEditing(false);
@@ -233,7 +252,9 @@ function useDashboardEditorController({ dashboard, updateDashboard, t }) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.dashboard.generated_toast.failed_to_save_dashboard')
+                    : t(
+                          'view.dashboard.generated_toast.failed_to_save_dashboard'
+                      )
             );
         } finally {
             setIsSaving(false);
@@ -346,7 +367,9 @@ export function DashboardPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.dashboard.generated_toast.failed_to_update_dashboard_panel')
+                    : t(
+                          'view.dashboard.generated_toast.failed_to_update_dashboard_panel'
+                      )
             );
         }
     };
@@ -358,8 +381,9 @@ export function DashboardPage() {
 
         const result = await confirm({
             title: t('view.dashboard.generated_modal.delete_dashboard'),
-            description:
-                t('view.dashboard.generated_modal.this_removes_the_dashboard_definition_from_the_s'),
+            description: t(
+                'view.dashboard.generated_modal.this_removes_the_dashboard_definition_from_the_s'
+            ),
             destructive: true,
             confirmText: t('common.actions.delete'),
             cancelText: t('common.actions.cancel')
@@ -381,7 +405,9 @@ export function DashboardPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.dashboard.generated_toast.failed_to_delete_dashboard')
+                    : t(
+                          'view.dashboard.generated_toast.failed_to_delete_dashboard'
+                      )
             );
         }
     };
@@ -397,7 +423,9 @@ export function DashboardPage() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.dashboard.generated_toast.failed_to_create_dashboard')
+                    : t(
+                          'view.dashboard.generated_toast.failed_to_create_dashboard'
+                      )
             );
         }
     };
@@ -412,7 +440,9 @@ export function DashboardPage() {
                             {t('dashboard.default_name')}
                         </CardTitle>
                         <CardDescription>
-                            {t('view.dashboard.generated.loading_dashboard_configuration')}
+                            {t(
+                                'view.dashboard.generated.loading_dashboard_configuration'
+                            )}
                         </CardDescription>
                     </CardHeader>
                 </Card>
@@ -432,15 +462,21 @@ export function DashboardPage() {
                             </CardTitle>
                             <CardDescription>
                                 {dashboards.length
-                                    ? t('view.dashboard.generated.that_dashboard_no_longer_exists_in_the_stored_config')
-                                    : t('view.dashboard.generated.no_dashboard_definitions_are_stored_yet')}
+                                    ? t(
+                                          'view.dashboard.generated.that_dashboard_no_longer_exists_in_the_stored_config'
+                                      )
+                                    : t(
+                                          'view.dashboard.generated.no_dashboard_definitions_are_stored_yet'
+                                      )}
                             </CardDescription>
                         </div>
                         {detail ? (
                             <div className="text-muted-foreground text-sm">
                                 {userFacingErrorMessage(
                                     detail,
-                                    t('view.dashboard.generated_toast.failed_to_load_dashboard_configuration')
+                                    t(
+                                        'view.dashboard.generated_toast.failed_to_load_dashboard_configuration'
+                                    )
                                 )}
                             </div>
                         ) : null}
@@ -460,7 +496,9 @@ export function DashboardPage() {
                                     })
                                 }
                             >
-                                {t('view.dashboard.generated.open_first_dashboard')}
+                                {t(
+                                    'view.dashboard.generated.open_first_dashboard'
+                                )}
                             </Button>
                         ) : (
                             <Button
@@ -488,7 +526,9 @@ export function DashboardPage() {
                     <Input
                         value={editName}
                         onChange={(event) => setEditName(event.target.value)}
-                        placeholder={t('view.dashboard.generated.dashboard_name')}
+                        placeholder={t(
+                            'view.dashboard.generated.dashboard_name'
+                        )}
                         className="mx-2 h-7 max-w-52 text-sm"
                     />
                     <div className="flex gap-2">
@@ -555,7 +595,9 @@ export function DashboardPage() {
                             ))
                         ) : (
                             <div className="text-muted-foreground flex min-h-[180px] items-center justify-center rounded-md border border-dashed text-sm">
-                                {t('view.dashboard.generated.add_a_row_to_start_building_this_dashboard')}
+                                {t(
+                                    'view.dashboard.generated.add_a_row_to_start_building_this_dashboard'
+                                )}
                             </div>
                         )}
 

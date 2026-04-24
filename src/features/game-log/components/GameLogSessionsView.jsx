@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils.js';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     countGameLogSessionEvent as countSessionEvent,
@@ -132,15 +133,21 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
                                     className="pointer-events-auto min-w-0 text-sm"
                                 />
                                 {durationText ? (
-                                    <Badge
-                                        variant="outline"
-                                        className="h-4 shrink-0 px-1 text-xs tabular-nums"
-                                        title={t(
-                                            'view.game_log.generated.time_spent_in_this_instance'
-                                        )}
-                                    >
-                                        {durationText}
-                                    </Badge>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Badge
+                                                variant="outline"
+                                                className="h-4 shrink-0 px-1 text-xs tabular-nums"
+                                            >
+                                                {durationText}
+                                            </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {t(
+                                                'view.game_log.generated.time_spent_in_this_instance'
+                                            )}
+                                        </TooltipContent>
+                                    </Tooltip>
                                 ) : null}
                             </div>
                         ) : (
@@ -162,31 +169,43 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
                         {session.events?.length ? (
                             <>
                                 {joinedCount ? (
-                                    <span
-                                        className="flex items-center gap-0.5"
-                                        title={TYPE_LABELS.OnPlayerJoined}
-                                    >
-                                        <LogInIcon className="size-3" />{' '}
-                                        {joinedCount}
-                                    </span>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="flex items-center gap-0.5">
+                                                <LogInIcon className="size-3" />{' '}
+                                                {joinedCount}
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {TYPE_LABELS.OnPlayerJoined}
+                                        </TooltipContent>
+                                    </Tooltip>
                                 ) : null}
                                 {leftCount ? (
-                                    <span
-                                        className="flex items-center gap-0.5"
-                                        title={TYPE_LABELS.OnPlayerLeft}
-                                    >
-                                        <LogOutIcon className="size-3" />{' '}
-                                        {leftCount}
-                                    </span>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="flex items-center gap-0.5">
+                                                <LogOutIcon className="size-3" />{' '}
+                                                {leftCount}
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {TYPE_LABELS.OnPlayerLeft}
+                                        </TooltipContent>
+                                    </Tooltip>
                                 ) : null}
                                 {videoCount ? (
-                                    <span
-                                        className="flex items-center gap-0.5"
-                                        title={TYPE_LABELS.VideoPlay}
-                                    >
-                                        <VideoIcon className="size-3" />{' '}
-                                        {videoCount}
-                                    </span>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="flex items-center gap-0.5">
+                                                <VideoIcon className="size-3" />{' '}
+                                                {videoCount}
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {TYPE_LABELS.VideoPlay}
+                                        </TooltipContent>
+                                    </Tooltip>
                                 ) : null}
                             </>
                         ) : null}

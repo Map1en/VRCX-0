@@ -1,8 +1,8 @@
 import { BellIcon, RefreshCcwIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useTranslation } from 'react-i18next';
 import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog.jsx';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
@@ -24,22 +24,21 @@ import {
 } from '@/ui/shadcn/sheet';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { NotificationList } from './vrc-notification-center/NotificationList.jsx';
 import {
     buildCachedInstanceMap,
     categoryOrder,
     openNotificationLink,
     resolveCurrentInviteLocation
 } from './vrc-notification-center/notificationCenterUtils.js';
+import { NotificationList } from './vrc-notification-center/NotificationList.jsx';
 
 export function VrcNotificationCenterHost() {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const endpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
+    const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
     const currentUserLocationTag = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot?.$locationTag
     );
@@ -359,11 +358,9 @@ export function VrcNotificationCenterHost() {
             }
             if (
                 notification.type === 'boop' &&
-                (
-                    responseType === 'reply' ||
+                (responseType === 'reply' ||
                     responseType === 'boop' ||
-                    response?.icon === 'reply'
-                )
+                    response?.icon === 'reply')
             ) {
                 await notificationRepository.sendBoop({
                     userId: notification.senderUserId,
@@ -457,40 +454,48 @@ export function VrcNotificationCenterHost() {
                             </SheetTitle>
                             <div className="flex items-center gap-2">
                                 <Badge
-                                    variant={unseenCount ? 'default' : 'outline'}
+                                    variant={
+                                        unseenCount ? 'default' : 'outline'
+                                    }
                                 >
                                     {unseenCount}
                                 </Badge>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    aria-label={t(
-                                        'view.notification.refresh_tooltip'
-                                    )}
-                                    title={t('view.notification.refresh_tooltip')}
-                                    disabled={loadStatus === 'running'}
-                                    onClick={() => {
-                                        void loadForCurrentUser().catch(
-                                            (error) => {
-                                                toast.error(
-                                                    userFacingErrorMessage(
-                                                        error,
-                                                        t(
-                                                            'host.vrc_notification_center.generated_toast.failed_to_refresh_notifications'
-                                                        )
-                                                    )
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            aria-label={t(
+                                                'view.notification.refresh_tooltip'
+                                            )}
+                                            disabled={loadStatus === 'running'}
+                                            onClick={() => {
+                                                void loadForCurrentUser().catch(
+                                                    (error) => {
+                                                        toast.error(
+                                                            userFacingErrorMessage(
+                                                                error,
+                                                                t(
+                                                                    'host.vrc_notification_center.generated_toast.failed_to_refresh_notifications'
+                                                                )
+                                                            )
+                                                        );
+                                                    }
                                                 );
-                                            }
-                                        );
-                                    }}
-                                >
-                                    {loadStatus === 'running' ? (
-                                        <Spinner data-icon="inline-start" />
-                                    ) : (
-                                        <RefreshCcwIcon data-icon="inline-start" />
-                                    )}
-                                </Button>
+                                            }}
+                                        >
+                                            {loadStatus === 'running' ? (
+                                                <Spinner data-icon="inline-start" />
+                                            ) : (
+                                                <RefreshCcwIcon data-icon="inline-start" />
+                                            )}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        {t('view.notification.refresh_tooltip')}
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </div>
                         {detail ? (
@@ -516,10 +521,7 @@ export function VrcNotificationCenterHost() {
                                     {categories[category]?.unseen?.length ? (
                                         <span className="text-muted-foreground ml-1 text-xs">
                                             (
-                                            {
-                                                categories[category].unseen
-                                                    .length
-                                            }
+                                            {categories[category].unseen.length}
                                             )
                                         </span>
                                     ) : null}
