@@ -236,6 +236,9 @@ export function InstanceActionBar({
     showRefresh = true,
     showHistory = false,
     showInstanceInfo = true,
+    instanceInfoPlacement = 'end',
+    instanceCountAlign = 'right',
+    instanceSummaryOrder = 'count-first',
     refreshTooltip = 'Refresh instance info',
     historyTooltip = 'Previous instance history',
     onRefresh,
@@ -445,6 +448,69 @@ export function InstanceActionBar({
         return null;
     }
 
+    const countSummary =
+        hasUserCount || capacity ? (
+            <span
+                className={cn(
+                    'inline-block min-w-[5ch] tabular-nums',
+                    instanceCountAlign === 'left'
+                        ? 'text-left'
+                        : 'text-right'
+                )}
+            >
+                {hasUserCount ? resolvedUserCount : '—'}
+                {capacity ? `/${capacity}` : ''}
+            </span>
+        ) : null;
+
+    const markerSummary = (
+        <>
+            {friendCount ? (
+                <span className="inline-flex items-center gap-0.5">
+                    <UsersRoundIcon className="size-3.5" />
+                    {friendCount}
+                </span>
+            ) : null}
+            {canCloseCurrentInstance ? (
+                busy === 'close' ? (
+                    <Spinner className="size-3.5" />
+                ) : (
+                    <XCircleIcon className="size-3.5" />
+                )
+            ) : null}
+            {queueSize ? (
+                <span>
+                    {t('dialog.new_instance.queueEnabled')} {queueSize}
+                </span>
+            ) : null}
+            {hasAgeGate ? (
+                <Badge variant="destructive">
+                    {t('dialog.new_instance.ageGate')}
+                </Badge>
+            ) : null}
+        </>
+    );
+
+    const instanceSummary =
+        showInstanceInfo && hasInstanceSummary ? (
+            <InstanceInfoTooltip
+                instance={instanceInfo}
+                location={resolvedInstanceLocation}
+                canClose={canCloseCurrentInstance}
+                closeDisabled={Boolean(busy)}
+                onClose={() => void closeInstance()}
+            >
+                <div className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                    {instanceSummaryOrder === 'markers-first'
+                        ? markerSummary
+                        : countSummary}
+                    {instanceSummaryOrder === 'markers-first'
+                        ? countSummary
+                        : markerSummary}
+                </div>
+            </InstanceInfoTooltip>
+        ) : null;
+
     return (
         <div
             className={cn(
@@ -452,6 +518,7 @@ export function InstanceActionBar({
                 className
             )}
         >
+            {instanceInfoPlacement === 'start' ? instanceSummary : null}
             {showLaunch && isRealLaunchLocation ? (
                 <ActionButton
                     label={t('dialog.instance.generated.launch_instance')}
@@ -487,41 +554,7 @@ export function InstanceActionBar({
                     onClick={onHistory}
                 />
             ) : null}
-            {showInstanceInfo && hasInstanceSummary ? (
-                <InstanceInfoTooltip
-                    instance={instanceInfo}
-                    location={resolvedInstanceLocation}
-                    canClose={canCloseCurrentInstance}
-                    closeDisabled={Boolean(busy)}
-                    onClose={() => void closeInstance()}
-                >
-                    <div className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-                        {hasUserCount || capacity ? (
-                            <span>
-                                {hasUserCount ? resolvedUserCount : '—'}
-                                {capacity ? `/${capacity}` : ''}
-                            </span>
-                        ) : null}
-                        {friendCount ? (
-                            <span className="inline-flex items-center gap-0.5">
-                                <UsersRoundIcon className="size-3.5" />
-                                {friendCount}
-                            </span>
-                        ) : null}
-                        {canCloseCurrentInstance ? (
-                            busy === 'close' ? (
-                                <Spinner className="size-3.5" />
-                            ) : (
-                                <XCircleIcon className="size-3.5" />
-                            )
-                        ) : null}
-                        {queueSize ? <span>{t('dialog.new_instance.queueEnabled')} {queueSize}</span> : null}
-                        {hasAgeGate ? (
-                            <Badge variant="destructive">{t('dialog.new_instance.ageGate')}</Badge>
-                        ) : null}
-                    </div>
-                </InstanceInfoTooltip>
-            ) : null}
+            {instanceInfoPlacement === 'start' ? null : instanceSummary}
         </div>
     );
 }

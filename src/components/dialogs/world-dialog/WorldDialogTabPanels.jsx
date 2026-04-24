@@ -153,6 +153,9 @@ export function WorldDialogTabPanels({ handlers, helpers, state, t }) {
                                             }
                                             playerCount={playerCount}
                                             capacity={capacity}
+                                            instanceInfoPlacement="start"
+                                            instanceCountAlign="left"
+                                            instanceSummaryOrder="markers-first"
                                             showHistory={Boolean(
                                                 previousInstances.length
                                             )}
