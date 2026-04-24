@@ -35,6 +35,26 @@ function getCurrentLocationPlayerIds() {
     );
 }
 
+function getCurrentLocationPlayers() {
+    return Array.from(ingestState.playersByKey.values())
+        .map((player) => {
+            const userId = normalizeString(player.userId);
+            const displayName = normalizeString(player.displayName);
+            const joinTime = Number(player.joinTime) || 0;
+
+            return {
+                id: userId || (displayName ? `display:${displayName}` : ''),
+                userId,
+                displayName,
+                joinedAt: joinTime ? new Date(joinTime).toISOString() : '',
+                joinedAtMs: joinTime,
+                lastDurationMs: 0,
+                source: 'runtime'
+            };
+        })
+        .filter((player) => player.id && (player.userId || player.displayName));
+}
+
 function getCurrentLocation() {
     return (
         ingestState.currentLocation ||
@@ -56,6 +76,7 @@ function resetCurrentGameLogSessionState() {
 
 export {
     getCurrentLocation,
+    getCurrentLocationPlayers,
     getCurrentLocationPlayerIds,
     ingestState,
     instanceMediaState,

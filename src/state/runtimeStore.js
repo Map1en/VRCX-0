@@ -85,6 +85,7 @@ const initialState = {
         currentDestination: '',
         currentLocationStartedAt: null,
         currentLocationPlayerIds: [],
+        currentLocationPlayers: [],
         lastGameStateChangedAt: null,
         lastGameStartedAt: null,
         lastCrashedAt: null,

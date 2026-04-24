@@ -9,22 +9,34 @@ import { handleIpcEvent } from './ipcEventService.js';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 import { handleBrowserFocus } from './vrcStatusService.js';
 
+let gameLogIngestQueue = Promise.resolve();
+
+async function ingestAndRecordGameLogEvent(name, payload) {
+    try {
+        await ingestBackendGameLogEvent(payload);
+        useRuntimeStore.getState().recordBackendEvent(name, payload);
+    } catch (error) {
+        await showSQLiteErrorDialog(error);
+        useNotificationStore.getState().pushNotification({
+            level: 'warning',
+            title: 'Game log ingest failed',
+            message: error instanceof Error ? error.message : String(error)
+        });
+    }
+}
+
 function handleBackendEvent(name, payload) {
     const runtimeStore = useRuntimeStore.getState();
 
-    runtimeStore.recordBackendEvent(name, payload);
-
     if (name === 'addGameLogEvent') {
-        ingestBackendGameLogEvent(payload).catch(async (error) => {
-            await showSQLiteErrorDialog(error);
-            useNotificationStore.getState().pushNotification({
-                level: 'warning',
-                title: 'Game log ingest failed',
-                message: error instanceof Error ? error.message : String(error)
-            });
-        });
+        gameLogIngestQueue = gameLogIngestQueue.then(
+            () => ingestAndRecordGameLogEvent(name, payload),
+            () => ingestAndRecordGameLogEvent(name, payload)
+        );
         return;
     }
+
+    runtimeStore.recordBackendEvent(name, payload);
 
     if (name === 'updateIsGameRunning') {
         handleGameRunningUpdate(payload).catch((error) => {

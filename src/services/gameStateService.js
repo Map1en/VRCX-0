@@ -259,6 +259,7 @@ function buildNewGameSessionPatch(startedAt) {
         currentDestination: '',
         currentLocationStartedAt: null,
         currentLocationPlayerIds: [],
+        currentLocationPlayers: [],
         lastGameStartedAt: startedAt
     };
 }

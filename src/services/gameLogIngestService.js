@@ -28,6 +28,7 @@ import {
 import { processScreenshot } from './game-log-ingest/screenshotMetadata.js';
 import {
     getCurrentLocation,
+    getCurrentLocationPlayers,
     getCurrentLocationPlayerIds,
     ingestState,
     instanceMediaState,
@@ -45,11 +46,15 @@ const GAME_LOG_BATCH_LIMIT = 50;
 
 function updateCurrentLocation({ location, worldName = '', createdAt = '' }) {
     const parsed = parseLocation(location);
+    const preserveTravelingPlayers =
+        ingestState.currentLocation === 'traveling' && location !== 'traveling';
     ingestState.currentLocation = location;
     ingestState.currentWorldName = worldName;
     ingestState.currentLocationStartedAt =
         createdAt || new Date().toISOString();
-    ingestState.playersByKey.clear();
+    if (!preserveTravelingPlayers) {
+        ingestState.playersByKey.clear();
+    }
     ingestState.lastVideoUrl = '';
     ingestState.lastResourceUrl = '';
 
@@ -60,7 +65,8 @@ function updateCurrentLocation({ location, worldName = '', createdAt = '' }) {
         currentWorldName: worldName,
         currentDestination: '',
         currentLocationStartedAt: ingestState.currentLocationStartedAt,
-        currentLocationPlayerIds: [],
+        currentLocationPlayerIds: getCurrentLocationPlayerIds(),
+        currentLocationPlayers: getCurrentLocationPlayers(),
         lastGameLogAt: new Date().toISOString(),
         lastGameLogType: 'location'
     });
@@ -71,7 +77,8 @@ function updateCurrentLocation({ location, worldName = '', createdAt = '' }) {
         currentWorldName: worldName,
         currentDestination: '',
         currentLocationStartedAt: ingestState.currentLocationStartedAt,
-        currentLocationPlayerIds: []
+        currentLocationPlayerIds: getCurrentLocationPlayerIds(),
+        currentLocationPlayers: getCurrentLocationPlayers()
     });
 }
 
@@ -130,6 +137,9 @@ async function persistGameLog(gameLog, options = {}) {
             }
             const changedAt = gameLog.dt || new Date().toISOString();
             await finalizeCurrentGameLogSession(changedAt);
+            ingestState.currentLocation = 'traveling';
+            ingestState.currentWorldName = '';
+            ingestState.currentLocationStartedAt = changedAt;
             runtimeStore.setGameState({
                 currentLocation: 'traveling',
                 currentWorldId: '',
@@ -137,6 +147,7 @@ async function persistGameLog(gameLog, options = {}) {
                 currentDestination: destination,
                 currentLocationStartedAt: changedAt,
                 currentLocationPlayerIds: [],
+                currentLocationPlayers: [],
                 lastGameLogAt: changedAt,
                 lastGameLogType: gameLog.type
             });
@@ -146,7 +157,8 @@ async function persistGameLog(gameLog, options = {}) {
                 currentWorldName: '',
                 currentDestination: destination,
                 currentLocationStartedAt: changedAt,
-                currentLocationPlayerIds: []
+                currentLocationPlayerIds: [],
+                currentLocationPlayers: []
             });
             break;
         }
@@ -181,7 +193,8 @@ async function persistGameLog(gameLog, options = {}) {
                 joinTime: Date.parse(gameLog.dt)
             });
             runtimeStore.setGameState({
-                currentLocationPlayerIds: getCurrentLocationPlayerIds()
+                currentLocationPlayerIds: getCurrentLocationPlayerIds(),
+                currentLocationPlayers: getCurrentLocationPlayers()
             });
             entry = createJoinLeaveEntry(
                 'OnPlayerJoined',
@@ -205,7 +218,8 @@ async function persistGameLog(gameLog, options = {}) {
                     : 0;
             ingestState.playersByKey.delete(playerKey);
             runtimeStore.setGameState({
-                currentLocationPlayerIds: getCurrentLocationPlayerIds()
+                currentLocationPlayerIds: getCurrentLocationPlayerIds(),
+                currentLocationPlayers: getCurrentLocationPlayers()
             });
             entry = createJoinLeaveEntry(
                 'OnPlayerLeft',
@@ -462,6 +476,7 @@ export async function finalizeCurrentGameLogSession(
             currentDestination: '',
             currentLocationStartedAt: null,
             currentLocationPlayerIds: [],
+            currentLocationPlayers: [],
             lastGameLogAt: stoppedAt,
             lastGameLogType: 'game-stopped'
         });

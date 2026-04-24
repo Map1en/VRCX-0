@@ -52,7 +52,8 @@ async function updateRealtimeLocationFallback(location) {
             currentWorldName: '',
             currentDestination: '',
             currentLocationStartedAt: null,
-            currentLocationPlayerIds: []
+            currentLocationPlayerIds: [],
+            currentLocationPlayers: []
         });
         return;
     }
@@ -69,6 +70,7 @@ async function updateRealtimeLocationFallback(location) {
         currentDestination: '',
         currentLocationStartedAt: createdAt,
         currentLocationPlayerIds: [],
+        currentLocationPlayers: [],
         lastGameLogAt: createdAt,
         lastGameLogType: 'location'
     });

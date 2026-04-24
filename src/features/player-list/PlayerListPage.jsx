@@ -6,6 +6,7 @@ import { PageScaffold } from '@/components/layout/PageScaffold.jsx';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     gameLogRepository,
+    instanceRepository,
     playerListRepository,
     vrchatSearchRepository,
     vrchatModerationRepository
@@ -27,6 +28,86 @@ import {
     normalizeString
 } from './playerListRows.js';
 
+function normalizeApiInstanceUsers(...sources) {
+    const rows = [];
+    const seen = new Set();
+
+    const push = (value) => {
+        if (!value) {
+            return;
+        }
+        if (value instanceof Map) {
+            for (const entry of value.values()) {
+                push(entry);
+            }
+            return;
+        }
+        if (Array.isArray(value)) {
+            for (const entry of value) {
+                push(entry);
+            }
+            return;
+        }
+        if (typeof value === 'string') {
+            const userId = normalizeString(value);
+            if (userId && !seen.has(userId)) {
+                seen.add(userId);
+                rows.push({
+                    id: userId,
+                    userId,
+                    displayName: userId,
+                    source: 'instance-api'
+                });
+            }
+            return;
+        }
+        if (typeof value !== 'object') {
+            return;
+        }
+        if (
+            !value.id &&
+            !value.userId &&
+            !value.user_id &&
+            !value.displayName &&
+            !value.display_name &&
+            !value.username &&
+            !value.name
+        ) {
+            for (const entry of Object.values(value)) {
+                push(entry);
+            }
+            return;
+        }
+
+        const userId = normalizeString(value.id || value.userId || value.user_id);
+        const displayName = normalizeString(
+            value.displayName ||
+                value.display_name ||
+                value.username ||
+                value.name ||
+                userId
+        );
+        const key = userId || displayName.toLowerCase();
+        if (!key || seen.has(key)) {
+            return;
+        }
+        seen.add(key);
+        rows.push({
+            ...value,
+            id: userId || key,
+            userId,
+            displayName,
+            source: 'instance-api'
+        });
+    };
+
+    for (const source of sources) {
+        push(source);
+    }
+
+    return rows;
+}
+
 export function PlayerListPage({ embedded = false } = {}) {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -37,15 +118,11 @@ export function PlayerListPage({ embedded = false } = {}) {
         (state) => state.auth.currentUserSnapshot
     );
     const currentUserLocation = useRuntimeStore((state) => {
-        const gameLocation = state.gameState.currentLocation;
-        if (gameLocation === 'traveling') {
-            return (
-                state.gameState.currentDestination ||
-                state.auth.currentUserSnapshot?.location ||
-                ''
-            );
-        }
-        return gameLocation || state.auth.currentUserSnapshot?.location || '';
+        return (
+            state.gameState.currentLocation ||
+            state.auth.currentUserSnapshot?.location ||
+            ''
+        );
     });
     const currentUserWorldId = useRuntimeStore(
         (state) =>
@@ -61,6 +138,12 @@ export function PlayerListPage({ embedded = false } = {}) {
     );
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.backendEvents.addGameLogEvent.count
+    );
+    const gameLogTailSyncedAt = useRuntimeStore(
+        (state) => state.updateLoop.lastGameLogSyncAt
+    );
+    const runtimePlayerRows = useRuntimeStore(
+        (state) => state.gameState.currentLocationPlayers
     );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const remoteFavoriteFriendIds = useFavoriteStore(
@@ -160,6 +243,25 @@ export function PlayerListPage({ embedded = false } = {}) {
             };
         }
 
+        if (currentUserLocation === 'traveling') {
+            setLoadStatus('idle');
+            setDetail('');
+            setContext({
+                createdAt: '',
+                location: 'traveling',
+                worldId: '',
+                worldName: '',
+                time: 0,
+                groupName: '',
+                playerCount: 0,
+                source: 'runtime'
+            });
+            setPlayerRows([]);
+            return () => {
+                active = false;
+            };
+        }
+
         setLoadStatus('running');
         setDetail('');
 
@@ -168,18 +270,49 @@ export function PlayerListPage({ embedded = false } = {}) {
                 currentUserId,
                 currentLocation: currentUserLocation
             })
-            .then((result) => {
+            .then(async (result) => {
                 if (!active) {
                     return;
                 }
 
-                setContext(result.context);
-                setPlayerRows(result.players);
+                const parsed = parseLocation(result.context?.location || '');
+                let players = Array.isArray(result.players)
+                    ? result.players
+                    : [];
+                if (!players.length && parsed.worldId && parsed.instanceId) {
+                    const response = await instanceRepository
+                        .getInstance({
+                            worldId: parsed.worldId,
+                            instanceId: parsed.instanceId,
+                            endpoint: currentUserEndpoint,
+                            force: true
+                        })
+                        .catch(() => null);
+                    if (!active) {
+                        return;
+                    }
+                    players = normalizeApiInstanceUsers(
+                        response?.json?.users,
+                        response?.json?.players,
+                        response?.json?.playerList,
+                        response?.json?.userList,
+                        response?.json?.userIds,
+                        response?.json?.usersById
+                    );
+                }
+
+                setContext({
+                    ...result.context,
+                    playerCount: players.length || result.context.playerCount
+                });
+                setPlayerRows(players);
                 setLoadStatus('ready');
                 setDetail(
                     result.context.source === 'database'
                         ? 'Rebuilt the current instance roster from local join/leave history.'
-                        : 'Using the current runtime location while waiting for more local game-log history.'
+                        : players.length
+                          ? 'Loaded current instance users from the VRChat instance API while local game-log history catches up.'
+                          : 'Using the current runtime location while waiting for more local game-log history.'
                 );
             })
             .catch((error) => {
@@ -202,9 +335,11 @@ export function PlayerListPage({ embedded = false } = {}) {
         };
     }, [
         addGameLogEventCount,
+        currentUserEndpoint,
         currentUserId,
         currentUserLocation,
         currentUserWorldId,
+        gameLogTailSyncedAt,
         gameLogDisabled,
         isGameRunning
     ]);
@@ -217,6 +352,7 @@ export function PlayerListPage({ embedded = false } = {}) {
     const playerSourceRows = useMemo(() => {
         return buildPlayerSourceRows({
             playerRows,
+            runtimePlayerRows,
             currentUserId,
             currentUserSnapshot,
             isGameRunning,
@@ -232,7 +368,8 @@ export function PlayerListPage({ embedded = false } = {}) {
         currentUserLocation,
         currentUserSnapshot,
         isGameRunning,
-        playerRows
+        playerRows,
+        runtimePlayerRows
     ]);
 
     const enrichedRows = useMemo(() => {

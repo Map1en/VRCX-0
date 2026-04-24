@@ -64,6 +64,7 @@ export function buildFavoriteIdSet(remoteFavoriteIds, localFriendFavorites) {
 
 export function buildPlayerSourceRows({
     playerRows,
+    runtimePlayerRows,
     currentUserId,
     currentUserSnapshot,
     isGameRunning,
@@ -75,27 +76,47 @@ export function buildPlayerSourceRows({
     const knownKeys = new Set();
 
     const currentUserKey = normalizeString(currentUserId);
-    for (const row of Array.isArray(playerRows) ? playerRows : []) {
+    const activeLocation = currentUserLocation || context.location;
+    const canUseLiveRows =
+        isGameRunning &&
+        activeLocation !== 'traveling' &&
+        isLiveLocation(activeLocation);
+    const addRow = (row) => {
         const rowUserId = normalizeString(row.userId);
         if (currentUserKey && rowUserId === currentUserKey) {
-            continue;
+            return;
         }
 
-        const rowKey = rowUserId || normalizeString(row.id || row.rowId);
+        const rowDisplayName = normalizeString(row.displayName).toLowerCase();
+        const rowKey =
+            rowUserId ||
+            normalizeString(row.id || row.rowId) ||
+            (rowDisplayName ? `display:${rowDisplayName}` : '');
         if (rowKey && knownKeys.has(rowKey)) {
-            continue;
+            return;
         }
         rows.push(row);
         if (rowKey) {
             knownKeys.add(rowKey);
+        }
+    };
+
+    if (canUseLiveRows) {
+        for (const row of Array.isArray(playerRows) ? playerRows : []) {
+            addRow(row);
+        }
+
+        for (const row of Array.isArray(runtimePlayerRows)
+            ? runtimePlayerRows
+            : []) {
+            addRow(row);
         }
     }
 
     if (
         currentUserKey &&
         currentUserSnapshot &&
-        isGameRunning &&
-        isLiveLocation(context.location || currentUserLocation) &&
+        canUseLiveRows &&
         !knownKeys.has(currentUserKey)
     ) {
         const joinedAtMs = parseTimeMs(
