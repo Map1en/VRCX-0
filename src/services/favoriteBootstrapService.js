@@ -13,7 +13,7 @@ import { useSessionStore } from '@/state/sessionStore.js';
 
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
-const activeHydrations = new WeakMap();
+const activeHydrations = new Map();
 
 function normalizeUserId(value) {
     return typeof value === 'string'
@@ -23,6 +23,10 @@ function normalizeUserId(value) {
 
 function getDisplayName(user) {
     return user?.displayName || user?.username || user?.id || '';
+}
+
+function favoriteBootstrapKey(userId, endpoint = '') {
+    return `${normalizeUserId(userId)}\u0000${String(endpoint || '')}`;
 }
 
 function uniqueValues(values) {
@@ -354,13 +358,13 @@ function buildPendingDetail(displayName, snapshot) {
     ].join(' ');
 }
 
-function isCurrentFavoriteBootstrapTarget(userId, currentUserSnapshot) {
+function isCurrentFavoriteBootstrapTarget(userId, endpoint = '') {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
 
     return (
         runtimeState.auth.currentUserId === userId &&
-        runtimeState.auth.currentUserSnapshot === currentUserSnapshot &&
+        runtimeState.auth.currentUserEndpoint === String(endpoint || '') &&
         sessionState.isLoggedIn &&
         sessionState.sessionPhase === 'ready'
     );
@@ -500,9 +504,7 @@ async function runFavoriteBootstrap({
         })
     };
 
-    if (
-        !isCurrentFavoriteBootstrapTarget(normalizedUserId, currentUserSnapshot)
-    ) {
+    if (!isCurrentFavoriteBootstrapTarget(normalizedUserId, endpoint)) {
         return {
             userId: normalizedUserId,
             stale: true,
@@ -537,8 +539,9 @@ export function bootstrapFavorites(options) {
         );
     }
 
-    if (activeHydrations.has(currentUserSnapshot)) {
-        return activeHydrations.get(currentUserSnapshot);
+    const activeKey = favoriteBootstrapKey(normalizedUserId, options?.endpoint);
+    if (activeHydrations.has(activeKey)) {
+        return activeHydrations.get(activeKey);
     }
 
     const promise = runFavoriteBootstrap(options)
@@ -546,7 +549,7 @@ export function bootstrapFavorites(options) {
             if (
                 isCurrentFavoriteBootstrapTarget(
                     normalizedUserId,
-                    currentUserSnapshot
+                    options?.endpoint
                 )
             ) {
                 useRuntimeStore
@@ -567,9 +570,9 @@ export function bootstrapFavorites(options) {
             throw error;
         })
         .finally(() => {
-            activeHydrations.delete(currentUserSnapshot);
+            activeHydrations.delete(activeKey);
         });
 
-    activeHydrations.set(currentUserSnapshot, promise);
+    activeHydrations.set(activeKey, promise);
     return promise;
 }

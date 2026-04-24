@@ -4,6 +4,7 @@ export function useSettingsPreferenceActions({
     DEFAULT_SEARCH_LIMIT,
     applyAppFontPreferences,
     auth,
+    commit,
     configRepository,
     customFontDraft,
     databaseMaintenanceRepository,
@@ -75,21 +76,6 @@ export function useSettingsPreferenceActions({
         setLocalFavoriteFriendsGroups(
             normalizedSnapshot.localFavoriteFriendsGroups
         );
-    }
-    async function commit(action, optimistic) {
-        const rollback = optimistic?.();
-        try {
-            await action();
-            return true;
-        } catch (error) {
-            rollback?.();
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.settings.generated_toast.failed_to_save_setting')
-            );
-            return false;
-        }
     }
     async function savePreferenceValue(key, value, action) {
         await commit(action, () => {

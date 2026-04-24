@@ -91,7 +91,7 @@ function parseTransportMessage(data) {
 }
 
 function isCurrentTransportTarget(context = activeContext) {
-    if (!context?.userId || !context?.currentUserSnapshot) {
+    if (!context?.userId) {
         return false;
     }
 
@@ -100,7 +100,8 @@ function isCurrentTransportTarget(context = activeContext) {
 
     return (
         runtimeState.auth.currentUserId === context.userId &&
-        runtimeState.auth.currentUserSnapshot === context.currentUserSnapshot &&
+        runtimeState.auth.currentUserEndpoint === context.endpoint &&
+        runtimeState.auth.currentUserWebsocket === context.websocket &&
         sessionState.isLoggedIn &&
         sessionState.sessionPhase === 'ready' &&
         sessionState.isFriendsLoaded
@@ -354,7 +355,8 @@ export async function startRealtimeTransport({
 
     if (
         activeContext?.userId === normalizedUserId &&
-        activeContext?.currentUserSnapshot === currentUserSnapshot &&
+        activeContext?.endpoint === endpoint &&
+        activeContext?.websocket === websocket &&
         activeSocket !== null
     ) {
         return stopRealtimeTransport;

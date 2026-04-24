@@ -33,13 +33,17 @@ function formatTimestampLong(value) {
     return formatDateFilter(value, 'long');
 }
 
-async function copyFeedText(text, label = 'Value') {
+async function copyFeedText(text, label, t) {
     const value = String(text || '').trim();
     if (!value) {
         return;
     }
     await copyTextToClipboard(value);
-    toast.success(t('view.feed.generated_dynamic.value_copied', { value: label }));
+    toast.success(
+        t('view.feed.generated_dynamic.value_copied', {
+            value: label || 'Value'
+        })
+    );
 }
 
 function SortButton({ column, label }) {
@@ -258,7 +262,9 @@ function FeedUserLink({
                 <ContextMenuGroup>
                     <ContextMenuItem
                         disabled={!userId}
-                        onSelect={() => void copyFeedText(userId, 'User ID')}
+                        onSelect={() =>
+                            void copyFeedText(userId, 'User ID', t)
+                        }
                     >
                         <CopyIcon />
                         {t('view.feed.generated.copy_user_id')}
@@ -266,7 +272,7 @@ function FeedUserLink({
                     <ContextMenuItem
                         disabled={!displayName}
                         onSelect={() =>
-                            void copyFeedText(displayName, 'Display name')
+                            void copyFeedText(displayName, 'Display name', t)
                         }
                     >
                         <CopyIcon />

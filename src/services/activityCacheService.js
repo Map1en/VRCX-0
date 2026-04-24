@@ -7,7 +7,7 @@ import { runActivityWorkerTask } from '@/workers/activityWorkerRunner.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
 const snapshotMap = new Map();
-const activeWarmups = new WeakMap();
+const activeWarmups = new Map();
 const FULL_CACHE_BATCH_DAYS = 30;
 const FULL_CACHE_MAX_DAYS = 3650;
 const INITIAL_RANGE_DAYS = 90;
@@ -56,13 +56,12 @@ function clearSnapshot(userId) {
     snapshotMap.clear();
 }
 
-function isCurrentWarmupTarget(userId, currentUserSnapshot) {
+function isCurrentWarmupTarget(userId) {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
 
     return (
         runtimeState.auth.currentUserId === userId &&
-        runtimeState.auth.currentUserSnapshot === currentUserSnapshot &&
         sessionState.isLoggedIn &&
         sessionState.sessionPhase === 'ready'
     );
@@ -72,8 +71,8 @@ function updateActivityState(patch) {
     useRuntimeStore.getState().setActivityState(patch);
 }
 
-function updateWarmupProgress(snapshot, currentUserSnapshot, detail) {
-    if (!isCurrentWarmupTarget(snapshot.userId, currentUserSnapshot)) {
+function updateWarmupProgress(snapshot, detail) {
+    if (!isCurrentWarmupTarget(snapshot.userId)) {
         return false;
     }
 
@@ -89,8 +88,8 @@ function updateWarmupProgress(snapshot, currentUserSnapshot, detail) {
     return true;
 }
 
-function setWarmupReady(snapshot, currentUserSnapshot, displayName) {
-    if (!isCurrentWarmupTarget(snapshot.userId, currentUserSnapshot)) {
+function setWarmupReady(snapshot, displayName) {
+    if (!isCurrentWarmupTarget(snapshot.userId)) {
         return false;
     }
 
@@ -107,8 +106,8 @@ function setWarmupReady(snapshot, currentUserSnapshot, displayName) {
     return true;
 }
 
-function setWarmupError(userId, currentUserSnapshot, error) {
-    if (!isCurrentWarmupTarget(userId, currentUserSnapshot)) {
+function setWarmupError(userId, error) {
+    if (!isCurrentWarmupTarget(userId)) {
         return;
     }
 
@@ -306,11 +305,10 @@ async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
 
     updateWarmupProgress(
         snapshot,
-        currentUserSnapshot,
         `Activity cache warm-up started for ${displayName} (${snapshot.sync.cachedRangeDays || 0} cached day(s)).`
     );
 
-    if (!isCurrentWarmupTarget(normalizedUserId, currentUserSnapshot)) {
+    if (!isCurrentWarmupTarget(normalizedUserId)) {
         return {
             userId: normalizedUserId,
             stale: true
@@ -322,7 +320,6 @@ async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
         if (
             !updateWarmupProgress(
                 snapshot,
-                currentUserSnapshot,
                 `Activity cache baseline built for ${displayName} (${snapshot.sync.cachedRangeDays || 0} cached day(s)).`
             )
         ) {
@@ -336,7 +333,6 @@ async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
         if (
             !updateWarmupProgress(
                 snapshot,
-                currentUserSnapshot,
                 `Activity cache snapshot refreshed for ${displayName} (${snapshot.sync.cachedRangeDays || 0} cached day(s)).`
             )
         ) {
@@ -354,7 +350,7 @@ async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
         toDays: currentDays
     });
 
-    if (!isCurrentWarmupTarget(normalizedUserId, currentUserSnapshot)) {
+    if (!isCurrentWarmupTarget(normalizedUserId)) {
         return {
             userId: normalizedUserId,
             stale: true
@@ -362,7 +358,7 @@ async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
     }
 
     if (probeItems.length === 0) {
-        setWarmupReady(snapshot, currentUserSnapshot, displayName);
+        setWarmupReady(snapshot, displayName);
         return {
             userId: normalizedUserId,
             stale: false,
@@ -379,7 +375,7 @@ async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
 
     let targetDays = currentDays;
     while (targetDays < totalDays) {
-        if (!isCurrentWarmupTarget(normalizedUserId, currentUserSnapshot)) {
+        if (!isCurrentWarmupTarget(normalizedUserId)) {
             return {
                 userId: normalizedUserId,
                 stale: true
@@ -396,7 +392,6 @@ async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
         if (
             !updateWarmupProgress(
                 snapshot,
-                currentUserSnapshot,
                 `Activity cache warm-up expanded to ${snapshot.sync.cachedRangeDays || nextTarget} day(s) for ${displayName}.`
             )
         ) {
@@ -407,7 +402,7 @@ async function runActivityCacheWarmup({ userId, currentUserSnapshot }) {
         }
     }
 
-    setWarmupReady(snapshot, currentUserSnapshot, displayName);
+    setWarmupReady(snapshot, displayName);
     return {
         userId: normalizedUserId,
         stale: false,
@@ -434,8 +429,8 @@ export function bootstrapActivityCache(options) {
         );
     }
 
-    if (activeWarmups.has(currentUserSnapshot)) {
-        return activeWarmups.get(currentUserSnapshot);
+    if (activeWarmups.has(normalizedUserId)) {
+        return activeWarmups.get(normalizedUserId);
     }
 
     const promise = runActivityCacheWarmup({
@@ -443,14 +438,14 @@ export function bootstrapActivityCache(options) {
         currentUserSnapshot
     })
         .catch((error) => {
-            setWarmupError(normalizedUserId, currentUserSnapshot, error);
+            setWarmupError(normalizedUserId, error);
             throw error;
         })
         .finally(() => {
-            activeWarmups.delete(currentUserSnapshot);
+            activeWarmups.delete(normalizedUserId);
         });
 
-    activeWarmups.set(currentUserSnapshot, promise);
+    activeWarmups.set(normalizedUserId, promise);
     return promise;
 }
 

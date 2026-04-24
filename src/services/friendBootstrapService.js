@@ -13,7 +13,7 @@ import { useSessionStore } from '@/state/sessionStore.js';
 
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
-const activeBootstraps = new WeakMap();
+const activeBootstraps = new Map();
 const MISSING_FRIEND_CONCURRENCY = 4;
 
 function normalizeUserId(value) {
@@ -177,13 +177,17 @@ function buildBucketIds(expectedIds, friendsById, stateBucket) {
         );
 }
 
-function isCurrentBootstrapTarget(userId, currentUserSnapshot) {
+function bootstrapTargetKey(userId, endpoint = '') {
+    return `${normalizeUserId(userId)}\u0000${String(endpoint || '')}`;
+}
+
+function isCurrentBootstrapTarget(userId, endpoint = '') {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
 
     return (
         runtimeState.auth.currentUserId === userId &&
-        runtimeState.auth.currentUserSnapshot === currentUserSnapshot &&
+        runtimeState.auth.currentUserEndpoint === String(endpoint || '') &&
         sessionState.isLoggedIn &&
         sessionState.sessionPhase === 'ready'
     );
@@ -362,7 +366,7 @@ async function runFriendBootstrap({
             : 'No direct user lookup fallback was needed.'
     ].join(' ');
 
-    if (!isCurrentBootstrapTarget(normalizedUserId, currentUserSnapshot)) {
+    if (!isCurrentBootstrapTarget(normalizedUserId, endpoint)) {
         return {
             userId: normalizedUserId,
             count: orderedFriendIds.length,
@@ -406,14 +410,15 @@ export function bootstrapFriendRoster(options) {
         );
     }
 
-    if (activeBootstraps.has(currentUserSnapshot)) {
-        return activeBootstraps.get(currentUserSnapshot);
+    const activeKey = bootstrapTargetKey(normalizedUserId, options?.endpoint);
+    if (activeBootstraps.has(activeKey)) {
+        return activeBootstraps.get(activeKey);
     }
 
     const promise = runFriendBootstrap(options)
         .catch((error) => {
             if (
-                isCurrentBootstrapTarget(normalizedUserId, currentUserSnapshot)
+                isCurrentBootstrapTarget(normalizedUserId, options?.endpoint)
             ) {
                 useFriendRosterStore
                     .getState()
@@ -433,9 +438,9 @@ export function bootstrapFriendRoster(options) {
             throw error;
         })
         .finally(() => {
-            activeBootstraps.delete(currentUserSnapshot);
+            activeBootstraps.delete(activeKey);
         });
 
-    activeBootstraps.set(currentUserSnapshot, promise);
+    activeBootstraps.set(activeKey, promise);
     return promise;
 }

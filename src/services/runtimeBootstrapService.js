@@ -36,8 +36,7 @@ function isSameAuthenticatedContext(left, right) {
     return (
         left?.userId === right?.userId &&
         left?.endpoint === right?.endpoint &&
-        left?.websocket === right?.websocket &&
-        left?.currentUserSnapshot === right?.currentUserSnapshot
+        left?.websocket === right?.websocket
     );
 }
 

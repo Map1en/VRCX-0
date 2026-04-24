@@ -277,15 +277,14 @@ function clearStoppedGameLocationSnapshot(
         return;
     }
 
-    let changed = false;
+    const clearedFields = {};
     const clearIfMatches = (field, ...values) => {
         const currentValue = normalizeString(currentUserSnapshot[field]);
         if (
             currentValue &&
             values.some((value) => value && currentValue === value)
         ) {
-            currentUserSnapshot[field] = '';
-            changed = true;
+            clearedFields[field] = '';
         }
     };
 
@@ -295,9 +294,12 @@ function clearStoppedGameLocationSnapshot(
     clearIfMatches('$travelingToLocation', stoppedDestination);
     clearIfMatches('worldId', stoppedWorldId);
 
-    if (changed) {
+    if (Object.keys(clearedFields).length) {
         useRuntimeStore.getState().setAuthBootstrap({
-            currentUserSnapshot
+            currentUserSnapshot: {
+                ...currentUserSnapshot,
+                ...clearedFields
+            }
         });
     }
 }

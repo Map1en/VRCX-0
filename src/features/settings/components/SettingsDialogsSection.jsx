@@ -1,4 +1,4 @@
-import { useSettingsPage } from '../SettingsPageContext.jsx';
+import { useSettingsDialogs } from '../SettingsPageContext.jsx';
 
 export function SettingsDialogsSection() {
     const {
@@ -58,7 +58,7 @@ export function SettingsDialogsSection() {
         resetSharedFeedFilters,
         openSourceNoticeOpen,
         setOpenSourceNoticeOpen
-    } = useSettingsPage();
+    } = useSettingsDialogs();
 
     return (
         <SettingsDialogs

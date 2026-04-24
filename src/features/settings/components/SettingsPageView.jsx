@@ -1,4 +1,10 @@
-import { useSettingsPage } from '../SettingsPageContext.jsx';
+import {
+    useSettingsIntegrationsSection,
+    useSettingsInterface,
+    useSettingsMedia,
+    useSettingsShell,
+    useSettingsSocial
+} from '../SettingsPageContext.jsx';
 import { SettingsAdvancedSection } from './SettingsAdvancedSection.jsx';
 import { SettingsDialogsSection } from './SettingsDialogsSection.jsx';
 import { SettingsNotificationsSection } from './SettingsNotificationsSection.jsx';
@@ -16,9 +22,12 @@ export function SettingsPageView() {
         settingsTabs,
         TabsTrigger,
         loading,
-        Spinner,
+        Spinner
+    } = useSettingsShell();
+    const {
         SettingsInterfaceTab,
         locale,
+        prefs,
         zoomInput,
         zoomLevel,
         commit,
@@ -29,6 +38,7 @@ export function SettingsPageView() {
         setZoomInput,
         setZoomLevelPreference,
         saveBoolPreference,
+        savePreferenceValue,
         setDataTableStripedPreference,
         setPointerOnHoverPreference,
         setAccessibleStatusIndicatorsPreference,
@@ -38,7 +48,9 @@ export function SettingsPageView() {
         setIntConfigPreference,
         resetTrustColors,
         saveTrustColor,
-        setPrefs,
+        setPrefs
+    } = useSettingsInterface();
+    const {
         SettingsMediaTab,
         setScreenshotHelperPreference,
         setScreenshotHelperModifyFilenamePreference,
@@ -50,7 +62,9 @@ export function SettingsPageView() {
         setSaveInstancePrintsPreference,
         handleCropInstancePrintsChange,
         setSaveInstanceStickersPreference,
-        setSaveInstanceEmojiPreference,
+        setSaveInstanceEmojiPreference
+    } = useSettingsMedia();
+    const {
         SettingsIntegrationsTab,
         discordPrefs,
         integrationPrefs,
@@ -65,7 +79,9 @@ export function SettingsPageView() {
         saveAvatarProviderConfig,
         avatarProviderConfigRef,
         applyAvatarProviderConfig,
-        setAvatarProviderDialogOpen,
+        setAvatarProviderDialogOpen
+    } = useSettingsIntegrationsSection();
+    const {
         SettingsSocialTab,
         selectedFavoriteFriendGroupLabel,
         favoriteFriendGroupOptions,
@@ -75,7 +91,7 @@ export function SettingsPageView() {
         setRecentActionCooldownEnabledPreference,
         setRecentActionCooldownMinutesPreference,
         toggleLocalFavoriteFriendsGroup
-    } = useSettingsPage();
+    } = useSettingsSocial();
 
     return (
         <div className="x-container flex flex-1 flex-col overflow-hidden p-4">

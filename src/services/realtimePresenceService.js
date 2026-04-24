@@ -130,6 +130,18 @@ function ensureArrayMembership(list, userId) {
     return values;
 }
 
+function getCurrentUserSnapshot(runtimeStore) {
+    const snapshot = runtimeStore.auth.currentUserSnapshot;
+    return snapshot && typeof snapshot === 'object' ? snapshot : null;
+}
+
+function setCurrentUserSnapshot(runtimeStore, snapshot) {
+    runtimeStore.setAuthBootstrap({
+        currentUserDisplayName: getDisplayName(snapshot),
+        currentUserSnapshot: snapshot
+    });
+}
+
 function firstString(...values) {
     for (const value of values) {
         if (typeof value === 'string' && value.trim()) {
@@ -598,16 +610,12 @@ function recordProfileDiffFeed({ userId, patch = {}, previous = {} }) {
 
 function patchCurrentUserSnapshot(patch) {
     const runtimeStore = useRuntimeStore.getState();
-    const snapshot = runtimeStore.auth.currentUserSnapshot;
-    if (!snapshot || typeof snapshot !== 'object') {
+    const snapshot = getCurrentUserSnapshot(runtimeStore);
+    if (!snapshot) {
         return;
     }
 
-    Object.assign(snapshot, patch);
-    runtimeStore.setAuthBootstrap({
-        currentUserDisplayName: getDisplayName(snapshot),
-        currentUserSnapshot: snapshot
-    });
+    setCurrentUserSnapshot(runtimeStore, { ...snapshot, ...patch });
 }
 
 function syncCurrentUserFriendState(userId, stateBucket) {
@@ -618,47 +626,47 @@ function syncCurrentUserFriendState(userId, stateBucket) {
     const nextStateBucket = normalizeStateBucket(stateBucket) || 'offline';
 
     const runtimeStore = useRuntimeStore.getState();
-    const snapshot = runtimeStore.auth.currentUserSnapshot;
-    if (!snapshot || typeof snapshot !== 'object') {
+    const snapshot = getCurrentUserSnapshot(runtimeStore);
+    if (!snapshot) {
         return;
     }
 
-    snapshot.friends = ensureArrayMembership(
-        snapshot.friends,
-        normalizedUserId
-    );
-    snapshot.onlineFriends = removeFromArray(
-        snapshot.onlineFriends,
-        normalizedUserId
-    );
-    snapshot.activeFriends = removeFromArray(
-        snapshot.activeFriends,
-        normalizedUserId
-    );
-    snapshot.offlineFriends = removeFromArray(
-        snapshot.offlineFriends,
-        normalizedUserId
-    );
+    const nextSnapshot = {
+        ...snapshot,
+        friends: ensureArrayMembership(snapshot.friends, normalizedUserId),
+        onlineFriends: removeFromArray(
+            snapshot.onlineFriends,
+            normalizedUserId
+        ),
+        activeFriends: removeFromArray(
+            snapshot.activeFriends,
+            normalizedUserId
+        ),
+        offlineFriends: removeFromArray(
+            snapshot.offlineFriends,
+            normalizedUserId
+        )
+    };
 
     if (nextStateBucket === 'online') {
-        snapshot.onlineFriends = ensureArrayMembership(
-            snapshot.onlineFriends,
+        nextSnapshot.onlineFriends = ensureArrayMembership(
+            nextSnapshot.onlineFriends,
             normalizedUserId
         );
     } else if (nextStateBucket === 'active') {
-        snapshot.activeFriends = ensureArrayMembership(
-            snapshot.activeFriends,
+        nextSnapshot.activeFriends = ensureArrayMembership(
+            nextSnapshot.activeFriends,
             normalizedUserId
         );
     } else {
-        snapshot.offlineFriends = ensureArrayMembership(
-            snapshot.offlineFriends,
+        nextSnapshot.offlineFriends = ensureArrayMembership(
+            nextSnapshot.offlineFriends,
             normalizedUserId
         );
     }
 
     runtimeStore.setAuthBootstrap({
-        currentUserSnapshot: snapshot
+        currentUserSnapshot: nextSnapshot
     });
 }
 
@@ -669,27 +677,28 @@ function removeCurrentUserFriend(userId) {
     }
 
     const runtimeStore = useRuntimeStore.getState();
-    const snapshot = runtimeStore.auth.currentUserSnapshot;
-    if (!snapshot || typeof snapshot !== 'object') {
+    const snapshot = getCurrentUserSnapshot(runtimeStore);
+    if (!snapshot) {
         return;
     }
 
-    snapshot.friends = removeFromArray(snapshot.friends, normalizedUserId);
-    snapshot.onlineFriends = removeFromArray(
-        snapshot.onlineFriends,
-        normalizedUserId
-    );
-    snapshot.activeFriends = removeFromArray(
-        snapshot.activeFriends,
-        normalizedUserId
-    );
-    snapshot.offlineFriends = removeFromArray(
-        snapshot.offlineFriends,
-        normalizedUserId
-    );
-
     runtimeStore.setAuthBootstrap({
-        currentUserSnapshot: snapshot
+        currentUserSnapshot: {
+            ...snapshot,
+            friends: removeFromArray(snapshot.friends, normalizedUserId),
+            onlineFriends: removeFromArray(
+                snapshot.onlineFriends,
+                normalizedUserId
+            ),
+            activeFriends: removeFromArray(
+                snapshot.activeFriends,
+                normalizedUserId
+            ),
+            offlineFriends: removeFromArray(
+                snapshot.offlineFriends,
+                normalizedUserId
+            )
+        }
     });
 }
 
