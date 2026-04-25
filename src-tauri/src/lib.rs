@@ -90,6 +90,12 @@ pub fn run() {
         )
         .init();
 
+    #[cfg(target_os = "linux")]
+    {
+        use webkit2gtk_nvidia_quirk::{apply_workaround_with_options, ApplyWorkaroundOptions};
+        apply_workaround_with_options(ApplyWorkaroundOptions::default());
+    }
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
