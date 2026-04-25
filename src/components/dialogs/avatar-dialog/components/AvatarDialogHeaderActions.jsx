@@ -104,13 +104,13 @@ export function AvatarDialogHeaderActions({
                                 )
                             }
                         >
-                            {t('dialog.avatar.generated.share_copy_url')}
+                            {t('dialog.avatar.actions.share')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={ExternalLinkIcon}
                             onSelect={() => onOpenLink(avatarUrl)}
                         >
-                            {t('dialog.avatar.generated.open_vrchat_page')}
+                            {t('common.actions.open_link')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={CopyIcon}
@@ -121,7 +121,7 @@ export function AvatarDialogHeaderActions({
                                 )
                             }
                         >
-                            {t('dialog.avatar.generated.copy_avatar_id')}
+                            {t('dialog.avatar.info.copy_id')}
                         </EntityActionItem>
                     </>
                 ) : null}
@@ -138,7 +138,7 @@ export function AvatarDialogHeaderActions({
                         icon={DownloadIcon}
                         onSelect={() => onOpenLink(packageUrl)}
                     >
-                        {t('dialog.avatar.generated.download_unity_package')}
+                        {t('dialog.avatar.actions.download_package')}
                     </EntityActionItem>
                 ) : null}
                 {canManageAvatar ? (
@@ -163,14 +163,14 @@ export function AvatarDialogHeaderActions({
                             disabled={actionStatus === 'rename'}
                             onSelect={onRename}
                         >
-                            {t('dialog.avatar.generated.rename')}
+                            {t('dialog.avatar.actions.rename')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={PencilIcon}
                             disabled={actionStatus === 'description'}
                             onSelect={onChangeDescription}
                         >
-                            {t('dialog.avatar.generated.change_description')}
+                            {t('dialog.avatar.actions.change_description')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={PencilIcon}
@@ -191,7 +191,7 @@ export function AvatarDialogHeaderActions({
                             disabled={actionStatus === 'image-upload'}
                             onSelect={onChangeImage}
                         >
-                            {t('dialog.avatar.generated.change_image')}
+                            {t('dialog.avatar.actions.change_image')}
                         </EntityActionItem>
                         <EntityActionSeparator />
                         {hasImposter ? (

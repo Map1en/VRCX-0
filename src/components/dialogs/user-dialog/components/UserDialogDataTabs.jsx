@@ -46,7 +46,7 @@ export function UserDialogMutualTab({
                 t={t}
             >
                 <span className="text-muted-foreground text-sm">
-                    {t('dialog.user.generated.sort_by')}
+                    {t('dialog.user.groups.sort_by')}
                 </span>
                 <Select
                     value={mutualSort}
@@ -121,7 +121,7 @@ export function UserDialogWorldsTab({
                         className="ml-auto h-8 w-40"
                     />
                     <span className="text-muted-foreground text-sm">
-                        {t('dialog.user.generated.sort_by')}
+                        {t('dialog.user.worlds.sort_by')}
                     </span>
                     <Select
                         value={worldSort}
@@ -285,7 +285,7 @@ export function UserDialogAvatarsTab({
                 {profile.id === currentUserId ? (
                     <>
                         <span className="text-muted-foreground text-sm">
-                            {t('dialog.user.generated.sort_by')}
+                            {t('dialog.user.avatars.sort_by')}
                         </span>
                         <Select
                             value={avatarSort}

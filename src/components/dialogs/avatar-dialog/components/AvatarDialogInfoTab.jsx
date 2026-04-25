@@ -55,7 +55,7 @@ export function AvatarDialogInfoTab({
             <EntityInfoGrid>
                 {galleryImages.length || canManageAvatar ? (
                     <EntityInfoBlock
-                        label={t('dialog.avatar.generated.gallery')}
+                        label={t('dialog.avatar.info.gallery')}
                         full
                     >
                         <div className="mt-2 flex w-full flex-col gap-2">
@@ -68,7 +68,7 @@ export function AvatarDialogInfoTab({
                                     onClick={onUploadGallery}
                                 >
                                     <UploadIcon data-icon="inline-start" />
-                                    {t('dialog.avatar.generated.upload')}
+                                    {t('dialog.screenshot_metadata.upload')}
                                 </Button>
                             ) : null}
                             {galleryImages.length ? (
@@ -140,7 +140,7 @@ export function AvatarDialogInfoTab({
                 ) : null}
                 {listings.length ? (
                     <EntityInfoBlock
-                        label={t('dialog.avatar.generated.published_listings')}
+                        label={t('dialog.avatar.info.listings')}
                         full
                     >
                         <div className="flex flex-col gap-2">
@@ -168,9 +168,9 @@ export function AvatarDialogInfoTab({
                     </EntityInfoBlock>
                 ) : null}
                 <EntityMemoTextarea
-                    label={t('dialog.avatar.generated.memo')}
+                    label={t('dialog.avatar.info.memo')}
                     value={memo}
-                    placeholder={t('dialog.avatar.generated.memo')}
+                    placeholder={t('dialog.avatar.info.memo_placeholder')}
                     onSave={onSaveMemo}
                 />
                 <EntityInfoBlock
@@ -180,7 +180,7 @@ export function AvatarDialogInfoTab({
                     full
                 />
                 <EntityInfoBlock
-                    label={t('dialog.avatar.generated.author')}
+                    label={t('table.import.author')}
                     onClick={avatar.authorId ? onOpenAuthor : undefined}
                 >
                     <span className="block truncate text-xs">
@@ -188,7 +188,7 @@ export function AvatarDialogInfoTab({
                     </span>
                 </EntityInfoBlock>
                 <EntityInfoBlock
-                    label={t('dialog.avatar.generated.created_at')}
+                    label={t('dialog.avatar.info.created_at')}
                     value={
                         avatar.created_at || avatar.createdAt
                             ? formatDateFilter(
@@ -199,7 +199,7 @@ export function AvatarDialogInfoTab({
                     }
                 />
                 <EntityInfoBlock
-                    label={t('dialog.avatar.generated.last_updated')}
+                    label={t('dialog.avatar.info.last_updated')}
                     value={
                         avatar.updated_at || avatar.updatedAt
                             ? formatDateFilter(
@@ -210,11 +210,11 @@ export function AvatarDialogInfoTab({
                     }
                 />
                 <EntityInfoBlock
-                    label={t('dialog.avatar.generated.version')}
+                    label={t('dialog.avatar.info.version')}
                     value={avatar.version ? String(avatar.version) : EMPTY_VALUE}
                 />
                 <EntityInfoBlock
-                    label={t('dialog.avatar.generated.time_spent')}
+                    label={t('dialog.avatar.info.time_spent')}
                     value={
                         avatar.$timeSpent
                             ? timeToText(avatar.$timeSpent)
@@ -222,7 +222,7 @@ export function AvatarDialogInfoTab({
                     }
                 />
                 <EntityInfoBlock
-                    label={t('dialog.avatar.generated.platform')}
+                    label={t('dialog.avatar.info.platform')}
                     full
                 >
                     <span className="block text-xs whitespace-normal">
@@ -241,7 +241,7 @@ export function AvatarDialogInfoTab({
                 ) : null}
                 {contentTags.length ? (
                     <EntityInfoBlock
-                        label={t('dialog.avatar.generated.content_tags')}
+                        label={t('dialog.avatar.info.tags')}
                         full
                     >
                         <AvatarDialogTagList

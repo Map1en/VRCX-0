@@ -123,7 +123,7 @@ export function GroupInstanceRows({ instances, currentUserId, endpoint = '' }) {
     }
 
     return (
-        <EntityInfoBlock label={t('dialog.group.generated.instances')} full>
+        <EntityInfoBlock label={t('dialog.group.info.instances')} full>
             <div className="mt-1 flex flex-col gap-2">
                 {instances.map((instance, index) => {
                     const location = getInstanceLocation(instance);

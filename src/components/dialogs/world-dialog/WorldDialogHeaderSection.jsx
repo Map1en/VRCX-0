@@ -110,15 +110,13 @@ export function WorldDialogHeaderSection({ handlers, state, t }) {
                     {world.occupants > 0 ? (
                         <Badge variant="outline">
                             <UsersIcon data-icon="inline-start" />
-                            {t('dialog.world.generated.occupants')}{' '}
-                            {world.occupants}
+                            {t('dialog.world.info.players')} {world.occupants}
                         </Badge>
                     ) : null}
                     {world.favorites > 0 ? (
                         <Badge variant="outline">
                             <HeartIcon data-icon="inline-start" />
-                            {t('dialog.world.generated.favorites')}{' '}
-                            {world.favorites}
+                            {t('dialog.world.info.favorites')} {world.favorites}
                         </Badge>
                     ) : null}
                     {world.$isCached ? (
@@ -180,19 +178,19 @@ export function WorldDialogHeaderSection({ handlers, state, t }) {
                                     icon={Share2Icon}
                                     onSelect={() => void onCopyWorldUrl()}
                                 >
-                                    {t('dialog.world.generated.share_copy_url')}
+                                    {t('dialog.world.actions.share')}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={ExternalLinkIcon}
                                     onSelect={onOpenWorldPage}
                                 >
-                                    {t('dialog.world.generated.open_vrchat_page')}
+                                    {t('common.actions.open_link')}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={CopyIcon}
                                     onSelect={() => void onCopyWorldId()}
                                 >
-                                    {t('dialog.world.generated.copy_world_id')}
+                                    {t('dialog.world.info.copy_id')}
                                 </EntityActionItem>
                             </>
                         ) : null}
@@ -202,7 +200,7 @@ export function WorldDialogHeaderSection({ handlers, state, t }) {
                             disabled={actionStatus === 'new-instance'}
                             onSelect={onNewInstance}
                         >
-                            {t('dialog.world.generated.new_instance')}
+                            {t('dialog.world.actions.new_instance')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={MessageSquareIcon}
@@ -216,14 +214,18 @@ export function WorldDialogHeaderSection({ handlers, state, t }) {
                             disabled={!canUpdateHome || actionStatus === 'home'}
                             onSelect={onHome}
                         >
-                            {isHomeWorld ? 'Reset Home' : 'Make Home'}
+                            {t(
+                                isHomeWorld
+                                    ? 'dialog.world.actions.reset_home'
+                                    : 'dialog.world.actions.make_home'
+                            )}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={LineChartIcon}
                             disabled={!previousInstances.length}
                             onSelect={() => onChangeTab('visit-history')}
                         >
-                            {t('dialog.world.generated.visit_history')}
+                            {t('dialog.world.actions.show_previous_instances')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={UploadIcon}

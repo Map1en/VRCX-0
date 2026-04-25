@@ -93,7 +93,7 @@ export function AvatarDialogHeaderBadges({
             ) : null}
             {avatar.unityPackageUrl || avatar.unityPackage?.url ? (
                 <Badge variant="outline">
-                    {t('dialog.avatar.generated.future_proofing')}
+                    {t('dialog.avatar.tags.future_proofing')}
                 </Badge>
             ) : null}
             {avatar.tags?.some((tag) => /quest/i.test(tag)) ? (
@@ -111,7 +111,7 @@ export function AvatarDialogHeaderBadges({
             ) : null}
             {platformInfo?.android?.platform ? (
                 <PlatformBadge
-                    label={t('dialog.avatar.generated.android')}
+                    label="Android"
                     rating={platformInfo.android.performanceRating}
                     fileSize={fileAnalysis.android?._fileSize}
                     icon={SmartphoneIcon}

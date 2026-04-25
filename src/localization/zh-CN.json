@@ -1789,7 +1789,8 @@
                 "platform": "支持的平台",
                 "last_visited": "最后游玩时间",
                 "visit_count": "游玩次数",
-                "time_spent": "总停留时长"
+                "time_spent": "总停留时长",
+                "persistent_data": "持久化数据"
             },
             "json": {
                 "header": "原始 JSON 信息"

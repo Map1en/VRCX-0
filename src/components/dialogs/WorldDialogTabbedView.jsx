@@ -305,10 +305,13 @@ export function WorldDialogTabbedView({
             worldDialogShortName
         });
     const tabs = [
-        { value: 'instances', label: 'Instances' },
-        { value: 'visit-history', label: 'Visit History' },
-        { value: 'info', label: 'Info' },
-        { value: 'json', label: 'JSON' }
+        { value: 'instances', label: t('dialog.world.instances.header') },
+        {
+            value: 'visit-history',
+            label: t('dialog.previous_instances.header')
+        },
+        { value: 'info', label: t('dialog.world.info.header') },
+        { value: 'json', label: t('dialog.world.json.header') }
     ];
 
     function changeTab(tab) {

@@ -166,7 +166,7 @@ export function UserDialogInfoTab({
             <EntityInfoGrid>
                 {profile.note && !hideUserNotes ? (
                     <EntityInfoBlock
-                        label={t('dialog.user.generated.note')}
+                        label={t('dialog.user.info.note')}
                         full
                         onClick={onEditMemo}
                     >
@@ -177,7 +177,7 @@ export function UserDialogInfoTab({
                 ) : null}
                 {memo && !hideUserMemos ? (
                     <EntityInfoBlock
-                        label={t('dialog.user.generated.memo')}
+                        label={t('dialog.user.info.memo')}
                         full
                         onClick={onEditMemo}
                     >
@@ -280,7 +280,7 @@ export function UserDialogInfoTab({
                         </span>
                     )}
                 </EntityInfoBlock>
-                <EntityInfoBlock label={t('dialog.user.generated.bio')} full>
+                <EntityInfoBlock label={t('dialog.user.info.bio')} full>
                     <div className="flex items-start gap-2">
                         <pre className="text-muted-foreground max-h-52 min-w-0 flex-1 overflow-auto font-sans text-xs whitespace-pre-wrap">
                             {visibleBio}
@@ -351,22 +351,22 @@ export function UserDialogInfoTab({
                 </EntityInfoBlock>
                 {!isCurrentUser ? (
                     <EntityInfoBlock
-                        label={t('dialog.user.generated.last_seen')}
+                        label={t('dialog.user.info.last_seen')}
                         value={formatStatsDate(lastSeen)}
                     />
                 ) : null}
                 <EntityInfoBlock
-                    label={t('dialog.user.generated.last_login')}
+                    label={t('dialog.user.info.last_login')}
                     value={formatDate(
                         profile.last_login || profile.last_activity
                     )}
                 />
                 <EntityInfoBlock
-                    label={t('dialog.user.generated.last_activity')}
+                    label={t('dialog.user.info.last_activity')}
                     value={formatDate(profile.last_activity)}
                 />
                 <EntityInfoBlock
-                    label={t('dialog.user.generated.date_joined')}
+                    label={t('dialog.user.info.date_joined')}
                     value={profile.date_joined}
                 />
                 {isCurrentUser ? (
@@ -393,7 +393,7 @@ export function UserDialogInfoTab({
                             }
                         />
                         <EntityInfoBlock
-                            label={t('dialog.user.generated.time_together')}
+                            label={t('dialog.user.info.time_together')}
                             value={formatStatsDuration(userTimeSpent)}
                         />
                     </>
@@ -417,7 +417,7 @@ export function UserDialogInfoTab({
                     </EntityInfoBlock>
                 ) : null}
                 <EntityInfoBlock
-                    label={t('dialog.user.generated.user_id')}
+                    label={t('dialog.user.info.id')}
                     mono
                     full
                 >
@@ -443,9 +443,7 @@ export function UserDialogInfoTab({
                                         </DropdownMenuTrigger>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        {t(
-                                            'dialog.user.generated.copy_user_details'
-                                        )}
+                                        {t('dialog.user.info.id_tooltip')}
                                     </TooltipContent>
                                 </Tooltip>
                                 <DropdownMenuContent align="start">
@@ -459,7 +457,7 @@ export function UserDialogInfoTab({
                                             }
                                         >
                                             {t(
-                                                'dialog.user.generated.copy_user_id'
+                                                'dialog.user.info.copy_id'
                                             )}
                                         </DropdownMenuItem>
                                         {profile.displayName ? (
@@ -472,7 +470,7 @@ export function UserDialogInfoTab({
                                                 }
                                             >
                                                 {t(
-                                                    'dialog.user.generated.copy_display_name'
+                                                    'dialog.user.info.copy_display_name'
                                                 )}
                                             </DropdownMenuItem>
                                         ) : null}

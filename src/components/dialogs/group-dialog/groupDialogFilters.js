@@ -1,14 +1,14 @@
 export function getGroupDialogTabs(t) {
     return [
-        { value: 'info', label: t('dialog.group.moderation_tabs.info') },
+        { value: 'info', label: t('dialog.group.info.header') },
         {
             value: 'instance-history',
-            label: t('dialog.group.moderation_tabs.instance_history')
+            label: t('dialog.previous_instances.header')
         },
-        { value: 'posts', label: t('dialog.group.moderation_tabs.posts') },
-        { value: 'members', label: t('dialog.group.moderation_tabs.members') },
-        { value: 'photos', label: t('dialog.group.moderation_tabs.photos') },
-        { value: 'json', label: t('dialog.group.moderation_tabs.json') }
+        { value: 'posts', label: t('dialog.group.posts.header') },
+        { value: 'members', label: t('dialog.group.members.header') },
+        { value: 'photos', label: t('dialog.group.gallery.header') },
+        { value: 'json', label: t('dialog.group.json.header') }
     ];
 }
 

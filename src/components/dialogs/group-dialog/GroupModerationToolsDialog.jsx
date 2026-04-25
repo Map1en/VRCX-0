@@ -247,7 +247,7 @@ export function GroupModerationToolsDialog({
             <DialogContent className="max-w-[min(92vw,64rem)]">
                 <DialogHeader>
                     <DialogTitle>
-                        {t('dialog.group.generated.moderation_tools')}
+                        {t('dialog.group.actions.moderation_tools')}
                     </DialogTitle>
                     <DialogDescription>
                         {group.name || 'Group'}

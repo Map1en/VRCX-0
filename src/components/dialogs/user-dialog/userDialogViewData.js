@@ -29,30 +29,35 @@ export function buildUserDialogTabs({
     const translate = typeof t === 'function' ? t : (key) => key;
 
     return [
-        { value: 'info', label: translate('dialog.user.tabs.info') },
+        { value: 'info', label: translate('dialog.user.info.header') },
         {
             value: 'instance-history',
-            label: translate('dialog.user.tabs.instance_history')
+            label: translate('dialog.previous_instances.header')
         },
         ...(!isCurrentUser && !currentUserHasSharedConnectionsOptOut
-            ? [{ value: 'mutual', label: translate('dialog.user.tabs.mutual') }]
+            ? [
+                  {
+                      value: 'mutual',
+                      label: translate('dialog.user.mutual_friends.header')
+                  }
+              ]
             : []),
-        { value: 'groups', label: translate('dialog.user.tabs.groups') },
-        { value: 'worlds', label: translate('dialog.user.tabs.worlds') },
+        { value: 'groups', label: translate('dialog.user.groups.header') },
+        { value: 'worlds', label: translate('dialog.user.worlds.header') },
         ...(!isCurrentUser
             ? [
                   {
                       value: 'favorite-worlds',
-                      label: translate('dialog.user.tabs.favorite_worlds')
+                      label: translate('dialog.user.favorite_worlds.header')
                   },
                   {
                       value: 'avatars',
-                      label: translate('dialog.user.tabs.avatars')
+                      label: translate('dialog.user.avatars.header')
                   }
               ]
             : []),
-        { value: 'activity', label: translate('dialog.user.tabs.activity') },
-        { value: 'json', label: translate('dialog.user.tabs.json') }
+        { value: 'activity', label: translate('dialog.user.activity.header') },
+        { value: 'json', label: translate('dialog.user.json.header') }
     ];
 }
 

@@ -115,23 +115,27 @@ function feedFiltersOptions() {
         {
             key: 'group.announcement',
             name: 'Group Announcement',
+            textKey: 'view.notification.filters.group.announcement',
             options: getOptions(['Off', 'On'])
         },
         {
             key: 'group.informative',
             name: 'Group Join',
+            textKey: 'view.notification.filters.group.informative',
             options: getOptions(['Off', 'On']),
             tooltip: 'When your request to join a group has been approved'
         },
         {
             key: 'group.invite',
             name: 'Group Invite',
+            textKey: 'view.notification.filters.group.invite',
             options: getOptions(['Off', 'On']),
             tooltip: 'When someone invites you to join a group'
         },
         {
             key: 'group.joinRequest',
             name: 'Group Join Request',
+            textKey: 'view.notification.filters.group.joinRequest',
             options: getOptions(['Off', 'On']),
             tooltip:
                 "When someone requests to join a group you're a moderator for"
@@ -139,11 +143,13 @@ function feedFiltersOptions() {
         {
             key: 'group.transfer',
             name: 'Group Transfer Request',
+            textKey: 'view.notification.filters.group.transfer',
             options: getOptions(['Off', 'On'])
         },
         {
             key: 'group.queueReady',
             name: 'Instance Queue Ready',
+            textKey: 'view.notification.filters.group.queueReady',
             options: getOptions(['Off', 'On'])
         },
         {

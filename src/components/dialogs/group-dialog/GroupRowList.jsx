@@ -163,7 +163,7 @@ function PhotoGalleryRows({ rows, loading, error, onPreviewImage }) {
     if (loading) {
         return (
             <GroupListState
-                title={t('dialog.group.generated.no_photos')}
+                title={t('dialog.group.gallery.header')}
                 loading
             />
         );
@@ -171,13 +171,13 @@ function PhotoGalleryRows({ rows, loading, error, onPreviewImage }) {
     if (error) {
         return (
             <GroupListState
-                title={t('dialog.group.generated.no_photos')}
+                title={t('dialog.group.gallery.header')}
                 error={error}
             />
         );
     }
     if (!galleryEntries.length) {
-        return (<GroupListState title={t('dialog.group.generated.no_photos')} />);
+        return (<GroupListState title={t('dialog.group.gallery.header')} />);
     }
 
     return (

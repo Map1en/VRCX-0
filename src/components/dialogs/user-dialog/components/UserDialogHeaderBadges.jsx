@@ -64,7 +64,7 @@ export function UserDialogHeaderBadges({
             ) : null}
             {mutualFriendCount ? (
                 <Badge variant="outline">
-                    {mutualFriendCount} {t('dialog.user.generated.mutual')}
+                    {mutualFriendCount} {t('dialog.user.tags.mutual_friends')}
                 </Badge>
             ) : null}
             {moderationState.block ? (

@@ -1,10 +1,26 @@
 import { toolsRepository } from '@/repositories/index.js';
 
 export const INVITE_MESSAGE_TYPES = [
-    { type: 'message', label: 'Invite' },
-    { type: 'request', label: 'Request Invite' },
-    { type: 'requestResponse', label: 'Request Invite Response' },
-    { type: 'response', label: 'Invite Response' }
+    {
+        type: 'message',
+        label: 'Invite',
+        labelKey: 'dialog.edit_invite_messages.invite_message_tab'
+    },
+    {
+        type: 'request',
+        label: 'Request Invite',
+        labelKey: 'dialog.edit_invite_messages.invite_request_tab'
+    },
+    {
+        type: 'requestResponse',
+        label: 'Request Invite Response',
+        labelKey: 'dialog.edit_invite_messages.invite_request_response_tab'
+    },
+    {
+        type: 'response',
+        label: 'Invite Response',
+        labelKey: 'dialog.edit_invite_messages.invite_response_tab'
+    }
 ];
 
 export const validModes = new Set(['select', 'manage', 'respond']);

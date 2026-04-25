@@ -145,7 +145,7 @@ export function GroupPostEditorDialog({
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="group-post-text">
-                            {t('dialog.group.generated.message')}
+                            {t('table.notification.message')}
                         </FieldLabel>
                         <Textarea
                             id="group-post-text"
@@ -175,14 +175,14 @@ export function GroupPostEditorDialog({
                             />
                             <FieldLabel htmlFor="group-post-send-notification">
                                 {t(
-                                    'dialog.group.generated.send_notification'
+                                    'dialog.shared_feed_filters.notification'
                                 )}
                             </FieldLabel>
                         </Field>
                     ) : null}
                     <Field>
                         <FieldLabel>
-                            {t('dialog.group.generated.post_visibility')}
+                            {t('dialog.group.posts.visibility')}
                         </FieldLabel>
                         <ToggleGroup
                             type="single"
@@ -211,7 +211,7 @@ export function GroupPostEditorDialog({
                     {form.visibility === 'group' ? (
                         <Field>
                             <FieldLabel>
-                                {t('dialog.group.generated.roles')}
+                                {t('dialog.group.info.roles')}
                             </FieldLabel>
                             {roles.length ? (
                                 <FieldGroup
@@ -263,7 +263,7 @@ export function GroupPostEditorDialog({
                     ) : null}
                     <Field>
                         <FieldLabel htmlFor="group-post-image-id">
-                            {t('dialog.group.generated.image')}
+                            {t('table.import.image')}
                         </FieldLabel>
                         <InputGroup>
                             <InputGroupInput

@@ -133,7 +133,7 @@ function InviteMessageTemplatesDialog({
                         <TabsList className="flex-wrap">
                             {INVITE_MESSAGE_TYPES.map((entry) => (
                                 <TabsTrigger key={entry.type} value={entry.type}>
-                                    {entry.label}
+                                    {t(entry.labelKey)}
                                 </TabsTrigger>
                             ))}
                         </TabsList>

@@ -152,11 +152,11 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                             {t('dialog.group.tags.verified')}
                         </Badge>
                     ) : null}
-                    <Badge variant="outline">
-                        <UsersIcon data-icon="inline-start" />
-                        {group.memberCount}{' '}
-                        {t('dialog.group.generated.members')}
-                    </Badge>
+                        <Badge variant="outline">
+                            <UsersIcon data-icon="inline-start" />
+                            {group.memberCount}{' '}
+                            {t('dialog.group.info.members')}
+                        </Badge>
                     {group.onlineMemberCount > 0 ? (
                         <Badge variant="outline">
                             <UsersIcon data-icon="inline-start" />
@@ -206,21 +206,19 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                     icon={Share2Icon}
                                     onSelect={() => void onCopyGroupUrl()}
                                 >
-                                    {t('dialog.group.generated.share_copy_url')}
+                                    {t('dialog.group.actions.share')}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={ExternalLinkIcon}
                                     onSelect={onOpenGroupPage}
                                 >
-                                    {t(
-                                        'dialog.group.generated.open_group_page'
-                                    )}
+                                    {t('common.actions.open_link')}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={CopyIcon}
                                     onSelect={() => void onCopyGroupId()}
                                 >
-                                    {t('dialog.group.generated.copy_group_id')}
+                                    {t('dialog.group.info.id_tooltip')}
                                 </EntityActionItem>
                             </>
                         ) : null}
@@ -235,9 +233,11 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                     }
                                     onSelect={onRepresentToggle}
                                 >
-                                    {isRepresenting
-                                        ? 'Unrepresent Group'
-                                        : 'Represent Group'}
+                                    {t(
+                                        isRepresenting
+                                            ? 'dialog.group.actions.unrepresent_tooltip'
+                                            : 'dialog.group.actions.represent_tooltip'
+                                    )}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={
@@ -248,9 +248,11 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                     disabled={actionStatus === 'member-props'}
                                     onSelect={onSubscribeToggle}
                                 >
-                                    {isSubscribedToAnnouncements
-                                        ? 'Unsubscribe Announcements'
-                                        : 'Subscribe Announcements'}
+                                    {t(
+                                        isSubscribedToAnnouncements
+                                            ? 'dialog.group.actions.unsubscribe'
+                                            : 'dialog.group.actions.subscribe'
+                                    )}
                                 </EntityActionItem>
                                 {canInviteToGroup ? (
                                     <EntityActionItem
@@ -262,9 +264,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                             void onInviteUserToGroup()
                                         }
                                     >
-                                        {t(
-                                            'dialog.group.generated.invite_to_group'
-                                        )}
+                                        {t('dialog.group.actions.invite_to_group')}
                                     </EntityActionItem>
                                 ) : null}
                                 {canManagePosts ? (
@@ -277,9 +277,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                             void onCreateGroupPost()
                                         }
                                     >
-                                        {t(
-                                            'dialog.group.generated.create_post'
-                                        )}
+                                        {t('dialog.group.actions.create_post')}
                                     </EntityActionItem>
                                 ) : null}
                                 {canModerateGroup ? (
@@ -287,9 +285,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                         icon={SettingsIcon}
                                         onSelect={onOpenModeration}
                                     >
-                                        {t(
-                                            'dialog.group.generated.moderation_tools'
-                                        )}
+                                        {t('dialog.group.actions.moderation_tools')}
                                     </EntityActionItem>
                                 ) : null}
                                 {canSetVisibility ? (
@@ -352,7 +348,7 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                     disabled={actionStatus === 'leave'}
                                     onSelect={onLeave}
                                 >
-                                    {t('dialog.group.generated.leave_group')}
+                                    {t('dialog.group.actions.leave')}
                                 </EntityActionItem>
                             </>
                         ) : (
@@ -366,9 +362,11 @@ export function GroupDialogHeaderSection({ state, handlers }) {
                                     disabled={actionStatus === 'block'}
                                     onSelect={onBlockToggle}
                                 >
-                                    {isBlocked
-                                        ? 'Unblock Group'
-                                        : 'Block Group'}
+                                    {t(
+                                        isBlocked
+                                            ? 'dialog.group.actions.unblock'
+                                            : 'dialog.group.actions.block'
+                                    )}
                                 </EntityActionItem>
                             </>
                         )}

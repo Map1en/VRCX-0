@@ -70,7 +70,11 @@ export function FeedFilterDialog({
                             {currentSharedFeedFilterOptions.map((setting) => (
                                 <Field
                                     key={`${feedFilterMode}:${setting.key}`}
-                                    label={setting.name}
+                                    label={
+                                        setting.textKey
+                                            ? t(setting.textKey)
+                                            : setting.name
+                                    }
                                     description={setting.tooltip}
                                     controlId={`settings-feed-filter-${feedFilterMode}-${setting.key}`}
                                 >

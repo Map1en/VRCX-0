@@ -4,22 +4,22 @@ export function getGroupModerationTabs(t) {
     return [
         {
             value: 'members',
-            label: t('dialog.group.moderation_tabs.members')
+            label: t('dialog.group_member_moderation.members')
         },
-        { value: 'bans', label: t('dialog.group.moderation_tabs.bans') },
+        { value: 'bans', label: t('dialog.group_member_moderation.bans') },
         {
             value: 'invites',
-            label: t('dialog.group.moderation_tabs.invites')
+            label: t('dialog.group_member_moderation.invites')
         },
         {
             value: 'requests',
-            label: t('dialog.group.moderation_tabs.join_requests')
+            label: t('dialog.group_member_moderation.join_requests')
         },
         {
             value: 'blocked',
-            label: t('dialog.group.moderation_tabs.blocked_requests')
+            label: t('dialog.group_member_moderation.blocked_requests')
         },
-        { value: 'logs', label: t('dialog.group.moderation_tabs.logs') }
+        { value: 'logs', label: t('dialog.group_member_moderation.logs') }
     ];
 }
 
@@ -121,12 +121,12 @@ export function getGroupModerationActions(tabValue, row, t) {
         return [
             {
                 key: 'kick',
-                label: t('dialog.group.moderation_tabs.kick'),
+                label: t('dialog.group_member_moderation.kick'),
                 destructive: true
             },
             {
                 key: 'ban',
-                label: t('dialog.group.moderation_tabs.ban'),
+                label: t('dialog.group_member_moderation.ban'),
                 destructive: true
             }
         ];
@@ -135,7 +135,7 @@ export function getGroupModerationActions(tabValue, row, t) {
         return [
             {
                 key: 'unban',
-                label: t('dialog.group.moderation_tabs.unban')
+                label: t('dialog.group_member_moderation.unban')
             }
         ];
     }
@@ -143,7 +143,7 @@ export function getGroupModerationActions(tabValue, row, t) {
         return [
             {
                 key: 'delete-invite',
-                label: t('dialog.group.moderation_tabs.delete'),
+                label: t('dialog.group_member_moderation.delete'),
                 destructive: true
             }
         ];
@@ -152,16 +152,16 @@ export function getGroupModerationActions(tabValue, row, t) {
         return [
             {
                 key: 'accept-request',
-                label: t('dialog.group.moderation_tabs.accept')
+                label: t('dialog.group_member_moderation.accept')
             },
             {
                 key: 'reject-request',
-                label: t('dialog.group.moderation_tabs.reject'),
+                label: t('dialog.group_member_moderation.reject'),
                 destructive: true
             },
             {
                 key: 'block-request',
-                label: t('dialog.group.moderation_tabs.block'),
+                label: t('dialog.group_member_moderation.block'),
                 destructive: true
             }
         ];
@@ -170,7 +170,7 @@ export function getGroupModerationActions(tabValue, row, t) {
         return [
             {
                 key: 'delete-blocked',
-                label: t('dialog.group.moderation_tabs.delete'),
+                label: t('dialog.group_member_moderation.delete'),
                 destructive: true
             }
         ];

@@ -167,9 +167,7 @@ export function PreviousInstancesListTable({
                                         className="h-auto px-1"
                                         onClick={onSortDescChange}
                                     >
-                                        {t(
-                                            'dialog.previous_instances.generated.created'
-                                        )}
+                                        {t('table.previous_instances.date')}
                                         {sortDesc ? (
                                             <ArrowDownIcon data-icon="inline-end" />
                                         ) : (
@@ -183,24 +181,19 @@ export function PreviousInstancesListTable({
                                     )}
                                 </TableHead>
                                 <TableHead className="w-48">
-                                    {t(
-                                        'dialog.previous_instances.generated.world_group'
-                                    )}
+                                    {t('table.previous_instances.world')} /{' '}
+                                    {t('dialog.new_instance.group')}
                                 </TableHead>
                                 <TableHead className="w-44">
                                     {t(
-                                        'dialog.previous_instances.generated.creator'
+                                        'table.previous_instances.instance_creator'
                                     )}
                                 </TableHead>
                                 <TableHead className="w-24">
-                                    {t(
-                                        'dialog.previous_instances.generated.duration'
-                                    )}
+                                    {t('table.previous_instances.time')}
                                 </TableHead>
                                 <TableHead className="w-80 text-right">
-                                    {t(
-                                        'dialog.previous_instances.generated.actions'
-                                    )}
+                                    {t('table.previous_instances.action')}
                                 </TableHead>
                             </TableRow>
                         </TableHeader>

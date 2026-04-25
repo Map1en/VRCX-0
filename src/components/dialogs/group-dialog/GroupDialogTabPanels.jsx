@@ -109,7 +109,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                                 )
                             }
                         >
-                            <span>{t('dialog.group.generated.author')}</span>
+                            <span>{t('table.import.author')}</span>
                             <span className="text-foreground font-medium">
                                 {announcementUserLabel(
                                     announcement,
@@ -119,7 +119,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                         </Button>
                     ) : (
                         <span className="inline-flex items-center gap-1">
-                            <span>{t('dialog.group.generated.author')}</span>
+                            <span>{t('table.import.author')}</span>
                             <span className="text-foreground font-medium">
                                 {announcementUserLabel(announcement, 'author')}
                             </span>
@@ -162,7 +162,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                 ) : null}
                 {announcement.createdAt ? (
                     <span className="inline-flex items-center gap-1">
-                        <span>{t('dialog.group.generated.created')}</span>
+                        <span>{t('dialog.group.posts.created_at')}</span>
                         <span className="text-foreground font-medium">
                             {announcementTimestamp(announcement.createdAt)}
                         </span>
@@ -170,7 +170,7 @@ function GroupAnnouncementInfo({ group, onPreviewImage, onOpenUser }) {
                 ) : null}
                 {announcement.updatedAt ? (
                     <span className="inline-flex items-center gap-1">
-                        <span>{t('dialog.group.generated.updated')}</span>
+                        <span>{t('dialog.group.posts.edited_at')}</span>
                         <span className="text-foreground font-medium">
                             {announcementTimestamp(announcement.updatedAt)}
                         </span>
@@ -278,11 +278,11 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         </EntityInfoBlock>
                     ) : null}
                     <EntityInfoBlock
-                        label={t('dialog.group.generated.members_2')}
+                        label={t('dialog.group.info.members')}
                         value={`${group.memberCount || 0} (${group.onlineMemberCount || 0})`}
                     />
                     <EntityInfoBlock
-                        label={t('dialog.group.generated.created_at')}
+                        label={t('dialog.group.info.created_at')}
                         value={
                             group.createdAt || group.created_at
                                 ? formatDateFilter(
@@ -293,7 +293,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         }
                     />
                     <EntityInfoBlock
-                        label={t('dialog.group.generated.last_visited')}
+                        label={t('dialog.group.info.last_visited')}
                         value={
                             previousInstances[0]?.created_at ||
                             previousInstances[0]?.createdAt
@@ -422,14 +422,14 @@ export function GroupDialogTabPanels({ state, handlers }) {
                 <div className="flex items-center gap-2">
                     <div className="text-muted-foreground text-sm">
                         {filteredPosts.length}/{posts.length}{' '}
-                        {t('dialog.group.generated.posts')}
+                        {t('dialog.group.posts.header')}
                     </div>
                     <Input
                         value={search.posts}
                         onChange={(event) =>
                             onSearchPostsChange(event.target.value)
                         }
-                        placeholder={t('dialog.group.generated.search_posts')}
+                        placeholder={t('dialog.group.posts.search_placeholder')}
                         className="ml-auto h-8 max-w-64"
                     />
                 </div>
@@ -453,7 +453,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                     <div className="text-muted-foreground text-sm">
                         {memberRows.length}/
                         {group.memberCount || members.length}{' '}
-                        {t('dialog.group.generated.members')}
+                        {t('dialog.group.members.header')}
                     </div>
                     <Button
                         type="button"
@@ -541,7 +541,7 @@ export function GroupDialogTabPanels({ state, handlers }) {
                         onChange={(event) =>
                             onSearchMembersChange(event.target.value)
                         }
-                        placeholder={t('dialog.group.generated.search_members')}
+                        placeholder={t('dialog.group.members.search')}
                         className="ml-auto h-8 max-w-64"
                     />
                 </div>

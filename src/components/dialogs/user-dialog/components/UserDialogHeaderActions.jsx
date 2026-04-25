@@ -125,16 +125,16 @@ export function UserDialogHeaderActions({
                             icon={Share2Icon}
                             onSelect={onCopyUserUrl}
                         >
-                            {t('dialog.user.generated.share_copy_url')}
+                            {t('dialog.user.actions.share')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={ExternalLinkIcon}
                             onSelect={onOpenUserUrl}
                         >
-                            {t('dialog.user.generated.open_vrchat_page')}
+                            {t('common.actions.open_link')}
                         </EntityActionItem>
                         <EntityActionItem icon={CopyIcon} onSelect={onCopyUserId}>
-                            {t('dialog.user.generated.copy_user_id')}
+                            {t('dialog.user.info.copy_id')}
                         </EntityActionItem>
                         <EntityActionSeparator />
                     </>
@@ -275,7 +275,7 @@ export function UserDialogHeaderActions({
                                     }
                                     onSelect={onInvite}
                                 >
-                                    {t('dialog.user.generated.send_invite')}
+                                    {t('dialog.user.actions.invite')}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={MessageSquareIcon}
@@ -298,7 +298,7 @@ export function UserDialogHeaderActions({
                                     disabled={actionsDisabled}
                                     onSelect={onInviteRequest}
                                 >
-                                    {t('dialog.user.generated.request_invite')}
+                                    {t('dialog.user.actions.request_invite')}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={MailIcon}
@@ -318,7 +318,7 @@ export function UserDialogHeaderActions({
                                     }
                                     onSelect={onBoop}
                                 >
-                                    {t('dialog.user.generated.boop')}
+                                    {t('dialog.user.actions.send_boop')}
                                 </EntityActionItem>
                                 <EntityActionItem
                                     icon={UserMinusIcon}

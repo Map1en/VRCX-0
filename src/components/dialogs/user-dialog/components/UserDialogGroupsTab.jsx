@@ -96,7 +96,7 @@ export function UserDialogGroupsTab({
                 {!groupEditMode ? (
                     <>
                         <span className="text-muted-foreground text-sm">
-                            {t('dialog.user.generated.sort_by')}
+                            {t('dialog.user.groups.sort_by')}
                         </span>
                         <Select
                             value={effectiveGroupSort}
