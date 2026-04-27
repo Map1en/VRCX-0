@@ -358,13 +358,7 @@ async function runFriendBootstrap({
     );
     await configRepository.setBool(`friendLogInit_${normalizedUserId}`, true);
 
-    const recoveredCount = recoveredFriends.length;
-    const detail = [
-        `Friend roster baseline loaded for ${displayName} (${orderedFriendIds.length} profiles).`,
-        missingIds.length
-            ? `Recovered ${recoveredCount} profile(s) from direct user lookups.`
-            : 'No direct user lookup fallback was needed.'
-    ].join(' ');
+    const detail = '';
 
     if (!isCurrentBootstrapTarget(normalizedUserId, endpoint)) {
         return {

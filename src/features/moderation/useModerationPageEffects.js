@@ -38,7 +38,6 @@ export function useModerationPageEffects({
     setShiftHeld,
     sorting,
     tablePageSizesPreference,
-    userFacingErrorMessage,
     vrchatModerationRepository,
     writePersistedState
 }) {
@@ -209,18 +208,13 @@ export function useModerationPageEffects({
                 setLoadStatus('ready');
                 setDetail('');
             })
-            .catch((error) => {
+            .catch(() => {
                 if (!active) {
                     return;
                 }
                 setRows([]);
                 setLoadStatus('error');
-                setDetail(
-                    userFacingErrorMessage(
-                        error,
-                        'Failed to load the moderation snapshot.'
-                    )
-                );
+                setDetail('');
             });
         return () => {
             active = false;

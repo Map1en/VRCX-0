@@ -13,7 +13,6 @@ import {
     PageScaffold,
     PageToolbar
 } from '@/components/layout/PageScaffold.jsx';
-import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     configRepository,
     vrchatModerationRepository
@@ -352,7 +351,6 @@ export function useModerationPageController({ embedded = false } = {}) {
         setShiftHeld,
         sorting,
         tablePageSizesPreference,
-        userFacingErrorMessage,
         vrchatModerationRepository,
         writePersistedState
     });
@@ -433,7 +431,6 @@ export function useModerationPageController({ embedded = false } = {}) {
         normalizeSelectedTypes,
         searchQuery,
         setSearchQuery,
-        userFacingErrorMessage,
         detail,
         currentUserId,
         loadStatus,

@@ -13,7 +13,6 @@ import {
     PageScaffold,
     PageToolbar
 } from '@/components/layout/PageScaffold.jsx';
-import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
 import {
     configRepository,
     friendLogHistoryRepository
@@ -293,7 +292,7 @@ export function FriendLogPage({ embedded = false } = {}) {
                 setLoadStatus('ready');
                 setDetail('');
             })
-            .catch((error) => {
+            .catch(() => {
                 if (!active) {
                     return;
                 }
@@ -301,12 +300,7 @@ export function FriendLogPage({ embedded = false } = {}) {
                 setRows([]);
                 updateRowsOwnerUserId(currentUserId);
                 setLoadStatus('error');
-                setDetail(
-                    userFacingErrorMessage(
-                        error,
-                        'Failed to load the friend history snapshot.'
-                    )
-                );
+                setDetail('');
             });
 
         return () => {
@@ -482,10 +476,7 @@ export function FriendLogPage({ embedded = false } = {}) {
                     onSelectedTypesChange={setSelectedTypes}
                     searchQuery={searchQuery}
                     onSearchQueryChange={setSearchQuery}
-                    detail={userFacingErrorMessage(
-                        detail,
-                        'Failed to load the friend history snapshot.'
-                    )}
+                    detail={detail}
                     currentUserId={currentUserId}
                     loadStatus={loadStatus}
                     onRefresh={() => setRefreshToken((value) => value + 1)}

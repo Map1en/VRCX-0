@@ -9,7 +9,6 @@ export function ModerationPageView({
     normalizeSelectedTypes,
     searchQuery,
     setSearchQuery,
-    userFacingErrorMessage,
     detail,
     currentUserId,
     loadStatus,
@@ -39,10 +38,7 @@ export function ModerationPageView({
                     normalizeSelectedTypes={normalizeSelectedTypes}
                     searchQuery={searchQuery}
                     onSearchQueryChange={setSearchQuery}
-                    detail={userFacingErrorMessage(
-                        detail,
-                        'Failed to load the moderation snapshot.'
-                    )}
+                    detail={detail}
                     currentUserId={currentUserId}
                     loadStatus={loadStatus}
                     onRefresh={() => setRefreshToken((value) => value + 1)}
