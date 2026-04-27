@@ -22,7 +22,7 @@ export function PageScaffold({
                 'flex h-full min-h-0 min-w-0 flex-col overflow-hidden',
                 embedded
                     ? 'p-3'
-                    : 'x-container x-container--auto-height p-4 pb-0',
+                    : 'x-container x-container--auto-height p-4',
                 embedded ? embeddedClassName : '',
                 className
             )}
