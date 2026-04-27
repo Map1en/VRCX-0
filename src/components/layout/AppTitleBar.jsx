@@ -3,6 +3,8 @@ import {
     CompassIcon,
     CopyIcon,
     MinusIcon,
+    PanelLeftCloseIcon,
+    PanelLeftOpenIcon,
     PanelRightCloseIcon,
     PanelRightOpenIcon,
     SearchIcon,
@@ -17,6 +19,7 @@ import { toast } from 'sonner';
 import { QuickSearchDialog } from '@/components/sidebar/QuickSearchDialog.jsx';
 import { cn } from '@/lib/utils.js';
 import { backend } from '@/platform/index.js';
+import { setSidebarCollapsedPreference } from '@/services/preferencesService.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
@@ -107,6 +110,7 @@ export function AppTitleBar() {
     const hostPlatform = useRuntimeStore(
         (state) => state.hostCapabilities.platform
     );
+    const sidebarOpen = useShellStore((state) => state.sidebarOpen);
     const rightSidebarOpen = useShellStore((state) => state.rightSidebarOpen);
     const toggleRightSidebar = useShellStore(
         (state) => state.toggleRightSidebar
@@ -229,6 +233,12 @@ export function AppTitleBar() {
     const RightSidebarIcon = rightSidebarOpen
         ? PanelRightCloseIcon
         : PanelRightOpenIcon;
+    const LeftSidebarIcon = sidebarOpen
+        ? PanelLeftCloseIcon
+        : PanelLeftOpenIcon;
+    const leftSidebarLabel = sidebarOpen
+        ? t('nav_tooltip.collapse_menu')
+        : t('nav_tooltip.expand_menu');
     const rightSidebarLabel = rightSidebarOpen
         ? 'Collapse right sidebar'
         : 'Expand right sidebar';
@@ -261,10 +271,10 @@ export function AppTitleBar() {
     const notificationButton = (
         <TitleBarButton
             label={t('side_panel.notification_center.title')}
-            className="relative rounded-none"
+            className="relative h-full w-9 rounded-none"
             onClick={toggleVrcNotificationCenter}
         >
-            <BellIcon data-icon="inline-start" />
+            <BellIcon data-icon="icon" />
             {vrcUnseenNotificationCount > 0 ? (
                 <Badge className="absolute top-0.5 right-1 h-3 min-w-3 rounded-full px-0.5 py-0 text-[7px] leading-none">
                     {vrcUnseenNotificationCount > 99
@@ -392,6 +402,7 @@ export function AppTitleBar() {
                                 </ContextMenu>
                             ) : (
                                 <div
+                                    className="h-full"
                                     onContextMenu={(event) => {
                                         event.preventDefault();
                                         toast.info(
@@ -407,10 +418,22 @@ export function AppTitleBar() {
                         ) : null}
                         {rightSidebarActionVisible ? (
                             <TitleBarButton
+                                label={leftSidebarLabel}
+                                onClick={() =>
+                                    void setSidebarCollapsedPreference(
+                                        sidebarOpen
+                                    )
+                                }
+                            >
+                                <LeftSidebarIcon data-icon="icon" />
+                            </TitleBarButton>
+                        ) : null}
+                        {rightSidebarActionVisible ? (
+                            <TitleBarButton
                                 label={rightSidebarLabel}
                                 onClick={() => toggleRightSidebar()}
                             >
-                                <RightSidebarIcon data-icon="inline-start" />
+                                <RightSidebarIcon data-icon="icon" />
                             </TitleBarButton>
                         ) : null}
                     </div>
