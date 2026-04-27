@@ -1,11 +1,10 @@
-import { CalendarIcon, StarIcon, XIcon } from 'lucide-react';
+import { CalendarRangeIcon, StarIcon, XIcon } from 'lucide-react';
 
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu.jsx';
 import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold.jsx';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Calendar } from '@/ui/shadcn/calendar';
 import {
@@ -19,9 +18,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 function FeedDateFilterControl({
     activeFilterCount,
+    dateFrom,
     dateDraftFrom,
     dateDraftRange,
     dateDraftTo,
+    dateTo,
     dateFilterOpen,
     onApplyDateFilter,
     onClearDateFilter,
@@ -30,31 +31,28 @@ function FeedDateFilterControl({
     t,
     todayDate
 }) {
+    const dateRangeLabel =
+        dateFrom || dateTo
+            ? [dateFrom || '...', dateTo || '...'].join(' - ')
+            : t('view.feed.date_range');
+
     return (
         <Popover open={dateFilterOpen} onOpenChange={onDateFilterOpenChange}>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
-                        <Button
+                        <InputGroupButton
                             type="button"
-                            variant="outline"
-                            size="icon-sm"
-                            className="relative"
-                            aria-label="Filter"
+                            size="icon-xs"
+                            variant={activeFilterCount ? 'secondary' : 'ghost'}
+                            aria-label={dateRangeLabel}
+                            onMouseDown={(event) => event.preventDefault()}
                         >
-                            <CalendarIcon data-icon="icon" />
-                            {activeFilterCount ? (
-                                <Badge
-                                    variant="secondary"
-                                    className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[0.65rem] leading-none"
-                                >
-                                    {activeFilterCount}
-                                </Badge>
-                            ) : null}
-                        </Button>
+                            <CalendarRangeIcon data-icon="icon" />
+                        </InputGroupButton>
                     </PopoverTrigger>
                 </TooltipTrigger>
-                <TooltipContent>{t('view.feed.filter')}</TooltipContent>
+                <TooltipContent>{dateRangeLabel}</TooltipContent>
             </Tooltip>
             <PopoverContent className="w-auto" align="end">
                 <Calendar
@@ -129,12 +127,24 @@ function FeedFilterButtons({
 }
 
 function FeedSearchInput({
+    activeFilterCount,
+    dateFrom,
+    dateDraftFrom,
+    dateDraftRange,
+    dateDraftTo,
+    dateTo,
+    dateFilterOpen,
+    onApplyDateFilter,
     onClearSearch,
+    onClearDateFilter,
+    onDateFilterOpenChange,
+    onDateRangeSelect,
     onSearchBlur,
     onSearchDraftChange,
     onSearchEnter,
     searchDraft,
-    t
+    t,
+    todayDate
 }) {
     return (
         <InputGroup className="h-9 min-w-0 flex-1 basis-0">
@@ -149,18 +159,34 @@ function FeedSearchInput({
                 }}
                 placeholder={t('view.feed.search_placeholder')}
             />
-            {searchDraft ? (
-                <InputGroupAddon align="inline-end">
+            <InputGroupAddon align="inline-end" className="gap-1">
+                {searchDraft ? (
                     <InputGroupButton
                         type="button"
                         size="icon-xs"
                         aria-label="Clear search"
+                        onMouseDown={(event) => event.preventDefault()}
                         onClick={onClearSearch}
                     >
                         <XIcon data-icon="icon" />
                     </InputGroupButton>
-                </InputGroupAddon>
-            ) : null}
+                ) : null}
+                <FeedDateFilterControl
+                    activeFilterCount={activeFilterCount}
+                    dateFrom={dateFrom}
+                    dateDraftFrom={dateDraftFrom}
+                    dateDraftRange={dateDraftRange}
+                    dateDraftTo={dateDraftTo}
+                    dateTo={dateTo}
+                    dateFilterOpen={dateFilterOpen}
+                    onApplyDateFilter={onApplyDateFilter}
+                    onClearDateFilter={onClearDateFilter}
+                    onDateFilterOpenChange={onDateFilterOpenChange}
+                    onDateRangeSelect={onDateRangeSelect}
+                    t={t}
+                    todayDate={todayDate}
+                />
+            </InputGroupAddon>
         </InputGroup>
     );
 }
@@ -168,9 +194,11 @@ function FeedSearchInput({
 export function FeedToolbar({
     activeFilterCount,
     activeFilters,
+    dateFrom,
     dateDraftFrom,
     dateDraftRange,
     dateDraftTo,
+    dateTo,
     dateFilterOpen,
     favoritesOnly,
     feedFilterTypes,
@@ -194,19 +222,6 @@ export function FeedToolbar({
         <PageToolbar>
             <PageToolbarRow>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <FeedDateFilterControl
-                        activeFilterCount={activeFilterCount}
-                        dateDraftFrom={dateDraftFrom}
-                        dateDraftRange={dateDraftRange}
-                        dateDraftTo={dateDraftTo}
-                        dateFilterOpen={dateFilterOpen}
-                        onApplyDateFilter={onApplyDateFilter}
-                        onClearDateFilter={onClearDateFilter}
-                        onDateFilterOpenChange={onDateFilterOpenChange}
-                        onDateRangeSelect={onDateRangeSelect}
-                        t={t}
-                        todayDate={todayDate}
-                    />
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
@@ -234,12 +249,24 @@ export function FeedToolbar({
                 />
 
                 <FeedSearchInput
+                    activeFilterCount={activeFilterCount}
+                    dateFrom={dateFrom}
+                    dateDraftFrom={dateDraftFrom}
+                    dateDraftRange={dateDraftRange}
+                    dateDraftTo={dateDraftTo}
+                    dateTo={dateTo}
+                    dateFilterOpen={dateFilterOpen}
+                    onApplyDateFilter={onApplyDateFilter}
                     onClearSearch={onClearSearch}
+                    onClearDateFilter={onClearDateFilter}
+                    onDateFilterOpenChange={onDateFilterOpenChange}
+                    onDateRangeSelect={onDateRangeSelect}
                     onSearchBlur={onSearchBlur}
                     onSearchDraftChange={onSearchDraftChange}
                     onSearchEnter={onSearchEnter}
                     searchDraft={searchDraft}
                     t={t}
+                    todayDate={todayDate}
                 />
 
                 <div className="flex items-center gap-2">

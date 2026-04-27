@@ -414,9 +414,11 @@ export function useFeedPageController({ embedded = false } = {}) {
         toolbarState: {
             activeFilterCount,
             activeFilters,
+            dateFrom,
             dateDraftFrom,
             dateDraftRange,
             dateDraftTo,
+            dateTo,
             dateFilterOpen,
             feedFilterTypes: FEED_FILTER_TYPES,
             favoritesOnly,
