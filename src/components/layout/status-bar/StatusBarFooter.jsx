@@ -1,4 +1,5 @@
 import { ClockIcon, NetworkIcon } from 'lucide-react';
+import { forwardRef } from 'react';
 
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
@@ -15,8 +16,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { StatusDot, StatusSegment } from './StatusBarParts.jsx';
 
-export function StatusBarFooter({ helpers, handlers, state, t }) {
+export const StatusBarFooter = forwardRef(function StatusBarFooter(
+    { className, helpers, handlers, state, t, ...props },
+    ref
+) {
     const {
+        appUptime,
         clockPopoverOpen,
         currentLocationDuration,
         currentWorld,
@@ -33,19 +38,28 @@ export function StatusBarFooter({ helpers, handlers, state, t }) {
         timezoneOptions,
         visibility,
         visibleClocks,
-        vrcStatus
+        vrcStatus,
+        zoomLabel
     } = state;
     const { formatClock, formatStatusDate } = helpers;
     const {
         onOpenMediaLink,
         onOpenStatusPage,
         onPromptProxySettings,
+        onPromptZoomSettings,
         onSetClockPopoverValue,
         onUpdateClockTimezone
     } = handlers;
 
     return (
-        <footer className="bg-background/95 border-t text-xs backdrop-blur">
+        <footer
+            ref={ref}
+            className={cn(
+                'bg-background/95 border-t text-xs backdrop-blur',
+                className
+            )}
+            {...props}
+        >
             <div className="flex min-h-7 flex-col gap-1 overflow-hidden lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                     <StatusSegment
@@ -257,7 +271,47 @@ export function StatusBarFooter({ helpers, handlers, state, t }) {
                               </Popover>
                           ))
                         : null}
-                    {visibility.proxy ? (
+                    {visibility.zoom ? (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 gap-1.5 rounded-none border-r px-2 text-xs font-normal"
+                                    onClick={onPromptZoomSettings}
+                                >
+                                    <span className="text-muted-foreground">
+                                        {t('status_bar.zoom')}
+                                    </span>
+                                    <span className="tabular-nums">
+                                        {zoomLabel}
+                                    </span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('status_bar.zoom_tooltip')}
+                            </TooltipContent>
+                        </Tooltip>
+                    ) : null}
+                    {visibility.uptime ? (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="-ml-px flex h-6 items-center gap-1.5 border-r px-2">
+                                    <span className="text-muted-foreground">
+                                        {t('status_bar.app_uptime_short')}
+                                    </span>
+                                    <span className="tabular-nums">
+                                        {appUptime}
+                                    </span>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('status_bar.app_uptime')}
+                            </TooltipContent>
+                        </Tooltip>
+                    ) : null}
+                    {visibility.proxy && proxyServer ? (
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
@@ -267,9 +321,7 @@ export function StatusBarFooter({ helpers, handlers, state, t }) {
                                     aria-label="Proxy settings"
                                     className={cn(
                                         '-ml-px h-6 w-7 rounded-none border-l',
-                                        proxyServer
-                                            ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
-                                            : 'text-muted-foreground hover:text-muted-foreground'
+                                        'border-primary/30 bg-primary/15 text-primary hover:bg-primary/20 hover:text-primary'
                                     )}
                                     onClick={onPromptProxySettings}
                                 >
@@ -277,9 +329,7 @@ export function StatusBarFooter({ helpers, handlers, state, t }) {
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                                {proxyServer
-                                    ? `Proxy: ${proxyServer}`
-                                    : 'Proxy disabled'}
+                                {`Proxy: ${proxyServer}`}
                             </TooltipContent>
                         </Tooltip>
                     ) : null}
@@ -287,4 +337,4 @@ export function StatusBarFooter({ helpers, handlers, state, t }) {
             </div>
         </footer>
     );
-}
+});

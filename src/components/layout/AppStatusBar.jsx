@@ -6,11 +6,17 @@ import { backend } from '@/platform/index.js';
 import { configRepository } from '@/repositories/index.js';
 import {
     loadPreferenceSnapshot,
-    setProxyServerPreference
+    setProxyServerPreference,
+    setZoomLevelPreference
 } from '@/services/preferencesService.js';
+import {
+    formatZoomPercentage,
+    normalizeZoomLevel
+} from '@/services/themeService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
+import { useShellStore } from '@/state/shellStore.js';
 import {
     ContextMenu,
     ContextMenuTrigger
@@ -29,6 +35,8 @@ const DEFAULT_VISIBILITY = {
     proxy: true,
     ws: true,
     nowPlaying: true,
+    uptime: false,
+    zoom: true,
     clocks: true,
     servers: true
 };
@@ -129,6 +137,14 @@ function formatDuration(ms) {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+function formatAppUptime(ms) {
+    const safeSeconds = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const seconds = safeSeconds % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
 function formatStatusDate(value) {
     const date = new Date(value || 0);
     if (Number.isNaN(date.getTime())) {
@@ -144,6 +160,7 @@ function formatStatusDate(value) {
 
 export function AppStatusBar() {
     const { t } = useTranslation();
+    const appStartedAtRef = useRef(Date.now());
     const transportMessageCountRef = useRef(0);
     const messageHistoryRef = useRef(new Array(60).fill(0));
     const [nowMs, setNowMs] = useState(Date.now());
@@ -208,6 +225,7 @@ export function AppStatusBar() {
         (state) => state.preferencesHydrated
     );
     const proxyServer = usePreferencesStore((state) => state.proxyServer);
+    const zoomLevel = useShellStore((state) => state.zoomLevel);
     const prompt = useModalStore((state) => state.prompt);
     const visibleClocks = clocks.slice(
         0,
@@ -285,6 +303,8 @@ export function AppStatusBar() {
     const nowPlayingProgress = nowPlaying.length
         ? `${formatDuration(nowPlayingElapsed * 1000)} / ${formatDuration(Number(nowPlaying.length) * 1000)}`
         : '';
+    const currentZoomLevel = normalizeZoomLevel(zoomLevel);
+    const appUptime = formatAppUptime(nowMs - appStartedAtRef.current);
     const timezoneOptions = TIMEZONE_OPTIONS;
 
     useEffect(() => {
@@ -474,6 +494,22 @@ export function AppStatusBar() {
         await setProxyServerPreference(nextProxyServer);
     }
 
+    async function promptZoomSettings() {
+        const currentZoom = normalizeZoomLevel(useShellStore.getState().zoomLevel);
+        const result = await prompt({
+            title: t('status_bar.zoom'),
+            description: t('status_bar.zoom_tooltip'),
+            inputValue: String(currentZoom),
+            confirmText: t('common.actions.save'),
+            cancelText: t('common.actions.close')
+        });
+        if (!result.ok) {
+            return;
+        }
+
+        await setZoomLevelPreference(result.value);
+    }
+
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild>
@@ -506,10 +542,20 @@ export function AppStatusBar() {
                                 );
                             });
                         },
+                        onPromptZoomSettings: () => {
+                            void promptZoomSettings().catch((error) => {
+                                toast.error(
+                                    error instanceof Error
+                                        ? error.message
+                                        : t('app_menu.messages.zoom_failed')
+                                );
+                            });
+                        },
                         onSetClockPopoverValue: setClockPopoverValue,
                         onUpdateClockTimezone: updateClockTimezone
                     }}
                     state={{
+                        appUptime,
                         clockPopoverOpen,
                         currentLocationDuration,
                         currentWorld,
@@ -526,7 +572,8 @@ export function AppStatusBar() {
                         timezoneOptions,
                         visibility,
                         visibleClocks,
-                        vrcStatus
+                        vrcStatus,
+                        zoomLabel: formatZoomPercentage(currentZoomLevel)
                     }}
                 />
             </ContextMenuTrigger>
