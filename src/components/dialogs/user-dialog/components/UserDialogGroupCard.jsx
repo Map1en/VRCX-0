@@ -13,6 +13,11 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils.js';
 import { groupProfileRepository } from '@/repositories/index.js';
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage
+} from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -136,17 +141,18 @@ export function UserGroupCard({
                 className="h-auto min-w-0 flex-1 justify-start gap-2 px-1.5 py-1.5 text-left font-normal"
                 onClick={() => openRow(displayGroup, 'group')}
             >
-                {image ? (
-                    <img
-                        src={image}
-                        alt=""
-                        className="size-9 shrink-0 rounded-md object-cover"
-                    />
-                ) : (
-                    <span className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-md [&>svg]:size-4">
-                        <UsersIcon className="text-muted-foreground" />
-                    </span>
-                )}
+                <Avatar className="size-9 rounded-md after:rounded-md">
+                    {image ? (
+                        <AvatarImage
+                            src={image}
+                            alt=""
+                            className="rounded-md"
+                        />
+                    ) : null}
+                    <AvatarFallback className="rounded-md [&>svg]:size-4">
+                        <UsersIcon aria-hidden="true" />
+                    </AvatarFallback>
+                </Avatar>
                 <span className="min-w-0 flex-1 overflow-hidden">
                     <span className="block truncate leading-snug font-medium">
                         {label || '\u2014'}
