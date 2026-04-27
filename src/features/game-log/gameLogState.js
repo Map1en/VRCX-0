@@ -8,7 +8,6 @@ export const GAME_LOG_COLUMN_IDS = [
     'detail',
     'action'
 ];
-export const GAME_LOG_STRETCH_COLUMN_ID = 'detail';
 
 const STORAGE_KEY = 'vrcx:table:gameLog';
 

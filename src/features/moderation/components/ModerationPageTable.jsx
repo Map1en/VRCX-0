@@ -1,8 +1,12 @@
 import {
+    DataTableColumnDndProvider,
+    DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
     DataTableHeader,
     DataTablePagination,
     DataTableScrollArea,
-    DataTableSurface
+    DataTableSurface,
+    getDataTableSizingStyle
 } from '@/components/data-table/DataTableView.jsx';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { PageFooter } from '@/components/layout/PageScaffold.jsx';
@@ -20,21 +24,33 @@ export function ModerationPageTable({
         <>
             <DataTableSurface>
                 <DataTableScrollArea>
-                    <Table className="app-data-table table-fixed">
-                        <DataTableHeader table={table} />
-                        <TableBody>
-                            {table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.original?.id || row.id}>
-                                    {row.getVisibleCells().map((cell) => (
-                                        <ResizableTableCell
-                                            key={cell.id}
-                                            cell={cell}
-                                        />
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <DataTableColumnDndProvider table={table}>
+                        <Table
+                            className="app-data-table table-fixed min-w-full"
+                            style={getDataTableSizingStyle(table)}
+                        >
+                            <DataTableColumnSizeColGroup table={table} />
+                            <DataTableHeader table={table} />
+                            <TableBody>
+                                {table.getRowModel().rows.map((row) => (
+                                    <TableRow key={row.original?.id || row.id}>
+                                        <DataTableColumnSortableContext
+                                            table={table}
+                                        >
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell) => (
+                                                    <ResizableTableCell
+                                                        key={cell.id}
+                                                        cell={cell}
+                                                    />
+                                                ))}
+                                        </DataTableColumnSortableContext>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </DataTableColumnDndProvider>
                 </DataTableScrollArea>
             </DataTableSurface>
 

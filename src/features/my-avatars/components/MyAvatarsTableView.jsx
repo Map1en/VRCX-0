@@ -1,8 +1,12 @@
 import {
+    DataTableColumnDndProvider,
+    DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
     DataTableHeader,
     DataTablePagination,
     DataTableScrollArea,
-    DataTableSurface
+    DataTableSurface,
+    getDataTableSizingStyle
 } from '@/components/data-table/DataTableView.jsx';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
@@ -37,91 +41,108 @@ export function MyAvatarsTableView({
         <>
             <DataTableSurface>
                 <DataTableScrollArea wideTable>
-                    <Table className="w-max min-w-full">
-                        <DataTableHeader table={table} />
-                        <TableBody>
-                            {table.getRowModel().rows.map((row) => (
-                                <ContextMenu
-                                    key={row.original?.id || row.id}
-                                >
-                                    <ContextMenuTrigger asChild>
-                                        <TableRow
-                                            className={[
-                                                'h-10 cursor-pointer',
-                                                row.original?.id ===
+                    <DataTableColumnDndProvider table={table}>
+                        <Table
+                            className="table-fixed min-w-full"
+                            style={getDataTableSizingStyle(table)}
+                        >
+                            <DataTableColumnSizeColGroup table={table} />
+                            <DataTableHeader table={table} />
+                            <TableBody>
+                                {table.getRowModel().rows.map((row) => (
+                                    <ContextMenu
+                                        key={row.original?.id || row.id}
+                                    >
+                                        <ContextMenuTrigger asChild>
+                                            <TableRow
+                                                className={[
+                                                    'h-10 cursor-pointer',
+                                                    row.original?.id ===
+                                                        currentAvatarId
+                                                        ? 'bg-primary/10'
+                                                        : ''
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(' ')}
+                                                tabIndex={0}
+                                                aria-label={t(
+                                                    'view.my_avatars.generated_dynamic.open_value',
+                                                    {
+                                                        value:
+                                                            row.original
+                                                                ?.name ||
+                                                            row.original?.id ||
+                                                            t(
+                                                                'view.my_avatars.generated.avatar'
+                                                            )
+                                                    }
+                                                )}
+                                                onKeyDown={(event) => {
+                                                    if (
+                                                        event.key !== 'Enter' &&
+                                                        event.key !== ' '
+                                                    ) {
+                                                        return;
+                                                    }
+                                                    event.preventDefault();
+                                                    openAvatarDetails(
+                                                        row.original
+                                                    );
+                                                }}
+                                                onClick={() =>
+                                                    openAvatarDetails(
+                                                        row.original
+                                                    )
+                                                }
+                                            >
+                                                <DataTableColumnSortableContext
+                                                    table={table}
+                                                >
+                                                    {row
+                                                        .getVisibleCells()
+                                                        .map((cell) => (
+                                                            <ResizableTableCell
+                                                                key={cell.id}
+                                                                cell={cell}
+                                                                className="px-2 py-1"
+                                                            />
+                                                        ))}
+                                                </DataTableColumnSortableContext>
+                                            </TableRow>
+                                        </ContextMenuTrigger>
+                                        <ContextMenuContent>
+                                            <AvatarActionMenuItems
+                                                avatar={row.original}
+                                                isActive={
+                                                    row.original?.id ===
                                                     currentAvatarId
-                                                    ? 'bg-primary/10'
-                                                    : ''
-                                            ]
-                                                .filter(Boolean)
-                                                .join(' ')}
-                                            tabIndex={0}
-                                            aria-label={t(
-                                                'view.my_avatars.generated_dynamic.open_value',
-                                                {
-                                                    value:
-                                                        row.original?.name ||
+                                                }
+                                                disabled={
+                                                    updatingAvatarId ===
                                                         row.original?.id ||
-                                                        t(
-                                                            'view.my_avatars.generated.avatar'
-                                                        )
+                                                    savingTagsAvatarId ===
+                                                        row.original?.id ||
+                                                    uploadingImageAvatarId ===
+                                                        row.original?.id
                                                 }
-                                            )}
-                                            onKeyDown={(event) => {
-                                                if (
-                                                    event.key !== 'Enter' &&
-                                                    event.key !== ' '
-                                                ) {
-                                                    return;
+                                                Item={ContextMenuItem}
+                                                Group={ContextMenuGroup}
+                                                Separator={
+                                                    ContextMenuSeparator
                                                 }
-                                                event.preventDefault();
-                                                openAvatarDetails(row.original);
-                                            }}
-                                            onClick={() =>
-                                                openAvatarDetails(row.original)
-                                            }
-                                        >
-                                            {row
-                                                .getVisibleCells()
-                                                .map((cell) => (
-                                                    <ResizableTableCell
-                                                        key={cell.id}
-                                                        cell={cell}
-                                                        className="px-2 py-1"
-                                                    />
-                                                ))}
-                                        </TableRow>
-                                    </ContextMenuTrigger>
-                                    <ContextMenuContent>
-                                        <AvatarActionMenuItems
-                                            avatar={row.original}
-                                            isActive={
-                                                row.original?.id ===
-                                                currentAvatarId
-                                            }
-                                            disabled={
-                                                updatingAvatarId ===
-                                                    row.original?.id ||
-                                                savingTagsAvatarId ===
-                                                    row.original?.id ||
-                                                uploadingImageAvatarId ===
-                                                    row.original?.id
-                                            }
-                                            Item={ContextMenuItem}
-                                            Group={ContextMenuGroup}
-                                            Separator={ContextMenuSeparator}
-                                            onAction={(action, avatar) =>
-                                                void onAvatarAction(
-                                                    action,
-                                                    avatar
-                                                )
-                                            }
-                                        />
-                                    </ContextMenuContent>
-                                </ContextMenu>
-                            ))}
-                        </TableBody>
-                    </Table>
+                                                onAction={(action, avatar) =>
+                                                    void onAvatarAction(
+                                                        action,
+                                                        avatar
+                                                    )
+                                                }
+                                            />
+                                        </ContextMenuContent>
+                                    </ContextMenu>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </DataTableColumnDndProvider>
                 </DataTableScrollArea>
             </DataTableSurface>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

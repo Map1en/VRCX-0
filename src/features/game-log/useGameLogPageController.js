@@ -14,9 +14,14 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import {
+    DataTableColumnDndProvider,
+    DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
     DataTableHeader,
     DataTablePagination,
-    DataTableSurface
+    DataTableScrollArea,
+    DataTableSurface,
+    getDataTableSizingStyle
 } from '@/components/data-table/DataTableView.jsx';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog.jsx';
@@ -45,7 +50,7 @@ import { useModalStore } from '@/state/modalStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { TableBody, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 
 import { buildGameLogColumns } from './components/GameLogColumns.jsx';
 import {
@@ -73,7 +78,6 @@ import {
 } from './gameLogRows.js';
 import {
     GAME_LOG_DEFAULT_PAGE_SIZES,
-    GAME_LOG_STRETCH_COLUMN_ID,
     readPersistedGameLogState,
     resolveGameLogPageSize,
     sanitizeGameLogColumnOrder,
@@ -87,14 +91,6 @@ import {
 import { normalizeId, openGameLogUser } from './gameLogUserLookup.js';
 import { useGameLogPageActions } from './useGameLogPageActions.js';
 import { useGameLogPageEffects } from './useGameLogPageEffects.js';
-function getGameLogColumnStyle(column) {
-    if (column?.id !== GAME_LOG_STRETCH_COLUMN_ID) {
-        return undefined;
-    }
-    return {
-        width: undefined
-    };
-}
 export function useGameLogPageController({ embedded = false } = {}) {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -508,9 +504,14 @@ export function useGameLogPageController({ embedded = false } = {}) {
         pagination,
         isFavoritesLoaded,
         hasRows,
+        DataTableColumnDndProvider,
+        DataTableColumnSizeColGroup,
+        DataTableColumnSortableContext,
+        DataTableScrollArea,
         DataTableSurface,
         DataTableHeader,
-        getGameLogColumnStyle,
+        getDataTableSizingStyle,
+        Table,
         TableBody,
         TableRow,
         ResizableTableCell,

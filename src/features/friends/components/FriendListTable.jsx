@@ -1,8 +1,12 @@
 import {
+    DataTableColumnDndProvider,
+    DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
     DataTableHeader,
     DataTablePagination,
     DataTableScrollArea,
-    DataTableSurface
+    DataTableSurface,
+    getDataTableSizingStyle
 } from '@/components/data-table/DataTableView.jsx';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import {
@@ -54,54 +58,68 @@ export function FriendListTable({
                 <>
                     <DataTableSurface>
                         <DataTableScrollArea wideTable>
-                            <Table className="w-max min-w-full">
-                                <DataTableHeader
-                                    table={table}
-                                    onResetLayout={onResetTableLayout}
-                                />
-                                <TableBody>
-                                    {table.getRowModel().rows.map((row) => (
-                                        <TableRow
-                                            key={row.id}
-                                            className="cursor-pointer"
-                                            tabIndex={0}
-                                            aria-label={t(
-                                                'view.friend_list.generated_dynamic.open_value',
-                                                {
-                                                    value:
-                                                        row.original
-                                                            ?.displayName ||
-                                                        row.original
-                                                            ?.username ||
-                                                        t(
-                                                            'view.friend_list.generated.friend'
-                                                        )
+                            <DataTableColumnDndProvider table={table}>
+                                <Table
+                                    className="table-fixed min-w-full"
+                                    style={getDataTableSizingStyle(table)}
+                                >
+                                    <DataTableColumnSizeColGroup
+                                        table={table}
+                                    />
+                                    <DataTableHeader
+                                        table={table}
+                                        onResetLayout={onResetTableLayout}
+                                    />
+                                    <TableBody>
+                                        {table.getRowModel().rows.map((row) => (
+                                            <TableRow
+                                                key={row.id}
+                                                className="cursor-pointer"
+                                                tabIndex={0}
+                                                aria-label={t(
+                                                    'view.friend_list.generated_dynamic.open_value',
+                                                    {
+                                                        value:
+                                                            row.original
+                                                                ?.displayName ||
+                                                            row.original
+                                                                ?.username ||
+                                                            t(
+                                                                'view.friend_list.generated.friend'
+                                                            )
+                                                    }
+                                                )}
+                                                onKeyDown={(event) => {
+                                                    if (
+                                                        event.key !== 'Enter' &&
+                                                        event.key !== ' '
+                                                    ) {
+                                                        return;
+                                                    }
+                                                    event.preventDefault();
+                                                    onOpenUser(row.original);
+                                                }}
+                                                onClick={() =>
+                                                    onOpenUser(row.original)
                                                 }
-                                            )}
-                                            onKeyDown={(event) => {
-                                                if (
-                                                    event.key !== 'Enter' &&
-                                                    event.key !== ' '
-                                                ) {
-                                                    return;
-                                                }
-                                                event.preventDefault();
-                                                onOpenUser(row.original);
-                                            }}
-                                            onClick={() => onOpenUser(row.original)}
-                                        >
-                                            {row
-                                                .getVisibleCells()
-                                                .map((cell) => (
-                                                    <ResizableTableCell
-                                                        key={cell.id}
-                                                        cell={cell}
-                                                    />
-                                                ))}
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                            >
+                                                <DataTableColumnSortableContext
+                                                    table={table}
+                                                >
+                                                    {row
+                                                        .getVisibleCells()
+                                                        .map((cell) => (
+                                                            <ResizableTableCell
+                                                                key={cell.id}
+                                                                cell={cell}
+                                                            />
+                                                        ))}
+                                                </DataTableColumnSortableContext>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </DataTableColumnDndProvider>
                         </DataTableScrollArea>
                     </DataTableSurface>
 

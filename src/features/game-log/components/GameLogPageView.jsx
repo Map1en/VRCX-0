@@ -49,9 +49,14 @@ export function GameLogPageView({
     pagination,
     isFavoritesLoaded,
     hasRows,
+    DataTableColumnDndProvider,
+    DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
+    DataTableScrollArea,
     DataTableSurface,
     DataTableHeader,
-    getGameLogColumnStyle,
+    getDataTableSizingStyle,
+    Table,
     TableBody,
     TableRow,
     ResizableTableCell,
@@ -179,36 +184,60 @@ export function GameLogPageView({
                         )
                     ) : hasRows ? (
                         <div className="flex min-h-0 flex-1 flex-col gap-3">
-                            <DataTableSurface className="overflow-x-hidden overflow-y-auto">
-                                <table className="w-full table-fixed caption-bottom text-sm">
-                                    <DataTableHeader
-                                        table={table}
-                                        getHeaderStyle={getGameLogColumnStyle}
-                                    />
-                                    <TableBody>
-                                        {table.getRowModel().rows.map((row) => (
-                                            <TableRow
-                                                key={
-                                                    row.original?.rowId != null
-                                                        ? `${row.original.type}:${row.original.rowId}`
-                                                        : row.id
-                                                }
-                                            >
-                                                {row
-                                                    .getVisibleCells()
-                                                    .map((cell) => (
-                                                        <ResizableTableCell
-                                                            key={cell.id}
-                                                            cell={cell}
-                                                            style={getGameLogColumnStyle(
-                                                                cell.column
-                                                            )}
-                                                        />
+                            <DataTableSurface>
+                                <DataTableScrollArea>
+                                    <DataTableColumnDndProvider table={table}>
+                                        <Table
+                                            className="table-fixed min-w-full"
+                                            style={getDataTableSizingStyle(
+                                                table
+                                            )}
+                                        >
+                                            <DataTableColumnSizeColGroup
+                                                table={table}
+                                            />
+                                            <DataTableHeader
+                                                table={table}
+                                            />
+                                            <TableBody>
+                                                {table
+                                                    .getRowModel()
+                                                    .rows.map((row) => (
+                                                        <TableRow
+                                                            key={
+                                                                row.original
+                                                                    ?.rowId !=
+                                                                null
+                                                                    ? `${row.original.type}:${row.original.rowId}`
+                                                                    : row.id
+                                                            }
+                                                        >
+                                                            <DataTableColumnSortableContext
+                                                                table={table}
+                                                            >
+                                                                {row
+                                                                    .getVisibleCells()
+                                                                    .map(
+                                                                        (
+                                                                            cell
+                                                                        ) => (
+                                                                            <ResizableTableCell
+                                                                                key={
+                                                                                    cell.id
+                                                                                }
+                                                                                cell={
+                                                                                    cell
+                                                                                }
+                                                                            />
+                                                                        )
+                                                                    )}
+                                                            </DataTableColumnSortableContext>
+                                                        </TableRow>
                                                     ))}
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </table>
+                                            </TableBody>
+                                        </Table>
+                                    </DataTableColumnDndProvider>
+                                </DataTableScrollArea>
                             </DataTableSurface>
 
                             <PageFooter>

@@ -7,10 +7,14 @@ import {
 } from 'lucide-react';
 
 import {
+    DataTableColumnDndProvider,
+    DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
     DataTableEmptyRow,
     DataTableHeader,
     DataTableScrollArea,
-    DataTableSurface
+    DataTableSurface,
+    getDataTableSizingStyle
 } from '@/components/data-table/DataTableView.jsx';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { EmptyState } from '@/components/layout/PageScaffold.jsx';
@@ -293,13 +297,19 @@ export function PlayerListTableShell({ table, onResetLayout, children }) {
     return (
         <DataTableSurface>
             <DataTableScrollArea>
-                <Table className="app-data-table table-fixed">
-                    <DataTableHeader
-                        table={table}
-                        onResetLayout={onResetLayout}
-                    />
-                    <TableBody>{children}</TableBody>
-                </Table>
+                <DataTableColumnDndProvider table={table}>
+                    <Table
+                        className="app-data-table table-fixed min-w-full"
+                        style={getDataTableSizingStyle(table)}
+                    >
+                        <DataTableColumnSizeColGroup table={table} />
+                        <DataTableHeader
+                            table={table}
+                            onResetLayout={onResetLayout}
+                        />
+                        <TableBody>{children}</TableBody>
+                    </Table>
+                </DataTableColumnDndProvider>
             </DataTableScrollArea>
         </DataTableSurface>
     );
@@ -337,9 +347,11 @@ export function PlayerListRows({
             }}
             onClick={() => void onOpenPlayer(row.original)}
         >
-            {row.getVisibleCells().map((cell) => (
-                <ResizableTableCell key={cell.id} cell={cell} />
-            ))}
+            <DataTableColumnSortableContext table={table}>
+                {row.getVisibleCells().map((cell) => (
+                    <ResizableTableCell key={cell.id} cell={cell} />
+                ))}
+            </DataTableColumnSortableContext>
         </TableRow>
     ));
 }

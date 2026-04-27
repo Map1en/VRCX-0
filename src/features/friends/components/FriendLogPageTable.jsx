@@ -1,10 +1,14 @@
 import {
+    DataTableColumnDndProvider,
+    DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
+    DataTableHeader,
     DataTablePagination,
     DataTableScrollArea,
-    DataTableSurface
+    DataTableSurface,
+    getDataTableSizingStyle
 } from '@/components/data-table/DataTableView.jsx';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
-import { DataTableHeader } from '@/components/data-table/DataTableView.jsx';
 import { PageFooter } from '@/components/layout/PageScaffold.jsx';
 import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 
@@ -20,21 +24,35 @@ export function FriendLogPageTable({
         <>
             <DataTableSurface>
                 <DataTableScrollArea wideTable>
-                    <Table className="w-max min-w-full">
-                        <DataTableHeader table={table} />
-                        <TableBody>
-                            {table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.original?.rowId || row.id}>
-                                    {row.getVisibleCells().map((cell) => (
-                                        <ResizableTableCell
-                                            key={cell.id}
-                                            cell={cell}
-                                        />
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <DataTableColumnDndProvider table={table}>
+                        <Table
+                            className="table-fixed min-w-full"
+                            style={getDataTableSizingStyle(table)}
+                        >
+                            <DataTableColumnSizeColGroup table={table} />
+                            <DataTableHeader table={table} />
+                            <TableBody>
+                                {table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.original?.rowId || row.id}
+                                    >
+                                        <DataTableColumnSortableContext
+                                            table={table}
+                                        >
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell) => (
+                                                    <ResizableTableCell
+                                                        key={cell.id}
+                                                        cell={cell}
+                                                    />
+                                                ))}
+                                        </DataTableColumnSortableContext>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </DataTableColumnDndProvider>
                 </DataTableScrollArea>
             </DataTableSurface>
 

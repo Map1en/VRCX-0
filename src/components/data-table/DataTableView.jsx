@@ -1,11 +1,13 @@
 import {
     DndContext,
     KeyboardSensor,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     closestCenter,
     useSensor,
     useSensors
 } from '@dnd-kit/core';
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
     SortableContext,
     arrayMove,
@@ -13,7 +15,6 @@ import {
     sortableKeyboardCoordinates
 } from '@dnd-kit/sortable';
 import {
-    flexRender,
     getCoreRowModel,
     useReactTable
 } from '@tanstack/react-table';
@@ -46,6 +47,11 @@ import {
 } from '@/ui/shadcn/table';
 import { ResizableTableHead } from './ResizableTableParts.jsx';
 import {
+    DataTableColumnDndContext,
+    dataTableColumnDndDefaultState,
+    useDataTableColumnDnd
+} from './dataTableColumnDndContext.js';
+import {
     getColumnOrder,
     getColumnOrderLocked,
     getReorderableColumnIds
@@ -68,21 +74,36 @@ function moveColumnByDrag(table, activeId, overId) {
     table.setColumnOrder(arrayMove(columnOrder, activeIndex, overIndex));
 }
 
-export function DataTableHeader({
-    table,
-    className = '',
-    enableColumnReorder = true,
-    getHeaderStyle,
-    onResetLayout
-}) {
-    const columnOrderLocked = getColumnOrderLocked(table);
-    const reorderableColumnIds = getReorderableColumnIds(table);
-    const canReorder =
-        enableColumnReorder &&
-        !columnOrderLocked &&
-        reorderableColumnIds.length > 1;
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
+export function getDataTableSizingStyle(table) {
+    const totalSize = table?.getTotalSize?.();
+    return Number.isFinite(totalSize) && totalSize > 0
+        ? { width: `${totalSize}px` }
+        : undefined;
+}
+
+export function DataTableColumnSizeColGroup({ table }) {
+    return (
+        <colgroup>
+            {(table?.getVisibleLeafColumns?.() ?? []).map((column) => (
+                <col
+                    key={column.id}
+                    style={{
+                        width: `${column.getSize()}px`
+                    }}
+                />
+            ))}
+        </colgroup>
+    );
+}
+
+function useColumnDndSensors() {
+    return useSensors(
+        useSensor(MouseSensor, {
+            activationConstraint: {
+                distance: 6
+            }
+        }),
+        useSensor(TouchSensor, {
             activationConstraint: {
                 distance: 6
             }
@@ -91,20 +112,102 @@ export function DataTableHeader({
             coordinateGetter: sortableKeyboardCoordinates
         })
     );
+}
+
+export function DataTableColumnDndProvider({
+    table,
+    enableColumnReorder = true,
+    children
+}) {
+    const columnOrderLocked = getColumnOrderLocked(table);
+    const reorderableColumnIds = getReorderableColumnIds(table);
+    const canReorder =
+        enableColumnReorder &&
+        !columnOrderLocked &&
+        reorderableColumnIds.length > 1;
+    const sensors = useColumnDndSensors();
+    const contextValue = canReorder
+        ? {
+              enabled: true,
+              items: reorderableColumnIds,
+              table
+          }
+        : dataTableColumnDndDefaultState;
+
+    if (!canReorder) {
+        return (
+            <DataTableColumnDndContext.Provider value={contextValue}>
+                {children}
+            </DataTableColumnDndContext.Provider>
+        );
+    }
+
+    return (
+        <DataTableColumnDndContext.Provider value={contextValue}>
+            <DndContext
+                accessibility={
+                    typeof document === 'undefined'
+                        ? undefined
+                        : { container: document.body }
+                }
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                modifiers={[restrictToHorizontalAxis]}
+                onDragEnd={(event) => {
+                    moveColumnByDrag(table, event.active?.id, event.over?.id);
+                }}
+            >
+                {children}
+            </DndContext>
+        </DataTableColumnDndContext.Provider>
+    );
+}
+
+export function DataTableColumnSortableContext({ table, children }) {
+    const columnDnd = useDataTableColumnDnd();
+
+    if (!columnDnd.enabled || columnDnd.table !== table) {
+        return children;
+    }
+
+    return (
+        <SortableContext
+            items={columnDnd.items}
+            strategy={horizontalListSortingStrategy}
+        >
+            {children}
+        </SortableContext>
+    );
+}
+
+export function DataTableHeader({
+    table,
+    className = '',
+    enableColumnReorder = true,
+    getHeaderStyle,
+    onResetLayout
+}) {
+    const columnDnd = useDataTableColumnDnd();
+    const canReorder = enableColumnReorder && columnDnd.enabled;
 
     const tableHeader = (
         <TableHeader className={className}>
             {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                        <ResizableTableHead
-                            key={header.id}
-                            header={header}
-                            enableColumnReorder={canReorder}
-                            style={getHeaderStyle?.(header.column, header)}
-                        />
-                    ))}
-                </TableRow>
+                <DataTableColumnSortableContext
+                    key={headerGroup.id}
+                    table={table}
+                >
+                    <TableRow>
+                        {headerGroup.headers.map((header) => (
+                            <ResizableTableHead
+                                key={header.id}
+                                header={header}
+                                enableColumnReorder={canReorder}
+                                style={getHeaderStyle?.(header.column, header)}
+                            />
+                        ))}
+                    </TableRow>
+                </DataTableColumnSortableContext>
             ))}
         </TableHeader>
     );
@@ -118,31 +221,7 @@ export function DataTableHeader({
         </TableColumnHeaderContextMenu>
     );
 
-    if (!canReorder) {
-        return headerWithMenu;
-    }
-
-    return (
-        <DndContext
-            accessibility={
-                typeof document === 'undefined'
-                    ? undefined
-                    : { container: document.body }
-            }
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={(event) => {
-                moveColumnByDrag(table, event.active?.id, event.over?.id);
-            }}
-        >
-            <SortableContext
-                items={reorderableColumnIds}
-                strategy={horizontalListSortingStrategy}
-            >
-                {headerWithMenu}
-            </SortableContext>
-        </DndContext>
-    );
+    return headerWithMenu;
 }
 
 export function DataTableSurface({ className = '', children }) {
@@ -166,9 +245,8 @@ export function DataTableScrollArea({
     return (
         <div
             className={cn(
-                'h-full min-h-0 min-w-0 overflow-auto',
-                wideTable &&
-                    '[&>[data-slot=table-container]]:w-max [&>[data-slot=table-container]]:min-w-full [&>[data-slot=table-container]]:overflow-visible',
+                'h-full min-h-0 min-w-0 overflow-auto [&>[data-slot=table-container]]:min-w-full [&>[data-slot=table-container]]:overflow-visible',
+                wideTable && '[&>[data-slot=table-container]]:w-max',
                 className
             )}
         >
@@ -308,31 +386,46 @@ export function DataTableView({
 
     return (
         <DataTableSurface>
-            <Table>
-                <DataTableHeader table={table} />
-                <TableBody>
-                    {table.getRowModel().rows.length > 0 ? (
-                        table.getRowModel().rows.map((row) => (
-                            <TableRow key={row.id}>
-                                {row.getVisibleCells().map((cell) => (
-                                    <TableCell key={cell.id}>
-                                        {flexRender(
-                                            cell.column.columnDef.cell,
-                                            cell.getContext()
-                                        )}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))
-                    ) : (
-                        <DataTableEmptyRow
-                            colSpan={table.getVisibleLeafColumns().length || 1}
-                        >
-                            {emptyLabel}
-                        </DataTableEmptyRow>
-                    )}
-                </TableBody>
-            </Table>
+            <DataTableScrollArea>
+                <DataTableColumnDndProvider table={table}>
+                    <Table
+                        className="table-fixed min-w-full"
+                        style={getDataTableSizingStyle(table)}
+                    >
+                        <DataTableColumnSizeColGroup table={table} />
+                        <DataTableHeader table={table} />
+                        <TableBody>
+                            {table.getRowModel().rows.length > 0 ? (
+                                table.getRowModel().rows.map((row) => (
+                                    <TableRow key={row.id}>
+                                        <DataTableColumnSortableContext
+                                            table={table}
+                                        >
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell) => (
+                                                    <ResizableTableCell
+                                                        key={cell.id}
+                                                        cell={cell}
+                                                    />
+                                                ))}
+                                        </DataTableColumnSortableContext>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <DataTableEmptyRow
+                                    colSpan={
+                                        table.getVisibleLeafColumns().length ||
+                                        1
+                                    }
+                                >
+                                    {emptyLabel}
+                                </DataTableEmptyRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </DataTableColumnDndProvider>
+            </DataTableScrollArea>
         </DataTableSurface>
     );
 }

@@ -1,6 +1,12 @@
 import {
+    DataTableColumnDndProvider,
+    DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
     DataTableHeader,
-    DataTablePagination
+    DataTablePagination,
+    DataTableScrollArea,
+    DataTableSurface,
+    getDataTableSizingStyle
 } from '@/components/data-table/DataTableView.jsx';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts.jsx';
 import { userFacingErrorMessage } from '@/lib/errorDisplay.js';
@@ -34,20 +40,31 @@ export function NotificationPageTable({
                 </div>
             ) : null}
 
-            <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
-                <div className="h-full overflow-auto">
-                    <Table className="app-data-table table-fixed">
+            <DataTableSurface>
+                <DataTableScrollArea>
+                    <DataTableColumnDndProvider table={table}>
+                        <Table
+                            className="app-data-table table-fixed min-w-full"
+                            style={getDataTableSizingStyle(table)}
+                        >
+                        <DataTableColumnSizeColGroup table={table} />
                         <DataTableHeader table={table} />
                         <TableBody>
                             {table.getRowModel().rows.length > 0 ? (
                                 table.getRowModel().rows.map((row) => (
                                     <TableRow key={row.id}>
-                                        {row.getVisibleCells().map((cell) => (
-                                            <ResizableTableCell
-                                                key={cell.id}
-                                                cell={cell}
-                                            />
-                                        ))}
+                                        <DataTableColumnSortableContext
+                                            table={table}
+                                        >
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell) => (
+                                                    <ResizableTableCell
+                                                        key={cell.id}
+                                                        cell={cell}
+                                                    />
+                                                ))}
+                                        </DataTableColumnSortableContext>
                                     </TableRow>
                                 ))
                             ) : (
@@ -63,9 +80,10 @@ export function NotificationPageTable({
                                 </TableRow>
                             )}
                         </TableBody>
-                    </Table>
-                </div>
-            </div>
+                        </Table>
+                    </DataTableColumnDndProvider>
+                </DataTableScrollArea>
+            </DataTableSurface>
 
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="text-muted-foreground text-sm">

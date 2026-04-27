@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils.js';
 import { Button } from '@/ui/shadcn/button';
 import { TableCell, TableHead } from '@/ui/shadcn/table';
 
+import { useDataTableColumnDnd } from './dataTableColumnDndContext.js';
 import { isColumnReorderable } from './tableColumnLayout.js';
 
 function resolveSize(value) {
@@ -46,25 +47,27 @@ function ResizableTableHeadContent({ header, dragHandleProps }) {
 
     return (
         <div className="flex min-w-0 items-center gap-2 pr-2">
-            {dragHandleProps ? (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`Reorder ${header.column.id} column`}
-                    className="shrink-0 cursor-grab opacity-0 group-hover:opacity-100 active:cursor-grabbing"
-                    {...dragHandleProps}
-                >
-                    <GripVerticalIcon data-icon="inline-start" />
-                </Button>
-            ) : null}
-            <div className="min-w-0 flex-1">
-                {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                      )}
+            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                <div className="min-w-0">
+                    {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                          )}
+                </div>
+                {dragHandleProps ? (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={`Reorder ${header.column.id} column`}
+                        className="shrink-0 cursor-grab opacity-0 group-hover:opacity-100 active:cursor-grabbing"
+                        {...dragHandleProps}
+                    >
+                        <GripVerticalIcon data-icon="inline-end" />
+                    </Button>
+                ) : null}
             </div>
             {canResize ? (
                 <Button
@@ -97,8 +100,8 @@ function ResizableTableHeadBase({ header, className = '', style }) {
         <TableHead
             className={cn('group relative select-none', className)}
             style={{
-                width: resolveSize(header.getSize()),
-                ...style
+                ...style,
+                width: resolveSize(header.getSize())
             }}
         >
             <ResizableTableHeadContent header={header} />
@@ -133,10 +136,10 @@ function SortableResizableTableHead({ header, className = '', style }) {
                 className
             )}
             style={{
+                ...style,
                 width: resolveSize(header.getSize()),
-                transform: CSS.Transform.toString(transform),
-                transition,
-                ...style
+                transform: CSS.Translate.toString(transform),
+                transition: transition || 'width transform 0.2s ease-in-out'
             }}
         >
             <ResizableTableHeadContent
@@ -173,12 +176,48 @@ export function ResizableTableHead({
 }
 
 export function ResizableTableCell({ cell, className = '', style }) {
+    const columnDnd = useDataTableColumnDnd();
+
+    if (columnDnd.enabled && isColumnReorderable(cell?.column)) {
+        return (
+            <SortableResizableTableCell
+                cell={cell}
+                className={className}
+                style={style}
+            />
+        );
+    }
+
     return (
         <TableCell
             className={className}
             style={{
+                ...style,
+                width: resolveSize(cell.column.getSize())
+            }}
+        >
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
+    );
+}
+
+function SortableResizableTableCell({ cell, className = '', style }) {
+    const { setNodeRef, transform, transition, isDragging } = useSortable({
+        id: cell.column.id
+    });
+
+    return (
+        <TableCell
+            ref={setNodeRef}
+            className={cn(
+                isDragging ? 'relative z-10 opacity-60' : 'relative',
+                className
+            )}
+            style={{
+                ...style,
                 width: resolveSize(cell.column.getSize()),
-                ...style
+                transform: CSS.Translate.toString(transform),
+                transition: transition || 'width transform 0.2s ease-in-out'
             }}
         >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
