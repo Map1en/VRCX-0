@@ -1,12 +1,4 @@
-import {
-    ArrowDownIcon,
-    ArrowUpIcon,
-    LockIcon,
-    RotateCcwIcon,
-    Settings2Icon,
-    UnlockIcon
-} from 'lucide-react';
-import { Fragment } from 'react';
+import { Settings2Icon } from 'lucide-react';
 
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/shadcn/button';
@@ -31,7 +23,6 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import {
-    getColumnOrder,
     getColumnOrderLocked,
     getToggleableColumns,
     hasColumnOrderLock,
@@ -39,20 +30,6 @@ import {
     resolveColumnLabel,
     setColumnOrderLocked
 } from './tableColumnLayout.js';
-
-function moveColumn(table, columnId, delta, order = getColumnOrder(table)) {
-    const currentIndex = order.indexOf(columnId);
-    const nextIndex = currentIndex + delta;
-
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= order.length) {
-        return;
-    }
-
-    const nextOrder = [...order];
-    const [entry] = nextOrder.splice(currentIndex, 1);
-    nextOrder.splice(nextIndex, 0, entry);
-    table.setColumnOrder(nextOrder);
-}
 
 function renderColumnLockLabel(locked) {
     return locked ? 'Unlock column order' : 'Lock column order';
@@ -67,31 +44,33 @@ export function TableColumnVisibilityMenu({
 
     const allLeafColumns = table.getAllLeafColumns();
     const columns = getToggleableColumns(allLeafColumns);
+    const showColumnOrderLock = hasColumnOrderLock(table);
 
-    if (!columns.length && !allLeafColumns.length) {
+    if (!columns.length && !showColumnOrderLock) {
         return null;
     }
 
-    const columnOrder = getColumnOrder(table, allLeafColumns);
     const columnOrderLocked = getColumnOrderLocked(table);
-    const showColumnOrderLock = hasColumnOrderLock(table);
-    const columnOrderIndexById = new Map(
-        columnOrder.map((columnId, index) => [columnId, index])
-    );
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
-                    <Settings2Icon data-icon="inline-start" />
-                    {label}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    aria-label={label}
+                >
+                    <Settings2Icon data-icon="icon" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
                 align="end"
                 className="max-h-96 w-72 overflow-y-auto"
             >
-                <DropdownMenuLabel>{t('table.generated.table_layout')}</DropdownMenuLabel>
+                <DropdownMenuLabel>
+                    {t('table.generated.table_layout')}
+                </DropdownMenuLabel>
                 <DropdownMenuGroup>
                     <DropdownMenuItem
                         onSelect={(event) => {
@@ -99,7 +78,6 @@ export function TableColumnVisibilityMenu({
                             resetTableLayout(table, onResetLayout);
                         }}
                     >
-                        <RotateCcwIcon data-icon="inline-start" />
                         {t('table.generated.reset_columns')}
                     </DropdownMenuItem>
                     {showColumnOrderLock ? (
@@ -109,77 +87,35 @@ export function TableColumnVisibilityMenu({
                                 setColumnOrderLocked(table, !columnOrderLocked);
                             }}
                         >
-                            {columnOrderLocked ? (
-                                <UnlockIcon data-icon="inline-start" />
-                            ) : (
-                                <LockIcon data-icon="inline-start" />
-                            )}
                             {renderColumnLockLabel(columnOrderLocked)}
                         </DropdownMenuItem>
                     ) : null}
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                    {columns.map((column) => {
-                        const columnIndex =
-                            columnOrderIndexById.get(column.id) ?? -1;
-                        const columnLabel = resolveColumnLabel(column);
-                        const canMoveUp = columnIndex > 0;
-                        const canMoveDown =
-                            columnIndex >= 0 &&
-                            columnIndex < columnOrder.length - 1;
-
-                        return (
-                            <Fragment key={column.id}>
+                {columns.length ? (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                            {columns.map((column) => (
                                 <DropdownMenuCheckboxItem
+                                    key={column.id}
                                     checked={column.getIsVisible()}
                                     onCheckedChange={(checked) =>
                                         column.toggleVisibility(
                                             checked === true
                                         )
                                     }
-                                    onSelect={(event) => event.preventDefault()}
+                                    onSelect={(event) =>
+                                        event.preventDefault()
+                                    }
                                 >
                                     <span className="min-w-0 flex-1 truncate">
-                                        {columnLabel}
+                                        {resolveColumnLabel(column)}
                                     </span>
                                 </DropdownMenuCheckboxItem>
-                                <DropdownMenuItem
-                                    inset
-                                    disabled={columnOrderLocked || !canMoveUp}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        moveColumn(
-                                            table,
-                                            column.id,
-                                            -1,
-                                            columnOrder
-                                        );
-                                    }}
-                                >
-                                    <ArrowUpIcon data-icon="inline-start" />
-                                    {t('table.generated.move_up')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    inset
-                                    disabled={columnOrderLocked || !canMoveDown}
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        moveColumn(
-                                            table,
-                                            column.id,
-                                            1,
-                                            columnOrder
-                                        );
-                                    }}
-                                >
-                                    <ArrowDownIcon data-icon="inline-start" />
-                                    {t('table.generated.move_down')}
-                                </DropdownMenuItem>
-                            </Fragment>
-                        );
-                    })}
-                </DropdownMenuGroup>
+                            ))}
+                        </DropdownMenuGroup>
+                    </>
+                ) : null}
             </DropdownMenuContent>
         </DropdownMenu>
     );
