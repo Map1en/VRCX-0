@@ -30,6 +30,7 @@ const commandArgs: Record<string, string[]> = {
     storage__set: ['key', 'value'],
     storage__remove: ['key'],
     sqlite__execute: ['sql', 'args'],
+    sqlite__execute_on_writer: ['sql', 'args'],
     sqlite__execute_non_query: ['sql', 'args'],
     sqlite__begin_upgrade: ['fromVersion', 'toVersion'],
     sqlite__commit_upgrade: [],

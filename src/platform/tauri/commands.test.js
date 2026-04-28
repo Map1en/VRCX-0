@@ -10,6 +10,9 @@ describe('tauri command mapping', () => {
         expect(toCommandName('sqlite', 'executeNonQuery')).toBe(
             'sqlite__execute_non_query'
         );
+        expect(toCommandName('sqlite', 'executeOnWriter')).toBe(
+            'sqlite__execute_on_writer'
+        );
         expect(toCommandName('assetBundle', 'CheckVRChatCache')).toBe(
             'asset_bundle__check_vrchat_cache'
         );

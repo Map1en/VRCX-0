@@ -96,6 +96,7 @@ pub fn run() {
             api::storage::storage__remove,
             api::storage::storage__get_all,
             api::database::sqlite__execute,
+            api::database::sqlite__execute_on_writer,
             api::database::sqlite__execute_non_query,
             api::database::sqlite__begin_upgrade,
             api::database::sqlite__commit_upgrade,

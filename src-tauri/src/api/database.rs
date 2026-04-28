@@ -19,6 +19,16 @@ pub fn sqlite__execute(
 }
 
 #[tauri::command]
+pub fn sqlite__execute_on_writer(
+    sql: String,
+    args: Option<HashMap<String, serde_json::Value>>,
+    state: State<'_, AppState>,
+) -> Result<Vec<Vec<serde_json::Value>>, AppError> {
+    let args = args.unwrap_or_default();
+    state.db.execute_on_writer(&sql, &args)
+}
+
+#[tauri::command]
 pub fn sqlite__execute_non_query(
     sql: String,
     args: Option<HashMap<String, serde_json::Value>>,

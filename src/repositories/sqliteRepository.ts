@@ -132,13 +132,37 @@ async function query<T extends SQLiteRow = SQLiteRow>(
     sql: string,
     args: SQLiteParams = null
 ): Promise<T[]> {
+    return queryWithInvoker(
+        (querySql, queryArgs) => backend.sqlite.execute(querySql, queryArgs),
+        'SQLite query failed',
+        sql,
+        args
+    );
+}
+
+async function queryOnWriter<T extends SQLiteRow = SQLiteRow>(
+    sql: string,
+    args: SQLiteParams = null
+): Promise<T[]> {
+    return queryWithInvoker(
+        (querySql, queryArgs) =>
+            backend.sqlite.executeOnWriter(querySql, queryArgs),
+        'SQLite writer query failed',
+        sql,
+        args
+    );
+}
+
+async function queryWithInvoker<T extends SQLiteRow = SQLiteRow>(
+    invokeQuery: (sql: string, args: SQLiteParams) => Promise<unknown>,
+    fallbackMessage: string,
+    sql: string,
+    args: SQLiteParams = null
+): Promise<T[]> {
     try {
-        return (await backend.sqlite.execute(sql, args)) as T[];
+        return (await invokeQuery(sql, args)) as T[];
     } catch (error) {
-        const normalizedError = normalizeSQLiteError(
-            error,
-            'SQLite query failed'
-        );
+        const normalizedError = normalizeSQLiteError(error, fallbackMessage);
         notifySQLiteError(normalizedError);
         throw normalizedError;
     }
@@ -149,6 +173,13 @@ async function all<T extends SQLiteRow = SQLiteRow>(
     args: SQLiteParams = null
 ): Promise<T[]> {
     return query(sql, args);
+}
+
+async function allOnWriter<T extends SQLiteRow = SQLiteRow>(
+    sql: string,
+    args: SQLiteParams = null
+): Promise<T[]> {
+    return queryOnWriter(sql, args);
 }
 
 async function execute<T extends SQLiteRow = SQLiteRow>(
@@ -165,8 +196,39 @@ async function execute<T extends SQLiteRow = SQLiteRow>(
     sqlOrArgs: string | SQLiteParams = null,
     maybeArgs: SQLiteParams = null
 ): Promise<T[]> {
+    return executeWithQuery<T>(query, callbackOrSql, sqlOrArgs, maybeArgs);
+}
+
+async function executeOnWriter<T extends SQLiteRow = SQLiteRow>(
+    sql: string,
+    args?: SQLiteParams
+): Promise<T[]>;
+async function executeOnWriter<T extends SQLiteRow = SQLiteRow>(
+    callback: (row: T) => void,
+    sql: string,
+    args?: SQLiteParams
+): Promise<T[]>;
+async function executeOnWriter<T extends SQLiteRow = SQLiteRow>(
+    callbackOrSql: string | ((row: T) => void),
+    sqlOrArgs: string | SQLiteParams = null,
+    maybeArgs: SQLiteParams = null
+): Promise<T[]> {
+    return executeWithQuery<T>(
+        queryOnWriter,
+        callbackOrSql,
+        sqlOrArgs,
+        maybeArgs
+    );
+}
+
+async function executeWithQuery<T extends SQLiteRow = SQLiteRow>(
+    queryFn: (sql: string, args?: SQLiteParams) => Promise<T[]>,
+    callbackOrSql: string | ((row: T) => void),
+    sqlOrArgs: string | SQLiteParams = null,
+    maybeArgs: SQLiteParams = null
+): Promise<T[]> {
     if (typeof callbackOrSql === 'function') {
-        const rows = await query<T>(sqlOrArgs as string, maybeArgs);
+        const rows = await queryFn(sqlOrArgs as string, maybeArgs);
         if (Array.isArray(rows)) {
             for (const row of rows) {
                 callbackOrSql(row);
@@ -175,7 +237,7 @@ async function execute<T extends SQLiteRow = SQLiteRow>(
         return rows;
     }
 
-    return query<T>(callbackOrSql, sqlOrArgs as SQLiteParams);
+    return queryFn(callbackOrSql, sqlOrArgs as SQLiteParams);
 }
 
 async function executeNonQuery(
@@ -206,13 +268,24 @@ async function transaction<T>(
 ): Promise<T> {
     await executeNonQuery('BEGIN');
     try {
-        const result = await steps(sqliteRepository);
+        const result = await steps(createWriterBoundRepository());
         await executeNonQuery('COMMIT');
         return result;
     } catch (error) {
         await executeNonQuery('ROLLBACK');
         throw error;
     }
+}
+
+function createWriterBoundRepository(): SQLiteRepository {
+    return Object.freeze({
+        query: queryOnWriter,
+        all: allOnWriter,
+        execute: executeOnWriter,
+        executeNonQuery,
+        run,
+        transaction
+    });
 }
 
 const sqliteRepository: SQLiteRepository = Object.freeze({

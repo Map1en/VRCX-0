@@ -1,13 +1,18 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Mutex, RwLock,
+};
 
 use chrono::Utc;
-use rusqlite::{types::Value as SqlValue, Connection, OptionalExtension, MAIN_DB};
+use rusqlite::{types::Value as SqlValue, Connection, OpenFlags, OptionalExtension, MAIN_DB};
 use serde::{Deserialize, Serialize};
 
 use crate::error::AppError;
+
+const READ_CONNECTION_COUNT: usize = 2;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,24 +28,31 @@ pub struct DatabaseUpgradeStatus {
 }
 
 struct UpgradeSession {
-    conn: Connection,
+    conn: Mutex<Connection>,
     status: DatabaseUpgradeStatus,
 }
 
-struct DatabaseInner {
-    main: Option<Connection>,
-    upgrade: Option<UpgradeSession>,
+struct MainDatabase {
+    writer: Mutex<Connection>,
+    readers: Vec<Mutex<Connection>>,
+    next_reader: AtomicUsize,
+}
+
+enum DatabaseMode {
+    Main(MainDatabase),
+    Upgrade(UpgradeSession),
+    Closed,
 }
 
 pub struct DatabaseService {
     db_path: PathBuf,
     upgrade_dir: PathBuf,
-    inner: Mutex<DatabaseInner>,
+    inner: RwLock<DatabaseMode>,
 }
 
 impl DatabaseService {
     pub fn new(db_path: &Path) -> Result<Self, AppError> {
-        let conn = open_configured_connection(db_path)?;
+        let main = open_main_database(db_path)?;
         let upgrade_dir = db_path
             .parent()
             .unwrap_or_else(|| Path::new("."))
@@ -49,10 +61,7 @@ impl DatabaseService {
         Ok(Self {
             db_path: db_path.to_path_buf(),
             upgrade_dir,
-            inner: Mutex::new(DatabaseInner {
-                main: Some(conn),
-                upgrade: None,
-            }),
+            inner: RwLock::new(DatabaseMode::Main(main)),
         })
     }
 
@@ -63,10 +72,45 @@ impl DatabaseService {
     ) -> Result<Vec<Vec<serde_json::Value>>, AppError> {
         let inner = self
             .inner
-            .lock()
+            .read()
             .map_err(|e| AppError::Database(e.to_string()))?;
-        let conn = inner.active_connection()?;
-        execute_on_connection(conn, sql, args)
+        match &*inner {
+            DatabaseMode::Main(main) => main.execute_read(sql, args),
+            DatabaseMode::Upgrade(upgrade) => {
+                let conn = upgrade
+                    .conn
+                    .lock()
+                    .map_err(|e| AppError::Database(e.to_string()))?;
+                execute_on_connection(&conn, sql, args)
+            }
+            DatabaseMode::Closed => Err(AppError::Database(
+                "Database connection is temporarily unavailable.".into(),
+            )),
+        }
+    }
+
+    pub fn execute_on_writer(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<Vec<Vec<serde_json::Value>>, AppError> {
+        let inner = self
+            .inner
+            .read()
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        match &*inner {
+            DatabaseMode::Main(main) => main.execute_on_writer(sql, args),
+            DatabaseMode::Upgrade(upgrade) => {
+                let conn = upgrade
+                    .conn
+                    .lock()
+                    .map_err(|e| AppError::Database(e.to_string()))?;
+                execute_on_connection(&conn, sql, args)
+            }
+            DatabaseMode::Closed => Err(AppError::Database(
+                "Database connection is temporarily unavailable.".into(),
+            )),
+        }
     }
 
     pub fn execute_non_query(
@@ -76,22 +120,49 @@ impl DatabaseService {
     ) -> Result<i64, AppError> {
         let inner = self
             .inner
-            .lock()
+            .read()
             .map_err(|e| AppError::Database(e.to_string()))?;
-        let conn = inner.active_connection()?;
-        execute_non_query_on_connection(conn, sql, args)
+        match &*inner {
+            DatabaseMode::Main(main) => main.execute_non_query(sql, args),
+            DatabaseMode::Upgrade(upgrade) => {
+                let conn = upgrade
+                    .conn
+                    .lock()
+                    .map_err(|e| AppError::Database(e.to_string()))?;
+                execute_non_query_on_connection(&conn, sql, args)
+            }
+            DatabaseMode::Closed => Err(AppError::Database(
+                "Database connection is temporarily unavailable.".into(),
+            )),
+        }
     }
 
     pub fn begin_upgrade(&self, from_version: i64, to_version: i64) -> Result<(), AppError> {
         let mut inner = self
             .inner
-            .lock()
+            .write()
             .map_err(|e| AppError::Database(e.to_string()))?;
 
-        if inner.upgrade.is_some() {
-            return Err(AppError::Database(
-                "A database upgrade is already running.".into(),
-            ));
+        let main = match &*inner {
+            DatabaseMode::Main(main) => main,
+            DatabaseMode::Upgrade(_) => {
+                return Err(AppError::Database(
+                    "A database upgrade is already running.".into(),
+                ));
+            }
+            DatabaseMode::Closed => {
+                return Err(AppError::Database(
+                    "Database connection is temporarily unavailable.".into(),
+                ));
+            }
+        };
+
+        {
+            let writer = main
+                .writer
+                .lock()
+                .map_err(|e| AppError::Database(e.to_string()))?;
+            checkpoint(&writer)?;
         }
 
         if let Some(status) = self.blocking_upgrade_status()? {
@@ -105,13 +176,15 @@ impl DatabaseService {
         fs::create_dir_all(&self.upgrade_dir)?;
 
         let work_db_path = self.work_db_path(from_version, to_version);
-        let main = inner
-            .main
-            .as_ref()
-            .ok_or_else(|| AppError::Database("Main database connection is not open.".into()))?;
-
-        main.backup(MAIN_DB, &work_db_path, None)
-            .map_err(|e| AppError::Database(e.to_string()))?;
+        {
+            let writer = main
+                .writer
+                .lock()
+                .map_err(|e| AppError::Database(e.to_string()))?;
+            writer
+                .backup(MAIN_DB, &work_db_path, None)
+                .map_err(|e| AppError::Database(e.to_string()))?;
+        }
 
         let conn = open_configured_connection(&work_db_path)?;
         let status = DatabaseUpgradeStatus {
@@ -124,42 +197,48 @@ impl DatabaseService {
         };
 
         self.write_status(&self.active_status_path(), &status)?;
-        inner.upgrade = Some(UpgradeSession { conn, status });
+        *inner = DatabaseMode::Upgrade(UpgradeSession {
+            conn: Mutex::new(conn),
+            status,
+        });
         Ok(())
     }
 
     pub fn commit_upgrade(&self) -> Result<(), AppError> {
         let mut inner = self
             .inner
-            .lock()
+            .write()
             .map_err(|e| AppError::Database(e.to_string()))?;
 
-        let status = inner
-            .upgrade
-            .as_ref()
-            .map(|session| session.status.clone())
-            .ok_or_else(|| AppError::Database("No database upgrade is running.".into()))?;
+        let status = match &*inner {
+            DatabaseMode::Upgrade(session) => session.status.clone(),
+            _ => return Err(AppError::Database("No database upgrade is running.".into())),
+        };
 
         {
-            let session = inner.upgrade.as_ref().unwrap();
-            ensure_upgrade_version_written(&session.conn, status.to_version)?;
-            checkpoint(&session.conn)?;
+            let session = match &*inner {
+                DatabaseMode::Upgrade(session) => session,
+                _ => unreachable!(),
+            };
+            let conn = session
+                .conn
+                .lock()
+                .map_err(|e| AppError::Database(e.to_string()))?;
+            ensure_upgrade_version_written(&conn, status.to_version)?;
+            checkpoint(&conn)?;
         }
 
-        if let Some(main) = inner.main.as_ref() {
-            checkpoint(main)?;
-        }
-
-        let session = inner.upgrade.take().unwrap();
+        let session = match std::mem::replace(&mut *inner, DatabaseMode::Closed) {
+            DatabaseMode::Upgrade(session) => session,
+            _ => unreachable!(),
+        };
         let work_db_path = PathBuf::from(&session.status.work_db_path);
         drop(session);
-        let main = inner.main.take();
-        drop(main);
 
         if let Err(error) = self.replace_main_database(&work_db_path) {
-            match open_configured_connection(&self.db_path) {
-                Ok(conn) => {
-                    inner.main = Some(conn);
+            match open_main_database(&self.db_path) {
+                Ok(main) => {
+                    *inner = DatabaseMode::Main(main);
                 }
                 Err(reopen_error) => {
                     tracing::warn!(
@@ -170,9 +249,9 @@ impl DatabaseService {
             return Err(error);
         }
 
-        match open_configured_connection(&self.db_path) {
-            Ok(conn) => {
-                inner.main = Some(conn);
+        match open_main_database(&self.db_path) {
+            Ok(main) => {
+                *inner = DatabaseMode::Main(main);
             }
             Err(error) => {
                 let mut failed_status = status;
@@ -207,26 +286,55 @@ impl DatabaseService {
     pub fn fail_upgrade(&self, reason: String) -> Result<(), AppError> {
         let mut inner = self
             .inner
-            .lock()
+            .write()
             .map_err(|e| AppError::Database(e.to_string()))?;
 
-        let mut status = if let Some(session) = inner.upgrade.take() {
-            let UpgradeSession { conn, status } = session;
-            if let Err(error) = checkpoint(&conn) {
-                tracing::warn!("Failed to checkpoint failed database upgrade copy: {error}");
+        let reopen_main = matches!(&*inner, DatabaseMode::Upgrade(_));
+        let mut status = match std::mem::replace(&mut *inner, DatabaseMode::Closed) {
+            DatabaseMode::Upgrade(session) => {
+                let UpgradeSession { conn, status } = session;
+                match conn.into_inner() {
+                    Ok(conn) => {
+                        if let Err(error) = checkpoint(&conn) {
+                            tracing::warn!(
+                                "Failed to checkpoint failed database upgrade copy: {error}"
+                            );
+                        }
+                        drop(conn);
+                    }
+                    Err(error) => {
+                        tracing::warn!(
+                            "Failed to close failed database upgrade connection cleanly: {error}"
+                        );
+                    }
+                }
+                status
             }
-            drop(conn);
-            status
-        } else if let Some(status) = self.read_status_if_exists(&self.active_status_path())? {
-            status
-        } else {
-            return Ok(());
+            other => {
+                *inner = other;
+                if let Some(status) = self.read_status_if_exists(&self.active_status_path())? {
+                    status
+                } else {
+                    return Ok(());
+                }
+            }
         };
 
         status.failed_at = Some(Utc::now().to_rfc3339());
         status.reason = Some(reason);
         self.write_status(&self.failed_status_path(), &status)?;
         self.remove_file_if_exists(&self.active_status_path())?;
+
+        if reopen_main {
+            match open_main_database(&self.db_path) {
+                Ok(main) => {
+                    *inner = DatabaseMode::Main(main);
+                }
+                Err(error) => {
+                    tracing::warn!("Failed to reopen database after upgrade failure: {error}");
+                }
+            }
+        }
         Ok(())
     }
 
@@ -341,21 +449,71 @@ impl DatabaseService {
     }
 }
 
-impl DatabaseInner {
-    fn active_connection(&self) -> Result<&Connection, AppError> {
-        if let Some(upgrade) = self.upgrade.as_ref() {
-            return Ok(&upgrade.conn);
+impl MainDatabase {
+    fn execute_read(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<Vec<Vec<serde_json::Value>>, AppError> {
+        if self.readers.is_empty() {
+            return self.execute_on_writer(sql, args);
         }
 
-        self.main
-            .as_ref()
-            .ok_or_else(|| AppError::Database("Main database connection is not open.".into()))
+        let index = self.next_reader.fetch_add(1, Ordering::Relaxed) % self.readers.len();
+        let conn = self.readers[index]
+            .lock()
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        execute_on_connection(&conn, sql, args)
     }
+
+    fn execute_on_writer(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<Vec<Vec<serde_json::Value>>, AppError> {
+        let conn = self
+            .writer
+            .lock()
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        execute_on_connection(&conn, sql, args)
+    }
+
+    fn execute_non_query(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<i64, AppError> {
+        let conn = self
+            .writer
+            .lock()
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        execute_non_query_on_connection(&conn, sql, args)
+    }
+}
+
+fn open_main_database(db_path: &Path) -> Result<MainDatabase, AppError> {
+    let writer = open_configured_connection(db_path)?;
+    let mut readers = Vec::with_capacity(READ_CONNECTION_COUNT);
+    for _ in 0..READ_CONNECTION_COUNT {
+        readers.push(Mutex::new(open_read_connection(db_path)?));
+    }
+    Ok(MainDatabase {
+        writer: Mutex::new(writer),
+        readers,
+        next_reader: AtomicUsize::new(0),
+    })
 }
 
 fn open_configured_connection(db_path: &Path) -> Result<Connection, AppError> {
     let conn = Connection::open(db_path).map_err(|e| AppError::Database(e.to_string()))?;
     configure_connection(&conn)?;
+    Ok(conn)
+}
+
+fn open_read_connection(db_path: &Path) -> Result<Connection, AppError> {
+    let conn = Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|e| AppError::Database(e.to_string()))?;
+    configure_read_connection(&conn)?;
     Ok(conn)
 }
 
@@ -365,6 +523,15 @@ fn configure_connection(conn: &Connection) -> Result<(), AppError> {
          PRAGMA busy_timeout=5000;
          PRAGMA journal_mode=WAL;
          PRAGMA optimize=0x10002;",
+    )
+    .map_err(|e| AppError::Database(e.to_string()))?;
+    Ok(())
+}
+
+fn configure_read_connection(conn: &Connection) -> Result<(), AppError> {
+    conn.execute_batch(
+        "PRAGMA busy_timeout=5000;
+         PRAGMA query_only=ON;",
     )
     .map_err(|e| AppError::Database(e.to_string()))?;
     Ok(())
