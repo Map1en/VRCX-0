@@ -66,7 +66,7 @@
         "echarts": "^6.0.0",
         "i18next": "^26.0.8",
         "lightningcss": "^1.32.0",
-        "lucide-react": "^1.13.0",
+        "lucide-react": "^1.14.0",
         "oxfmt": "^0.47.0",
         "oxlint": "^1.62.0",
         "radix-ui": "^1.4.3",
