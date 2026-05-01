@@ -48,7 +48,7 @@
         "input-otp": "^1.4.2",
         "next-themes": "^0.4.6",
         "shadcn": "^4.6.0",
-        "sigma": "^3.0.2"
+        "sigma": "^3.0.3"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.2.4",
