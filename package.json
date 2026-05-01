@@ -39,7 +39,7 @@
         "@fontsource-variable/noto-sans-tc": "^5.2.10",
         "@sigma/edge-curve": "^3.1.0",
         "@sigma/node-border": "^3.0.0",
-        "@tauri-apps/api": "^2.10.1",
+        "@tauri-apps/api": "^2.11.0",
         "date-fns": "^4.1.0",
         "graphology": "^0.26.0",
         "graphology-communities-louvain": "^2.0.2",
