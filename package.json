@@ -67,7 +67,7 @@
         "i18next": "^26.0.8",
         "lightningcss": "^1.32.0",
         "lucide-react": "^1.14.0",
-        "oxfmt": "^0.47.0",
+        "oxfmt": "^0.48.0",
         "oxlint": "^1.63.0",
         "radix-ui": "^1.4.3",
         "react": "^19.2.5",
