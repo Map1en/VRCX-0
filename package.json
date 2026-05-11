@@ -69,7 +69,7 @@
         "zustand": "^5.0.13"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.2.4",
+        "@tailwindcss/vite": "^4.3.0",
         "@tauri-apps/cli": "^2.11.1",
         "@types/node": "^25.6.2",
         "@types/react": "^19.2.14",
