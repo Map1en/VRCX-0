@@ -12,7 +12,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dirs = "6"
 rusqlite = { version = "0.39", features = ["bundled", "backup"] }
-sysinfo = "0.38"
+sysinfo = "0.39"
 chrono = "0.4"
 reqwest = { version = "0.13", features = [
     "cookies",
