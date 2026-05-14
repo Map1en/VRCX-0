@@ -3,4 +3,4 @@ pub mod db;
 pub mod event_bus;
 pub mod game_client;
 pub mod game_log;
-pub mod ingest;
+pub mod worker;

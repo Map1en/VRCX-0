@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::backend::context::BackendContext;
 use crate::backend::game_client::GameClientBackend;
 use crate::backend::game_log::GameLogBackend;
 use crate::domain::app_paths::AppPaths;
@@ -26,6 +27,7 @@ pub struct AppState {
     pub discord_rpc: DiscordRpc,
     pub process_monitor: ProcessMonitor,
     pub log_watcher: LogWatcher,
+    pub backend_context: Arc<BackendContext>,
     pub game_log_backend: Arc<GameLogBackend>,
     pub game_client_backend: Arc<GameClientBackend>,
     pub web: Arc<WebClient>,
@@ -66,17 +68,16 @@ impl AppState {
             web.cookie_jar(),
             web.proxy_url(),
         )?);
-        let game_log_backend = Arc::new(GameLogBackend::new(
+        let backend_context = Arc::new(BackendContext::new(
             Arc::clone(&db),
             Arc::clone(&web),
             Arc::clone(&image_cache),
         ));
+        let game_log_backend = Arc::new(GameLogBackend::new(Arc::clone(&backend_context)));
         let game_log_sink: Arc<dyn GameLogEventSink> = game_log_backend.clone();
         let log_watcher = LogWatcher::new(Some(game_log_sink));
         let game_client_backend = Arc::new(GameClientBackend::new(
-            Arc::clone(&db),
-            Arc::clone(&web),
-            Arc::clone(&image_cache),
+            Arc::clone(&backend_context),
             log_watcher.clone(),
         ));
         let ipc_sink: Arc<dyn IpcEventSink> = game_client_backend.clone();
@@ -93,6 +94,7 @@ impl AppState {
             discord_rpc,
             process_monitor,
             log_watcher,
+            backend_context,
             game_log_backend,
             game_client_backend,
             web,

@@ -1,49 +1,19 @@
-use std::collections::HashMap;
-
 use sea_query::{ColumnDef, Index, SqliteQueryBuilder, Table};
 
-use crate::domain::database::{DatabaseService, DatabaseWriteTransaction};
+use crate::backend::db::common::{ident, DbWriteTarget};
+use crate::domain::database::DatabaseService;
 use crate::error::AppError;
 
 use super::schema::*;
-
-pub(super) trait GameLogWriteTarget {
-    fn execute_non_query(
-        &self,
-        sql: &str,
-        args: &HashMap<String, serde_json::Value>,
-    ) -> Result<i64, AppError>;
-}
-
-impl GameLogWriteTarget for DatabaseService {
-    fn execute_non_query(
-        &self,
-        sql: &str,
-        args: &HashMap<String, serde_json::Value>,
-    ) -> Result<i64, AppError> {
-        DatabaseService::execute_non_query(self, sql, args)
-    }
-}
-
-impl GameLogWriteTarget for DatabaseWriteTransaction<'_> {
-    fn execute_non_query(
-        &self,
-        sql: &str,
-        args: &HashMap<String, serde_json::Value>,
-    ) -> Result<i64, AppError> {
-        DatabaseWriteTransaction::execute_non_query(self, sql, args)
-    }
-}
 
 #[allow(dead_code)]
 pub fn ensure_game_log_tables(db: &DatabaseService) -> Result<(), AppError> {
     ensure_game_log_tables_on(db)
 }
 
-pub(super) fn ensure_game_log_tables_on(target: &impl GameLogWriteTarget) -> Result<(), AppError> {
-    let args = HashMap::new();
+pub(super) fn ensure_game_log_tables_on(target: &impl DbWriteTarget) -> Result<(), AppError> {
     for sql in create_table_sqls() {
-        target.execute_non_query(&sql, &args)?;
+        target.execute_non_query(&sql, &Default::default())?;
     }
     Ok(())
 }

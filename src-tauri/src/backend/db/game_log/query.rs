@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
 use chrono::Utc;
 use sea_query::{Expr, Order, Query, SqliteQueryBuilder};
 
+use crate::backend::db::common::{ident, row_string, ParamsBuilder};
 use crate::domain::database::DatabaseService;
 use crate::error::AppError;
 
@@ -66,8 +65,9 @@ pub fn get_user_id_from_display_name(
     db: &DatabaseService,
     display_name: &str,
 ) -> Result<String, AppError> {
-    let mut args = HashMap::new();
-    args.insert("@displayName".to_string(), serde_json::json!(display_name));
+    let args = ParamsBuilder::new()
+        .set("displayName", display_name)
+        .build();
     Ok(db
         .execute(&user_id_from_display_name_sql(), &args)?
         .first()
@@ -81,37 +81,16 @@ pub fn get_location_before_or_at(
     db: &DatabaseService,
     created_at: &str,
 ) -> Result<Option<GameLogLocationSnapshot>, AppError> {
-    let mut args = HashMap::new();
-    args.insert("@createdAt".to_string(), serde_json::json!(created_at));
+    let args = ParamsBuilder::new().set("createdAt", created_at).build();
     Ok(db
         .execute(&location_before_or_at_sql(), &args)?
         .first()
         .map(|row| GameLogLocationSnapshot {
-            created_at: row
-                .first()
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
-            location: row
-                .get(1)
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
-            world_id: row
-                .get(2)
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
-            world_name: row
-                .get(3)
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
-            group_name: row
-                .get(4)
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
+            created_at: row_string(row, 0),
+            location: row_string(row, 1),
+            world_id: row_string(row, 2),
+            world_name: row_string(row, 3),
+            group_name: row_string(row, 4),
         }))
 }
 
@@ -121,34 +100,19 @@ pub fn get_join_leave_entries_for_location_range(
     after_date: &str,
     before_date: &str,
 ) -> Result<Vec<GameLogJoinLeaveSnapshot>, AppError> {
-    let mut args = HashMap::new();
-    args.insert("@location".to_string(), serde_json::json!(location));
-    args.insert("@afterDate".to_string(), serde_json::json!(after_date));
-    args.insert("@beforeDate".to_string(), serde_json::json!(before_date));
+    let args = ParamsBuilder::new()
+        .set(COL_LOCATION, location)
+        .set("afterDate", after_date)
+        .set("beforeDate", before_date)
+        .build();
     Ok(db
         .execute(&join_leave_entries_for_location_range_sql(), &args)?
         .into_iter()
         .map(|row| GameLogJoinLeaveSnapshot {
-            created_at: row
-                .first()
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
-            event_type: row
-                .get(1)
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
-            display_name: row
-                .get(2)
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
-            user_id: row
-                .get(3)
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
+            created_at: row_string(&row, 0),
+            event_type: row_string(&row, 1),
+            display_name: row_string(&row, 2),
+            user_id: row_string(&row, 3),
         })
         .collect())
 }

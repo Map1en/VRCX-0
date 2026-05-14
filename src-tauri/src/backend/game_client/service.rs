@@ -1,17 +1,16 @@
 use std::sync::{Arc, Mutex};
-
-use tauri::AppHandle;
+#[cfg(test)]
+use std::time::Duration;
 
 use crate::backend::context::BackendContext;
-use crate::domain::database::DatabaseService;
-use crate::domain::image_cache::ImageCache;
 use crate::domain::log_watcher::LogWatcher;
 use crate::domain::process_monitor::{GameProcessEvent, GameProcessEventSink};
-use crate::domain::web_client::WebClient;
 use crate::error::AppError;
 
+use crate::backend::worker::{BackendWorker, BackendWorkerOptions};
+
 use super::actions::{GameClientActions, SystemGameClientActions};
-use super::lifecycle;
+use super::{ipc, lifecycle};
 
 pub(super) struct GameClientState {
     pub external_notifier_version: i64,
@@ -22,57 +21,60 @@ pub(super) struct GameClientState {
 
 #[derive(Clone)]
 pub(super) struct GameClientDeps {
-    pub context: BackendContext,
+    pub context: Arc<BackendContext>,
     pub log_watcher: LogWatcher,
     pub actions: Arc<dyn GameClientActions>,
     pub state: Arc<Mutex<GameClientState>>,
 }
 
+pub(super) enum GameClientJob {
+    VrcxNoty {
+        message: String,
+    },
+    VrcxExternal {
+        message: String,
+        display_name: String,
+        user_id: String,
+        notify: bool,
+    },
+    GameStopped,
+}
+
 pub struct GameClientBackend {
-    pub(super) context: BackendContext,
-    pub(super) log_watcher: LogWatcher,
-    pub(super) actions: Arc<dyn GameClientActions>,
     pub(super) state: Arc<Mutex<GameClientState>>,
+    pub(super) worker: BackendWorker<GameClientJob>,
 }
 
 impl GameClientBackend {
-    pub fn new(
-        db: Arc<DatabaseService>,
-        web: Arc<WebClient>,
-        image_cache: Arc<ImageCache>,
-        log_watcher: LogWatcher,
-    ) -> Self {
-        Self::new_with_actions(
-            db,
-            web,
-            image_cache,
-            log_watcher,
-            Arc::new(SystemGameClientActions),
-        )
+    pub fn new(context: Arc<BackendContext>, log_watcher: LogWatcher) -> Self {
+        Self::new_with_actions(context, log_watcher, Arc::new(SystemGameClientActions))
     }
 
     fn new_with_actions(
-        db: Arc<DatabaseService>,
-        web: Arc<WebClient>,
-        image_cache: Arc<ImageCache>,
+        context: Arc<BackendContext>,
         log_watcher: LogWatcher,
         actions: Arc<dyn GameClientActions>,
     ) -> Self {
-        Self {
-            context: BackendContext::new(db, web, image_cache),
-            log_watcher,
-            actions,
-            state: Arc::new(Mutex::new(GameClientState {
-                external_notifier_version: 0,
-                last_crash_at_ms: None,
-                session_active: false,
-                current_location: String::new(),
-            })),
-        }
-    }
+        let state = Arc::new(Mutex::new(GameClientState {
+            external_notifier_version: 0,
+            last_crash_at_ms: None,
+            session_active: false,
+            current_location: String::new(),
+        }));
+        let worker_deps = GameClientDeps {
+            context: Arc::clone(&context),
+            log_watcher: log_watcher.clone(),
+            actions: Arc::clone(&actions),
+            state: Arc::clone(&state),
+        };
+        let worker = BackendWorker::start(
+            "game-client",
+            BackendWorkerOptions::default(),
+            context.event_bus.clone(),
+            move |jobs| handle_jobs(worker_deps.clone(), jobs),
+        );
 
-    pub fn set_app_handle(&self, app_handle: AppHandle) {
-        self.context.event_bus.set_app_handle(app_handle);
+        Self { state, worker }
     }
 
     pub fn set_runtime_state(&self, session_active: bool, current_location: &str) {
@@ -84,41 +86,55 @@ impl GameClientBackend {
         state.current_location = current_location.trim().to_string();
     }
 
-    pub(super) fn deps(&self) -> GameClientDeps {
-        GameClientDeps {
-            context: self.context.clone(),
-            log_watcher: self.log_watcher.clone(),
-            actions: Arc::clone(&self.actions),
-            state: Arc::clone(&self.state),
-        }
+    pub(super) fn enqueue_job(&self, job: GameClientJob) -> Result<(), AppError> {
+        self.worker.push_batch([job])?;
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(super) fn wait_until_idle_for_test(&self) -> bool {
+        self.worker.wait_until_idle(Duration::from_secs(2))
     }
 }
 
 impl GameProcessEventSink for GameClientBackend {
     fn on_game_process_event(&self, event: GameProcessEvent) -> Result<(), AppError> {
         if event.game_changed && !event.is_game_running {
-            let deps = self.deps();
-            if let Some(plan) = lifecycle::prepare_game_stopped(&deps)? {
-                tauri::async_runtime::spawn(async move {
-                    if let Err(error) = lifecycle::execute_crash_relaunch(deps, plan).await {
-                        tracing::warn!("GameClient stopped-game handling failed: {error}");
-                    }
-                });
-            }
+            self.enqueue_job(GameClientJob::GameStopped)?;
         }
         Ok(())
     }
 }
 
+fn handle_jobs(deps: GameClientDeps, jobs: Vec<GameClientJob>) -> Result<(), AppError> {
+    for job in jobs {
+        match job {
+            GameClientJob::VrcxNoty { .. } | GameClientJob::VrcxExternal { .. } => {
+                ipc::handle_ipc_job(&deps, job)?;
+            }
+            GameClientJob::GameStopped => {
+                if let Some(plan) = lifecycle::prepare_game_stopped(&deps)? {
+                    let task_deps = deps.clone();
+                    tauri::async_runtime::spawn(async move {
+                        if let Err(error) = lifecycle::execute_crash_relaunch(task_deps, plan).await
+                        {
+                            tracing::warn!("GameClient stopped-game handling failed: {error}");
+                        }
+                    });
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 impl GameClientBackend {
     pub(super) fn test_with_actions(
-        db: Arc<DatabaseService>,
-        web: Arc<WebClient>,
-        image_cache: Arc<ImageCache>,
+        context: Arc<BackendContext>,
         log_watcher: LogWatcher,
         actions: Arc<dyn GameClientActions>,
     ) -> Self {
-        Self::new_with_actions(db, web, image_cache, log_watcher, actions)
+        Self::new_with_actions(context, log_watcher, actions)
     }
 }

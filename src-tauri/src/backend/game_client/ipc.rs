@@ -6,7 +6,7 @@ use crate::backend::db::game_log::{
 use crate::domain::ipc::{IpcEventDisposition, IpcEventSink};
 use crate::error::AppError;
 
-use super::service::GameClientBackend;
+use super::service::{GameClientBackend, GameClientDeps, GameClientJob};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum ParsedIpcEvent {
@@ -39,8 +39,13 @@ impl IpcEventSink for GameClientBackend {
                 if !self.is_session_active()? {
                     return Ok(IpcEventDisposition::Forward);
                 }
-                self.handle_vrcx_noty(&message)?;
-                Ok(IpcEventDisposition::Handled)
+                match self.enqueue_job(GameClientJob::VrcxNoty { message }) {
+                    Ok(()) => Ok(IpcEventDisposition::Handled),
+                    Err(error) => {
+                        tracing::warn!("failed to enqueue VRCX notifier IPC event: {error}");
+                        Ok(IpcEventDisposition::Forward)
+                    }
+                }
             }
             Ok(ParsedIpcEvent::VrcxExternal {
                 message,
@@ -51,8 +56,18 @@ impl IpcEventSink for GameClientBackend {
                 if !self.is_session_active()? {
                     return Ok(IpcEventDisposition::Forward);
                 }
-                self.handle_vrcx_external(&message, &display_name, &user_id, notify)?;
-                Ok(IpcEventDisposition::Handled)
+                match self.enqueue_job(GameClientJob::VrcxExternal {
+                    message,
+                    display_name,
+                    user_id,
+                    notify,
+                }) {
+                    Ok(()) => Ok(IpcEventDisposition::Handled),
+                    Err(error) => {
+                        tracing::warn!("failed to enqueue VRCX external IPC event: {error}");
+                        Ok(IpcEventDisposition::Forward)
+                    }
+                }
             }
             Ok(ParsedIpcEvent::Forward) | Err(_) => Ok(IpcEventDisposition::Forward),
         }
@@ -67,102 +82,115 @@ impl GameClientBackend {
             .map_err(|error| AppError::Custom(format!("GameClient state lock: {error}")))?
             .session_active)
     }
+}
 
-    fn current_location(&self) -> String {
-        if let Ok(state) = self.state.lock() {
-            let current_location = state.current_location.trim();
-            if !current_location.is_empty() {
-                return current_location.to_string();
-            }
+pub(super) fn handle_ipc_job(deps: &GameClientDeps, job: GameClientJob) -> Result<(), AppError> {
+    match job {
+        GameClientJob::VrcxNoty { message } => handle_vrcx_noty(deps, &message),
+        GameClientJob::VrcxExternal {
+            message,
+            display_name,
+            user_id,
+            notify,
+        } => handle_vrcx_external(deps, &message, &display_name, &user_id, notify),
+        GameClientJob::GameStopped => Ok(()),
+    }
+}
+
+fn current_location(deps: &GameClientDeps) -> String {
+    if let Ok(state) = deps.state.lock() {
+        let current_location = state.current_location.trim();
+        if !current_location.is_empty() {
+            return current_location.to_string();
         }
-
-        self.log_watcher
-            .current_location_snapshot()
-            .map(|snapshot| snapshot.location)
-            .unwrap_or_default()
     }
 
-    fn handle_vrcx_noty(&self, message: &str) -> Result<(), AppError> {
-        let version = self
-            .state
-            .lock()
-            .map_err(|error| AppError::Custom(format!("GameClient state lock: {error}")))?
-            .external_notifier_version;
-        if version > 21 {
-            return Ok(());
-        }
+    deps.log_watcher
+        .current_location_snapshot()
+        .map(|snapshot| snapshot.location)
+        .unwrap_or_default()
+}
 
-        let created_at = now_iso();
-        write_batch(
-            &self.context.db,
-            &GameLogWriteBatch {
-                events: vec![GameLogEventEntry {
-                    created_at: created_at.clone(),
-                    data: message.to_string(),
-                }],
-                ..Default::default()
-            },
-        )?;
-        self.context.event_bus.emit_backend_game_log_event(vec![
-            "backend-ipc".into(),
-            created_at,
-            "event".into(),
-            message.to_string(),
-        ]);
-        self.context.event_bus.emit_game_client_event(
+fn handle_vrcx_noty(deps: &GameClientDeps, message: &str) -> Result<(), AppError> {
+    let version = deps
+        .state
+        .lock()
+        .map_err(|error| AppError::Custom(format!("GameClient state lock: {error}")))?
+        .external_notifier_version;
+    if version > 21 {
+        return Ok(());
+    }
+
+    let created_at = now_iso();
+    write_batch(
+        &deps.context.db,
+        &GameLogWriteBatch {
+            events: vec![GameLogEventEntry {
+                created_at: created_at.clone(),
+                data: message.to_string(),
+            }],
+            ..Default::default()
+        },
+    )?;
+    deps.context.event_bus.emit_backend_game_log_event(vec![
+        "backend-ipc".into(),
+        created_at,
+        "event".into(),
+        message.to_string(),
+    ]);
+    deps.context.event_bus.emit_game_client_event(
+        "notification",
+        serde_json::json!({
+            "level": "info",
+            "title": "External notifier",
+            "message": message,
+        }),
+    );
+    Ok(())
+}
+
+fn handle_vrcx_external(
+    deps: &GameClientDeps,
+    message: &str,
+    display_name: &str,
+    user_id: &str,
+    notify: bool,
+) -> Result<(), AppError> {
+    let created_at = now_iso();
+    let location = current_location(deps);
+    write_batch(
+        &deps.context.db,
+        &GameLogWriteBatch {
+            externals: vec![GameLogExternalEntry {
+                created_at: created_at.clone(),
+                message: message.to_string(),
+                display_name: display_name.to_string(),
+                user_id: user_id.to_string(),
+                location: location.clone(),
+            }],
+            ..Default::default()
+        },
+    )?;
+    deps.context.event_bus.emit_backend_game_log_event(vec![
+        "backend-ipc".into(),
+        created_at,
+        "external".into(),
+        message.to_string(),
+        display_name.to_string(),
+        user_id.to_string(),
+        location,
+    ]);
+    if notify {
+        deps.context.event_bus.emit_game_client_event(
             "notification",
             serde_json::json!({
                 "level": "info",
-                "title": "External notifier",
+                "title": if display_name.is_empty() { "External" } else { display_name },
                 "message": message,
             }),
         );
-        Ok(())
     }
-
-    fn handle_vrcx_external(
-        &self,
-        message: &str,
-        display_name: &str,
-        user_id: &str,
-        notify: bool,
-    ) -> Result<(), AppError> {
-        let created_at = now_iso();
-        let location = self.current_location();
-        write_batch(
-            &self.context.db,
-            &GameLogWriteBatch {
-                externals: vec![GameLogExternalEntry {
-                    created_at: created_at.clone(),
-                    message: message.to_string(),
-                    display_name: display_name.to_string(),
-                    user_id: user_id.to_string(),
-                    location: location.clone(),
-                }],
-                ..Default::default()
-            },
-        )?;
-        self.context.event_bus.emit_backend_game_log_event(vec![
-            "backend-ipc".into(),
-            created_at,
-            "external".into(),
-            message.to_string(),
-            display_name.to_string(),
-            user_id.to_string(),
-            location,
-        ]);
-        if notify {
-            self.context.event_bus.emit_game_client_event(
-                "notification",
-                serde_json::json!({
-                    "level": "info",
-                    "title": if display_name.is_empty() { "External" } else { display_name },
-                    "message": message,
-                }),
-            );
-        }
-        Ok(())
-    }
+    Ok(())
 }
 
 fn parse_ipc_event(packet: &str) -> Result<ParsedIpcEvent, serde_json::Error> {
@@ -228,6 +256,7 @@ mod tests {
     use std::path::PathBuf;
     use std::sync::Arc;
 
+    use crate::backend::context::BackendContext;
     use crate::backend::db::game_log::ensure_game_log_tables;
     use crate::backend::game_client::actions::GameClientActions;
     use crate::domain::database::DatabaseService;
@@ -292,10 +321,9 @@ mod tests {
             web.cookie_jar(),
             web.proxy_url(),
         )?);
+        let context = Arc::new(BackendContext::new(Arc::clone(&db), web, image_cache));
         let backend = GameClientBackend::test_with_actions(
-            Arc::clone(&db),
-            web,
-            image_cache,
+            context,
             LogWatcher::new(None),
             Arc::new(NoopActions),
         );
@@ -356,6 +384,7 @@ mod tests {
             )?,
             IpcEventDisposition::Handled
         );
+        assert!(backend.wait_until_idle_for_test());
 
         let empty = std::collections::HashMap::new();
         let events = db.execute("SELECT data FROM gamelog_event", &empty)?;

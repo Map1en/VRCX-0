@@ -1,3 +1,6 @@
+use std::sync::{Arc, Mutex};
+
+use crate::backend::context::BackendContext;
 use crate::backend::db::config as backend_config;
 use crate::backend::db::game_log::{
     write_batch, GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry,
@@ -8,11 +11,60 @@ use crate::domain::log_watcher::{GameLogEvent, GameLogEventKind};
 use crate::domain::process_monitor::GameProcessEvent;
 use crate::error::AppError;
 
+use super::instance_media::InstanceMediaQueue;
 use super::runtime_state::{
     duration_ms, now_iso, parse_event_time_ms, player_key, world_id_from_location,
     GameLogRuntimeState, PlayerState,
 };
-use super::{lifecycle, screenshot, video, BackendDeps, GameLogBackend};
+use super::{lifecycle, screenshot, video, BackendDeps};
+
+#[derive(Clone)]
+pub(super) enum GameLogWorkerJob {
+    Event(GameLogEvent),
+    Process(GameProcessEvent),
+}
+
+#[derive(Clone)]
+pub(super) struct GameLogProcessor {
+    context: Arc<BackendContext>,
+    state: Arc<Mutex<GameLogRuntimeState>>,
+    media_queue: InstanceMediaQueue,
+}
+
+impl GameLogProcessor {
+    pub(super) fn new(context: Arc<BackendContext>) -> Self {
+        Self {
+            context,
+            state: Arc::new(Mutex::new(GameLogRuntimeState::default())),
+            media_queue: InstanceMediaQueue::new(),
+        }
+    }
+
+    pub(super) fn handle_jobs(&self, jobs: Vec<GameLogWorkerJob>) -> Result<(), AppError> {
+        let mut pending_events = Vec::new();
+        for job in jobs {
+            match job {
+                GameLogWorkerJob::Event(event) => pending_events.push(event),
+                GameLogWorkerJob::Process(event) => {
+                    self.ingest_events_now(&pending_events)?;
+                    pending_events.clear();
+                    self.handle_game_process_event_now(event)?;
+                }
+            }
+        }
+        self.ingest_events_now(&pending_events)
+    }
+
+    fn deps(&self) -> BackendDeps {
+        BackendDeps {
+            db: Arc::clone(&self.context.db),
+            web: Arc::clone(&self.context.web),
+            image_cache: Arc::clone(&self.context.image_cache),
+            event_bus: self.context.event_bus.clone(),
+            media_queue: self.media_queue.clone(),
+        }
+    }
+}
 
 enum SideEffectCommand {
     Video(video::VideoInput),
@@ -42,17 +94,7 @@ enum SideEffectCommand {
     },
 }
 
-impl GameLogBackend {
-    pub fn ingest_events(&self, events: &[GameLogEvent]) -> Result<(), AppError> {
-        if events.is_empty() {
-            return Ok(());
-        }
-
-        self.ingest_queue.push_batch(events.iter().cloned());
-        let queued_events = self.ingest_queue.flush();
-        self.ingest_events_now(&queued_events)
-    }
-
+impl GameLogProcessor {
     fn ingest_events_now(&self, events: &[GameLogEvent]) -> Result<(), AppError> {
         if events.is_empty() {
             return Ok(());
@@ -219,6 +261,7 @@ impl GameLogBackend {
         }
 
         write_batch(&self.context.db, &batch)?;
+        self.emit_backend_persisted_mirrors(events);
         for side_effect in side_effects {
             dispatch_side_effect(deps.clone(), side_effect);
         }
@@ -226,7 +269,7 @@ impl GameLogBackend {
         Ok(())
     }
 
-    pub fn handle_game_process_event(&self, event: GameProcessEvent) -> Result<(), AppError> {
+    fn handle_game_process_event_now(&self, event: GameProcessEvent) -> Result<(), AppError> {
         let deps = self.deps();
         let mut batch = GameLogWriteBatch::default();
         {
@@ -438,6 +481,31 @@ impl GameLogBackend {
         state.now_playing_url = video_url.to_string();
         true
     }
+
+    fn emit_backend_persisted_mirrors(&self, events: &[GameLogEvent]) {
+        for event in events {
+            if should_emit_backend_persisted_mirror(&event.kind) {
+                self.context
+                    .event_bus
+                    .emit_backend_game_log_event(event.to_compat_row());
+            }
+        }
+    }
+}
+
+fn should_emit_backend_persisted_mirror(kind: &GameLogEventKind) -> bool {
+    matches!(
+        kind,
+        GameLogEventKind::Location { .. }
+            | GameLogEventKind::LocationDestination { .. }
+            | GameLogEventKind::PlayerJoined { .. }
+            | GameLogEventKind::PlayerLeft { .. }
+            | GameLogEventKind::PortalSpawn
+            | GameLogEventKind::ResourceLoad { .. }
+            | GameLogEventKind::Event { .. }
+            | GameLogEventKind::External { .. }
+            | GameLogEventKind::Vrcx { .. }
+    )
 }
 
 fn decode_video_url(value: &str) -> String {
@@ -521,15 +589,15 @@ mod tests {
     use std::path::PathBuf;
     use std::sync::Arc;
 
+    use crate::backend::context::BackendContext;
     use crate::backend::db::config as backend_config;
+    use crate::backend::game_log::GameLogBackend;
     use crate::domain::database::DatabaseService;
     use crate::domain::image_cache::ImageCache;
     use crate::domain::log_watcher::{GameLogEvent, GameLogEventKind};
     use crate::domain::storage::StorageService;
     use crate::domain::web_client::WebClient;
     use crate::error::AppError;
-
-    use super::GameLogBackend;
 
     struct TestDir {
         path: PathBuf,
@@ -574,7 +642,8 @@ mod tests {
             web.cookie_jar(),
             web.proxy_url(),
         )?);
-        let backend = GameLogBackend::new(Arc::clone(&db), web, image_cache);
+        let context = Arc::new(BackendContext::new(Arc::clone(&db), web, image_cache));
+        let backend = GameLogBackend::new(context);
         Ok((dir, db, backend))
     }
 
@@ -604,6 +673,7 @@ mod tests {
                 },
             ),
         ])?;
+        assert!(backend.wait_until_idle_for_test());
 
         let rows = db.execute("SELECT time FROM gamelog_location", &Default::default())?;
         assert_eq!(rows[0][0], serde_json::json!(40000));
@@ -631,12 +701,38 @@ mod tests {
                 world_name: "Disabled".into(),
             },
         )])?;
+        assert!(backend.wait_until_idle_for_test());
 
         let rows = db.execute(
             "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'gamelog_location'",
             &Default::default(),
         )?;
         assert!(rows.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn emits_backend_persisted_mirror_after_worker_write() -> Result<(), AppError> {
+        let (_dir, _db, backend) = test_backend("backend-gamelog-worker-mirror")?;
+
+        backend.ingest_events(&[event(
+            "2026-05-14T06:00:00.000Z",
+            GameLogEventKind::Location {
+                location: "wrld_mirror:1".into(),
+                world_name: "Mirror World".into(),
+            },
+        )])?;
+        assert!(backend.wait_until_idle_for_test());
+
+        let events = backend.context.event_bus.take_events_for_test();
+        assert!(events.iter().any(|event| {
+            event.name == "addGameLogEvent"
+                && event
+                    .payload
+                    .get("backendPersisted")
+                    .and_then(|value| value.as_bool())
+                    == Some(true)
+        }));
         Ok(())
     }
 }

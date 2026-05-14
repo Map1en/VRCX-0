@@ -1,5 +1,3 @@
-use sea_query::Alias;
-
 pub(super) const TABLE_LOCATION: &str = "gamelog_location";
 pub(super) const TABLE_JOIN_LEAVE: &str = "gamelog_join_leave";
 pub(super) const TABLE_PORTAL_SPAWN: &str = "gamelog_portal_spawn";
@@ -26,7 +24,3 @@ pub(super) const COL_RESOURCE_URL: &str = "resource_url";
 pub(super) const COL_RESOURCE_TYPE: &str = "resource_type";
 pub(super) const COL_DATA: &str = "data";
 pub(super) const COL_MESSAGE: &str = "message";
-
-pub(super) fn ident(name: impl Into<String>) -> Alias {
-    Alias::new(name)
-}

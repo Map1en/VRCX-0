@@ -91,6 +91,14 @@ pub async fn handle_video_play(deps: BackendDeps, mut input: VideoInput) -> Resu
         },
     )?;
 
+    deps.event_bus.emit_backend_game_log_event(vec![
+        "backend-game-log".into(),
+        input.created_at.clone(),
+        "video-play".into(),
+        input.video_url.clone(),
+        input.display_name.clone(),
+    ]);
+
     deps.emit_side_effect(
         "nowPlaying",
         serde_json::json!({

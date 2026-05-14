@@ -1,36 +1,18 @@
-use std::collections::HashMap;
-
-use sea_query::{Expr, OnConflict, Query, SqliteQueryBuilder};
-
+use crate::backend::db::common::{
+    insert_or_ignore_sql, update_by_key_sql, DbWriteTarget, ParamsBuilder,
+};
 use crate::domain::database::DatabaseService;
 use crate::error::AppError;
 
 use super::schema::*;
-use super::tables::{ensure_game_log_tables_on, GameLogWriteTarget};
+use super::tables::ensure_game_log_tables_on;
 use super::types::{
     GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogLocationEntry,
     GameLogPortalSpawnEntry, GameLogResourceLoadEntry, GameLogVideoPlayEntry, GameLogWriteBatch,
 };
 
-fn insert_or_ignore_sql(table: &str, columns: &[&str]) -> String {
-    let mut query = Query::insert();
-    query.into_table(ident(table));
-    query.columns(columns.iter().map(|column| ident(*column)));
-    query.values_panic(
-        columns
-            .iter()
-            .map(|column| Expr::cust(format!("@{column}"))),
-    );
-    query.on_conflict(OnConflict::new().do_nothing().to_owned());
-    query.to_string(SqliteQueryBuilder)
-}
-
 fn update_location_time_sql() -> String {
-    Query::update()
-        .table(ident(TABLE_LOCATION))
-        .value(ident(COL_TIME), Expr::cust("@time"))
-        .and_where(Expr::col(ident(COL_CREATED_AT)).eq(Expr::cust("@created_at")))
-        .to_string(SqliteQueryBuilder)
+    update_by_key_sql(TABLE_LOCATION, &[COL_TIME], COL_CREATED_AT)
 }
 
 #[allow(dead_code)]
@@ -39,25 +21,17 @@ pub fn insert_location(db: &DatabaseService, entry: &GameLogLocationEntry) -> Re
 }
 
 fn insert_location_on(
-    target: &impl GameLogWriteTarget,
+    target: &impl DbWriteTarget,
     entry: &GameLogLocationEntry,
 ) -> Result<(), AppError> {
-    let mut args = HashMap::new();
-    args.insert(
-        "@created_at".to_string(),
-        serde_json::json!(entry.created_at),
-    );
-    args.insert("@location".to_string(), serde_json::json!(entry.location));
-    args.insert("@world_id".to_string(), serde_json::json!(entry.world_id));
-    args.insert(
-        "@world_name".to_string(),
-        serde_json::json!(entry.world_name),
-    );
-    args.insert("@time".to_string(), serde_json::json!(entry.time));
-    args.insert(
-        "@group_name".to_string(),
-        serde_json::json!(entry.group_name),
-    );
+    let args = ParamsBuilder::new()
+        .set(COL_CREATED_AT, entry.created_at.clone())
+        .set(COL_LOCATION, entry.location.clone())
+        .set(COL_WORLD_ID, entry.world_id.clone())
+        .set(COL_WORLD_NAME, entry.world_name.clone())
+        .set(COL_TIME, entry.time)
+        .set(COL_GROUP_NAME, entry.group_name.clone())
+        .build();
     target.execute_non_query(
         &insert_or_ignore_sql(
             TABLE_LOCATION,
@@ -85,13 +59,14 @@ pub fn update_location_time(
 }
 
 fn update_location_time_on(
-    target: &impl GameLogWriteTarget,
+    target: &impl DbWriteTarget,
     created_at: &str,
     time: i64,
 ) -> Result<(), AppError> {
-    let mut args = HashMap::new();
-    args.insert("@created_at".to_string(), serde_json::json!(created_at));
-    args.insert("@time".to_string(), serde_json::json!(time));
+    let args = ParamsBuilder::new()
+        .set(COL_CREATED_AT, created_at)
+        .set(COL_TIME, time)
+        .build();
     target.execute_non_query(&update_location_time_sql(), &args)?;
     Ok(())
 }
@@ -105,22 +80,17 @@ pub fn insert_join_leave(
 }
 
 fn insert_join_leave_on(
-    target: &impl GameLogWriteTarget,
+    target: &impl DbWriteTarget,
     entry: &GameLogJoinLeaveEntry,
 ) -> Result<(), AppError> {
-    let mut args = HashMap::new();
-    args.insert(
-        "@created_at".to_string(),
-        serde_json::json!(entry.created_at),
-    );
-    args.insert("@type".to_string(), serde_json::json!(entry.event_type));
-    args.insert(
-        "@display_name".to_string(),
-        serde_json::json!(entry.display_name),
-    );
-    args.insert("@location".to_string(), serde_json::json!(entry.location));
-    args.insert("@user_id".to_string(), serde_json::json!(entry.user_id));
-    args.insert("@time".to_string(), serde_json::json!(entry.time));
+    let args = ParamsBuilder::new()
+        .set(COL_CREATED_AT, entry.created_at.clone())
+        .set(COL_TYPE, entry.event_type.clone())
+        .set(COL_DISPLAY_NAME, entry.display_name.clone())
+        .set(COL_LOCATION, entry.location.clone())
+        .set(COL_USER_ID, entry.user_id.clone())
+        .set(COL_TIME, entry.time)
+        .build();
     target.execute_non_query(
         &insert_or_ignore_sql(
             TABLE_JOIN_LEAVE,
@@ -147,28 +117,17 @@ pub fn insert_portal_spawn(
 }
 
 fn insert_portal_spawn_on(
-    target: &impl GameLogWriteTarget,
+    target: &impl DbWriteTarget,
     entry: &GameLogPortalSpawnEntry,
 ) -> Result<(), AppError> {
-    let mut args = HashMap::new();
-    args.insert(
-        "@created_at".to_string(),
-        serde_json::json!(entry.created_at),
-    );
-    args.insert(
-        "@display_name".to_string(),
-        serde_json::json!(entry.display_name),
-    );
-    args.insert("@location".to_string(), serde_json::json!(entry.location));
-    args.insert("@user_id".to_string(), serde_json::json!(entry.user_id));
-    args.insert(
-        "@instance_id".to_string(),
-        serde_json::json!(entry.instance_id),
-    );
-    args.insert(
-        "@world_name".to_string(),
-        serde_json::json!(entry.world_name),
-    );
+    let args = ParamsBuilder::new()
+        .set(COL_CREATED_AT, entry.created_at.clone())
+        .set(COL_DISPLAY_NAME, entry.display_name.clone())
+        .set(COL_LOCATION, entry.location.clone())
+        .set(COL_USER_ID, entry.user_id.clone())
+        .set(COL_INSTANCE_ID, entry.instance_id.clone())
+        .set(COL_WORLD_NAME, entry.world_name.clone())
+        .build();
     target.execute_non_query(
         &insert_or_ignore_sql(
             TABLE_PORTAL_SPAWN,
@@ -195,26 +154,18 @@ pub fn insert_video_play(
 }
 
 fn insert_video_play_on(
-    target: &impl GameLogWriteTarget,
+    target: &impl DbWriteTarget,
     entry: &GameLogVideoPlayEntry,
 ) -> Result<(), AppError> {
-    let mut args = HashMap::new();
-    args.insert(
-        "@created_at".to_string(),
-        serde_json::json!(entry.created_at),
-    );
-    args.insert("@video_url".to_string(), serde_json::json!(entry.video_url));
-    args.insert(
-        "@video_name".to_string(),
-        serde_json::json!(entry.video_name),
-    );
-    args.insert("@video_id".to_string(), serde_json::json!(entry.video_id));
-    args.insert("@location".to_string(), serde_json::json!(entry.location));
-    args.insert(
-        "@display_name".to_string(),
-        serde_json::json!(entry.display_name),
-    );
-    args.insert("@user_id".to_string(), serde_json::json!(entry.user_id));
+    let args = ParamsBuilder::new()
+        .set(COL_CREATED_AT, entry.created_at.clone())
+        .set(COL_VIDEO_URL, entry.video_url.clone())
+        .set(COL_VIDEO_NAME, entry.video_name.clone())
+        .set(COL_VIDEO_ID, entry.video_id.clone())
+        .set(COL_LOCATION, entry.location.clone())
+        .set(COL_DISPLAY_NAME, entry.display_name.clone())
+        .set(COL_USER_ID, entry.user_id.clone())
+        .build();
     target.execute_non_query(
         &insert_or_ignore_sql(
             TABLE_VIDEO_PLAY,
@@ -242,23 +193,15 @@ pub fn insert_resource_load(
 }
 
 fn insert_resource_load_on(
-    target: &impl GameLogWriteTarget,
+    target: &impl DbWriteTarget,
     entry: &GameLogResourceLoadEntry,
 ) -> Result<(), AppError> {
-    let mut args = HashMap::new();
-    args.insert(
-        "@created_at".to_string(),
-        serde_json::json!(entry.created_at),
-    );
-    args.insert(
-        "@resource_url".to_string(),
-        serde_json::json!(entry.resource_url),
-    );
-    args.insert(
-        "@resource_type".to_string(),
-        serde_json::json!(entry.resource_type),
-    );
-    args.insert("@location".to_string(), serde_json::json!(entry.location));
+    let args = ParamsBuilder::new()
+        .set(COL_CREATED_AT, entry.created_at.clone())
+        .set(COL_RESOURCE_URL, entry.resource_url.clone())
+        .set(COL_RESOURCE_TYPE, entry.resource_type.clone())
+        .set(COL_LOCATION, entry.location.clone())
+        .build();
     target.execute_non_query(
         &insert_or_ignore_sql(
             TABLE_RESOURCE_LOAD,
@@ -279,16 +222,11 @@ pub fn insert_event(db: &DatabaseService, entry: &GameLogEventEntry) -> Result<(
     insert_event_on(db, entry)
 }
 
-fn insert_event_on(
-    target: &impl GameLogWriteTarget,
-    entry: &GameLogEventEntry,
-) -> Result<(), AppError> {
-    let mut args = HashMap::new();
-    args.insert(
-        "@created_at".to_string(),
-        serde_json::json!(entry.created_at),
-    );
-    args.insert("@data".to_string(), serde_json::json!(entry.data));
+fn insert_event_on(target: &impl DbWriteTarget, entry: &GameLogEventEntry) -> Result<(), AppError> {
+    let args = ParamsBuilder::new()
+        .set(COL_CREATED_AT, entry.created_at.clone())
+        .set(COL_DATA, entry.data.clone())
+        .build();
     target.execute_non_query(
         &insert_or_ignore_sql(TABLE_EVENT, &[COL_CREATED_AT, COL_DATA]),
         &args,
@@ -302,21 +240,16 @@ pub fn insert_external(db: &DatabaseService, entry: &GameLogExternalEntry) -> Re
 }
 
 fn insert_external_on(
-    target: &impl GameLogWriteTarget,
+    target: &impl DbWriteTarget,
     entry: &GameLogExternalEntry,
 ) -> Result<(), AppError> {
-    let mut args = HashMap::new();
-    args.insert(
-        "@created_at".to_string(),
-        serde_json::json!(entry.created_at),
-    );
-    args.insert("@message".to_string(), serde_json::json!(entry.message));
-    args.insert(
-        "@display_name".to_string(),
-        serde_json::json!(entry.display_name),
-    );
-    args.insert("@user_id".to_string(), serde_json::json!(entry.user_id));
-    args.insert("@location".to_string(), serde_json::json!(entry.location));
+    let args = ParamsBuilder::new()
+        .set(COL_CREATED_AT, entry.created_at.clone())
+        .set(COL_MESSAGE, entry.message.clone())
+        .set(COL_DISPLAY_NAME, entry.display_name.clone())
+        .set(COL_USER_ID, entry.user_id.clone())
+        .set(COL_LOCATION, entry.location.clone())
+        .build();
     target.execute_non_query(
         &insert_or_ignore_sql(
             TABLE_EXTERNAL,

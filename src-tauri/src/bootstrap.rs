@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::time::Duration;
 
 use tauri::http::{header::CONTENT_TYPE, Request, Response, StatusCode};
@@ -217,19 +216,7 @@ fn create_main_window(
 }
 
 fn db_config_bool(state: &AppState, key: &str) -> Option<bool> {
-    let mut args = HashMap::new();
-    args.insert(
-        "@key".to_string(),
-        serde_json::Value::String(key.to_string()),
-    );
-
-    state
-        .db
-        .execute("SELECT value FROM configs WHERE key = @key LIMIT 1", &args)
-        .ok()
-        .and_then(|rows| rows.into_iter().next())
-        .and_then(|row| row.into_iter().next())
-        .and_then(|value| value.as_str().map(|s| s == "true"))
+    state.backend_context.config().get_bool(key, false).ok()
 }
 
 fn disable_windows_default_context_menu(app: &tauri::App) {
@@ -302,9 +289,9 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
         platform = %host_capabilities.platform,
         "host capabilities resolved"
     );
-    state.game_log_backend.set_app_handle(app.handle().clone());
     state
-        .game_client_backend
+        .backend_context
+        .event_bus
         .set_app_handle(app.handle().clone());
 
     if is_host_capability_available(HostCapability::GameProcessMonitor) {

@@ -22,6 +22,7 @@ type BackendEventName =
     | 'addGameLogEvent'
     | 'gameLogSideEffect'
     | 'gameClientEvent'
+    | 'backendWorkerError'
     | 'updateIsGameRunning'
     | 'ipcEvent'
     | 'browserFocus';
@@ -48,6 +49,10 @@ function normalizeString(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
+}
+
+function isBackendPersistedGameLogMirror(payload: unknown): boolean {
+    return isRecord(payload) && payload.backendPersisted === true;
 }
 
 function publishNowPlayingSharedFeed(payload: Record<string, unknown>): void {
@@ -115,6 +120,11 @@ async function ingestAndRecordGameLogEvent(
     name: BackendEventName,
     payload: unknown
 ): Promise<void> {
+    if (isBackendPersistedGameLogMirror(payload)) {
+        useRuntimeStore.getState().recordBackendEvent(name, payload);
+        return;
+    }
+
     if (!(await canIngestGameLogEvent())) {
         return;
     }
@@ -185,6 +195,11 @@ function handleBackendEvent(name: BackendEventName, payload: unknown): void {
         return;
     }
 
+    if (name === 'backendWorkerError') {
+        console.warn('Backend worker error:', payload);
+        return;
+    }
+
     if (name === 'updateIsGameRunning') {
         if (!isHostCapabilityAvailable('gameProcessMonitor')) {
             return;
@@ -229,6 +244,7 @@ export async function bindBackendEvents(): Promise<() => void> {
         'addGameLogEvent',
         'gameLogSideEffect',
         'gameClientEvent',
+        'backendWorkerError',
         'updateIsGameRunning',
         'ipcEvent',
         'browserFocus'
