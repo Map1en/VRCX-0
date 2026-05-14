@@ -9,7 +9,7 @@ use super::schema::*;
 use super::tables::ensure_game_log_tables;
 use super::types::{GameLogJoinLeaveSnapshot, GameLogLocationSnapshot};
 
-fn user_id_from_display_name_sql() -> String {
+fn latest_join_leave_lookup_sql() -> String {
     Query::select()
         .column(ident(COL_USER_ID))
         .from(ident(TABLE_JOIN_LEAVE))
@@ -69,7 +69,7 @@ pub fn get_user_id_from_display_name(
         .set("displayName", display_name)
         .build();
     Ok(db
-        .execute(&user_id_from_display_name_sql(), &args)?
+        .execute(&latest_join_leave_lookup_sql(), &args)?
         .first()
         .and_then(|row| row.first())
         .and_then(|value| value.as_str())
