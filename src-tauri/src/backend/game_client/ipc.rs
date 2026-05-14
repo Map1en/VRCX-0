@@ -39,7 +39,10 @@ impl IpcEventSink for GameClientBackend {
                 if !self.is_session_active()? {
                     return Ok(IpcEventDisposition::Forward);
                 }
-                match self.enqueue_job(GameClientJob::VrcxNoty { message }) {
+                match self.enqueue_job(GameClientJob::VrcxNoty {
+                    message,
+                    fallback_packet: packet.to_string(),
+                }) {
                     Ok(()) => Ok(IpcEventDisposition::Handled),
                     Err(error) => {
                         tracing::warn!("failed to enqueue VRCX notifier IPC event: {error}");
@@ -61,6 +64,7 @@ impl IpcEventSink for GameClientBackend {
                     display_name,
                     user_id,
                     notify,
+                    fallback_packet: packet.to_string(),
                 }) {
                     Ok(()) => Ok(IpcEventDisposition::Handled),
                     Err(error) => {
@@ -86,12 +90,13 @@ impl GameClientBackend {
 
 pub(super) fn handle_ipc_job(deps: &GameClientDeps, job: GameClientJob) -> Result<(), AppError> {
     match job {
-        GameClientJob::VrcxNoty { message } => handle_vrcx_noty(deps, &message),
+        GameClientJob::VrcxNoty { message, .. } => handle_vrcx_noty(deps, &message),
         GameClientJob::VrcxExternal {
             message,
             display_name,
             user_id,
             notify,
+            ..
         } => handle_vrcx_external(deps, &message, &display_name, &user_id, notify),
         GameClientJob::GameStopped => Ok(()),
     }

@@ -152,10 +152,11 @@ async function sweepVrchatCacheIfEnabled() {
 
 async function scheduleCrashRelaunchIfNeeded(previousGameState) {
     if (isBackendGameClientLifecycleActive()) {
-        await waitForBackendCrashRelaunchDecision();
-    }
-
-    if (shouldSkipFrontendCrashRelaunch()) {
+        const hasBackendDecision = await waitForBackendCrashRelaunchDecision();
+        if (shouldSkipFrontendCrashRelaunch() || !hasBackendDecision) {
+            return;
+        }
+    } else if (shouldSkipFrontendCrashRelaunch()) {
         return;
     }
 
@@ -193,6 +194,10 @@ async function scheduleCrashRelaunchIfNeeded(previousGameState) {
         () => {
             crashRelaunchTimer = null;
             (async () => {
+                if (shouldSkipFrontendCrashRelaunch()) {
+                    return;
+                }
+
                 if (!previousGameState.isGameNoVR) {
                     const steamVrRunning = await backend.app
                         .IsSteamVRRunning()

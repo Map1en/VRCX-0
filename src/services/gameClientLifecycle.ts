@@ -16,7 +16,7 @@ let lastBackendCrashRelaunchDecision: {
     receivedAt: number;
 } | null = null;
 let lastRuntimeStateSignature = '';
-let crashRelaunchDecisionWaiters: Array<() => void> = [];
+let crashRelaunchDecisionWaiters: Array<(received: boolean) => void> = [];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
@@ -76,7 +76,7 @@ export function recordBackendGameClientEvent(
     const waiters = crashRelaunchDecisionWaiters;
     crashRelaunchDecisionWaiters = [];
     for (const resolve of waiters) {
-        resolve();
+        resolve(true);
     }
 }
 
@@ -86,23 +86,23 @@ export function resetBackendCrashRelaunchDecision(): void {
 }
 
 export function waitForBackendCrashRelaunchDecision(
-    timeoutMs = 250
-): Promise<void> {
+    timeoutMs = 2000
+): Promise<boolean> {
     if (getBackendCrashRelaunchHandled() || lastBackendCrashRelaunchDecision) {
-        return Promise.resolve();
+        return Promise.resolve(true);
     }
 
     return new Promise((resolve) => {
         let timer: ReturnType<typeof globalThis.setTimeout>;
-        const finish = () => {
+        const finish = (received: boolean) => {
             globalThis.clearTimeout(timer);
-            resolve();
+            resolve(received);
         };
         timer = globalThis.setTimeout(() => {
             crashRelaunchDecisionWaiters = crashRelaunchDecisionWaiters.filter(
                 (entry) => entry !== finish
             );
-            resolve();
+            resolve(false);
         }, timeoutMs);
         crashRelaunchDecisionWaiters.push(finish);
     });

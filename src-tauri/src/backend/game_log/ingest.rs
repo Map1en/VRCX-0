@@ -42,17 +42,25 @@ impl GameLogProcessor {
 
     pub(super) fn handle_jobs(&self, jobs: Vec<GameLogWorkerJob>) -> Result<(), AppError> {
         let mut pending_events = Vec::new();
+        let mut first_error = None;
         for job in jobs {
             match job {
                 GameLogWorkerJob::Event(event) => pending_events.push(event),
                 GameLogWorkerJob::Process(event) => {
-                    self.ingest_events_now(&pending_events)?;
+                    if let Err(error) = self.ingest_events_now(&pending_events) {
+                        remember_error(&mut first_error, error);
+                    }
                     pending_events.clear();
-                    self.handle_game_process_event_now(event)?;
+                    if let Err(error) = self.handle_game_process_event_now(event) {
+                        remember_error(&mut first_error, error);
+                    }
                 }
             }
         }
-        self.ingest_events_now(&pending_events)
+        if let Err(error) = self.ingest_events_now(&pending_events) {
+            remember_error(&mut first_error, error);
+        }
+        first_error.map_or(Ok(()), Err)
     }
 
     fn deps(&self) -> BackendDeps {
@@ -63,6 +71,31 @@ impl GameLogProcessor {
             event_bus: self.context.event_bus.clone(),
             media_queue: self.media_queue.clone(),
         }
+    }
+
+    fn state_snapshot(&self) -> Result<GameLogRuntimeState, AppError> {
+        Ok(self
+            .state
+            .lock()
+            .map_err(|error| AppError::Custom(format!("GameLog backend state lock: {error}")))?
+            .clone())
+    }
+
+    fn commit_state(&self, state: GameLogRuntimeState) -> Result<(), AppError> {
+        *self
+            .state
+            .lock()
+            .map_err(|error| AppError::Custom(format!("GameLog backend state lock: {error}")))? =
+            state;
+        Ok(())
+    }
+}
+
+fn remember_error(first_error: &mut Option<AppError>, error: AppError) {
+    if first_error.is_none() {
+        *first_error = Some(error);
+    } else {
+        tracing::warn!("GameLog worker job failed: {error}");
     }
 }
 
@@ -109,158 +142,140 @@ impl GameLogProcessor {
         let deps = self.deps();
         let mut batch = GameLogWriteBatch::default();
         let mut side_effects = Vec::new();
+        let mut state = self.state_snapshot()?;
 
-        {
-            let mut state = self.state.lock().map_err(|error| {
-                AppError::Custom(format!("GameLog backend state lock: {error}"))
-            })?;
-
-            for event in events {
-                match &event.kind {
-                    GameLogEventKind::Location {
-                        location,
-                        world_name,
-                    } => self.ingest_location(&mut state, &mut batch, event, location, world_name),
-                    GameLogEventKind::LocationDestination { .. } => {
-                        self.finalize_location_session(&mut state, &mut batch, &event.created_at);
-                        state.current_location = "traveling".into();
-                        state.current_world_name.clear();
-                        state.current_location_started_at = event.created_at.clone();
-                        state.current_location_started_at_ms =
-                            parse_event_time_ms(&event.created_at);
+        for event in events {
+            match &event.kind {
+                GameLogEventKind::Location {
+                    location,
+                    world_name,
+                } => self.ingest_location(&mut state, &mut batch, event, location, world_name),
+                GameLogEventKind::LocationDestination { .. } => {
+                    self.finalize_location_session(&mut state, &mut batch, &event.created_at);
+                    state.current_location = "traveling".into();
+                    state.current_world_name.clear();
+                    state.current_location_started_at = event.created_at.clone();
+                    state.current_location_started_at_ms = parse_event_time_ms(&event.created_at);
+                }
+                GameLogEventKind::PlayerJoined {
+                    display_name,
+                    user_id,
+                } => {
+                    self.ingest_player_joined(&mut state, &mut batch, event, display_name, user_id)
+                }
+                GameLogEventKind::PlayerLeft {
+                    display_name,
+                    user_id,
+                } => self.ingest_player_left(&mut state, &mut batch, event, display_name, user_id),
+                GameLogEventKind::PortalSpawn => {
+                    self.ingest_portal_spawn(&state, &mut batch, event)
+                }
+                GameLogEventKind::Notification { .. } | GameLogEventKind::AvatarChange { .. } => {}
+                GameLogEventKind::ResourceLoad {
+                    resource_type,
+                    resource_url,
+                } => self.ingest_resource_load(
+                    &mut state,
+                    &mut batch,
+                    event,
+                    resource_type,
+                    resource_url,
+                    log_resource_load,
+                ),
+                GameLogEventKind::VideoPlay {
+                    video_url,
+                    display_name,
+                } => {
+                    if let Some(input) =
+                        self.prepare_video_play(&mut state, event, video_url, display_name)
+                    {
+                        side_effects.push(SideEffectCommand::Video(input));
                     }
-                    GameLogEventKind::PlayerJoined {
-                        display_name,
-                        user_id,
-                    } => self.ingest_player_joined(
-                        &mut state,
-                        &mut batch,
-                        event,
-                        display_name,
-                        user_id,
-                    ),
-                    GameLogEventKind::PlayerLeft {
-                        display_name,
-                        user_id,
-                    } => self.ingest_player_left(
-                        &mut state,
-                        &mut batch,
-                        event,
-                        display_name,
-                        user_id,
-                    ),
-                    GameLogEventKind::PortalSpawn => {
-                        self.ingest_portal_spawn(&state, &mut batch, event)
-                    }
-                    GameLogEventKind::Notification { .. }
-                    | GameLogEventKind::AvatarChange { .. } => {}
-                    GameLogEventKind::ResourceLoad {
-                        resource_type,
-                        resource_url,
-                    } => self.ingest_resource_load(
-                        &mut state,
-                        &mut batch,
-                        event,
-                        resource_type,
-                        resource_url,
-                        log_resource_load,
-                    ),
-                    GameLogEventKind::VideoPlay {
-                        video_url,
-                        display_name,
-                    } => {
-                        if let Some(input) =
-                            self.prepare_video_play(&mut state, event, video_url, display_name)
-                        {
-                            side_effects.push(SideEffectCommand::Video(input));
-                        }
-                    }
-                    GameLogEventKind::VideoSync { timestamp } => {
-                        side_effects.push(SideEffectCommand::VideoSync {
-                            timestamp: timestamp.clone(),
-                            created_at: event.created_at.clone(),
-                        });
-                    }
-                    GameLogEventKind::Vrcx { data } => {
-                        match video::parse_provider_video(
-                            &event.created_at,
-                            &state.current_location,
-                            data,
-                        ) {
-                            video::ProviderVideoEvent::Video(input) => {
-                                if self.accept_video_url(&mut state, &input.video_url) {
-                                    side_effects.push(SideEffectCommand::Video(input));
-                                }
-                            }
-                            video::ProviderVideoEvent::ResetNowPlaying => {
-                                state.last_video_url.clear();
-                                state.now_playing_url.clear();
-                                side_effects.push(SideEffectCommand::NowPlayingReset);
-                            }
-                            video::ProviderVideoEvent::Ignored => {}
-                            video::ProviderVideoEvent::NotProvider => {
-                                batch.externals.push(GameLogExternalEntry {
-                                    created_at: event.created_at.clone(),
-                                    message: data.clone(),
-                                    display_name: String::new(),
-                                    user_id: String::new(),
-                                    location: state.current_location.clone(),
-                                });
+                }
+                GameLogEventKind::VideoSync { timestamp } => {
+                    side_effects.push(SideEffectCommand::VideoSync {
+                        timestamp: timestamp.clone(),
+                        created_at: event.created_at.clone(),
+                    });
+                }
+                GameLogEventKind::Vrcx { data } => {
+                    match video::parse_provider_video(
+                        &event.created_at,
+                        &state.current_location,
+                        data,
+                    ) {
+                        video::ProviderVideoEvent::Video(input) => {
+                            if self.accept_video_url(&mut state, &input.video_url) {
+                                side_effects.push(SideEffectCommand::Video(input));
                             }
                         }
-                    }
-                    GameLogEventKind::ApiRequest { url } => {
-                        side_effects.push(SideEffectCommand::ApiRequest { url: url.clone() });
-                    }
-                    GameLogEventKind::Screenshot { path } => {
-                        side_effects.push(SideEffectCommand::Screenshot(
-                            screenshot::ScreenshotInput {
+                        video::ProviderVideoEvent::ResetNowPlaying => {
+                            state.last_video_url.clear();
+                            state.now_playing_url.clear();
+                            side_effects.push(SideEffectCommand::NowPlayingReset);
+                        }
+                        video::ProviderVideoEvent::Ignored => {}
+                        video::ProviderVideoEvent::NotProvider => {
+                            batch.externals.push(GameLogExternalEntry {
                                 created_at: event.created_at.clone(),
-                                path: path.clone(),
-                                snapshot: state.snapshot(),
-                            },
-                        ));
+                                message: data.clone(),
+                                display_name: String::new(),
+                                user_id: String::new(),
+                                location: state.current_location.clone(),
+                            });
+                        }
                     }
-                    GameLogEventKind::StickerSpawn {
-                        user_id,
-                        display_name,
-                        inventory_id,
-                    } => side_effects.push(SideEffectCommand::Sticker {
-                        user_id: user_id.clone(),
-                        display_name: display_name.clone(),
-                        inventory_id: inventory_id.clone(),
-                    }),
-                    GameLogEventKind::VrcQuit => side_effects.push(SideEffectCommand::VrcQuit {
+                }
+                GameLogEventKind::ApiRequest { url } => {
+                    side_effects.push(SideEffectCommand::ApiRequest { url: url.clone() });
+                }
+                GameLogEventKind::Screenshot { path } => {
+                    side_effects.push(SideEffectCommand::Screenshot(screenshot::ScreenshotInput {
                         created_at: event.created_at.clone(),
-                        is_game_running: state.is_game_running,
-                    }),
-                    GameLogEventKind::OpenVrInit => {
-                        side_effects.push(SideEffectCommand::NoVr { no_vr: false })
-                    }
-                    GameLogEventKind::DesktopMode => {
-                        side_effects.push(SideEffectCommand::NoVr { no_vr: true })
-                    }
-                    GameLogEventKind::UdonException { data } => {
-                        side_effects.push(SideEffectCommand::UdonException { data: data.clone() })
-                    }
-                    GameLogEventKind::Event { data } => batch.events.push(GameLogEventEntry {
+                        path: path.clone(),
+                        snapshot: state.snapshot(),
+                    }));
+                }
+                GameLogEventKind::StickerSpawn {
+                    user_id,
+                    display_name,
+                    inventory_id,
+                } => side_effects.push(SideEffectCommand::Sticker {
+                    user_id: user_id.clone(),
+                    display_name: display_name.clone(),
+                    inventory_id: inventory_id.clone(),
+                }),
+                GameLogEventKind::VrcQuit => side_effects.push(SideEffectCommand::VrcQuit {
+                    created_at: event.created_at.clone(),
+                    is_game_running: state.is_game_running,
+                }),
+                GameLogEventKind::OpenVrInit => {
+                    side_effects.push(SideEffectCommand::NoVr { no_vr: false })
+                }
+                GameLogEventKind::DesktopMode => {
+                    side_effects.push(SideEffectCommand::NoVr { no_vr: true })
+                }
+                GameLogEventKind::UdonException { data } => {
+                    side_effects.push(SideEffectCommand::UdonException { data: data.clone() })
+                }
+                GameLogEventKind::Event { data } => batch.events.push(GameLogEventEntry {
+                    created_at: event.created_at.clone(),
+                    data: data.clone(),
+                }),
+                GameLogEventKind::External { data } => {
+                    batch.externals.push(GameLogExternalEntry {
                         created_at: event.created_at.clone(),
-                        data: data.clone(),
-                    }),
-                    GameLogEventKind::External { data } => {
-                        batch.externals.push(GameLogExternalEntry {
-                            created_at: event.created_at.clone(),
-                            message: data.clone(),
-                            display_name: String::new(),
-                            user_id: String::new(),
-                            location: state.current_location.clone(),
-                        });
-                    }
+                        message: data.clone(),
+                        display_name: String::new(),
+                        user_id: String::new(),
+                        location: state.current_location.clone(),
+                    });
                 }
             }
         }
 
         write_batch(&self.context.db, &batch)?;
+        self.commit_state(state)?;
         self.emit_backend_persisted_mirrors(events);
         for side_effect in side_effects {
             dispatch_side_effect(deps.clone(), side_effect);
@@ -272,26 +287,23 @@ impl GameLogProcessor {
     fn handle_game_process_event_now(&self, event: GameProcessEvent) -> Result<(), AppError> {
         let deps = self.deps();
         let mut batch = GameLogWriteBatch::default();
-        {
-            let mut state = self.state.lock().map_err(|error| {
-                AppError::Custom(format!("GameLog backend state lock: {error}"))
-            })?;
-            state.is_game_running = event.is_game_running;
-            state.is_steamvr_running = event.is_steamvr_running;
-            if event.game_changed && !event.is_game_running {
-                let stopped_at = now_iso();
-                self.finalize_location_session(&mut state, &mut batch, &stopped_at);
-                state.current_location.clear();
-                state.current_world_name.clear();
-                state.current_location_started_at.clear();
-                state.current_location_started_at_ms = None;
-                state.last_resource_url.clear();
-                state.last_video_url.clear();
-                state.now_playing_url.clear();
-            }
+        let mut state = self.state_snapshot()?;
+        state.is_game_running = event.is_game_running;
+        state.is_steamvr_running = event.is_steamvr_running;
+        if event.game_changed && !event.is_game_running {
+            let stopped_at = now_iso();
+            self.finalize_location_session(&mut state, &mut batch, &stopped_at);
+            state.current_location.clear();
+            state.current_world_name.clear();
+            state.current_location_started_at.clear();
+            state.current_location_started_at_ms = None;
+            state.last_resource_url.clear();
+            state.last_video_url.clear();
+            state.now_playing_url.clear();
         }
 
         write_batch(&self.context.db, &batch)?;
+        self.commit_state(state)?;
         if event.game_changed && !event.is_game_running {
             deps.emit_side_effect("nowPlayingReset", serde_json::json!({}));
         }

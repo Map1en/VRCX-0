@@ -30,14 +30,30 @@ pub(super) struct GameClientDeps {
 pub(super) enum GameClientJob {
     VrcxNoty {
         message: String,
+        fallback_packet: String,
     },
     VrcxExternal {
         message: String,
         display_name: String,
         user_id: String,
         notify: bool,
+        fallback_packet: String,
     },
     GameStopped,
+}
+
+impl GameClientJob {
+    fn fallback_packet(&self) -> Option<&str> {
+        match self {
+            GameClientJob::VrcxNoty {
+                fallback_packet, ..
+            }
+            | GameClientJob::VrcxExternal {
+                fallback_packet, ..
+            } => Some(fallback_packet),
+            GameClientJob::GameStopped => None,
+        }
+    }
 }
 
 pub struct GameClientBackend {
@@ -107,13 +123,20 @@ impl GameProcessEventSink for GameClientBackend {
 }
 
 fn handle_jobs(deps: GameClientDeps, jobs: Vec<GameClientJob>) -> Result<(), AppError> {
+    let mut first_error = None;
     for job in jobs {
+        let fallback_packet = job.fallback_packet().map(ToOwned::to_owned);
         match job {
             GameClientJob::VrcxNoty { .. } | GameClientJob::VrcxExternal { .. } => {
-                ipc::handle_ipc_job(&deps, job)?;
+                if let Err(error) = ipc::handle_ipc_job(&deps, job) {
+                    if let Some(packet) = fallback_packet {
+                        deps.context.event_bus.emit_ipc_event(&packet);
+                    }
+                    remember_error(&mut first_error, error);
+                }
             }
-            GameClientJob::GameStopped => {
-                if let Some(plan) = lifecycle::prepare_game_stopped(&deps)? {
+            GameClientJob::GameStopped => match lifecycle::prepare_game_stopped(&deps) {
+                Ok(Some(plan)) => {
                     let task_deps = deps.clone();
                     tauri::async_runtime::spawn(async move {
                         if let Err(error) = lifecycle::execute_crash_relaunch(task_deps, plan).await
@@ -122,10 +145,29 @@ fn handle_jobs(deps: GameClientDeps, jobs: Vec<GameClientJob>) -> Result<(), App
                         }
                     });
                 }
-            }
+                Ok(None) => {}
+                Err(error) => {
+                    deps.context.event_bus.emit_game_client_event(
+                        "crashRelaunchDecision",
+                        serde_json::json!({
+                            "handled": false,
+                            "error": error.to_string(),
+                        }),
+                    );
+                    remember_error(&mut first_error, error);
+                }
+            },
         }
     }
-    Ok(())
+    first_error.map_or(Ok(()), Err)
+}
+
+fn remember_error(first_error: &mut Option<AppError>, error: AppError) {
+    if first_error.is_none() {
+        *first_error = Some(error);
+    } else {
+        tracing::warn!("GameClient worker job failed: {error}");
+    }
 }
 
 #[cfg(test)]
