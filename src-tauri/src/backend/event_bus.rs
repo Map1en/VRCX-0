@@ -4,6 +4,8 @@ use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter};
 
+use crate::backend::db::game_log::GameLogWriteBatch;
+
 #[cfg(test)]
 #[derive(Clone, Debug)]
 pub struct BackendEventForTest {
@@ -77,6 +79,22 @@ impl BackendEventBus {
             serde_json::json!({
                 "backendPersisted": true,
                 "raw": raw,
+            }),
+        );
+    }
+
+    pub fn emit_game_log_persistence_fallback(
+        &self,
+        batch: &GameLogWriteBatch,
+        raw_rows: Vec<Vec<String>>,
+        error: &str,
+    ) {
+        self.emit(
+            "gameLogPersistenceFallback",
+            serde_json::json!({
+                "batch": batch,
+                "rawRows": raw_rows,
+                "error": error,
             }),
         );
     }

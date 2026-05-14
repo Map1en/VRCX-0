@@ -129,6 +129,14 @@ pub fn detect_steamvr_running() -> bool {
         .any(|proc| is_steamvr_process_name(&proc.name().to_string_lossy()))
 }
 
+pub fn detect_game_running() -> bool {
+    let mut sys = System::new();
+    sys.refresh_processes(ProcessesToUpdate::All, true);
+    sys.processes()
+        .values()
+        .any(|proc| is_vrchat_process_name(&proc.name().to_string_lossy()))
+}
+
 #[cfg(target_os = "linux")]
 fn is_vrchat_process_name(name: &str) -> bool {
     name == "VRChat.exe"
@@ -136,7 +144,7 @@ fn is_vrchat_process_name(name: &str) -> bool {
 
 #[cfg(not(target_os = "linux"))]
 fn is_vrchat_process_name(name: &str) -> bool {
-    name.starts_with("VRChat")
+    name.eq_ignore_ascii_case("VRChat.exe")
 }
 
 #[cfg(target_os = "linux")]
@@ -171,9 +179,11 @@ mod tests {
 
     #[test]
     #[cfg(not(target_os = "linux"))]
-    fn non_linux_process_name_matching_keeps_existing_behavior() {
+    fn non_linux_vrchat_process_name_matches_game_process_only() {
         assert!(is_vrchat_process_name("VRChat.exe"));
-        assert!(is_vrchat_process_name("VRChat"));
+        assert!(is_vrchat_process_name("vrchat.exe"));
+        assert!(!is_vrchat_process_name("VRChat"));
+        assert!(!is_vrchat_process_name("VRChatHelper.exe"));
         assert!(is_steamvr_process_name("vrserver"));
         assert!(is_steamvr_process_name("vrserver.exe"));
     }

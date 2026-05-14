@@ -7,6 +7,7 @@ import { recordBackendGameClientEvent } from './gameClientLifecycle.js';
 import { handleGameRunningUpdate } from './gameStateService.js';
 import {
     ingestBackendGameLogEvent,
+    persistBackendGameLogFallbackBatch,
     resetNowPlayingState
 } from './gameLogIngestService.js';
 import {
@@ -20,6 +21,7 @@ import { handleBrowserFocus } from './vrcStatusService.js';
 
 type BackendEventName =
     | 'addGameLogEvent'
+    | 'gameLogPersistenceFallback'
     | 'gameLogSideEffect'
     | 'gameClientEvent'
     | 'backendWorkerError'
@@ -142,6 +144,39 @@ async function ingestAndRecordGameLogEvent(
     }
 }
 
+async function persistAndRecordGameLogFallback(
+    name: BackendEventName,
+    payload: unknown
+): Promise<void> {
+    try {
+        await persistBackendGameLogFallbackBatch(payload);
+        const runtimeStore = useRuntimeStore.getState();
+        runtimeStore.recordBackendEvent(name, payload);
+        const record = isRecord(payload) ? payload : {};
+        const rawRows = Array.isArray(record.rawRows) ? record.rawRows : [];
+        if (rawRows.length > 0) {
+            for (const raw of rawRows) {
+                runtimeStore.recordBackendEvent('addGameLogEvent', {
+                    backendPersistenceFallback: true,
+                    raw
+                });
+            }
+        } else {
+            runtimeStore.recordBackendEvent('addGameLogEvent', {
+                backendPersistenceFallback: true,
+                payload
+            });
+        }
+    } catch (error) {
+        await showSQLiteErrorDialog(error);
+        useNotificationStore.getState().pushNotification({
+            level: 'warning',
+            title: 'Game log fallback failed',
+            message: error instanceof Error ? error.message : String(error)
+        });
+    }
+}
+
 function handleBackendEvent(name: BackendEventName, payload: unknown): void {
     const runtimeStore = useRuntimeStore.getState();
 
@@ -149,6 +184,14 @@ function handleBackendEvent(name: BackendEventName, payload: unknown): void {
         gameLogIngestQueue = gameLogIngestQueue.then(
             () => ingestAndRecordGameLogEvent(name, payload),
             () => ingestAndRecordGameLogEvent(name, payload)
+        );
+        return;
+    }
+
+    if (name === 'gameLogPersistenceFallback') {
+        gameLogIngestQueue = gameLogIngestQueue.then(
+            () => persistAndRecordGameLogFallback(name, payload),
+            () => persistAndRecordGameLogFallback(name, payload)
         );
         return;
     }
@@ -242,6 +285,7 @@ export async function bindBackendEvents(): Promise<() => void> {
     const unsubscribers: BackendEventUnsubscribe[] = [];
     const events: BackendEventName[] = [
         'addGameLogEvent',
+        'gameLogPersistenceFallback',
         'gameLogSideEffect',
         'gameClientEvent',
         'backendWorkerError',

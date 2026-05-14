@@ -1,4 +1,6 @@
-#[derive(Clone, Debug, PartialEq, Eq)]
+use serde::Serialize;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct GameLogLocationEntry {
     pub created_at: String,
     pub location: String,
@@ -8,7 +10,7 @@ pub struct GameLogLocationEntry {
     pub group_name: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct GameLogJoinLeaveEntry {
     pub created_at: String,
     pub event_type: String,
@@ -18,7 +20,7 @@ pub struct GameLogJoinLeaveEntry {
     pub time: i64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct GameLogPortalSpawnEntry {
     pub created_at: String,
     pub display_name: String,
@@ -28,7 +30,7 @@ pub struct GameLogPortalSpawnEntry {
     pub world_name: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct GameLogVideoPlayEntry {
     pub created_at: String,
     pub video_url: String,
@@ -39,7 +41,7 @@ pub struct GameLogVideoPlayEntry {
     pub user_id: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct GameLogResourceLoadEntry {
     pub created_at: String,
     pub resource_url: String,
@@ -47,13 +49,13 @@ pub struct GameLogResourceLoadEntry {
     pub location: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct GameLogEventEntry {
     pub created_at: String,
     pub data: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct GameLogExternalEntry {
     pub created_at: String,
     pub message: String,
@@ -62,13 +64,13 @@ pub struct GameLogExternalEntry {
     pub location: String,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct GameLogLocationTimeUpdate {
     pub created_at: String,
     pub time: i64,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct GameLogWriteBatch {
     pub locations: Vec<GameLogLocationEntry>,
     pub location_time_updates: Vec<GameLogLocationTimeUpdate>,

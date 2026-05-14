@@ -297,6 +297,7 @@ const initialState = {
     },
     backendEvents: {
         addGameLogEvent: createBackendEventState(),
+        gameLogPersistenceFallback: createBackendEventState(),
         gameLogSideEffect: createBackendEventState(),
         updateIsGameRunning: createBackendEventState(),
         ipcEvent: createBackendEventState(),

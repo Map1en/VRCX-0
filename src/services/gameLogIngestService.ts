@@ -51,6 +51,32 @@ import { isHostCapabilityAvailable } from './hostCapabilityService.js';
 const GAME_LOG_BATCH_LIMIT = 50;
 type GameLogRow = Record<string, any>;
 
+function isRecord(value: unknown): value is Record<string, any> {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function listFromBatch(batch: Record<string, any>, key: string): Record<string, any>[] {
+    const value = batch[key];
+    return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+function field(record: Record<string, any>, snakeKey: string, camelKey?: string) {
+    return record[snakeKey] ?? record[camelKey ?? snakeKey];
+}
+
+function textField(
+    record: Record<string, any>,
+    snakeKey: string,
+    camelKey?: string
+): string {
+    return normalizeString(field(record, snakeKey, camelKey));
+}
+
+function numberField(record: Record<string, any>, key: string): number {
+    const value = Number(field(record, key));
+    return Number.isFinite(value) ? value : 0;
+}
+
 function isBackendGameLogIngestActive() {
     return isHostCapabilityAvailable('backendGameLogIngest');
 }
@@ -652,6 +678,90 @@ export async function ingestBackendGameLogEvent(payload: unknown) {
 
     await initializeGameLogIngest();
     return persistGameLog(parseRawRow(payload) as GameLogRow);
+}
+
+export async function persistBackendGameLogFallbackBatch(payload: unknown) {
+    const record = isRecord(payload) ? payload : {};
+    const batch = isRecord(record.batch) ? record.batch : {};
+
+    for (const entry of listFromBatch(batch, 'locations')) {
+        await gameLogRepository.addGamelogLocationToDatabase({
+            created_at: textField(entry, 'created_at', 'createdAt'),
+            location: textField(entry, 'location'),
+            worldId: textField(entry, 'world_id', 'worldId'),
+            worldName: textField(entry, 'world_name', 'worldName'),
+            time: numberField(entry, 'time'),
+            groupName: textField(entry, 'group_name', 'groupName')
+        });
+    }
+
+    for (const entry of listFromBatch(batch, 'location_time_updates')) {
+        await gameLogRepository.updateGamelogLocationTimeToDatabase({
+            created_at: textField(entry, 'created_at', 'createdAt'),
+            time: numberField(entry, 'time')
+        });
+    }
+
+    const joinLeaveEntries = listFromBatch(batch, 'join_leave').map((entry) => ({
+        created_at: textField(entry, 'created_at', 'createdAt'),
+        type: textField(entry, 'event_type', 'eventType'),
+        displayName: textField(entry, 'display_name', 'displayName'),
+        location: textField(entry, 'location'),
+        userId: textField(entry, 'user_id', 'userId'),
+        time: numberField(entry, 'time')
+    }));
+    if (joinLeaveEntries.length > 0) {
+        await gameLogRepository.addGamelogJoinLeaveBulk(joinLeaveEntries);
+    }
+
+    for (const entry of listFromBatch(batch, 'portal_spawns')) {
+        await gameLogRepository.addGamelogPortalSpawnToDatabase({
+            created_at: textField(entry, 'created_at', 'createdAt'),
+            displayName: textField(entry, 'display_name', 'displayName'),
+            location: textField(entry, 'location'),
+            userId: textField(entry, 'user_id', 'userId'),
+            instanceId: textField(entry, 'instance_id', 'instanceId'),
+            worldName: textField(entry, 'world_name', 'worldName')
+        });
+    }
+
+    for (const entry of listFromBatch(batch, 'video_plays')) {
+        await gameLogRepository.addGamelogVideoPlayToDatabase({
+            created_at: textField(entry, 'created_at', 'createdAt'),
+            videoUrl: textField(entry, 'video_url', 'videoUrl'),
+            videoName: textField(entry, 'video_name', 'videoName'),
+            videoId: textField(entry, 'video_id', 'videoId'),
+            location: textField(entry, 'location'),
+            displayName: textField(entry, 'display_name', 'displayName'),
+            userId: textField(entry, 'user_id', 'userId')
+        });
+    }
+
+    for (const entry of listFromBatch(batch, 'resource_loads')) {
+        await gameLogRepository.addGamelogResourceLoadToDatabase({
+            created_at: textField(entry, 'created_at', 'createdAt'),
+            resourceUrl: textField(entry, 'resource_url', 'resourceUrl'),
+            type: textField(entry, 'resource_type', 'resourceType'),
+            location: textField(entry, 'location')
+        });
+    }
+
+    for (const entry of listFromBatch(batch, 'events')) {
+        await gameLogRepository.addGamelogEventToDatabase({
+            created_at: textField(entry, 'created_at', 'createdAt'),
+            data: textField(entry, 'data')
+        });
+    }
+
+    for (const entry of listFromBatch(batch, 'externals')) {
+        await gameLogRepository.addGamelogExternalToDatabase({
+            created_at: textField(entry, 'created_at', 'createdAt'),
+            message: textField(entry, 'message'),
+            displayName: textField(entry, 'display_name', 'displayName'),
+            userId: textField(entry, 'user_id', 'userId'),
+            location: textField(entry, 'location')
+        });
+    }
 }
 
 export async function syncGameLogTail() {

@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use crate::backend::context::BackendContext;
 use crate::backend::db::config as backend_config;
@@ -17,6 +18,14 @@ use super::runtime_state::{
     GameLogRuntimeState, PlayerState,
 };
 use super::{lifecycle, screenshot, video, BackendDeps};
+
+const GAME_LOG_WRITE_RETRY_DELAYS_MS: &[u64] = &[25, 100, 250];
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum GameLogWriteOutcome {
+    BackendPersisted,
+    FrontendFallback,
+}
 
 #[derive(Clone)]
 pub(super) enum GameLogWorkerJob {
@@ -88,6 +97,24 @@ impl GameLogProcessor {
             .map_err(|error| AppError::Custom(format!("GameLog backend state lock: {error}")))? =
             state;
         Ok(())
+    }
+
+    fn write_batch_or_emit_fallback(
+        &self,
+        batch: &GameLogWriteBatch,
+        raw_rows: Vec<Vec<String>>,
+    ) -> Result<GameLogWriteOutcome, AppError> {
+        match write_batch_with_retry(&self.context.db, batch) {
+            Ok(()) => Ok(GameLogWriteOutcome::BackendPersisted),
+            Err(error) => {
+                let message = error.to_string();
+                self.context
+                    .event_bus
+                    .emit_game_log_persistence_fallback(batch, raw_rows, &message);
+                tracing::warn!("GameLog batch write delegated to frontend fallback: {message}");
+                Ok(GameLogWriteOutcome::FrontendFallback)
+            }
+        }
     }
 }
 
@@ -274,9 +301,14 @@ impl GameLogProcessor {
             }
         }
 
-        write_batch(&self.context.db, &batch)?;
+        let write_outcome = self.write_batch_or_emit_fallback(
+            &batch,
+            events.iter().map(GameLogEvent::to_compat_row).collect(),
+        )?;
         self.commit_state(state)?;
-        self.emit_backend_persisted_mirrors(events);
+        if write_outcome == GameLogWriteOutcome::BackendPersisted {
+            self.emit_backend_persisted_mirrors(events);
+        }
         for side_effect in side_effects {
             dispatch_side_effect(deps.clone(), side_effect);
         }
@@ -302,7 +334,7 @@ impl GameLogProcessor {
             state.now_playing_url.clear();
         }
 
-        write_batch(&self.context.db, &batch)?;
+        self.write_batch_or_emit_fallback(&batch, Vec::new())?;
         self.commit_state(state)?;
         if event.game_changed && !event.is_game_running {
             deps.emit_side_effect("nowPlayingReset", serde_json::json!({}));
@@ -518,6 +550,25 @@ fn should_emit_backend_persisted_mirror(kind: &GameLogEventKind) -> bool {
             | GameLogEventKind::External { .. }
             | GameLogEventKind::Vrcx { .. }
     )
+}
+
+fn write_batch_with_retry(
+    db: &crate::domain::database::DatabaseService,
+    batch: &GameLogWriteBatch,
+) -> Result<(), AppError> {
+    let mut delays = GAME_LOG_WRITE_RETRY_DELAYS_MS.iter();
+    loop {
+        match write_batch(db, batch) {
+            Ok(()) => return Ok(()),
+            Err(error) => {
+                let Some(delay_ms) = delays.next() else {
+                    return Err(error);
+                };
+                tracing::warn!("GameLog batch write failed, retrying in {delay_ms}ms: {error}");
+                std::thread::sleep(Duration::from_millis(*delay_ms));
+            }
+        }
+    }
 }
 
 fn decode_video_url(value: &str) -> String {

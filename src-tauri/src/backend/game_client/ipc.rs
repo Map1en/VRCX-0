@@ -301,6 +301,10 @@ mod tests {
     struct NoopActions;
 
     impl GameClientActions for NoopActions {
+        fn is_game_running(&self) -> bool {
+            false
+        }
+
         fn is_steamvr_running(&self) -> bool {
             true
         }
