@@ -21,6 +21,9 @@ import {
     enqueueStickerSave
 } from './game-log-ingest/instanceMediaSave.js';
 import {
+    shouldSkipBackendPersistedGameLog as shouldSkipBackendPersistedGameLogByCapability
+} from './game-log-ingest/backendPersistence.js';
+import {
     getPlayerKey,
     normalizeString,
     parseRawRow
@@ -45,17 +48,6 @@ import { recordGameRuntimePresence } from './domainIngestionService.js';
 import { isHostCapabilityAvailable } from './hostCapabilityService.js';
 
 const GAME_LOG_BATCH_LIMIT = 50;
-const BACKEND_GAME_LOG_INGEST_TYPES = new Set([
-    'location',
-    'location-destination',
-    'player-joined',
-    'player-left',
-    'portal-spawn',
-    'resource-load-string',
-    'resource-load-image',
-    'event'
-]);
-
 type GameLogRow = Record<string, any>;
 
 function isBackendGameLogIngestActive() {
@@ -63,10 +55,9 @@ function isBackendGameLogIngestActive() {
 }
 
 function shouldSkipBackendPersistedGameLog(gameLog: GameLogRow) {
-    return (
-        isBackendGameLogIngestActive() &&
-        BACKEND_GAME_LOG_INGEST_TYPES.has(String(gameLog?.type || ''))
-    );
+    return shouldSkipBackendPersistedGameLogByCapability(gameLog, {
+        backendGameLogIngestAvailable: isBackendGameLogIngestActive()
+    });
 }
 
 function updateCurrentLocation({

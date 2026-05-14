@@ -5,10 +5,9 @@ use chrono::DateTime;
 
 use crate::backend::db::config as backend_config;
 use crate::backend::db::game_log::{
-    ensure_game_log_tables, insert_event, insert_external, insert_join_leave, insert_location,
-    insert_portal_spawn, insert_resource_load, update_location_time, GameLogEventEntry,
-    GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogPortalSpawnEntry,
-    GameLogResourceLoadEntry,
+    write_batch, GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry,
+    GameLogLocationEntry, GameLogLocationTimeUpdate, GameLogPortalSpawnEntry,
+    GameLogResourceLoadEntry, GameLogWriteBatch,
 };
 use crate::domain::database::DatabaseService;
 use crate::domain::log_watcher::{GameLogEvent, GameLogEventKind, GameLogEventSink};
@@ -21,7 +20,6 @@ pub struct GameLogIngest {
 
 #[derive(Default)]
 struct GameLogIngestState {
-    tables_ready: bool,
     current_location: String,
     current_world_name: String,
     current_location_started_at: String,
@@ -45,6 +43,14 @@ impl GameLogIngest {
     }
 
     pub fn ingest_event(&self, event: &GameLogEvent) -> Result<(), AppError> {
+        self.ingest_events(std::slice::from_ref(event))
+    }
+
+    pub fn ingest_events(&self, events: &[GameLogEvent]) -> Result<(), AppError> {
+        if events.is_empty() {
+            return Ok(());
+        }
+
         let mut state = self
             .state
             .lock()
@@ -52,87 +58,84 @@ impl GameLogIngest {
         if backend_config::get_bool(&self.db, "gameLogDisabled", false)? {
             return Ok(());
         }
-        self.ensure_ready(&mut state)?;
 
-        match &event.kind {
-            GameLogEventKind::Location {
-                location,
-                world_name,
-            } => self.ingest_location(&mut state, event, location, world_name),
-            GameLogEventKind::LocationDestination { .. } => {
-                self.finalize_location_session(&mut state, &event.created_at)?;
-                state.current_location = "traveling".into();
-                state.current_world_name.clear();
-                state.current_location_started_at = event.created_at.clone();
-                state.current_location_started_at_ms = parse_event_time_ms(&event.created_at);
-                Ok(())
-            }
-            GameLogEventKind::PlayerJoined {
-                display_name,
-                user_id,
-            } => self.ingest_player_joined(&mut state, event, display_name, user_id),
-            GameLogEventKind::PlayerLeft {
-                display_name,
-                user_id,
-            } => self.ingest_player_left(&mut state, event, display_name, user_id),
-            GameLogEventKind::PortalSpawn => self.ingest_portal_spawn(&state, event),
-            GameLogEventKind::ResourceLoad {
-                resource_type,
-                resource_url,
-            } => self.ingest_resource_load(&mut state, event, resource_type, resource_url),
-            GameLogEventKind::Event { data } => insert_event(
-                &self.db,
-                &GameLogEventEntry {
+        let log_resource_load = backend_config::get_bool(&self.db, "logResourceLoad", false)?;
+        let mut batch = GameLogWriteBatch::default();
+        for event in events {
+            match &event.kind {
+                GameLogEventKind::Location {
+                    location,
+                    world_name,
+                } => self.ingest_location(&mut state, &mut batch, event, location, world_name),
+                GameLogEventKind::LocationDestination { .. } => {
+                    self.finalize_location_session(&mut state, &mut batch, &event.created_at);
+                    state.current_location = "traveling".into();
+                    state.current_world_name.clear();
+                    state.current_location_started_at = event.created_at.clone();
+                    state.current_location_started_at_ms = parse_event_time_ms(&event.created_at);
+                }
+                GameLogEventKind::PlayerJoined {
+                    display_name,
+                    user_id,
+                } => {
+                    self.ingest_player_joined(&mut state, &mut batch, event, display_name, user_id)
+                }
+                GameLogEventKind::PlayerLeft {
+                    display_name,
+                    user_id,
+                } => self.ingest_player_left(&mut state, &mut batch, event, display_name, user_id),
+                GameLogEventKind::PortalSpawn => {
+                    self.ingest_portal_spawn(&state, &mut batch, event)
+                }
+                GameLogEventKind::ResourceLoad {
+                    resource_type,
+                    resource_url,
+                } => self.ingest_resource_load(
+                    &mut state,
+                    &mut batch,
+                    event,
+                    resource_type,
+                    resource_url,
+                    log_resource_load,
+                ),
+                GameLogEventKind::Event { data } => batch.events.push(GameLogEventEntry {
                     created_at: event.created_at.clone(),
                     data: data.clone(),
-                },
-            ),
-            GameLogEventKind::External { data } => insert_external(
-                &self.db,
-                &GameLogExternalEntry {
+                }),
+                GameLogEventKind::External { data } => batch.externals.push(GameLogExternalEntry {
                     created_at: event.created_at.clone(),
                     message: data.clone(),
                     display_name: String::new(),
                     user_id: String::new(),
                     location: state.current_location.clone(),
-                },
-            ),
-        }
-    }
-
-    fn ensure_ready(&self, state: &mut GameLogIngestState) -> Result<(), AppError> {
-        if state.tables_ready {
-            return Ok(());
+                }),
+            }
         }
 
-        ensure_game_log_tables(&self.db)?;
-        state.tables_ready = true;
-        Ok(())
+        write_batch(&self.db, &batch)
     }
 
     fn ingest_location(
         &self,
         state: &mut GameLogIngestState,
+        batch: &mut GameLogWriteBatch,
         event: &GameLogEvent,
         location: &str,
         world_name: &str,
-    ) -> Result<(), AppError> {
+    ) {
         if location.is_empty() {
-            return Ok(());
+            return;
         }
 
         let world_id = location.split(':').next().unwrap_or_default().to_string();
-        insert_location(
-            &self.db,
-            &GameLogLocationEntry {
-                created_at: event.created_at.clone(),
-                location: location.to_string(),
-                world_id,
-                world_name: world_name.to_string(),
-                time: 0,
-                group_name: String::new(),
-            },
-        )?;
+        batch.locations.push(GameLogLocationEntry {
+            created_at: event.created_at.clone(),
+            location: location.to_string(),
+            world_id,
+            world_name: world_name.to_string(),
+            time: 0,
+            group_name: String::new(),
+        });
 
         state.current_location = location.to_string();
         state.current_world_name = world_name.to_string();
@@ -140,16 +143,16 @@ impl GameLogIngest {
         state.current_location_started_at_ms = parse_event_time_ms(&event.created_at);
         state.players_by_key.clear();
         state.last_resource_url.clear();
-        Ok(())
     }
 
     fn ingest_player_joined(
         &self,
         state: &mut GameLogIngestState,
+        batch: &mut GameLogWriteBatch,
         event: &GameLogEvent,
         display_name: &str,
         user_id: &str,
-    ) -> Result<(), AppError> {
+    ) {
         let player_key = player_key(user_id, display_name);
         let join_time_ms = parse_event_time_ms(&event.created_at);
         state.players_by_key.insert(
@@ -161,131 +164,120 @@ impl GameLogIngest {
             },
         );
 
-        insert_join_leave(
-            &self.db,
-            &GameLogJoinLeaveEntry {
-                created_at: event.created_at.clone(),
-                event_type: "OnPlayerJoined".into(),
-                display_name: display_name.to_string(),
-                location: state.current_location.clone(),
-                user_id: user_id.to_string(),
-                time: 0,
-            },
-        )
+        batch.join_leave.push(GameLogJoinLeaveEntry {
+            created_at: event.created_at.clone(),
+            event_type: "OnPlayerJoined".into(),
+            display_name: display_name.to_string(),
+            location: state.current_location.clone(),
+            user_id: user_id.to_string(),
+            time: 0,
+        });
     }
 
     fn ingest_player_left(
         &self,
         state: &mut GameLogIngestState,
+        batch: &mut GameLogWriteBatch,
         event: &GameLogEvent,
         display_name: &str,
         user_id: &str,
-    ) -> Result<(), AppError> {
+    ) {
         let left_time_ms = parse_event_time_ms(&event.created_at);
         let player = state
             .players_by_key
             .remove(&player_key(user_id, display_name));
         let duration = duration_ms(player.as_ref().and_then(|p| p.join_time_ms), left_time_ms);
 
-        insert_join_leave(
-            &self.db,
-            &GameLogJoinLeaveEntry {
-                created_at: event.created_at.clone(),
-                event_type: "OnPlayerLeft".into(),
-                display_name: display_name.to_string(),
-                location: state.current_location.clone(),
-                user_id: user_id.to_string(),
-                time: duration,
-            },
-        )
+        batch.join_leave.push(GameLogJoinLeaveEntry {
+            created_at: event.created_at.clone(),
+            event_type: "OnPlayerLeft".into(),
+            display_name: display_name.to_string(),
+            location: state.current_location.clone(),
+            user_id: user_id.to_string(),
+            time: duration,
+        });
     }
 
     fn ingest_portal_spawn(
         &self,
         state: &GameLogIngestState,
+        batch: &mut GameLogWriteBatch,
         event: &GameLogEvent,
-    ) -> Result<(), AppError> {
-        insert_portal_spawn(
-            &self.db,
-            &GameLogPortalSpawnEntry {
-                created_at: event.created_at.clone(),
-                display_name: String::new(),
-                location: state.current_location.clone(),
-                user_id: String::new(),
-                instance_id: String::new(),
-                world_name: String::new(),
-            },
-        )
+    ) {
+        batch.portal_spawns.push(GameLogPortalSpawnEntry {
+            created_at: event.created_at.clone(),
+            display_name: String::new(),
+            location: state.current_location.clone(),
+            user_id: String::new(),
+            instance_id: String::new(),
+            world_name: String::new(),
+        });
     }
 
     fn ingest_resource_load(
         &self,
         state: &mut GameLogIngestState,
+        batch: &mut GameLogWriteBatch,
         event: &GameLogEvent,
         resource_type: &str,
         resource_url: &str,
-    ) -> Result<(), AppError> {
-        if resource_url.is_empty()
-            || state.last_resource_url == resource_url
-            || !backend_config::get_bool(&self.db, "logResourceLoad", false)?
+        log_resource_load: bool,
+    ) {
+        if resource_url.is_empty() || state.last_resource_url == resource_url || !log_resource_load
         {
-            return Ok(());
+            return;
         }
 
         state.last_resource_url = resource_url.to_string();
-        insert_resource_load(
-            &self.db,
-            &GameLogResourceLoadEntry {
-                created_at: event.created_at.clone(),
-                resource_url: resource_url.to_string(),
-                resource_type: resource_type.to_string(),
-                location: state.current_location.clone(),
-            },
-        )
+        batch.resource_loads.push(GameLogResourceLoadEntry {
+            created_at: event.created_at.clone(),
+            resource_url: resource_url.to_string(),
+            resource_type: resource_type.to_string(),
+            location: state.current_location.clone(),
+        });
     }
 
     fn finalize_location_session(
         &self,
         state: &mut GameLogIngestState,
+        batch: &mut GameLogWriteBatch,
         stopped_at: &str,
-    ) -> Result<(), AppError> {
+    ) {
         let stopped_at_ms = parse_event_time_ms(stopped_at);
         if state.current_location.is_empty() || stopped_at_ms.is_none() {
             state.players_by_key.clear();
-            return Ok(());
+            return;
         }
 
         for player in state.players_by_key.values() {
-            insert_join_leave(
-                &self.db,
-                &GameLogJoinLeaveEntry {
-                    created_at: stopped_at.to_string(),
-                    event_type: "OnPlayerLeft".into(),
-                    display_name: player.display_name.clone(),
-                    location: state.current_location.clone(),
-                    user_id: player.user_id.clone(),
-                    time: duration_ms(player.join_time_ms, stopped_at_ms),
-                },
-            )?;
+            batch.join_leave.push(GameLogJoinLeaveEntry {
+                created_at: stopped_at.to_string(),
+                event_type: "OnPlayerLeft".into(),
+                display_name: player.display_name.clone(),
+                location: state.current_location.clone(),
+                user_id: player.user_id.clone(),
+                time: duration_ms(player.join_time_ms, stopped_at_ms),
+            });
         }
         state.players_by_key.clear();
 
         let location_duration = duration_ms(state.current_location_started_at_ms, stopped_at_ms);
         if !state.current_location_started_at.is_empty() {
-            update_location_time(
-                &self.db,
-                &state.current_location_started_at,
-                location_duration,
-            )?;
+            batch.location_time_updates.push(GameLogLocationTimeUpdate {
+                created_at: state.current_location_started_at.clone(),
+                time: location_duration,
+            });
         }
-
-        Ok(())
     }
 }
 
 impl GameLogEventSink for GameLogIngest {
     fn ingest_game_log_event(&self, event: &GameLogEvent) -> Result<(), AppError> {
         self.ingest_event(event)
+    }
+
+    fn ingest_game_log_events(&self, events: &[GameLogEvent]) -> Result<(), AppError> {
+        self.ingest_events(events)
     }
 }
 
@@ -318,6 +310,8 @@ mod tests {
     use crate::domain::database::DatabaseService;
     use crate::domain::log_watcher::{GameLogEvent, GameLogEventKind};
     use crate::error::AppError;
+
+    use crate::backend::db::config as backend_config;
 
     use super::GameLogIngest;
 
@@ -429,6 +423,74 @@ mod tests {
             &Default::default(),
         )?;
         assert!(rows.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn ingests_fixture_batch_with_resource_config_and_empty_user_id() -> Result<(), AppError> {
+        let (_dir, db, ingest) = test_ingest("backend-gamelog-ingest-batch")?;
+        backend_config::set_bool(&db, "logResourceLoad", true)?;
+
+        ingest.ingest_events(&[
+            event(
+                "2026-05-14T08:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_fixture:1".into(),
+                    world_name: "多字节 World".into(),
+                },
+            ),
+            event(
+                "2026-05-14T08:00:05.000Z",
+                GameLogEventKind::PlayerJoined {
+                    display_name: "做鳄梦small-fry".into(),
+                    user_id: "".into(),
+                },
+            ),
+            event(
+                "2026-05-14T08:00:15.000Z",
+                GameLogEventKind::PlayerLeft {
+                    display_name: "做鳄梦small-fry".into(),
+                    user_id: "".into(),
+                },
+            ),
+            event(
+                "2026-05-14T08:00:20.000Z",
+                GameLogEventKind::ResourceLoad {
+                    resource_type: "ImageLoad".into(),
+                    resource_url: "https://example.test/fixture.png".into(),
+                },
+            ),
+            event(
+                "2026-05-14T08:00:30.000Z",
+                GameLogEventKind::LocationDestination {
+                    location: "wrld_next:1".into(),
+                },
+            ),
+        ])?;
+
+        let rows = db.execute(
+            "SELECT world_name, time FROM gamelog_location",
+            &Default::default(),
+        )?;
+        assert_eq!(rows[0][0], serde_json::json!("多字节 World"));
+        assert_eq!(rows[0][1], serde_json::json!(30000));
+        let rows = db.execute(
+            "SELECT type, display_name, user_id, time FROM gamelog_join_leave ORDER BY created_at",
+            &Default::default(),
+        )?;
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[1][0], serde_json::json!("OnPlayerLeft"));
+        assert_eq!(rows[1][1], serde_json::json!("做鳄梦small-fry"));
+        assert_eq!(rows[1][2], serde_json::json!(""));
+        assert_eq!(rows[1][3], serde_json::json!(10000));
+        let rows = db.execute(
+            "SELECT resource_url FROM gamelog_resource_load",
+            &Default::default(),
+        )?;
+        assert_eq!(
+            rows[0][0],
+            serde_json::json!("https://example.test/fixture.png")
+        );
         Ok(())
     }
 }

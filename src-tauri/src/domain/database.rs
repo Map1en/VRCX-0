@@ -50,6 +50,10 @@ pub struct DatabaseService {
     inner: RwLock<DatabaseMode>,
 }
 
+pub struct DatabaseWriteTransaction<'conn> {
+    tx: rusqlite::Transaction<'conn>,
+}
+
 impl DatabaseService {
     pub fn new(db_path: &Path) -> Result<Self, AppError> {
         let main = open_main_database(db_path)?;
@@ -130,6 +134,29 @@ impl DatabaseService {
                     .lock()
                     .map_err(|e| AppError::Database(e.to_string()))?;
                 execute_non_query_on_connection(&conn, sql, args)
+            }
+            DatabaseMode::Closed => Err(AppError::Database(
+                "Database connection is temporarily unavailable.".into(),
+            )),
+        }
+    }
+
+    pub fn write_transaction<T, F>(&self, f: F) -> Result<T, AppError>
+    where
+        F: FnOnce(&mut DatabaseWriteTransaction<'_>) -> Result<T, AppError>,
+    {
+        let inner = self
+            .inner
+            .read()
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        match &*inner {
+            DatabaseMode::Main(main) => main.write_transaction(f),
+            DatabaseMode::Upgrade(upgrade) => {
+                let mut conn = upgrade
+                    .conn
+                    .lock()
+                    .map_err(|e| AppError::Database(e.to_string()))?;
+                execute_write_transaction(&mut conn, f)
             }
             DatabaseMode::Closed => Err(AppError::Database(
                 "Database connection is temporarily unavailable.".into(),
@@ -449,6 +476,25 @@ impl DatabaseService {
     }
 }
 
+impl DatabaseWriteTransaction<'_> {
+    #[allow(dead_code)]
+    pub fn execute(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<Vec<Vec<serde_json::Value>>, AppError> {
+        execute_on_connection(&self.tx, sql, args)
+    }
+
+    pub fn execute_non_query(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<i64, AppError> {
+        execute_non_query_on_connection(&self.tx, sql, args)
+    }
+}
+
 impl MainDatabase {
     fn execute_read(
         &self,
@@ -488,6 +534,17 @@ impl MainDatabase {
             .lock()
             .map_err(|e| AppError::Database(e.to_string()))?;
         execute_non_query_on_connection(&conn, sql, args)
+    }
+
+    fn write_transaction<T, F>(&self, f: F) -> Result<T, AppError>
+    where
+        F: FnOnce(&mut DatabaseWriteTransaction<'_>) -> Result<T, AppError>,
+    {
+        let mut conn = self
+            .writer
+            .lock()
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        execute_write_transaction(&mut conn, f)
     }
 }
 
@@ -541,6 +598,22 @@ fn checkpoint(conn: &Connection) -> Result<(), AppError> {
     conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
         .map_err(|e| AppError::Database(e.to_string()))?;
     Ok(())
+}
+
+fn execute_write_transaction<T, F>(conn: &mut Connection, f: F) -> Result<T, AppError>
+where
+    F: FnOnce(&mut DatabaseWriteTransaction<'_>) -> Result<T, AppError>,
+{
+    let tx = conn
+        .transaction()
+        .map_err(|e| AppError::Database(e.to_string()))?;
+    let mut wrapped = DatabaseWriteTransaction { tx };
+    let value = f(&mut wrapped)?;
+    wrapped
+        .tx
+        .commit()
+        .map_err(|e| AppError::Database(e.to_string()))?;
+    Ok(value)
 }
 
 fn ensure_upgrade_version_written(conn: &Connection, to_version: i64) -> Result<(), AppError> {
@@ -771,6 +844,35 @@ mod tests {
             rows,
             vec![vec![serde_json::json!("trusted"), serde_json::json!(4)]]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn rolls_back_writer_transaction_when_any_statement_fails() -> Result<(), AppError> {
+        let dir = TestDir::new("sqlite-transaction-rollback");
+        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+        let empty = HashMap::new();
+
+        db.execute_non_query(
+            "CREATE TABLE transaction_items (id INTEGER PRIMARY KEY, name TEXT NOT NULL)",
+            &empty,
+        )?;
+
+        let result = db.write_transaction(|tx| {
+            let mut args = HashMap::new();
+            args.insert("@id".to_string(), serde_json::json!(1));
+            args.insert("@name".to_string(), serde_json::json!("pending"));
+            tx.execute_non_query(
+                "INSERT INTO transaction_items (id, name) VALUES (@id, @name)",
+                &args,
+            )?;
+            tx.execute_non_query("INSERT INTO missing_table (value) VALUES (1)", &empty)?;
+            Ok(())
+        });
+
+        assert!(result.is_err());
+        let rows = db.execute("SELECT COUNT(*) FROM transaction_items", &empty)?;
+        assert_eq!(rows[0][0], serde_json::json!(0));
         Ok(())
     }
 }

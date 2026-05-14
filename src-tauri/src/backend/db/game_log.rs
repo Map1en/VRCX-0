@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::domain::database::DatabaseService;
+use crate::domain::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::error::AppError;
 
 const CREATE_GAMELOG_LOCATION: &str = "CREATE TABLE IF NOT EXISTS gamelog_location (id INTEGER PRIMARY KEY, created_at TEXT, location TEXT, world_id TEXT, world_name TEXT, time INTEGER, group_name TEXT, UNIQUE(created_at, location))";
@@ -19,6 +19,34 @@ const INSERT_RESOURCE_LOAD: &str = "INSERT OR IGNORE INTO gamelog_resource_load 
 const INSERT_EVENT: &str =
     "INSERT OR IGNORE INTO gamelog_event (created_at, data) VALUES (@created_at, @data)";
 const INSERT_EXTERNAL: &str = "INSERT OR IGNORE INTO gamelog_external (created_at, message, display_name, user_id, location) VALUES (@created_at, @message, @display_name, @user_id, @location)";
+
+trait GameLogWriteTarget {
+    fn execute_non_query(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<i64, AppError>;
+}
+
+impl GameLogWriteTarget for DatabaseService {
+    fn execute_non_query(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<i64, AppError> {
+        DatabaseService::execute_non_query(self, sql, args)
+    }
+}
+
+impl GameLogWriteTarget for DatabaseWriteTransaction<'_> {
+    fn execute_non_query(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<i64, AppError> {
+        DatabaseWriteTransaction::execute_non_query(self, sql, args)
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GameLogLocationEntry {
@@ -73,7 +101,41 @@ pub struct GameLogExternalEntry {
     pub location: String,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct GameLogLocationTimeUpdate {
+    pub created_at: String,
+    pub time: i64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct GameLogWriteBatch {
+    pub locations: Vec<GameLogLocationEntry>,
+    pub location_time_updates: Vec<GameLogLocationTimeUpdate>,
+    pub join_leave: Vec<GameLogJoinLeaveEntry>,
+    pub portal_spawns: Vec<GameLogPortalSpawnEntry>,
+    pub resource_loads: Vec<GameLogResourceLoadEntry>,
+    pub events: Vec<GameLogEventEntry>,
+    pub externals: Vec<GameLogExternalEntry>,
+}
+
+impl GameLogWriteBatch {
+    pub fn is_empty(&self) -> bool {
+        self.locations.is_empty()
+            && self.location_time_updates.is_empty()
+            && self.join_leave.is_empty()
+            && self.portal_spawns.is_empty()
+            && self.resource_loads.is_empty()
+            && self.events.is_empty()
+            && self.externals.is_empty()
+    }
+}
+
+#[allow(dead_code)]
 pub fn ensure_game_log_tables(db: &DatabaseService) -> Result<(), AppError> {
+    ensure_game_log_tables_on(db)
+}
+
+fn ensure_game_log_tables_on(target: &impl GameLogWriteTarget) -> Result<(), AppError> {
     let args = HashMap::new();
     for sql in [
         CREATE_GAMELOG_LOCATION,
@@ -83,12 +145,20 @@ pub fn ensure_game_log_tables(db: &DatabaseService) -> Result<(), AppError> {
         CREATE_GAMELOG_EVENT,
         CREATE_GAMELOG_EXTERNAL,
     ] {
-        db.execute_non_query(sql, &args)?;
+        target.execute_non_query(sql, &args)?;
     }
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn insert_location(db: &DatabaseService, entry: &GameLogLocationEntry) -> Result<(), AppError> {
+    insert_location_on(db, entry)
+}
+
+fn insert_location_on(
+    target: &impl GameLogWriteTarget,
+    entry: &GameLogLocationEntry,
+) -> Result<(), AppError> {
     let mut args = HashMap::new();
     args.insert(
         "@created_at".to_string(),
@@ -105,24 +175,41 @@ pub fn insert_location(db: &DatabaseService, entry: &GameLogLocationEntry) -> Re
         "@group_name".to_string(),
         serde_json::json!(entry.group_name),
     );
-    db.execute_non_query(INSERT_LOCATION, &args)?;
+    target.execute_non_query(INSERT_LOCATION, &args)?;
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn update_location_time(
     db: &DatabaseService,
+    created_at: &str,
+    time: i64,
+) -> Result<(), AppError> {
+    update_location_time_on(db, created_at, time)
+}
+
+fn update_location_time_on(
+    target: &impl GameLogWriteTarget,
     created_at: &str,
     time: i64,
 ) -> Result<(), AppError> {
     let mut args = HashMap::new();
     args.insert("@created_at".to_string(), serde_json::json!(created_at));
     args.insert("@time".to_string(), serde_json::json!(time));
-    db.execute_non_query(UPDATE_LOCATION_TIME, &args)?;
+    target.execute_non_query(UPDATE_LOCATION_TIME, &args)?;
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn insert_join_leave(
     db: &DatabaseService,
+    entry: &GameLogJoinLeaveEntry,
+) -> Result<(), AppError> {
+    insert_join_leave_on(db, entry)
+}
+
+fn insert_join_leave_on(
+    target: &impl GameLogWriteTarget,
     entry: &GameLogJoinLeaveEntry,
 ) -> Result<(), AppError> {
     let mut args = HashMap::new();
@@ -138,12 +225,20 @@ pub fn insert_join_leave(
     args.insert("@location".to_string(), serde_json::json!(entry.location));
     args.insert("@user_id".to_string(), serde_json::json!(entry.user_id));
     args.insert("@time".to_string(), serde_json::json!(entry.time));
-    db.execute_non_query(INSERT_JOIN_LEAVE, &args)?;
+    target.execute_non_query(INSERT_JOIN_LEAVE, &args)?;
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn insert_portal_spawn(
     db: &DatabaseService,
+    entry: &GameLogPortalSpawnEntry,
+) -> Result<(), AppError> {
+    insert_portal_spawn_on(db, entry)
+}
+
+fn insert_portal_spawn_on(
+    target: &impl GameLogWriteTarget,
     entry: &GameLogPortalSpawnEntry,
 ) -> Result<(), AppError> {
     let mut args = HashMap::new();
@@ -165,12 +260,20 @@ pub fn insert_portal_spawn(
         "@world_name".to_string(),
         serde_json::json!(entry.world_name),
     );
-    db.execute_non_query(INSERT_PORTAL_SPAWN, &args)?;
+    target.execute_non_query(INSERT_PORTAL_SPAWN, &args)?;
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn insert_resource_load(
     db: &DatabaseService,
+    entry: &GameLogResourceLoadEntry,
+) -> Result<(), AppError> {
+    insert_resource_load_on(db, entry)
+}
+
+fn insert_resource_load_on(
+    target: &impl GameLogWriteTarget,
     entry: &GameLogResourceLoadEntry,
 ) -> Result<(), AppError> {
     let mut args = HashMap::new();
@@ -187,22 +290,38 @@ pub fn insert_resource_load(
         serde_json::json!(entry.resource_type),
     );
     args.insert("@location".to_string(), serde_json::json!(entry.location));
-    db.execute_non_query(INSERT_RESOURCE_LOAD, &args)?;
+    target.execute_non_query(INSERT_RESOURCE_LOAD, &args)?;
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn insert_event(db: &DatabaseService, entry: &GameLogEventEntry) -> Result<(), AppError> {
+    insert_event_on(db, entry)
+}
+
+fn insert_event_on(
+    target: &impl GameLogWriteTarget,
+    entry: &GameLogEventEntry,
+) -> Result<(), AppError> {
     let mut args = HashMap::new();
     args.insert(
         "@created_at".to_string(),
         serde_json::json!(entry.created_at),
     );
     args.insert("@data".to_string(), serde_json::json!(entry.data));
-    db.execute_non_query(INSERT_EVENT, &args)?;
+    target.execute_non_query(INSERT_EVENT, &args)?;
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn insert_external(db: &DatabaseService, entry: &GameLogExternalEntry) -> Result<(), AppError> {
+    insert_external_on(db, entry)
+}
+
+fn insert_external_on(
+    target: &impl GameLogWriteTarget,
+    entry: &GameLogExternalEntry,
+) -> Result<(), AppError> {
     let mut args = HashMap::new();
     args.insert(
         "@created_at".to_string(),
@@ -215,8 +334,40 @@ pub fn insert_external(db: &DatabaseService, entry: &GameLogExternalEntry) -> Re
     );
     args.insert("@user_id".to_string(), serde_json::json!(entry.user_id));
     args.insert("@location".to_string(), serde_json::json!(entry.location));
-    db.execute_non_query(INSERT_EXTERNAL, &args)?;
+    target.execute_non_query(INSERT_EXTERNAL, &args)?;
     Ok(())
+}
+
+pub fn write_batch(db: &DatabaseService, batch: &GameLogWriteBatch) -> Result<(), AppError> {
+    if batch.is_empty() {
+        return Ok(());
+    }
+
+    db.write_transaction(|tx| {
+        ensure_game_log_tables_on(tx)?;
+        for entry in &batch.locations {
+            insert_location_on(tx, entry)?;
+        }
+        for update in &batch.location_time_updates {
+            update_location_time_on(tx, &update.created_at, update.time)?;
+        }
+        for entry in &batch.join_leave {
+            insert_join_leave_on(tx, entry)?;
+        }
+        for entry in &batch.portal_spawns {
+            insert_portal_spawn_on(tx, entry)?;
+        }
+        for entry in &batch.resource_loads {
+            insert_resource_load_on(tx, entry)?;
+        }
+        for entry in &batch.events {
+            insert_event_on(tx, entry)?;
+        }
+        for entry in &batch.externals {
+            insert_external_on(tx, entry)?;
+        }
+        Ok(())
+    })
 }
 
 #[cfg(test)]
@@ -228,9 +379,9 @@ mod tests {
 
     use super::{
         ensure_game_log_tables, insert_event, insert_join_leave, insert_location,
-        insert_portal_spawn, insert_resource_load, update_location_time, GameLogEventEntry,
-        GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogPortalSpawnEntry,
-        GameLogResourceLoadEntry,
+        insert_portal_spawn, insert_resource_load, update_location_time, write_batch,
+        GameLogEventEntry, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogPortalSpawnEntry,
+        GameLogResourceLoadEntry, GameLogWriteBatch,
     };
 
     struct TestDir {
@@ -403,6 +554,83 @@ mod tests {
         update_location_time(db, "2026-05-14T03:00:00.000Z", 2500)?;
         let rows = db.execute("SELECT time FROM gamelog_location", &Default::default())?;
         assert_eq!(rows[0][0], serde_json::json!(2500));
+        Ok(())
+    }
+
+    #[test]
+    fn writes_core_rows_in_one_batch_and_keeps_deduplication() -> Result<(), AppError> {
+        let test_db = test_db("backend-gamelog-batch")?;
+        let db = &test_db.db;
+        let mut batch = GameLogWriteBatch::default();
+        batch.locations.push(GameLogLocationEntry {
+            created_at: "2026-05-14T06:00:00.000Z".into(),
+            location: "wrld_batch:1".into(),
+            world_id: "wrld_batch".into(),
+            world_name: "Batch 世界".into(),
+            time: 0,
+            group_name: "".into(),
+        });
+        batch.locations.push(batch.locations[0].clone());
+        batch.join_leave.push(GameLogJoinLeaveEntry {
+            created_at: "2026-05-14T06:00:10.000Z".into(),
+            event_type: "OnPlayerJoined".into(),
+            display_name: "BatchUser".into(),
+            location: "wrld_batch:1".into(),
+            user_id: "usr_batch".into(),
+            time: 0,
+        });
+        batch.events.push(GameLogEventEntry {
+            created_at: "2026-05-14T06:00:20.000Z".into(),
+            data: "event data".into(),
+        });
+
+        write_batch(db, &batch)?;
+
+        let rows = db.execute("SELECT COUNT(*) FROM gamelog_location", &Default::default())?;
+        assert_eq!(rows[0][0], serde_json::json!(1));
+        let rows = db.execute(
+            "SELECT COUNT(*) FROM gamelog_join_leave",
+            &Default::default(),
+        )?;
+        assert_eq!(rows[0][0], serde_json::json!(1));
+        let rows = db.execute("SELECT COUNT(*) FROM gamelog_event", &Default::default())?;
+        assert_eq!(rows[0][0], serde_json::json!(1));
+        Ok(())
+    }
+
+    #[test]
+    fn batch_write_rolls_back_when_one_core_insert_fails() -> Result<(), AppError> {
+        let dir = TestDir::new("backend-gamelog-batch-rollback");
+        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+        db.execute_non_query(
+            "CREATE TABLE gamelog_join_leave (id INTEGER PRIMARY KEY, broken TEXT)",
+            &Default::default(),
+        )?;
+
+        let mut batch = GameLogWriteBatch::default();
+        batch.locations.push(GameLogLocationEntry {
+            created_at: "2026-05-14T07:00:00.000Z".into(),
+            location: "wrld_rollback:1".into(),
+            world_id: "wrld_rollback".into(),
+            world_name: "Rollback".into(),
+            time: 0,
+            group_name: "".into(),
+        });
+        batch.join_leave.push(GameLogJoinLeaveEntry {
+            created_at: "2026-05-14T07:00:10.000Z".into(),
+            event_type: "OnPlayerJoined".into(),
+            display_name: "RollbackUser".into(),
+            location: "wrld_rollback:1".into(),
+            user_id: "usr_rollback".into(),
+            time: 0,
+        });
+
+        assert!(write_batch(&db, &batch).is_err());
+        let rows = db.execute(
+            "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'gamelog_location'",
+            &Default::default(),
+        )?;
+        assert!(rows.is_empty());
         Ok(())
     }
 }

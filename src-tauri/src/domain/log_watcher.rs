@@ -25,6 +25,13 @@ pub struct LogWatcher {
 
 pub trait GameLogEventSink: Send + Sync {
     fn ingest_game_log_event(&self, event: &GameLogEvent) -> Result<(), AppError>;
+
+    fn ingest_game_log_events(&self, events: &[GameLogEvent]) -> Result<(), AppError> {
+        for event in events {
+            self.ingest_game_log_event(event)?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -66,6 +73,7 @@ pub enum GameLogEventKind {
 
 struct Inner {
     log_list: RwLock<Vec<Vec<String>>>,
+    event_buffer: Mutex<Vec<GameLogEvent>>,
     event_sink: Option<Arc<dyn GameLogEventSink>>,
     log_dir: RwLock<Option<PathBuf>>,
     till_date: Mutex<Option<NaiveDateTime>>,
@@ -82,6 +90,7 @@ impl LogWatcher {
         Self {
             inner: Arc::new(Inner {
                 log_list: RwLock::new(Vec::new()),
+                event_buffer: Mutex::new(Vec::new()),
                 event_sink,
                 log_dir: RwLock::new(None),
                 till_date: Mutex::new(None),
@@ -194,6 +203,7 @@ fn thread_loop(inner: Arc<Inner>, log_dir: PathBuf, app_handle: AppHandle) {
                 *reset = false;
                 contexts.clear();
                 inner.log_list.write().unwrap().clear();
+                inner.event_buffer.lock().unwrap().clear();
             }
         }
 
@@ -291,6 +301,7 @@ fn update(
         contexts.remove(&name);
     }
 
+    flush_game_log_events(inner);
     *first_run = false;
     saw_new_data
 }
@@ -568,11 +579,9 @@ fn convert_log_time_to_iso8601(line: &str) -> String {
 }
 
 fn append_log(inner: &Inner, app_handle: &AppHandle, item: Vec<String>, first_run: bool) {
-    if let Some(event_sink) = &inner.event_sink {
+    if inner.event_sink.is_some() {
         if let Some(event) = GameLogEvent::from_raw_row(&item) {
-            if let Err(error) = event_sink.ingest_game_log_event(&event) {
-                tracing::warn!("failed to ingest GameLog event in backend: {error}");
-            }
+            inner.event_buffer.lock().unwrap().push(event);
         }
     }
 
@@ -582,6 +591,24 @@ fn append_log(inner: &Inner, app_handle: &AppHandle, item: Vec<String>, first_ru
         }
     }
     inner.log_list.write().unwrap().push(item);
+}
+
+fn flush_game_log_events(inner: &Inner) {
+    let Some(event_sink) = &inner.event_sink else {
+        return;
+    };
+
+    let events = {
+        let mut buffer = inner.event_buffer.lock().unwrap();
+        if buffer.is_empty() {
+            return;
+        }
+        std::mem::take(&mut *buffer)
+    };
+
+    if let Err(error) = event_sink.ingest_game_log_events(&events) {
+        tracing::warn!("failed to ingest GameLog event batch in backend: {error}");
+    }
 }
 
 impl GameLogEvent {
