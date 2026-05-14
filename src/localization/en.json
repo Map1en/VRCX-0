@@ -4194,7 +4194,7 @@
             "notice_location_prefix": "Full notices file location in the app directory:",
             "open_project": "Open Project",
             "open_license_url": "Open License URL",
-            "notice_unavailable": "No local license text was generated for this entry. Open the full notice file and review this component before release.",
+            "notice_unavailable": "No local license text is available for this entry. You can find this dependency's notice in the full notices file.",
             "select_package": "Select a package to view details.",
             "review_required": "Review required",
             "no_results": "No matching packages found.",

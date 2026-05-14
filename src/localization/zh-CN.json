@@ -4194,7 +4194,7 @@
             "notice_location_prefix": "应用目录中的完整声明文件位置：",
             "open_project": "打开项目",
             "open_license_url": "打开许可证 URL",
-            "notice_unavailable": "未为此项生成本地许可证文本。请打开完整的声明文件并在发布前审查此组件。",
+            "notice_unavailable": "此条目没有可用的本地许可证文本。你可以在完整声明文件中查看该依赖的声明信息。",
             "select_package": "选择软件包以查看详细信息。",
             "review_required": "需要审查",
             "no_results": "未找到匹配的软件包。",
