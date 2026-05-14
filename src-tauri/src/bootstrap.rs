@@ -59,6 +59,10 @@ pub fn init_error_logging() {
         .init();
 }
 
+pub fn init_tls_crypto_provider() {
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+}
+
 pub fn updater_public_key() -> String {
     match option_env!("TAURI_UPDATER_PUBLIC_KEY") {
         Some(value) if !value.trim().is_empty() => value.to_string(),

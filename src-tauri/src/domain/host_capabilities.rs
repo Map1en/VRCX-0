@@ -24,6 +24,7 @@ pub struct HostCapabilities {
     pub backend_game_log_ingest: CapabilityStatus,
     pub backend_game_log_side_effects: CapabilityStatus,
     pub backend_game_client_lifecycle: CapabilityStatus,
+    pub backend_realtime_transport: CapabilityStatus,
     pub game_process_monitor: CapabilityStatus,
     pub vrchat_path_discovery: CapabilityStatus,
     pub steam_library_discovery: CapabilityStatus,
@@ -177,6 +178,7 @@ pub fn current_host_capabilities() -> HostCapabilities {
             backend_game_log_ingest: available.clone(),
             backend_game_log_side_effects: available.clone(),
             backend_game_client_lifecycle: available.clone(),
+            backend_realtime_transport: available.clone(),
             game_process_monitor: available.clone(),
             vrchat_path_discovery: available.clone(),
             steam_library_discovery: available.clone(),
@@ -194,7 +196,7 @@ pub fn current_host_capabilities() -> HostCapabilities {
             arch: arch.to_string(),
             linux_package_kind: "unknown".to_string(),
             local_database: available.clone(),
-            websocket_runtime: available,
+            websocket_runtime: available.clone(),
             game_log_watcher: CapabilityStatus::unsupported("GameLog watcher", "macOS"),
             backend_game_log_ingest: CapabilityStatus::unsupported(
                 "backend GameLog ingest",
@@ -208,6 +210,7 @@ pub fn current_host_capabilities() -> HostCapabilities {
                 "backend game client lifecycle",
                 "macOS",
             ),
+            backend_realtime_transport: available.clone(),
             game_process_monitor: CapabilityStatus::unsupported("Game process monitor", "macOS"),
             vrchat_path_discovery: CapabilityStatus::unsupported("VRChat path discovery", "macOS"),
             steam_library_discovery: CapabilityStatus::unsupported(
@@ -229,7 +232,7 @@ pub fn current_host_capabilities() -> HostCapabilities {
             arch: arch.to_string(),
             linux_package_kind: "unknown".to_string(),
             local_database: available.clone(),
-            websocket_runtime: available,
+            websocket_runtime: available.clone(),
             game_log_watcher: CapabilityStatus::unsupported("GameLog watcher", platform),
             backend_game_log_ingest: CapabilityStatus::unsupported(
                 "backend GameLog ingest",
@@ -243,6 +246,7 @@ pub fn current_host_capabilities() -> HostCapabilities {
                 "backend game client lifecycle",
                 platform,
             ),
+            backend_realtime_transport: available.clone(),
             game_process_monitor: CapabilityStatus::unsupported("Game process monitor", platform),
             vrchat_path_discovery: CapabilityStatus::unsupported("VRChat path discovery", platform),
             steam_library_discovery: CapabilityStatus::unsupported(
@@ -316,6 +320,7 @@ fn linux_host_capabilities(platform: &str, available: &CapabilityStatus) -> Host
         backend_game_log_ingest: game_log_watcher.clone(),
         backend_game_log_side_effects: game_log_watcher,
         backend_game_client_lifecycle,
+        backend_realtime_transport: available.clone(),
         game_process_monitor: available.clone(),
         vrchat_path_discovery: vrchat_path_discovery.clone(),
         steam_library_discovery,

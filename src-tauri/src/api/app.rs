@@ -8,6 +8,7 @@ pub mod legacy_migration;
 pub mod local_player_moderations;
 pub mod media;
 pub mod paths;
+pub mod realtime;
 pub mod registry;
 pub mod screenshots;
 pub mod shell;

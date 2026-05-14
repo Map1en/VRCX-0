@@ -13,6 +13,7 @@ use state::AppState;
 
 pub fn run() {
     bootstrap::init_error_logging();
+    bootstrap::init_tls_crypto_provider();
     bootstrap::apply_linux_webkit_workaround();
 
     let builder = tauri::Builder::default()
@@ -131,6 +132,8 @@ pub fn run() {
             api::app::game::app__quit_game,
             api::app::game::app__start_game,
             api::app::game::app__start_game_from_path,
+            api::app::realtime::app__start_realtime_transport,
+            api::app::realtime::app__stop_realtime_transport,
             api::app::host_capabilities::app__get_host_capabilities,
             api::app::paths::app__current_culture,
             api::app::paths::app__current_language,

@@ -54,6 +54,7 @@ export interface HostCapabilities {
     backendGameLogIngest: HostCapabilityStatus;
     backendGameLogSideEffects: HostCapabilityStatus;
     backendGameClientLifecycle: HostCapabilityStatus;
+    backendRealtimeTransport: HostCapabilityStatus;
     gameProcessMonitor: HostCapabilityStatus;
     vrchatPathDiscovery: HostCapabilityStatus;
     steamLibraryDiscovery: HostCapabilityStatus;
@@ -82,6 +83,12 @@ export interface AppBackendNamespace extends BackendNamespace {
         sessionActive: boolean,
         currentLocation: string
     ): Promise<void>;
+    StartRealtimeTransport(
+        userId: string,
+        endpoint: string,
+        websocket: string
+    ): Promise<void>;
+    StopRealtimeTransport(): Promise<void>;
     CheckLegacyVrcxAvailable(): Promise<boolean>;
     GetLegacyVrcxMigrationStatus(): Promise<LegacyVrcxMigrationStatus>;
     GetLegacyVrcxForceMigrationStatus(): Promise<LegacyVrcxMigrationStatus>;

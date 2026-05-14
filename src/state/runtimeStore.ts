@@ -154,6 +154,7 @@ const HOST_CAPABILITY_KEYS = Object.freeze([
     'backendGameLogIngest',
     'backendGameLogSideEffects',
     'backendGameClientLifecycle',
+    'backendRealtimeTransport',
     'gameProcessMonitor',
     'vrchatPathDiscovery',
     'steamLibraryDiscovery',
@@ -299,6 +300,8 @@ const initialState = {
         addGameLogEvent: createBackendEventState(),
         gameLogPersistenceFallback: createBackendEventState(),
         gameLogSideEffect: createBackendEventState(),
+        realtimeWsMessage: createBackendEventState(),
+        realtimeWsStatus: createBackendEventState(),
         updateIsGameRunning: createBackendEventState(),
         ipcEvent: createBackendEventState(),
         browserFocus: createBackendEventState()

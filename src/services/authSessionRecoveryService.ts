@@ -80,7 +80,9 @@ async function runRuntimeAuthRecovery(error: unknown): Promise<void> {
     }
 }
 
-function handleRuntimeAuthFailure(error: unknown): Promise<void> | undefined {
+export function handleRuntimeAuthFailure(
+    error: unknown
+): Promise<void> | undefined {
     if (!shouldHandleRuntimeAuthFailure(error)) {
         return;
     }

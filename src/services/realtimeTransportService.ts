@@ -1,29 +1,24 @@
 import { backend } from '@/platform/index.js';
-import { vrchatAuthRepository } from '@/repositories/index.js';
 import { DEFAULT_WEBSOCKET_DOMAIN } from '@/repositories/vrchatAuthRepository.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 
+import { handleRuntimeAuthFailure } from './authSessionRecoveryService.js';
 import { refreshFriendAndFavoriteSnapshots } from './backgroundMaintenanceService.js';
 import { isHostCapabilityAvailable } from './hostCapabilityService.js';
 import { handleRealtimePresenceEvent } from './realtimePresenceService.js';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
-let activeSocket: WebSocket | null = null;
-let reconnectTimer: number | null = null;
 let activeContext: Record<string, any> | null = null;
 let intentionalStop = false;
 let ipcAnnouncedForActiveSession = false;
-let lastSocketMessage = '';
-
-function clearReconnectTimer() {
-    if (reconnectTimer !== null) {
-        window.clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-    }
-}
+let backendTransportStarting = false;
+let backendTransportActive = false;
+let backendTransportCleanup: (() => void) | null = null;
+let backendConnectedForActiveSession = false;
+let backendTransportRunId = 0;
 
 function normalizeWebsocketDomain(value: unknown) {
     if (typeof value === 'string' && value.trim()) {
@@ -33,38 +28,9 @@ function normalizeWebsocketDomain(value: unknown) {
     return DEFAULT_WEBSOCKET_DOMAIN;
 }
 
-function getTransportUrl(domain: unknown, token: string) {
-    return `${normalizeWebsocketDomain(domain)}/?auth=${encodeURIComponent(token)}`;
-}
-
-function parseTransportMessage(data: unknown): { json: Record<string, any> | null } {
-    if (typeof data !== 'string') {
-        return {
-            json: null
-        };
-    }
-
-    try {
-        const json = JSON.parse(data);
-        if (typeof json?.content === 'string') {
-            try {
-                json.content = JSON.parse(json.content);
-            } catch {
-                // keep the original string payload if it is not JSON
-            }
-        }
-
-        return {
-            json
-        };
-    } catch {
-        return {
-            json: null
-        };
-    }
-}
-
-function isCurrentTransportTarget(context: Record<string, any> | null = activeContext) {
+function isCurrentTransportTarget(
+    context: Record<string, any> | null = activeContext
+) {
     if (!context?.userId) {
         return false;
     }
@@ -86,48 +52,38 @@ function updateTransportStartupDetail(detail: string) {
     syncStartupServicesTask([detail]);
 }
 
-function scheduleReconnect() {
-    if (!isCurrentTransportTarget()) {
-        return;
-    }
-
-    useRuntimeStore.getState().incrementTransportReconnect();
-    useSessionStore.getState().setTransportStatus('pipeline-reconnecting');
-    clearReconnectTimer();
-    reconnectTimer = window.setTimeout(() => {
-        reconnectTimer = null;
-        connectRealtimeTransport({
-            announceIpc: false,
-            preserveMetrics: true
-        }).catch((error) => {
-            handleTransportFailure(error, { reconnecting: true });
-        });
-    }, 5000);
+function isRecord(value: unknown): value is Record<string, any> {
+    return Boolean(value && typeof value === 'object');
 }
 
-function handleTransportFailure(error: unknown, { reconnecting = false } = {}) {
-    if (!isCurrentTransportTarget()) {
-        return;
+function cleanupBackendRealtimeSubscription() {
+    const cleanup = backendTransportCleanup;
+    backendTransportCleanup = null;
+    if (cleanup) {
+        cleanup();
     }
+}
 
-    const message = error instanceof Error ? error.message : String(error);
-    useSessionStore
-        .getState()
-        .setTransportStatus(
-            reconnecting ? 'pipeline-reconnecting' : 'pipeline-error'
-        );
-    updateTransportStartupDetail(
-        [`Realtime transport bootstrap failed: ${message}.`].join(' ')
-    );
-    if (!reconnecting) {
-        useNotificationStore.getState().pushNotification({
-            level: 'warning',
-            title: 'Realtime transport failed',
-            message
-        });
+function markBackendTransportStopped() {
+    backendTransportStarting = false;
+    backendTransportActive = false;
+    backendConnectedForActiveSession = false;
+}
+
+function requestBackendRealtimeStop() {
+    backend.app.StopRealtimeTransport().catch((error) => {
+        console.warn('Backend realtime transport stop failed:', error);
+    });
+}
+
+function stopBackendRealtimeTransport() {
+    const shouldStopBackend = backendTransportStarting || backendTransportActive;
+    backendTransportRunId += 1;
+    cleanupBackendRealtimeSubscription();
+    markBackendTransportStopped();
+    if (shouldStopBackend) {
+        requestBackendRealtimeStop();
     }
-
-    scheduleReconnect();
 }
 
 function refreshBaselineAfterReconnect() {
@@ -140,93 +96,258 @@ function refreshBaselineAfterReconnect() {
     });
 }
 
-function attachSocketHandlers(
-    socket: WebSocket,
-    context: Record<string, any>,
-    { refreshBaselineOnOpen = false } = {}
-) {
-    socket.onopen = () => {
-        if (socket !== activeSocket || !isCurrentTransportTarget(context)) {
-            try {
-                socket.close();
-            } catch {
-                // ignore stale socket close failure
-            }
-            return;
-        }
+function handleRealtimeMessageFailure(error: unknown) {
+    showSQLiteErrorDialog(error).catch((dialogError) => {
+        console.warn('Realtime SQLite error dialog failed:', dialogError);
+    });
+    useNotificationStore.getState().pushNotification({
+        level: 'warning',
+        title: 'Realtime event failed',
+        message: error instanceof Error ? error.message : String(error)
+    });
+}
 
+function handleRealtimeJsonMessage(message: Record<string, any>) {
+    Promise.resolve(handleRealtimePresenceEvent(message)).catch(
+        handleRealtimeMessageFailure
+    );
+}
+
+function handleRealtimeAuthFailure(payload: Record<string, any>) {
+    const reason = String(payload.reason || '').trim();
+    const statusCode = Number(payload.statusCode);
+    const isMissingCredentials =
+        statusCode === 401 && reason.includes('Missing Credentials');
+    if (!isMissingCredentials) {
+        useNotificationStore.getState().pushNotification({
+            level: 'warning',
+            title: 'Realtime auth failed',
+            message:
+                reason || 'The realtime websocket could not authenticate.'
+        });
+        return;
+    }
+
+    const error = Object.assign(new Error(reason), {
+        status: statusCode,
+        endpoint: 'auth',
+        payload
+    });
+    const handled = handleRuntimeAuthFailure(error);
+    if (handled) {
+        void handled.catch((recoveryError) => {
+            console.warn(
+                'Realtime auth failure recovery failed:',
+                recoveryError
+            );
+        });
+        return;
+    }
+
+    useNotificationStore.getState().pushNotification({
+        level: 'warning',
+        title: 'Realtime auth failed',
+        message:
+            reason || 'The realtime websocket could not authenticate.'
+    });
+}
+
+function handleRealtimeStatus(
+    payload: unknown,
+    context: Record<string, any>,
+    refreshBaselineOnReconnect: boolean
+) {
+    useRuntimeStore.getState().recordBackendEvent('realtimeWsStatus', payload);
+    const statusPayload = isRecord(payload) ? payload : {};
+    const status = String(statusPayload.status || '');
+    if (!isCurrentTransportTarget(context)) {
+        return;
+    }
+
+    const websocketDomain = normalizeWebsocketDomain(
+        statusPayload.websocketDomain || context.websocket
+    );
+
+    if (status === 'connecting') {
+        useSessionStore.getState().setTransportStatus('pipeline-connecting');
+        return;
+    }
+
+    if (status === 'connected') {
         useRuntimeStore.getState().setTransportState({
             websocketConnected: true,
-            websocketDomain: normalizeWebsocketDomain(context.websocket),
+            websocketDomain,
             lastConnectedAt: new Date().toISOString()
         });
         useSessionStore.getState().setTransportStatus('pipeline-connected');
         updateTransportStartupDetail(
-            [
-                'Friend roster baseline, IPC announce, and websocket transport are active.'
-            ].join(' ')
+            'Friend roster baseline, IPC announce, and websocket transport are active.'
         );
-        if (refreshBaselineOnOpen) {
+        if (backendConnectedForActiveSession || refreshBaselineOnReconnect) {
             refreshBaselineAfterReconnect();
         }
-    };
+        backendConnectedForActiveSession = true;
+        return;
+    }
 
-    socket.onmessage = ({ data }) => {
-        if (socket !== activeSocket || !isCurrentTransportTarget(context)) {
-            return;
-        }
+    if (status === 'reconnecting') {
+        useRuntimeStore.getState().incrementTransportReconnect();
+        useRuntimeStore.getState().setTransportState({
+            websocketConnected: false,
+            websocketDomain,
+            lastDisconnectedAt: new Date().toISOString()
+        });
+        useSessionStore.getState().setTransportStatus('pipeline-reconnecting');
+        return;
+    }
 
-        const parsedMessage = parseTransportMessage(data);
-
-        if (typeof data === 'string') {
-            if (lastSocketMessage === data) {
-                return;
-            }
-            lastSocketMessage = data;
-        }
-
-        if (parsedMessage.json) {
-            Promise.resolve(
-                handleRealtimePresenceEvent(parsedMessage.json)
-            ).catch(async (error) => {
-                await showSQLiteErrorDialog(error);
-                useNotificationStore.getState().pushNotification({
-                    level: 'warning',
-                    title: 'Realtime event failed',
-                    message:
-                        error instanceof Error ? error.message : String(error)
-                });
-            });
-        }
-    };
-
-    socket.onerror = () => {
-        if (socket !== activeSocket || !isCurrentTransportTarget(context)) {
-            return;
-        }
-
+    if (status === 'error') {
+        useRuntimeStore.getState().setTransportState({
+            websocketConnected: false,
+            websocketDomain,
+            lastDisconnectedAt: new Date().toISOString()
+        });
         useSessionStore.getState().setTransportStatus('pipeline-error');
-    };
+        return;
+    }
 
-    socket.onclose = () => {
-        if (socket !== activeSocket) {
-            return;
-        }
+    if (status === 'authFailure') {
+        useRuntimeStore.getState().setTransportState({
+            websocketConnected: false,
+            websocketDomain,
+            lastDisconnectedAt: new Date().toISOString()
+        });
+        useSessionStore.getState().setTransportStatus('pipeline-error');
+        handleRealtimeAuthFailure(statusPayload);
+        return;
+    }
 
-        activeSocket = null;
-
+    if (status === 'disconnected') {
         useRuntimeStore.getState().setTransportState({
             websocketConnected: false,
             lastDisconnectedAt: new Date().toISOString()
         });
-
         if (intentionalStop || !isCurrentTransportTarget(context)) {
             useSessionStore.getState().setTransportStatus('disconnected');
-            return;
         }
+    }
+}
 
-        scheduleReconnect();
+async function subscribeBackendRealtimeEvents(
+    context: Record<string, any>,
+    refreshBaselineOnReconnect: boolean
+) {
+    const unsubscribers = await Promise.all([
+        backend.events.subscribe('realtimeWsMessage', (payload) => {
+            useRuntimeStore
+                .getState()
+                .recordBackendEvent('realtimeWsMessage', payload);
+            const json = isRecord(payload) ? payload.json : null;
+            if (!isCurrentTransportTarget(context)) {
+                return;
+            }
+            if (isRecord(json)) {
+                handleRealtimeJsonMessage(json);
+            } else {
+                console.warn(
+                    '[RealtimeTransport] ignored invalid realtime payload',
+                    payload
+                );
+            }
+        }),
+        backend.events.subscribe('realtimeWsStatus', (payload) => {
+            handleRealtimeStatus(payload, context, refreshBaselineOnReconnect);
+        })
+    ]);
+
+    return () => {
+        for (const unsubscribe of unsubscribers) {
+            unsubscribe();
+        }
     };
+}
+
+async function startBackendRealtimeTransport(
+    context: Record<string, any>,
+    { refreshBaselineOnReconnect = false } = {}
+) {
+    const runId = ++backendTransportRunId;
+    cleanupBackendRealtimeSubscription();
+    backendTransportStarting = true;
+    backendTransportActive = false;
+    backendConnectedForActiveSession = false;
+    useSessionStore.getState().setTransportStatus('pipeline-connecting');
+
+    let cleanup: () => void;
+    try {
+        cleanup = await subscribeBackendRealtimeEvents(
+            context,
+            Boolean(refreshBaselineOnReconnect)
+        );
+    } catch (error) {
+        if (runId === backendTransportRunId) {
+            markBackendTransportStopped();
+        }
+        console.warn('[RealtimeTransport] subscribe failed', error);
+        throw error;
+    }
+    if (
+        runId !== backendTransportRunId ||
+        intentionalStop ||
+        !isCurrentTransportTarget(context)
+    ) {
+        cleanup();
+        markBackendTransportStopped();
+        requestBackendRealtimeStop();
+        return;
+    }
+    backendTransportCleanup = cleanup;
+
+    try {
+        await backend.app.StartRealtimeTransport(
+            context.userId,
+            context.endpoint,
+            context.websocket
+        );
+    } catch (error) {
+        if (runId === backendTransportRunId) {
+            cleanupBackendRealtimeSubscription();
+            markBackendTransportStopped();
+        }
+        console.warn('[RealtimeTransport] backend start failed', error);
+        throw error;
+    }
+
+    if (
+        runId !== backendTransportRunId ||
+        intentionalStop ||
+        !isCurrentTransportTarget(context)
+    ) {
+        cleanupBackendRealtimeSubscription();
+        markBackendTransportStopped();
+        requestBackendRealtimeStop();
+        return;
+    }
+
+    backendTransportStarting = false;
+    backendTransportActive = true;
+}
+
+function handleTransportFailure(error: unknown) {
+    if (!isCurrentTransportTarget()) {
+        return;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    useSessionStore.getState().setTransportStatus('pipeline-error');
+    updateTransportStartupDetail(
+        [`Realtime transport bootstrap failed: ${message}.`].join(' ')
+    );
+    useNotificationStore.getState().pushNotification({
+        level: 'warning',
+        title: 'Realtime transport failed',
+        message
+    });
 }
 
 async function connectRealtimeTransport({
@@ -238,8 +359,7 @@ async function connectRealtimeTransport({
         return stopRealtimeTransport();
     }
 
-    clearReconnectTimer();
-    lastSocketMessage = '';
+    stopBackendRealtimeTransport();
 
     if (!preserveMetrics) {
         useRuntimeStore.getState().setTransportState({
@@ -281,28 +401,13 @@ async function connectRealtimeTransport({
         return stopRealtimeTransport();
     }
 
-    useSessionStore.getState().setTransportStatus('pipeline-connecting');
-    const authSession = await vrchatAuthRepository.getAuthSession({
-        endpoint: context.endpoint
-    });
-
-    const authJson = authSession?.json as Record<string, any> | undefined;
-    if (!authJson?.ok || !authJson?.token) {
-        throw new Error(
-            'The auth transport bootstrap did not return a websocket token.'
-        );
+    if (!isHostCapabilityAvailable('backendRealtimeTransport')) {
+        console.warn('[RealtimeTransport] backend capability unavailable');
+        throw new Error('Backend realtime transport is unavailable.');
     }
 
-    if (!isCurrentTransportTarget(context)) {
-        return stopRealtimeTransport();
-    }
-
-    const socket = new WebSocket(
-        getTransportUrl(context.websocket, authJson.token)
-    );
-    activeSocket = socket;
-    attachSocketHandlers(socket, context, {
-        refreshBaselineOnOpen: Boolean(preserveMetrics)
+    await startBackendRealtimeTransport(context, {
+        refreshBaselineOnReconnect: Boolean(preserveMetrics)
     });
 }
 
@@ -330,7 +435,7 @@ export async function startRealtimeTransport({
         activeContext?.userId === normalizedUserId &&
         activeContext?.endpoint === endpoint &&
         activeContext?.websocket === websocket &&
-        activeSocket !== null
+        (backendTransportStarting || backendTransportActive)
     ) {
         return stopRealtimeTransport;
     }
@@ -352,7 +457,7 @@ export async function startRealtimeTransport({
             preserveMetrics: false
         });
     } catch (error) {
-        handleTransportFailure(error, { reconnecting: false });
+        handleTransportFailure(error);
         throw error;
     }
 
@@ -364,21 +469,9 @@ export function stopRealtimeTransport({
     updateStatus = true
 } = {}) {
     intentionalStop = true;
-    clearReconnectTimer();
-    lastSocketMessage = '';
-
-    const socket = activeSocket;
-    activeSocket = null;
     activeContext = null;
     ipcAnnouncedForActiveSession = false;
-
-    if (socket !== null) {
-        try {
-            socket.close();
-        } catch {
-            // ignore transport shutdown errors
-        }
-    }
+    stopBackendRealtimeTransport();
 
     if (!preserveTelemetry) {
         useRuntimeStore.getState().setTransportState({

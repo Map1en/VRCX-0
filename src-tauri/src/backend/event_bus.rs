@@ -5,6 +5,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Emitter};
 
 use crate::backend::db::game_log::GameLogWriteBatch;
+use crate::backend::realtime::types::{RealtimeWsMessagePayload, RealtimeWsStatusPayload};
 
 #[cfg(test)]
 #[derive(Clone, Debug)]
@@ -111,5 +112,13 @@ impl BackendEventBus {
                 "message": message,
             }),
         );
+    }
+
+    pub fn emit_realtime_ws_message(&self, payload: RealtimeWsMessagePayload) {
+        self.emit("realtimeWsMessage", payload);
+    }
+
+    pub fn emit_realtime_ws_status(&self, payload: RealtimeWsStatusPayload) {
+        self.emit("realtimeWsStatus", payload);
     }
 }
