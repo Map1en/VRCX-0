@@ -45,8 +45,29 @@ import { recordGameRuntimePresence } from './domainIngestionService.js';
 import { isHostCapabilityAvailable } from './hostCapabilityService.js';
 
 const GAME_LOG_BATCH_LIMIT = 50;
+const BACKEND_GAME_LOG_INGEST_TYPES = new Set([
+    'location',
+    'location-destination',
+    'player-joined',
+    'player-left',
+    'portal-spawn',
+    'resource-load-string',
+    'resource-load-image',
+    'event'
+]);
 
 type GameLogRow = Record<string, any>;
+
+function isBackendGameLogIngestActive() {
+    return isHostCapabilityAvailable('backendGameLogIngest');
+}
+
+function shouldSkipBackendPersistedGameLog(gameLog: GameLogRow) {
+    return (
+        isBackendGameLogIngestActive() &&
+        BACKEND_GAME_LOG_INGEST_TYPES.has(String(gameLog?.type || ''))
+    );
+}
 
 function updateCurrentLocation({
     location,
@@ -143,6 +164,7 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
     const location = getCurrentLocation();
     const copyScreenshotToClipboard =
         options.copyScreenshotToClipboard !== false;
+    const backendPersisted = shouldSkipBackendPersistedGameLog(gameLog);
     let entry = null;
 
     runtimeStore.setGameState({
@@ -161,7 +183,9 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
                 break;
             }
             const changedAt = gameLog.dt || new Date().toISOString();
-            await finalizeCurrentGameLogSession(changedAt);
+            await finalizeCurrentGameLogSession(changedAt, {
+                skipPersistence: backendPersisted
+            });
             ingestState.currentLocation = 'traveling';
             ingestState.currentWorldName = '';
             ingestState.currentLocationStartedAt = changedAt;
@@ -210,7 +234,9 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
                 parsed.worldId || '',
                 worldName
             );
-            await gameLogRepository.addGamelogLocationToDatabase(entry);
+            if (!backendPersisted) {
+                await gameLogRepository.addGamelogLocationToDatabase(entry);
+            }
             updateCurrentLocation({
                 location: normalizedLocation,
                 worldName,
@@ -250,7 +276,9 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
                 location,
                 userId
             );
-            await gameLogRepository.addGamelogJoinLeaveToDatabase(entry);
+            if (!backendPersisted) {
+                await gameLogRepository.addGamelogJoinLeaveToDatabase(entry);
+            }
             break;
         }
         case 'player-left': {
@@ -290,12 +318,16 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
                 userId,
                 duration
             );
-            await gameLogRepository.addGamelogJoinLeaveToDatabase(entry);
+            if (!backendPersisted) {
+                await gameLogRepository.addGamelogJoinLeaveToDatabase(entry);
+            }
             break;
         }
         case 'portal-spawn':
             entry = createPortalSpawnEntry(gameLog.dt, location);
-            await gameLogRepository.addGamelogPortalSpawnToDatabase(entry);
+            if (!backendPersisted) {
+                await gameLogRepository.addGamelogPortalSpawnToDatabase(entry);
+            }
             break;
         case 'video-play': {
             const videoUrl = decodeURI(normalizeString(gameLog.videoUrl));
@@ -349,7 +381,9 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
                 resourceUrl,
                 location
             );
-            await gameLogRepository.addGamelogResourceLoadToDatabase(entry);
+            if (!backendPersisted) {
+                await gameLogRepository.addGamelogResourceLoadToDatabase(entry);
+            }
             break;
         }
         case 'api-request': {
@@ -371,7 +405,9 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
                 type: 'Event',
                 data: normalizeString(gameLog.event)
             };
-            await gameLogRepository.addGamelogEventToDatabase(entry);
+            if (!backendPersisted) {
+                await gameLogRepository.addGamelogEventToDatabase(entry);
+            }
             break;
         case 'vrcx':
             entry = await persistProviderVideo(gameLog, location);
@@ -484,7 +520,8 @@ export function resetGameLogIngestSessionState() {
 }
 
 export async function finalizeCurrentGameLogSession(
-    stoppedAt: string = new Date().toISOString()
+    stoppedAt: string = new Date().toISOString(),
+    options: { skipPersistence?: boolean } = {}
 ) {
     const runtimeStore = useRuntimeStore.getState();
     const runtimeGameState = runtimeStore.gameState;
@@ -500,7 +537,11 @@ export async function finalizeCurrentGameLogSession(
     let persistenceError = null;
 
     try {
-        if (location && Number.isFinite(stoppedAtTime)) {
+        if (
+            location &&
+            Number.isFinite(stoppedAtTime) &&
+            !options.skipPersistence
+        ) {
             const leaveEntries = [];
             for (const playerValue of ingestState.playersByKey.values()) {
                 const player = playerValue as Record<string, any>;

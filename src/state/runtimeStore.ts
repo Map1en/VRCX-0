@@ -151,6 +151,7 @@ const HOST_CAPABILITY_KEYS = Object.freeze([
     'localDatabase',
     'websocketRuntime',
     'gameLogWatcher',
+    'backendGameLogIngest',
     'gameProcessMonitor',
     'vrchatPathDiscovery',
     'steamLibraryDiscovery',

@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use crate::backend::game_log_ingest::GameLogIngest;
 use crate::domain::app_paths::AppPaths;
 use crate::domain::auto_launch::AutoAppLaunchManager;
 use crate::domain::database::DatabaseService;
@@ -8,7 +11,7 @@ use crate::domain::legacy_migration::{
     cleanup_legacy_updater_files, consume_pending_legacy_migration,
 };
 use crate::domain::legacy_vrcx::{LegacyVrcxMigrationStatus, LegacyVrcxSource};
-use crate::domain::log_watcher::LogWatcher;
+use crate::domain::log_watcher::{GameLogEventSink, LogWatcher};
 use crate::domain::process_monitor::ProcessMonitor;
 use crate::domain::screenshot::MetadataCacheDb;
 use crate::domain::storage::StorageService;
@@ -18,7 +21,7 @@ use crate::error::AppError;
 pub struct AppState {
     pub paths: AppPaths,
     pub storage: StorageService,
-    pub db: DatabaseService,
+    pub db: Arc<DatabaseService>,
     pub discord_rpc: DiscordRpc,
     pub process_monitor: ProcessMonitor,
     pub log_watcher: LogWatcher,
@@ -51,10 +54,12 @@ impl AppState {
 
         let storage = StorageService::new(&paths.config_file)?;
 
-        let db = DatabaseService::new(&paths.db_file)?;
+        let db = Arc::new(DatabaseService::new(&paths.db_file)?);
         let discord_rpc = DiscordRpc::new();
         let process_monitor = ProcessMonitor::new();
-        let log_watcher = LogWatcher::new();
+        let game_log_ingest: Arc<dyn GameLogEventSink> =
+            Arc::new(GameLogIngest::new(Arc::clone(&db)));
+        let log_watcher = LogWatcher::new(Some(game_log_ingest));
         let web = WebClient::new(&storage, &db)?;
         let image_cache =
             ImageCache::new(paths.image_cache.clone(), web.cookie_jar(), web.proxy_url())?;

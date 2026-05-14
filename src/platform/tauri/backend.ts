@@ -51,6 +51,7 @@ export interface HostCapabilities {
     localDatabase: HostCapabilityStatus;
     websocketRuntime: HostCapabilityStatus;
     gameLogWatcher: HostCapabilityStatus;
+    backendGameLogIngest: HostCapabilityStatus;
     gameProcessMonitor: HostCapabilityStatus;
     vrchatPathDiscovery: HostCapabilityStatus;
     steamLibraryDiscovery: HostCapabilityStatus;

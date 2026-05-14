@@ -9,6 +9,8 @@ use chrono::{Local, NaiveDateTime, Utc};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
+use crate::error::AppError;
+
 const INACTIVE_POLL_KEEPALIVE: Duration = Duration::from_secs(120);
 const LOG_TIMESTAMP_LEN: usize = 19;
 const LOG_SEPARATOR_INDEX: usize = 31;
@@ -21,8 +23,50 @@ pub struct LogWatcher {
     inner: Arc<Inner>,
 }
 
+pub trait GameLogEventSink: Send + Sync {
+    fn ingest_game_log_event(&self, event: &GameLogEvent) -> Result<(), AppError>;
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GameLogEvent {
+    pub file_name: String,
+    pub created_at: String,
+    pub kind: GameLogEventKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum GameLogEventKind {
+    Location {
+        location: String,
+        world_name: String,
+    },
+    LocationDestination {
+        location: String,
+    },
+    PlayerJoined {
+        display_name: String,
+        user_id: String,
+    },
+    PlayerLeft {
+        display_name: String,
+        user_id: String,
+    },
+    PortalSpawn,
+    ResourceLoad {
+        resource_type: String,
+        resource_url: String,
+    },
+    Event {
+        data: String,
+    },
+    External {
+        data: String,
+    },
+}
+
 struct Inner {
     log_list: RwLock<Vec<Vec<String>>>,
+    event_sink: Option<Arc<dyn GameLogEventSink>>,
     log_dir: RwLock<Option<PathBuf>>,
     till_date: Mutex<Option<NaiveDateTime>>,
     active: Mutex<bool>,
@@ -34,10 +78,11 @@ struct Inner {
 }
 
 impl LogWatcher {
-    pub fn new() -> Self {
+    pub fn new(event_sink: Option<Arc<dyn GameLogEventSink>>) -> Self {
         Self {
             inner: Arc::new(Inner {
                 log_list: RwLock::new(Vec::new()),
+                event_sink,
                 log_dir: RwLock::new(None),
                 till_date: Mutex::new(None),
                 active: Mutex::new(false),
@@ -523,12 +568,147 @@ fn convert_log_time_to_iso8601(line: &str) -> String {
 }
 
 fn append_log(inner: &Inner, app_handle: &AppHandle, item: Vec<String>, first_run: bool) {
+    if let Some(event_sink) = &inner.event_sink {
+        if let Some(event) = GameLogEvent::from_raw_row(&item) {
+            if let Err(error) = event_sink.ingest_game_log_event(&event) {
+                tracing::warn!("failed to ingest GameLog event in backend: {error}");
+            }
+        }
+    }
+
     if !first_run {
         if let Ok(json) = serde_json::to_string(&item) {
             let _ = app_handle.emit("addGameLogEvent", json);
         }
     }
     inner.log_list.write().unwrap().push(item);
+}
+
+impl GameLogEvent {
+    pub fn from_raw_row(row: &[String]) -> Option<Self> {
+        let file_name = row.first()?.to_string();
+        let created_at = row.get(1)?.to_string();
+        let event_type = row.get(2)?.as_str();
+        if created_at.is_empty() || event_type.is_empty() {
+            return None;
+        }
+        let kind = match event_type {
+            "location" => GameLogEventKind::Location {
+                location: row.get(3).cloned().unwrap_or_default(),
+                world_name: row.get(4).cloned().unwrap_or_default(),
+            },
+            "location-destination" => GameLogEventKind::LocationDestination {
+                location: row.get(3).cloned().unwrap_or_default(),
+            },
+            "player-joined" => GameLogEventKind::PlayerJoined {
+                display_name: row.get(3).cloned().unwrap_or_default(),
+                user_id: row.get(4).cloned().unwrap_or_default(),
+            },
+            "player-left" => GameLogEventKind::PlayerLeft {
+                display_name: row.get(3).cloned().unwrap_or_default(),
+                user_id: row.get(4).cloned().unwrap_or_default(),
+            },
+            "portal-spawn" => GameLogEventKind::PortalSpawn,
+            "resource-load-string" => GameLogEventKind::ResourceLoad {
+                resource_type: "StringLoad".into(),
+                resource_url: row.get(3).cloned().unwrap_or_default(),
+            },
+            "resource-load-image" => GameLogEventKind::ResourceLoad {
+                resource_type: "ImageLoad".into(),
+                resource_url: row.get(3).cloned().unwrap_or_default(),
+            },
+            "event" => GameLogEventKind::Event {
+                data: row.get(3).cloned().unwrap_or_default(),
+            },
+            "vrcx" => {
+                let data = row.get(3).cloned().unwrap_or_default();
+                if data.starts_with("VideoPlay(") {
+                    return None;
+                }
+                GameLogEventKind::External { data }
+            }
+            _ => return None,
+        };
+
+        Some(Self {
+            file_name,
+            created_at,
+            kind,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{GameLogEvent, GameLogEventKind};
+
+    fn row(fields: &[&str]) -> Vec<String> {
+        fields.iter().map(|field| (*field).to_string()).collect()
+    }
+
+    #[test]
+    fn converts_raw_location_and_multibyte_player_rows_to_structured_events() {
+        let location = GameLogEvent::from_raw_row(&row(&[
+            "output_log.txt",
+            "2026-05-14T01:00:00.000Z",
+            "location",
+            "wrld_test:123",
+            "测试世界",
+        ]))
+        .unwrap();
+        assert_eq!(
+            location.kind,
+            GameLogEventKind::Location {
+                location: "wrld_test:123".into(),
+                world_name: "测试世界".into(),
+            }
+        );
+
+        let join = GameLogEvent::from_raw_row(&row(&[
+            "output_log.txt",
+            "2026-05-14T01:00:10.000Z",
+            "player-joined",
+            "做鳄梦small-fry",
+            "usr_1",
+        ]))
+        .unwrap();
+        assert_eq!(
+            join.kind,
+            GameLogEventKind::PlayerJoined {
+                display_name: "做鳄梦small-fry".into(),
+                user_id: "usr_1".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn converts_resource_load_rows_to_display_entry_types() {
+        let resource = GameLogEvent::from_raw_row(&row(&[
+            "output_log.txt",
+            "2026-05-14T01:00:30.000Z",
+            "resource-load-image",
+            "https://example.test/image.png",
+        ]))
+        .unwrap();
+        assert_eq!(
+            resource.kind,
+            GameLogEventKind::ResourceLoad {
+                resource_type: "ImageLoad".into(),
+                resource_url: "https://example.test/image.png".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn leaves_vrcx_video_provider_rows_on_the_frontend_video_path() {
+        assert!(GameLogEvent::from_raw_row(&row(&[
+            "output_log.txt",
+            "2026-05-14T01:00:40.000Z",
+            "vrcx",
+            "VideoPlay(PyPyDance) \"https://example.test\",0,10,\"Song (User)\"",
+        ]))
+        .is_none());
+    }
 }
 
 fn parse_user_info(s: &str) -> (String, String) {
