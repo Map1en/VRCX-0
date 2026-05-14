@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use chrono::Utc;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use tauri::Manager;
 
 use crate::backend::db::config as backend_config;
 use crate::backend::db::game_log::{write_batch, GameLogEventEntry, GameLogWriteBatch};
@@ -184,12 +183,7 @@ fn emit_crash_relaunch_decision(
 }
 
 fn focus_main_window(deps: &GameClientDeps) {
-    let Some(app_handle) = deps.context.event_bus.app_handle() else {
-        return;
-    };
-    if let Some(window) = app_handle.get_webview_window("main") {
-        let _ = window.set_focus();
-    }
+    deps.context.host.focus_main_window();
 }
 
 fn persist_crash_relaunch_event(deps: &GameClientDeps) -> Result<(), AppError> {

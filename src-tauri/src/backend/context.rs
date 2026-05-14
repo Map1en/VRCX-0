@@ -6,6 +6,7 @@ use crate::domain::web_client::WebClient;
 
 use super::db::config::ConfigRepository;
 use super::event_bus::BackendEventBus;
+use super::host_actions::BackendHost;
 
 #[derive(Clone)]
 pub struct BackendContext {
@@ -13,6 +14,7 @@ pub struct BackendContext {
     pub web: Arc<WebClient>,
     pub image_cache: Arc<ImageCache>,
     pub event_bus: BackendEventBus,
+    pub host: BackendHost,
     pub config: ConfigRepository,
 }
 
@@ -28,6 +30,7 @@ impl BackendContext {
             web,
             image_cache,
             event_bus: BackendEventBus::new(),
+            host: BackendHost::new(),
             config,
         }
     }

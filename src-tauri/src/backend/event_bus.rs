@@ -2,10 +2,13 @@ use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
 use serde_json::Value;
-use tauri::{AppHandle, Emitter};
 
 use crate::backend::db::game_log::GameLogWriteBatch;
 use crate::backend::realtime::types::{RealtimeWsMessagePayload, RealtimeWsStatusPayload};
+
+pub trait BackendEventSink: Send + Sync {
+    fn emit(&self, event: &str, payload: Value);
+}
 
 #[cfg(test)]
 #[derive(Clone, Debug)]
@@ -16,7 +19,7 @@ pub struct BackendEventForTest {
 
 #[derive(Clone, Default)]
 pub struct BackendEventBus {
-    app_handle: Arc<Mutex<Option<AppHandle>>>,
+    sink: Arc<Mutex<Option<Arc<dyn BackendEventSink>>>>,
     #[cfg(test)]
     events: Arc<Mutex<Vec<BackendEventForTest>>>,
 }
@@ -26,27 +29,35 @@ impl BackendEventBus {
         Self::default()
     }
 
-    pub fn set_app_handle(&self, app_handle: AppHandle) {
-        *self.app_handle.lock().unwrap() = Some(app_handle);
+    pub fn set_sink<S>(&self, sink: S)
+    where
+        S: BackendEventSink + 'static,
+    {
+        *self.sink.lock().unwrap() = Some(Arc::new(sink));
     }
 
-    pub fn app_handle(&self) -> Option<AppHandle> {
-        self.app_handle.lock().unwrap().clone()
+    pub fn emit<T: Serialize>(&self, event: &str, payload: T) {
+        match serde_json::to_value(payload) {
+            Ok(value) => self.emit_value(event, value),
+            Err(error) => {
+                tracing::warn!(event, error = %error, "failed to serialize backend event payload");
+            }
+        }
     }
 
-    pub fn emit<T: Serialize + Clone>(&self, event: &str, payload: T) {
+    fn emit_value(&self, event: &str, payload: Value) {
         #[cfg(test)]
-        if let Ok(value) = serde_json::to_value(payload.clone()) {
+        {
             self.events.lock().unwrap().push(BackendEventForTest {
                 name: event.to_string(),
-                payload: value,
+                payload: payload.clone(),
             });
         }
 
-        let Some(app_handle) = self.app_handle() else {
-            return;
-        };
-        let _ = app_handle.emit(event, payload);
+        let sink = self.sink.lock().unwrap().clone();
+        if let Some(sink) = sink {
+            sink.emit(event, payload);
+        }
     }
 
     #[cfg(test)]

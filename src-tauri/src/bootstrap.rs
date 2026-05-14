@@ -3,17 +3,55 @@ use std::time::Duration;
 
 use tauri::http::{header::CONTENT_TYPE, Request, Response, StatusCode};
 use tauri::menu::{Menu, MenuItem};
-use tauri::{Manager, WebviewWindowBuilder};
+use tauri::{Emitter, Manager, WebviewWindowBuilder};
 use tauri_plugin_autostart::ManagerExt as _;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
 
+use crate::backend::event_bus::BackendEventSink;
+use crate::backend::host_actions::BackendHostActions;
 use crate::domain::host_capabilities::{
     current_host_capabilities, is_host_capability_available, HostCapability,
 };
 use crate::state::AppState;
+
+#[derive(Clone)]
+struct TauriBackendEventSink {
+    app_handle: tauri::AppHandle,
+}
+
+impl TauriBackendEventSink {
+    fn new(app_handle: tauri::AppHandle) -> Self {
+        Self { app_handle }
+    }
+}
+
+impl BackendEventSink for TauriBackendEventSink {
+    fn emit(&self, event: &str, payload: serde_json::Value) {
+        let _ = self.app_handle.emit(event, payload);
+    }
+}
+
+#[derive(Clone)]
+struct TauriBackendHostActions {
+    app_handle: tauri::AppHandle,
+}
+
+impl TauriBackendHostActions {
+    fn new(app_handle: tauri::AppHandle) -> Self {
+        Self { app_handle }
+    }
+}
+
+impl BackendHostActions for TauriBackendHostActions {
+    fn focus_main_window(&self) {
+        if let Some(window) = self.app_handle.get_webview_window("main") {
+            let _ = window.set_focus();
+        }
+    }
+}
 
 pub fn show_main_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -296,7 +334,11 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
     state
         .backend_context
         .event_bus
-        .set_app_handle(app.handle().clone());
+        .set_sink(TauriBackendEventSink::new(app.handle().clone()));
+    state
+        .backend_context
+        .host
+        .set_actions(TauriBackendHostActions::new(app.handle().clone()));
 
     if is_host_capability_available(HostCapability::GameProcessMonitor) {
         state.process_monitor.start(
