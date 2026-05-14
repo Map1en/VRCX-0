@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use chrono::DateTime;
 
+use crate::backend::db::config as backend_config;
 use crate::backend::db::game_log::{
     ensure_game_log_tables, insert_event, insert_external, insert_join_leave, insert_location,
     insert_portal_spawn, insert_resource_load, update_location_time, GameLogEventEntry,
@@ -48,7 +49,7 @@ impl GameLogIngest {
             .state
             .lock()
             .map_err(|error| AppError::Custom(format!("GameLog ingest state lock: {error}")))?;
-        if self.config_bool("gameLogDisabled", false) {
+        if backend_config::get_bool(&self.db, "gameLogDisabled", false)? {
             return Ok(());
         }
         self.ensure_ready(&mut state)?;
@@ -226,7 +227,7 @@ impl GameLogIngest {
     ) -> Result<(), AppError> {
         if resource_url.is_empty()
             || state.last_resource_url == resource_url
-            || !self.config_bool("logResourceLoad", false)
+            || !backend_config::get_bool(&self.db, "logResourceLoad", false)?
         {
             return Ok(());
         }
@@ -279,26 +280,6 @@ impl GameLogIngest {
         }
 
         Ok(())
-    }
-
-    fn config_bool(&self, key: &str, default_value: bool) -> bool {
-        let mut args = HashMap::new();
-        args.insert(
-            "@key".to_string(),
-            serde_json::json!(format!("config:vrcx_{}", key.to_lowercase())),
-        );
-
-        match self
-            .db
-            .execute("SELECT value FROM configs WHERE key = @key LIMIT 1", &args)
-        {
-            Ok(rows) => rows
-                .first()
-                .and_then(|row| row.first())
-                .and_then(|value| value.as_str())
-                .map_or(default_value, |value| value == "true"),
-            Err(_) => default_value,
-        }
     }
 }
 
