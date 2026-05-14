@@ -293,12 +293,6 @@ export async function handleIpcEvent(payload: unknown) {
         case 'VRCXLaunch':
             console.log('VRCXLaunch:', data);
             break;
-        case 'OnEvent':
-        case 'OnOperationResponse':
-        case 'OnOperationRequest':
-        case 'VRCEvent':
-        case 'Event7List':
-            break;
         default:
             console.log('IPC:', data);
             break;
