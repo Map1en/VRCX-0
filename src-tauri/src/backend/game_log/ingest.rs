@@ -48,11 +48,22 @@ impl GameLogBackend {
             return Ok(());
         }
 
-        if backend_config::get_bool(&self.db, "gameLogDisabled", false)? {
+        self.ingest_queue.push_batch(events.iter().cloned());
+        let queued_events = self.ingest_queue.flush();
+        self.ingest_events_now(&queued_events)
+    }
+
+    fn ingest_events_now(&self, events: &[GameLogEvent]) -> Result<(), AppError> {
+        if events.is_empty() {
             return Ok(());
         }
 
-        let log_resource_load = backend_config::get_bool(&self.db, "logResourceLoad", false)?;
+        if backend_config::get_bool(&self.context.db, "gameLogDisabled", false)? {
+            return Ok(());
+        }
+
+        let log_resource_load =
+            backend_config::get_bool(&self.context.db, "logResourceLoad", false)?;
         let deps = self.deps();
         let mut batch = GameLogWriteBatch::default();
         let mut side_effects = Vec::new();
@@ -99,6 +110,8 @@ impl GameLogBackend {
                     GameLogEventKind::PortalSpawn => {
                         self.ingest_portal_spawn(&state, &mut batch, event)
                     }
+                    GameLogEventKind::Notification { .. }
+                    | GameLogEventKind::AvatarChange { .. } => {}
                     GameLogEventKind::ResourceLoad {
                         resource_type,
                         resource_url,
@@ -205,7 +218,7 @@ impl GameLogBackend {
             }
         }
 
-        write_batch(&self.db, &batch)?;
+        write_batch(&self.context.db, &batch)?;
         for side_effect in side_effects {
             dispatch_side_effect(deps.clone(), side_effect);
         }
@@ -235,7 +248,7 @@ impl GameLogBackend {
             }
         }
 
-        write_batch(&self.db, &batch)?;
+        write_batch(&self.context.db, &batch)?;
         if event.game_changed && !event.is_game_running {
             deps.emit_side_effect("nowPlayingReset", serde_json::json!({}));
         }

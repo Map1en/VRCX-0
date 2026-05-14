@@ -23,6 +23,7 @@ describe('backend GameLog persistence routing', () => {
 
     it('routes LogWatcher side effects away from frontend handlers when backend side effects are active', () => {
         expect(isBackendHandledGameLogSideEffectType('video-play')).toBe(true);
+        expect(isBackendHandledGameLogSideEffectType('video-sync')).toBe(true);
         expect(isBackendHandledGameLogSideEffectType('vrcx')).toBe(true);
         expect(isBackendHandledGameLogSideEffectType('screenshot')).toBe(true);
         expect(isBackendHandledGameLogSideEffectType('api-request')).toBe(true);
@@ -31,6 +32,10 @@ describe('backend GameLog persistence routing', () => {
         );
         expect(isBackendHandledGameLogSideEffectType('openvr-init')).toBe(true);
         expect(isBackendHandledGameLogSideEffectType('desktop-mode')).toBe(
+            true
+        );
+        expect(isBackendHandledGameLogSideEffectType('vrc-quit')).toBe(true);
+        expect(isBackendHandledGameLogSideEffectType('udon-exception')).toBe(
             true
         );
 

@@ -1,0 +1,32 @@
+use sea_query::Alias;
+
+pub(super) const TABLE_LOCATION: &str = "gamelog_location";
+pub(super) const TABLE_JOIN_LEAVE: &str = "gamelog_join_leave";
+pub(super) const TABLE_PORTAL_SPAWN: &str = "gamelog_portal_spawn";
+pub(super) const TABLE_VIDEO_PLAY: &str = "gamelog_video_play";
+pub(super) const TABLE_RESOURCE_LOAD: &str = "gamelog_resource_load";
+pub(super) const TABLE_EVENT: &str = "gamelog_event";
+pub(super) const TABLE_EXTERNAL: &str = "gamelog_external";
+
+pub(super) const COL_ID: &str = "id";
+pub(super) const COL_CREATED_AT: &str = "created_at";
+pub(super) const COL_LOCATION: &str = "location";
+pub(super) const COL_WORLD_ID: &str = "world_id";
+pub(super) const COL_WORLD_NAME: &str = "world_name";
+pub(super) const COL_TIME: &str = "time";
+pub(super) const COL_GROUP_NAME: &str = "group_name";
+pub(super) const COL_TYPE: &str = "type";
+pub(super) const COL_DISPLAY_NAME: &str = "display_name";
+pub(super) const COL_USER_ID: &str = "user_id";
+pub(super) const COL_INSTANCE_ID: &str = "instance_id";
+pub(super) const COL_VIDEO_URL: &str = "video_url";
+pub(super) const COL_VIDEO_NAME: &str = "video_name";
+pub(super) const COL_VIDEO_ID: &str = "video_id";
+pub(super) const COL_RESOURCE_URL: &str = "resource_url";
+pub(super) const COL_RESOURCE_TYPE: &str = "resource_type";
+pub(super) const COL_DATA: &str = "data";
+pub(super) const COL_MESSAGE: &str = "message";
+
+pub(super) fn ident(name: impl Into<String>) -> Alias {
+    Alias::new(name)
+}
