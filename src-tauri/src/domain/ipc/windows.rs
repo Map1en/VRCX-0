@@ -2,28 +2,31 @@ use std::sync::{Arc, Mutex};
 
 use tauri::{AppHandle, Emitter};
 
-use super::IpcPacket;
+use super::{IpcEventDisposition, IpcEventSink, IpcPacket};
 
 pub struct IpcServer {
     clients: Arc<Mutex<Vec<ClientHandle>>>,
+    event_sink: Option<Arc<dyn IpcEventSink>>,
 }
 
 type ClientHandle = Arc<Mutex<Option<std::fs::File>>>;
 
 impl IpcServer {
-    pub fn new() -> Self {
+    pub fn new(event_sink: Option<Arc<dyn IpcEventSink>>) -> Self {
         Self {
             clients: Arc::new(Mutex::new(Vec::new())),
+            event_sink,
         }
     }
 
     pub fn start(&self, app_handle: AppHandle) {
         let clients = self.clients.clone();
+        let event_sink = self.event_sink.clone();
 
         std::thread::spawn(move || {
             let pipe_name = get_ipc_name();
             loop {
-                if let Err(e) = accept_one(&pipe_name, &clients, &app_handle) {
+                if let Err(e) = accept_one(&pipe_name, &clients, &app_handle, &event_sink) {
                     tracing::error!("[IPC] accept error: {e}");
                     std::thread::sleep(std::time::Duration::from_secs(1));
                 }
@@ -71,6 +74,7 @@ fn accept_one(
     pipe_name: &str,
     clients: &Arc<Mutex<Vec<ClientHandle>>>,
     app_handle: &AppHandle,
+    event_sink: &Option<Arc<dyn IpcEventSink>>,
 ) -> Result<(), String> {
     use windows_sys::Win32::Foundation::*;
     use windows_sys::Win32::Storage::FileSystem::*;
@@ -112,8 +116,9 @@ fn accept_one(
 
     let app_handle = app_handle.clone();
     let clients_ref = clients.clone();
+    let event_sink = event_sink.clone();
     std::thread::spawn(move || {
-        read_client(client_arc, &clients_ref, &app_handle);
+        read_client(client_arc, &clients_ref, &app_handle, event_sink);
     });
 
     Ok(())
@@ -123,6 +128,7 @@ fn read_client(
     client_arc: ClientHandle,
     clients: &Arc<Mutex<Vec<ClientHandle>>>,
     app_handle: &AppHandle,
+    event_sink: Option<Arc<dyn IpcEventSink>>,
 ) {
     use std::io::Read;
 
@@ -149,7 +155,20 @@ fn read_client(
             pending.drain(..1);
 
             if !packet_str.is_empty() {
-                let _ = app_handle.emit("ipcEvent", &packet_str);
+                let should_forward = match &event_sink {
+                    Some(sink) => match sink.on_ipc_event(&packet_str) {
+                        Ok(IpcEventDisposition::Handled) => false,
+                        Ok(IpcEventDisposition::Forward) => true,
+                        Err(error) => {
+                            tracing::warn!("IPC backend handler failed: {error}");
+                            true
+                        }
+                    },
+                    None => true,
+                };
+                if should_forward {
+                    let _ = app_handle.emit("ipcEvent", &packet_str);
+                }
             }
         }
     }

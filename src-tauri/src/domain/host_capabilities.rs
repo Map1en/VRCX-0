@@ -23,6 +23,7 @@ pub struct HostCapabilities {
     pub game_log_watcher: CapabilityStatus,
     pub backend_game_log_ingest: CapabilityStatus,
     pub backend_game_log_side_effects: CapabilityStatus,
+    pub backend_game_client_lifecycle: CapabilityStatus,
     pub game_process_monitor: CapabilityStatus,
     pub vrchat_path_discovery: CapabilityStatus,
     pub steam_library_discovery: CapabilityStatus,
@@ -175,6 +176,7 @@ pub fn current_host_capabilities() -> HostCapabilities {
             game_log_watcher: available.clone(),
             backend_game_log_ingest: available.clone(),
             backend_game_log_side_effects: available.clone(),
+            backend_game_client_lifecycle: available.clone(),
             game_process_monitor: available.clone(),
             vrchat_path_discovery: available.clone(),
             steam_library_discovery: available.clone(),
@@ -200,6 +202,10 @@ pub fn current_host_capabilities() -> HostCapabilities {
             ),
             backend_game_log_side_effects: CapabilityStatus::unsupported(
                 "backend GameLog side effects",
+                "macOS",
+            ),
+            backend_game_client_lifecycle: CapabilityStatus::unsupported(
+                "backend game client lifecycle",
                 "macOS",
             ),
             game_process_monitor: CapabilityStatus::unsupported("Game process monitor", "macOS"),
@@ -231,6 +237,10 @@ pub fn current_host_capabilities() -> HostCapabilities {
             ),
             backend_game_log_side_effects: CapabilityStatus::unsupported(
                 "backend GameLog side effects",
+                platform,
+            ),
+            backend_game_client_lifecycle: CapabilityStatus::unsupported(
+                "backend game client lifecycle",
                 platform,
             ),
             game_process_monitor: CapabilityStatus::unsupported("Game process monitor", platform),
@@ -288,6 +298,14 @@ fn linux_host_capabilities(platform: &str, available: &CapabilityStatus) -> Host
         Err(reason) => CapabilityStatus::unavailable(&reason),
     };
 
+    let backend_game_client_lifecycle = if game_launch.available && game_log_watcher.available {
+        available.clone()
+    } else if !game_launch.available {
+        game_launch.clone()
+    } else {
+        game_log_watcher.clone()
+    };
+
     HostCapabilities {
         platform: platform.to_string(),
         arch: current_arch().to_string(),
@@ -297,6 +315,7 @@ fn linux_host_capabilities(platform: &str, available: &CapabilityStatus) -> Host
         game_log_watcher: game_log_watcher.clone(),
         backend_game_log_ingest: game_log_watcher.clone(),
         backend_game_log_side_effects: game_log_watcher,
+        backend_game_client_lifecycle,
         game_process_monitor: available.clone(),
         vrchat_path_discovery: vrchat_path_discovery.clone(),
         steam_library_discovery,

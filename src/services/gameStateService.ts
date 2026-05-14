@@ -9,6 +9,12 @@ import {
     refreshDiscordPresence
 } from '@/services/discordPresenceService.js';
 import {
+    isBackendGameClientLifecycleActive,
+    resetBackendCrashRelaunchDecision,
+    shouldSkipFrontendCrashRelaunch,
+    waitForBackendCrashRelaunchDecision
+} from '@/services/gameClientLifecycle.js';
+import {
     finalizeCurrentGameLogSession,
     resetGameLogIngestSessionState,
     resetNowPlayingState
@@ -145,6 +151,14 @@ async function sweepVrchatCacheIfEnabled() {
 }
 
 async function scheduleCrashRelaunchIfNeeded(previousGameState) {
+    if (isBackendGameClientLifecycleActive()) {
+        await waitForBackendCrashRelaunchDecision();
+    }
+
+    if (shouldSkipFrontendCrashRelaunch()) {
+        return;
+    }
+
     if (!isHostCapabilitySupported('gameLaunch')) {
         return;
     }
@@ -424,6 +438,7 @@ export async function handleGameRunningUpdate(payload: Record<string, any> = {})
 
     if (nextGameRunning) {
         if (gameRunningChanged) {
+            resetBackendCrashRelaunchDecision();
             resetGameLogIngestSessionState();
             resetNowPlayingState();
             startCurrentAvatarWearTimer();

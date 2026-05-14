@@ -38,7 +38,7 @@ impl ProcessMonitor {
         app_handle: AppHandle,
         auto_launch: AutoAppLaunchManager,
         log_watcher: LogWatcher,
-        game_process_sink: Option<Arc<dyn GameProcessEventSink>>,
+        game_process_sinks: Vec<Arc<dyn GameProcessEventSink>>,
     ) {
         let game = Arc::clone(&self.game_running);
         let steamvr = Arc::clone(&self.steamvr_running);
@@ -76,7 +76,7 @@ impl ProcessMonitor {
                 }
 
                 if first_poll || game_changed || steamvr_changed {
-                    if let Some(sink) = &game_process_sink {
+                    for sink in &game_process_sinks {
                         if let Err(error) = sink.on_game_process_event(GameProcessEvent {
                             is_game_running: game_found,
                             is_steamvr_running: steamvr_found,
@@ -119,6 +119,14 @@ impl ProcessMonitor {
     pub fn is_steamvr_running(&self) -> bool {
         self.steamvr_running.load(Ordering::Relaxed)
     }
+}
+
+pub fn detect_steamvr_running() -> bool {
+    let mut sys = System::new();
+    sys.refresh_processes(ProcessesToUpdate::All, true);
+    sys.processes()
+        .values()
+        .any(|proc| is_steamvr_process_name(&proc.name().to_string_lossy()))
 }
 
 #[cfg(target_os = "linux")]

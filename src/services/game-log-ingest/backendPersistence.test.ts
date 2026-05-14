@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+    isBackendPersistedGameLogMirror,
     isBackendHandledGameLogSideEffectType,
     isBackendPersistedGameLogType,
     shouldSkipBackendHandledGameLogSideEffect,
@@ -13,6 +14,7 @@ describe('backend GameLog persistence routing', () => {
         expect(isBackendPersistedGameLogType('player-left')).toBe(true);
         expect(isBackendPersistedGameLogType('resource-load-image')).toBe(true);
         expect(isBackendPersistedGameLogType('event')).toBe(true);
+        expect(isBackendPersistedGameLogType('external')).toBe(true);
 
         expect(isBackendPersistedGameLogType('video-play')).toBe(false);
         expect(isBackendPersistedGameLogType('screenshot')).toBe(false);
@@ -56,6 +58,18 @@ describe('backend GameLog persistence routing', () => {
                 { backendGameLogIngestAvailable: false }
             )
         ).toBe(false);
+    });
+
+    it('always skips frontend writes for backend-persisted mirror rows', () => {
+        expect(isBackendPersistedGameLogMirror({ backendPersisted: true })).toBe(
+            true
+        );
+        expect(
+            shouldSkipBackendPersistedGameLog(
+                { type: 'external', backendPersisted: true },
+                { backendGameLogIngestAvailable: false }
+            )
+        ).toBe(true);
     });
 
     it('keeps frontend side effects as fallback when backend side effects are unavailable', () => {

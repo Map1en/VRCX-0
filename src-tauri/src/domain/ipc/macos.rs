@@ -1,11 +1,11 @@
 use tauri::AppHandle;
 
-use super::IpcPacket;
+use super::{IpcEventSink, IpcPacket};
 
 pub struct IpcServer;
 
 impl IpcServer {
-    pub fn new() -> Self {
+    pub fn new(_event_sink: Option<std::sync::Arc<dyn IpcEventSink>>) -> Self {
         Self
     }
 

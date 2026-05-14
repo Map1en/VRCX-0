@@ -8,6 +8,7 @@ import { bindBackendEvents } from './backendEventService.js';
 import { refreshPlayerModerations } from './backgroundMaintenanceService.js';
 import { bootstrapFavorites } from './favoriteBootstrapService.js';
 import { bootstrapFriendRoster } from './friendBootstrapService.js';
+import { startBackendGameClientRuntimeSync } from './gameClientLifecycle.js';
 import { stopGameStateService } from './gameStateService.js';
 import { getTimeUnitLabels, setI18nLanguage } from './i18nService.js';
 import {
@@ -86,6 +87,7 @@ function createReactRuntimeStartPromise() {
         .then(() => bindBackendEvents())
         .then((cleanup) => {
             cleanups.push(cleanup ?? null);
+            cleanups.push(startBackendGameClientRuntimeSync());
             cleanups.push(startRuntimeUpdateLoop());
             cleanups.push(startVrcStatusPolling());
             reactRuntimeCleanup = () => {

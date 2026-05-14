@@ -38,4 +38,24 @@ impl BackendEventBus {
             }),
         );
     }
+
+    pub fn emit_game_client_event(&self, kind: &str, payload: Value) {
+        self.emit(
+            "gameClientEvent",
+            serde_json::json!({
+                "kind": kind,
+                "payload": payload,
+            }),
+        );
+    }
+
+    pub fn emit_backend_game_log_event(&self, raw: Vec<String>) {
+        self.emit(
+            "addGameLogEvent",
+            serde_json::json!({
+                "backendPersisted": true,
+                "raw": raw,
+            }),
+        );
+    }
 }

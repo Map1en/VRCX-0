@@ -303,13 +303,19 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
         "host capabilities resolved"
     );
     state.game_log_backend.set_app_handle(app.handle().clone());
+    state
+        .game_client_backend
+        .set_app_handle(app.handle().clone());
 
     if is_host_capability_available(HostCapability::GameProcessMonitor) {
         state.process_monitor.start(
             app.handle().clone(),
             state.auto_launch.clone(),
             state.log_watcher.clone(),
-            Some(state.game_log_backend.clone()),
+            vec![
+                state.game_log_backend.clone(),
+                state.game_client_backend.clone(),
+            ],
         );
     }
 

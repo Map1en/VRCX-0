@@ -3,11 +3,12 @@ import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 
+import { recordBackendGameClientEvent } from './gameClientLifecycle.js';
+import { handleGameRunningUpdate } from './gameStateService.js';
 import {
     ingestBackendGameLogEvent,
     resetNowPlayingState
 } from './gameLogIngestService.js';
-import { handleGameRunningUpdate } from './gameStateService.js';
 import {
     isHostCapabilityAvailable,
     refreshHostCapabilities
@@ -20,6 +21,7 @@ import { handleBrowserFocus } from './vrcStatusService.js';
 type BackendEventName =
     | 'addGameLogEvent'
     | 'gameLogSideEffect'
+    | 'gameClientEvent'
     | 'updateIsGameRunning'
     | 'ipcEvent'
     | 'browserFocus';
@@ -169,6 +171,20 @@ function handleBackendEvent(name: BackendEventName, payload: unknown): void {
         return;
     }
 
+    if (name === 'gameClientEvent') {
+        if (!isHostCapabilityAvailable('backendGameClientLifecycle')) {
+            return;
+        }
+        const record = isRecord(payload) ? payload : {};
+        const kind = String(record.kind || '');
+        const clientPayload = isRecord(record.payload) ? record.payload : {};
+        recordBackendGameClientEvent(kind, clientPayload);
+        if (kind === 'notification') {
+            useNotificationStore.getState().pushNotification(clientPayload);
+        }
+        return;
+    }
+
     if (name === 'updateIsGameRunning') {
         if (!isHostCapabilityAvailable('gameProcessMonitor')) {
             return;
@@ -212,6 +228,7 @@ export async function bindBackendEvents(): Promise<() => void> {
     const events: BackendEventName[] = [
         'addGameLogEvent',
         'gameLogSideEffect',
+        'gameClientEvent',
         'updateIsGameRunning',
         'ipcEvent',
         'browserFocus'

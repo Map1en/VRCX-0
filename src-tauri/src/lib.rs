@@ -127,6 +127,7 @@ pub fn run() {
             api::app::game::app__check_game_running,
             api::app::game::app__is_game_running,
             api::app::game::app__is_steamvr_running,
+            api::app::game::app__set_game_client_runtime_state,
             api::app::game::app__quit_game,
             api::app::game::app__start_game,
             api::app::game::app__start_game_from_path,

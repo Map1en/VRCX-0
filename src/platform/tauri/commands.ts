@@ -49,6 +49,7 @@ const commandArgs: Record<string, string[]> = {
     app__get_host_capabilities: [],
     app__set_user_agent: [],
     app__check_game_running: [],
+    app__set_game_client_runtime_state: ['sessionActive', 'currentLocation'],
     app__get_file_base64: ['path'],
     app__sign_file: ['blob'],
     app__resize_image_to_fit_limits: ['base64data'],

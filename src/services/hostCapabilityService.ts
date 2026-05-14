@@ -11,6 +11,7 @@ const HOST_CAPABILITY_KEYS = Object.freeze([
     'gameLogWatcher',
     'backendGameLogIngest',
     'backendGameLogSideEffects',
+    'backendGameClientLifecycle',
     'gameProcessMonitor',
     'vrchatPathDiscovery',
     'steamLibraryDiscovery',

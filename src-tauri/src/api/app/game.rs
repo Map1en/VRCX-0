@@ -39,6 +39,17 @@ pub fn app__is_steamvr_running(state: State<'_, AppState>) -> Result<bool, AppEr
 }
 
 #[tauri::command]
+pub fn app__set_game_client_runtime_state(
+    state: State<'_, AppState>,
+    session_active: bool,
+    current_location: String,
+) {
+    state
+        .game_client_backend
+        .set_runtime_state(session_active, &current_location);
+}
+
+#[tauri::command]
 pub fn app__quit_game() -> Result<i32, AppError> {
     require_host_capability_supported(HostCapability::GameLaunch)?;
     Ok(game_launch::quit_game())

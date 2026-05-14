@@ -6,7 +6,8 @@ const BACKEND_GAME_LOG_INGEST_TYPES = new Set([
     'portal-spawn',
     'resource-load-string',
     'resource-load-image',
-    'event'
+    'event',
+    'external'
 ]);
 
 const BACKEND_GAME_LOG_SIDE_EFFECT_TYPES = new Set([
@@ -24,7 +25,12 @@ const BACKEND_GAME_LOG_SIDE_EFFECT_TYPES = new Set([
 
 type GameLogLike = {
     type?: unknown;
+    backendPersisted?: unknown;
 };
+
+export function isBackendPersistedGameLogMirror(gameLog: GameLogLike): boolean {
+    return gameLog?.backendPersisted === true;
+}
 
 export function isBackendPersistedGameLogType(type: unknown): boolean {
     return BACKEND_GAME_LOG_INGEST_TYPES.has(String(type || ''));
@@ -35,8 +41,9 @@ export function shouldSkipBackendPersistedGameLog(
     options: { backendGameLogIngestAvailable: boolean }
 ): boolean {
     return (
-        options.backendGameLogIngestAvailable &&
-        isBackendPersistedGameLogType(gameLog?.type)
+        isBackendPersistedGameLogMirror(gameLog) ||
+        (options.backendGameLogIngestAvailable &&
+            isBackendPersistedGameLogType(gameLog?.type))
     );
 }
 

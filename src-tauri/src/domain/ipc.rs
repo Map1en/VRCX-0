@@ -16,6 +16,18 @@ pub use unsupported::{vrcipc_send, IpcServer};
 #[cfg(target_os = "windows")]
 pub use windows::{vrcipc_send, IpcServer};
 
+use crate::error::AppError;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IpcEventDisposition {
+    Forward,
+    Handled,
+}
+
+pub trait IpcEventSink: Send + Sync {
+    fn on_ipc_event(&self, packet: &str) -> Result<IpcEventDisposition, AppError>;
+}
+
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct IpcPacket {
     #[serde(rename = "Type")]

@@ -61,6 +61,12 @@ function parseRawGameLog(
         case 'udon-exception':
             gameLog.data = args[0];
             break;
+        case 'external':
+            gameLog.message = args[0];
+            gameLog.displayName = args[1];
+            gameLog.userId = args[2];
+            gameLog.location = args[3];
+            break;
         case 'api-request':
             gameLog.url = args[0];
             break;
@@ -105,7 +111,11 @@ function parseRawRow(payload: unknown): ParsedGameLog {
     if (!dt || !type) {
         throw new Error('Game log payload is missing dt or type.');
     }
-    return parseRawGameLog(dt, type, args);
+    const gameLog = parseRawGameLog(dt, type, args);
+    if (isRecord(payload) && payload.backendPersisted === true) {
+        gameLog.backendPersisted = true;
+    }
+    return gameLog;
 }
 
 function getPlayerKey(userId: unknown, displayName: unknown): string {
