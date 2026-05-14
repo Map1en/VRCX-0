@@ -302,12 +302,14 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
         platform = %host_capabilities.platform,
         "host capabilities resolved"
     );
+    state.game_log_backend.set_app_handle(app.handle().clone());
 
     if is_host_capability_available(HostCapability::GameProcessMonitor) {
         state.process_monitor.start(
             app.handle().clone(),
             state.auto_launch.clone(),
             state.log_watcher.clone(),
+            Some(state.game_log_backend.clone()),
         );
     }
 
@@ -320,6 +322,9 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
         let local_low = std::env::var("LOCALAPPDATA")
             .map(|p| std::path::PathBuf::from(p).join("..\\LocalLow\\VRChat\\VRChat"))
             .unwrap_or_default();
+        if let Err(error) = state.game_log_backend.prime_log_watcher(&state.log_watcher) {
+            tracing::warn!("failed to prime GameLog watcher from backend DB: {error}");
+        }
         state.log_watcher.start(local_low, app.handle().clone());
     }
 
@@ -337,6 +342,9 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
                     latest_log,
                     "starting Linux GameLog watcher"
                 );
+                if let Err(error) = state.game_log_backend.prime_log_watcher(&state.log_watcher) {
+                    tracing::warn!("failed to prime GameLog watcher from backend DB: {error}");
+                }
                 state
                     .log_watcher
                     .start_without_process_monitor(paths.app_data, app.handle().clone());

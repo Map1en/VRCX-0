@@ -7,6 +7,18 @@ use tauri::{AppHandle, Emitter};
 
 use super::auto_launch::AutoAppLaunchManager;
 use super::log_watcher::LogWatcher;
+use crate::error::AppError;
+
+#[derive(Clone, Copy, Debug)]
+pub struct GameProcessEvent {
+    pub is_game_running: bool,
+    pub is_steamvr_running: bool,
+    pub game_changed: bool,
+}
+
+pub trait GameProcessEventSink: Send + Sync {
+    fn on_game_process_event(&self, event: GameProcessEvent) -> Result<(), AppError>;
+}
 
 pub struct ProcessMonitor {
     game_running: Arc<AtomicBool>,
@@ -26,6 +38,7 @@ impl ProcessMonitor {
         app_handle: AppHandle,
         auto_launch: AutoAppLaunchManager,
         log_watcher: LogWatcher,
+        game_process_sink: Option<Arc<dyn GameProcessEventSink>>,
     ) {
         let game = Arc::clone(&self.game_running);
         let steamvr = Arc::clone(&self.steamvr_running);
@@ -55,12 +68,26 @@ impl ProcessMonitor {
 
                 let prev_game = game.swap(game_found, Ordering::Relaxed);
                 let prev_steamvr = steamvr.swap(steamvr_found, Ordering::Relaxed);
+                let game_changed = prev_game != game_found;
+                let steamvr_changed = prev_steamvr != steamvr_found;
 
-                if first_poll || prev_game != game_found {
+                if first_poll || game_changed {
                     log_watcher.set_game_running(game_found);
                 }
 
-                if prev_game != game_found || prev_steamvr != steamvr_found {
+                if first_poll || game_changed || steamvr_changed {
+                    if let Some(sink) = &game_process_sink {
+                        if let Err(error) = sink.on_game_process_event(GameProcessEvent {
+                            is_game_running: game_found,
+                            is_steamvr_running: steamvr_found,
+                            game_changed,
+                        }) {
+                            tracing::warn!("failed to handle GameLog process event: {error}");
+                        }
+                    }
+                }
+
+                if game_changed || steamvr_changed {
                     let _ = app_handle.emit(
                         "updateIsGameRunning",
                         serde_json::json!({
@@ -72,7 +99,7 @@ impl ProcessMonitor {
 
                 if first_poll {
                     first_poll = false;
-                } else if prev_game != game_found {
+                } else if game_changed {
                     if game_found {
                         auto_launch.on_game_started(steamvr_found);
                     } else {

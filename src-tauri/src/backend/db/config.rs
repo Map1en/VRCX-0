@@ -36,6 +36,26 @@ pub fn get_bool(db: &DatabaseService, key: &str, default_value: bool) -> Result<
     Ok(get_raw(db, key)?.map_or(default_value, |value| value == "true"))
 }
 
+pub fn get_string(
+    db: &DatabaseService,
+    key: &str,
+    default_value: &str,
+) -> Result<String, AppError> {
+    Ok(get_raw(db, key)?.unwrap_or_else(|| default_value.to_string()))
+}
+
+#[allow(dead_code)]
+pub fn get_json(
+    db: &DatabaseService,
+    key: &str,
+    default_value: serde_json::Value,
+) -> Result<serde_json::Value, AppError> {
+    let Some(value) = get_raw(db, key)? else {
+        return Ok(default_value);
+    };
+    Ok(serde_json::from_str(&value).unwrap_or(default_value))
+}
+
 #[allow(dead_code)]
 pub fn set_raw(db: &DatabaseService, key: &str, value: &str) -> Result<(), AppError> {
     ensure_config_table(db)?;

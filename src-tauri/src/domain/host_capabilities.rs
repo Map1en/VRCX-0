@@ -22,6 +22,7 @@ pub struct HostCapabilities {
     pub websocket_runtime: CapabilityStatus,
     pub game_log_watcher: CapabilityStatus,
     pub backend_game_log_ingest: CapabilityStatus,
+    pub backend_game_log_side_effects: CapabilityStatus,
     pub game_process_monitor: CapabilityStatus,
     pub vrchat_path_discovery: CapabilityStatus,
     pub steam_library_discovery: CapabilityStatus,
@@ -173,6 +174,7 @@ pub fn current_host_capabilities() -> HostCapabilities {
             websocket_runtime: available.clone(),
             game_log_watcher: available.clone(),
             backend_game_log_ingest: available.clone(),
+            backend_game_log_side_effects: available.clone(),
             game_process_monitor: available.clone(),
             vrchat_path_discovery: available.clone(),
             steam_library_discovery: available.clone(),
@@ -194,6 +196,10 @@ pub fn current_host_capabilities() -> HostCapabilities {
             game_log_watcher: CapabilityStatus::unsupported("GameLog watcher", "macOS"),
             backend_game_log_ingest: CapabilityStatus::unsupported(
                 "backend GameLog ingest",
+                "macOS",
+            ),
+            backend_game_log_side_effects: CapabilityStatus::unsupported(
+                "backend GameLog side effects",
                 "macOS",
             ),
             game_process_monitor: CapabilityStatus::unsupported("Game process monitor", "macOS"),
@@ -221,6 +227,10 @@ pub fn current_host_capabilities() -> HostCapabilities {
             game_log_watcher: CapabilityStatus::unsupported("GameLog watcher", platform),
             backend_game_log_ingest: CapabilityStatus::unsupported(
                 "backend GameLog ingest",
+                platform,
+            ),
+            backend_game_log_side_effects: CapabilityStatus::unsupported(
+                "backend GameLog side effects",
                 platform,
             ),
             game_process_monitor: CapabilityStatus::unsupported("Game process monitor", platform),
@@ -285,7 +295,8 @@ fn linux_host_capabilities(platform: &str, available: &CapabilityStatus) -> Host
         local_database: available.clone(),
         websocket_runtime: available.clone(),
         game_log_watcher: game_log_watcher.clone(),
-        backend_game_log_ingest: game_log_watcher,
+        backend_game_log_ingest: game_log_watcher.clone(),
+        backend_game_log_side_effects: game_log_watcher,
         game_process_monitor: available.clone(),
         vrchat_path_discovery: vrchat_path_discovery.clone(),
         steam_library_discovery,

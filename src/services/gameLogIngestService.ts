@@ -21,6 +21,7 @@ import {
     enqueueStickerSave
 } from './game-log-ingest/instanceMediaSave.js';
 import {
+    shouldSkipBackendHandledGameLogSideEffect as shouldSkipBackendHandledGameLogSideEffectByCapability,
     shouldSkipBackendPersistedGameLog as shouldSkipBackendPersistedGameLogByCapability
 } from './game-log-ingest/backendPersistence.js';
 import {
@@ -54,9 +55,19 @@ function isBackendGameLogIngestActive() {
     return isHostCapabilityAvailable('backendGameLogIngest');
 }
 
+function isBackendGameLogSideEffectsActive() {
+    return isHostCapabilityAvailable('backendGameLogSideEffects');
+}
+
 function shouldSkipBackendPersistedGameLog(gameLog: GameLogRow) {
     return shouldSkipBackendPersistedGameLogByCapability(gameLog, {
         backendGameLogIngestAvailable: isBackendGameLogIngestActive()
+    });
+}
+
+function shouldSkipBackendHandledGameLogSideEffect(gameLog: GameLogRow) {
+    return shouldSkipBackendHandledGameLogSideEffectByCapability(gameLog, {
+        backendGameLogSideEffectsAvailable: isBackendGameLogSideEffectsActive()
     });
 }
 
@@ -156,6 +167,8 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
     const copyScreenshotToClipboard =
         options.copyScreenshotToClipboard !== false;
     const backendPersisted = shouldSkipBackendPersistedGameLog(gameLog);
+    const backendSideEffectHandled =
+        shouldSkipBackendHandledGameLogSideEffect(gameLog);
     let entry = null;
 
     runtimeStore.setGameState({
@@ -321,6 +334,9 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
             }
             break;
         case 'video-play': {
+            if (backendSideEffectHandled) {
+                break;
+            }
             const videoUrl = decodeURI(normalizeString(gameLog.videoUrl));
             if (!videoUrl || ingestState.lastVideoUrl === videoUrl) {
                 break;
@@ -338,6 +354,9 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
             break;
         }
         case 'video-sync': {
+            if (backendSideEffectHandled) {
+                break;
+            }
             const timestamp = Number.parseInt(
                 normalizeString(gameLog.timestamp).replace(/,/g, ''),
                 10
@@ -378,6 +397,9 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
             break;
         }
         case 'api-request': {
+            if (backendSideEffectHandled) {
+                break;
+            }
             const requestUrl = normalizeString(gameLog.url);
             if (await configRepository.getBool('saveInstanceEmoji', false)) {
                 void enqueueEmojiSave(
@@ -401,9 +423,15 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
             }
             break;
         case 'vrcx':
+            if (backendSideEffectHandled) {
+                break;
+            }
             entry = await persistProviderVideo(gameLog, location);
             break;
         case 'vrc-quit': {
+            if (backendSideEffectHandled) {
+                break;
+            }
             const shouldQuit = await configRepository.getBool(
                 'vrcQuitFix',
                 true
@@ -426,13 +454,22 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
         }
         case 'openvr-init':
             runtimeStore.setGameState({ isGameNoVR: false });
+            if (backendSideEffectHandled) {
+                break;
+            }
             await configRepository.setBool('isGameNoVR', false);
             break;
         case 'desktop-mode':
             runtimeStore.setGameState({ isGameNoVR: true });
+            if (backendSideEffectHandled) {
+                break;
+            }
             await configRepository.setBool('isGameNoVR', true);
             break;
         case 'screenshot': {
+            if (backendSideEffectHandled) {
+                break;
+            }
             const screenshotPath = await processScreenshot(
                 gameLog.screenshotPath,
                 {
@@ -447,11 +484,17 @@ async function persistGameLog(gameLog: GameLogRow, options: GameLogRow = {}) {
             break;
         }
         case 'udon-exception':
+            if (backendSideEffectHandled) {
+                break;
+            }
             if (await configRepository.getBool('udonExceptionLogging', false)) {
                 console.log('UdonException', gameLog.data);
             }
             break;
         case 'sticker-spawn':
+            if (backendSideEffectHandled) {
+                break;
+            }
             if (await configRepository.getBool('saveInstanceStickers', false)) {
                 void enqueueStickerSave(
                     instanceMediaState.stickerInventoryIds,
@@ -485,6 +528,12 @@ export async function initializeGameLogIngest() {
             ingestState.tailCaughtUp = true;
             ingestState.initialized = true;
             ingestState.watcherInitialized = false;
+            return;
+        }
+        if (isBackendGameLogSideEffectsActive()) {
+            ingestState.tailCaughtUp = true;
+            ingestState.initialized = true;
+            ingestState.watcherInitialized = true;
             return;
         }
         const dateTill = await gameLogRepository.getLastDateGameLogDatabase();
@@ -526,12 +575,14 @@ export async function finalizeCurrentGameLogSession(
     );
     const stoppedAtTime = Date.parse(stoppedAt);
     let persistenceError = null;
+    const skipPersistence =
+        options.skipPersistence ?? isBackendGameLogSideEffectsActive();
 
     try {
         if (
             location &&
             Number.isFinite(stoppedAtTime) &&
-            !options.skipPersistence
+            !skipPersistence
         ) {
             const leaveEntries = [];
             for (const playerValue of ingestState.playersByKey.values()) {
@@ -610,6 +661,15 @@ export async function syncGameLogTail() {
 
     if (!isHostCapabilityAvailable('gameLogWatcher')) {
         return { processed: 0, skipped: true, unavailable: true };
+    }
+
+    if (isBackendGameLogSideEffectsActive()) {
+        useRuntimeStore.getState().setUpdateLoopState({
+            lastGameLogSyncAt: new Date().toISOString(),
+            lastGameLogSyncDetail: 'Backend GameLog side effects are active.'
+        });
+        ingestState.tailCaughtUp = true;
+        return { processed: 0, backend: true };
     }
 
     if (

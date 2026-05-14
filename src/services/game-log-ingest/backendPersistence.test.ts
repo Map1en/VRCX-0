@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+    isBackendHandledGameLogSideEffectType,
     isBackendPersistedGameLogType,
+    shouldSkipBackendHandledGameLogSideEffect,
     shouldSkipBackendPersistedGameLog
 } from './backendPersistence.js';
 
@@ -19,6 +21,23 @@ describe('backend GameLog persistence routing', () => {
         expect(isBackendPersistedGameLogType('desktop-mode')).toBe(false);
     });
 
+    it('routes LogWatcher side effects away from frontend handlers when backend side effects are active', () => {
+        expect(isBackendHandledGameLogSideEffectType('video-play')).toBe(true);
+        expect(isBackendHandledGameLogSideEffectType('vrcx')).toBe(true);
+        expect(isBackendHandledGameLogSideEffectType('screenshot')).toBe(true);
+        expect(isBackendHandledGameLogSideEffectType('api-request')).toBe(true);
+        expect(isBackendHandledGameLogSideEffectType('sticker-spawn')).toBe(
+            true
+        );
+        expect(isBackendHandledGameLogSideEffectType('openvr-init')).toBe(true);
+        expect(isBackendHandledGameLogSideEffectType('desktop-mode')).toBe(
+            true
+        );
+
+        expect(isBackendHandledGameLogSideEffectType('location')).toBe(false);
+        expect(isBackendHandledGameLogSideEffectType('event')).toBe(false);
+    });
+
     it('keeps frontend writes as fallback when backend ingest is unavailable', () => {
         expect(
             shouldSkipBackendPersistedGameLog(
@@ -30,6 +49,21 @@ describe('backend GameLog persistence routing', () => {
             shouldSkipBackendPersistedGameLog(
                 { type: 'location' },
                 { backendGameLogIngestAvailable: false }
+            )
+        ).toBe(false);
+    });
+
+    it('keeps frontend side effects as fallback when backend side effects are unavailable', () => {
+        expect(
+            shouldSkipBackendHandledGameLogSideEffect(
+                { type: 'screenshot' },
+                { backendGameLogSideEffectsAvailable: true }
+            )
+        ).toBe(true);
+        expect(
+            shouldSkipBackendHandledGameLogSideEffect(
+                { type: 'screenshot' },
+                { backendGameLogSideEffectsAvailable: false }
             )
         ).toBe(false);
     });

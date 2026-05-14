@@ -17,6 +17,7 @@ const LOG_SEPARATOR_INDEX: usize = 31;
 const LOG_CONTENT_OFFSET: usize = 34;
 const LOG_MIN_LINE_LEN: usize = 36;
 const LOG_TIME_FORMAT: &str = "%Y.%m.%d %H:%M:%S";
+const MAX_COMPAT_LOG_ROWS: usize = 5000;
 
 #[derive(Clone)]
 pub struct LogWatcher {
@@ -41,6 +42,7 @@ pub struct GameLogEvent {
     pub kind: GameLogEventKind,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GameLogEventKind {
     Location {
@@ -62,6 +64,33 @@ pub enum GameLogEventKind {
     ResourceLoad {
         resource_type: String,
         resource_url: String,
+    },
+    VideoPlay {
+        video_url: String,
+        display_name: String,
+    },
+    VideoSync {
+        timestamp: String,
+    },
+    Vrcx {
+        data: String,
+    },
+    ApiRequest {
+        url: String,
+    },
+    Screenshot {
+        path: String,
+    },
+    StickerSpawn {
+        user_id: String,
+        display_name: String,
+        inventory_id: String,
+    },
+    VrcQuit,
+    OpenVrInit,
+    DesktopMode,
+    UdonException {
+        data: String,
     },
     Event {
         data: String,
@@ -590,7 +619,12 @@ fn append_log(inner: &Inner, app_handle: &AppHandle, item: Vec<String>, first_ru
             let _ = app_handle.emit("addGameLogEvent", json);
         }
     }
-    inner.log_list.write().unwrap().push(item);
+    let mut log_list = inner.log_list.write().unwrap();
+    log_list.push(item);
+    if log_list.len() > MAX_COMPAT_LOG_ROWS {
+        let overflow = log_list.len() - MAX_COMPAT_LOG_ROWS;
+        log_list.drain(..overflow);
+    }
 }
 
 fn flush_game_log_events(inner: &Inner) {
@@ -644,16 +678,36 @@ impl GameLogEvent {
                 resource_type: "ImageLoad".into(),
                 resource_url: row.get(3).cloned().unwrap_or_default(),
             },
+            "video-play" => GameLogEventKind::VideoPlay {
+                video_url: row.get(3).cloned().unwrap_or_default(),
+                display_name: row.get(4).cloned().unwrap_or_default(),
+            },
+            "video-sync" => GameLogEventKind::VideoSync {
+                timestamp: row.get(3).cloned().unwrap_or_default(),
+            },
+            "api-request" => GameLogEventKind::ApiRequest {
+                url: row.get(3).cloned().unwrap_or_default(),
+            },
+            "screenshot" => GameLogEventKind::Screenshot {
+                path: row.get(3).cloned().unwrap_or_default(),
+            },
+            "sticker-spawn" => GameLogEventKind::StickerSpawn {
+                user_id: row.get(3).cloned().unwrap_or_default(),
+                display_name: row.get(4).cloned().unwrap_or_default(),
+                inventory_id: row.get(5).cloned().unwrap_or_default(),
+            },
+            "vrc-quit" => GameLogEventKind::VrcQuit,
+            "openvr-init" => GameLogEventKind::OpenVrInit,
+            "desktop-mode" => GameLogEventKind::DesktopMode,
+            "udon-exception" => GameLogEventKind::UdonException {
+                data: row.get(3).cloned().unwrap_or_default(),
+            },
             "event" => GameLogEventKind::Event {
                 data: row.get(3).cloned().unwrap_or_default(),
             },
-            "vrcx" => {
-                let data = row.get(3).cloned().unwrap_or_default();
-                if data.starts_with("VideoPlay(") {
-                    return None;
-                }
-                GameLogEventKind::External { data }
-            }
+            "vrcx" => GameLogEventKind::Vrcx {
+                data: row.get(3).cloned().unwrap_or_default(),
+            },
             _ => return None,
         };
 
@@ -727,14 +781,54 @@ mod tests {
     }
 
     #[test]
-    fn leaves_vrcx_video_provider_rows_on_the_frontend_video_path() {
-        assert!(GameLogEvent::from_raw_row(&row(&[
+    fn converts_side_effect_rows_to_structured_events() {
+        let video = GameLogEvent::from_raw_row(&row(&[
+            "output_log.txt",
+            "2026-05-14T01:00:35.000Z",
+            "video-play",
+            "https://youtu.be/dQw4w9WgXcQ",
+            "做鳄梦small-fry",
+        ]))
+        .unwrap();
+        assert_eq!(
+            video.kind,
+            GameLogEventKind::VideoPlay {
+                video_url: "https://youtu.be/dQw4w9WgXcQ".into(),
+                display_name: "做鳄梦small-fry".into(),
+            }
+        );
+
+        let vrcx = GameLogEvent::from_raw_row(&row(&[
             "output_log.txt",
             "2026-05-14T01:00:40.000Z",
             "vrcx",
             "VideoPlay(PyPyDance) \"https://example.test\",0,10,\"Song (User)\"",
         ]))
-        .is_none());
+        .unwrap();
+        assert_eq!(
+            vrcx.kind,
+            GameLogEventKind::Vrcx {
+                data: "VideoPlay(PyPyDance) \"https://example.test\",0,10,\"Song (User)\"".into(),
+            }
+        );
+
+        let sticker = GameLogEvent::from_raw_row(&row(&[
+            "output_log.txt",
+            "2026-05-14T01:00:45.000Z",
+            "sticker-spawn",
+            "usr_1",
+            "做鳄梦small-fry",
+            "inv_123",
+        ]))
+        .unwrap();
+        assert_eq!(
+            sticker.kind,
+            GameLogEventKind::StickerSpawn {
+                user_id: "usr_1".into(),
+                display_name: "做鳄梦small-fry".into(),
+                inventory_id: "inv_123".into(),
+            }
+        );
     }
 }
 

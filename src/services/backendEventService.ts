@@ -3,18 +3,23 @@ import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 
-import { ingestBackendGameLogEvent } from './gameLogIngestService.js';
+import {
+    ingestBackendGameLogEvent,
+    resetNowPlayingState
+} from './gameLogIngestService.js';
 import { handleGameRunningUpdate } from './gameStateService.js';
 import {
     isHostCapabilityAvailable,
     refreshHostCapabilities
 } from './hostCapabilityService.js';
 import { handleIpcEvent } from './ipcEventService.js';
+import { pushSharedFeedNotification } from './sharedFeedFilterService.js';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 import { handleBrowserFocus } from './vrcStatusService.js';
 
 type BackendEventName =
     | 'addGameLogEvent'
+    | 'gameLogSideEffect'
     | 'updateIsGameRunning'
     | 'ipcEvent'
     | 'browserFocus';
@@ -32,6 +37,54 @@ type HostCapabilitySnapshot = Record<string, unknown> & {
 type BackendEventUnsubscribe = () => void;
 
 let gameLogIngestQueue: Promise<unknown> = Promise.resolve();
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function normalizeString(value: unknown): string {
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
+}
+
+function publishNowPlayingSharedFeed(payload: Record<string, unknown>): void {
+    const videoUrl = normalizeString(payload.videoUrl || payload.url);
+    if (!videoUrl) {
+        return;
+    }
+
+    const videoName = normalizeString(payload.videoName || payload.name);
+    const displayName = normalizeString(payload.displayName);
+    const message = [
+        videoName || videoUrl,
+        displayName ? `(${displayName})` : ''
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+    void pushSharedFeedNotification({
+        ...payload,
+        created_at:
+            normalizeString(payload.created_at) ||
+            normalizeString(payload.startedAt) ||
+            new Date().toISOString(),
+        type: 'VideoPlay',
+        videoUrl,
+        videoName,
+        videoId: normalizeString(payload.videoId || payload.source),
+        location: normalizeString(payload.location),
+        displayName,
+        userId: normalizeString(payload.userId),
+        message,
+        notyName: message
+    }).catch((error) => {
+        console.warn(
+            'Failed to publish backend video shared feed notification:',
+            error
+        );
+    });
+}
 
 async function canIngestGameLogEvent(): Promise<boolean> {
     if (isHostCapabilityAvailable('gameLogWatcher')) {
@@ -90,6 +143,32 @@ function handleBackendEvent(name: BackendEventName, payload: unknown): void {
 
     runtimeStore.recordBackendEvent(name, payload);
 
+    if (name === 'gameLogSideEffect') {
+        if (!isHostCapabilityAvailable('backendGameLogSideEffects')) {
+            return;
+        }
+        const record = isRecord(payload) ? payload : {};
+        const kind = String(record.kind || '');
+        const sidePayload = isRecord(record.payload) ? record.payload : {};
+        if (kind === 'nowPlaying') {
+            runtimeStore.setNowPlayingState(sidePayload);
+            publishNowPlayingSharedFeed(sidePayload);
+        } else if (kind === 'nowPlayingReset') {
+            resetNowPlayingState();
+        } else if (kind === 'screenshotProcessed') {
+            runtimeStore.setGameState({
+                lastScreenshotPath: String(sidePayload.path || '')
+            });
+        } else if (kind === 'gameNoVR') {
+            runtimeStore.setGameState({
+                isGameNoVR: Boolean(sidePayload.isGameNoVR)
+            });
+        } else if (kind === 'notification') {
+            useNotificationStore.getState().pushNotification(sidePayload);
+        }
+        return;
+    }
+
     if (name === 'updateIsGameRunning') {
         if (!isHostCapabilityAvailable('gameProcessMonitor')) {
             return;
@@ -132,6 +211,7 @@ export async function bindBackendEvents(): Promise<() => void> {
     const unsubscribers: BackendEventUnsubscribe[] = [];
     const events: BackendEventName[] = [
         'addGameLogEvent',
+        'gameLogSideEffect',
         'updateIsGameRunning',
         'ipcEvent',
         'browserFocus'

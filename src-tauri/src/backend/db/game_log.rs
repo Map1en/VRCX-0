@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
+use chrono::Utc;
+
 use crate::domain::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::error::AppError;
 
 const CREATE_GAMELOG_LOCATION: &str = "CREATE TABLE IF NOT EXISTS gamelog_location (id INTEGER PRIMARY KEY, created_at TEXT, location TEXT, world_id TEXT, world_name TEXT, time INTEGER, group_name TEXT, UNIQUE(created_at, location))";
 const CREATE_GAMELOG_JOIN_LEAVE: &str = "CREATE TABLE IF NOT EXISTS gamelog_join_leave (id INTEGER PRIMARY KEY, created_at TEXT, type TEXT, display_name TEXT, location TEXT, user_id TEXT, time INTEGER, UNIQUE(created_at, type, display_name))";
 const CREATE_GAMELOG_PORTAL_SPAWN: &str = "CREATE TABLE IF NOT EXISTS gamelog_portal_spawn (id INTEGER PRIMARY KEY, created_at TEXT, display_name TEXT, location TEXT, user_id TEXT, instance_id TEXT, world_name TEXT, UNIQUE(created_at, display_name))";
+const CREATE_GAMELOG_VIDEO_PLAY: &str = "CREATE TABLE IF NOT EXISTS gamelog_video_play (id INTEGER PRIMARY KEY, created_at TEXT, video_url TEXT, video_name TEXT, video_id TEXT, location TEXT, display_name TEXT, user_id TEXT, UNIQUE(created_at, video_url))";
 const CREATE_GAMELOG_RESOURCE_LOAD: &str = "CREATE TABLE IF NOT EXISTS gamelog_resource_load (id INTEGER PRIMARY KEY, created_at TEXT, resource_url TEXT, resource_type TEXT, location TEXT, UNIQUE(created_at, resource_url))";
 const CREATE_GAMELOG_EVENT: &str = "CREATE TABLE IF NOT EXISTS gamelog_event (id INTEGER PRIMARY KEY, created_at TEXT, data TEXT, UNIQUE(created_at, data))";
 const CREATE_GAMELOG_EXTERNAL: &str = "CREATE TABLE IF NOT EXISTS gamelog_external (id INTEGER PRIMARY KEY, created_at TEXT, message TEXT, display_name TEXT, user_id TEXT, location TEXT, UNIQUE(created_at, message))";
@@ -15,6 +18,7 @@ const UPDATE_LOCATION_TIME: &str =
     "UPDATE gamelog_location SET time = @time WHERE created_at = @created_at";
 const INSERT_JOIN_LEAVE: &str = "INSERT OR IGNORE INTO gamelog_join_leave (created_at, type, display_name, location, user_id, time) VALUES (@created_at, @type, @display_name, @location, @user_id, @time)";
 const INSERT_PORTAL_SPAWN: &str = "INSERT OR IGNORE INTO gamelog_portal_spawn (created_at, display_name, location, user_id, instance_id, world_name) VALUES (@created_at, @display_name, @location, @user_id, @instance_id, @world_name)";
+const INSERT_VIDEO_PLAY: &str = "INSERT OR IGNORE INTO gamelog_video_play (created_at, video_url, video_name, video_id, location, display_name, user_id) VALUES (@created_at, @video_url, @video_name, @video_id, @location, @display_name, @user_id)";
 const INSERT_RESOURCE_LOAD: &str = "INSERT OR IGNORE INTO gamelog_resource_load (created_at, resource_url, resource_type, location) VALUES (@created_at, @resource_url, @resource_type, @location)";
 const INSERT_EVENT: &str =
     "INSERT OR IGNORE INTO gamelog_event (created_at, data) VALUES (@created_at, @data)";
@@ -79,6 +83,17 @@ pub struct GameLogPortalSpawnEntry {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GameLogVideoPlayEntry {
+    pub created_at: String,
+    pub video_url: String,
+    pub video_name: String,
+    pub video_id: String,
+    pub location: String,
+    pub display_name: String,
+    pub user_id: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GameLogResourceLoadEntry {
     pub created_at: String,
     pub resource_url: String,
@@ -113,6 +128,7 @@ pub struct GameLogWriteBatch {
     pub location_time_updates: Vec<GameLogLocationTimeUpdate>,
     pub join_leave: Vec<GameLogJoinLeaveEntry>,
     pub portal_spawns: Vec<GameLogPortalSpawnEntry>,
+    pub video_plays: Vec<GameLogVideoPlayEntry>,
     pub resource_loads: Vec<GameLogResourceLoadEntry>,
     pub events: Vec<GameLogEventEntry>,
     pub externals: Vec<GameLogExternalEntry>,
@@ -124,10 +140,28 @@ impl GameLogWriteBatch {
             && self.location_time_updates.is_empty()
             && self.join_leave.is_empty()
             && self.portal_spawns.is_empty()
+            && self.video_plays.is_empty()
             && self.resource_loads.is_empty()
             && self.events.is_empty()
             && self.externals.is_empty()
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GameLogLocationSnapshot {
+    pub created_at: String,
+    pub location: String,
+    pub world_id: String,
+    pub world_name: String,
+    pub group_name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GameLogJoinLeaveSnapshot {
+    pub created_at: String,
+    pub event_type: String,
+    pub display_name: String,
+    pub user_id: String,
 }
 
 #[allow(dead_code)]
@@ -141,6 +175,7 @@ fn ensure_game_log_tables_on(target: &impl GameLogWriteTarget) -> Result<(), App
         CREATE_GAMELOG_LOCATION,
         CREATE_GAMELOG_JOIN_LEAVE,
         CREATE_GAMELOG_PORTAL_SPAWN,
+        CREATE_GAMELOG_VIDEO_PLAY,
         CREATE_GAMELOG_RESOURCE_LOAD,
         CREATE_GAMELOG_EVENT,
         CREATE_GAMELOG_EXTERNAL,
@@ -265,6 +300,39 @@ fn insert_portal_spawn_on(
 }
 
 #[allow(dead_code)]
+pub fn insert_video_play(
+    db: &DatabaseService,
+    entry: &GameLogVideoPlayEntry,
+) -> Result<(), AppError> {
+    insert_video_play_on(db, entry)
+}
+
+fn insert_video_play_on(
+    target: &impl GameLogWriteTarget,
+    entry: &GameLogVideoPlayEntry,
+) -> Result<(), AppError> {
+    let mut args = HashMap::new();
+    args.insert(
+        "@created_at".to_string(),
+        serde_json::json!(entry.created_at),
+    );
+    args.insert("@video_url".to_string(), serde_json::json!(entry.video_url));
+    args.insert(
+        "@video_name".to_string(),
+        serde_json::json!(entry.video_name),
+    );
+    args.insert("@video_id".to_string(), serde_json::json!(entry.video_id));
+    args.insert("@location".to_string(), serde_json::json!(entry.location));
+    args.insert(
+        "@display_name".to_string(),
+        serde_json::json!(entry.display_name),
+    );
+    args.insert("@user_id".to_string(), serde_json::json!(entry.user_id));
+    target.execute_non_query(INSERT_VIDEO_PLAY, &args)?;
+    Ok(())
+}
+
+#[allow(dead_code)]
 pub fn insert_resource_load(
     db: &DatabaseService,
     entry: &GameLogResourceLoadEntry,
@@ -357,6 +425,9 @@ pub fn write_batch(db: &DatabaseService, batch: &GameLogWriteBatch) -> Result<()
         for entry in &batch.portal_spawns {
             insert_portal_spawn_on(tx, entry)?;
         }
+        for entry in &batch.video_plays {
+            insert_video_play_on(tx, entry)?;
+        }
         for entry in &batch.resource_loads {
             insert_resource_load_on(tx, entry)?;
         }
@@ -368,6 +439,110 @@ pub fn write_batch(db: &DatabaseService, batch: &GameLogWriteBatch) -> Result<()
         }
         Ok(())
     })
+}
+
+pub fn get_user_id_from_display_name(
+    db: &DatabaseService,
+    display_name: &str,
+) -> Result<String, AppError> {
+    let mut args = HashMap::new();
+    args.insert("@displayName".to_string(), serde_json::json!(display_name));
+    Ok(db
+        .execute(
+            "SELECT user_id FROM gamelog_join_leave WHERE display_name = @displayName AND user_id != '' ORDER BY id DESC LIMIT 1",
+            &args,
+        )?
+        .first()
+        .and_then(|row| row.first())
+        .and_then(|value| value.as_str())
+        .unwrap_or_default()
+        .to_string())
+}
+
+pub fn get_location_before_or_at(
+    db: &DatabaseService,
+    created_at: &str,
+) -> Result<Option<GameLogLocationSnapshot>, AppError> {
+    let mut args = HashMap::new();
+    args.insert("@createdAt".to_string(), serde_json::json!(created_at));
+    Ok(db
+        .execute(
+            "SELECT created_at, location, world_id, world_name, group_name FROM gamelog_location WHERE created_at <= @createdAt ORDER BY created_at DESC LIMIT 1",
+            &args,
+        )?
+        .first()
+        .map(|row| GameLogLocationSnapshot {
+            created_at: row.first().and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+            location: row.get(1).and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+            world_id: row.get(2).and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+            world_name: row.get(3).and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+            group_name: row.get(4).and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+        }))
+}
+
+pub fn get_join_leave_entries_for_location_range(
+    db: &DatabaseService,
+    location: &str,
+    after_date: &str,
+    before_date: &str,
+) -> Result<Vec<GameLogJoinLeaveSnapshot>, AppError> {
+    let mut args = HashMap::new();
+    args.insert("@location".to_string(), serde_json::json!(location));
+    args.insert("@afterDate".to_string(), serde_json::json!(after_date));
+    args.insert("@beforeDate".to_string(), serde_json::json!(before_date));
+    Ok(db
+        .execute(
+            "SELECT created_at, type, display_name, user_id FROM gamelog_join_leave WHERE location = @location AND created_at >= @afterDate AND created_at <= @beforeDate ORDER BY created_at ASC",
+            &args,
+        )?
+        .into_iter()
+        .map(|row| GameLogJoinLeaveSnapshot {
+            created_at: row.first().and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+            event_type: row.get(1).and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+            display_name: row.get(2).and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+            user_id: row.get(3).and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+        })
+        .collect())
+}
+
+pub fn get_last_game_log_date(db: &DatabaseService) -> Result<String, AppError> {
+    ensure_game_log_tables(db)?;
+
+    let now = Utc::now();
+    let now_string = now.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string();
+    let date_offset = (now - chrono::Duration::days(1))
+        .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+        .to_string();
+
+    let mut dates = Vec::new();
+    for sql in [
+        "SELECT created_at FROM gamelog_location ORDER BY id DESC LIMIT 1",
+        "SELECT created_at FROM gamelog_join_leave ORDER BY id DESC LIMIT 1",
+        "SELECT created_at FROM gamelog_portal_spawn ORDER BY id DESC LIMIT 1",
+        "SELECT created_at FROM gamelog_event ORDER BY id DESC LIMIT 1",
+        "SELECT created_at FROM gamelog_video_play ORDER BY id DESC LIMIT 1",
+        "SELECT created_at FROM gamelog_resource_load ORDER BY id DESC LIMIT 1",
+    ] {
+        if let Some(value) = db
+            .execute(sql, &Default::default())?
+            .first()
+            .and_then(|row| row.first())
+            .and_then(|value| value.as_str())
+            .filter(|value| !value.is_empty())
+        {
+            dates.push(value.to_string());
+        }
+    }
+
+    dates.sort();
+    let Some(latest) = dates.last() else {
+        return Ok(now_string);
+    };
+    if latest > &date_offset && latest < &now_string {
+        Ok(latest.clone())
+    } else {
+        Ok(now_string)
+    }
 }
 
 #[cfg(test)]
