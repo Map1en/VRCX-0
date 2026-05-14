@@ -35,29 +35,46 @@ type ActivityState = Record<string, unknown> & {
 
 type RuntimeStore = {
     startup: Record<string, TaskState>;
-    hostCapabilities: Record<string, unknown>;
-    auth: Record<string, unknown> & {
+    hostCapabilities: Record<string, any> & {
+        platform: string;
+        arch: string;
+        linuxPackageKind: string;
+    };
+    auth: Record<string, any> & {
         currentUserId: string | null;
         currentUserDisplayName: string;
         currentUserEndpoint: string;
         currentUserWebsocket: string;
+        currentUserSnapshot: Record<string, any> | null;
     };
-    updateLoop: Record<string, unknown>;
+    updateLoop: Record<string, any> & {
+        isRunning: boolean;
+        tickCount: number;
+        hasAvailableUpdate: boolean;
+    };
     activity: ActivityState;
     transport: TransportState;
-    gameState: Record<string, unknown> & {
+    gameState: Record<string, any> & {
         isGameRunning: boolean | null;
         isSteamVRRunning: boolean | null;
+        isGameNoVR: boolean;
         currentLocation: string;
         currentWorldId: string;
         currentWorldName: string;
         currentDestination: string;
+        currentLocationStartedAt: string | null;
         currentLocationPlayerIds: unknown[];
         currentLocationPlayers: unknown[];
     };
-    nowPlaying: Record<string, unknown>;
-    vrcStatus: Record<string, unknown>;
-    groupInstances: Record<string, unknown> & {
+    nowPlaying: Record<string, any> & {
+        url: string;
+        name: string;
+        thumbnailUrl: string;
+        length: number;
+        startedAt: string | null;
+    };
+    vrcStatus: Record<string, any>;
+    groupInstances: Record<string, any> & {
         instances: unknown[];
         groupOrder: unknown[];
     };
@@ -154,8 +171,8 @@ function createCapabilityStatus(reason = 'Host capabilities have not loaded.') {
     };
 }
 
-function createHostCapabilities(): Record<string, unknown> {
-    const capabilities: Record<string, unknown> = {
+function createHostCapabilities(): RuntimeStore['hostCapabilities'] {
+    const capabilities: RuntimeStore['hostCapabilities'] = {
         platform: 'unknown',
         arch: 'unknown',
         linuxPackageKind: 'unknown'
@@ -325,7 +342,8 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
     },
     setHostCapabilities(payload) {
         set({
-            hostCapabilities: payload || createHostCapabilities()
+            hostCapabilities: (payload ||
+                createHostCapabilities()) as RuntimeStore['hostCapabilities']
         });
     },
     setUpdateLoopState(patch) {

@@ -67,3 +67,6 @@ devtools = ["tauri/devtools"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+
+[profile.dev]
+debug = "line-tables-only"

@@ -345,29 +345,36 @@ export function normalizePreferenceSnapshot(snapshot: PreferenceSnapshot = {}) {
     };
 }
 
-export const usePreferencesStore = create((set) => ({
+type PreferencesState = ReturnType<typeof normalizePreferenceSnapshot> & {
+    preferencesHydrated: boolean;
+    hydratePreferences(snapshot: unknown): void;
+    patchPreferences(patch: Record<string, unknown>): void;
+    setPreferenceValue(key: string, value: unknown): void;
+};
+
+export const usePreferencesStore = create<PreferencesState>((set) => ({
     ...normalizePreferenceSnapshot(DEFAULT_PREFERENCES),
     preferencesHydrated: false,
-    hydratePreferences(snapshot) {
+    hydratePreferences(snapshot: unknown) {
         set({
-            ...normalizePreferenceSnapshot(snapshot),
+            ...normalizePreferenceSnapshot(snapshot as PreferenceSnapshot),
             preferencesHydrated: true
         });
     },
-    patchPreferences(patch) {
+    patchPreferences(patch: Record<string, unknown>) {
         set((state) =>
             normalizePreferenceSnapshot({
                 ...state,
                 ...patch
-            })
+            } as PreferenceSnapshot)
         );
     },
-    setPreferenceValue(key, value) {
+    setPreferenceValue(key: string, value: unknown) {
         set((state) =>
             normalizePreferenceSnapshot({
                 ...state,
                 [key]: value
-            })
+            } as PreferenceSnapshot)
         );
     }
 }));

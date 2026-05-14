@@ -64,8 +64,12 @@ async function loadLegacyRules() {
     const selectedGroups = safeArray(selectedGroupsRaw);
     const selectedInstanceTypes = safeArray(selectedInstanceTypesRaw);
     const instanceConditions = buildInstanceConditions(selectedInstanceTypes);
-    const companyActions = { status: companyStatus || 'busy' };
-    const aloneActions = { status: aloneStatus || 'join me' };
+    const companyActions: Record<string, unknown> = {
+        status: companyStatus || 'busy'
+    };
+    const aloneActions: Record<string, unknown> = {
+        status: aloneStatus || 'join me'
+    };
     if (companyDescEnabled) {
         companyActions.statusDescription = companyDesc || '';
     }

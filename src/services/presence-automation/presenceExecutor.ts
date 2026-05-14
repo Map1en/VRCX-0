@@ -8,9 +8,9 @@ const DEFAULT_MIN_DESCRIPTION_WRITE_INTERVAL_MS = 60_000;
 const DEFAULT_STABLE_LOCATION_MS = 30_000;
 const MAX_AUDIT_LOGS = 50;
 
-const auditLogs = [];
-const writeStates = new Map();
-const timeRestoreSnapshots = {};
+const auditLogs: Record<string, any>[] = [];
+const writeStates = new Map<string, Record<string, any>>();
+const timeRestoreSnapshots: Record<string, Record<string, any>> = {};
 
 function createWriteState() {
     return {
@@ -43,8 +43,8 @@ function addAuditLog(entry) {
     auditLogs.splice(MAX_AUDIT_LOGS);
 }
 
-function getChangedPatch(currentUser, patch) {
-    const changed = {};
+function getChangedPatch(currentUser: Record<string, any>, patch: Record<string, any>) {
+    const changed: Record<string, any> = {};
     if (hasOwn(patch, 'status') && currentUser?.status !== patch.status) {
         changed.status = patch.status;
     }
@@ -57,16 +57,16 @@ function getChangedPatch(currentUser, patch) {
     return changed;
 }
 
-function getCurrentFieldValue(currentUser, field) {
+function getCurrentFieldValue(currentUser: Record<string, any>, field: string) {
     return String(currentUser?.[field] ?? '');
 }
 
-function getAutomationScopeKey(facts) {
+function getAutomationScopeKey(facts: Record<string, any>) {
     return `${facts?.endpoint || ''}:${facts?.currentUserId || ''}`;
 }
 
-function isCurrentAuthScope(facts) {
-    const auth = useRuntimeStore.getState().auth || {};
+function isCurrentAuthScope(facts: Record<string, any>) {
+    const auth = useRuntimeStore.getState().auth;
     const authCurrentUserId =
         auth.currentUserId || auth.currentUserSnapshot?.id || '';
     return (
@@ -118,8 +118,12 @@ function hasLocationScopedChanges(result, changedPatch) {
     );
 }
 
-function buildPatchWithTimeRestore(currentUser, result, scopeKey) {
-    const patch = { ...(result?.patch || {}) };
+function buildPatchWithTimeRestore(
+    currentUser: Record<string, any>,
+    result: Record<string, any>,
+    scopeKey: string
+) {
+    const patch: Record<string, any> = { ...(result?.patch || {}) };
     const timeOwnedFieldRestores = getTimeOwnedFieldRestores(result);
     const timeOwnedFields = new Set(timeOwnedFieldRestores.keys());
     const pendingRestores = [];
@@ -190,21 +194,27 @@ function getRetryAfterMs(error) {
     return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 60000;
 }
 
-function shouldSkipForStableLocation(facts, stableLocationMs) {
+function shouldSkipForStableLocation(facts: Record<string, any>, stableLocationMs: unknown) {
     if (facts.isTraveling) {
         return 'traveling';
     }
     const startedAtMs = parseDateMs(facts.currentLocationStartedAt);
     if (
         startedAtMs &&
-        Date.now() - startedAtMs < (stableLocationMs || DEFAULT_STABLE_LOCATION_MS)
+        Date.now() - startedAtMs <
+            Number(stableLocationMs || DEFAULT_STABLE_LOCATION_MS)
     ) {
         return 'location-stabilizing';
     }
     return '';
 }
 
-function shouldSkipForThrottle(changedPatch, throttle, nowMs, state) {
+function shouldSkipForThrottle(
+    changedPatch: Record<string, any>,
+    throttle: Record<string, any>,
+    nowMs: number,
+    state: Record<string, any>
+) {
     if (
         hasOwn(changedPatch, 'status') &&
         changedPatch.status === state.lastStatusValue &&
@@ -226,7 +236,11 @@ function shouldSkipForThrottle(changedPatch, throttle, nowMs, state) {
     return '';
 }
 
-function updateWriteTimestamps(state, changedPatch, nowMs) {
+function updateWriteTimestamps(
+    state: Record<string, any>,
+    changedPatch: Record<string, any>,
+    nowMs: number
+) {
     if (hasOwn(changedPatch, 'status')) {
         state.lastStatusWriteAtMs = nowMs;
         state.lastStatusValue = changedPatch.status;
@@ -241,7 +255,7 @@ export async function applyPresenceAutomationResult({
     facts,
     result,
     throttle = {}
-}) {
+}: Record<string, any>) {
     const currentUser =
         facts.currentUser && typeof facts.currentUser === 'object'
             ? facts.currentUser

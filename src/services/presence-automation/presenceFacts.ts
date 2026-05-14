@@ -5,7 +5,7 @@ import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
-function normalizeInstanceType(location) {
+function normalizeInstanceType(location: Record<string, any>) {
     if (!location?.accessType) {
         return '';
     }
@@ -21,7 +21,7 @@ function normalizeInstanceType(location) {
     return 'groupPublic';
 }
 
-function getCachedInstanceLocation(instance) {
+function getCachedInstanceLocation(instance: Record<string, any>) {
     return String(
         instance?.location ||
             instance?.$location ||
@@ -31,7 +31,7 @@ function getCachedInstanceLocation(instance) {
     ).trim();
 }
 
-function buildCachedInstanceMap(instances) {
+function buildCachedInstanceMap(instances: unknown) {
     const map = new Map();
     for (const instance of Array.isArray(instances) ? instances : []) {
         const location = getCachedInstanceLocation(instance);
@@ -42,7 +42,7 @@ function buildCachedInstanceMap(instances) {
     return map;
 }
 
-function collectPresentFavoriteGroupKeys(players) {
+function collectPresentFavoriteGroupKeys(players: Record<string, any>[]) {
     const favoriteState = useFavoriteStore.getState();
     const presentUserIds = new Set(
         (players || []).map((player) => player.userId).filter(Boolean)
@@ -74,7 +74,10 @@ function collectPresentFavoriteGroupKeys(players) {
     return Array.from(keys);
 }
 
-function resolveCurrentLocation(gameState, currentUser) {
+function resolveCurrentLocation(
+    gameState: Record<string, any>,
+    currentUser: Record<string, any> | null
+) {
     return (
         gameState.currentLocation ||
         gameState.currentDestination ||
@@ -84,14 +87,14 @@ function resolveCurrentLocation(gameState, currentUser) {
     );
 }
 
-function getVerifiedCurrentLocation(gameState) {
+function getVerifiedCurrentLocation(gameState: Record<string, any>) {
     const currentLocation = String(gameState?.currentLocation || '').trim();
     return currentLocation && currentLocation !== 'traveling'
         ? currentLocation
         : '';
 }
 
-function normalizePlayer(player, index = 0) {
+function normalizePlayer(player: unknown, index = 0) {
     const source =
         player && typeof player === 'object'
             ? player
@@ -99,20 +102,21 @@ function normalizePlayer(player, index = 0) {
                   id: player,
                   userId: player
               };
-    const userId = String(source.userId || source.id || '').trim();
+    const record = source as Record<string, any>;
+    const userId = String(record.userId || record.id || '').trim();
     const displayName = String(
-        source.displayName || source.name || userId || ''
+        record.displayName || record.name || userId || ''
     ).trim();
-    const id = String(source.id || userId || `runtime:${index}`).trim();
+    const id = String(record.id || userId || `runtime:${index}`).trim();
     return {
-        ...source,
+        ...record,
         id,
         userId,
         displayName
     };
 }
 
-function getRuntimePlayers(gameState) {
+function getRuntimePlayers(gameState: Record<string, any>) {
     const players = Array.isArray(gameState?.currentLocationPlayers)
         ? gameState.currentLocationPlayers
               .map((player, index) => normalizePlayer(player, index))
@@ -133,7 +137,7 @@ function getRuntimePlayers(gameState) {
         : [];
 }
 
-function isLiveCurrentLocation(location) {
+function isLiveCurrentLocation(location: unknown) {
     const normalizedLocation = String(location || '').trim();
     return Boolean(
         normalizedLocation &&
@@ -145,8 +149,8 @@ function isLiveCurrentLocation(location) {
 
 export async function buildPresenceFacts({ now = new Date() } = {}) {
     const runtimeState = useRuntimeStore.getState();
-    const auth = runtimeState.auth || {};
-    const gameState = runtimeState.gameState || {};
+    const auth = runtimeState.auth;
+    const gameState = runtimeState.gameState;
     const currentUser = auth.currentUserSnapshot || null;
     const currentUserId = auth.currentUserId || currentUser?.id || '';
     const endpoint = auth.currentUserEndpoint || '';

@@ -1,4 +1,4 @@
-type RealtimePresenceContent = Record<string, unknown>;
+type RealtimePresenceContent = Record<string, any>;
 type RealtimePresenceMessageParts = {
     type: string;
     content: RealtimePresenceContent;

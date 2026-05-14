@@ -14,8 +14,8 @@ const AUTO_ACCEPT_ALL_FAVORITES = 'All Favorites';
 const AUTO_ACCEPT_SELECTED_FAVORITES = 'Selected Favorites';
 const DEFAULT_AUTO_INVITE_SENDER_COOLDOWN_MS = 10 * 60 * 1000;
 
-const senderCooldowns = new Map();
-const pendingSenderInvites = new Set();
+const senderCooldowns = new Map<string, number>();
+const pendingSenderInvites = new Set<string>();
 
 function safeJsonParse(value, fallback) {
     if (Array.isArray(value)) {
@@ -82,7 +82,7 @@ function getVerifiedCurrentLocation(gameState) {
 }
 
 function isCurrentInviteScope({ endpoint, currentUserId }) {
-    const auth = useRuntimeStore.getState().auth || {};
+    const auth = useRuntimeStore.getState().auth;
     const authCurrentUserId =
         auth.currentUserId || auth.currentUserSnapshot?.id || '';
     return (
@@ -91,7 +91,7 @@ function isCurrentInviteScope({ endpoint, currentUserId }) {
     );
 }
 
-function isUserInLocalGroups(userId, localFriendFavorites, groupNames) {
+function isUserInLocalGroups(userId, localFriendFavorites, groupNames = []) {
     const localGroups = groupNames?.length
         ? groupNames
         : Object.keys(localFriendFavorites || {});
@@ -296,13 +296,14 @@ async function sendInviteForRequest({
     if (!currentLocationValidation.valid) {
         return { sent: false, reason: currentLocationValidation.reason };
     }
+    const worldJson = worldResponse.json as Record<string, any> | undefined;
     await notificationRepository.sendInvite({
         receiverUserId: notification.senderUserId,
         endpoint,
         params: {
             instanceId: currentInviteLocation,
             worldId: parsedLocation.worldId,
-            worldName: worldResponse.json?.name || parsedLocation.worldId,
+            worldName: worldJson?.name || parsedLocation.worldId,
             rsvp: true
         }
     });
@@ -338,7 +339,7 @@ export async function handleInviteAutomationNotification(notification) {
     }
 
     const runtimeState = useRuntimeStore.getState();
-    const auth = runtimeState.auth || {};
+    const auth = runtimeState.auth;
     if (!runtimeState.gameState?.isGameRunning) {
         return { handled: false, reason: 'game-not-running' };
     }

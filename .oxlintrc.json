@@ -6,7 +6,7 @@
     "ignorePatterns": [
         "build/**",
         "node_modules/**",
-        "src/services/confusables.js"
+        "src/services/confusables.ts"
     ],
     "env": {
         "builtin": true
@@ -855,7 +855,7 @@
             }
         },
         {
-            "files": ["src/services/confusables.js"],
+            "files": ["src/services/confusables.ts"],
             "rules": {
                 "no-irregular-whitespace": "off",
                 "no-misleading-character-class": "off"

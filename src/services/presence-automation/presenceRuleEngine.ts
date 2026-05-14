@@ -6,7 +6,7 @@ const STATUS_VALUES = new Set([
     'offline'
 ]);
 
-function compareNumbers(left, op, right) {
+function compareNumbers(left: number, op: string, right: number) {
     if (op === '>') {
         return left > right;
     }
@@ -56,7 +56,7 @@ function matchesDayFilter(days, now, activeDayOffset = 0) {
     return days.includes(getLocalDayValue(now, activeDayOffset));
 }
 
-function matchesTimeWindow(condition, facts) {
+function matchesTimeWindow(condition: Record<string, any>, facts: Record<string, any>) {
     const start = parseClockMinutes(condition.start);
     const end = parseClockMinutes(condition.end);
     if (start === null || end === null) {
@@ -84,11 +84,11 @@ function matchesTimeWindow(condition, facts) {
     return false;
 }
 
-function hasPlayerFacts(facts) {
+function hasPlayerFacts(facts: Record<string, any>) {
     return facts?.playerFactsKnown === true;
 }
 
-function matchesCondition(condition, facts) {
+function matchesCondition(condition: Record<string, any>, facts: Record<string, any>) {
     const type = condition?.type;
     if (!type) {
         return false;
@@ -174,8 +174,8 @@ function matchesCondition(condition, facts) {
     return false;
 }
 
-function validateActionPatch(actions = {}) {
-    const patch = {};
+function validateActionPatch(actions: Record<string, any> = {}) {
+    const patch: Record<string, any> = {};
     if (actions.status && STATUS_VALUES.has(actions.status)) {
         patch.status = actions.status;
     }
@@ -189,7 +189,7 @@ function validateActionPatch(actions = {}) {
     return patch;
 }
 
-function evaluateRule(rule, facts) {
+function evaluateRule(rule: Record<string, any>, facts: Record<string, any>) {
     const conditions = Array.isArray(rule.conditions) ? rule.conditions : [];
     for (const condition of conditions) {
         if (!matchesCondition(condition, facts)) {
@@ -213,8 +213,8 @@ export function evaluatePresenceRules({ facts, rules }) {
             }
             return String(left.id || '').localeCompare(String(right.id || ''));
         });
-    const patch = {};
-    const fieldOwners = {};
+    const patch: Record<string, any> = {};
+    const fieldOwners: Record<string, string> = {};
     const stoppedDomains = new Set();
     const matchedRules = [];
     const skippedRules = [];
