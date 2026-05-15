@@ -409,7 +409,7 @@ impl RealtimeBackend {
         }
         match self.friends.apply_ws_message(payload) {
             RealtimeFriendApplyResult::Output(output) => {
-                self.apply_friend_output_locked(&state, output);
+                self.apply_friend_output_locked(&state, *output);
             }
             RealtimeFriendApplyResult::MissingBaseline => {
                 tracing::warn!(

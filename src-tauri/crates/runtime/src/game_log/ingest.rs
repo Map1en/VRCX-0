@@ -152,7 +152,7 @@ impl GameLogIngestEngine {
                     ) {
                         video::ProviderVideoEvent::Video(input) => {
                             if self.accept_video_url(&input.video_url) {
-                                output.side_effects.push(GameLogSideEffect::Video(input));
+                                output.side_effects.push(GameLogSideEffect::Video(*input));
                             }
                         }
                         video::ProviderVideoEvent::ResetNowPlaying => {

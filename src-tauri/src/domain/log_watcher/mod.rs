@@ -5,6 +5,8 @@ mod queue;
 mod scanner;
 mod watcher;
 
-pub use event::{GameLogEvent, GameLogEventKind, GameLogEventSink};
+#[cfg(test)]
+pub use event::GameLogEventKind;
+pub use event::{GameLogEvent, GameLogEventSink};
 pub use scanner::LogLocationSnapshot;
 pub use watcher::LogWatcher;

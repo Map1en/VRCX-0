@@ -128,7 +128,7 @@ pub fn auth_token_from_response(status: i32, body: &str) -> Result<String, Error
         });
     }
 
-    if status >= 400 || status < 0 {
+    if !(0..400).contains(&status) {
         return Err(Error::Other(format!(
             "auth transport bootstrap failed ({status})"
         )));

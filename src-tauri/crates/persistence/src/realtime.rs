@@ -107,6 +107,17 @@ struct ExistingFriendLogRow {
     friend_number: i64,
 }
 
+struct FriendLogHistoryEntry<'a> {
+    created_at: &'a str,
+    entry_type: &'a str,
+    user_id: &'a str,
+    display_name: &'a str,
+    previous_display_name: &'a str,
+    trust_level: &'a str,
+    previous_trust_level: &'a str,
+    friend_number: i64,
+}
+
 pub fn write_realtime_batch(
     db: &DatabaseService,
     owner_user_id: &str,
@@ -207,7 +218,9 @@ fn upsert_friend_log_current(
         ),
         &ParamsBuilder::new().set("user_id", target_user_id.clone()).build(),
     )?;
-    let existing = existing_rows.first().map(existing_friend_log_row);
+    let existing = existing_rows
+        .first()
+        .map(|row| existing_friend_log_row(row));
     let friend_number = if entry.friend_number > 0 {
         entry.friend_number
     } else if let Some(existing) = existing.as_ref() {
@@ -244,28 +257,32 @@ fn upsert_friend_log_current(
             add_friend_log_history(
                 tx,
                 user_prefix,
-                &entry.created_at,
-                "Friend",
-                &target_user_id,
-                display_name,
-                "",
-                trust_level,
-                "",
-                friend_number,
+                &FriendLogHistoryEntry {
+                    created_at: &entry.created_at,
+                    entry_type: "Friend",
+                    user_id: &target_user_id,
+                    display_name,
+                    previous_display_name: "",
+                    trust_level,
+                    previous_trust_level: "",
+                    friend_number,
+                },
             )?;
         }
     } else {
         add_friend_log_history(
             tx,
             user_prefix,
-            &entry.created_at,
-            "Friend",
-            &target_user_id,
-            display_name,
-            "",
-            trust_level,
-            "",
-            friend_number,
+            &FriendLogHistoryEntry {
+                created_at: &entry.created_at,
+                entry_type: "Friend",
+                user_id: &target_user_id,
+                display_name,
+                previous_display_name: "",
+                trust_level,
+                previous_trust_level: "",
+                friend_number,
+            },
         )?;
     }
     Ok(())
@@ -286,7 +303,10 @@ fn delete_friend_log_current(
         ),
         &ParamsBuilder::new().set("user_id", target_user_id.clone()).build(),
     )?;
-    let Some(existing) = existing_rows.first().map(existing_friend_log_row) else {
+    let Some(existing) = existing_rows
+        .first()
+        .map(|row| existing_friend_log_row(row))
+    else {
         return Ok(());
     };
     let deleted = tx.execute_non_query(
@@ -297,14 +317,16 @@ fn delete_friend_log_current(
         add_friend_log_history(
             tx,
             user_prefix,
-            &entry.created_at,
-            "Unfriend",
-            &existing.user_id,
-            &existing.display_name,
-            "",
-            &existing.trust_level,
-            "",
-            existing.friend_number,
+            &FriendLogHistoryEntry {
+                created_at: &entry.created_at,
+                entry_type: "Unfriend",
+                user_id: &existing.user_id,
+                display_name: &existing.display_name,
+                previous_display_name: "",
+                trust_level: &existing.trust_level,
+                previous_trust_level: "",
+                friend_number: existing.friend_number,
+            },
         )?;
     }
     Ok(())
@@ -313,28 +335,21 @@ fn delete_friend_log_current(
 fn add_friend_log_history(
     tx: &mut DatabaseWriteTransaction<'_>,
     user_prefix: &str,
-    created_at: &str,
-    entry_type: &str,
-    user_id: &str,
-    display_name: &str,
-    previous_display_name: &str,
-    trust_level: &str,
-    previous_trust_level: &str,
-    friend_number: i64,
+    entry: &FriendLogHistoryEntry<'_>,
 ) -> Result<(), Error> {
     tx.execute_non_query(
         &format!(
             "INSERT INTO {user_prefix}_friend_log_history (created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number) VALUES (@created_at, @type, @user_id, @display_name, @previous_display_name, @trust_level, @previous_trust_level, @friend_number)"
         ),
         &ParamsBuilder::new()
-            .set("created_at", created_at)
-            .set("type", entry_type)
-            .set("user_id", user_id)
-            .set("display_name", display_name)
-            .set("previous_display_name", previous_display_name)
-            .set("trust_level", trust_level)
-            .set("previous_trust_level", previous_trust_level)
-            .set("friend_number", friend_number)
+            .set("created_at", entry.created_at)
+            .set("type", entry.entry_type)
+            .set("user_id", entry.user_id)
+            .set("display_name", entry.display_name)
+            .set("previous_display_name", entry.previous_display_name)
+            .set("trust_level", entry.trust_level)
+            .set("previous_trust_level", entry.previous_trust_level)
+            .set("friend_number", entry.friend_number)
             .build(),
     )?;
     Ok(())
@@ -714,7 +729,7 @@ fn next_friend_number(
     })
 }
 
-fn existing_friend_log_row(row: &Vec<Value>) -> ExistingFriendLogRow {
+fn existing_friend_log_row(row: &[Value]) -> ExistingFriendLogRow {
     ExistingFriendLogRow {
         user_id: row.first().and_then(Value::as_str).unwrap_or("").to_string(),
         display_name: row.get(1).and_then(Value::as_str).unwrap_or("").to_string(),

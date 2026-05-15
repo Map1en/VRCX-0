@@ -5,10 +5,10 @@ use serde_json::Value;
 use crate::error::AppError;
 use vrcx_0_persistence::config as backend_config;
 use vrcx_0_persistence::game_log::{self, GameLogVideoPlayEntry, GameLogWriteBatch};
+pub use vrcx_0_runtime::game_log::video::VideoInput;
 use vrcx_0_runtime::game_log::video::{
     convert_youtube_duration_to_seconds, parse_youtube_video_id, url_encode,
 };
-pub use vrcx_0_runtime::game_log::video::{parse_provider_video, ProviderVideoEvent, VideoInput};
 
 use super::BackendDeps;
 
@@ -25,9 +25,7 @@ pub async fn handle_video_play(deps: BackendDeps, mut input: VideoInput) -> Resu
     }
 
     input.video_url = input.video_url.trim().to_string();
-    let youtube_id = if input.video_id.is_empty() {
-        parse_youtube_video_id(&input.video_url)
-    } else if input.video_id == "YouTube" {
+    let youtube_id = if input.video_id.is_empty() || input.video_id == "YouTube" {
         parse_youtube_video_id(&input.video_url)
     } else {
         String::new()

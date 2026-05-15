@@ -325,7 +325,7 @@ async fn connect_once(
                 match frame {
                     Message::Text(text) => {
                         let received_at = chrono::Utc::now().to_rfc3339();
-                        if let Some(payload) = parser.parse_text(&text.to_string(), received_at) {
+                        if let Some(payload) = parser.parse_text(text.as_ref(), received_at) {
                             let message_type = payload
                                 .json
                                 .get("type")

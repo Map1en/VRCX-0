@@ -84,7 +84,7 @@ pub struct RealtimeCurrentUserAuthority {
 }
 
 pub enum RealtimeFriendApplyResult {
-    Output(RealtimeFriendOutput),
+    Output(Box<RealtimeFriendOutput>),
     MissingBaseline,
     Ignored,
 }

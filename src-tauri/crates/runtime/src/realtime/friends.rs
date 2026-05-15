@@ -117,6 +117,7 @@ impl RealtimeFriendsRuntime {
             return RealtimeFriendApplyResult::MissingBaseline;
         }
         apply_friend_event(&mut state, message_type, content, &now)
+            .map(Box::new)
             .map(RealtimeFriendApplyResult::Output)
             .unwrap_or(RealtimeFriendApplyResult::Ignored)
     }

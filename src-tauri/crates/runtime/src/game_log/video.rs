@@ -17,7 +17,7 @@ pub struct VideoInput {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ProviderVideoEvent {
-    Video(VideoInput),
+    Video(Box<VideoInput>),
     ResetNowPlaying,
     Ignored,
     NotProvider,
@@ -27,6 +27,7 @@ pub fn parse_provider_video(created_at: &str, location: &str, data: &str) -> Pro
     let trimmed = data.trim();
     if trimmed.starts_with("VideoPlay(PyPyDance) ") {
         return parse_pypy_dance(created_at, location, trimmed)
+            .map(Box::new)
             .map(ProviderVideoEvent::Video)
             .unwrap_or(ProviderVideoEvent::Ignored);
     }
@@ -34,11 +35,13 @@ pub fn parse_provider_video(created_at: &str, location: &str, data: &str) -> Pro
         || trimmed.starts_with("VideoPlay(ZuwaZuwaDance) ")
     {
         return parse_vr_dancing(created_at, location, trimmed)
+            .map(Box::new)
             .map(ProviderVideoEvent::Video)
             .unwrap_or(ProviderVideoEvent::Ignored);
     }
     if trimmed.starts_with("LSMedia ") {
         return parse_ls_media(created_at, location, trimmed)
+            .map(Box::new)
             .map(ProviderVideoEvent::Video)
             .unwrap_or(ProviderVideoEvent::Ignored);
     }
@@ -156,7 +159,7 @@ fn parse_popcorn_palace(created_at: &str, location: &str, data: &str) -> Provide
     if video_name.is_empty() {
         return ProviderVideoEvent::ResetNowPlaying;
     }
-    ProviderVideoEvent::Video(VideoInput {
+    ProviderVideoEvent::Video(Box::new(VideoInput {
         created_at: created_at.to_string(),
         location: location.to_string(),
         video_url: video_name.clone(),
@@ -167,7 +170,7 @@ fn parse_popcorn_palace(created_at: &str, location: &str, data: &str) -> Provide
         video_id: "PopcornPalace".into(),
         video_name,
         ..Default::default()
-    })
+    }))
 }
 
 pub fn parse_youtube_video_id(video_url: &str) -> String {
