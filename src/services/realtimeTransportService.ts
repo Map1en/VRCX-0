@@ -8,11 +8,18 @@ import { handleRuntimeAuthFailure } from './authSessionRecoveryService.js';
 import { refreshFriendAndFavoriteSnapshots } from './backgroundMaintenanceService.js';
 import { isHostCapabilityAvailable } from './hostCapabilityService.js';
 import {
+    acceptRealtimeFriendBaselineProjection,
     clearRealtimeFriendBaselineTransportContext,
+    isCurrentRealtimeFriendBaselineAccepted,
+    markRealtimeFriendBaselineDirty,
     setRealtimeFriendBaselineTransportContext,
     syncCurrentRealtimeFriendBaseline
 } from './realtimeFriendBaselineService.js';
-import { handleRealtimePresenceEvent } from './realtimePresenceService.js';
+import {
+    handleRealtimeFriendProjection,
+    handleRealtimePresenceEvent,
+    isRealtimeFriendEventType
+} from './realtimePresenceService.js';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
@@ -173,9 +180,28 @@ function handleRealtimeMessageFailure(error: unknown) {
 }
 
 function handleRealtimeJsonMessage(message: Record<string, any>) {
-    Promise.resolve(handleRealtimePresenceEvent(message)).catch(
-        handleRealtimeMessageFailure
-    );
+    const isRealtimeFriendEvent = isRealtimeFriendEventType(message.type);
+    if (
+        isRealtimeFriendEvent &&
+        isCurrentRealtimeFriendBaselineAccepted(backendTransportGeneration)
+    ) {
+        return;
+    }
+    if (isRealtimeFriendEvent) {
+        markRealtimeFriendBaselineDirty();
+    }
+    Promise.resolve(handleRealtimePresenceEvent(message))
+        .then(() => {
+            if (
+                isRealtimeFriendEvent &&
+                !isCurrentRealtimeFriendBaselineAccepted(
+                    backendTransportGeneration
+                )
+            ) {
+                void syncCurrentRealtimeFriendBaseline();
+            }
+        })
+        .catch(handleRealtimeMessageFailure);
 }
 
 function handleRealtimeAuthFailure(payload: Record<string, any>) {
@@ -320,6 +346,25 @@ async function subscribeBackendRealtimeEvents(
         }),
         backend.events.subscribe('realtimeWsStatus', (payload) => {
             handleRealtimeStatus(payload, context, refreshBaselineOnReconnect);
+        }),
+        backend.events.subscribe('realtimeFriendProjection', (payload) => {
+            if (!isCurrentTransportTarget(context)) {
+                return;
+            }
+            const projection = isRecord(payload) ? payload : null;
+            if (
+                !isCurrentRealtimeFriendBaselineAccepted(
+                    projection?.generation,
+                    projection?.baselineRevision
+                ) &&
+                !acceptRealtimeFriendBaselineProjection(projection)
+            ) {
+                return;
+            }
+            useRuntimeStore
+                .getState()
+                .recordBackendEvent('realtimeFriendProjection', payload);
+            handleRealtimeFriendProjection(payload);
         })
     ]);
 

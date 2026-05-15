@@ -62,6 +62,7 @@ const commandArgs: Record<string, string[]> = {
         'websocket',
         'clientRunId',
         'generation',
+        'baselineRevision',
         'friendsById'
     ],
     app__stop_realtime_transport: [

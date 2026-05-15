@@ -5,6 +5,7 @@ use serde_json::Value;
 
 use crate::backend::realtime::types::{RealtimeWsMessagePayload, RealtimeWsStatusPayload};
 use vrcx_0_persistence::game_log::GameLogWriteBatch;
+use vrcx_0_runtime::realtime::friends::FriendProjection;
 use vrcx_0_runtime::session::HostSessionProjection;
 
 pub trait BackendEventSink: Send + Sync {
@@ -138,5 +139,9 @@ impl BackendEventBus {
 
     pub fn emit_realtime_ws_status(&self, payload: RealtimeWsStatusPayload) {
         self.emit("realtimeWsStatus", payload);
+    }
+
+    pub fn emit_realtime_friend_projection(&self, payload: FriendProjection) {
+        self.emit("realtimeFriendProjection", payload);
     }
 }

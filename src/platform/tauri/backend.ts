@@ -99,10 +99,12 @@ export interface AppBackendNamespace extends BackendNamespace {
         websocket: string,
         clientRunId: number,
         generation: number,
+        baselineRevision: number,
         friendsById: Record<string, unknown>
     ): Promise<{
         accepted: boolean;
         generation: number;
+        baselineRevision: number;
         friendCount: number;
     }>;
     StopRealtimeTransport(

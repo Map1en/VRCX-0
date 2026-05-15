@@ -8,6 +8,7 @@ pub mod config;
 pub mod database;
 mod error;
 pub mod game_log;
+pub mod realtime;
 
 pub use error::Error;
 

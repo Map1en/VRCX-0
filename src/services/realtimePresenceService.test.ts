@@ -19,7 +19,8 @@ const serviceMocks = vi.hoisted(() => ({
     applyCurrentUserLocationEvent: vi.fn(),
     handleInstanceClosedEvent: vi.fn(),
     persistAvatarWearTransition: vi.fn(),
-    refreshCurrentUser: vi.fn()
+    refreshCurrentUser: vi.fn(),
+    pushSharedFeedNotification: vi.fn()
 }));
 
 vi.mock('@/repositories/index.js', () => ({
@@ -58,6 +59,10 @@ vi.mock('./vrcNotificationRuntimeService.js', () => ({
         serviceMocks.handleRealtimeNotificationEvent
 }));
 
+vi.mock('./sharedFeedFilterService.js', () => ({
+    pushSharedFeedNotification: serviceMocks.pushSharedFeedNotification
+}));
+
 vi.mock('@/platform/index.js', () => ({
     backend: {
         app: {
@@ -82,12 +87,14 @@ describe('realtimePresenceService friend persistence boundary', () => {
             false
         );
         serviceMocks.handleRealtimeNotificationEvent.mockResolvedValue(true);
+        serviceMocks.pushSharedFeedNotification.mockResolvedValue(undefined);
 
         const { useFriendRosterStore } =
             await import('@/state/friendRosterStore.js');
         const { useRuntimeStore } = await import('@/state/runtimeStore.js');
         const { usePreferencesStore } =
             await import('@/state/preferencesStore.js');
+        const { useFeedLiveStore } = await import('@/state/feedLiveStore.js');
         const { useShellStore } = await import('@/state/shellStore.js');
 
         useFriendRosterStore.getState().resetRoster();
@@ -107,6 +114,7 @@ describe('realtimePresenceService friend persistence boundary', () => {
         usePreferencesStore.getState().hydratePreferences({
             gameLogDisabled: false
         });
+        useFeedLiveStore.getState().resetFeedLive();
         useShellStore.getState().clearAllNotifications();
     });
 
@@ -250,5 +258,52 @@ describe('realtimePresenceService friend persistence boundary', () => {
         expect(
             serviceMocks.persistence.persistRealtimeFriendDelete
         ).not.toHaveBeenCalled();
+    });
+
+    it('applies backend friend projection without frontend persistence writes', async () => {
+        const { useFeedLiveStore } = await import('@/state/feedLiveStore.js');
+        const { useFriendRosterStore } =
+            await import('@/state/friendRosterStore.js');
+        const { useShellStore } = await import('@/state/shellStore.js');
+        const { handleRealtimeFriendProjection } =
+            await import('./realtimePresenceService.js');
+
+        handleRealtimeFriendProjection({
+            patches: [
+                {
+                    userId: 'usr_friend',
+                    patch: {
+                        id: 'usr_friend',
+                        displayName: 'Friend',
+                        state: 'online',
+                        location: 'wrld_1:123'
+                    },
+                    stateBucket: 'online'
+                }
+            ],
+            removals: [],
+            feedEntries: [
+                {
+                    created_at: '2026-05-15T00:00:00Z',
+                    type: 'Online',
+                    userId: 'usr_friend',
+                    displayName: 'Friend',
+                    location: 'wrld_1:123'
+                }
+            ],
+            friendLogChanged: true
+        });
+
+        expect(
+            serviceMocks.persistence.persistRealtimeFriendOnlineFeed
+        ).not.toHaveBeenCalled();
+        expect(
+            useFriendRosterStore.getState().friendsById.usr_friend.stateBucket
+        ).toBe('online');
+        expect(useFeedLiveStore.getState().entries[0].entry).toMatchObject({
+            type: 'Online',
+            userId: 'usr_friend'
+        });
+        expect(useShellStore.getState().notifiedMenus).toContain('friend-log');
     });
 });

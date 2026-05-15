@@ -42,7 +42,19 @@ vi.mock('./hostCapabilityService.js', () => ({
 }));
 
 const presenceState = vi.hoisted(() => ({
-    handleRealtimePresenceEvent: vi.fn()
+    handleRealtimeFriendProjection: vi.fn(),
+    handleRealtimePresenceEvent: vi.fn(),
+    isRealtimeFriendEventType: vi.fn((type: unknown) =>
+        [
+            'friend-add',
+            'friend-delete',
+            'friend-update',
+            'friend-online',
+            'friend-active',
+            'friend-offline',
+            'friend-location'
+        ].includes(String(type || ''))
+    )
 }));
 
 const authRecoveryState = vi.hoisted(() => ({
@@ -50,7 +62,10 @@ const authRecoveryState = vi.hoisted(() => ({
 }));
 
 vi.mock('./realtimePresenceService.js', () => ({
-    handleRealtimePresenceEvent: presenceState.handleRealtimePresenceEvent
+    handleRealtimeFriendProjection:
+        presenceState.handleRealtimeFriendProjection,
+    handleRealtimePresenceEvent: presenceState.handleRealtimePresenceEvent,
+    isRealtimeFriendEventType: presenceState.isRealtimeFriendEventType
 }));
 
 vi.mock('./authSessionRecoveryService.js', () => ({
@@ -89,14 +104,26 @@ describe('realtime transport backend routing', () => {
                 sessionGeneration: 1
             })
         );
-        backendState.app.SetRealtimeFriendBaseline.mockResolvedValue({
-            accepted: true,
-            generation: 1,
-            friendCount: 0
-        });
+        backendState.app.SetRealtimeFriendBaseline.mockImplementation(
+            async (
+                _currentUserId: string,
+                _endpoint: string,
+                _websocket: string,
+                _clientRunId: number,
+                generation: number,
+                baselineRevision: number
+            ) => ({
+                accepted: true,
+                generation,
+                baselineRevision,
+                friendCount: 0
+            })
+        );
         backendState.app.StopRealtimeTransport.mockResolvedValue(undefined);
         backendState.eventHandlers.clear();
+        presenceState.handleRealtimeFriendProjection.mockReset();
         presenceState.handleRealtimePresenceEvent.mockReset();
+        presenceState.isRealtimeFriendEventType.mockClear();
         authRecoveryState.handleRuntimeAuthFailure.mockReset();
         authRecoveryState.handleRuntimeAuthFailure.mockReturnValue(
             Promise.resolve()
@@ -145,8 +172,11 @@ describe('realtime transport backend routing', () => {
             '',
             expect.any(Number),
             1,
+            0,
             expect.any(Object)
         );
+        await Promise.resolve();
+        await Promise.resolve();
         expect(globalThis.WebSocket).not.toHaveBeenCalled();
 
         emitBackendEvent('realtimeWsMessage', {
@@ -157,10 +187,490 @@ describe('realtime transport backend routing', () => {
             raw: '{}',
             receivedAt: '2026-05-14T00:00:00Z'
         });
-        expect(presenceState.handleRealtimePresenceEvent).toHaveBeenCalledWith({
-            type: 'friend-online',
-            content: { userId: 'usr_2' }
+        expect(
+            presenceState.handleRealtimePresenceEvent
+        ).not.toHaveBeenCalled();
+
+        emitBackendEvent('realtimeFriendProjection', {
+            generation: 1,
+            baselineRevision: 0,
+            patches: [
+                {
+                    userId: 'usr_2',
+                    patch: { id: 'usr_2', state: 'online' },
+                    stateBucket: 'online'
+                }
+            ],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
         });
+        expect(presenceState.handleRealtimeFriendProjection).toHaveBeenCalled();
+    });
+
+    it('uses frontend friend handling until backend baseline is accepted', async () => {
+        let resolveBaseline:
+            | ((value: {
+                  accepted: boolean;
+                  generation: number;
+                  baselineRevision: number;
+                  friendCount: number;
+              }) => void)
+            | null = null;
+        backendState.app.SetRealtimeFriendBaseline.mockReturnValue(
+            new Promise((resolve) => {
+                resolveBaseline = resolve;
+            })
+        );
+        const { useRuntimeStore } = await import('@/state/runtimeStore.js');
+        const { useSessionStore } = await import('@/state/sessionStore.js');
+        const { startRealtimeTransport } =
+            await import('./realtimeTransportService.js');
+
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_1',
+            currentUserEndpoint: '',
+            currentUserWebsocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: true,
+            isFriendsLoaded: true,
+            sessionPhase: 'ready'
+        });
+
+        await startRealtimeTransport({
+            userId: 'usr_1',
+            endpoint: '',
+            websocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        await vi.waitFor(() => {
+            expect(
+                backendState.app.SetRealtimeFriendBaseline
+            ).toHaveBeenCalled();
+        });
+
+        emitBackendEvent('realtimeWsMessage', {
+            json: {
+                type: 'friend-online',
+                content: { userId: 'usr_2' }
+            },
+            raw: '{}',
+            receivedAt: '2026-05-14T00:00:00Z'
+        });
+        expect(presenceState.handleRealtimePresenceEvent).toHaveBeenCalledTimes(
+            1
+        );
+
+        resolveBaseline?.({
+            accepted: true,
+            generation: 1,
+            baselineRevision: 1,
+            friendCount: 0
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+        emitBackendEvent('realtimeFriendProjection', {
+            generation: 1,
+            baselineRevision: 1,
+            patches: [
+                {
+                    userId: 'usr_2',
+                    patch: { id: 'usr_2', state: 'online' },
+                    stateBucket: 'online'
+                }
+            ],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+        expect(
+            presenceState.handleRealtimeFriendProjection
+        ).toHaveBeenCalledTimes(1);
+
+        emitBackendEvent('realtimeFriendProjection', {
+            generation: 1,
+            baselineRevision: 0,
+            patches: [
+                {
+                    userId: 'usr_old',
+                    patch: { id: 'usr_old', state: 'online' },
+                    stateBucket: 'online'
+                }
+            ],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+        expect(
+            presenceState.handleRealtimeFriendProjection
+        ).toHaveBeenCalledTimes(1);
+
+        emitBackendEvent('realtimeWsMessage', {
+            json: {
+                type: 'friend-online',
+                content: { userId: 'usr_3' }
+            },
+            raw: '{}',
+            receivedAt: '2026-05-14T00:00:01Z'
+        });
+        expect(presenceState.handleRealtimePresenceEvent).toHaveBeenCalledTimes(
+            1
+        );
+    });
+
+    it('keeps frontend friend handling when backend baseline generation is mismatched', async () => {
+        backendState.app.SetRealtimeFriendBaseline.mockImplementation(
+            async (
+                _currentUserId: string,
+                _endpoint: string,
+                _websocket: string,
+                _clientRunId: number,
+                _generation: number,
+                baselineRevision: number
+            ) => ({
+                accepted: true,
+                generation: 2,
+                baselineRevision,
+                friendCount: 0
+            })
+        );
+        const { useRuntimeStore } = await import('@/state/runtimeStore.js');
+        const { useSessionStore } = await import('@/state/sessionStore.js');
+        const { startRealtimeTransport } =
+            await import('./realtimeTransportService.js');
+
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_1',
+            currentUserEndpoint: '',
+            currentUserWebsocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: true,
+            isFriendsLoaded: true,
+            sessionPhase: 'ready'
+        });
+
+        await startRealtimeTransport({
+            userId: 'usr_1',
+            endpoint: '',
+            websocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        await vi.waitFor(() => {
+            expect(
+                backendState.app.SetRealtimeFriendBaseline
+            ).toHaveBeenCalled();
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        emitBackendEvent('realtimeWsMessage', {
+            json: {
+                type: 'friend-online',
+                content: { userId: 'usr_2' }
+            },
+            raw: '{}',
+            receivedAt: '2026-05-14T00:00:00Z'
+        });
+        expect(presenceState.handleRealtimePresenceEvent).toHaveBeenCalledTimes(
+            1
+        );
+
+        emitBackendEvent('realtimeFriendProjection', {
+            generation: 2,
+            baselineRevision: 0,
+            patches: [
+                {
+                    userId: 'usr_2',
+                    patch: { id: 'usr_2', state: 'online' },
+                    stateBucket: 'online'
+                }
+            ],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+        expect(
+            presenceState.handleRealtimeFriendProjection
+        ).not.toHaveBeenCalled();
+    });
+
+    it('refreshes a pending baseline after raw friend fallback mutates the roster', async () => {
+        let baselineCallCount = 0;
+        let resolveFirstBaseline:
+            | ((value: {
+                  accepted: boolean;
+                  generation: number;
+                  baselineRevision: number;
+                  friendCount: number;
+              }) => void)
+            | null = null;
+        backendState.app.SetRealtimeFriendBaseline.mockImplementation(
+            async (
+                _currentUserId: string,
+                _endpoint: string,
+                _websocket: string,
+                _clientRunId: number,
+                generation: number,
+                baselineRevision: number,
+                friendsById: Record<string, unknown>
+            ) => {
+                baselineCallCount += 1;
+                if (baselineCallCount === 1) {
+                    return new Promise((resolve) => {
+                        resolveFirstBaseline = resolve;
+                    });
+                }
+                return {
+                    accepted: true,
+                    generation,
+                    baselineRevision,
+                    friendCount: Object.keys(friendsById).length
+                };
+            }
+        );
+        presenceState.handleRealtimePresenceEvent.mockImplementationOnce(
+            async () => {
+                const { useFriendRosterStore } =
+                    await import('@/state/friendRosterStore.js');
+                useFriendRosterStore.getState().applyFriendPatch({
+                    userId: 'usr_2',
+                    patch: { id: 'usr_2', state: 'online' },
+                    stateBucket: 'online'
+                });
+                return true;
+            }
+        );
+        const { useRuntimeStore } = await import('@/state/runtimeStore.js');
+        const { useSessionStore } = await import('@/state/sessionStore.js');
+        const { startRealtimeTransport } =
+            await import('./realtimeTransportService.js');
+
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_1',
+            currentUserEndpoint: '',
+            currentUserWebsocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: true,
+            isFriendsLoaded: true,
+            sessionPhase: 'ready'
+        });
+
+        await startRealtimeTransport({
+            userId: 'usr_1',
+            endpoint: '',
+            websocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        await vi.waitFor(() => {
+            expect(
+                backendState.app.SetRealtimeFriendBaseline
+            ).toHaveBeenCalledTimes(1);
+        });
+
+        emitBackendEvent('realtimeWsMessage', {
+            json: {
+                type: 'friend-online',
+                content: { userId: 'usr_2' }
+            },
+            raw: '{}',
+            receivedAt: '2026-05-14T00:00:00Z'
+        });
+        await vi.waitFor(() => {
+            expect(
+                backendState.app.SetRealtimeFriendBaseline
+            ).toHaveBeenCalledTimes(2);
+        });
+        expect(
+            backendState.app.SetRealtimeFriendBaseline.mock.calls[1][5]
+        ).toBe(1);
+        expect(
+            backendState.app.SetRealtimeFriendBaseline.mock.calls[1][6]
+        ).toHaveProperty('usr_2');
+
+        resolveFirstBaseline?.({
+            accepted: true,
+            generation: 1,
+            baselineRevision: 0,
+            friendCount: 0
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+        presenceState.handleRealtimePresenceEvent.mockClear();
+
+        emitBackendEvent('realtimeWsMessage', {
+            json: {
+                type: 'friend-online',
+                content: { userId: 'usr_3' }
+            },
+            raw: '{}',
+            receivedAt: '2026-05-14T00:00:01Z'
+        });
+        expect(
+            presenceState.handleRealtimePresenceEvent
+        ).not.toHaveBeenCalled();
+    });
+
+    it('accepts a matching projection before the baseline promise resolves', async () => {
+        let resolveBaseline:
+            | ((value: {
+                  accepted: boolean;
+                  generation: number;
+                  baselineRevision: number;
+                  friendCount: number;
+              }) => void)
+            | null = null;
+        backendState.app.SetRealtimeFriendBaseline.mockReturnValue(
+            new Promise((resolve) => {
+                resolveBaseline = resolve;
+            })
+        );
+        const { useRuntimeStore } = await import('@/state/runtimeStore.js');
+        const { useSessionStore } = await import('@/state/sessionStore.js');
+        const { startRealtimeTransport } =
+            await import('./realtimeTransportService.js');
+
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_1',
+            currentUserEndpoint: '',
+            currentUserWebsocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: true,
+            isFriendsLoaded: true,
+            sessionPhase: 'ready'
+        });
+
+        await startRealtimeTransport({
+            userId: 'usr_1',
+            endpoint: '',
+            websocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        await vi.waitFor(() => {
+            expect(
+                backendState.app.SetRealtimeFriendBaseline
+            ).toHaveBeenCalled();
+        });
+
+        emitBackendEvent('realtimeFriendProjection', {
+            generation: 1,
+            baselineRevision: 0,
+            patches: [
+                {
+                    userId: 'usr_2',
+                    patch: { id: 'usr_2', state: 'online' },
+                    stateBucket: 'online'
+                }
+            ],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+        expect(
+            presenceState.handleRealtimeFriendProjection
+        ).toHaveBeenCalledTimes(1);
+
+        emitBackendEvent('realtimeWsMessage', {
+            json: {
+                type: 'friend-online',
+                content: { userId: 'usr_2' }
+            },
+            raw: '{}',
+            receivedAt: '2026-05-14T00:00:00Z'
+        });
+        expect(
+            presenceState.handleRealtimePresenceEvent
+        ).not.toHaveBeenCalled();
+
+        resolveBaseline?.({
+            accepted: true,
+            generation: 1,
+            baselineRevision: 0,
+            friendCount: 0
+        });
+    });
+
+    it('retries baseline sync when backend requires a newer baseline revision', async () => {
+        let baselineCallCount = 0;
+        backendState.app.SetRealtimeFriendBaseline.mockImplementation(
+            async (
+                _currentUserId: string,
+                _endpoint: string,
+                _websocket: string,
+                _clientRunId: number,
+                generation: number,
+                baselineRevision: number
+            ) => {
+                baselineCallCount += 1;
+                if (baselineCallCount === 1) {
+                    return {
+                        accepted: false,
+                        generation,
+                        baselineRevision: 1,
+                        friendCount: 0
+                    };
+                }
+                return {
+                    accepted: true,
+                    generation,
+                    baselineRevision,
+                    friendCount: 0
+                };
+            }
+        );
+        const { useRuntimeStore } = await import('@/state/runtimeStore.js');
+        const { useSessionStore } = await import('@/state/sessionStore.js');
+        const { startRealtimeTransport } =
+            await import('./realtimeTransportService.js');
+
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_1',
+            currentUserEndpoint: '',
+            currentUserWebsocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: true,
+            isFriendsLoaded: true,
+            sessionPhase: 'ready'
+        });
+
+        await startRealtimeTransport({
+            userId: 'usr_1',
+            endpoint: '',
+            websocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        await vi.waitFor(() => {
+            expect(
+                backendState.app.SetRealtimeFriendBaseline
+            ).toHaveBeenCalledTimes(2);
+        });
+        expect(
+            backendState.app.SetRealtimeFriendBaseline.mock.calls[0][5]
+        ).toBe(0);
+        expect(
+            backendState.app.SetRealtimeFriendBaseline.mock.calls[1][5]
+        ).toBe(1);
+
+        emitBackendEvent('realtimeWsMessage', {
+            json: {
+                type: 'friend-online',
+                content: { userId: 'usr_2' }
+            },
+            raw: '{}',
+            receivedAt: '2026-05-14T00:00:00Z'
+        });
+        expect(
+            presenceState.handleRealtimePresenceEvent
+        ).not.toHaveBeenCalled();
     });
 
     it('does not fall back to browser WebSocket when backend start fails', async () => {
@@ -339,8 +849,11 @@ describe('realtime transport backend routing', () => {
             'wss://two',
             runTwo,
             2,
+            0,
             expect.any(Object)
         );
+        await Promise.resolve();
+        await Promise.resolve();
 
         pendingStarts[0].resolve({
             generation: 1,
@@ -363,10 +876,11 @@ describe('realtime transport backend routing', () => {
             backendState.app.SetRealtimeFriendBaseline.mock.calls
         ).not.toEqual(
             expect.arrayContaining([
-                ['usr_1', '', 'wss://one', runOne, 1, expect.any(Object)]
+                ['usr_1', '', 'wss://one', runOne, 1, 0, expect.any(Object)]
             ])
         );
 
+        presenceState.handleRealtimeFriendProjection.mockReset();
         presenceState.handleRealtimePresenceEvent.mockReset();
         emitBackendEvent('realtimeWsMessage', {
             json: {
@@ -376,9 +890,43 @@ describe('realtime transport backend routing', () => {
             raw: '{}',
             receivedAt: '2026-05-14T00:00:00Z'
         });
-        expect(presenceState.handleRealtimePresenceEvent).toHaveBeenCalledTimes(
-            1
-        );
+        expect(
+            presenceState.handleRealtimePresenceEvent
+        ).not.toHaveBeenCalled();
+        emitBackendEvent('realtimeFriendProjection', {
+            generation: 1,
+            baselineRevision: 0,
+            patches: [
+                {
+                    userId: 'usr_old',
+                    patch: { id: 'usr_old', state: 'online' },
+                    stateBucket: 'online'
+                }
+            ],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+        expect(
+            presenceState.handleRealtimeFriendProjection
+        ).not.toHaveBeenCalled();
+        emitBackendEvent('realtimeFriendProjection', {
+            generation: 2,
+            baselineRevision: 0,
+            patches: [
+                {
+                    userId: 'usr_2',
+                    patch: { id: 'usr_2', state: 'online' },
+                    stateBucket: 'online'
+                }
+            ],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+        expect(
+            presenceState.handleRealtimeFriendProjection
+        ).toHaveBeenCalledTimes(1);
     });
 
     it('routes backend auth failure status into runtime auth recovery', async () => {

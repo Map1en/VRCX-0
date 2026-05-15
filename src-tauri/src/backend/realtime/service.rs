@@ -1,16 +1,21 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use tokio::sync::watch;
 
 use crate::backend::context::BackendContext;
 use crate::error::AppError;
 
-use super::connection::run_realtime_transport;
+use super::connection::{run_realtime_transport, RealtimeMessageSink};
 use super::types::{RealtimeSessionContext, RealtimeTransportStartResult, RealtimeWsStatusPayload};
 use vrcx_0_domain::friends::{FriendRecord, FriendRosterBaseline};
+use vrcx_0_domain::realtime::RealtimeWsMessagePayload;
 use vrcx_0_integrations::realtime::normalize_websocket_domain;
-use vrcx_0_runtime::realtime::friends::{FriendBaselineResult, RealtimeFriendsRuntime};
+use vrcx_0_persistence::realtime::write_realtime_batch;
+use vrcx_0_runtime::realtime::friends::{
+    FriendBaselineResult, FriendProjection, PendingOfflineTimerAction, RealtimeFriendApplyResult,
+    RealtimeFriendOutput, RealtimeFriendsRuntime,
+};
 
 #[derive(Clone, Debug)]
 struct ActiveRealtimeContext {
@@ -18,6 +23,8 @@ struct ActiveRealtimeContext {
     generation: u64,
     client_run_id: u64,
     session_generation: u64,
+    required_friend_baseline_revision: u64,
+    accepted_friend_baseline_revision: u64,
 }
 
 #[derive(Default)]
@@ -73,6 +80,10 @@ pub struct RealtimeBackend {
     friends: RealtimeFriendsRuntime,
 }
 
+struct RealtimeBackendMessageSink {
+    backend: Arc<RealtimeBackend>,
+}
+
 impl RealtimeBackend {
     pub fn new(context: Arc<BackendContext>) -> Self {
         let (cancel_tx, _) = watch::channel(0);
@@ -85,7 +96,7 @@ impl RealtimeBackend {
     }
 
     pub fn start(
-        &self,
+        self: &Arc<Self>,
         user_id: String,
         endpoint: String,
         websocket: String,
@@ -122,14 +133,27 @@ impl RealtimeBackend {
                 generation,
                 client_run_id,
                 session_generation,
+                required_friend_baseline_revision: 0,
+                accepted_friend_baseline_revision: 0,
             });
+            self.friends.clear();
         }
         let context = Arc::clone(&self.context);
+        let message_sink: Arc<dyn RealtimeMessageSink> = Arc::new(RealtimeBackendMessageSink {
+            backend: Arc::clone(self),
+        });
         let cancel_rx = self.cancel_tx.subscribe();
         let _ = self.cancel_tx.send(generation);
         tauri::async_runtime::spawn(async move {
-            run_realtime_transport(context, generation, session_generation, session, cancel_rx)
-                .await;
+            run_realtime_transport(
+                context,
+                message_sink,
+                generation,
+                session_generation,
+                session,
+                cancel_rx,
+            )
+            .await;
         });
 
         Ok(RealtimeTransportStartResult {
@@ -196,24 +220,22 @@ impl RealtimeBackend {
         websocket: String,
         client_run_id: u64,
         generation: u64,
+        baseline_revision: u64,
         friends_by_id: HashMap<String, FriendRecord>,
     ) -> Result<FriendBaselineResult, AppError> {
         let current_user_id = current_user_id.trim().to_string();
         let endpoint = endpoint.trim().to_string();
         let websocket = websocket.trim().to_string();
 
-        let active = {
-            let state = self
-                .state
-                .lock()
-                .map_err(|error| AppError::Custom(format!("realtime state lock: {error}")))?;
-            state.active_context.clone()
-        };
-
-        let Some(active) = active else {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|error| AppError::Custom(format!("realtime state lock: {error}")))?;
+        let Some(active) = state.active_context.as_mut() else {
             return Ok(FriendBaselineResult {
                 accepted: false,
                 generation: 0,
+                baseline_revision: 0,
                 friend_count: 0,
             });
         };
@@ -242,18 +264,197 @@ impl RealtimeBackend {
             return Ok(FriendBaselineResult {
                 accepted: false,
                 generation: active.generation,
+                baseline_revision: active.accepted_friend_baseline_revision,
                 friend_count: 0,
             });
         }
 
-        Ok(self.friends.set_baseline(
+        if baseline_revision < active.required_friend_baseline_revision
+            || baseline_revision < active.accepted_friend_baseline_revision
+        {
+            tracing::warn!(
+                generation,
+                baseline_revision,
+                required_revision = active.required_friend_baseline_revision,
+                accepted_revision = active.accepted_friend_baseline_revision,
+                "[Realtime] rejected stale friend baseline revision"
+            );
+            return Ok(FriendBaselineResult {
+                accepted: false,
+                generation: active.generation,
+                baseline_revision: active
+                    .required_friend_baseline_revision
+                    .max(active.accepted_friend_baseline_revision),
+                friend_count: 0,
+            });
+        }
+
+        let result = self.friends.set_baseline(
             FriendRosterBaseline {
                 current_user_id,
                 endpoint,
                 websocket,
                 friends_by_id,
             },
-            active.session_generation,
-        ))
+            active.generation,
+            baseline_revision,
+        );
+        active.accepted_friend_baseline_revision = result.baseline_revision;
+        Ok(result)
+    }
+
+    fn is_friend_output_current_locked(
+        &self,
+        state: &RealtimeBackendState,
+        projection: &FriendProjection,
+    ) -> bool {
+        let Some(active) = state.active_context.as_ref() else {
+            return false;
+        };
+        active.generation == projection.generation
+            && projection.baseline_revision >= active.required_friend_baseline_revision
+            && projection.baseline_revision >= active.accepted_friend_baseline_revision
+            && self
+                .context
+                .session
+                .is_realtime_generation_active(active.session_generation)
+    }
+
+    fn apply_friend_output(self: &Arc<Self>, output: RealtimeFriendOutput) {
+        let state = match self.state.lock() {
+            Ok(state) => state,
+            Err(error) => {
+                tracing::warn!("realtime state lock failed: {error}");
+                return;
+            }
+        };
+        self.apply_friend_output_locked(&state, output);
+    }
+
+    fn apply_friend_output_locked(
+        self: &Arc<Self>,
+        state: &MutexGuard<'_, RealtimeBackendState>,
+        output: RealtimeFriendOutput,
+    ) {
+        let mut projection = output.projection.clone();
+        if !self.is_friend_output_current_locked(state, &projection) {
+            self.friends
+                .clear_baseline_if_revision(projection.generation, projection.baseline_revision);
+            return;
+        }
+        if let Err(error) =
+            write_realtime_batch(&self.context.db, &output.owner_user_id, &output.persistence)
+        {
+            tracing::warn!("Realtime friend persistence failed: {error}");
+            projection.feed_entries.clear();
+        }
+        self.context
+            .event_bus
+            .emit_realtime_friend_projection(projection);
+
+        if let PendingOfflineTimerAction::Schedule {
+            user_id,
+            token,
+            delay_ms,
+        } = output.timer_action
+        {
+            let backend = Arc::clone(self);
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                let now = chrono::Utc::now().to_rfc3339();
+                backend.fire_pending_offline(&user_id, token, now);
+            });
+        }
+    }
+
+    fn fire_pending_offline(self: &Arc<Self>, user_id: &str, token: u64, now: String) {
+        let state = match self.state.lock() {
+            Ok(state) => state,
+            Err(error) => {
+                tracing::warn!("realtime state lock failed: {error}");
+                return;
+            }
+        };
+        if let Some(output) = self.friends.fire_pending_offline(user_id, token, now) {
+            self.apply_friend_output_locked(&state, output);
+        }
+    }
+}
+
+impl RealtimeMessageSink for RealtimeBackendMessageSink {
+    fn handle_realtime_ws_message(
+        &self,
+        generation: u64,
+        session_generation: u64,
+        session: &RealtimeSessionContext,
+        payload: &RealtimeWsMessagePayload,
+    ) {
+        let mut state = match self.backend.state.lock() {
+            Ok(state) => state,
+            Err(error) => {
+                tracing::warn!("realtime state lock failed: {error}");
+                return;
+            }
+        };
+        let is_current = state
+            .active_context
+            .as_ref()
+            .map(|active| {
+                active.generation == generation
+                    && active.session_generation == session_generation
+                    && active.session == *session
+                    && self
+                        .backend
+                        .context
+                        .session
+                        .is_realtime_generation_active(session_generation)
+            })
+            .unwrap_or(false);
+        if !is_current {
+            return;
+        }
+        match self.backend.friends.apply_ws_message(payload) {
+            RealtimeFriendApplyResult::Output(output) => {
+                self.backend.apply_friend_output_locked(&state, output);
+            }
+            RealtimeFriendApplyResult::MissingBaseline => {
+                if let Some(active) = state.active_context.as_mut() {
+                    if active.generation == generation
+                        && active.session_generation == session_generation
+                        && active.session == *session
+                    {
+                        active.required_friend_baseline_revision =
+                            active.required_friend_baseline_revision.saturating_add(1);
+                    }
+                }
+            }
+            RealtimeFriendApplyResult::Ignored => {}
+        };
+    }
+
+    fn handle_realtime_transport_finished(
+        &self,
+        generation: u64,
+        session_generation: u64,
+        session: &RealtimeSessionContext,
+    ) {
+        let mut state = match self.backend.state.lock() {
+            Ok(state) => state,
+            Err(error) => {
+                tracing::warn!("realtime state lock failed: {error}");
+                return;
+            }
+        };
+        let Some(active) = state.active_context.as_ref() else {
+            return;
+        };
+        if active.generation != generation
+            || active.session_generation != session_generation
+            || active.session != *session
+        {
+            return;
+        }
+        state.active_context = None;
+        self.backend.friends.clear();
     }
 }

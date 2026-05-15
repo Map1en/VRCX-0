@@ -28,6 +28,23 @@ enum ConnectionEnd {
     Stopped,
 }
 
+pub trait RealtimeMessageSink: Send + Sync {
+    fn handle_realtime_ws_message(
+        &self,
+        generation: u64,
+        session_generation: u64,
+        session: &RealtimeSessionContext,
+        payload: &super::types::RealtimeWsMessagePayload,
+    );
+
+    fn handle_realtime_transport_finished(
+        &self,
+        generation: u64,
+        session_generation: u64,
+        session: &RealtimeSessionContext,
+    );
+}
+
 #[derive(Debug)]
 enum RealtimeConnectionError {
     AuthFailure {
@@ -95,12 +112,22 @@ async fn fetch_auth_token(
 
 pub async fn run_realtime_transport(
     context: Arc<BackendContext>,
+    message_sink: Arc<dyn RealtimeMessageSink>,
     generation: u64,
     session_generation: u64,
     session: RealtimeSessionContext,
     mut cancel_rx: watch::Receiver<u64>,
 ) {
-    run_realtime_transport_inner(Arc::clone(&context), generation, session, &mut cancel_rx).await;
+    run_realtime_transport_inner(
+        Arc::clone(&context),
+        Arc::clone(&message_sink),
+        generation,
+        session_generation,
+        session.clone(),
+        &mut cancel_rx,
+    )
+    .await;
+    message_sink.handle_realtime_transport_finished(generation, session_generation, &session);
     context
         .session
         .clear_realtime_context_if_generation(session_generation);
@@ -108,7 +135,9 @@ pub async fn run_realtime_transport(
 
 async fn run_realtime_transport_inner(
     context: Arc<BackendContext>,
+    message_sink: Arc<dyn RealtimeMessageSink>,
     generation: u64,
+    session_generation: u64,
     session: RealtimeSessionContext,
     cancel_rx: &mut watch::Receiver<u64>,
 ) {
@@ -136,8 +165,10 @@ async fn run_realtime_transport_inner(
 
         match connect_once(
             Arc::clone(&context),
+            Arc::clone(&message_sink),
             &session,
             generation,
+            session_generation,
             cancel_rx,
             &event_bus,
         )
@@ -205,8 +236,10 @@ async fn run_realtime_transport_inner(
 
 async fn connect_once(
     context: Arc<BackendContext>,
+    message_sink: Arc<dyn RealtimeMessageSink>,
     session: &RealtimeSessionContext,
     generation: u64,
+    session_generation: u64,
     cancel_rx: &mut watch::Receiver<u64>,
     event_bus: &BackendEventBus,
 ) -> Result<ConnectionEnd, RealtimeConnectionError> {
@@ -279,6 +312,12 @@ async fn connect_once(
                             if message_type == "<missing>" {
                                 log_untyped_message_summary(generation, &payload.json);
                             }
+                            message_sink.handle_realtime_ws_message(
+                                generation,
+                                session_generation,
+                                session,
+                                &payload,
+                            );
                             event_bus.emit_realtime_ws_message(payload);
                         }
                     }

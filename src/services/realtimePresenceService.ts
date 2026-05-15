@@ -1,4 +1,5 @@
 import { configRepository } from '@/repositories/index.js';
+import { useFeedLiveStore } from '@/state/feedLiveStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { usePreferencesStore } from '@/state/preferencesStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -40,7 +41,22 @@ import {
     persistRealtimeFriendUpdateFeed,
     scheduleRealtimeFriendOfflineFeed
 } from './realtime-presence/persistence.js';
+import { pushSharedFeedNotification } from './sharedFeedFilterService.js';
 import { handleRealtimeNotificationEvent } from './vrcNotificationRuntimeService.js';
+
+const REALTIME_FRIEND_EVENT_TYPES = new Set([
+    'friend-add',
+    'friend-delete',
+    'friend-update',
+    'friend-online',
+    'friend-active',
+    'friend-offline',
+    'friend-location'
+]);
+
+function isRealtimeFriendEventType(type) {
+    return REALTIME_FRIEND_EVENT_TYPES.has(String(type || ''));
+}
 
 function patchCurrentUserSnapshot(patch) {
     const runtimeStore = useRuntimeStore.getState();
@@ -172,6 +188,65 @@ function applyFriendPatch(userId, patch, stateBucket) {
 
 function notifyFriendLogMenu() {
     useShellStore.getState().notifyMenu('friend-log');
+}
+
+function pushProjectionFeedEntry(entry) {
+    if (!entry || typeof entry !== 'object') {
+        return;
+    }
+    const ownerUserId = normalizeUserId(
+        useRuntimeStore.getState().auth.currentUserId
+    );
+    if (!ownerUserId) {
+        return;
+    }
+    useFeedLiveStore.getState().pushEntry(entry, { ownerUserId });
+    void pushSharedFeedNotification(entry).catch((error) => {
+        console.warn(
+            'Failed to publish realtime friend shared feed notification:',
+            error
+        );
+    });
+}
+
+function handleRealtimeFriendProjection(payload) {
+    const record = payload && typeof payload === 'object' ? payload : {};
+    const removals = Array.isArray(record.removals) ? record.removals : [];
+    for (const userId of removals) {
+        const normalizedUserId = normalizeUserId(userId);
+        if (!normalizedUserId) {
+            continue;
+        }
+        cancelRealtimeFriendPendingOffline(normalizedUserId);
+        useFriendRosterStore.getState().removeFriend(normalizedUserId);
+        removeCurrentUserFriend(normalizedUserId);
+    }
+
+    const patches = Array.isArray(record.patches) ? record.patches : [];
+    for (const patchEntry of patches) {
+        if (!patchEntry || typeof patchEntry !== 'object') {
+            continue;
+        }
+        const patch = patchEntry.patch || {};
+        const userId = normalizeUserId(
+            patchEntry.userId || patch.id || patch.userId
+        );
+        if (!userId) {
+            continue;
+        }
+        applyFriendPatch(userId, patch, patchEntry.stateBucket || patch.state);
+    }
+
+    const feedEntries = Array.isArray(record.feedEntries)
+        ? record.feedEntries
+        : [];
+    for (const entry of feedEntries) {
+        pushProjectionFeedEntry(entry);
+    }
+
+    if (record.friendLogChanged) {
+        notifyFriendLogMenu();
+    }
 }
 
 async function isGameLogDisabled() {
@@ -494,3 +569,5 @@ export async function handleRealtimePresenceEvent(message) {
         }
     });
 }
+
+export { handleRealtimeFriendProjection, isRealtimeFriendEventType };

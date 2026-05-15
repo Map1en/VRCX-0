@@ -26,8 +26,22 @@ pub struct FriendRecord {
     pub world_id: String,
     #[serde(default)]
     pub platform: String,
-    #[serde(default)]
+    #[serde(default, alias = "last_platform")]
     pub last_platform: String,
+    #[serde(default)]
+    pub status: String,
+    #[serde(default)]
+    pub status_description: String,
+    #[serde(default)]
+    pub bio: String,
+    #[serde(default)]
+    pub current_avatar_image_url: String,
+    #[serde(default)]
+    pub current_avatar_thumbnail_image_url: String,
+    #[serde(default)]
+    pub current_avatar_author_id: String,
+    #[serde(default)]
+    pub current_avatar_name: String,
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }

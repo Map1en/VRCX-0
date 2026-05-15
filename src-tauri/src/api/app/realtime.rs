@@ -51,6 +51,7 @@ pub fn app__set_realtime_friend_baseline(
     websocket: String,
     client_run_id: u64,
     generation: u64,
+    baseline_revision: u64,
     friends_by_id: HashMap<String, FriendRecord>,
 ) -> Result<FriendBaselineResult, AppError> {
     state.realtime_backend.set_friend_baseline(
@@ -59,6 +60,7 @@ pub fn app__set_realtime_friend_baseline(
         websocket,
         client_run_id,
         generation,
+        baseline_revision,
         friends_by_id,
     )
 }
