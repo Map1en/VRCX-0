@@ -407,15 +407,19 @@ export async function handleGameRunningUpdate(payload: Record<string, any> = {})
     const gameRunningChanged = previousGameRunning !== nextGameRunning;
     const steamVrRunningChanged = previousSteamVrRunning !== nextSteamVrRunning;
     const changed = gameRunningChanged || steamVrRunningChanged;
+    const payloadChangedAt =
+        normalizeString(payload?.lastGameStateChangedAt) ||
+        normalizeString(payload?.changedAt);
+    const payloadStartedAt = normalizeString(payload?.lastGameStartedAt);
     const shouldRefreshDiscordPresence =
         gameRunningChanged ||
         (nextGameRunning === true &&
             useSessionStore.getState().sessionPhase === 'ready');
-    const now = new Date().toISOString();
+    const now = payloadChangedAt || new Date().toISOString();
     const gameStartedAt =
         gameRunningChanged && nextGameRunning
-            ? now
-            : runtimeStore.gameState.lastGameStartedAt;
+            ? payloadStartedAt || now
+            : payloadStartedAt || runtimeStore.gameState.lastGameStartedAt;
     const newSessionPatch =
         gameRunningChanged && nextGameRunning
             ? buildNewGameSessionPatch(gameStartedAt)

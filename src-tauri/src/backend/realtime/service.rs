@@ -52,11 +52,19 @@ impl RealtimeBackend {
             state.active_context = Some(session.clone());
             state.generation
         };
+        let session_generation = self.context.session.set_realtime_context(
+            vrcx_0_runtime::session::RealtimeSessionContext::new(
+                session.user_id.clone(),
+                session.endpoint.clone(),
+                session.websocket.clone(),
+            ),
+        );
         let context = Arc::clone(&self.context);
         let cancel_rx = self.cancel_tx.subscribe();
         let _ = self.cancel_tx.send(generation);
         tauri::async_runtime::spawn(async move {
-            run_realtime_transport(context, generation, session, cancel_rx).await;
+            run_realtime_transport(context, generation, session_generation, session, cancel_rx)
+                .await;
         });
 
         Ok(())
@@ -81,6 +89,7 @@ impl RealtimeBackend {
             let _ = self.cancel_tx.send(state.generation);
             websocket_domain
         };
+        self.context.session.clear_realtime_context();
 
         self.context
             .event_bus

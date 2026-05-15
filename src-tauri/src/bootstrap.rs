@@ -15,6 +15,7 @@ use crate::backend::host_actions::BackendHostActions;
 use crate::domain::host_capabilities::{
     current_host_capabilities, is_host_capability_available, HostCapability,
 };
+use crate::domain::process_monitor::GameProcessEventSink;
 use crate::state::AppState;
 
 #[derive(Clone)]
@@ -341,14 +342,15 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
         .set_actions(TauriBackendHostActions::new(app.handle().clone()));
 
     if is_host_capability_available(HostCapability::GameProcessMonitor) {
+        let game_process_sinks: Vec<std::sync::Arc<dyn GameProcessEventSink>> = vec![
+            state.session_backend.clone(),
+            state.game_log_backend.clone(),
+            state.game_client_backend.clone(),
+        ];
         state.process_monitor.start(
-            app.handle().clone(),
             state.auto_launch.clone(),
             state.log_watcher.clone(),
-            vec![
-                state.game_log_backend.clone(),
-                state.game_client_backend.clone(),
-            ],
+            game_process_sinks,
         );
     }
 

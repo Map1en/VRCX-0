@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
-use tauri::{AppHandle, Emitter, State};
+use tauri::State;
+use vrcx_0_runtime::session::HostSessionProjection;
 
 use crate::domain::game_launch;
 use crate::error::AppError;
@@ -11,18 +12,23 @@ use super::host_capabilities::{
 };
 
 #[tauri::command]
-pub fn app__check_game_running(
-    app_handle: AppHandle,
-    state: State<'_, AppState>,
-) -> Result<(), AppError> {
+pub fn app__check_game_running(state: State<'_, AppState>) -> Result<(), AppError> {
     require_host_capability(HostCapability::GameProcessMonitor)?;
-    let _ = app_handle.emit(
-        "updateIsGameRunning",
-        serde_json::json!({
-            "isGameRunning": state.process_monitor.is_game_running(),
-            "isSteamVRRunning": state.process_monitor.is_steamvr_running(),
-        }),
-    );
+    let snapshot = state.backend_context.session.snapshot();
+    let projection = HostSessionProjection {
+        is_game_running: snapshot.is_game_running,
+        is_steamvr_running: snapshot.is_steamvr_running,
+        last_game_started_at: snapshot.last_game_started_at,
+        last_game_state_changed_at: snapshot.last_game_state_changed_at.clone(),
+        generation: snapshot.generation,
+        game_changed: false,
+        steamvr_changed: false,
+        changed_at: snapshot.last_game_state_changed_at.unwrap_or_default(),
+    };
+    state
+        .backend_context
+        .event_bus
+        .emit_game_process_status(projection);
     Ok(())
 }
 

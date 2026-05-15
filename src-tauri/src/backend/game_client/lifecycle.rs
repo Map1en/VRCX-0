@@ -74,11 +74,11 @@ pub(super) async fn execute_crash_relaunch(
     plan: CrashRelaunchPlan,
 ) -> Result<(), AppError> {
     tokio::time::sleep(plan.delay).await;
-    if deps.actions.is_game_running() {
+    if is_game_running(&deps) {
         tracing::info!("VRChat is already running; skipping crash relaunch");
         return Ok(());
     }
-    if !plan.desktop_mode && !deps.actions.is_steamvr_running() {
+    if !plan.desktop_mode && !is_steamvr_running(&deps) {
         tracing::info!("SteamVR is not running; skipping VRChat crash relaunch");
         return Ok(());
     }
@@ -184,6 +184,14 @@ fn emit_crash_relaunch_decision(
 
 fn focus_main_window(deps: &GameClientDeps) {
     deps.context.host.focus_main_window();
+}
+
+fn is_game_running(deps: &GameClientDeps) -> bool {
+    deps.context.session.snapshot().is_game_running || deps.actions.is_game_running()
+}
+
+fn is_steamvr_running(deps: &GameClientDeps) -> bool {
+    deps.context.session.snapshot().is_steamvr_running || deps.actions.is_steamvr_running()
 }
 
 fn persist_crash_relaunch_event(deps: &GameClientDeps) -> Result<(), AppError> {

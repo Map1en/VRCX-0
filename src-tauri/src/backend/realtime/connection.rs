@@ -96,15 +96,28 @@ async fn fetch_auth_token(
 pub async fn run_realtime_transport(
     context: Arc<BackendContext>,
     generation: u64,
+    session_generation: u64,
     session: RealtimeSessionContext,
     mut cancel_rx: watch::Receiver<u64>,
+) {
+    run_realtime_transport_inner(Arc::clone(&context), generation, session, &mut cancel_rx).await;
+    context
+        .session
+        .clear_realtime_context_if_generation(session_generation);
+}
+
+async fn run_realtime_transport_inner(
+    context: Arc<BackendContext>,
+    generation: u64,
+    session: RealtimeSessionContext,
+    cancel_rx: &mut watch::Receiver<u64>,
 ) {
     let event_bus = context.event_bus.clone();
     let websocket_domain = normalize_websocket_domain(&session.websocket);
     let mut reconnect_attempt = 0usize;
 
     loop {
-        if is_cancelled(&cancel_rx, generation) {
+        if is_cancelled(cancel_rx, generation) {
             emit_status(&event_bus, "disconnected", &websocket_domain, None, None);
             return;
         }
@@ -125,7 +138,7 @@ pub async fn run_realtime_transport(
             Arc::clone(&context),
             &session,
             generation,
-            &mut cancel_rx,
+            cancel_rx,
             &event_bus,
         )
         .await
@@ -175,7 +188,7 @@ pub async fn run_realtime_transport(
         tokio::select! {
             _ = tokio::time::sleep(RECONNECT_DELAY) => {}
             changed = cancel_rx.changed() => {
-                if changed.is_err() || is_cancelled(&cancel_rx, generation) {
+                if changed.is_err() || is_cancelled(cancel_rx, generation) {
                     emit_status(
                         &event_bus,
                         "disconnected",

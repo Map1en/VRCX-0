@@ -4,6 +4,7 @@ use crate::backend::context::BackendContext;
 use crate::backend::game_client::GameClientBackend;
 use crate::backend::game_log::GameLogBackend;
 use crate::backend::realtime::RealtimeBackend;
+use crate::backend::session::SessionBackend;
 use crate::domain::app_paths::AppPaths;
 use crate::domain::auto_launch::AutoAppLaunchManager;
 use crate::domain::discord_rpc::DiscordRpc;
@@ -32,6 +33,7 @@ pub struct AppState {
     pub game_log_backend: Arc<GameLogBackend>,
     pub game_client_backend: Arc<GameClientBackend>,
     pub realtime_backend: Arc<RealtimeBackend>,
+    pub session_backend: Arc<SessionBackend>,
     pub web: Arc<WebClient>,
     pub image_cache: Arc<ImageCache>,
     pub ipc: IpcServer,
@@ -83,6 +85,7 @@ impl AppState {
             log_watcher.clone(),
         ));
         let realtime_backend = Arc::new(RealtimeBackend::new(Arc::clone(&backend_context)));
+        let session_backend = Arc::new(SessionBackend::new(Arc::clone(&backend_context)));
         let ipc_sink: Arc<dyn IpcEventSink> = game_client_backend.clone();
         let ipc = IpcServer::new(Some(ipc_sink));
         let screenshot_cache = MetadataCacheDb::new(&paths.app_data.join("metadataCache.db"))
@@ -101,6 +104,7 @@ impl AppState {
             game_log_backend,
             game_client_backend,
             realtime_backend,
+            session_backend,
             web,
             image_cache,
             ipc,

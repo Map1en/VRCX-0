@@ -8,6 +8,7 @@ use crate::domain::process_monitor::{GameProcessEvent, GameProcessEventSink};
 use crate::error::AppError;
 
 use crate::backend::worker::{BackendWorker, BackendWorkerOptions};
+use vrcx_0_runtime::game_log::ingest::GameLogProcessEvent;
 
 use super::ingest::{GameLogProcessor, GameLogWorkerJob};
 
@@ -47,7 +48,19 @@ impl GameLogBackend {
     }
 
     fn enqueue_process_event(&self, event: GameProcessEvent) -> Result<(), AppError> {
-        self.worker.push_batch([GameLogWorkerJob::Process(event)])?;
+        let snapshot = self.context.session.snapshot();
+        let changed_at = snapshot.last_game_state_changed_at.unwrap_or_else(|| {
+            chrono::Utc::now()
+                .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+                .to_string()
+        });
+        self.worker
+            .push_batch([GameLogWorkerJob::Process(GameLogProcessEvent {
+                is_game_running: snapshot.is_game_running,
+                is_steamvr_running: snapshot.is_steamvr_running,
+                game_changed: event.game_changed,
+                changed_at,
+            })])?;
         Ok(())
     }
 

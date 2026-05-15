@@ -6,4 +6,5 @@
 //! actions, and clocks.
 
 pub mod game_log;
+pub mod session;
 pub mod shell;

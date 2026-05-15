@@ -5,6 +5,7 @@ use serde_json::Value;
 
 use crate::backend::realtime::types::{RealtimeWsMessagePayload, RealtimeWsStatusPayload};
 use vrcx_0_persistence::game_log::GameLogWriteBatch;
+use vrcx_0_runtime::session::HostSessionProjection;
 
 pub trait BackendEventSink: Send + Sync {
     fn emit(&self, event: &str, payload: Value);
@@ -125,6 +126,10 @@ impl BackendEventBus {
                 "message": message,
             }),
         );
+    }
+
+    pub fn emit_game_process_status(&self, payload: HostSessionProjection) {
+        self.emit("updateIsGameRunning", payload);
     }
 
     pub fn emit_realtime_ws_message(&self, payload: RealtimeWsMessagePayload) {

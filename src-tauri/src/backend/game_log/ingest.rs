@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use crate::backend::context::BackendContext;
 use crate::domain::log_watcher::GameLogEvent;
-use crate::domain::process_monitor::GameProcessEvent;
 use crate::error::AppError;
 use vrcx_0_persistence::config as backend_config;
 use vrcx_0_persistence::game_log::{write_batch, GameLogWriteBatch};
@@ -26,7 +25,7 @@ enum GameLogWriteOutcome {
 #[derive(Clone)]
 pub(super) enum GameLogWorkerJob {
     Event(GameLogEvent),
-    Process(GameProcessEvent),
+    Process(GameLogProcessEvent),
 }
 
 #[derive(Clone)]
@@ -95,17 +94,8 @@ impl GameLogProcessor {
         self.apply_ingest_output(self.deps(), output)
     }
 
-    fn handle_game_process_event_now(&self, event: GameProcessEvent) -> Result<(), AppError> {
-        let output = self.with_engine(|engine| {
-            engine.handle_process_event(GameLogProcessEvent {
-                is_game_running: event.is_game_running,
-                is_steamvr_running: event.is_steamvr_running,
-                game_changed: event.game_changed,
-                changed_at: chrono::Utc::now()
-                    .format("%Y-%m-%dT%H:%M:%S%.3fZ")
-                    .to_string(),
-            })
-        })?;
+    fn handle_game_process_event_now(&self, event: GameLogProcessEvent) -> Result<(), AppError> {
+        let output = self.with_engine(|engine| engine.handle_process_event(event))?;
         self.apply_ingest_output(self.deps(), output)
     }
 

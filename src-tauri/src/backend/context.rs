@@ -4,6 +4,7 @@ use crate::domain::image_cache::ImageCache;
 use crate::domain::web_client::WebClient;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::database::DatabaseService;
+use vrcx_0_runtime::session::HostSessionRuntime;
 
 use super::event_bus::BackendEventBus;
 use super::host_actions::BackendHost;
@@ -15,6 +16,7 @@ pub struct BackendContext {
     pub image_cache: Arc<ImageCache>,
     pub event_bus: BackendEventBus,
     pub host: BackendHost,
+    pub session: HostSessionRuntime,
     pub config: ConfigRepository,
 }
 
@@ -31,6 +33,7 @@ impl BackendContext {
             image_cache,
             event_bus: BackendEventBus::new(),
             host: BackendHost::new(),
+            session: HostSessionRuntime::new(),
             config,
         }
     }

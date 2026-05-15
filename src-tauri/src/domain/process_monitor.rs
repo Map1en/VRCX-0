@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use sysinfo::{ProcessesToUpdate, System};
-use tauri::{AppHandle, Emitter};
 
 use super::auto_launch::AutoAppLaunchManager;
 use super::log_watcher::LogWatcher;
@@ -35,7 +34,6 @@ impl ProcessMonitor {
 
     pub fn start(
         &self,
-        app_handle: AppHandle,
         auto_launch: AutoAppLaunchManager,
         log_watcher: LogWatcher,
         game_process_sinks: Vec<Arc<dyn GameProcessEventSink>>,
@@ -82,19 +80,9 @@ impl ProcessMonitor {
                             is_steamvr_running: steamvr_found,
                             game_changed,
                         }) {
-                            tracing::warn!("failed to handle GameLog process event: {error}");
+                            tracing::warn!("failed to handle game process event: {error}");
                         }
                     }
-                }
-
-                if game_changed || steamvr_changed {
-                    let _ = app_handle.emit(
-                        "updateIsGameRunning",
-                        serde_json::json!({
-                            "isGameRunning": game_found,
-                            "isSteamVRRunning": steamvr_found,
-                        }),
-                    );
                 }
 
                 if first_poll {
