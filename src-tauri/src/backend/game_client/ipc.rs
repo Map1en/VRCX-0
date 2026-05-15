@@ -1,10 +1,10 @@
 use serde_json::Value;
 
-use crate::backend::db::game_log::{
-    write_batch, GameLogEventEntry, GameLogExternalEntry, GameLogWriteBatch,
-};
 use crate::domain::ipc::{IpcEventDisposition, IpcEventSink};
 use crate::error::AppError;
+use vrcx_0_persistence::game_log::{
+    write_batch, GameLogEventEntry, GameLogExternalEntry, GameLogWriteBatch,
+};
 
 use super::service::{GameClientBackend, GameClientDeps, GameClientJob};
 
@@ -262,15 +262,15 @@ mod tests {
     use std::sync::Arc;
 
     use crate::backend::context::BackendContext;
-    use crate::backend::db::game_log::ensure_game_log_tables;
     use crate::backend::game_client::actions::GameClientActions;
-    use crate::domain::database::DatabaseService;
     use crate::domain::image_cache::ImageCache;
     use crate::domain::ipc::{IpcEventDisposition, IpcEventSink};
     use crate::domain::log_watcher::LogWatcher;
     use crate::domain::storage::StorageService;
     use crate::domain::web_client::WebClient;
     use crate::error::AppError;
+    use vrcx_0_persistence::database::DatabaseService;
+    use vrcx_0_persistence::game_log::ensure_game_log_tables;
 
     use super::{parse_ipc_event, ParsedIpcEvent};
     use crate::backend::game_client::GameClientBackend;

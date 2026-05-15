@@ -1,9 +1,9 @@
 use chrono::Utc;
 use sea_query::{Expr, Order, Query, SqliteQueryBuilder};
 
-use crate::backend::db::common::{ident, row_string, ParamsBuilder};
-use crate::domain::database::DatabaseService;
-use crate::error::AppError;
+use crate::common::{ident, row_string, ParamsBuilder};
+use crate::database::DatabaseService;
+use crate::Error;
 
 use super::schema::*;
 use super::tables::ensure_game_log_tables;
@@ -64,7 +64,7 @@ fn latest_created_at_sql(table: &str) -> String {
 pub fn get_user_id_from_display_name(
     db: &DatabaseService,
     display_name: &str,
-) -> Result<String, AppError> {
+) -> Result<String, Error> {
     let args = ParamsBuilder::new()
         .set("displayName", display_name)
         .build();
@@ -80,7 +80,7 @@ pub fn get_user_id_from_display_name(
 pub fn get_location_before_or_at(
     db: &DatabaseService,
     created_at: &str,
-) -> Result<Option<GameLogLocationSnapshot>, AppError> {
+) -> Result<Option<GameLogLocationSnapshot>, Error> {
     let args = ParamsBuilder::new().set("createdAt", created_at).build();
     Ok(db
         .execute(&location_before_or_at_sql(), &args)?
@@ -99,7 +99,7 @@ pub fn get_join_leave_entries_for_location_range(
     location: &str,
     after_date: &str,
     before_date: &str,
-) -> Result<Vec<GameLogJoinLeaveSnapshot>, AppError> {
+) -> Result<Vec<GameLogJoinLeaveSnapshot>, Error> {
     let args = ParamsBuilder::new()
         .set(COL_LOCATION, location)
         .set("afterDate", after_date)
@@ -117,7 +117,7 @@ pub fn get_join_leave_entries_for_location_range(
         .collect())
 }
 
-pub fn get_last_game_log_date(db: &DatabaseService) -> Result<String, AppError> {
+pub fn get_last_game_log_date(db: &DatabaseService) -> Result<String, Error> {
     ensure_game_log_tables(db)?;
 
     let now = Utc::now();

@@ -121,12 +121,8 @@ async function ingestAndRecordGameLogEvent(
     name: BackendEventName,
     payload: unknown
 ): Promise<void> {
-    if (isBackendPersistedGameLogMirror(payload)) {
-        useRuntimeStore.getState().recordBackendEvent(name, payload);
-        return;
-    }
-
-    if (!(await canIngestGameLogEvent())) {
+    const backendPersisted = isBackendPersistedGameLogMirror(payload);
+    if (!backendPersisted && !(await canIngestGameLogEvent())) {
         return;
     }
 

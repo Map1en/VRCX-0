@@ -9,11 +9,11 @@ use reqwest::{Client, Method, Proxy};
 use reqwest_cookie_store::{CookieStore, CookieStoreMutex, RawCookie};
 use serde_json::Value;
 
-use crate::domain::database::DatabaseService;
 use crate::domain::image_processing;
 use crate::domain::proxy::load_proxy_url;
 use crate::domain::storage::StorageService;
 use crate::error::AppError;
+use vrcx_0_persistence::database::DatabaseService;
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[serde(rename_all = "PascalCase")]
@@ -475,12 +475,12 @@ impl WebClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::database::DatabaseService;
     use crate::domain::storage::StorageService;
     use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::thread::JoinHandle;
     use std::time::{Duration, Instant};
+    use vrcx_0_persistence::database::DatabaseService;
 
     struct TestDir {
         path: std::path::PathBuf,

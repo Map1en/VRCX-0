@@ -4,9 +4,9 @@ use std::collections::HashMap;
 
 use tauri::State;
 
-use crate::domain::database::DatabaseUpgradeStatus;
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_persistence::database::DatabaseUpgradeStatus;
 
 #[tauri::command]
 pub fn sqlite__execute(
@@ -15,7 +15,7 @@ pub fn sqlite__execute(
     state: State<'_, AppState>,
 ) -> Result<Vec<Vec<serde_json::Value>>, AppError> {
     let args = args.unwrap_or_default();
-    state.db.execute(&sql, &args)
+    Ok(state.db.execute(&sql, &args)?)
 }
 
 #[tauri::command]
@@ -25,7 +25,7 @@ pub fn sqlite__execute_on_writer(
     state: State<'_, AppState>,
 ) -> Result<Vec<Vec<serde_json::Value>>, AppError> {
     let args = args.unwrap_or_default();
-    state.db.execute_on_writer(&sql, &args)
+    Ok(state.db.execute_on_writer(&sql, &args)?)
 }
 
 #[tauri::command]
@@ -35,7 +35,7 @@ pub fn sqlite__execute_non_query(
     state: State<'_, AppState>,
 ) -> Result<i64, AppError> {
     let args = args.unwrap_or_default();
-    state.db.execute_non_query(&sql, &args)
+    Ok(state.db.execute_non_query(&sql, &args)?)
 }
 
 #[tauri::command]
@@ -44,22 +44,22 @@ pub fn sqlite__begin_upgrade(
     to_version: i64,
     state: State<'_, AppState>,
 ) -> Result<(), AppError> {
-    state.db.begin_upgrade(from_version, to_version)
+    Ok(state.db.begin_upgrade(from_version, to_version)?)
 }
 
 #[tauri::command]
 pub fn sqlite__commit_upgrade(state: State<'_, AppState>) -> Result<(), AppError> {
-    state.db.commit_upgrade()
+    Ok(state.db.commit_upgrade()?)
 }
 
 #[tauri::command]
 pub fn sqlite__fail_upgrade(reason: String, state: State<'_, AppState>) -> Result<(), AppError> {
-    state.db.fail_upgrade(reason)
+    Ok(state.db.fail_upgrade(reason)?)
 }
 
 #[tauri::command]
 pub fn sqlite__get_failed_upgrade(
     state: State<'_, AppState>,
 ) -> Result<Option<DatabaseUpgradeStatus>, AppError> {
-    state.db.get_failed_upgrade()
+    Ok(state.db.get_failed_upgrade()?)
 }

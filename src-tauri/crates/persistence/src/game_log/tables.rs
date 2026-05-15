@@ -1,17 +1,17 @@
 use sea_query::{ColumnDef, Index, SqliteQueryBuilder, Table};
 
-use crate::backend::db::common::{ident, DbWriteTarget};
-use crate::domain::database::DatabaseService;
-use crate::error::AppError;
+use crate::common::{ident, DbWriteTarget};
+use crate::database::DatabaseService;
+use crate::Error;
 
 use super::schema::*;
 
 #[allow(dead_code)]
-pub fn ensure_game_log_tables(db: &DatabaseService) -> Result<(), AppError> {
+pub fn ensure_game_log_tables(db: &DatabaseService) -> Result<(), Error> {
     ensure_game_log_tables_on(db)
 }
 
-pub(super) fn ensure_game_log_tables_on(target: &impl DbWriteTarget) -> Result<(), AppError> {
+pub(super) fn ensure_game_log_tables_on(target: &impl DbWriteTarget) -> Result<(), Error> {
     for sql in create_table_sqls() {
         target.execute_non_query(&sql, &Default::default())?;
     }

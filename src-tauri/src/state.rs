@@ -6,7 +6,6 @@ use crate::backend::game_log::GameLogBackend;
 use crate::backend::realtime::RealtimeBackend;
 use crate::domain::app_paths::AppPaths;
 use crate::domain::auto_launch::AutoAppLaunchManager;
-use crate::domain::database::DatabaseService;
 use crate::domain::discord_rpc::DiscordRpc;
 use crate::domain::image_cache::ImageCache;
 use crate::domain::ipc::{IpcEventSink, IpcServer};
@@ -20,6 +19,7 @@ use crate::domain::screenshot::MetadataCacheDb;
 use crate::domain::storage::StorageService;
 use crate::domain::web_client::WebClient;
 use crate::error::AppError;
+use vrcx_0_persistence::database::DatabaseService;
 
 pub struct AppState {
     pub paths: AppPaths,

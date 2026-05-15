@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::backend::db::game_log::GameLogWriteBatch;
 use crate::backend::realtime::types::{RealtimeWsMessagePayload, RealtimeWsStatusPayload};
+use vrcx_0_persistence::game_log::GameLogWriteBatch;
 
 pub trait BackendEventSink: Send + Sync {
     fn emit(&self, event: &str, payload: Value);

@@ -114,4 +114,35 @@ describe('backendEventService', () => {
 
         warn.mockRestore();
     });
+
+    it('projects backend-persisted GameLog mirrors without frontend DB fallback', async () => {
+        const handlers = new Map<string, (payload: unknown) => void>();
+        mocks.subscribe.mockImplementation((name, handler) => {
+            handlers.set(name, handler);
+            return Promise.resolve(() => {});
+        });
+        mocks.ingestBackendGameLogEvent.mockResolvedValue(null);
+
+        await bindBackendEvents();
+
+        const payload = {
+            backendPersisted: true,
+            raw: [
+                'backend-game-log',
+                '2026-05-15T00:00:00.000Z',
+                'location',
+                'wrld_test:1',
+                'Test World'
+            ]
+        };
+        handlers.get('addGameLogEvent')?.(payload);
+        await new Promise((resolve) => {
+            setTimeout(resolve, 0);
+        });
+
+        expect(mocks.ingestBackendGameLogEvent).toHaveBeenCalledWith(payload);
+        expect(
+            useRuntimeStore.getState().backendEvents.addGameLogEvent.count
+        ).toBe(1);
+    });
 });

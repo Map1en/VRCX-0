@@ -1,0 +1,7 @@
+[package]
+name = "vrcx-0-platform"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vrcx-0-domain = { path = "../domain" }

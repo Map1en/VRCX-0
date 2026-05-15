@@ -1,6 +1,6 @@
 use sea_query::{ColumnDef, Expr, OnConflict, Query, SqliteQueryBuilder, Table};
 
-use crate::backend::db::common::{ident, named_param};
+use crate::common::{ident, named_param};
 
 pub(super) const TABLE_CONFIGS: &str = "configs";
 pub(super) const COL_KEY: &str = "key";

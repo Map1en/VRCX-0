@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::domain::database::DatabaseService;
-use crate::error::AppError;
+use crate::database::DatabaseService;
+use crate::Error;
 
-use crate::backend::db::config::ConfigKey;
+use crate::config::ConfigKey;
 
 use super::{
     get_bool, get_json, get_raw, remove, set_bool, set_json, set_raw, set_string, ConfigRepository,
@@ -38,7 +38,7 @@ struct TestDatabase {
     db: Arc<DatabaseService>,
 }
 
-fn test_db(name: &str) -> Result<TestDatabase, AppError> {
+fn test_db(name: &str) -> Result<TestDatabase, Error> {
     let dir = TestDir::new(name);
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
     Ok(TestDatabase { _dir: dir, db })
@@ -61,7 +61,7 @@ fn resolves_frontend_config_keys() {
 }
 
 #[test]
-fn reads_and_writes_bool_string_and_json_values() -> Result<(), AppError> {
+fn reads_and_writes_bool_string_and_json_values() -> Result<(), Error> {
     let test_db = test_db("backend-config-repository")?;
     let repo = ConfigRepository::new(Arc::clone(&test_db.db));
 
@@ -80,7 +80,7 @@ fn reads_and_writes_bool_string_and_json_values() -> Result<(), AppError> {
 }
 
 #[test]
-fn bool_reading_accepts_legacy_shapes() -> Result<(), AppError> {
+fn bool_reading_accepts_legacy_shapes() -> Result<(), Error> {
     let test_db = test_db("backend-config-bool-shapes")?;
 
     set_raw(&test_db.db, "one", "1")?;
@@ -96,7 +96,7 @@ fn bool_reading_accepts_legacy_shapes() -> Result<(), AppError> {
 }
 
 #[test]
-fn remove_deletes_existing_values() -> Result<(), AppError> {
+fn remove_deletes_existing_values() -> Result<(), Error> {
     let test_db = test_db("backend-config-remove")?;
 
     set_string(&test_db.db, "customKey", "value")?;

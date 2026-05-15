@@ -8,9 +8,9 @@ use chrono::{DateTime, Utc};
 use reqwest::Url;
 use serde_json::Value;
 
-use crate::backend::db::config as backend_config;
 use crate::domain::{image_processing, media_files, vrchat_paths};
 use crate::error::AppError;
+use vrcx_0_persistence::config as backend_config;
 
 use super::BackendDeps;
 

@@ -3,9 +3,9 @@ use std::time::Duration;
 use chrono::Utc;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 
-use crate::backend::db::config as backend_config;
-use crate::backend::db::game_log::{write_batch, GameLogEventEntry, GameLogWriteBatch};
 use crate::error::AppError;
+use vrcx_0_persistence::config as backend_config;
+use vrcx_0_persistence::game_log::{write_batch, GameLogEventEntry, GameLogWriteBatch};
 
 use super::service::GameClientDeps;
 

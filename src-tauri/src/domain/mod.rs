@@ -3,7 +3,6 @@ pub mod asset_bundle_cache;
 pub mod auto_launch;
 pub mod calendar;
 pub mod clipboard;
-pub mod database;
 pub mod discord_rpc;
 pub mod error_log;
 pub mod game_launch;

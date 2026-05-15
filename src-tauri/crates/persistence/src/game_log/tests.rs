@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use crate::domain::database::DatabaseService;
-use crate::error::AppError;
+use crate::database::DatabaseService;
+use crate::Error;
 
 use super::super::tables::ensure_game_log_tables;
 use super::super::types::{
@@ -41,7 +41,7 @@ struct TestDatabase {
     db: DatabaseService,
 }
 
-fn test_db(name: &str) -> Result<TestDatabase, AppError> {
+fn test_db(name: &str) -> Result<TestDatabase, Error> {
     let dir = TestDir::new(name);
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     ensure_game_log_tables(&db)?;
@@ -49,7 +49,7 @@ fn test_db(name: &str) -> Result<TestDatabase, AppError> {
 }
 
 #[test]
-fn creates_all_game_log_tables_from_schema_builder() -> Result<(), AppError> {
+fn creates_all_game_log_tables_from_schema_builder() -> Result<(), Error> {
     let test_db = test_db("backend-gamelog-schema-builder")?;
     let db = &test_db.db;
 
@@ -62,7 +62,7 @@ fn creates_all_game_log_tables_from_schema_builder() -> Result<(), AppError> {
 }
 
 #[test]
-fn writes_core_game_log_rows_with_parameterized_sql() -> Result<(), AppError> {
+fn writes_core_game_log_rows_with_parameterized_sql() -> Result<(), Error> {
     let test_db = test_db("backend-gamelog-writes")?;
     let db = &test_db.db;
 
@@ -143,7 +143,7 @@ fn writes_core_game_log_rows_with_parameterized_sql() -> Result<(), AppError> {
 }
 
 #[test]
-fn duplicate_location_and_join_leave_rows_are_ignored() -> Result<(), AppError> {
+fn duplicate_location_and_join_leave_rows_are_ignored() -> Result<(), Error> {
     let test_db = test_db("backend-gamelog-dedupe")?;
     let db = &test_db.db;
     let location = GameLogLocationEntry {
@@ -179,7 +179,7 @@ fn duplicate_location_and_join_leave_rows_are_ignored() -> Result<(), AppError> 
 }
 
 #[test]
-fn updates_location_duration_by_created_at() -> Result<(), AppError> {
+fn updates_location_duration_by_created_at() -> Result<(), Error> {
     let test_db = test_db("backend-gamelog-duration")?;
     let db = &test_db.db;
     insert_location(
@@ -200,7 +200,7 @@ fn updates_location_duration_by_created_at() -> Result<(), AppError> {
 }
 
 #[test]
-fn writes_core_rows_in_one_batch_and_keeps_deduplication() -> Result<(), AppError> {
+fn writes_core_rows_in_one_batch_and_keeps_deduplication() -> Result<(), Error> {
     let test_db = test_db("backend-gamelog-batch")?;
     let db = &test_db.db;
     let mut batch = GameLogWriteBatch::default();
@@ -241,7 +241,7 @@ fn writes_core_rows_in_one_batch_and_keeps_deduplication() -> Result<(), AppErro
 }
 
 #[test]
-fn batch_write_rolls_back_when_one_core_insert_fails() -> Result<(), AppError> {
+fn batch_write_rolls_back_when_one_core_insert_fails() -> Result<(), Error> {
     let dir = TestDir::new("backend-gamelog-batch-rollback");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     db.execute_non_query(

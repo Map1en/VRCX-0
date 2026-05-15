@@ -1,8 +1,8 @@
 use chrono::Utc;
 
-use crate::backend::db::config as backend_config;
 use crate::domain::game_launch;
 use crate::error::AppError;
+use vrcx_0_persistence::config as backend_config;
 
 use super::runtime_state::parse_event_time_ms;
 use super::BackendDeps;

@@ -1,0 +1,15 @@
+[package]
+name = "vrcx-0-runtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4"
+percent-encoding = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tracing = "0.1"
+url = "2"
+vrcx-0-domain = { path = "../domain" }
+vrcx-0-persistence = { path = "../persistence" }

@@ -1,8 +1,8 @@
-use crate::backend::db::common::{
+use crate::common::{
     insert_or_ignore_sql, update_by_key_sql, DbWriteTarget, ParamsBuilder,
 };
-use crate::domain::database::DatabaseService;
-use crate::error::AppError;
+use crate::database::DatabaseService;
+use crate::Error;
 
 use super::schema::*;
 use super::tables::ensure_game_log_tables_on;
@@ -16,14 +16,14 @@ fn update_location_time_sql() -> String {
 }
 
 #[allow(dead_code)]
-pub fn insert_location(db: &DatabaseService, entry: &GameLogLocationEntry) -> Result<(), AppError> {
+pub fn insert_location(db: &DatabaseService, entry: &GameLogLocationEntry) -> Result<(), Error> {
     insert_location_on(db, entry)
 }
 
 fn insert_location_on(
     target: &impl DbWriteTarget,
     entry: &GameLogLocationEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, entry.created_at.clone())
         .set(COL_LOCATION, entry.location.clone())
@@ -54,7 +54,7 @@ pub fn update_location_time(
     db: &DatabaseService,
     created_at: &str,
     time: i64,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     update_location_time_on(db, created_at, time)
 }
 
@@ -62,7 +62,7 @@ fn update_location_time_on(
     target: &impl DbWriteTarget,
     created_at: &str,
     time: i64,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, created_at)
         .set(COL_TIME, time)
@@ -75,14 +75,14 @@ fn update_location_time_on(
 pub fn insert_join_leave(
     db: &DatabaseService,
     entry: &GameLogJoinLeaveEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     insert_join_leave_on(db, entry)
 }
 
 fn insert_join_leave_on(
     target: &impl DbWriteTarget,
     entry: &GameLogJoinLeaveEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, entry.created_at.clone())
         .set(COL_TYPE, entry.event_type.clone())
@@ -112,14 +112,14 @@ fn insert_join_leave_on(
 pub fn insert_portal_spawn(
     db: &DatabaseService,
     entry: &GameLogPortalSpawnEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     insert_portal_spawn_on(db, entry)
 }
 
 fn insert_portal_spawn_on(
     target: &impl DbWriteTarget,
     entry: &GameLogPortalSpawnEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, entry.created_at.clone())
         .set(COL_DISPLAY_NAME, entry.display_name.clone())
@@ -149,14 +149,14 @@ fn insert_portal_spawn_on(
 pub fn insert_video_play(
     db: &DatabaseService,
     entry: &GameLogVideoPlayEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     insert_video_play_on(db, entry)
 }
 
 fn insert_video_play_on(
     target: &impl DbWriteTarget,
     entry: &GameLogVideoPlayEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, entry.created_at.clone())
         .set(COL_VIDEO_URL, entry.video_url.clone())
@@ -188,14 +188,14 @@ fn insert_video_play_on(
 pub fn insert_resource_load(
     db: &DatabaseService,
     entry: &GameLogResourceLoadEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     insert_resource_load_on(db, entry)
 }
 
 fn insert_resource_load_on(
     target: &impl DbWriteTarget,
     entry: &GameLogResourceLoadEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, entry.created_at.clone())
         .set(COL_RESOURCE_URL, entry.resource_url.clone())
@@ -218,11 +218,11 @@ fn insert_resource_load_on(
 }
 
 #[allow(dead_code)]
-pub fn insert_event(db: &DatabaseService, entry: &GameLogEventEntry) -> Result<(), AppError> {
+pub fn insert_event(db: &DatabaseService, entry: &GameLogEventEntry) -> Result<(), Error> {
     insert_event_on(db, entry)
 }
 
-fn insert_event_on(target: &impl DbWriteTarget, entry: &GameLogEventEntry) -> Result<(), AppError> {
+fn insert_event_on(target: &impl DbWriteTarget, entry: &GameLogEventEntry) -> Result<(), Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, entry.created_at.clone())
         .set(COL_DATA, entry.data.clone())
@@ -235,14 +235,14 @@ fn insert_event_on(target: &impl DbWriteTarget, entry: &GameLogEventEntry) -> Re
 }
 
 #[allow(dead_code)]
-pub fn insert_external(db: &DatabaseService, entry: &GameLogExternalEntry) -> Result<(), AppError> {
+pub fn insert_external(db: &DatabaseService, entry: &GameLogExternalEntry) -> Result<(), Error> {
     insert_external_on(db, entry)
 }
 
 fn insert_external_on(
     target: &impl DbWriteTarget,
     entry: &GameLogExternalEntry,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, entry.created_at.clone())
         .set(COL_MESSAGE, entry.message.clone())
@@ -266,7 +266,7 @@ fn insert_external_on(
     Ok(())
 }
 
-pub fn write_batch(db: &DatabaseService, batch: &GameLogWriteBatch) -> Result<(), AppError> {
+pub fn write_batch(db: &DatabaseService, batch: &GameLogWriteBatch) -> Result<(), Error> {
     if batch.is_empty() {
         return Ok(());
     }

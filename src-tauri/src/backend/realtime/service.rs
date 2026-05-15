@@ -5,8 +5,9 @@ use tokio::sync::watch;
 use crate::backend::context::BackendContext;
 use crate::error::AppError;
 
-use super::connection::{normalize_websocket_domain, run_realtime_transport};
+use super::connection::run_realtime_transport;
 use super::types::{RealtimeSessionContext, RealtimeWsStatusPayload};
+use vrcx_0_integrations::realtime::normalize_websocket_domain;
 
 #[derive(Default)]
 struct RealtimeBackendState {

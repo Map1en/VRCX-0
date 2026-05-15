@@ -3,9 +3,9 @@ use std::sync::Arc;
 use serde_json::Value;
 
 use crate::backend::event_bus::BackendEventBus;
-use crate::domain::database::DatabaseService;
 use crate::domain::image_cache::ImageCache;
 use crate::domain::web_client::WebClient;
+use vrcx_0_persistence::database::DatabaseService;
 
 use super::instance_media::InstanceMediaQueue;
 

@@ -1,9 +1,9 @@
 use chrono::{DateTime, Duration, Utc};
 
-use crate::backend::db::config as backend_config;
-use crate::backend::db::game_log;
 use crate::domain::{clipboard, screenshot as screenshot_domain};
 use crate::error::AppError;
+use vrcx_0_persistence::config as backend_config;
+use vrcx_0_persistence::game_log;
 
 use super::runtime_state::{world_id_from_location, RuntimeSnapshot};
 use super::BackendDeps;

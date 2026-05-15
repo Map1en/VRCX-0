@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::backend::db::common::ParamsBuilder;
-use crate::domain::database::DatabaseService;
-use crate::error::AppError;
+use crate::common::ParamsBuilder;
+use crate::database::DatabaseService;
+use crate::Error;
 
 use super::schema::{
     create_configs_sql, delete_value_sql, select_value_sql, upsert_value_sql, COL_KEY, COL_VALUE,
@@ -20,11 +20,11 @@ impl ConfigRepository {
         Self { db }
     }
 
-    pub fn ensure_table(&self) -> Result<(), AppError> {
+    pub fn ensure_table(&self) -> Result<(), Error> {
         ensure_config_table(&self.db)
     }
 
-    pub fn get_raw(&self, key: impl Into<ConfigKey>) -> Result<Option<String>, AppError> {
+    pub fn get_raw(&self, key: impl Into<ConfigKey>) -> Result<Option<String>, Error> {
         get_raw(&self.db, key.into().as_str())
     }
 
@@ -32,7 +32,7 @@ impl ConfigRepository {
         &self,
         key: impl Into<ConfigKey>,
         default_value: bool,
-    ) -> Result<bool, AppError> {
+    ) -> Result<bool, Error> {
         get_bool(&self.db, key.into().as_str(), default_value)
     }
 
@@ -40,7 +40,7 @@ impl ConfigRepository {
         &self,
         key: impl Into<ConfigKey>,
         default_value: &str,
-    ) -> Result<String, AppError> {
+    ) -> Result<String, Error> {
         get_string(&self.db, key.into().as_str(), default_value)
     }
 
@@ -48,19 +48,19 @@ impl ConfigRepository {
         &self,
         key: impl Into<ConfigKey>,
         default_value: serde_json::Value,
-    ) -> Result<serde_json::Value, AppError> {
+    ) -> Result<serde_json::Value, Error> {
         get_json(&self.db, key.into().as_str(), default_value)
     }
 
-    pub fn set_raw(&self, key: impl Into<ConfigKey>, value: &str) -> Result<(), AppError> {
+    pub fn set_raw(&self, key: impl Into<ConfigKey>, value: &str) -> Result<(), Error> {
         set_raw(&self.db, key.into().as_str(), value)
     }
 
-    pub fn set_bool(&self, key: impl Into<ConfigKey>, value: bool) -> Result<(), AppError> {
+    pub fn set_bool(&self, key: impl Into<ConfigKey>, value: bool) -> Result<(), Error> {
         set_bool(&self.db, key.into().as_str(), value)
     }
 
-    pub fn set_string(&self, key: impl Into<ConfigKey>, value: &str) -> Result<(), AppError> {
+    pub fn set_string(&self, key: impl Into<ConfigKey>, value: &str) -> Result<(), Error> {
         set_string(&self.db, key.into().as_str(), value)
     }
 
@@ -68,21 +68,21 @@ impl ConfigRepository {
         &self,
         key: impl Into<ConfigKey>,
         value: &serde_json::Value,
-    ) -> Result<(), AppError> {
+    ) -> Result<(), Error> {
         set_json(&self.db, key.into().as_str(), value)
     }
 
-    pub fn remove(&self, key: impl Into<ConfigKey>) -> Result<(), AppError> {
+    pub fn remove(&self, key: impl Into<ConfigKey>) -> Result<(), Error> {
         remove(&self.db, key.into().as_str())
     }
 }
 
-pub fn ensure_config_table(db: &DatabaseService) -> Result<(), AppError> {
+pub fn ensure_config_table(db: &DatabaseService) -> Result<(), Error> {
     db.execute_non_query(&create_configs_sql(), &Default::default())?;
     Ok(())
 }
 
-pub fn get_raw(db: &DatabaseService, key: &str) -> Result<Option<String>, AppError> {
+pub fn get_raw(db: &DatabaseService, key: &str) -> Result<Option<String>, Error> {
     ensure_config_table(db)?;
     let args = ParamsBuilder::new()
         .set(COL_KEY, resolve_config_key(key))
@@ -96,7 +96,7 @@ pub fn get_raw(db: &DatabaseService, key: &str) -> Result<Option<String>, AppErr
         .map(ToOwned::to_owned))
 }
 
-pub fn get_bool(db: &DatabaseService, key: &str, default_value: bool) -> Result<bool, AppError> {
+pub fn get_bool(db: &DatabaseService, key: &str, default_value: bool) -> Result<bool, Error> {
     Ok(get_raw(db, key)?.map_or(default_value, |value| {
         parse_bool_config(&value).unwrap_or(default_value)
     }))
@@ -106,7 +106,7 @@ pub fn get_string(
     db: &DatabaseService,
     key: &str,
     default_value: &str,
-) -> Result<String, AppError> {
+) -> Result<String, Error> {
     Ok(get_raw(db, key)?.unwrap_or_else(|| default_value.to_string()))
 }
 
@@ -114,14 +114,14 @@ pub fn get_json(
     db: &DatabaseService,
     key: &str,
     default_value: serde_json::Value,
-) -> Result<serde_json::Value, AppError> {
+) -> Result<serde_json::Value, Error> {
     let Some(value) = get_raw(db, key)? else {
         return Ok(default_value);
     };
     Ok(serde_json::from_str(&value).unwrap_or(default_value))
 }
 
-pub fn set_raw(db: &DatabaseService, key: &str, value: &str) -> Result<(), AppError> {
+pub fn set_raw(db: &DatabaseService, key: &str, value: &str) -> Result<(), Error> {
     ensure_config_table(db)?;
     let args = ParamsBuilder::new()
         .set(COL_KEY, resolve_config_key(key))
@@ -131,12 +131,12 @@ pub fn set_raw(db: &DatabaseService, key: &str, value: &str) -> Result<(), AppEr
     Ok(())
 }
 
-pub fn set_bool(db: &DatabaseService, key: &str, value: bool) -> Result<(), AppError> {
+pub fn set_bool(db: &DatabaseService, key: &str, value: bool) -> Result<(), Error> {
     set_raw(db, key, if value { "true" } else { "false" })
 }
 
 #[allow(dead_code)]
-pub fn set_string(db: &DatabaseService, key: &str, value: &str) -> Result<(), AppError> {
+pub fn set_string(db: &DatabaseService, key: &str, value: &str) -> Result<(), Error> {
     set_raw(db, key, value)
 }
 
@@ -145,12 +145,12 @@ pub fn set_json(
     db: &DatabaseService,
     key: &str,
     value: &serde_json::Value,
-) -> Result<(), AppError> {
+) -> Result<(), Error> {
     set_raw(db, key, &value.to_string())
 }
 
 #[allow(dead_code)]
-pub fn remove(db: &DatabaseService, key: &str) -> Result<(), AppError> {
+pub fn remove(db: &DatabaseService, key: &str) -> Result<(), Error> {
     ensure_config_table(db)?;
     let args = ParamsBuilder::new()
         .set(COL_KEY, resolve_config_key(key))

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use crate::domain::database::DatabaseService;
 use crate::domain::image_cache::ImageCache;
 use crate::domain::web_client::WebClient;
+use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_persistence::database::DatabaseService;
 
-use super::db::config::ConfigRepository;
 use super::event_bus::BackendEventBus;
 use super::host_actions::BackendHost;
 

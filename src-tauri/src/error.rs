@@ -20,3 +20,14 @@ impl Serialize for AppError {
         serializer.serialize_str(&self.to_string())
     }
 }
+
+impl From<vrcx_0_persistence::Error> for AppError {
+    fn from(value: vrcx_0_persistence::Error) -> Self {
+        match value {
+            vrcx_0_persistence::Error::Database(message) => AppError::Database(message),
+            vrcx_0_persistence::Error::Io(error) => AppError::Io(error),
+            vrcx_0_persistence::Error::Json(error) => AppError::Json(error),
+            vrcx_0_persistence::Error::Custom(message) => AppError::Custom(message),
+        }
+    }
+}

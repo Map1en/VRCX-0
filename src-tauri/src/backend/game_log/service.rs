@@ -31,7 +31,7 @@ impl GameLogBackend {
     }
 
     pub fn prime_log_watcher(&self, log_watcher: &LogWatcher) -> Result<(), AppError> {
-        let date_till = crate::backend::db::game_log::get_last_game_log_date(&self.context.db)?;
+        let date_till = vrcx_0_persistence::game_log::get_last_game_log_date(&self.context.db)?;
         log_watcher.set_date_till(&date_till);
         Ok(())
     }
