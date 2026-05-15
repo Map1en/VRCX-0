@@ -134,6 +134,7 @@ pub fn run() {
             api::app::game::app__start_game_from_path,
             api::app::realtime::app__start_realtime_transport,
             api::app::realtime::app__stop_realtime_transport,
+            api::app::realtime::app__set_realtime_friend_baseline,
             api::app::host_capabilities::app__get_host_capabilities,
             api::app::paths::app__current_culture,
             api::app::paths::app__current_language,

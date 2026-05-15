@@ -16,6 +16,7 @@ import {
     recordFriendPatch,
     recordFriendRosterFacts
 } from './domainIngestionService.js';
+import { syncCurrentRealtimeFriendBaseline } from './realtimeFriendBaselineService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
 const activeBootstraps = new Map<string, Promise<unknown>>();
@@ -171,7 +172,10 @@ function buildSnapshotFriendIdSet(currentUserSnapshot) {
     };
 }
 
-function buildUnfriendHistoryEntry(row: Record<string, any>, createdAt: string) {
+function buildUnfriendHistoryEntry(
+    row: Record<string, any>,
+    createdAt: string
+) {
     const userId = normalizeUserId(row?.userId);
     if (!userId) {
         return null;
@@ -267,12 +271,11 @@ async function confirmFriendLogRemovalHistoryEntries({
                 }
 
                 try {
-                    const response = await vrchatFriendRepository.getFriendStatus(
-                        {
+                    const response =
+                        await vrchatFriendRepository.getFriendStatus({
                             userId: targetUserId,
                             endpoint
-                        }
-                    );
+                        });
                     if ((response?.json as any)?.isFriend !== false) {
                         continue;
                     }
@@ -336,8 +339,7 @@ export async function recordFriendLogFriendByUserId({
             normalizedCurrentUserId
         )) as Record<string, any>[];
         const existingRow = existingRows.find(
-            (entry) =>
-                normalizeUserId(entry?.userId) === normalizedTargetUserId
+            (entry) => normalizeUserId(entry?.userId) === normalizedTargetUserId
         );
         const maxFriendNumber = existingRows.reduce((maxValue, row) => {
             const friendNumber =
@@ -465,8 +467,7 @@ export async function recordFriendLogUnfriendByUserId({
             normalizedCurrentUserId
         )) as Record<string, any>[];
         const row = existingRows.find(
-            (entry) =>
-                normalizeUserId(entry?.userId) === normalizedTargetUserId
+            (entry) => normalizeUserId(entry?.userId) === normalizedTargetUserId
         );
         const historyEntry = row
             ? buildUnfriendHistoryEntry(row, nowIso())
@@ -495,7 +496,10 @@ export async function recordFriendLogUnfriendByUserId({
     });
 }
 
-function createFallbackFriendUser(userId: unknown, existingRow: Record<string, any>) {
+function createFallbackFriendUser(
+    userId: unknown,
+    existingRow: Record<string, any>
+) {
     return {
         id: userId,
         displayName: existingRow?.displayName || userId,
@@ -542,7 +546,10 @@ function normalizeFriendEntry(
             10
         ) || 0;
     const displayName =
-        getMeaningfulDisplayName(sourceRecord, sourceRecord.id || existingRow?.userId) ||
+        getMeaningfulDisplayName(
+            sourceRecord,
+            sourceRecord.id || existingRow?.userId
+        ) ||
         existingRow?.displayName ||
         getDisplayName(sourceRecord) ||
         sourceRecord.id;
@@ -561,11 +568,17 @@ function normalizeFriendEntry(
         $isModerator: trust.isModerator,
         $isTroll: trust.isTroll,
         $isProbableTroll: trust.isProbableTroll,
-        $platform: computeUserPlatform(sourceRecord.platform, sourceRecord.last_platform)
+        $platform: computeUserPlatform(
+            sourceRecord.platform,
+            sourceRecord.last_platform
+        )
     };
 }
 
-function compareFriendEntries(left: Record<string, any>, right: Record<string, any>) {
+function compareFriendEntries(
+    left: Record<string, any>,
+    right: Record<string, any>
+) {
     const leftNumber =
         Number.parseInt(left?.friendNumber ?? left?.$friendNumber ?? 0, 10) ||
         0;
@@ -737,10 +750,9 @@ async function runFriendBootstrap({
                 fetchedFriendsById.set(friendId, friend);
             }
 
-            const existingRows =
-                (await friendLogRepository.getFriendLogCurrent(
-                    normalizedUserId
-                )) as Record<string, any>[];
+            const existingRows = (await friendLogRepository.getFriendLogCurrent(
+                normalizedUserId
+            )) as Record<string, any>[];
             const existingRowsById = new Map(
                 existingRows.map((row) => [normalizeUserId(row?.userId), row])
             );
@@ -911,13 +923,8 @@ async function runFriendBootstrap({
         }
     );
 
-    const {
-        friendsById,
-        orderedFriendIds,
-        onlineIds,
-        activeIds,
-        offlineIds
-    } = bootstrapResult as Record<string, any>;
+    const { friendsById, orderedFriendIds, onlineIds, activeIds, offlineIds } =
+        bootstrapResult as Record<string, any>;
     const detail = (bootstrapResult as Record<string, any>).detail;
 
     if (!isCurrentBootstrapTarget(normalizedUserId, endpoint)) {
@@ -942,6 +949,7 @@ async function runFriendBootstrap({
         endpoint,
         friendsById
     });
+    void syncCurrentRealtimeFriendBaseline();
     useSessionStore.getState().setFriendsLoaded(true);
     syncStartupServicesTask([detail]);
 

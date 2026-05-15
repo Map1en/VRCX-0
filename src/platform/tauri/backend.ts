@@ -86,9 +86,32 @@ export interface AppBackendNamespace extends BackendNamespace {
     StartRealtimeTransport(
         userId: string,
         endpoint: string,
-        websocket: string
+        websocket: string,
+        clientRunId: number
+    ): Promise<{
+        generation: number;
+        clientRunId: number;
+        sessionGeneration: number;
+    }>;
+    SetRealtimeFriendBaseline(
+        currentUserId: string,
+        endpoint: string,
+        websocket: string,
+        clientRunId: number,
+        generation: number,
+        friendsById: Record<string, unknown>
+    ): Promise<{
+        accepted: boolean;
+        generation: number;
+        friendCount: number;
+    }>;
+    StopRealtimeTransport(
+        userId?: string | null,
+        endpoint?: string | null,
+        websocket?: string | null,
+        clientRunId?: number | null,
+        generation?: number | null
     ): Promise<void>;
-    StopRealtimeTransport(): Promise<void>;
     CheckLegacyVrcxAvailable(): Promise<boolean>;
     GetLegacyVrcxMigrationStatus(): Promise<LegacyVrcxMigrationStatus>;
     GetLegacyVrcxForceMigrationStatus(): Promise<LegacyVrcxMigrationStatus>;

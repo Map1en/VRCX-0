@@ -7,6 +7,11 @@ import { useSessionStore } from '@/state/sessionStore.js';
 import { handleRuntimeAuthFailure } from './authSessionRecoveryService.js';
 import { refreshFriendAndFavoriteSnapshots } from './backgroundMaintenanceService.js';
 import { isHostCapabilityAvailable } from './hostCapabilityService.js';
+import {
+    clearRealtimeFriendBaselineTransportContext,
+    setRealtimeFriendBaselineTransportContext,
+    syncCurrentRealtimeFriendBaseline
+} from './realtimeFriendBaselineService.js';
 import { handleRealtimePresenceEvent } from './realtimePresenceService.js';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
@@ -19,6 +24,9 @@ let backendTransportActive = false;
 let backendTransportCleanup: (() => void) | null = null;
 let backendConnectedForActiveSession = false;
 let backendTransportRunId = 0;
+let backendTransportContext: Record<string, any> | null = null;
+let backendTransportClientRunId: number | null = null;
+let backendTransportGeneration: number | null = null;
 
 function normalizeWebsocketDomain(value: unknown) {
     if (typeof value === 'string' && value.trim()) {
@@ -64,25 +72,82 @@ function cleanupBackendRealtimeSubscription() {
     }
 }
 
+function cleanupBackendRealtimeSubscriptionForRun(
+    runId: number,
+    cleanup: () => void
+) {
+    cleanup();
+    if (
+        runId === backendTransportRunId &&
+        backendTransportCleanup === cleanup
+    ) {
+        backendTransportCleanup = null;
+    }
+}
+
 function markBackendTransportStopped() {
     backendTransportStarting = false;
     backendTransportActive = false;
     backendConnectedForActiveSession = false;
+    backendTransportContext = null;
+    backendTransportClientRunId = null;
+    backendTransportGeneration = null;
 }
 
-function requestBackendRealtimeStop() {
-    backend.app.StopRealtimeTransport().catch((error) => {
-        console.warn('Backend realtime transport stop failed:', error);
-    });
+function backendTransportStopScope() {
+    return {
+        userId: backendTransportContext?.userId ?? null,
+        endpoint: backendTransportContext?.endpoint ?? null,
+        websocket: backendTransportContext?.websocket ?? null,
+        clientRunId: backendTransportClientRunId,
+        generation: backendTransportGeneration
+    };
+}
+
+function transportStopScopeForRun(
+    context: Record<string, any>,
+    clientRunId: number,
+    generation: number | null
+) {
+    return {
+        userId: context.userId ?? null,
+        endpoint: context.endpoint ?? null,
+        websocket: context.websocket ?? null,
+        clientRunId,
+        generation
+    };
+}
+
+function requestBackendRealtimeStop(scope = backendTransportStopScope()) {
+    backend.app
+        .StopRealtimeTransport(
+            scope.userId,
+            scope.endpoint,
+            scope.websocket,
+            scope.clientRunId,
+            scope.generation
+        )
+        .catch((error) => {
+            console.warn('Backend realtime transport stop failed:', error);
+        });
 }
 
 function stopBackendRealtimeTransport() {
-    const shouldStopBackend = backendTransportStarting || backendTransportActive;
+    const shouldStopBackend =
+        backendTransportStarting || backendTransportActive;
+    const stopScope = backendTransportStopScope();
     backendTransportRunId += 1;
     cleanupBackendRealtimeSubscription();
+    clearRealtimeFriendBaselineTransportContext({
+        currentUserId: stopScope.userId,
+        endpoint: stopScope.endpoint,
+        websocket: stopScope.websocket,
+        clientRunId: stopScope.clientRunId,
+        generation: stopScope.generation
+    });
     markBackendTransportStopped();
     if (shouldStopBackend) {
-        requestBackendRealtimeStop();
+        requestBackendRealtimeStop(stopScope);
     }
 }
 
@@ -122,8 +187,7 @@ function handleRealtimeAuthFailure(payload: Record<string, any>) {
         useNotificationStore.getState().pushNotification({
             level: 'warning',
             title: 'Realtime auth failed',
-            message:
-                reason || 'The realtime websocket could not authenticate.'
+            message: reason || 'The realtime websocket could not authenticate.'
         });
         return;
     }
@@ -147,8 +211,7 @@ function handleRealtimeAuthFailure(payload: Record<string, any>) {
     useNotificationStore.getState().pushNotification({
         level: 'warning',
         title: 'Realtime auth failed',
-        message:
-            reason || 'The realtime websocket could not authenticate.'
+        message: reason || 'The realtime websocket could not authenticate.'
     });
 }
 
@@ -276,6 +339,9 @@ async function startBackendRealtimeTransport(
     backendTransportStarting = true;
     backendTransportActive = false;
     backendConnectedForActiveSession = false;
+    backendTransportContext = context;
+    backendTransportClientRunId = runId;
+    backendTransportGeneration = null;
     useSessionStore.getState().setTransportStatus('pipeline-connecting');
 
     let cleanup: () => void;
@@ -296,19 +362,27 @@ async function startBackendRealtimeTransport(
         intentionalStop ||
         !isCurrentTransportTarget(context)
     ) {
-        cleanup();
-        markBackendTransportStopped();
-        requestBackendRealtimeStop();
+        cleanupBackendRealtimeSubscriptionForRun(runId, cleanup);
+        if (runId === backendTransportRunId) {
+            markBackendTransportStopped();
+        }
         return;
     }
     backendTransportCleanup = cleanup;
 
+    let startResult: Record<string, any>;
+    let startGeneration: number | null = null;
     try {
-        await backend.app.StartRealtimeTransport(
+        startResult = (await backend.app.StartRealtimeTransport(
             context.userId,
             context.endpoint,
-            context.websocket
-        );
+            context.websocket,
+            runId
+        )) as Record<string, any>;
+        startGeneration = Number(startResult?.generation) || null;
+        if (runId === backendTransportRunId) {
+            backendTransportGeneration = startGeneration;
+        }
     } catch (error) {
         if (runId === backendTransportRunId) {
             cleanupBackendRealtimeSubscription();
@@ -323,14 +397,36 @@ async function startBackendRealtimeTransport(
         intentionalStop ||
         !isCurrentTransportTarget(context)
     ) {
-        cleanupBackendRealtimeSubscription();
-        markBackendTransportStopped();
-        requestBackendRealtimeStop();
+        const stopScope = transportStopScopeForRun(
+            context,
+            runId,
+            startGeneration
+        );
+        cleanupBackendRealtimeSubscriptionForRun(runId, cleanup);
+        clearRealtimeFriendBaselineTransportContext({
+            currentUserId: stopScope.userId,
+            endpoint: stopScope.endpoint,
+            websocket: stopScope.websocket,
+            clientRunId: stopScope.clientRunId,
+            generation: stopScope.generation
+        });
+        if (runId === backendTransportRunId) {
+            markBackendTransportStopped();
+        }
+        requestBackendRealtimeStop(stopScope);
         return;
     }
 
+    setRealtimeFriendBaselineTransportContext({
+        currentUserId: context.userId,
+        endpoint: context.endpoint,
+        websocket: context.websocket,
+        clientRunId: runId,
+        generation: startGeneration
+    });
     backendTransportStarting = false;
     backendTransportActive = true;
+    void syncCurrentRealtimeFriendBaseline();
 }
 
 function handleTransportFailure(error: unknown) {
@@ -469,9 +565,9 @@ export function stopRealtimeTransport({
     updateStatus = true
 } = {}) {
     intentionalStop = true;
-    activeContext = null;
     ipcAnnouncedForActiveSession = false;
     stopBackendRealtimeTransport();
+    activeContext = null;
 
     if (!preserveTelemetry) {
         useRuntimeStore.getState().setTransportState({

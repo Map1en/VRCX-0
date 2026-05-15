@@ -3,4 +3,4 @@ mod parser;
 mod service;
 pub(crate) mod types;
 
-pub use service::RealtimeBackend;
+pub use service::{RealtimeBackend, RealtimeStopRequest};

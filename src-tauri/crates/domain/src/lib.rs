@@ -5,4 +5,5 @@
 //! expose data shapes and deterministic transformations only.
 
 pub mod log_watcher;
+pub mod friends;
 pub mod realtime;

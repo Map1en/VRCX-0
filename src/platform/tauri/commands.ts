@@ -50,8 +50,27 @@ const commandArgs: Record<string, string[]> = {
     app__set_user_agent: [],
     app__check_game_running: [],
     app__set_game_client_runtime_state: ['sessionActive', 'currentLocation'],
-    app__start_realtime_transport: ['userId', 'endpoint', 'websocket'],
-    app__stop_realtime_transport: [],
+    app__start_realtime_transport: [
+        'userId',
+        'endpoint',
+        'websocket',
+        'clientRunId'
+    ],
+    app__set_realtime_friend_baseline: [
+        'currentUserId',
+        'endpoint',
+        'websocket',
+        'clientRunId',
+        'generation',
+        'friendsById'
+    ],
+    app__stop_realtime_transport: [
+        'userId',
+        'endpoint',
+        'websocket',
+        'clientRunId',
+        'generation'
+    ],
     app__get_file_base64: ['path'],
     app__sign_file: ['blob'],
     app__resize_image_to_fit_limits: ['base64data'],

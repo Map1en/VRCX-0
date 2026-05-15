@@ -13,19 +13,8 @@ import {
     recordCurrentUserSnapshot,
     recordFriendPatch
 } from './domainIngestionService.js';
-import {
-    recordFriendLogFriendByUserId,
-    recordFriendLogUnfriendByUserId
-} from './friendBootstrapService.js';
 import { applyCurrentUserLocationEvent } from './realtime-presence/currentUserLocationFallback.js';
 import { dispatchRealtimePresenceMessage } from './realtime-presence/dispatcher.js';
-import {
-    cancelPendingOffline,
-    recordGpsFeed,
-    recordOnlineFeed,
-    recordProfileDiffFeed,
-    scheduleOfflineFeed
-} from './realtime-presence/feedWriter.js';
 import {
     buildLocationMetadataPatch,
     buildLocationPatch,
@@ -33,7 +22,6 @@ import {
     firstString,
     getCurrentUserSnapshot,
     hasEventStateBucket,
-    isOnlineState,
     normalizeStateBucket,
     normalizeUserId,
     onlinePresenceFallback,
@@ -43,6 +31,15 @@ import {
     setCurrentUserSnapshot
 } from './realtime-presence/helpers.js';
 import { handleInstanceClosedEvent } from './realtime-presence/notifications.js';
+import {
+    cancelRealtimeFriendPendingOffline,
+    persistRealtimeFriendAdd,
+    persistRealtimeFriendDelete,
+    persistRealtimeFriendLocationFeed,
+    persistRealtimeFriendOnlineFeed,
+    persistRealtimeFriendUpdateFeed,
+    scheduleRealtimeFriendOfflineFeed
+} from './realtime-presence/persistence.js';
 import { handleRealtimeNotificationEvent } from './vrcNotificationRuntimeService.js';
 
 function patchCurrentUserSnapshot(patch) {
@@ -140,7 +137,10 @@ function removeCurrentUserFriend(userId) {
         'offlineFriends'
     ]) {
         if (Array.isArray(snapshot[key])) {
-            nextSnapshot[key] = removeFromArray(snapshot[key], normalizedUserId);
+            nextSnapshot[key] = removeFromArray(
+                snapshot[key],
+                normalizedUserId
+            );
         }
     }
 
@@ -213,22 +213,11 @@ export async function handleRealtimePresenceEvent(message) {
                         userPatch,
                         currentStateBucket
                     );
-                    let historyCount = 0;
-                    try {
-                        const runtimeState = useRuntimeStore.getState();
-                        const result = (await recordFriendLogFriendByUserId({
-                            currentUserId: runtimeState.auth.currentUserId,
-                            targetUserId: userId,
-                            targetUser: userPatch,
-                            stateBucket: currentStateBucket
-                        })) as Record<string, any>;
-                        historyCount = result?.historyCount ?? 0;
-                    } catch (error) {
-                        console.warn(
-                            'Friend log add recording failed:',
-                            error
-                        );
-                    }
+                    const { historyCount } = await persistRealtimeFriendAdd({
+                        userId,
+                        userPatch,
+                        stateBucket: currentStateBucket
+                    });
                     if (changed || historyCount > 0) {
                         notifyFriendLogMenu();
                     }
@@ -239,21 +228,10 @@ export async function handleRealtimePresenceEvent(message) {
                     if (!userId) {
                         return false;
                     }
-                    cancelPendingOffline(userId);
+                    cancelRealtimeFriendPendingOffline(userId);
                     useFriendRosterStore.getState().removeFriend(userId);
                     removeCurrentUserFriend(userId);
-                    try {
-                        const runtimeState = useRuntimeStore.getState();
-                        await recordFriendLogUnfriendByUserId({
-                            currentUserId: runtimeState.auth.currentUserId,
-                            targetUserId: userId
-                        });
-                    } catch (error) {
-                        console.warn(
-                            'Friend log unfriend recording failed:',
-                            error
-                        );
-                    }
+                    await persistRealtimeFriendDelete({ userId });
                     notifyFriendLogMenu();
                     return true;
                 }
@@ -278,7 +256,11 @@ export async function handleRealtimePresenceEvent(message) {
                         previous
                     );
                     const patch = { ...userPatch, id: userId };
-                    recordProfileDiffFeed({ userId, patch, previous });
+                    persistRealtimeFriendUpdateFeed({
+                        userId,
+                        patch,
+                        previous
+                    });
                     return applyFriendPatch(userId, patch, stateBucket);
                 }
                 case 'friend-online': {
@@ -288,7 +270,8 @@ export async function handleRealtimePresenceEvent(message) {
                     if (!userId) {
                         return false;
                     }
-                    const canceledPendingOffline = cancelPendingOffline(userId);
+                    const canceledPendingOffline =
+                        cancelRealtimeFriendPendingOffline(userId);
                     const previous =
                         useFriendRosterStore.getState().friendsById[userId] ??
                         null;
@@ -325,23 +308,12 @@ export async function handleRealtimePresenceEvent(message) {
                             locationTimestamp
                         )
                     };
-                    if (!canceledPendingOffline && !isOnlineState(previous)) {
-                        recordOnlineFeed({
-                            type: 'Online',
-                            userId,
-                            patch,
-                            previous,
-                            location: patch.location,
-                            time: ''
-                        });
-                    } else {
-                        recordGpsFeed({
-                            userId,
-                            patch,
-                            previous,
-                            location: patch.location
-                        });
-                    }
+                    persistRealtimeFriendOnlineFeed({
+                        userId,
+                        patch,
+                        previous,
+                        canceledPendingOffline
+                    });
                     return applyFriendPatch(userId, patch, 'online');
                 }
                 case 'friend-active': {
@@ -362,7 +334,7 @@ export async function handleRealtimePresenceEvent(message) {
                         ...buildLocationPatch('offline', 'offline', 'offline')
                     };
                     if (
-                        scheduleOfflineFeed({
+                        scheduleRealtimeFriendOfflineFeed({
                             userId,
                             patch,
                             previous,
@@ -388,7 +360,7 @@ export async function handleRealtimePresenceEvent(message) {
                         ...buildLocationPatch('offline', 'offline', 'offline')
                     };
                     if (
-                        scheduleOfflineFeed({
+                        scheduleRealtimeFriendOfflineFeed({
                             userId,
                             patch,
                             previous,
@@ -406,7 +378,7 @@ export async function handleRealtimePresenceEvent(message) {
                     if (!userId) {
                         return false;
                     }
-                    cancelPendingOffline(userId);
+                    cancelRealtimeFriendPendingOffline(userId);
                     const previous =
                         useFriendRosterStore.getState().friendsById[userId] ??
                         null;
@@ -442,17 +414,17 @@ export async function handleRealtimePresenceEvent(message) {
                             locationTimestamp
                         )
                     };
-                    recordGpsFeed({
+                    persistRealtimeFriendLocationFeed({
                         userId,
                         patch,
-                        previous,
-                        location: patch.location
+                        previous
                     });
                     return applyFriendPatch(userId, patch, 'online');
                 }
                 case 'user-update': {
                     const runtimeState = useRuntimeStore.getState();
-                    const previous = runtimeState.auth.currentUserSnapshot ?? null;
+                    const previous =
+                        runtimeState.auth.currentUserSnapshot ?? null;
                     const userPatch =
                         sanitizeTransportUser(content.user, {
                             preserveState: true
