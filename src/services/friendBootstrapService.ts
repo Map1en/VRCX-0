@@ -16,7 +16,6 @@ import {
     recordFriendPatch,
     recordFriendRosterFacts
 } from './domainIngestionService.js';
-import { syncCurrentRealtimeFriendBaseline } from './realtimeFriendBaselineService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
 const activeBootstraps = new Map<string, Promise<unknown>>();
@@ -949,7 +948,6 @@ async function runFriendBootstrap({
         endpoint,
         friendsById
     });
-    void syncCurrentRealtimeFriendBaseline();
     useSessionStore.getState().setFriendsLoaded(true);
     syncStartupServicesTask([detail]);
 

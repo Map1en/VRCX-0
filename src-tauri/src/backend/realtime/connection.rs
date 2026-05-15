@@ -29,6 +29,15 @@ enum ConnectionEnd {
 }
 
 pub trait RealtimeMessageSink: Send + Sync {
+    fn handle_realtime_transport_status(
+        &self,
+        _generation: u64,
+        _session_generation: u64,
+        _session: &RealtimeSessionContext,
+        _status: &str,
+    ) {
+    }
+
     fn handle_realtime_ws_message(
         &self,
         generation: u64,
@@ -151,17 +160,18 @@ async fn run_realtime_transport_inner(
             return;
         }
 
-        emit_status(
-            &event_bus,
-            if reconnect_attempt == 0 {
-                "connecting"
-            } else {
-                "reconnecting"
-            },
-            &websocket_domain,
-            None,
-            None,
+        let status = if reconnect_attempt == 0 {
+            "connecting"
+        } else {
+            "reconnecting"
+        };
+        message_sink.handle_realtime_transport_status(
+            generation,
+            session_generation,
+            &session,
+            status,
         );
+        emit_status(&event_bus, status, &websocket_domain, None, None);
 
         match connect_once(
             Arc::clone(&context),
@@ -184,6 +194,12 @@ async fn run_realtime_transport_inner(
                     generation,
                     reconnect_attempt,
                     "[Realtime] websocket closed; scheduling reconnect"
+                );
+                message_sink.handle_realtime_transport_status(
+                    generation,
+                    session_generation,
+                    &session,
+                    "reconnecting",
                 );
                 emit_status(
                     &event_bus,
@@ -280,6 +296,12 @@ async fn connect_once(
     if is_cancelled(cancel_rx, generation) {
         return Ok(ConnectionEnd::Stopped);
     }
+    message_sink.handle_realtime_transport_status(
+        generation,
+        session_generation,
+        session,
+        "connected",
+    );
     emit_status(event_bus, "connected", &websocket_domain, None, None);
 
     let mut parser = RealtimeMessageParser::default();
@@ -318,7 +340,6 @@ async fn connect_once(
                                 session,
                                 &payload,
                             );
-                            event_bus.emit_realtime_ws_message(payload);
                         }
                     }
                     Message::Close(close) => {

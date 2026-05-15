@@ -74,6 +74,10 @@ pub struct GameLogIngestEngine {
 }
 
 impl GameLogIngestEngine {
+    pub fn runtime_snapshot(&self) -> RuntimeSnapshot {
+        self.state.snapshot()
+    }
+
     pub fn ingest_events(
         &mut self,
         events: &[GameLogEvent],
@@ -99,6 +103,9 @@ impl GameLogIngestEngine {
                     self.finalize_location_session(&mut output.batch, &event.created_at);
                     self.state.current_location = "traveling".into();
                     self.state.current_world_name.clear();
+                    if let GameLogEventKind::LocationDestination { location } = &event.kind {
+                        self.state.current_destination = location.clone();
+                    }
                     self.state.current_location_started_at = event.created_at.clone();
                     self.state.current_location_started_at_ms =
                         parse_event_time_ms(&event.created_at);
@@ -233,6 +240,7 @@ impl GameLogIngestEngine {
             self.finalize_location_session(&mut output.batch, &event.changed_at);
             self.state.current_location.clear();
             self.state.current_world_name.clear();
+            self.state.current_destination.clear();
             self.state.current_location_started_at.clear();
             self.state.current_location_started_at_ms = None;
             self.state.last_resource_url.clear();
@@ -265,6 +273,7 @@ impl GameLogIngestEngine {
 
         self.state.current_location = location.to_string();
         self.state.current_world_name = world_name.to_string();
+        self.state.current_destination.clear();
         self.state.current_location_started_at = event.created_at.clone();
         self.state.current_location_started_at_ms = parse_event_time_ms(&event.created_at);
         self.state.players_by_key.clear();

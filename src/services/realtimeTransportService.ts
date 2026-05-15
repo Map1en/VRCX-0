@@ -1,5 +1,6 @@
 import { backend } from '@/platform/index.js';
 import { DEFAULT_WEBSOCKET_DOMAIN } from '@/repositories/vrchatAuthRepository.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useNotificationStore } from '@/state/notificationStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
@@ -8,17 +9,10 @@ import { handleRuntimeAuthFailure } from './authSessionRecoveryService.js';
 import { refreshFriendAndFavoriteSnapshots } from './backgroundMaintenanceService.js';
 import { isHostCapabilityAvailable } from './hostCapabilityService.js';
 import {
-    acceptRealtimeFriendBaselineProjection,
-    clearRealtimeFriendBaselineTransportContext,
-    isCurrentRealtimeFriendBaselineAccepted,
-    markRealtimeFriendBaselineDirty,
-    setRealtimeFriendBaselineTransportContext,
-    syncCurrentRealtimeFriendBaseline
-} from './realtimeFriendBaselineService.js';
-import {
+    handleRealtimeCurrentUserProjection,
     handleRealtimeFriendProjection,
-    handleRealtimePresenceEvent,
-    isRealtimeFriendEventType
+    handleRealtimeInstanceClosedProjection,
+    handleRealtimeNotificationProjection
 } from './realtimePresenceService.js';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
@@ -34,6 +28,11 @@ let backendTransportRunId = 0;
 let backendTransportContext: Record<string, any> | null = null;
 let backendTransportClientRunId: number | null = null;
 let backendTransportGeneration: number | null = null;
+let pendingBackendProjectionEvents: Array<{
+    payload: unknown;
+    context: Record<string, any>;
+    deliver: () => void;
+}> = [];
 
 function normalizeWebsocketDomain(value: unknown) {
     if (typeof value === 'string' && value.trim()) {
@@ -44,6 +43,15 @@ function normalizeWebsocketDomain(value: unknown) {
 }
 
 function isCurrentTransportTarget(
+    context: Record<string, any> | null = activeContext
+) {
+    return (
+        isCurrentTransportIdentity(context) &&
+        useSessionStore.getState().isFriendsLoaded
+    );
+}
+
+function isCurrentTransportIdentity(
     context: Record<string, any> | null = activeContext
 ) {
     if (!context?.userId) {
@@ -58,8 +66,7 @@ function isCurrentTransportTarget(
         runtimeState.auth.currentUserEndpoint === context.endpoint &&
         runtimeState.auth.currentUserWebsocket === context.websocket &&
         sessionState.isLoggedIn &&
-        sessionState.sessionPhase === 'ready' &&
-        sessionState.isFriendsLoaded
+        sessionState.sessionPhase === 'ready'
     );
 }
 
@@ -69,6 +76,56 @@ function updateTransportStartupDetail(detail: string) {
 
 function isRecord(value: unknown): value is Record<string, any> {
     return Boolean(value && typeof value === 'object');
+}
+
+function projectionGeneration(payload: unknown) {
+    const generation = Number(isRecord(payload) ? payload.generation : null);
+    return Number.isFinite(generation) && generation > 0 ? generation : null;
+}
+
+function isCurrentRealtimeProjection(
+    payload: unknown,
+    context: Record<string, any>
+) {
+    return (
+        isCurrentTransportIdentity(context) &&
+        backendTransportGeneration !== null &&
+        projectionGeneration(payload) === backendTransportGeneration
+    );
+}
+
+function routeRealtimeProjection(
+    payload: unknown,
+    context: Record<string, any>,
+    deliver: () => void
+) {
+    if (isCurrentRealtimeProjection(payload, context)) {
+        deliver();
+        return;
+    }
+    if (
+        backendTransportGeneration === null &&
+        isCurrentTransportIdentity(context) &&
+        projectionGeneration(payload) !== null
+    ) {
+        pendingBackendProjectionEvents.push({ payload, context, deliver });
+        if (pendingBackendProjectionEvents.length > 128) {
+            pendingBackendProjectionEvents.shift();
+        }
+    }
+}
+
+function flushPendingBackendProjectionEvents() {
+    if (!pendingBackendProjectionEvents.length) {
+        return;
+    }
+    const pending = pendingBackendProjectionEvents;
+    pendingBackendProjectionEvents = [];
+    for (const entry of pending) {
+        if (isCurrentRealtimeProjection(entry.payload, entry.context)) {
+            entry.deliver();
+        }
+    }
 }
 
 function cleanupBackendRealtimeSubscription() {
@@ -99,6 +156,7 @@ function markBackendTransportStopped() {
     backendTransportContext = null;
     backendTransportClientRunId = null;
     backendTransportGeneration = null;
+    pendingBackendProjectionEvents = [];
 }
 
 function backendTransportStopScope() {
@@ -145,13 +203,6 @@ function stopBackendRealtimeTransport() {
     const stopScope = backendTransportStopScope();
     backendTransportRunId += 1;
     cleanupBackendRealtimeSubscription();
-    clearRealtimeFriendBaselineTransportContext({
-        currentUserId: stopScope.userId,
-        endpoint: stopScope.endpoint,
-        websocket: stopScope.websocket,
-        clientRunId: stopScope.clientRunId,
-        generation: stopScope.generation
-    });
     markBackendTransportStopped();
     if (shouldStopBackend) {
         requestBackendRealtimeStop(stopScope);
@@ -159,13 +210,25 @@ function stopBackendRealtimeTransport() {
 }
 
 function refreshBaselineAfterReconnect() {
-    void refreshFriendAndFavoriteSnapshots().catch((error) => {
-        useNotificationStore.getState().pushNotification({
-            level: 'warning',
-            title: 'Realtime baseline refresh failed',
-            message: error instanceof Error ? error.message : String(error)
+    let refreshError: unknown = null;
+    void refreshFriendAndFavoriteSnapshots({ syncRealtime: false })
+        .catch((error) => {
+            refreshError = error;
+        })
+        .finally(() =>
+            syncBackendRealtimeFriendSnapshot({ requireFriendsLoaded: false })
+        )
+        .catch((error) => {
+            const reportError = refreshError || error;
+            useNotificationStore.getState().pushNotification({
+                level: 'warning',
+                title: 'Realtime baseline refresh failed',
+                message:
+                    reportError instanceof Error
+                        ? reportError.message
+                        : String(reportError)
+            });
         });
-    });
 }
 
 function handleRealtimeMessageFailure(error: unknown) {
@@ -177,31 +240,6 @@ function handleRealtimeMessageFailure(error: unknown) {
         title: 'Realtime event failed',
         message: error instanceof Error ? error.message : String(error)
     });
-}
-
-function handleRealtimeJsonMessage(message: Record<string, any>) {
-    const isRealtimeFriendEvent = isRealtimeFriendEventType(message.type);
-    if (
-        isRealtimeFriendEvent &&
-        isCurrentRealtimeFriendBaselineAccepted(backendTransportGeneration)
-    ) {
-        return;
-    }
-    if (isRealtimeFriendEvent) {
-        markRealtimeFriendBaselineDirty();
-    }
-    Promise.resolve(handleRealtimePresenceEvent(message))
-        .then(() => {
-            if (
-                isRealtimeFriendEvent &&
-                !isCurrentRealtimeFriendBaselineAccepted(
-                    backendTransportGeneration
-                )
-            ) {
-                void syncCurrentRealtimeFriendBaseline();
-            }
-        })
-        .catch(handleRealtimeMessageFailure);
 }
 
 function handleRealtimeAuthFailure(payload: Record<string, any>) {
@@ -270,7 +308,7 @@ function handleRealtimeStatus(
         });
         useSessionStore.getState().setTransportStatus('pipeline-connected');
         updateTransportStartupDetail(
-            'Friend roster baseline, IPC announce, and websocket transport are active.'
+            'Backend realtime transport, IPC announce, and websocket transport are active.'
         );
         if (backendConnectedForActiveSession || refreshBaselineOnReconnect) {
             refreshBaselineAfterReconnect();
@@ -327,44 +365,44 @@ async function subscribeBackendRealtimeEvents(
     refreshBaselineOnReconnect: boolean
 ) {
     const unsubscribers = await Promise.all([
-        backend.events.subscribe('realtimeWsMessage', (payload) => {
-            useRuntimeStore
-                .getState()
-                .recordBackendEvent('realtimeWsMessage', payload);
-            const json = isRecord(payload) ? payload.json : null;
-            if (!isCurrentTransportTarget(context)) {
-                return;
-            }
-            if (isRecord(json)) {
-                handleRealtimeJsonMessage(json);
-            } else {
-                console.warn(
-                    '[RealtimeTransport] ignored invalid realtime payload',
-                    payload
-                );
-            }
-        }),
         backend.events.subscribe('realtimeWsStatus', (payload) => {
             handleRealtimeStatus(payload, context, refreshBaselineOnReconnect);
         }),
         backend.events.subscribe('realtimeFriendProjection', (payload) => {
-            if (!isCurrentTransportTarget(context)) {
-                return;
-            }
-            const projection = isRecord(payload) ? payload : null;
-            if (
-                !isCurrentRealtimeFriendBaselineAccepted(
-                    projection?.generation,
-                    projection?.baselineRevision
-                ) &&
-                !acceptRealtimeFriendBaselineProjection(projection)
-            ) {
-                return;
-            }
-            useRuntimeStore
-                .getState()
-                .recordBackendEvent('realtimeFriendProjection', payload);
-            handleRealtimeFriendProjection(payload);
+            routeRealtimeProjection(payload, context, () => {
+                useRuntimeStore
+                    .getState()
+                    .recordBackendEvent('realtimeFriendProjection', payload);
+                handleRealtimeFriendProjection(payload);
+            });
+        }),
+        backend.events.subscribe('realtimeNotificationProjection', (payload) => {
+            routeRealtimeProjection(payload, context, () => {
+                useRuntimeStore
+                    .getState()
+                    .recordBackendEvent('realtimeNotificationProjection', payload);
+                Promise.resolve(handleRealtimeNotificationProjection(payload)).catch(
+                    handleRealtimeMessageFailure
+                );
+            });
+        }),
+        backend.events.subscribe('realtimeCurrentUserProjection', (payload) => {
+            routeRealtimeProjection(payload, context, () => {
+                useRuntimeStore
+                    .getState()
+                    .recordBackendEvent('realtimeCurrentUserProjection', payload);
+                handleRealtimeCurrentUserProjection(payload);
+            });
+        }),
+        backend.events.subscribe('realtimeInstanceClosedProjection', (payload) => {
+            routeRealtimeProjection(payload, context, () => {
+                useRuntimeStore
+                    .getState()
+                    .recordBackendEvent('realtimeInstanceClosedProjection', payload);
+                Promise.resolve(handleRealtimeInstanceClosedProjection(payload)).catch(
+                    handleRealtimeMessageFailure
+                );
+            });
         })
     ]);
 
@@ -422,11 +460,14 @@ async function startBackendRealtimeTransport(
             context.userId,
             context.endpoint,
             context.websocket,
-            runId
+            runId,
+            context.currentUserSnapshot,
+            useFriendRosterStore.getState().friendsById
         )) as Record<string, any>;
         startGeneration = Number(startResult?.generation) || null;
         if (runId === backendTransportRunId) {
             backendTransportGeneration = startGeneration;
+            flushPendingBackendProjectionEvents();
         }
     } catch (error) {
         if (runId === backendTransportRunId) {
@@ -448,13 +489,6 @@ async function startBackendRealtimeTransport(
             startGeneration
         );
         cleanupBackendRealtimeSubscriptionForRun(runId, cleanup);
-        clearRealtimeFriendBaselineTransportContext({
-            currentUserId: stopScope.userId,
-            endpoint: stopScope.endpoint,
-            websocket: stopScope.websocket,
-            clientRunId: stopScope.clientRunId,
-            generation: stopScope.generation
-        });
         if (runId === backendTransportRunId) {
             markBackendTransportStopped();
         }
@@ -462,16 +496,8 @@ async function startBackendRealtimeTransport(
         return;
     }
 
-    setRealtimeFriendBaselineTransportContext({
-        currentUserId: context.userId,
-        endpoint: context.endpoint,
-        websocket: context.websocket,
-        clientRunId: runId,
-        generation: startGeneration
-    });
     backendTransportStarting = false;
     backendTransportActive = true;
-    void syncCurrentRealtimeFriendBaseline();
 }
 
 function handleTransportFailure(error: unknown) {
@@ -603,6 +629,31 @@ export async function startRealtimeTransport({
     }
 
     return stopRealtimeTransport;
+}
+
+export async function syncBackendRealtimeFriendSnapshot({
+    requireFriendsLoaded = true
+}: { requireFriendsLoaded?: boolean } = {}) {
+    const context = backendTransportContext ?? activeContext;
+    const isCurrent = requireFriendsLoaded
+        ? isCurrentTransportTarget(context)
+        : isCurrentTransportIdentity(context);
+    if (
+        !backendTransportActive ||
+        !context?.userId ||
+        backendTransportGeneration === null ||
+        !isCurrent
+    ) {
+        return null;
+    }
+
+    return backend.app.SyncRealtimeFriendSnapshot(
+        context.userId,
+        context.endpoint,
+        context.websocket,
+        backendTransportGeneration,
+        useFriendRosterStore.getState().friendsById
+    );
 }
 
 export function stopRealtimeTransport({

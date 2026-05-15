@@ -1,15 +1,7 @@
 import vrchatFriendRepository from '@/repositories/vrchatFriendRepository.js';
+import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
-
-type RealtimePresenceServiceModule = {
-    handleRealtimePresenceEvent: (
-        message: Record<string, unknown>
-    ) => Promise<boolean>;
-};
-const realtimePresenceServiceLoaders =
-    import.meta.glob<RealtimePresenceServiceModule>(
-        './realtimePresenceService.js'
-    );
+import { useShellStore } from '@/state/shellStore.js';
 
 type FriendLike = {
     id?: unknown;
@@ -41,19 +33,39 @@ function isCurrentAuthTarget({ currentUserId, endpoint }: AuthTarget): boolean {
     );
 }
 
-async function handleFriendDeletePresenceEvent(userId: string): Promise<void> {
-    const loadRealtimePresenceService =
-        realtimePresenceServiceLoaders['./realtimePresenceService.js'];
-    if (typeof loadRealtimePresenceService !== 'function') {
-        throw new Error('Realtime presence service is unavailable.');
+function removeFromArray(values: unknown, userId: string): string[] {
+    return Array.isArray(values)
+        ? values.filter((value) => normalizeUserId(value) !== userId)
+        : [];
+}
+
+function applyLocalFriendDelete(userId: string): void {
+    useFriendRosterStore.getState().removeFriend(userId);
+    const runtimeStore = useRuntimeStore.getState();
+    const snapshot = runtimeStore.auth.currentUserSnapshot;
+    if (snapshot && typeof snapshot === 'object') {
+        runtimeStore.setAuthBootstrap({
+            currentUserSnapshot: {
+                ...snapshot,
+                friends: removeFromArray(snapshot.friends, userId),
+                onlineFriends: removeFromArray(snapshot.onlineFriends, userId),
+                activeFriends: removeFromArray(snapshot.activeFriends, userId),
+                offlineFriends: removeFromArray(snapshot.offlineFriends, userId)
+            }
+        });
     }
-    const { handleRealtimePresenceEvent } = await loadRealtimePresenceService();
-    await handleRealtimePresenceEvent({
-        type: 'friend-delete',
-        content: {
-            userId
-        }
-    });
+    useShellStore.getState().notifyMenu('friend-log');
+}
+
+async function syncRealtimeFriendSnapshotAfterLocalMutation() {
+    try {
+        const { syncBackendRealtimeFriendSnapshot } = await import(
+            './realtimeTransportService.js'
+        );
+        await syncBackendRealtimeFriendSnapshot();
+    } catch (error) {
+        console.warn('Realtime friend snapshot sync failed:', error);
+    }
 }
 
 async function deleteFriend({
@@ -79,7 +91,15 @@ async function deleteFriend({
         };
     }
 
-    await handleFriendDeletePresenceEvent(normalizedUserId);
+    const { recordFriendLogUnfriendByUserId } = await import(
+        './friendBootstrapService.js'
+    );
+    await recordFriendLogUnfriendByUserId({
+        currentUserId,
+        targetUserId: normalizedUserId
+    });
+    applyLocalFriendDelete(normalizedUserId);
+    await syncRealtimeFriendSnapshotAfterLocalMutation();
 
     return {
         stale: false,

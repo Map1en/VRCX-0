@@ -594,7 +594,7 @@ async function refreshFriendsAndFavorites() {
         return;
     }
 
-    await Promise.all([
+    const results = await Promise.allSettled([
         bootstrapFriendRoster({
             userId: auth.currentUserId,
             endpoint: auth.currentUserEndpoint,
@@ -606,10 +606,41 @@ async function refreshFriendsAndFavorites() {
             currentUserSnapshot: auth.currentUserSnapshot
         })
     ]);
+    const failed = results.find((result) => result.status === 'rejected') as
+        | PromiseRejectedResult
+        | undefined;
+    if (failed) {
+        throw failed.reason;
+    }
 }
 
-export async function refreshFriendAndFavoriteSnapshots() {
-    await refreshFriendsAndFavorites();
+export async function refreshFriendAndFavoriteSnapshots({
+    syncRealtime = true
+}: { syncRealtime?: boolean } = {}) {
+    let refreshError: unknown = null;
+    let syncError: unknown = null;
+    try {
+        await refreshFriendsAndFavorites();
+    } catch (error) {
+        refreshError = error;
+    } finally {
+        if (syncRealtime) {
+            try {
+                const { syncBackendRealtimeFriendSnapshot } = await import(
+                    './realtimeTransportService.js'
+                );
+                await syncBackendRealtimeFriendSnapshot();
+            } catch (error) {
+                syncError = error;
+            }
+        }
+    }
+    if (refreshError) {
+        throw refreshError;
+    }
+    if (syncError) {
+        throw syncError;
+    }
 }
 
 export async function refreshPlayerModerations({ isCurrent = null } = {}) {
@@ -1039,7 +1070,11 @@ export async function runBackgroundMaintenanceTick() {
     }
 
     try {
-        await runDueTask('friendsRefresh', 3600, refreshFriendsAndFavorites);
+        await runDueTask(
+            'friendsRefresh',
+            3600,
+            refreshFriendAndFavoriteSnapshots
+        );
         await runGroupUserInstancesIfDue();
         await runDueTask('moderationRefresh', 3600, refreshPlayerModerations);
         await runDueTask(

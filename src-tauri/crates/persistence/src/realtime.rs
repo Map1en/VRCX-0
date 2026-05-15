@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use crate::common::ParamsBuilder;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
+use crate::game_log::{ensure_game_log_tables, GameLogLocationEntry};
 use crate::Error;
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -13,6 +14,8 @@ pub struct FriendLogUpsert {
     pub trust_level: String,
     pub friend_number: i64,
     pub created_at: String,
+    #[serde(default)]
+    pub force_history: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -31,6 +34,22 @@ pub struct RealtimePersistenceBatch {
     pub friend_log_deletes: Vec<FriendLogDelete>,
     #[serde(default)]
     pub feed_entries: Vec<Value>,
+    #[serde(default)]
+    pub notification_v1_upserts: Vec<Value>,
+    #[serde(default)]
+    pub notification_v2_upserts: Vec<Value>,
+    #[serde(default)]
+    pub notification_v2_updates: Vec<NotificationV2Update>,
+    #[serde(default)]
+    pub notification_expirations: Vec<NotificationExpiration>,
+    #[serde(default)]
+    pub notification_seen: Vec<String>,
+    #[serde(default)]
+    pub avatar_history_upserts: Vec<AvatarHistoryUpsert>,
+    #[serde(default)]
+    pub avatar_time_spent_upserts: Vec<AvatarTimeSpentUpsert>,
+    #[serde(default)]
+    pub game_log_locations: Vec<GameLogLocationEntry>,
 }
 
 impl RealtimePersistenceBatch {
@@ -38,7 +57,46 @@ impl RealtimePersistenceBatch {
         self.friend_log_upserts.is_empty()
             && self.friend_log_deletes.is_empty()
             && self.feed_entries.is_empty()
+            && self.notification_v1_upserts.is_empty()
+            && self.notification_v2_upserts.is_empty()
+            && self.notification_v2_updates.is_empty()
+            && self.notification_expirations.is_empty()
+            && self.notification_seen.is_empty()
+            && self.avatar_history_upserts.is_empty()
+            && self.avatar_time_spent_upserts.is_empty()
+            && self.game_log_locations.is_empty()
     }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationExpiration {
+    pub id: String,
+    pub expired_at: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationV2Update {
+    pub id: String,
+    pub updates: Value,
+    #[serde(default)]
+    pub received_at: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AvatarHistoryUpsert {
+    pub avatar_id: String,
+    pub created_at: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AvatarTimeSpentUpsert {
+    pub avatar_id: String,
+    pub created_at: String,
+    pub time_spent: i64,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -66,6 +124,9 @@ pub fn write_realtime_batch(
     }
     let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
     ensure_realtime_tables(db, &user_prefix)?;
+    if !batch.game_log_locations.is_empty() {
+        ensure_game_log_tables(db)?;
+    }
     db.write_transaction(|tx| {
         for entry in &batch.friend_log_upserts {
             upsert_friend_log_current(tx, &user_prefix, entry)?;
@@ -75,6 +136,30 @@ pub fn write_realtime_batch(
         }
         for entry in &batch.feed_entries {
             insert_feed_entry(tx, &user_prefix, entry)?;
+        }
+        for entry in &batch.notification_v1_upserts {
+            upsert_notification_v1(tx, &user_prefix, entry)?;
+        }
+        for entry in &batch.notification_v2_upserts {
+            upsert_notification_v2(tx, &user_prefix, entry)?;
+        }
+        for entry in &batch.notification_v2_updates {
+            update_notification_v2(tx, &user_prefix, entry)?;
+        }
+        for entry in &batch.notification_expirations {
+            expire_notification(tx, &user_prefix, entry)?;
+        }
+        for id in &batch.notification_seen {
+            mark_notification_seen(tx, &user_prefix, id)?;
+        }
+        for entry in &batch.avatar_history_upserts {
+            upsert_avatar_history(tx, &user_prefix, entry)?;
+        }
+        for entry in &batch.avatar_time_spent_upserts {
+            upsert_avatar_time_spent(tx, &user_prefix, entry)?;
+        }
+        for entry in &batch.game_log_locations {
+            insert_game_log_location_if_changed(tx, entry)?;
         }
         Ok(())
     })
@@ -86,6 +171,25 @@ pub fn ensure_realtime_tables(db: &DatabaseService, user_prefix: &str) -> Result
         db.execute_non_query(&sql, &Default::default())?;
     }
     Ok(())
+}
+
+pub fn lookup_game_log_world_name(db: &DatabaseService, world_id: &str) -> Result<String, Error> {
+    let world_id = world_id.trim();
+    if world_id.is_empty() {
+        return Ok(String::new());
+    }
+    ensure_game_log_tables(db)?;
+    let rows = db.execute(
+        "SELECT world_name FROM gamelog_location WHERE world_id = @world_id ORDER BY id DESC LIMIT 1",
+        &ParamsBuilder::new().set("world_id", world_id).build(),
+    )?;
+    Ok(rows
+        .first()
+        .and_then(|row| row.first())
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .unwrap_or("")
+        .to_string())
 }
 
 fn upsert_friend_log_current(
@@ -136,6 +240,20 @@ fn upsert_friend_log_current(
                 .set("friend_number", friend_number)
                 .build(),
         )?;
+        if entry.force_history {
+            add_friend_log_history(
+                tx,
+                user_prefix,
+                &entry.created_at,
+                "Friend",
+                &target_user_id,
+                display_name,
+                "",
+                trust_level,
+                "",
+                friend_number,
+            )?;
+        }
     } else {
         add_friend_log_history(
             tx,
@@ -296,6 +414,281 @@ fn insert_feed_entry(
     Ok(())
 }
 
+fn upsert_notification_v1(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    notification: &Value,
+) -> Result<(), Error> {
+    let id = entry_string(notification, "id");
+    let created_at_snake = entry_string(notification, "created_at");
+    let created_at_camel = entry_string(notification, "createdAt");
+    let created_at = first_non_empty([created_at_snake.as_str(), created_at_camel.as_str()])
+        .to_string();
+    let notification_type = entry_string(notification, "type");
+    if id.is_empty() || created_at.is_empty() || notification_type.is_empty() {
+        return Ok(());
+    }
+    let details = notification.get("details").unwrap_or(&Value::Null);
+    tx.execute_non_query(
+        &format!("INSERT OR IGNORE INTO {user_prefix}_notifications (id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired) VALUES (@id, @created_at, @type, @sender_user_id, @sender_username, @receiver_user_id, @message, @world_id, @world_name, @image_url, @invite_message, @request_message, @response_message, @expired)"),
+        &ParamsBuilder::new()
+            .set("id", id)
+            .set("created_at", created_at)
+            .set("type", notification_type)
+            .set("sender_user_id", entry_string(notification, "senderUserId"))
+            .set("sender_username", entry_string(notification, "senderUsername"))
+            .set("receiver_user_id", entry_string(notification, "receiverUserId"))
+            .set("message", entry_string(notification, "message"))
+            .set("world_id", entry_string(details, "worldId"))
+            .set("world_name", entry_string(details, "worldName"))
+            .set("image_url", {
+                let details_image = entry_string(details, "imageUrl");
+                let notification_image = entry_string(notification, "imageUrl");
+                first_non_empty([details_image.as_str(), notification_image.as_str()])
+                    .to_string()
+            })
+            .set("invite_message", entry_string(details, "inviteMessage"))
+            .set("request_message", entry_string(details, "requestMessage"))
+            .set("response_message", entry_string(details, "responseMessage"))
+            .set(
+                "expired",
+                if bool_field(notification.get("$isExpired"))
+                    || bool_field(notification.get("expired"))
+                {
+                    1
+                } else {
+                    0
+                },
+            )
+            .build(),
+    )?;
+    Ok(())
+}
+
+fn upsert_notification_v2(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    notification: &Value,
+) -> Result<(), Error> {
+    let id = entry_string(notification, "id");
+    if id.is_empty() {
+        return Ok(());
+    }
+    tx.execute_non_query(
+        &format!("INSERT OR REPLACE INTO {user_prefix}_notifications_v2 (id, created_at, updated_at, expires_at, type, link, link_text, message, title, image_url, seen, sender_user_id, sender_username, data, responses, details) VALUES (@id, @created_at, @updated_at, @expires_at, @type, @link, @link_text, @message, @title, @image_url, @seen, @sender_user_id, @sender_username, @data, @responses, @details)"),
+        &ParamsBuilder::new()
+            .set("id", id)
+            .set("created_at", entry_string(notification, "createdAt"))
+            .set("updated_at", entry_string(notification, "updatedAt"))
+            .set("expires_at", entry_string(notification, "expiresAt"))
+            .set("type", entry_string(notification, "type"))
+            .set("link", entry_string(notification, "link"))
+            .set("link_text", entry_string(notification, "linkText"))
+            .set("message", entry_string(notification, "message"))
+            .set("title", entry_string(notification, "title"))
+            .set("image_url", entry_string(notification, "imageUrl"))
+            .set("seen", if bool_field(notification.get("seen")) { 1 } else { 0 })
+            .set("sender_user_id", entry_string(notification, "senderUserId"))
+            .set("sender_username", entry_string(notification, "senderUsername"))
+            .set("data", json_string(notification.get("data"), "{}"))
+            .set("responses", json_string(notification.get("responses"), "[]"))
+            .set("details", json_string(notification.get("details"), "{}"))
+            .build(),
+    )?;
+    Ok(())
+}
+
+fn expire_notification(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &NotificationExpiration,
+) -> Result<(), Error> {
+    let id = normalize_user_id(&entry.id);
+    if id.is_empty() {
+        return Ok(());
+    }
+    tx.execute_non_query(
+        &format!("UPDATE {user_prefix}_notifications_v2 SET expires_at = @expires_at, seen = 1 WHERE id = @id"),
+        &ParamsBuilder::new()
+            .set("id", id.clone())
+            .set("expires_at", entry.expired_at.clone())
+            .build(),
+    )?;
+    tx.execute_non_query(
+        &format!("UPDATE {user_prefix}_notifications SET expired = 1 WHERE id = @id"),
+        &ParamsBuilder::new().set("id", id).build(),
+    )?;
+    Ok(())
+}
+
+fn update_notification_v2(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &NotificationV2Update,
+) -> Result<(), Error> {
+    let id = normalize_user_id(&entry.id);
+    let Some(updates) = entry.updates.as_object() else {
+        return Ok(());
+    };
+    if id.is_empty() || updates.is_empty() {
+        return Ok(());
+    }
+
+    let mut assignments = Vec::new();
+    let mut params = ParamsBuilder::new().set("id", id.clone());
+    for (json_key, column) in [
+        ("createdAt", "created_at"),
+        ("updatedAt", "updated_at"),
+        ("expiresAt", "expires_at"),
+        ("type", "type"),
+        ("link", "link"),
+        ("linkText", "link_text"),
+        ("message", "message"),
+        ("title", "title"),
+        ("imageUrl", "image_url"),
+        ("senderUserId", "sender_user_id"),
+        ("senderUsername", "sender_username"),
+    ] {
+        if let Some(value) = updates.get(json_key) {
+            assignments.push(format!("{column} = @{column}"));
+            params = params.set(column, value.clone());
+        }
+    }
+    if let Some(value) = updates.get("seen") {
+        assignments.push("seen = @seen".to_string());
+        params = params.set("seen", if bool_field(Some(value)) { 1 } else { 0 });
+    }
+    for (json_key, column, default) in [
+        ("data", "data", "{}"),
+        ("responses", "responses", "[]"),
+        ("details", "details", "{}"),
+    ] {
+        if updates.contains_key(json_key) {
+            assignments.push(format!("{column} = @{column}"));
+            params = params.set(column, json_string(updates.get(json_key), default));
+        }
+    }
+
+    if assignments.is_empty() {
+        return Ok(());
+    }
+    let updated = tx.execute_non_query(
+        &format!(
+            "UPDATE {user_prefix}_notifications_v2 SET {} WHERE id = @id",
+            assignments.join(", ")
+        ),
+        &params.build(),
+    )?;
+    if updated <= 0 {
+        let mut notification = updates.clone();
+        notification.insert("id".into(), Value::String(id));
+        notification
+            .entry("createdAt")
+            .or_insert_with(|| Value::String(entry.received_at.clone()));
+        notification
+            .entry("created_at")
+            .or_insert_with(|| Value::String(entry.received_at.clone()));
+        upsert_notification_v2(tx, user_prefix, &Value::Object(notification))?;
+    }
+    Ok(())
+}
+
+fn mark_notification_seen(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    id: &str,
+) -> Result<(), Error> {
+    let id = normalize_user_id(id);
+    if id.is_empty() {
+        return Ok(());
+    }
+    tx.execute_non_query(
+        &format!("UPDATE {user_prefix}_notifications_v2 SET seen = 1 WHERE id = @id"),
+        &ParamsBuilder::new().set("id", id).build(),
+    )?;
+    Ok(())
+}
+
+fn upsert_avatar_history(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &AvatarHistoryUpsert,
+) -> Result<(), Error> {
+    let avatar_id = normalize_user_id(&entry.avatar_id);
+    if avatar_id.is_empty() {
+        return Ok(());
+    }
+    tx.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_avatar_history (avatar_id, created_at, time)
+             VALUES (@avatar_id, @created_at, 0)
+             ON CONFLICT(avatar_id) DO UPDATE SET created_at = @created_at"
+        ),
+        &ParamsBuilder::new()
+            .set("avatar_id", avatar_id)
+            .set("created_at", entry.created_at.clone())
+            .build(),
+    )?;
+    Ok(())
+}
+
+fn upsert_avatar_time_spent(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &AvatarTimeSpentUpsert,
+) -> Result<(), Error> {
+    let avatar_id = normalize_user_id(&entry.avatar_id);
+    if avatar_id.is_empty() || entry.time_spent <= 0 {
+        return Ok(());
+    }
+    tx.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_avatar_history (avatar_id, created_at, time)
+             VALUES (@avatar_id, @created_at, @time_spent)
+             ON CONFLICT(avatar_id) DO UPDATE SET time = time + @time_spent"
+        ),
+        &ParamsBuilder::new()
+            .set("avatar_id", avatar_id)
+            .set("created_at", entry.created_at.clone())
+            .set("time_spent", entry.time_spent)
+            .build(),
+    )?;
+    Ok(())
+}
+
+fn insert_game_log_location_if_changed(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    entry: &GameLogLocationEntry,
+) -> Result<(), Error> {
+    if entry.location.trim().is_empty() {
+        return Ok(());
+    }
+    let rows = tx.execute(
+        "SELECT location FROM gamelog_location ORDER BY created_at DESC, id DESC LIMIT 1",
+        &Default::default(),
+    )?;
+    let latest = rows
+        .first()
+        .and_then(|row| row.first())
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    if latest == entry.location {
+        return Ok(());
+    }
+    tx.execute_non_query(
+        "INSERT OR IGNORE INTO gamelog_location (created_at, location, world_id, world_name, time, group_name) VALUES (@created_at, @location, @world_id, @world_name, @time, @group_name)",
+        &ParamsBuilder::new()
+            .set("created_at", entry.created_at.clone())
+            .set("location", entry.location.clone())
+            .set("world_id", entry.world_id.clone())
+            .set("world_name", entry.world_name.clone())
+            .set("time", entry.time)
+            .set("group_name", entry.group_name.clone())
+            .build(),
+    )?;
+    Ok(())
+}
+
 fn next_friend_number(
     tx: &mut DatabaseWriteTransaction<'_>,
     user_prefix: &str,
@@ -345,6 +738,13 @@ fn realtime_table_statements(user_prefix: &str) -> Vec<String> {
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_friend_log_current (user_id TEXT PRIMARY KEY, display_name TEXT, trust_level TEXT, friend_number INTEGER)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_friend_log_history (id INTEGER PRIMARY KEY, created_at TEXT, type TEXT, user_id TEXT, display_name TEXT, previous_display_name TEXT, trust_level TEXT, previous_trust_level TEXT, friend_number INTEGER)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_friend_log_history_user_id_idx ON {user_prefix}_friend_log_history (user_id)"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_notifications (id TEXT PRIMARY KEY, created_at TEXT, type TEXT, sender_user_id TEXT, sender_username TEXT, receiver_user_id TEXT, message TEXT, world_id TEXT, world_name TEXT, image_url TEXT, invite_message TEXT, request_message TEXT, response_message TEXT, expired INTEGER)"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_created_id_idx ON {user_prefix}_notifications (created_at DESC, id DESC)"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_notifications_v2 (id TEXT PRIMARY KEY, created_at TEXT, updated_at TEXT, expires_at TEXT, type TEXT, link TEXT, link_text TEXT, message TEXT, title TEXT, image_url TEXT, seen INTEGER, sender_user_id TEXT, sender_username TEXT, data TEXT, responses TEXT, details TEXT)"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_created_id_idx ON {user_prefix}_notifications_v2 (created_at DESC, id DESC)"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_seen_created_id_idx ON {user_prefix}_notifications_v2 (seen, created_at DESC, id DESC)"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_type_created_id_idx ON {user_prefix}_notifications_v2 (type, created_at DESC, id DESC)"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_avatar_history (avatar_id TEXT PRIMARY KEY, created_at TEXT, time INTEGER)"),
     ]
 }
 
@@ -419,6 +819,17 @@ fn value_to_i64(value: &Value) -> Option<i64> {
         })
 }
 
+fn bool_field(value: Option<&Value>) -> bool {
+    value.and_then(Value::as_bool).unwrap_or(false)
+}
+
+fn json_string(value: Option<&Value>, default: &str) -> String {
+    value
+        .filter(|value| !value.is_null())
+        .map(ToString::to_string)
+        .unwrap_or_else(|| default.to_string())
+}
+
 fn first_non_empty<'a>(values: impl IntoIterator<Item = &'a str>) -> &'a str {
     values
         .into_iter()
@@ -487,6 +898,7 @@ mod tests {
                     trust_level: "Known".into(),
                     friend_number: 12,
                     created_at: "2026-05-15T00:00:00Z".into(),
+                    force_history: false,
                 }],
                 feed_entries: vec![json!({
                     "created_at": "2026-05-15T00:00:00Z",

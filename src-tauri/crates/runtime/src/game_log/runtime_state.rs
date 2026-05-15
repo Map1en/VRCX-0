@@ -7,6 +7,7 @@ use serde::Serialize;
 pub struct GameLogRuntimeState {
     pub current_location: String,
     pub current_world_name: String,
+    pub current_destination: String,
     pub current_location_started_at: String,
     pub current_location_started_at_ms: Option<i64>,
     pub players_by_key: HashMap<String, PlayerState>,
@@ -29,6 +30,7 @@ pub struct PlayerState {
 pub struct RuntimeSnapshot {
     pub location: String,
     pub world_name: String,
+    pub destination: String,
     pub players: Vec<PlayerState>,
 }
 
@@ -37,6 +39,7 @@ impl GameLogRuntimeState {
         RuntimeSnapshot {
             location: self.current_location.clone(),
             world_name: self.current_world_name.clone(),
+            destination: self.current_destination.clone(),
             players: self.players_by_key.values().cloned().collect(),
         }
     }

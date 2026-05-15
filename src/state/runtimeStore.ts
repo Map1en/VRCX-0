@@ -300,8 +300,11 @@ const initialState = {
         addGameLogEvent: createBackendEventState(),
         gameLogPersistenceFallback: createBackendEventState(),
         gameLogSideEffect: createBackendEventState(),
-        realtimeWsMessage: createBackendEventState(),
         realtimeWsStatus: createBackendEventState(),
+        realtimeFriendProjection: createBackendEventState(),
+        realtimeNotificationProjection: createBackendEventState(),
+        realtimeCurrentUserProjection: createBackendEventState(),
+        realtimeInstanceClosedProjection: createBackendEventState(),
         updateIsGameRunning: createBackendEventState(),
         ipcEvent: createBackendEventState(),
         browserFocus: createBackendEventState()

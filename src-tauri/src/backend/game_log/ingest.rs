@@ -88,14 +88,20 @@ impl GameLogProcessor {
 
         let log_resource_load =
             backend_config::get_bool(&self.context.db, "logResourceLoad", false)?;
-        let output = self.with_engine(|engine| {
-            engine.ingest_events(events, GameLogIngestOptions { log_resource_load })
+        let (output, snapshot) = self.with_engine(|engine| {
+            let output = engine.ingest_events(events, GameLogIngestOptions { log_resource_load });
+            (output, engine.runtime_snapshot())
         })?;
+        self.context.set_game_log_snapshot(snapshot);
         self.apply_ingest_output(self.deps(), output)
     }
 
     fn handle_game_process_event_now(&self, event: GameLogProcessEvent) -> Result<(), AppError> {
-        let output = self.with_engine(|engine| engine.handle_process_event(event))?;
+        let (output, snapshot) = self.with_engine(|engine| {
+            let output = engine.handle_process_event(event);
+            (output, engine.runtime_snapshot())
+        })?;
+        self.context.set_game_log_snapshot(snapshot);
         self.apply_ingest_output(self.deps(), output)
     }
 

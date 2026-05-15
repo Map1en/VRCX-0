@@ -4,81 +4,18 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{json, Map, Value};
 use vrcx_0_domain::friends::{normalize_state_bucket, FriendRecord, FriendRosterBaseline};
 use vrcx_0_domain::realtime::RealtimeWsMessagePayload;
-use vrcx_0_persistence::realtime::{
-    FriendLogDelete, FriendLogUpsert, RealtimePersistenceBatch,
+use vrcx_0_persistence::realtime::{FriendLogDelete, FriendLogUpsert};
+
+use super::types::{
+    FriendBaselineResult, FriendProjection, FriendProjectionPatch, PendingOfflineTimerAction,
+    RealtimeFriendApplyResult, RealtimeFriendOutput, RealtimeFriendSnapshot,
 };
 
 const PENDING_OFFLINE_DELAY_MS: u64 = 170_000;
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct RealtimeFriendSnapshot {
-    pub current_user_id: String,
-    pub endpoint: String,
-    pub websocket: String,
-    pub generation: u64,
-    pub baseline_revision: u64,
-    pub friends_by_id: HashMap<String, FriendRecord>,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendBaselineResult {
-    pub accepted: bool,
-    pub generation: u64,
-    pub baseline_revision: u64,
-    pub friend_count: usize,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendProjectionPatch {
-    pub user_id: String,
-    pub patch: Value,
-    pub state_bucket: String,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendProjection {
-    pub generation: u64,
-    pub baseline_revision: u64,
-    #[serde(default)]
-    pub patches: Vec<FriendProjectionPatch>,
-    #[serde(default)]
-    pub removals: Vec<String>,
-    #[serde(default)]
-    pub feed_entries: Vec<Value>,
-    pub friend_log_changed: bool,
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct RealtimeFriendOutput {
-    pub owner_user_id: String,
-    pub projection: FriendProjection,
-    pub persistence: RealtimePersistenceBatch,
-    pub timer_action: PendingOfflineTimerAction,
-}
-
-pub enum RealtimeFriendApplyResult {
-    Output(RealtimeFriendOutput),
-    MissingBaseline,
-    Ignored,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub enum PendingOfflineTimerAction {
-    #[default]
-    None,
-    Schedule {
-        user_id: String,
-        token: u64,
-        delay_ms: u64,
-    },
-}
 
 #[derive(Clone, Debug)]
 struct PendingOffline {
@@ -621,6 +558,7 @@ fn friend_log_upsert(
             .or_else(|| previous.and_then(|previous| int_field(previous.get("friendNumber"))))
             .unwrap_or(0),
         created_at: created_at.to_string(),
+        force_history: true,
     }
 }
 
@@ -913,12 +851,20 @@ fn is_online_value(value: &Value) -> bool {
 }
 
 fn is_real_location(location: &str) -> bool {
-    let location = location.trim();
-    !location.is_empty()
-        && location != "offline"
-        && location != "offline:offline"
-        && location != "traveling"
-        && location != "private"
+    let location = location.trim().to_ascii_lowercase();
+    if location.is_empty() || location.starts_with("local") {
+        return false;
+    }
+    !matches!(
+        location.as_str(),
+        ":"
+            | "offline"
+            | "offline:offline"
+            | "traveling"
+            | "traveling:traveling"
+            | "private"
+            | "private:private"
+    )
 }
 
 fn string_or_previous(patch: &Value, previous: &Value, key: &str) -> String {

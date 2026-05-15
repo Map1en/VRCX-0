@@ -54,17 +54,18 @@ const commandArgs: Record<string, string[]> = {
         'userId',
         'endpoint',
         'websocket',
-        'clientRunId'
-    ],
-    app__set_realtime_friend_baseline: [
-        'currentUserId',
-        'endpoint',
-        'websocket',
         'clientRunId',
-        'generation',
-        'baselineRevision',
+        'currentUserSnapshot',
         'friendsById'
     ],
+    app__sync_realtime_friend_snapshot: [
+        'userId',
+        'endpoint',
+        'websocket',
+        'generation',
+        'friendsById'
+    ],
+    app__expire_realtime_notification: ['userId', 'notificationId'],
     app__stop_realtime_transport: [
         'userId',
         'endpoint',

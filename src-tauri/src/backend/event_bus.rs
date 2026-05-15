@@ -3,9 +3,12 @@ use std::sync::{Arc, Mutex};
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::backend::realtime::types::{RealtimeWsMessagePayload, RealtimeWsStatusPayload};
+use crate::backend::realtime::types::RealtimeWsStatusPayload;
 use vrcx_0_persistence::game_log::GameLogWriteBatch;
-use vrcx_0_runtime::realtime::friends::FriendProjection;
+use vrcx_0_runtime::realtime::types::{
+    FriendProjection, RealtimeCurrentUserProjection, RealtimeInstanceClosedProjection,
+    RealtimeNotificationProjection,
+};
 use vrcx_0_runtime::session::HostSessionProjection;
 
 pub trait BackendEventSink: Send + Sync {
@@ -133,15 +136,26 @@ impl BackendEventBus {
         self.emit("updateIsGameRunning", payload);
     }
 
-    pub fn emit_realtime_ws_message(&self, payload: RealtimeWsMessagePayload) {
-        self.emit("realtimeWsMessage", payload);
-    }
-
     pub fn emit_realtime_ws_status(&self, payload: RealtimeWsStatusPayload) {
         self.emit("realtimeWsStatus", payload);
     }
 
     pub fn emit_realtime_friend_projection(&self, payload: FriendProjection) {
         self.emit("realtimeFriendProjection", payload);
+    }
+
+    pub fn emit_realtime_notification_projection(&self, payload: RealtimeNotificationProjection) {
+        self.emit("realtimeNotificationProjection", payload);
+    }
+
+    pub fn emit_realtime_current_user_projection(&self, payload: RealtimeCurrentUserProjection) {
+        self.emit("realtimeCurrentUserProjection", payload);
+    }
+
+    pub fn emit_realtime_instance_closed_projection(
+        &self,
+        payload: RealtimeInstanceClosedProjection,
+    ) {
+        self.emit("realtimeInstanceClosedProjection", payload);
     }
 }

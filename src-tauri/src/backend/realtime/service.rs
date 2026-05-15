@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 
+use serde_json::Value;
 use tokio::sync::watch;
 
 use crate::backend::context::BackendContext;
@@ -11,11 +12,23 @@ use super::types::{RealtimeSessionContext, RealtimeTransportStartResult, Realtim
 use vrcx_0_domain::friends::{FriendRecord, FriendRosterBaseline};
 use vrcx_0_domain::realtime::RealtimeWsMessagePayload;
 use vrcx_0_integrations::realtime::normalize_websocket_domain;
-use vrcx_0_persistence::realtime::write_realtime_batch;
-use vrcx_0_runtime::realtime::friends::{
-    FriendBaselineResult, FriendProjection, PendingOfflineTimerAction, RealtimeFriendApplyResult,
-    RealtimeFriendOutput, RealtimeFriendsRuntime,
+use vrcx_0_persistence::config as backend_config;
+use vrcx_0_persistence::realtime::{
+    lookup_game_log_world_name, write_realtime_batch, NotificationExpiration,
+    RealtimePersistenceBatch,
 };
+use vrcx_0_runtime::realtime::current_user::RealtimeCurrentUserRuntime;
+use vrcx_0_runtime::realtime::friends::{is_friend_event_type, RealtimeFriendsRuntime};
+use vrcx_0_runtime::realtime::notifications::{
+    apply_instance_closed_ws_message, apply_notification_ws_message,
+};
+use vrcx_0_runtime::realtime::types::{
+    FriendBaselineResult, FriendProjection, PendingOfflineTimerAction,
+    RealtimeCurrentUserAuthority, RealtimeCurrentUserOutput, RealtimeFriendApplyResult,
+    RealtimeFriendOutput, RealtimeInstanceClosedOutput, RealtimeNotificationOutput,
+};
+
+const MAX_QUEUED_FRIEND_MESSAGES: usize = 512;
 
 #[derive(Clone, Debug)]
 struct ActiveRealtimeContext {
@@ -23,14 +36,14 @@ struct ActiveRealtimeContext {
     generation: u64,
     client_run_id: u64,
     session_generation: u64,
-    required_friend_baseline_revision: u64,
-    accepted_friend_baseline_revision: u64,
 }
 
 #[derive(Default)]
 struct RealtimeBackendState {
     generation: u64,
     active_context: Option<ActiveRealtimeContext>,
+    friend_messages_paused: bool,
+    queued_friend_messages: Vec<RealtimeWsMessagePayload>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -78,6 +91,7 @@ pub struct RealtimeBackend {
     state: Mutex<RealtimeBackendState>,
     cancel_tx: watch::Sender<u64>,
     friends: RealtimeFriendsRuntime,
+    current_user: RealtimeCurrentUserRuntime,
 }
 
 struct RealtimeBackendMessageSink {
@@ -92,6 +106,7 @@ impl RealtimeBackend {
             state: Mutex::new(RealtimeBackendState::default()),
             cancel_tx,
             friends: RealtimeFriendsRuntime::new(),
+            current_user: RealtimeCurrentUserRuntime::new(),
         }
     }
 
@@ -101,6 +116,8 @@ impl RealtimeBackend {
         endpoint: String,
         websocket: String,
         client_run_id: u64,
+        current_user_snapshot: Value,
+        friends_by_id: HashMap<String, FriendRecord>,
     ) -> Result<RealtimeTransportStartResult, AppError> {
         let session = RealtimeSessionContext::new(user_id, endpoint, websocket);
         if session.user_id.is_empty() {
@@ -133,10 +150,26 @@ impl RealtimeBackend {
                 generation,
                 client_run_id,
                 session_generation,
-                required_friend_baseline_revision: 0,
-                accepted_friend_baseline_revision: 0,
             });
+            state.friend_messages_paused = false;
+            state.queued_friend_messages.clear();
             self.friends.clear();
+            self.current_user.clear();
+            self.friends.set_baseline(
+                FriendRosterBaseline {
+                    current_user_id: session.user_id.clone(),
+                    endpoint: session.endpoint.clone(),
+                    websocket: session.websocket.clone(),
+                    friends_by_id,
+                },
+                generation,
+                0,
+            );
+            self.current_user.set_snapshot(
+                session.user_id.clone(),
+                generation,
+                current_user_snapshot,
+            );
         }
         let context = Arc::clone(&self.context);
         let message_sink: Arc<dyn RealtimeMessageSink> = Arc::new(RealtimeBackendMessageSink {
@@ -161,6 +194,93 @@ impl RealtimeBackend {
             client_run_id,
             session_generation,
         })
+    }
+
+    pub fn sync_friend_snapshot(
+        self: &Arc<Self>,
+        user_id: String,
+        endpoint: String,
+        websocket: String,
+        generation: Option<u64>,
+        friends_by_id: HashMap<String, FriendRecord>,
+    ) -> Result<FriendBaselineResult, AppError> {
+        let requested_session = RealtimeSessionContext::new(user_id, endpoint, websocket);
+        let (result, active) = {
+            let state = self
+                .state
+                .lock()
+                .map_err(|error| AppError::Custom(format!("realtime state lock: {error}")))?;
+            let Some(active) = state.active_context.clone() else {
+                return Ok(FriendBaselineResult::default());
+            };
+            if active.session != requested_session
+                || generation
+                    .map(|generation| generation != active.generation)
+                    .unwrap_or(false)
+                || !self
+                    .context
+                    .session
+                    .is_realtime_generation_active(active.session_generation)
+            {
+                return Ok(FriendBaselineResult {
+                    accepted: false,
+                    generation: generation.unwrap_or(active.generation),
+                    baseline_revision: self
+                        .friends
+                        .snapshot()
+                        .map(|snapshot| snapshot.baseline_revision)
+                        .unwrap_or(0),
+                    friend_count: friends_by_id.len(),
+                });
+            }
+
+            let baseline_revision = self
+                .friends
+                .snapshot()
+                .filter(|snapshot| snapshot.generation == active.generation)
+                .map(|snapshot| snapshot.baseline_revision.saturating_add(1))
+                .unwrap_or(0);
+            let result = self.friends.set_baseline(
+                FriendRosterBaseline {
+                    current_user_id: active.session.user_id.clone(),
+                    endpoint: active.session.endpoint.clone(),
+                    websocket: active.session.websocket.clone(),
+                    friends_by_id,
+                },
+                active.generation,
+                baseline_revision,
+            );
+            (result, active)
+        };
+
+        self.drain_queued_friend_messages(active);
+
+        Ok(result)
+    }
+
+    pub fn expire_notification(
+        &self,
+        user_id: String,
+        notification_id: String,
+    ) -> Result<(), AppError> {
+        let user_id = user_id.trim().to_string();
+        let notification_id = notification_id.trim().to_string();
+        if user_id.is_empty() || notification_id.is_empty() {
+            return Ok(());
+        }
+
+        write_realtime_batch(
+            &self.context.db,
+            &user_id,
+            &RealtimePersistenceBatch {
+                notification_expirations: vec![NotificationExpiration {
+                    id: notification_id,
+                    expired_at: chrono::Utc::now().to_rfc3339(),
+                }],
+                ..RealtimePersistenceBatch::default()
+            },
+        )
+        .map_err(|error| AppError::Custom(format!("expire realtime notification: {error}")))
     }
 
     pub fn stop(&self, request: RealtimeStopRequest) {
@@ -196,9 +316,12 @@ impl RealtimeBackend {
             let websocket_domain = normalize_websocket_domain(&active.session.websocket);
             state.generation = state.generation.saturating_add(1);
             state.active_context = None;
+            state.friend_messages_paused = false;
+            state.queued_friend_messages.clear();
             let _ = self.cancel_tx.send(state.generation);
             self.context.session.clear_realtime_context();
             self.friends.clear();
+            self.current_user.clear();
             websocket_domain
         };
 
@@ -213,96 +336,6 @@ impl RealtimeBackend {
             });
     }
 
-    pub fn set_friend_baseline(
-        &self,
-        current_user_id: String,
-        endpoint: String,
-        websocket: String,
-        client_run_id: u64,
-        generation: u64,
-        baseline_revision: u64,
-        friends_by_id: HashMap<String, FriendRecord>,
-    ) -> Result<FriendBaselineResult, AppError> {
-        let current_user_id = current_user_id.trim().to_string();
-        let endpoint = endpoint.trim().to_string();
-        let websocket = websocket.trim().to_string();
-
-        let mut state = self
-            .state
-            .lock()
-            .map_err(|error| AppError::Custom(format!("realtime state lock: {error}")))?;
-        let Some(active) = state.active_context.as_mut() else {
-            return Ok(FriendBaselineResult {
-                accepted: false,
-                generation: 0,
-                baseline_revision: 0,
-                friend_count: 0,
-            });
-        };
-
-        let matches_context = active.session.user_id == current_user_id
-            && active.session.endpoint == endpoint
-            && active.session.websocket == websocket
-            && active.client_run_id == client_run_id
-            && active.generation == generation
-            && self
-                .context
-                .session
-                .is_realtime_generation_active(active.session_generation);
-
-        if !matches_context {
-            tracing::warn!(
-                current_user_id,
-                endpoint,
-                websocket,
-                client_run_id,
-                generation,
-                active_client_run_id = active.client_run_id,
-                active_generation = active.generation,
-                "[Realtime] ignored stale friend baseline"
-            );
-            return Ok(FriendBaselineResult {
-                accepted: false,
-                generation: active.generation,
-                baseline_revision: active.accepted_friend_baseline_revision,
-                friend_count: 0,
-            });
-        }
-
-        if baseline_revision < active.required_friend_baseline_revision
-            || baseline_revision < active.accepted_friend_baseline_revision
-        {
-            tracing::warn!(
-                generation,
-                baseline_revision,
-                required_revision = active.required_friend_baseline_revision,
-                accepted_revision = active.accepted_friend_baseline_revision,
-                "[Realtime] rejected stale friend baseline revision"
-            );
-            return Ok(FriendBaselineResult {
-                accepted: false,
-                generation: active.generation,
-                baseline_revision: active
-                    .required_friend_baseline_revision
-                    .max(active.accepted_friend_baseline_revision),
-                friend_count: 0,
-            });
-        }
-
-        let result = self.friends.set_baseline(
-            FriendRosterBaseline {
-                current_user_id,
-                endpoint,
-                websocket,
-                friends_by_id,
-            },
-            active.generation,
-            baseline_revision,
-        );
-        active.accepted_friend_baseline_revision = result.baseline_revision;
-        Ok(result)
-    }
-
     fn is_friend_output_current_locked(
         &self,
         state: &RealtimeBackendState,
@@ -312,15 +345,58 @@ impl RealtimeBackend {
             return false;
         };
         active.generation == projection.generation
-            && projection.baseline_revision >= active.required_friend_baseline_revision
-            && projection.baseline_revision >= active.accepted_friend_baseline_revision
             && self
                 .context
                 .session
                 .is_realtime_generation_active(active.session_generation)
     }
 
-    fn apply_friend_output(self: &Arc<Self>, output: RealtimeFriendOutput) {
+    fn is_message_current_locked(
+        &self,
+        state: &RealtimeBackendState,
+        generation: u64,
+        session_generation: u64,
+        session: &RealtimeSessionContext,
+    ) -> bool {
+        state
+            .active_context
+            .as_ref()
+            .map(|active| {
+                active.generation == generation
+                    && active.session_generation == session_generation
+                    && active.session == *session
+                    && self
+                        .context
+                        .session
+                        .is_realtime_generation_active(session_generation)
+            })
+            .unwrap_or(false)
+    }
+
+    fn queue_friend_message_locked(
+        &self,
+        state: &mut RealtimeBackendState,
+        generation: u64,
+        payload: &RealtimeWsMessagePayload,
+    ) {
+        if state.queued_friend_messages.len() >= MAX_QUEUED_FRIEND_MESSAGES {
+            state.queued_friend_messages.remove(0);
+            tracing::warn!(
+                generation,
+                max = MAX_QUEUED_FRIEND_MESSAGES,
+                "[Realtime] dropped oldest queued friend message during baseline refresh"
+            );
+        }
+        state.queued_friend_messages.push(payload.clone());
+    }
+
+    fn handle_friend_ws_message(
+        self: &Arc<Self>,
+        generation: u64,
+        session_generation: u64,
+        session: &RealtimeSessionContext,
+        payload: &RealtimeWsMessagePayload,
+    ) {
         let state = match self.state.lock() {
             Ok(state) => state,
             Err(error) => {
@@ -328,7 +404,21 @@ impl RealtimeBackend {
                 return;
             }
         };
-        self.apply_friend_output_locked(&state, output);
+        if !self.is_message_current_locked(&state, generation, session_generation, session) {
+            return;
+        }
+        match self.friends.apply_ws_message(payload) {
+            RealtimeFriendApplyResult::Output(output) => {
+                self.apply_friend_output_locked(&state, output);
+            }
+            RealtimeFriendApplyResult::MissingBaseline => {
+                tracing::warn!(
+                    generation,
+                    "[Realtime] friend event arrived without a baseline"
+                );
+            }
+            RealtimeFriendApplyResult::Ignored => {}
+        };
     }
 
     fn apply_friend_output_locked(
@@ -367,6 +457,126 @@ impl RealtimeBackend {
         }
     }
 
+    fn apply_notification_output(&self, output: RealtimeNotificationOutput) {
+        let projection = output.projection;
+        if let Err(error) =
+            write_realtime_batch(&self.context.db, &output.owner_user_id, &output.persistence)
+        {
+            tracing::warn!("Realtime notification persistence failed: {error}");
+        }
+        self.context
+            .event_bus
+            .emit_realtime_notification_projection(projection);
+    }
+
+    fn apply_current_user_output(&self, mut output: RealtimeCurrentUserOutput) {
+        self.enrich_current_user_location_output(&mut output);
+        let projection = output.projection;
+        if let Err(error) =
+            write_realtime_batch(&self.context.db, &output.owner_user_id, &output.persistence)
+        {
+            tracing::warn!("Realtime current user persistence failed: {error}");
+        }
+        self.context
+            .event_bus
+            .emit_realtime_current_user_projection(projection);
+    }
+
+    fn enrich_current_user_location_output(&self, output: &mut RealtimeCurrentUserOutput) {
+        let Some(location_entry) = output.persistence.game_log_locations.first_mut() else {
+            return;
+        };
+        if !location_entry.world_name.trim().is_empty()
+            && location_entry.world_name.trim() != location_entry.world_id.trim()
+        {
+            return;
+        }
+        let world_name =
+            match lookup_game_log_world_name(&self.context.db, &location_entry.world_id) {
+                Ok(world_name) => world_name,
+                Err(error) => {
+                    tracing::warn!("Realtime current user world-name lookup failed: {error}");
+                    String::new()
+                }
+            };
+        if world_name.is_empty() {
+            return;
+        }
+        location_entry.world_name = world_name.clone();
+        if let Some(game_state_patch) = output
+            .projection
+            .game_state_patch
+            .as_mut()
+            .and_then(Value::as_object_mut)
+        {
+            let current_world_id = json_string_field(game_state_patch.get("currentWorldId"));
+            if current_world_id == location_entry.world_id {
+                game_state_patch.insert("currentWorldName".into(), Value::String(world_name));
+            }
+        }
+    }
+
+    fn apply_instance_closed_output(
+        &self,
+        owner_user_id: &str,
+        output: RealtimeInstanceClosedOutput,
+    ) {
+        let projection = output.projection;
+        if let Err(error) =
+            write_realtime_batch(&self.context.db, owner_user_id, &output.persistence)
+        {
+            tracing::warn!("Realtime instance-closed persistence failed: {error}");
+        }
+        self.context
+            .event_bus
+            .emit_realtime_instance_closed_projection(projection);
+    }
+
+    fn refresh_current_user_snapshot_after_update(
+        self: &Arc<Self>,
+        generation: u64,
+        session: RealtimeSessionContext,
+        overlay_patch: Value,
+    ) {
+        let backend = Arc::clone(self);
+        tauri::async_runtime::spawn(async move {
+            let mut options = HashMap::new();
+            options.insert(
+                "url".to_string(),
+                Value::String(current_user_url(&session.endpoint)),
+            );
+            options.insert("method".to_string(), Value::String("GET".into()));
+            let (status, body) = match backend.context.web.execute(options).await {
+                Ok(result) => result,
+                Err(error) => {
+                    tracing::warn!("Realtime current user refresh failed: {error}");
+                    return;
+                }
+            };
+            backend.context.web.save_cookies(&backend.context.db);
+            if !(200..300).contains(&status) {
+                tracing::warn!(status, "Realtime current user refresh returned non-success");
+                return;
+            }
+            let snapshot = match serde_json::from_str::<Value>(&body) {
+                Ok(snapshot) => snapshot,
+                Err(error) => {
+                    tracing::warn!("Realtime current user refresh json failed: {error}");
+                    return;
+                }
+            };
+            let Some(output) = backend.current_user.apply_refreshed_snapshot(
+                generation,
+                snapshot,
+                overlay_patch,
+                backend.current_user_authority(),
+            ) else {
+                return;
+            };
+            backend.apply_current_user_output(output);
+        });
+    }
+
     fn fire_pending_offline(self: &Arc<Self>, user_id: &str, token: u64, now: String) {
         let state = match self.state.lock() {
             Ok(state) => state,
@@ -379,9 +589,110 @@ impl RealtimeBackend {
             self.apply_friend_output_locked(&state, output);
         }
     }
+
+    fn drain_queued_friend_messages(self: &Arc<Self>, active: ActiveRealtimeContext) {
+        loop {
+            let queued_messages = {
+                let mut state = match self.state.lock() {
+                    Ok(state) => state,
+                    Err(error) => {
+                        tracing::warn!("realtime state lock failed: {error}");
+                        return;
+                    }
+                };
+                if !self.is_message_current_locked(
+                    &state,
+                    active.generation,
+                    active.session_generation,
+                    &active.session,
+                ) {
+                    return;
+                }
+                if state.queued_friend_messages.is_empty() {
+                    state.friend_messages_paused = false;
+                    return;
+                }
+                std::mem::take(&mut state.queued_friend_messages)
+            };
+
+            for payload in queued_messages {
+                self.handle_friend_ws_message(
+                    active.generation,
+                    active.session_generation,
+                    &active.session,
+                    &payload,
+                );
+            }
+        }
+    }
+
+    fn current_user_authority(&self) -> RealtimeCurrentUserAuthority {
+        let session = self.context.session.snapshot();
+        let game_log_snapshot = self.context.game_log_snapshot();
+        let game_log_disabled =
+            backend_config::get_bool(&self.context.db, "gameLogDisabled", false).unwrap_or(false);
+        RealtimeCurrentUserAuthority {
+            is_game_running: session.is_game_running,
+            game_log_enabled: !game_log_disabled,
+            game_log_location: game_log_snapshot.location,
+            game_log_destination: game_log_snapshot.destination,
+            game_log_world_name: game_log_snapshot.world_name,
+        }
+    }
+}
+
+fn current_user_url(endpoint: &str) -> String {
+    let endpoint = endpoint.trim().trim_end_matches('/');
+    let endpoint = if endpoint.is_empty() {
+        "https://api.vrchat.cloud/api/1"
+    } else {
+        endpoint
+    };
+    format!("{endpoint}/auth/user")
+}
+
+fn json_string_field(value: Option<&Value>) -> String {
+    value
+        .and_then(Value::as_str)
+        .map(ToString::to_string)
+        .unwrap_or_else(|| {
+            value
+                .filter(|value| !value.is_null())
+                .map(ToString::to_string)
+                .unwrap_or_default()
+        })
+        .trim()
+        .to_string()
 }
 
 impl RealtimeMessageSink for RealtimeBackendMessageSink {
+    fn handle_realtime_transport_status(
+        &self,
+        generation: u64,
+        session_generation: u64,
+        session: &RealtimeSessionContext,
+        status: &str,
+    ) {
+        if status != "reconnecting" {
+            return;
+        }
+        let mut state = match self.backend.state.lock() {
+            Ok(state) => state,
+            Err(error) => {
+                tracing::warn!("realtime state lock failed: {error}");
+                return;
+            }
+        };
+        if !self
+            .backend
+            .is_message_current_locked(&state, generation, session_generation, session)
+        {
+            return;
+        }
+        state.friend_messages_paused = true;
+        state.queued_friend_messages.clear();
+    }
+
     fn handle_realtime_ws_message(
         &self,
         generation: u64,
@@ -396,40 +707,56 @@ impl RealtimeMessageSink for RealtimeBackendMessageSink {
                 return;
             }
         };
-        let is_current = state
-            .active_context
-            .as_ref()
-            .map(|active| {
-                active.generation == generation
-                    && active.session_generation == session_generation
-                    && active.session == *session
-                    && self
-                        .backend
-                        .context
-                        .session
-                        .is_realtime_generation_active(session_generation)
-            })
-            .unwrap_or(false);
-        if !is_current {
+        if !self
+            .backend
+            .is_message_current_locked(&state, generation, session_generation, session)
+        {
             return;
         }
-        match self.backend.friends.apply_ws_message(payload) {
-            RealtimeFriendApplyResult::Output(output) => {
-                self.backend.apply_friend_output_locked(&state, output);
+
+        let message_type = payload.json.get("type").and_then(serde_json::Value::as_str);
+        if message_type.map(is_friend_event_type).unwrap_or(false) {
+            if state.friend_messages_paused {
+                self.backend
+                    .queue_friend_message_locked(&mut state, generation, payload);
+                return;
             }
-            RealtimeFriendApplyResult::MissingBaseline => {
-                if let Some(active) = state.active_context.as_mut() {
-                    if active.generation == generation
-                        && active.session_generation == session_generation
-                        && active.session == *session
-                    {
-                        active.required_friend_baseline_revision =
-                            active.required_friend_baseline_revision.saturating_add(1);
-                    }
-                }
+            drop(state);
+            self.backend
+                .handle_friend_ws_message(generation, session_generation, session, payload);
+        } else {
+            drop(state);
+        }
+
+        if let Some(output) =
+            apply_notification_ws_message(&session.user_id, &session.endpoint, generation, payload)
+        {
+            self.backend.apply_notification_output(output);
+            return;
+        }
+
+        let is_user_update = message_type == Some("user-update");
+        if let Some(output) = self.backend.current_user.apply_ws_message(
+            generation,
+            payload,
+            self.backend.current_user_authority(),
+        ) {
+            let overlay_patch = output.projection.patch.clone();
+            self.backend.apply_current_user_output(output);
+            if is_user_update {
+                self.backend.refresh_current_user_snapshot_after_update(
+                    generation,
+                    session.clone(),
+                    overlay_patch,
+                );
             }
-            RealtimeFriendApplyResult::Ignored => {}
-        };
+            return;
+        }
+
+        if let Some(output) = apply_instance_closed_ws_message(generation, payload) {
+            self.backend
+                .apply_instance_closed_output(&session.user_id, output);
+        }
     }
 
     fn handle_realtime_transport_finished(
@@ -455,6 +782,9 @@ impl RealtimeMessageSink for RealtimeBackendMessageSink {
             return;
         }
         state.active_context = None;
+        state.friend_messages_paused = false;
+        state.queued_friend_messages.clear();
         self.backend.friends.clear();
+        self.backend.current_user.clear();
     }
 }

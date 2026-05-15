@@ -2,15 +2,16 @@
 
 use std::collections::HashMap;
 
+use serde_json::Value;
 use tauri::State;
 use vrcx_0_domain::friends::FriendRecord;
-use vrcx_0_runtime::realtime::friends::FriendBaselineResult;
 
 use crate::error::AppError;
 use crate::state::AppState;
 
 use crate::backend::realtime::types::RealtimeTransportStartResult;
 use crate::backend::realtime::RealtimeStopRequest;
+use vrcx_0_runtime::realtime::types::FriendBaselineResult;
 
 #[tauri::command]
 pub fn app__start_realtime_transport(
@@ -19,10 +20,46 @@ pub fn app__start_realtime_transport(
     endpoint: String,
     websocket: String,
     client_run_id: u64,
+    current_user_snapshot: Value,
+    friends_by_id: HashMap<String, FriendRecord>,
 ) -> Result<RealtimeTransportStartResult, AppError> {
+    state.realtime_backend.start(
+        user_id,
+        endpoint,
+        websocket,
+        client_run_id,
+        current_user_snapshot,
+        friends_by_id,
+    )
+}
+
+#[tauri::command]
+pub fn app__sync_realtime_friend_snapshot(
+    state: State<'_, AppState>,
+    user_id: String,
+    endpoint: String,
+    websocket: String,
+    generation: Option<u64>,
+    friends_by_id: HashMap<String, FriendRecord>,
+) -> Result<FriendBaselineResult, AppError> {
+    state.realtime_backend.sync_friend_snapshot(
+        user_id,
+        endpoint,
+        websocket,
+        generation,
+        friends_by_id,
+    )
+}
+
+#[tauri::command]
+pub fn app__expire_realtime_notification(
+    state: State<'_, AppState>,
+    user_id: String,
+    notification_id: String,
+) -> Result<(), AppError> {
     state
         .realtime_backend
-        .start(user_id, endpoint, websocket, client_run_id)
+        .expire_notification(user_id, notification_id)
 }
 
 #[tauri::command]
@@ -41,26 +78,4 @@ pub fn app__stop_realtime_transport(
         client_run_id,
         generation,
     });
-}
-
-#[tauri::command]
-pub fn app__set_realtime_friend_baseline(
-    state: State<'_, AppState>,
-    current_user_id: String,
-    endpoint: String,
-    websocket: String,
-    client_run_id: u64,
-    generation: u64,
-    baseline_revision: u64,
-    friends_by_id: HashMap<String, FriendRecord>,
-) -> Result<FriendBaselineResult, AppError> {
-    state.realtime_backend.set_friend_baseline(
-        current_user_id,
-        endpoint,
-        websocket,
-        client_run_id,
-        generation,
-        baseline_revision,
-        friends_by_id,
-    )
 }

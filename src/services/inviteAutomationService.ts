@@ -3,6 +3,7 @@ import {
     notificationRepository,
     vrchatSearchRepository
 } from '@/repositories/index.js';
+import { backend } from '@/platform/index.js';
 import { checkCanInvite } from '@/shared/utils/invite.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
@@ -230,10 +231,7 @@ async function expireNotificationLocally({ userId, notification }) {
     if (!userId || !notification?.id) {
         return;
     }
-    await notificationRepository.expireNotification({
-        userId,
-        id: notification.id
-    });
+    await backend.app.ExpireRealtimeNotification(userId, notification.id);
     const store = useVrcNotificationStore.getState();
     store.expireNotifications(notification.id);
     store.markNotificationsSeen(notification.id);

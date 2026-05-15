@@ -87,19 +87,19 @@ export interface AppBackendNamespace extends BackendNamespace {
         userId: string,
         endpoint: string,
         websocket: string,
-        clientRunId: number
+        clientRunId: number,
+        currentUserSnapshot: Record<string, unknown>,
+        friendsById: Record<string, unknown>
     ): Promise<{
         generation: number;
         clientRunId: number;
         sessionGeneration: number;
     }>;
-    SetRealtimeFriendBaseline(
-        currentUserId: string,
+    SyncRealtimeFriendSnapshot(
+        userId: string,
         endpoint: string,
         websocket: string,
-        clientRunId: number,
-        generation: number,
-        baselineRevision: number,
+        generation: number | null,
         friendsById: Record<string, unknown>
     ): Promise<{
         accepted: boolean;
@@ -107,6 +107,10 @@ export interface AppBackendNamespace extends BackendNamespace {
         baselineRevision: number;
         friendCount: number;
     }>;
+    ExpireRealtimeNotification(
+        userId: string,
+        notificationId: string
+    ): Promise<void>;
     StopRealtimeTransport(
         userId?: string | null,
         endpoint?: string | null,
