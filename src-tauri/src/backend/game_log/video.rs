@@ -4,7 +4,7 @@ use reqwest::Url;
 use serde_json::Value;
 
 use crate::backend::db::config as backend_config;
-use crate::backend::db::game_log::{self, GameLogVideoPlayEntry};
+use crate::backend::db::game_log::{self, GameLogVideoPlayEntry, GameLogWriteBatch};
 use crate::error::AppError;
 
 use super::BackendDeps;
@@ -78,9 +78,15 @@ pub async fn handle_video_play(deps: BackendDeps, mut input: VideoInput) -> Resu
         input.user_id = game_log::get_user_id_from_display_name(&deps.db, &input.display_name)?;
     }
 
-    game_log::insert_video_play(
-        &deps.db,
-        &GameLogVideoPlayEntry {
+    let raw_row = vec![
+        "backend-game-log".into(),
+        input.created_at.clone(),
+        "video-play".into(),
+        input.video_url.clone(),
+        input.display_name.clone(),
+    ];
+    let batch = GameLogWriteBatch {
+        video_plays: vec![GameLogVideoPlayEntry {
             created_at: input.created_at.clone(),
             video_url: input.video_url.clone(),
             video_name: input.video_name.clone(),
@@ -88,16 +94,20 @@ pub async fn handle_video_play(deps: BackendDeps, mut input: VideoInput) -> Resu
             location: input.location.clone(),
             display_name: input.display_name.clone(),
             user_id: input.user_id.clone(),
-        },
-    )?;
+        }],
+        ..Default::default()
+    };
+    if let Err(error) = game_log::write_batch(&deps.db, &batch) {
+        let message = error.to_string();
+        deps.event_bus
+            .emit_game_log_persistence_fallback(&batch, vec![raw_row], &message);
+        tracing::warn!(
+            "GameLog video write failed; frontend fallback writes are disabled: {message}"
+        );
+        return Ok(());
+    }
 
-    deps.event_bus.emit_backend_game_log_event(vec![
-        "backend-game-log".into(),
-        input.created_at.clone(),
-        "video-play".into(),
-        input.video_url.clone(),
-        input.display_name.clone(),
-    ]);
+    deps.event_bus.emit_backend_game_log_event(raw_row);
 
     deps.emit_side_effect(
         "nowPlaying",

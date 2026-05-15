@@ -7,7 +7,6 @@ import { recordBackendGameClientEvent } from './gameClientLifecycle.js';
 import { handleGameRunningUpdate } from './gameStateService.js';
 import {
     ingestBackendGameLogEvent,
-    persistBackendGameLogFallbackBatch,
     resetNowPlayingState
 } from './gameLogIngestService.js';
 import {
@@ -144,36 +143,15 @@ async function ingestAndRecordGameLogEvent(
     }
 }
 
-async function persistAndRecordGameLogFallback(
+function recordGameLogPersistenceTelemetry(
     name: BackendEventName,
     payload: unknown
-): Promise<void> {
-    try {
-        await persistBackendGameLogFallbackBatch(payload);
-        const runtimeStore = useRuntimeStore.getState();
-        runtimeStore.recordBackendEvent(name, payload);
-        const record = isRecord(payload) ? payload : {};
-        const rawRows = Array.isArray(record.rawRows) ? record.rawRows : [];
-        if (rawRows.length > 0) {
-            for (const raw of rawRows) {
-                runtimeStore.recordBackendEvent('addGameLogEvent', {
-                    backendPersistenceFallback: true,
-                    raw
-                });
-            }
-        } else {
-            runtimeStore.recordBackendEvent('addGameLogEvent', {
-                backendPersistenceFallback: true,
-                payload
-            });
-        }
-    } catch (error) {
-        await showSQLiteErrorDialog(error);
-        useNotificationStore.getState().pushNotification({
-            level: 'warning',
-            title: 'Game log fallback failed',
-            message: error instanceof Error ? error.message : String(error)
-        });
+): void {
+    useRuntimeStore.getState().recordBackendEvent(name, payload);
+    const record = isRecord(payload) ? payload : {};
+    const errorMessage = normalizeString(record.error);
+    if (errorMessage) {
+        console.warn('Backend GameLog persistence failed:', errorMessage);
     }
 }
 
@@ -189,10 +167,7 @@ function handleBackendEvent(name: BackendEventName, payload: unknown): void {
     }
 
     if (name === 'gameLogPersistenceFallback') {
-        gameLogIngestQueue = gameLogIngestQueue.then(
-            () => persistAndRecordGameLogFallback(name, payload),
-            () => persistAndRecordGameLogFallback(name, payload)
-        );
+        recordGameLogPersistenceTelemetry(name, payload);
         return;
     }
 

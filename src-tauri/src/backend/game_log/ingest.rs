@@ -24,7 +24,7 @@ const GAME_LOG_WRITE_RETRY_DELAYS_MS: &[u64] = &[25, 100, 250];
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum GameLogWriteOutcome {
     BackendPersisted,
-    FrontendFallback,
+    PersistenceFailed,
 }
 
 #[derive(Clone)]
@@ -99,7 +99,7 @@ impl GameLogProcessor {
         Ok(())
     }
 
-    fn write_batch_or_emit_fallback(
+    fn write_batch_or_emit_failure_telemetry(
         &self,
         batch: &GameLogWriteBatch,
         raw_rows: Vec<Vec<String>>,
@@ -111,8 +111,10 @@ impl GameLogProcessor {
                 self.context
                     .event_bus
                     .emit_game_log_persistence_fallback(batch, raw_rows, &message);
-                tracing::warn!("GameLog batch write delegated to frontend fallback: {message}");
-                Ok(GameLogWriteOutcome::FrontendFallback)
+                tracing::warn!(
+                    "GameLog batch write failed after retries; frontend fallback writes are disabled: {message}"
+                );
+                Ok(GameLogWriteOutcome::PersistenceFailed)
             }
         }
     }
@@ -301,7 +303,7 @@ impl GameLogProcessor {
             }
         }
 
-        let write_outcome = self.write_batch_or_emit_fallback(
+        let write_outcome = self.write_batch_or_emit_failure_telemetry(
             &batch,
             events.iter().map(GameLogEvent::to_compat_row).collect(),
         )?;
@@ -334,7 +336,7 @@ impl GameLogProcessor {
             state.now_playing_url.clear();
         }
 
-        self.write_batch_or_emit_fallback(&batch, Vec::new())?;
+        self.write_batch_or_emit_failure_telemetry(&batch, Vec::new())?;
         self.commit_state(state)?;
         if event.game_changed && !event.is_game_running {
             deps.emit_side_effect("nowPlayingReset", serde_json::json!({}));

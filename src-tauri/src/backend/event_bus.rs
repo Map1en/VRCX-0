@@ -101,6 +101,8 @@ impl BackendEventBus {
         raw_rows: Vec<Vec<String>>,
         error: &str,
     ) {
+        // Compatibility event name. This is telemetry-only; the WebView must not
+        // write the batch as a fallback for backend-originated GameLog events.
         self.emit(
             "gameLogPersistenceFallback",
             serde_json::json!({
