@@ -397,6 +397,10 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
     state
         .backend_context
         .background_jobs
+        .register_frontend_job_catalog();
+    state
+        .backend_context
+        .background_jobs
         .start_database_optimize_loop(
             std::sync::Arc::clone(&state.db),
             state.backend_context.tasks.clone(),

@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::backend::background::BackendBackgroundJobSnapshot;
@@ -20,6 +20,23 @@ pub struct BackendAppSnapshot {
     pub sync: BackendSyncSnapshot,
     pub diagnostics: BackendDiagnosticsSnapshot,
     pub game_log: BackendGameLogRuntimeSnapshot,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackendBackgroundJobRecordInput {
+    pub name: String,
+    #[serde(default = "default_frontend_owner")]
+    pub owner: String,
+    #[serde(default)]
+    pub cadence_seconds: Option<u64>,
+    pub status: String,
+    #[serde(default)]
+    pub detail: String,
+}
+
+fn default_frontend_owner() -> String {
+    "frontend".into()
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -72,5 +89,46 @@ pub fn app__backend_app_snapshot_get(state: State<'_, AppState>) -> BackendAppSn
         sync: state.backend_context.sync.snapshot(),
         diagnostics: state.backend_context.diagnostics.snapshot(),
         game_log: state.backend_context.game_log_snapshot().into(),
+    }
+}
+
+#[tauri::command]
+pub fn app__backend_background_job_record(
+    state: State<'_, AppState>,
+    input: BackendBackgroundJobRecordInput,
+) {
+    let name = input.name.trim();
+    if name.is_empty() {
+        return;
+    }
+
+    let detail = input.detail.trim();
+    state.backend_context.background_jobs.register_job(
+        name,
+        input.owner.trim(),
+        input.cadence_seconds,
+        input.status.trim(),
+        detail,
+    );
+    match input.status.trim() {
+        "running" => state
+            .backend_context
+            .background_jobs
+            .mark_running(name, detail),
+        "completed" | "idle" => state
+            .backend_context
+            .background_jobs
+            .mark_completed(name, detail),
+        "error" => state
+            .backend_context
+            .background_jobs
+            .mark_failed(name, detail),
+        status => state.backend_context.background_jobs.register_job(
+            name,
+            input.owner.trim(),
+            input.cadence_seconds,
+            status,
+            detail,
+        ),
     }
 }

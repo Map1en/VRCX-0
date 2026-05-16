@@ -252,6 +252,7 @@ pub fn run() {
             api::app::paths::app__current_culture,
             api::app::paths::app__current_language,
             api::app::backend_runtime::app__backend_app_snapshot_get,
+            api::app::backend_runtime::app__backend_background_job_record,
             api::app::backend_runtime::app__backend_background_jobs_snapshot_get,
             api::app::backend_runtime::app__backend_diagnostics_get,
             api::app::backend_runtime::app__backend_runtime_snapshot_get,

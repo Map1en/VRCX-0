@@ -10,6 +10,7 @@ export function SettingsAdvancedSection({ advanced }) {
         sqliteTableSizeRows,
         onlineVisitCount,
         configTreeData,
+        backendAppSnapshot,
         saveBoolPreference,
         backend,
         saveAppLauncherField,
@@ -22,6 +23,7 @@ export function SettingsAdvancedSection({ advanced }) {
         refreshSqliteTableSizes,
         refreshOnlineVisits,
         refreshConfigTreeData,
+        refreshBackendAppSnapshot,
         setConfigTreeData,
         migrateLegacyVrcxData
     } = advanced;
@@ -37,6 +39,7 @@ export function SettingsAdvancedSection({ advanced }) {
             sqliteTableSizeRows={sqliteTableSizeRows}
             onlineVisitCount={onlineVisitCount}
             configTreeData={configTreeData}
+            backendAppSnapshot={backendAppSnapshot}
             gameLogDisabledLabel={t(
                 'view.settings.advanced.advanced.cache_debug.disable_gamelog'
             )}
@@ -111,6 +114,9 @@ export function SettingsAdvancedSection({ advanced }) {
             onRefreshSqliteTableSizes={() => void refreshSqliteTableSizes()}
             onRefreshOnlineVisits={() => void refreshOnlineVisits()}
             onRefreshConfigTreeData={() => void refreshConfigTreeData()}
+            onRefreshBackendAppSnapshot={() =>
+                void refreshBackendAppSnapshot()
+            }
             onClearConfigTreeData={() => setConfigTreeData({})}
         />
     );

@@ -1554,7 +1554,9 @@
                     "header": "诊断",
                     "refresh_online_users": "刷新在线人数",
                     "refresh_config_json": "读取 Config JSON",
-                    "clear_config_json": "清除显示结果"
+                    "clear_config_json": "清除显示结果",
+                    "backend_runtime": "后端运行态",
+                    "refresh_backend_runtime": "刷新后端运行态"
                 },
                 "diagnostics_maintenance": {
                     "header": "维护",

@@ -16,6 +16,7 @@ export function SettingsAdvancedTab({
     sqliteTableSizeRows,
     onlineVisitCount,
     configTreeData,
+    backendAppSnapshot,
     gameLogDisabledLabel,
     onRelaunchVRChatAfterCrashChange,
     onVrcQuitFixChange,
@@ -37,6 +38,7 @@ export function SettingsAdvancedTab({
     onRefreshSqliteTableSizes,
     onRefreshOnlineVisits,
     onRefreshConfigTreeData,
+    onRefreshBackendAppSnapshot,
     onClearConfigTreeData
 }) {
     const gameLogDisabledDescription = t(
@@ -219,6 +221,7 @@ export function SettingsAdvancedTab({
                 sqliteTableSizeRows={sqliteTableSizeRows}
                 onlineVisitCount={onlineVisitCount}
                 configTreeData={configTreeData}
+                backendAppSnapshot={backendAppSnapshot}
                 onAutoSweepVRChatCacheChange={onAutoSweepVRChatCacheChange}
                 onClearVrcxCache={onClearVrcxCache}
                 onPromptAutoClearVrcxCacheFrequency={
@@ -231,6 +234,7 @@ export function SettingsAdvancedTab({
                 onRefreshSqliteTableSizes={onRefreshSqliteTableSizes}
                 onRefreshOnlineVisits={onRefreshOnlineVisits}
                 onRefreshConfigTreeData={onRefreshConfigTreeData}
+                onRefreshBackendAppSnapshot={onRefreshBackendAppSnapshot}
                 onClearConfigTreeData={onClearConfigTreeData}
             />
         </SettingsTabContent>

@@ -77,6 +77,53 @@ impl BackendBackgroundJobs {
         }
     }
 
+    pub fn register_frontend_job_catalog(&self) {
+        for (name, cadence_seconds, detail) in [
+            (
+                "friendsRefresh",
+                Some(3_600),
+                "Friend and favorite refresh is still driven by the authenticated frontend runtime.",
+            ),
+            (
+                "groupInstanceRefresh",
+                Some(300),
+                "Group instance refresh is still driven by the authenticated frontend runtime.",
+            ),
+            (
+                "moderationRefresh",
+                Some(3_600),
+                "Moderation snapshot refresh is still driven by the authenticated frontend runtime.",
+            ),
+            (
+                "appUpdateCheck",
+                Some(10_800),
+                "Update checks are still driven by frontend maintenance because they surface UI notifications.",
+            ),
+            (
+                "clearVRCXCacheCheck",
+                Some(86_400),
+                "Frontend memory/cache cleanup is still driven by the frontend runtime.",
+            ),
+            (
+                "discordUpdate",
+                Some(3),
+                "Discord presence is still driven by the authenticated frontend runtime.",
+            ),
+            (
+                "autoStateChange",
+                Some(3),
+                "Presence automation is still driven by the authenticated frontend runtime.",
+            ),
+            (
+                "startupMaintenance",
+                None,
+                "Startup maintenance is still initiated by the frontend bootstrap.",
+            ),
+        ] {
+            self.register_job(name, "frontend", cadence_seconds, "frontend-owned", detail);
+        }
+    }
+
     pub fn mark_running(&self, name: &str, detail: impl Into<String>) {
         self.upsert_status(name, "running", Some(now_iso()), None, detail, false);
     }

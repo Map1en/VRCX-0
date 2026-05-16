@@ -13,6 +13,7 @@ import { backend } from '@/platform/index.js';
 import {
     avatarProfileRepository,
     avatarSearchProviderRepository,
+    backendRuntimeRepository,
     configRepository,
     databaseMaintenanceRepository,
     feedRepository,
@@ -188,6 +189,7 @@ export function useSettingsPageController() {
     const [purgeInProgress, setPurgeInProgress] = useState(false);
     const [onlineVisitCount, setOnlineVisitCount] = useState(null);
     const [configTreeData, setConfigTreeData] = useState({});
+    const [backendAppSnapshot, setBackendAppSnapshot] = useState(null);
     const [localFavoriteFriendsGroups, setLocalFavoriteFriendsGroups] =
         useState([]);
     const [zoomInput, setZoomInput] = useState('100');
@@ -462,6 +464,19 @@ export function useSettingsPageController() {
             .map((group) => group.label)
             .join(', ') ||
         t('view.settings.general.favorites.group_placeholder');
+
+    async function refreshBackendAppSnapshot() {
+        try {
+            setBackendAppSnapshot(
+                await backendRuntimeRepository.getAppSnapshot()
+            );
+        } catch (error) {
+            toast.error(
+                error instanceof Error ? error.message : String(error)
+            );
+        }
+    }
+
     return {
         shell: {
             PageHeader,
@@ -601,6 +616,7 @@ export function useSettingsPageController() {
             sqliteTableSizeRows,
             onlineVisitCount,
             configTreeData,
+            backendAppSnapshot,
             saveBoolPreference,
             backend,
             saveAppLauncherField,
@@ -613,6 +629,7 @@ export function useSettingsPageController() {
             refreshSqliteTableSizes,
             refreshOnlineVisits,
             refreshConfigTreeData,
+            refreshBackendAppSnapshot,
             setConfigTreeData,
             migrateLegacyVrcxData
         },

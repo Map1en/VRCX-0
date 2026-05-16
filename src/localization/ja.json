@@ -1554,7 +1554,9 @@
                     "header": "診断情報",
                     "refresh_online_users": "オンライン数を更新",
                     "refresh_config_json": "Config JSON を読み取り",
-                    "clear_config_json": "表示結果をクリア"
+                    "clear_config_json": "表示結果をクリア",
+                    "backend_runtime": "バックエンドランタイム",
+                    "refresh_backend_runtime": "バックエンドランタイムを更新"
                 },
                 "diagnostics_maintenance": {
                     "header": "メンテナンス",

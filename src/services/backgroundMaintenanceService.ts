@@ -28,6 +28,10 @@ import {
     persistAvatarWearTransition
 } from './avatarWearTimeService.js';
 import {
+    recordBackendBackgroundJob,
+    runRecordedBackendJob
+} from './backendBackgroundJobService.js';
+import {
     recordCurrentUserSnapshot,
     recordLocationHintsFromInstances
 } from './domainIngestionService.js';
@@ -1039,10 +1043,17 @@ async function checkForAppUpdate({ includeRegistryBackup = true } = {}) {
 }
 
 export async function runStartupMaintenance() {
-    await Promise.all([
-        checkForAppUpdate({ includeRegistryBackup: false }),
-        checkAutoBackupRestoreVrcRegistry()
-    ]);
+    await runRecordedBackendJob(
+        {
+            name: 'startupMaintenance',
+            detail: 'Running startup update and registry maintenance.'
+        },
+        () =>
+            Promise.all([
+                checkForAppUpdate({ includeRegistryBackup: false }),
+                checkAutoBackupRestoreVrcRegistry()
+            ])
+    );
 }
 
 async function runDueTask(timerName, intervalSeconds, task) {
@@ -1051,7 +1062,14 @@ async function runDueTask(timerName, intervalSeconds, task) {
     }
 
     timers[timerName] = intervalSeconds;
-    await task();
+    await runRecordedBackendJob(
+        {
+            name: timerName,
+            cadenceSeconds: intervalSeconds,
+            detail: `Running frontend-owned maintenance task ${timerName}.`
+        },
+        task
+    );
 }
 
 export async function runBackgroundMaintenanceTick() {
@@ -1065,6 +1083,12 @@ export async function runBackgroundMaintenanceTick() {
     for (const key of Object.keys(timers)) {
         timers[key] -= elapsed;
     }
+    void recordBackendBackgroundJob({
+        name: 'backgroundMaintenanceTick',
+        owner: 'frontend',
+        status: 'running',
+        detail: 'Frontend maintenance tick is active.'
+    });
 
     try {
         await runDueTask(
@@ -1084,6 +1108,12 @@ export async function runBackgroundMaintenanceTick() {
         await runDueTask('autoStateChange', 3, updateAutoStateChange);
     } finally {
         running = false;
+        void recordBackendBackgroundJob({
+            name: 'backgroundMaintenanceTick',
+            owner: 'frontend',
+            status: 'completed',
+            detail: 'Frontend maintenance tick completed.'
+        });
     }
 }
 

@@ -1554,7 +1554,9 @@
                     "header": "Diagnostics",
                     "refresh_online_users": "Refresh online users",
                     "refresh_config_json": "Read Config JSON",
-                    "clear_config_json": "Clear displayed JSON"
+                    "clear_config_json": "Clear displayed JSON",
+                    "backend_runtime": "Backend runtime",
+                    "refresh_backend_runtime": "Refresh backend runtime"
                 },
                 "diagnostics_maintenance": {
                     "header": "Maintenance",

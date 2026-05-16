@@ -25,6 +25,7 @@ export function SettingsAdvancedDataCards({
     sqliteTableSizeRows,
     onlineVisitCount,
     configTreeData,
+    backendAppSnapshot,
     onAutoSweepVRChatCacheChange,
     onClearVrcxCache,
     onPromptAutoClearVrcxCacheFrequency,
@@ -35,6 +36,7 @@ export function SettingsAdvancedDataCards({
     onRefreshSqliteTableSizes,
     onRefreshOnlineVisits,
     onRefreshConfigTreeData,
+    onRefreshBackendAppSnapshot,
     onClearConfigTreeData
 }) {
     return (
@@ -243,6 +245,27 @@ export function SettingsAdvancedDataCards({
                     {Object.keys(configTreeData).length ? (
                         <div className="bg-muted/30 max-h-[32rem] overflow-auto rounded-lg border p-3">
                             <JsonTreeView data={configTreeData} />
+                        </div>
+                    ) : null}
+                    <Field
+                        label={t(
+                            'view.settings.advanced_groups.diagnostics.backend_runtime'
+                        )}
+                    >
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onRefreshBackendAppSnapshot}
+                        >
+                            {t(
+                                'view.settings.advanced_groups.diagnostics.refresh_backend_runtime'
+                            )}
+                        </Button>
+                    </Field>
+                    {backendAppSnapshot ? (
+                        <div className="bg-muted/30 max-h-[32rem] overflow-auto rounded-lg border p-3">
+                            <JsonTreeView data={backendAppSnapshot} />
                         </div>
                     ) : null}
                 </CardContent>

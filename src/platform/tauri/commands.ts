@@ -44,6 +44,7 @@ const commandArgs: Record<string, string[]> = {
     app__current_language: [],
     app__get_host_capabilities: [],
     app__backend_app_snapshot_get: [],
+    app__backend_background_job_record: ['input'],
     app__backend_background_jobs_snapshot_get: [],
     app__backend_diagnostics_get: [],
     app__backend_runtime_snapshot_get: [],

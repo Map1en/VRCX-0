@@ -148,6 +148,13 @@ export interface AppBackendNamespace extends BackendNamespace {
     ExitApplication(): Promise<void>;
     GetHostCapabilities(): Promise<HostCapabilities>;
     BackendAppSnapshotGet(): Promise<BackendAppSnapshot>;
+    BackendBackgroundJobRecord(input: {
+        name: string;
+        owner?: string;
+        cadenceSeconds?: number | null;
+        status: string;
+        detail?: string;
+    }): Promise<void>;
     BackendBackgroundJobsSnapshotGet(): Promise<BackendBackgroundJobSnapshot[]>;
     BackendDiagnosticsGet(): Promise<BackendDiagnosticsSnapshot>;
     BackendRuntimeSnapshotGet(): Promise<BackendRuntimeSnapshot>;
