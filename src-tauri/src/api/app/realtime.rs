@@ -52,6 +52,26 @@ pub fn app__sync_realtime_friend_snapshot(
 }
 
 #[tauri::command]
+pub fn app__sync_realtime_current_user_snapshot(
+    state: State<'_, AppState>,
+    user_id: String,
+    endpoint: String,
+    websocket: String,
+    generation: Option<u64>,
+    snapshot: Value,
+    overlay_patch: Value,
+) -> Result<bool, AppError> {
+    state.realtime_backend.sync_current_user_snapshot(
+        user_id,
+        endpoint,
+        websocket,
+        generation,
+        snapshot,
+        overlay_patch,
+    )
+}
+
+#[tauri::command]
 pub fn app__expire_realtime_notification(
     state: State<'_, AppState>,
     user_id: String,

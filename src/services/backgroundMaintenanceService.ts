@@ -23,8 +23,7 @@ import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 
 import {
-    buildAvatarWearSnapshotUpdate,
-    persistAvatarWearTransition
+    buildAvatarWearSnapshotUpdate
 } from './avatarWearTimeService.js';
 import {
     recordBackendBackgroundJob,
@@ -560,13 +559,22 @@ async function refreshCurrentUserForTarget({ target, record }) {
         overlayPatch: record.overlayPatch
     });
 
-    const { snapshot: nextSnapshot, transition } =
-        buildAvatarWearSnapshotUpdate({
-            previousSnapshot: runtimeStore.auth.currentUserSnapshot,
-            nextSnapshot: user,
-            isGameRunning: runtimeStore.gameState.isGameRunning,
-            userId: user.id
-        }) as any;
+    void import('./realtimeTransportService.js')
+        .then(({ syncBackendRealtimeCurrentUserSnapshot }) =>
+            syncBackendRealtimeCurrentUserSnapshot(user, record.overlayPatch)
+        )
+        .catch((error) => {
+            console.warn(
+                'Failed to sync current user snapshot to backend:',
+                error
+            );
+        });
+
+    const { snapshot: nextSnapshot } = buildAvatarWearSnapshotUpdate({
+        previousSnapshot: runtimeStore.auth.currentUserSnapshot,
+        nextSnapshot: user,
+        isGameRunning: runtimeStore.gameState.isGameRunning
+    }) as any;
 
     useRuntimeStore.getState().setAuthBootstrap({
         currentUserId: nextSnapshot.id,
@@ -581,7 +589,6 @@ async function refreshCurrentUserForTarget({ target, record }) {
     recordCurrentUserSnapshot(nextSnapshot, {
         endpoint: target.currentUserEndpoint
     });
-    persistAvatarWearTransition(transition);
     syncFriendRosterStateFromCurrentUserSnapshot(
         nextSnapshot,
         `Friend roster states refreshed for ${nextSnapshot.displayName || nextSnapshot.username || nextSnapshot.id}.`

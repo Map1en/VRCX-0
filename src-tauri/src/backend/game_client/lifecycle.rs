@@ -3,6 +3,7 @@ use std::time::Duration;
 use chrono::Utc;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 
+use crate::domain::asset_bundle_cache;
 use crate::error::AppError;
 use vrcx_0_persistence::config as backend_config;
 use vrcx_0_persistence::game_log::{write_batch, GameLogEventEntry, GameLogWriteBatch};
@@ -34,6 +35,13 @@ pub(super) struct CrashRelaunchConfig {
 pub(super) fn prepare_game_stopped(
     deps: &GameClientDeps,
 ) -> Result<Option<CrashRelaunchPlan>, AppError> {
+    if let Err(error) = persist_game_stop_session(deps) {
+        tracing::warn!("failed to persist backend game-stop session: {error}");
+    }
+    if let Err(error) = sweep_vrchat_cache_if_enabled(deps) {
+        tracing::warn!("failed to sweep VRChat cache after game stop: {error}");
+    }
+
     let config = CrashRelaunchConfig {
         enabled: backend_config::get_bool(&deps.context.db, "relaunchVRChatAfterCrash", false)?,
         is_game_no_vr: backend_config::get_bool(&deps.context.db, "isGameNoVR", false)?,
@@ -67,6 +75,49 @@ pub(super) fn prepare_game_stopped(
 
     emit_crash_relaunch_decision(deps, plan.as_ref(), &location);
     Ok(plan)
+}
+
+fn persist_game_stop_session(deps: &GameClientDeps) -> Result<(), AppError> {
+    let snapshot = deps.context.session.snapshot();
+    let Some(started_at) = snapshot.last_game_started_at.as_deref() else {
+        return Ok(());
+    };
+    let Ok(started_at) = chrono::DateTime::parse_from_rfc3339(started_at) else {
+        return Ok(());
+    };
+    let offline_at = Utc::now().timestamp_millis();
+    let session_duration = offline_at.saturating_sub(started_at.timestamp_millis());
+    if session_duration <= 0 {
+        return Ok(());
+    }
+    deps.context
+        .config
+        .set_string("lastGameSessionMs", &session_duration.to_string())?;
+    deps.context
+        .config
+        .set_string("lastGameOfflineAt", &offline_at.to_string())?;
+    Ok(())
+}
+
+fn sweep_vrchat_cache_if_enabled(deps: &GameClientDeps) -> Result<(), AppError> {
+    if !backend_config::get_bool(&deps.context.db, "autoSweepVRChatCache", false)? {
+        return Ok(());
+    }
+    let removed_paths = asset_bundle_cache::sweep_cache();
+    let removed_count = removed_paths.len();
+    deps.context.event_bus.emit_game_client_event(
+        "notification",
+        serde_json::json!({
+            "level": "info",
+            "title": "VRChat cache swept",
+            "message": if removed_count > 0 {
+                format!("Removed {removed_count} cache entries.")
+            } else {
+                "No cache entries were removed.".to_string()
+            },
+        }),
+    );
+    Ok(())
 }
 
 pub(super) async fn execute_crash_relaunch(

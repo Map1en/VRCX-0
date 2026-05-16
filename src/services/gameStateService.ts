@@ -106,7 +106,7 @@ async function persistGameStopSession(previousGameState) {
     const startedAt = Date.parse(previousGameState.lastGameStartedAt || '');
     const offlineAt = Date.now();
 
-    if (Number.isFinite(startedAt)) {
+    if (!isBackendGameClientLifecycleActive() && Number.isFinite(startedAt)) {
         const sessionDuration = Math.max(0, offlineAt - startedAt);
         if (sessionDuration > 0) {
             await Promise.all([
@@ -129,6 +129,10 @@ async function persistGameStopSession(previousGameState) {
 }
 
 async function sweepVrchatCacheIfEnabled() {
+    if (isBackendGameClientLifecycleActive()) {
+        return;
+    }
+
     if (!(await configRepository.getBool('autoSweepVRChatCache', false))) {
         return;
     }

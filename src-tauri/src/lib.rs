@@ -130,6 +130,7 @@ pub fn run() {
             api::app::game::app__start_game_from_path,
             api::app::realtime::app__start_realtime_transport,
             api::app::realtime::app__sync_realtime_friend_snapshot,
+            api::app::realtime::app__sync_realtime_current_user_snapshot,
             api::app::realtime::app__expire_realtime_notification,
             api::app::realtime::app__stop_realtime_transport,
             api::app::local_data::app__config_set_values,

@@ -656,6 +656,34 @@ export async function syncBackendRealtimeFriendSnapshot({
     );
 }
 
+export async function syncBackendRealtimeCurrentUserSnapshot(
+    snapshot: unknown,
+    overlayPatch: unknown = null
+) {
+    const context = backendTransportContext ?? activeContext;
+    if (
+        !backendTransportActive ||
+        !context?.userId ||
+        backendTransportGeneration === null ||
+        !isCurrentTransportIdentity(context) ||
+        !snapshot ||
+        typeof snapshot !== 'object'
+    ) {
+        return null;
+    }
+
+    return backend.app.SyncRealtimeCurrentUserSnapshot(
+        context.userId,
+        context.endpoint,
+        context.websocket,
+        backendTransportGeneration,
+        snapshot as Record<string, unknown>,
+        overlayPatch && typeof overlayPatch === 'object'
+            ? (overlayPatch as Record<string, unknown>)
+            : null
+    );
+}
+
 export function stopRealtimeTransport({
     preserveTelemetry = false,
     updateStatus = true

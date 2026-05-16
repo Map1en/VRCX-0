@@ -429,6 +429,7 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
             state.session_backend.clone(),
             state.game_log_backend.clone(),
             state.game_client_backend.clone(),
+            state.realtime_backend.clone(),
         ];
         state.process_monitor.start(
             state.auto_launch.clone(),

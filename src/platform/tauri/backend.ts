@@ -1031,6 +1031,14 @@ export interface AppBackendNamespace extends BackendNamespace {
         baselineRevision: number;
         friendCount: number;
     }>;
+    SyncRealtimeCurrentUserSnapshot(
+        userId: string,
+        endpoint: string,
+        websocket: string,
+        generation: number | null,
+        snapshot: Record<string, unknown>,
+        overlayPatch: Record<string, unknown> | null
+    ): Promise<boolean>;
     ExpireRealtimeNotification(
         userId: string,
         notificationId: string

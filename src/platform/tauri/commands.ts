@@ -219,6 +219,14 @@ const commandArgs: Record<string, string[]> = {
         'generation',
         'friendsById'
     ],
+    app__sync_realtime_current_user_snapshot: [
+        'userId',
+        'endpoint',
+        'websocket',
+        'generation',
+        'snapshot',
+        'overlayPatch'
+    ],
     app__expire_realtime_notification: ['userId', 'notificationId'],
     app__stop_realtime_transport: [
         'userId',

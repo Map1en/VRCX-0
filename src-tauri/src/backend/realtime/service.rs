@@ -5,6 +5,7 @@ use serde_json::Value;
 use tokio::sync::watch;
 
 use crate::backend::context::BackendContext;
+use crate::domain::process_monitor::{GameProcessEvent, GameProcessEventSink};
 use crate::error::AppError;
 
 use super::connection::{run_realtime_transport, RealtimeMessageSink};
@@ -195,6 +196,10 @@ impl RealtimeBackend {
             .await;
         });
 
+        if self.context.session.snapshot().is_game_running {
+            self.sync_current_user_game_running_state(generation, true);
+        }
+
         Ok(RealtimeTransportStartResult {
             generation,
             client_run_id,
@@ -286,6 +291,50 @@ impl RealtimeBackend {
         Ok(result)
     }
 
+    pub fn sync_current_user_snapshot(
+        &self,
+        user_id: String,
+        endpoint: String,
+        websocket: String,
+        generation: Option<u64>,
+        snapshot: Value,
+        overlay_patch: Value,
+    ) -> Result<bool, AppError> {
+        let requested_session = RealtimeSessionContext::new(user_id, endpoint, websocket);
+        let active = {
+            let state = self
+                .state
+                .lock()
+                .map_err(|error| AppError::Custom(format!("realtime state lock: {error}")))?;
+            let Some(active) = state.active_context.clone() else {
+                return Ok(false);
+            };
+            if active.session != requested_session
+                || generation
+                    .map(|generation| generation != active.generation)
+                    .unwrap_or(false)
+                || !self
+                    .context
+                    .session
+                    .is_realtime_generation_active(active.session_generation)
+            {
+                return Ok(false);
+            }
+            active
+        };
+
+        let Some(output) = self.current_user.apply_refreshed_snapshot(
+            active.generation,
+            snapshot,
+            overlay_patch,
+            self.current_user_authority(),
+        ) else {
+            return Ok(false);
+        };
+        self.apply_current_user_output(output);
+        Ok(true)
+    }
+
     pub fn expire_notification(
         &self,
         user_id: String,
@@ -325,7 +374,7 @@ impl RealtimeBackend {
     }
 
     pub fn stop(&self, request: RealtimeStopRequest) {
-        let websocket_domain = {
+        let (websocket_domain, final_current_user_output) = {
             let mut state = match self.state.lock() {
                 Ok(state) => state,
                 Err(error) => {
@@ -355,6 +404,9 @@ impl RealtimeBackend {
             }
 
             let websocket_domain = normalize_websocket_domain(&active.session.websocket);
+            let final_current_user_output = self
+                .current_user
+                .apply_game_running_state(active.generation, false);
             state.generation = state.generation.saturating_add(1);
             state.active_context = None;
             state.friend_messages_paused = false;
@@ -363,8 +415,12 @@ impl RealtimeBackend {
             self.context.session.clear_realtime_context();
             self.friends.clear();
             self.current_user.clear();
-            websocket_domain
+            (websocket_domain, final_current_user_output)
         };
+
+        if let Some(output) = final_current_user_output {
+            self.apply_current_user_output(output);
+        }
 
         self.context
             .event_bus
@@ -719,6 +775,16 @@ impl RealtimeBackend {
             game_log_world_name: game_log_snapshot.world_name,
         }
     }
+
+    fn sync_current_user_game_running_state(&self, generation: u64, is_game_running: bool) {
+        let Some(output) = self
+            .current_user
+            .apply_game_running_state(generation, is_game_running)
+        else {
+            return;
+        };
+        self.apply_current_user_output(output);
+    }
 }
 
 fn current_user_url(endpoint: &str) -> String {
@@ -845,26 +911,57 @@ impl RealtimeMessageSink for RealtimeBackendMessageSink {
         session_generation: u64,
         session: &RealtimeSessionContext,
     ) {
-        let mut state = match self.backend.state.lock() {
-            Ok(state) => state,
-            Err(error) => {
-                tracing::warn!("realtime state lock failed: {error}");
+        let final_current_user_output = {
+            let mut state = match self.backend.state.lock() {
+                Ok(state) => state,
+                Err(error) => {
+                    tracing::warn!("realtime state lock failed: {error}");
+                    return;
+                }
+            };
+            let Some(active) = state.active_context.as_ref() else {
+                return;
+            };
+            if active.generation != generation
+                || active.session_generation != session_generation
+                || active.session != *session
+            {
                 return;
             }
+            let final_current_user_output = self
+                .backend
+                .current_user
+                .apply_game_running_state(generation, false);
+            state.active_context = None;
+            state.friend_messages_paused = false;
+            state.queued_friend_messages.clear();
+            self.backend.friends.clear();
+            self.backend.current_user.clear();
+            final_current_user_output
         };
-        let Some(active) = state.active_context.as_ref() else {
-            return;
-        };
-        if active.generation != generation
-            || active.session_generation != session_generation
-            || active.session != *session
-        {
-            return;
+
+        if let Some(output) = final_current_user_output {
+            self.backend.apply_current_user_output(output);
         }
-        state.active_context = None;
-        state.friend_messages_paused = false;
-        state.queued_friend_messages.clear();
-        self.backend.friends.clear();
-        self.backend.current_user.clear();
+    }
+}
+
+impl GameProcessEventSink for RealtimeBackend {
+    fn on_game_process_event(&self, event: GameProcessEvent) -> Result<(), AppError> {
+        if !event.game_changed {
+            return Ok(());
+        }
+        let active = {
+            let state = self
+                .state
+                .lock()
+                .map_err(|error| AppError::Custom(format!("realtime state lock: {error}")))?;
+            state.active_context.clone()
+        };
+        let Some(active) = active else {
+            return Ok(());
+        };
+        self.sync_current_user_game_running_state(active.generation, event.is_game_running);
+        Ok(())
     }
 }

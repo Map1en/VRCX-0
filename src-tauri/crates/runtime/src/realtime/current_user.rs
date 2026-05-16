@@ -125,6 +125,30 @@ impl RealtimeCurrentUserRuntime {
             &authority,
             true,
             false,
+            false,
+        )
+    }
+
+    pub fn apply_game_running_state(
+        &self,
+        generation: u64,
+        is_game_running: bool,
+    ) -> Option<RealtimeCurrentUserOutput> {
+        let mut state = self.lock_state();
+        if state.generation != generation || state.current_user_id.is_empty() {
+            return None;
+        }
+        apply_current_user_patch(
+            &mut state,
+            Value::Object(Map::new()),
+            &EventTime::now(),
+            &RealtimeCurrentUserAuthority {
+                is_game_running,
+                ..RealtimeCurrentUserAuthority::default()
+            },
+            false,
+            false,
+            is_game_running,
         )
     }
 
@@ -163,7 +187,7 @@ fn apply_user_update(
     if patch.is_empty() {
         return None;
     }
-    apply_current_user_patch(state, Value::Object(patch), now, authority, true, false)
+    apply_current_user_patch(state, Value::Object(patch), now, authority, true, false, false)
 }
 
 fn apply_user_location(
@@ -181,7 +205,7 @@ fn apply_user_location(
         content.get("travelingToLocation"),
         content.get("worldId"),
     );
-    apply_current_user_patch(state, patch, now, authority, true, true)
+    apply_current_user_patch(state, patch, now, authority, true, true, false)
 }
 
 fn apply_current_user_patch(
@@ -191,6 +215,7 @@ fn apply_current_user_patch(
     authority: &RealtimeCurrentUserAuthority,
     applies_game_log_authority: bool,
     writes_location_fallback: bool,
+    records_current_avatar_history: bool,
 ) -> Option<RealtimeCurrentUserOutput> {
     let previous = state.snapshot.clone();
     let mut projection_patch = patch.as_object().cloned().unwrap_or_default();
@@ -215,6 +240,7 @@ fn apply_current_user_patch(
         &previous,
         authority.is_game_running,
         now,
+        records_current_avatar_history,
     );
     if writes_location_fallback && !authority.is_game_running {
         if let Some(location_entry) = location_game_log_entry(&snapshot, now) {
@@ -296,6 +322,7 @@ fn apply_avatar_wear_transition(
     previous_snapshot: &Value,
     is_game_running: bool,
     now: &EventTime,
+    records_current_avatar_history: bool,
 ) -> (Value, RealtimePersistenceBatch) {
     let mut next = next_snapshot.as_object().cloned().unwrap_or_default();
     let previous = previous_snapshot.as_object();
@@ -311,6 +338,15 @@ fn apply_avatar_wear_transition(
     let mut persistence = RealtimePersistenceBatch::default();
 
     if !is_game_running {
+        if !previous_avatar_id.is_empty() && previous_swap_time > 0 {
+            persistence
+                .avatar_time_spent_upserts
+                .push(AvatarTimeSpentUpsert {
+                    avatar_id: previous_avatar_id,
+                    created_at: now.iso.clone(),
+                    time_spent: now.timestamp_ms.saturating_sub(previous_swap_time),
+                });
+        }
         next.insert("$previousAvatarSwapTime".into(), Value::Null);
         return (Value::Object(next), persistence);
     }
@@ -352,6 +388,12 @@ fn apply_avatar_wear_transition(
         return (Value::Object(next), persistence);
     }
     let next_swap_time = int_field(next.get("$previousAvatarSwapTime")).unwrap_or(0);
+    if records_current_avatar_history || (previous_swap_time <= 0 && next_swap_time <= 0) {
+        persistence.avatar_history_upserts.push(AvatarHistoryUpsert {
+            avatar_id: next_avatar_id,
+            created_at: now.iso.clone(),
+        });
+    }
     next.insert(
         "$previousAvatarSwapTime".into(),
         Value::from(first_positive([previous_swap_time, next_swap_time, now.timestamp_ms])),
